@@ -1079,4 +1079,100 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("size(dst)").withRows(Array(Array(sizeHint)))
   }
 
+  /*
+   * This test comes from a query that failed when sorting out scheduling order
+   * but we also assert results with some very rudimentary data to make sure it
+   * can run successfully (this part of the test can be improved...).
+   */
+  test("ordered union in complex query") {
+    // given
+    given {
+      val setupQuery =
+        """create (orgReg1:OrgReg {uuid:'orgreg1'})
+          |create (oar1:Owner {uuid: 'oar1'})
+          |create (orgReg1)-[:MANAGES]->(oar1)
+          |create (source1:RegArticle {uuid: 'source1'})
+          |create (source2:RegArticle {uuid: 'source1'})
+          |create (target1:RegArticle { articleNumber: 1 })
+          |create (source1)-[:OVERRIDES]->(target1)
+          |create (target2:RegArticle { articleNumber: 2 })
+          |create (source1)-[:EXTENDS]->(target2)
+          |create (target3:RegArticle { articleNumber: 3 })
+          |create (source1)-[:ACTIVATES]->(target3)
+          |create (source2)-[:ACTIVATES]->(target3)
+          |create (:Owner)-[:DEFINES]->(source1)
+          |create (oar1)-[:DEFINES]->(target1)
+          |create (oar1)-[:DEFINES]->(target3)
+          |create (targetParent1)-[:DEFINES]->(target1)
+          |create (targetParent2)-[:DEFINES]->(target2)
+          |create (targetParent3)-[:DEFINES]->(target3)
+          |""".stripMargin
+      runtimeTestSupport.graphDb.executeTransactionally(setupQuery)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("sourceArticleId", "targetArticleNumber", "targetArticleDefinedById", "targetArticleId", "targetArticleTitle", "targetArticleType", "inheritanceType", "isOutgoing")
+      .distinct("sourceArticleId AS sourceArticleId", "isOutgoing AS isOutgoing", "inheritanceType AS inheritanceType", "targetArticleId AS targetArticleId", "targetArticleNumber AS targetArticleNumber", "targetArticleDefinedById AS targetArticleDefinedById", "targetArticleType AS targetArticleType", "targetArticleTitle AS targetArticleTitle")
+      .union()
+      .|.projection("sourceArticleId AS sourceArticleId", "isOutgoing AS isOutgoing", "inheritanceType AS inheritanceType", "targetArticleId AS targetArticleId", "targetArticleNumber AS targetArticleNumber", "targetArticleDefinedById AS targetArticleDefinedById", "targetArticleType AS targetArticleType", "targetArticleTitle AS targetArticleTitle")
+      .|.projection("targetParent.uuid AS targetArticleDefinedById", "target.uuid AS targetArticleId", "target.title AS targetArticleTitle", "target.articleNumber AS targetArticleNumber", "cacheN[source.uuid] AS sourceArticleId")
+      .|.orderedDistinct(Seq("rel"), "rel AS rel", "type(rel) AS inheritanceType", "startNode(rel) = source AS isOutgoing", "targetParent AS targetParent", "source AS source", "target AS target", "head([l IN labels(target) WHERE not l = 'somelabel']) AS targetArticleType")
+      .|.expandAll("(target)<-[:DEFINES]-(targetParent)")
+      .|.filter("managesOar.uuid = 'oar1'", "managesOar:OrgReg")
+      .|.expandAll("(oar)<-[:MANAGES]-(managesOar)")
+      .|.filter("oar:Owner", "oar.uuid = 'oar1'")
+      .|.expandAll("(source)<-[:DEFINES]-(oar)")
+      .|.filter("cacheNFromStore[source.uuid] = 'source1'", "source:RegArticle", "target:RegArticle")
+      .|.orderedDistinct(Seq("rel"), "rel AS rel", "source AS source", "target AS target")
+      .|.orderedUnion(Seq(Ascending("rel")))
+      .|.|.relationshipTypeScan("(source)-[rel:ACTIVATES]-(target)", IndexOrderAscending)
+      .|.orderedUnion(Seq(Ascending("rel")))
+      .|.|.relationshipTypeScan("(source)-[rel:EXTENDS]-(target)", IndexOrderAscending)
+      .|.relationshipTypeScan("(source)-[rel:OVERRIDES]-(target)", IndexOrderAscending)
+      .projection("sourceArticleId AS sourceArticleId", "isOutgoing AS isOutgoing", "inheritanceType AS inheritanceType", "targetArticleId AS targetArticleId", "targetArticleNumber AS targetArticleNumber", "targetArticleDefinedById AS targetArticleDefinedById", "targetArticleType AS targetArticleType", "targetArticleTitle AS targetArticleTitle")
+      .projection("cacheN[target.articleNumber] AS targetArticleNumber", "cacheN[target.title] AS targetArticleTitle", "cacheN[target.uuid] AS targetArticleId", "cacheN[source.uuid] AS sourceArticleId", "cacheN[targetParent.uuid] AS targetArticleDefinedById")
+      .distinct("type(rel) AS inheritanceType", "startNode(rel) = source AS isOutgoing", "targetParent AS targetParent", "target AS target", "head([l IN labels(target) WHERE not l = 'somelabel']) AS targetArticleType", "rel AS rel", "source AS source")
+      .semiApply()
+      .|.expandInto("(oar)-[:DEFINES]->(target)")
+      .|.argument("oar", "target")
+      .cartesianProduct()
+      .|.cacheProperties("cacheNFromStore[target.articleNumber]", "cacheNFromStore[target.title]", "cacheNFromStore[target.uuid]", "cacheNFromStore[targetParent.uuid]")
+      .|.expandAll("(target)<-[:DEFINES]-(targetParent)")
+      .|.filter("cacheNFromStore[source.uuid] = 'source1'", "target:RegArticle", "source:RegArticle")
+      .|.antiSemiApply()
+      .|.|.filter("defines:Owner")
+      .|.|.expandAll("(source)<-[:DEFINES]-(defines)")
+      .|.|.argument("source")
+      .|.orderedDistinct(Seq("rel"), "rel AS rel", "source AS source", "target AS target")
+      .|.orderedUnion(Seq(Ascending("rel")))
+      .|.|.relationshipTypeScan("(source)-[rel:ACTIVATES]-(target)", IndexOrderAscending)
+      .|.orderedUnion(Seq(Ascending("rel")))
+      .|.|.relationshipTypeScan("(source)-[rel:EXTENDS]-(target)", IndexOrderAscending)
+      .|.relationshipTypeScan("(source)-[rel:OVERRIDES]-(target)", IndexOrderAscending)
+      .filter("oar.uuid = 'oar1'", "oar:Owner")
+      .expandAll("(orgReg)-[:MANAGES]->(oar)")
+      .filter("orgReg.uuid = 'orgreg1'")
+      .nodeByLabelScan("orgReg", "OrgReg", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should
+      beColumns(
+        "sourceArticleId",
+        "targetArticleNumber",
+        "targetArticleDefinedById",
+        "targetArticleId",
+        "targetArticleTitle",
+        "targetArticleType",
+        "inheritanceType",
+        "isOutgoing"
+      )
+      .withRows(inAnyOrder(Seq(
+        Array("source1", 3L, "oar1", null, null, "RegArticle", "ACTIVATES", true),
+        Array("source1", 3L, null, null, null, "RegArticle", "ACTIVATES", true)
+      )))
+  }
+
 }
