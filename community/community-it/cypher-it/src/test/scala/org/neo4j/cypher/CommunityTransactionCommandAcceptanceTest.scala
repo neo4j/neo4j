@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDE
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.kernel.impl.api.KernelTransactions
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.neo4j.test.DoubleLatch
 import org.neo4j.test.NamedFunction
@@ -768,11 +769,11 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   }
 
   test("Should fail when terminating the current transaction") {
-    // The first transaction gets id 'neo4j-transaction-3' so that should be the terminate command in this case
-
+    val sequence =
+      graph.getDependencyResolver.resolveDependency(classOf[KernelTransactions]).get().currentSequenceNumber() + 1
     // WHEN
     val exception = the[TransactionStatusFailureException] thrownBy {
-      execute("TERMINATE TRANSACTIONS 'neo4j-transaction-3'").toList
+      execute(s"TERMINATE TRANSACTIONS 'neo4j-transaction-$sequence'").toList
     }
 
     // THEN
