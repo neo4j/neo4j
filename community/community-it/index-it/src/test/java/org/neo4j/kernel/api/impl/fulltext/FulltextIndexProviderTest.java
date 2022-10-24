@@ -22,12 +22,14 @@ package org.neo4j.kernel.api.impl.fulltext;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
@@ -50,6 +52,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.MutableSet;
@@ -83,6 +86,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexConfig;
@@ -114,11 +118,13 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -147,6 +153,8 @@ class FulltextIndexProviderTest {
     private int propIdHa;
     private int propIdHe;
     private int propIdHo;
+    private String firstNodeId;
+    private String firstRelationshipId;
 
     @BeforeEach
     void prepDB() {
@@ -160,12 +168,14 @@ class FulltextIndexProviderTest {
             node1.setProperty("ha", "value1");
             node1.setProperty("he", "value2");
             node1.setProperty("ho", "value3");
+            firstNodeId = node1.getElementId();
             node2 = transaction.createNode();
             Relationship rel = node1.createRelationshipTo(node2, hejType);
             rel.setProperty("hej", "valuuu");
             rel.setProperty("ha", "value1");
             rel.setProperty("he", "value2");
             rel.setProperty("ho", "value3");
+            firstRelationshipId = rel.getElementId();
 
             transaction.commit();
         }
@@ -503,6 +513,11 @@ class FulltextIndexProviderTest {
 
     @Test
     void indexWithUnknownAnalyzerWillBeMarkedAsFailedOnStartup() throws Exception {
+        assumeThat(
+                        db.getDependencyResolver().resolveDependency(StorageEngineFactory.class)
+                                instanceof RecordStorageEngineFactory)
+                .isTrue();
+
         // Create a full-text index.
         long indexId;
         try (KernelTransactionImplementation transaction = getKernelTransaction()) {
@@ -870,31 +885,28 @@ class FulltextIndexProviderTest {
                     ktx.dataRead().indexReadSession(ktx.schemaRead().indexGetForName("fulltext"));
             try (NodeValueIndexCursor cursor =
                     ktx.cursors().allocateNodeValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                ktx.dataRead()
-                        .nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch("value"));
-                assertTrue(cursor.next());
-                assertEquals(0L, cursor.nodeReference());
-                assertFalse(cursor.next());
-
-                ktx.dataRead()
-                        .nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch("villa"));
-                assertTrue(cursor.next());
-                assertEquals(thirdNodeId, idMapper.nodeElementId(cursor.nodeReference()));
-                assertFalse(cursor.next());
-
-                ktx.dataRead()
-                        .nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch("value3"));
-                var foundIds = new HashSet<String>();
-                assertTrue(cursor.next());
-                foundIds.add(idMapper.nodeElementId(cursor.nodeReference()));
-                assertTrue(cursor.next());
-                foundIds.add(idMapper.nodeElementId(cursor.nodeReference()));
-                assertFalse(cursor.next());
-                assertThat(foundIds.remove(idMapper.nodeElementId(0L))).isTrue();
-                assertThat(foundIds.remove(thirdNodeId)).isTrue();
+                assertIndexedNodes(idMapper, ktx, index, cursor, "value", firstNodeId);
+                assertIndexedNodes(idMapper, ktx, index, cursor, "villa", thirdNodeId);
+                assertIndexedNodes(idMapper, ktx, index, cursor, "value3", firstNodeId, thirdNodeId);
             }
             tx.commit();
         }
+    }
+
+    private void assertIndexedNodes(
+            ElementIdMapper idMapper,
+            KernelTransaction ktx,
+            IndexReadSession index,
+            NodeValueIndexCursor cursor,
+            String query,
+            String... nodeIds)
+            throws KernelException {
+        ktx.dataRead().nodeIndexSeek(ktx.queryContext(), index, cursor, unconstrained(), fulltextSearch(query));
+        Set<String> found = new HashSet<>();
+        while (cursor.next()) {
+            found.add(idMapper.nodeElementId(cursor.nodeReference()));
+        }
+        assertThat(found).isEqualTo(asSet(nodeIds));
     }
 
     private void verifyRelationshipData(String secondRelId) throws Exception {
@@ -905,39 +917,31 @@ class FulltextIndexProviderTest {
             IndexReadSession indexReadSession = ktx.dataRead().indexReadSession(index);
             try (RelationshipValueIndexCursor cursor =
                     ktx.cursors().allocateRelationshipValueIndexCursor(ktx.cursorContext(), ktx.memoryTracker())) {
-                ktx.dataRead()
-                        .relationshipIndexSeek(
-                                ktx.queryContext(),
-                                indexReadSession,
-                                cursor,
-                                unconstrained(),
-                                fulltextSearch("valuuu"));
-                assertTrue(cursor.next());
-                assertEquals(0L, cursor.relationshipReference());
-                assertFalse(cursor.next());
-
-                ktx.dataRead()
-                        .relationshipIndexSeek(
-                                ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch("villa"));
-                assertTrue(cursor.next());
-                assertEquals(secondRelId, idMapper.relationshipElementId(cursor.relationshipReference()));
-                assertFalse(cursor.next());
-
-                ktx.dataRead()
-                        .relationshipIndexSeek(
-                                ktx.queryContext(),
-                                indexReadSession,
-                                cursor,
-                                unconstrained(),
-                                fulltextSearch("value3"));
-                assertTrue(cursor.next());
-                assertEquals(0L, cursor.relationshipReference());
-                assertTrue(cursor.next());
-                assertEquals(secondRelId, idMapper.relationshipElementId(cursor.relationshipReference()));
-                assertFalse(cursor.next());
+                assertIndexedRelationships(idMapper, ktx, indexReadSession, cursor, "valuuu", firstRelationshipId);
+                assertIndexedRelationships(idMapper, ktx, indexReadSession, cursor, "villa", secondRelId);
+                assertIndexedRelationships(
+                        idMapper, ktx, indexReadSession, cursor, "value3", firstRelationshipId, secondRelId);
             }
             tx.commit();
         }
+    }
+
+    private void assertIndexedRelationships(
+            ElementIdMapper idMapper,
+            KernelTransaction ktx,
+            IndexReadSession indexReadSession,
+            RelationshipValueIndexCursor cursor,
+            String query,
+            String... relationshipIds)
+            throws KernelException {
+        ktx.dataRead()
+                .relationshipIndexSeek(
+                        ktx.queryContext(), indexReadSession, cursor, unconstrained(), fulltextSearch(query));
+        Set<String> found = new HashSet<>();
+        while (cursor.next()) {
+            found.add(idMapper.relationshipElementId(cursor.relationshipReference()));
+        }
+        assertThat(found).isEqualTo(asSet(relationshipIds));
     }
 
     private void await(IndexDescriptor index) {
