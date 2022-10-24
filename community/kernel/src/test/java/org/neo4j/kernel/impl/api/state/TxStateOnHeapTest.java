@@ -36,4 +36,9 @@ class TxStateOnHeapTest extends TxStateTest {
             }
         });
     }
+
+    @Override
+    long usedMemory() {
+        return memoryTracker.estimatedHeapMemory();
+    }
 }

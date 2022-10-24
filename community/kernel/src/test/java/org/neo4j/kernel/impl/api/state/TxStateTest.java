@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -105,7 +106,7 @@ abstract class TxStateTest {
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private CollectionsFactory collectionsFactory;
     private TxState state;
-    private MemoryTracker memoryTracker;
+    MemoryTracker memoryTracker;
 
     TxStateTest(CollectionsFactorySupplier collectionsFactorySupplier) {
         this.collectionsFactorySupplier = collectionsFactorySupplier;
@@ -123,6 +124,8 @@ abstract class TxStateTest {
         collectionsFactory.release();
         assertEquals(0L, memoryTracker.usedNativeMemory(), "Seems like native memory is leaking");
     }
+
+    abstract long usedMemory();
 
     @Test
     void shouldGetAddedLabels() {
@@ -984,35 +987,41 @@ abstract class TxStateTest {
     @Test
     void getOrCreateNodeState_props_useCollectionsFactory() {
         final NodeStateImpl nodeState = state.getOrCreateNodeState(1);
+        long memoryBefore = usedMemory();
 
         nodeState.addProperty(2, stringValue("foo"));
         nodeState.removeProperty(3);
         nodeState.changeProperty(4, stringValue("bar"));
 
-        verify(collectionsFactory, times(2)).newValuesMap(memoryTracker);
-        verify(collectionsFactory).newLongSet(memoryTracker);
+        verify(collectionsFactory, times(2)).newValuesMap(any());
+        verify(collectionsFactory).newLongSet(any());
+        assertThat(usedMemory()).isGreaterThan(memoryBefore);
         verifyNoMoreInteractions(collectionsFactory);
     }
 
     @Test
     void getOrCreateLabelStateNodeDiffSets_useCollectionsFactory() {
         final MutableLongDiffSets diffSets = state.getOrCreateLabelStateNodeDiffSets(1);
+        long memoryBefore = usedMemory();
 
         diffSets.add(1);
         diffSets.remove(2);
 
-        verify(collectionsFactory, times(2)).newLongSet(memoryTracker);
+        verify(collectionsFactory, times(2)).newLongSet(any());
+        assertThat(usedMemory()).isGreaterThan(memoryBefore);
         verifyNoMoreInteractions(collectionsFactory);
     }
 
     @Test
     void getOrCreateTypeStateRelationshipDiffSets_useCollectionsFactory() {
         final MutableLongDiffSets diffSets = state.getOrCreateTypeStateRelationshipDiffSets(1);
+        long memoryBefore = usedMemory();
 
         diffSets.add(1);
         diffSets.remove(2);
 
-        verify(collectionsFactory, times(2)).newLongSet(memoryTracker);
+        verify(collectionsFactory, times(2)).newLongSet(any());
+        assertThat(usedMemory()).isGreaterThan(memoryBefore);
         verifyNoMoreInteractions(collectionsFactory);
     }
 
@@ -1020,9 +1029,13 @@ abstract class TxStateTest {
     void getOrCreateIndexUpdatesForSeek_useCollectionsFactory() {
         final MutableLongDiffSets diffSets =
                 state.getOrCreateIndexUpdatesForSeek(new HashMap<>(), ValueTuple.of(stringValue("test")));
+        long memoryBefore = usedMemory();
+
         diffSets.add(1);
         diffSets.remove(2);
-        verify(collectionsFactory, times(2)).newLongSet(memoryTracker);
+
+        verify(collectionsFactory, times(2)).newLongSet(any());
+        assertThat(usedMemory()).isGreaterThan(memoryBefore);
         verifyNoMoreInteractions(collectionsFactory);
     }
 
@@ -1087,6 +1100,51 @@ abstract class TxStateTest {
             }
         });
         assertThat(found.booleanValue()).isTrue();
+    }
+
+    @Test
+    void transactionStateResetReleasesNodeUsedMemory() {
+        long memoryOnTestStart = usedMemory();
+
+        for (int iteration = 0; iteration < 10; iteration++) {
+            for (int nodeId = 0; nodeId < 1024; nodeId++) {
+                state.nodeDoCreate(nodeId);
+            }
+            assertThat(usedMemory()).isGreaterThan(memoryOnTestStart);
+
+            state.reset();
+
+            assertEquals(usedMemory(), memoryOnTestStart);
+        }
+    }
+
+    @Test
+    void transactionStateResetReleasesRelatioshipUsedMemory() {
+        long memoryOnTestStart = usedMemory();
+
+        for (int iteration = 0; iteration < 10; iteration++) {
+            for (int relationship = 0; relationship < 1024; relationship++) {
+                state.relationshipDoDelete(relationship, 2, relationship + 1, relationship + 2);
+            }
+            assertThat(usedMemory()).isGreaterThan(memoryOnTestStart);
+
+            state.reset();
+
+            assertEquals(usedMemory(), memoryOnTestStart);
+        }
+    }
+
+    @Test
+    void stateResetKeepChangesFlagsOn() {
+        state.nodeDoCreate(1);
+
+        assertTrue(state.hasDataChanges());
+        assertTrue(state.hasChanges());
+
+        state.reset();
+
+        assertTrue(state.hasDataChanges());
+        assertTrue(state.hasChanges());
     }
 
     private LongDiffSets addedNodes(long... added) {

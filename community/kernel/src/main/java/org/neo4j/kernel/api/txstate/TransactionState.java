@@ -98,5 +98,10 @@ public interface TransactionState extends ReadableTransactionState {
 
     // MEMORY TRACKING
 
+    /**
+     * Return memory tracker that tracks the amount of memory current tx state occupy in memory.
+     * Please note that this tracker is not the whole transaction memory tracker and may be measuring only parts
+     * that are still in memory in this particular transaction state(it may be backed by the store)
+     */
     MemoryTracker memoryTracker();
 }

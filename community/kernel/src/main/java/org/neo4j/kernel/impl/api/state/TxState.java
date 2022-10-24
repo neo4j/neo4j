@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.util.diffsets.RemovalsCountingDiffSets;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
@@ -109,7 +110,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private MutableMap<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
-    private final MemoryTracker memoryTracker;
+    private final ScopedMemoryTracker stateMemoryTracker;
     private final TransactionStateBehaviour behaviour;
     private long revision;
     private long dataRevision;
@@ -123,11 +124,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     }
 
     public TxState(
-            CollectionsFactory collectionsFactory, MemoryTracker memoryTracker, TransactionStateBehaviour behaviour) {
+            CollectionsFactory collectionsFactory,
+            MemoryTracker transactionTracker,
+            TransactionStateBehaviour behaviour) {
+        transactionTracker.allocateHeap(SHALLOW_SIZE);
         this.collectionsFactory = collectionsFactory;
-        this.memoryTracker = memoryTracker;
+        this.stateMemoryTracker = new ScopedMemoryTracker(transactionTracker);
         this.behaviour = behaviour;
-        this.memoryTracker.allocateHeap(SHALLOW_SIZE);
     }
 
     @Override
@@ -138,14 +141,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
         if (relationships != null) {
             try (HeapTrackingArrayList<NodeRelationshipIds> sortedNodeRelState =
-                    HeapTrackingArrayList.newArrayList(nodeStatesMap.size(), memoryTracker)) {
+                    HeapTrackingArrayList.newArrayList(nodeStatesMap.size(), stateMemoryTracker)) {
                 nodeStatesMap.forEachValue(nodeState -> {
                     if (nodeState.isDeleted() && nodeState.isAddedInThisTx()) {
                         return;
                     }
                     if (nodeState.hasAddedRelationships() || nodeState.hasRemovedRelationships()) {
                         sortedNodeRelState.add(StateNodeRelationshipIds.createStateNodeRelationshipIds(
-                                nodeState, this::relationshipVisitWithProperties, memoryTracker));
+                                nodeState, this::relationshipVisitWithProperties, stateMemoryTracker));
                     }
                 });
                 sortedNodeRelState.sort(Comparator.comparingLong(NodeRelationshipIds::nodeId));
@@ -247,6 +250,28 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
         return getDataRevision() != 0;
     }
 
+    public void reset() {
+        labelStatesMap = null;
+        nodeStatesMap = null;
+        relationshipTypeStatesMap = null;
+        relationshipStatesMap = null;
+
+        createdLabelTokens = null;
+        createdPropertyKeyTokens = null;
+        createdRelationshipTypeTokens = null;
+
+        indexChanges = null;
+        constraintsChanges = null;
+
+        nodes = null;
+        relationships = null;
+        createdConstraintIndexesByConstraint = null;
+        indexUpdates = null;
+
+        collectionsFactory.release();
+        stateMemoryTracker.reset();
+    }
+
     @Override
     public Iterable<NodeState> modifiedNodes() {
         if (nodeStatesMap == null) {
@@ -259,9 +284,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     @VisibleForTesting
     MutableLongDiffSets getOrCreateLabelStateNodeDiffSets(long labelId) {
         if (labelStatesMap == null) {
-            labelStatesMap = newLongObjectMap(memoryTracker);
+            labelStatesMap = newLongObjectMap(stateMemoryTracker);
         }
-        return labelStatesMap.getIfAbsentPut(labelId, () -> newMutableLongDiffSets(collectionsFactory, memoryTracker));
+        return labelStatesMap.getIfAbsentPut(
+                labelId, () -> newMutableLongDiffSets(collectionsFactory, stateMemoryTracker));
     }
 
     private LongDiffSets getLabelStateNodeDiffSets(long labelId) {
@@ -275,10 +301,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     @VisibleForTesting
     MutableLongDiffSets getOrCreateTypeStateRelationshipDiffSets(int relationshipType) {
         if (relationshipTypeStatesMap == null) {
-            relationshipTypeStatesMap = newLongObjectMap(memoryTracker);
+            relationshipTypeStatesMap = newLongObjectMap(stateMemoryTracker);
         }
         return relationshipTypeStatesMap.getIfAbsentPut(
-                relationshipType, () -> newMutableLongDiffSets(collectionsFactory, memoryTracker));
+                relationshipType, () -> newMutableLongDiffSets(collectionsFactory, stateMemoryTracker));
     }
 
     @Override
@@ -458,27 +484,27 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     @Override
     public void labelDoCreateForName(String labelName, boolean internal, long id) {
         if (createdLabelTokens == null) {
-            createdLabelTokens = newLongObjectMap(memoryTracker);
+            createdLabelTokens = newLongObjectMap(stateMemoryTracker);
         }
-        createdLabelTokens.put(id, createTokenState(labelName, internal, memoryTracker));
+        createdLabelTokens.put(id, createTokenState(labelName, internal, stateMemoryTracker));
         changed();
     }
 
     @Override
     public void propertyKeyDoCreateForName(String propertyKeyName, boolean internal, int id) {
         if (createdPropertyKeyTokens == null) {
-            createdPropertyKeyTokens = newLongObjectMap(memoryTracker);
+            createdPropertyKeyTokens = newLongObjectMap(stateMemoryTracker);
         }
-        createdPropertyKeyTokens.put(id, createTokenState(propertyKeyName, internal, memoryTracker));
+        createdPropertyKeyTokens.put(id, createTokenState(propertyKeyName, internal, stateMemoryTracker));
         changed();
     }
 
     @Override
     public void relationshipTypeDoCreateForName(String labelName, boolean internal, int id) {
         if (createdRelationshipTypeTokens == null) {
-            createdRelationshipTypeTokens = newLongObjectMap(memoryTracker);
+            createdRelationshipTypeTokens = newLongObjectMap(stateMemoryTracker);
         }
-        createdRelationshipTypeTokens.put(id, createTokenState(labelName, internal, memoryTracker));
+        createdRelationshipTypeTokens.put(id, createTokenState(labelName, internal, stateMemoryTracker));
         changed();
     }
 
@@ -568,7 +594,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private MutableDiffSets<IndexDescriptor> indexChangesDiffSets() {
         if (indexChanges == null) {
-            indexChanges = newMutableDiffSets(memoryTracker);
+            indexChanges = newMutableDiffSets(stateMemoryTracker);
         }
         return indexChanges;
     }
@@ -580,7 +606,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private RemovalsCountingDiffSets nodes() {
         if (nodes == null) {
-            nodes = newRemovalsCountingDiffSets(collectionsFactory, memoryTracker);
+            nodes = newRemovalsCountingDiffSets(collectionsFactory, stateMemoryTracker);
         }
         return nodes;
     }
@@ -601,7 +627,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private RemovalsCountingDiffSets relationships() {
         if (relationships == null) {
-            relationships = newRemovalsCountingDiffSets(collectionsFactory, memoryTracker);
+            relationships = newRemovalsCountingDiffSets(collectionsFactory, stateMemoryTracker);
         }
         return relationships;
     }
@@ -616,7 +642,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     @VisibleForTesting
     NodeStateImpl getOrCreateNodeState(long nodeId) {
         if (nodeStatesMap == null) {
-            nodeStatesMap = newLongObjectMap(memoryTracker);
+            nodeStatesMap = newLongObjectMap(stateMemoryTracker);
         }
         return nodeStatesMap.getIfAbsentPut(nodeId, () -> newNodeState(nodeId));
     }
@@ -624,7 +650,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     private RelationshipStateImpl getOrCreateRelationshipState(
             long relationshipId, int type, long startNode, long endNode) {
         if (relationshipStatesMap == null) {
-            relationshipStatesMap = newLongObjectMap(memoryTracker);
+            relationshipStatesMap = newLongObjectMap(stateMemoryTracker);
         }
         return relationshipStatesMap.getIfAbsentPut(
                 relationshipId, () -> newRelationshipState(relationshipId, type, startNode, endNode));
@@ -667,7 +693,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private MutableDiffSets<ConstraintDescriptor> constraintsChangesDiffSets() {
         if (constraintsChanges == null) {
-            constraintsChanges = newMutableDiffSets(memoryTracker);
+            constraintsChanges = newMutableDiffSets(stateMemoryTracker);
         }
         return constraintsChanges;
     }
@@ -740,25 +766,25 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     @Override
     public MemoryTracker memoryTracker() {
-        return memoryTracker;
+        return stateMemoryTracker;
     }
 
     @VisibleForTesting
     MutableLongDiffSets getOrCreateIndexUpdatesForSeek(
             Map<ValueTuple, MutableLongDiffSets> updates, ValueTuple values) {
-        return updates.computeIfAbsent(values, value -> newMutableLongDiffSets(collectionsFactory, memoryTracker));
+        return updates.computeIfAbsent(values, value -> newMutableLongDiffSets(collectionsFactory, stateMemoryTracker));
     }
 
     private Map<ValueTuple, MutableLongDiffSets> getOrCreateIndexUpdatesByDescriptor(SchemaDescriptor schema) {
         if (indexUpdates == null) {
-            indexUpdates = newMap(memoryTracker);
+            indexUpdates = newMap(stateMemoryTracker);
         }
-        return indexUpdates.getIfAbsentPut(schema, () -> newMap(memoryTracker));
+        return indexUpdates.getIfAbsentPut(schema, () -> newMap(stateMemoryTracker));
     }
 
     private Map<IndexBackedConstraintDescriptor, IndexDescriptor> createdConstraintIndexesByConstraint() {
         if (createdConstraintIndexesByConstraint == null) {
-            createdConstraintIndexesByConstraint = newMap(memoryTracker);
+            createdConstraintIndexesByConstraint = newMap(stateMemoryTracker);
         }
         return createdConstraintIndexesByConstraint;
     }
@@ -784,11 +810,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     }
 
     private NodeStateImpl newNodeState(long nodeId) {
-        return NodeStateImpl.createNodeState(nodeId, nodeIsAddedInThisTx(nodeId), collectionsFactory, memoryTracker);
+        return NodeStateImpl.createNodeState(
+                nodeId, nodeIsAddedInThisTx(nodeId), collectionsFactory, stateMemoryTracker);
     }
 
     private RelationshipStateImpl newRelationshipState(long relationshipId, int type, long startNode, long endNode) {
         return RelationshipStateImpl.createRelationshipStateImpl(
-                relationshipId, type, startNode, endNode, collectionsFactory, memoryTracker);
+                relationshipId, type, startNode, endNode, collectionsFactory, stateMemoryTracker);
     }
 }

@@ -46,4 +46,9 @@ class TxStateOffHeapTest extends TxStateTest {
     static void afterAll() {
         BLOCK_ALLOCATOR.release();
     }
+
+    @Override
+    long usedMemory() {
+        return memoryTracker.usedNativeMemory();
+    }
 }

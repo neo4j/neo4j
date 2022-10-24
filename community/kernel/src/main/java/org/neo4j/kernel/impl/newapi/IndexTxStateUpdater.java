@@ -101,15 +101,12 @@ public class IndexTxStateUpdater {
                 ValueTuple valueTuple = ValueTuple.of(values);
                 memoryTracker.allocateHeap(valueTuple.getShallowSize());
                 switch (changeType) {
-                    case ADDED_LABEL:
+                    case ADDED_LABEL -> {
                         indexingService.validateBeforeCommit(index, values, node.nodeReference());
                         read.txState().indexDoUpdateEntry(index.schema(), node.nodeReference(), null, valueTuple);
-                        break;
-                    case REMOVED_LABEL:
-                        read.txState().indexDoUpdateEntry(index.schema(), node.nodeReference(), valueTuple, null);
-                        break;
-                    default:
-                        throw new IllegalStateException(changeType + " is not a supported event");
+                    }
+                    case REMOVED_LABEL -> read.txState()
+                            .indexDoUpdateEntry(index.schema(), node.nodeReference(), valueTuple, null);
                 }
             }
         }
