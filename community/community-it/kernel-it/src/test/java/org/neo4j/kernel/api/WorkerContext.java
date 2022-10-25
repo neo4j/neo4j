@@ -25,16 +25,18 @@ public class WorkerContext<T extends AutoCloseable> implements AutoCloseable {
     private final T cursor;
     private final ExecutionContext context;
     private final KernelTransaction owner;
+    private final Statement statement;
 
-    public WorkerContext(T cursor, ExecutionContext context, KernelTransaction owner) {
+    public WorkerContext(T cursor, ExecutionContext context, KernelTransaction owner, Statement statement) {
         this.cursor = cursor;
         this.context = context;
         this.owner = owner;
+        this.statement = statement;
     }
 
     @Override
     public void close() {
-        closeAllUnchecked(context);
+        closeAllUnchecked(context, statement);
     }
 
     public T getCursor() {

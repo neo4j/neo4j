@@ -38,6 +38,8 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
@@ -77,9 +79,10 @@ final class TestUtils {
             KernelTransaction tx, Function<CursorContext, T> cursorFactory, int numberOfWorkers) {
         List<WorkerContext<T>> workers = new ArrayList<>(numberOfWorkers);
         for (int i = 0; i < numberOfWorkers; i++) {
+            var statement = tx.acquireStatement();
             var executionContext = tx.createExecutionContext();
-            WorkerContext<T> workerContext =
-                    new WorkerContext<>(cursorFactory.apply(executionContext.cursorContext()), executionContext, tx);
+            WorkerContext<T> workerContext = new WorkerContext<>(
+                    cursorFactory.apply(executionContext.cursorContext()), executionContext, tx, statement);
             workers.add(workerContext);
         }
         return workers;
@@ -93,7 +96,10 @@ final class TestUtils {
                 T cursor = workerContext.getCursor();
                 var executionContext = workerContext.getContext();
                 while (scan.reserveBatch(
-                        cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode())) {
+                        cursor,
+                        sizeHint,
+                        executionContext.cursorContext(),
+                        executionContext.securityContext().mode())) {
                     while (cursor.next()) {
                         result.add(producer.applyAsLong(cursor));
                     }
@@ -112,13 +118,38 @@ final class TestUtils {
                 LongArrayList batch = new LongArrayList();
                 T cursor = workerContext.getCursor();
                 var executionContext = workerContext.getContext();
-                scan.reservePartition(cursor, executionContext.cursorContext(), executionContext.accessMode());
+                scan.reservePartition(
+                        cursor,
+                        executionContext.cursorContext(),
+                        executionContext.securityContext().mode());
                 while (cursor.next()) {
                     batch.add(producer.applyAsLong(cursor));
                 }
                 return batch;
             } finally {
                 workerContext.complete();
+            }
+        };
+    }
+
+    static <T extends Cursor> Callable<LongList> singleBatchWorker(
+            Scan<T> scan,
+            T cursor,
+            CursorContext cursorContext,
+            AccessMode accessMode,
+            ToLongFunction<T> producer,
+            int sizeHint) {
+        return () -> {
+            try {
+                LongArrayList result = new LongArrayList();
+                while (scan.reserveBatch(cursor, sizeHint, cursorContext, accessMode)) {
+                    while (cursor.next()) {
+                        result.add(producer.applyAsLong(cursor));
+                    }
+                }
+                return result;
+            } finally {
+                IOUtils.closeAll(cursor, cursorContext);
             }
         };
     }
@@ -167,7 +198,10 @@ final class TestUtils {
                 LongArrayList batch = new LongArrayList();
                 var executionContext = workerContext.getContext();
                 while (scan.reserveBatch(
-                        cursor, sizeHint, executionContext.cursorContext(), executionContext.accessMode())) {
+                        cursor,
+                        sizeHint,
+                        executionContext.cursorContext(),
+                        executionContext.securityContext().mode())) {
                     while (cursor.next()) {
                         batch.add(producer.applyAsLong(cursor));
                     }
@@ -176,6 +210,21 @@ final class TestUtils {
             } finally {
                 workerContext.complete();
             }
+        };
+    }
+
+    static <T extends Cursor> Callable<LongList> randomBatchWorker(
+            Scan<T> scan, T cursor, CursorContext cursorContext, AccessMode accessMode, ToLongFunction<T> producer) {
+        return () -> {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            int sizeHint = random.nextInt(1, 5);
+            LongArrayList batch = new LongArrayList();
+            while (scan.reserveBatch(cursor, sizeHint, cursorContext, accessMode)) {
+                while (cursor.next()) {
+                    batch.add(producer.applyAsLong(cursor));
+                }
+            }
+            return batch;
         };
     }
 

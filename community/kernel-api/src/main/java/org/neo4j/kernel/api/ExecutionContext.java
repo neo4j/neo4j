@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -44,14 +47,19 @@ public interface ExecutionContext extends AutoCloseable {
     CursorContext cursorContext();
 
     /**
-     * @return execution context security access mode
+     * @return execution context security context
      */
-    AccessMode accessMode();
+    SecurityContext securityContext();
 
     /**
      * {@link Read} implementation used for reads as part of this context
      */
     Read dataRead();
+
+    /**
+     * {@link TokenRead} implementation used for token reads as part of this context
+     */
+    TokenRead tokenRead();
 
     /**
      * {@link Procedures} implementation used for procedure and function invocation as part of this context
@@ -75,6 +83,10 @@ public interface ExecutionContext extends AutoCloseable {
      * that created from this transaction.
      */
     MemoryTracker memoryTracker();
+
+    Locks locks();
+
+    SecurityAuthorizationHandler securityAuthorizationHandler();
 
     /**
      * Mark execution context as completed and prepare any data that needs to be reported back to owning transaction.

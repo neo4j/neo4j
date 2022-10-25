@@ -365,7 +365,9 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                             try (var entities = workerContext.getCursor()) {
                                 final var found = new HashSet<Long>();
                                 while (scan.reservePartition(
-                                        entities, executionContext.cursorContext(), executionContext.accessMode())) {
+                                        entities,
+                                        executionContext.cursorContext(),
+                                        executionContext.securityContext().mode())) {
                                     while (entities.next()) {
                                         // when   inspecting the found entities
                                         // then   there should be no duplicates within the partition

@@ -202,7 +202,7 @@ class ExecutionContextFunctionIT {
     void testUserFunctionSecurityContext() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             // We should start with FULL access mode ...
-            AccessMode originalAccessMode = executionContext.accessMode();
+            AccessMode originalAccessMode = executionContext.securityContext().mode();
             assertThat(originalAccessMode).isEqualTo(FULL);
 
             // ... which should be restricted to READ during the function call ...
@@ -212,7 +212,7 @@ class ExecutionContextFunctionIT {
                             new OverriddenAccessMode(originalAccessMode, AccessMode.Static.READ).name()));
 
             // ... and restored to FULL again after the call.
-            assertThat(executionContext.accessMode()).isEqualTo(FULL);
+            assertThat(executionContext.securityContext().mode()).isEqualTo(FULL);
         });
     }
 
@@ -383,8 +383,7 @@ class ExecutionContextFunctionIT {
     }
 
     private ExecutionContext createExecutionContext(Transaction transaction) {
-        return ((KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction())
-                .createNewExecutionContext();
+        return ((InternalTransaction) transaction).kernelTransaction().createExecutionContext();
     }
 
     private void registerFunctions() throws KernelException {

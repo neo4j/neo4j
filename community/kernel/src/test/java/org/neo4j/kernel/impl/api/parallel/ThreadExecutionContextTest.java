@@ -25,6 +25,8 @@ import static org.mockito.Mockito.verify;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -52,9 +54,11 @@ class ThreadExecutionContextTest {
                 new ExecutionContextCursorTracer(mock(PageCacheTracer.class), "test"),
                 contextFactory.create("tx-tag"),
                 allStoreHolder,
+                mock(TokenRead.class),
                 storeCursors,
                 mock(IndexMonitor.class),
                 mock(MemoryTracker.class),
+                mock(SecurityAuthorizationHandler.class),
                 List.of(storageReader, lockClient))) {
             executionContext.complete();
         }

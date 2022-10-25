@@ -43,6 +43,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -79,40 +80,44 @@ public class ExecutionContextIT {
     void contextMemoryTracking() throws ExecutionException {
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
-            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
-            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
-                var executionContext = ktx.createExecutionContext();
-                futures.add(executors.submit(() -> {
-                    for (int j = 0; j < 5; j++) {
-                        executionContext.memoryTracker().allocateHeap(10);
-                    }
-                    executionContext.complete();
-                }));
-                contexts.add(executionContext);
+            try (Statement statement = ktx.acquireStatement()) {
+                var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+                var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+                for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
+                    var executionContext = ktx.createExecutionContext();
+                    futures.add(executors.submit(() -> {
+                        for (int j = 0; j < 5; j++) {
+                            executionContext.memoryTracker().allocateHeap(10);
+                        }
+                        executionContext.complete();
+                    }));
+                    contexts.add(executionContext);
+                }
+                Futures.getAll(futures);
+
+                KernelTransactions kernelTransactions =
+                        databaseAPI.getDependencyResolver().resolveDependency(KernelTransactions.class);
+
+                var transactionHandle = kernelTransactions.activeTransactions().stream()
+                        .filter(tx -> tx.isUnderlyingTransaction(ktx))
+                        .findFirst()
+                        .orElseThrow();
+                assertEquals(
+                        mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+                assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
+
+                closeAllUnchecked(contexts);
+
+                assertEquals(
+                        mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
+                assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
+
+                transaction.close();
+
+                var statistic = new TransactionExecutionStatistic(ktx, Clocks.nanoClock(), 0);
+                assertEquals(0, statistic.getEstimatedUsedHeapMemory());
+                assertEquals(0, statistic.getNativeAllocatedBytes());
             }
-            Futures.getAll(futures);
-
-            KernelTransactions kernelTransactions =
-                    databaseAPI.getDependencyResolver().resolveDependency(KernelTransactions.class);
-
-            var transactionHandle = kernelTransactions.activeTransactions().stream()
-                    .filter(tx -> tx.isUnderlyingTransaction(ktx))
-                    .findFirst()
-                    .orElseThrow();
-            assertEquals(mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
-            assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
-
-            closeAllUnchecked(contexts);
-
-            assertEquals(mebiBytes(40), transactionHandle.transactionStatistic().getEstimatedUsedHeapMemory());
-            assertEquals(0, transactionHandle.transactionStatistic().getNativeAllocatedBytes());
-
-            transaction.close();
-
-            var statistic = new TransactionExecutionStatistic(ktx, Clocks.nanoClock(), 0);
-            assertEquals(0, statistic.getEstimatedUsedHeapMemory());
-            assertEquals(0, statistic.getNativeAllocatedBytes());
         }
     }
 
@@ -130,20 +135,22 @@ public class ExecutionContextIT {
 
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
-            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
-            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
-                var executionContext = ktx.createExecutionContext();
-                futures.add(executors.submit(() -> {
-                    for (long nodeId : nodeIds) {
-                        assertTrue(executionContext.dataRead().nodeExists(nodeId));
-                    }
-                    executionContext.complete();
-                }));
-                contexts.add(executionContext);
+            try (Statement statement = ktx.acquireStatement()) {
+                var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+                var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+                for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
+                    var executionContext = ktx.createExecutionContext();
+                    futures.add(executors.submit(() -> {
+                        for (long nodeId : nodeIds) {
+                            assertTrue(executionContext.dataRead().nodeExists(nodeId));
+                        }
+                        executionContext.complete();
+                    }));
+                    contexts.add(executionContext);
+                }
+                Futures.getAll(futures);
+                closeAllUnchecked(contexts);
             }
-            Futures.getAll(futures);
-            closeAllUnchecked(contexts);
         }
     }
 
@@ -163,20 +170,22 @@ public class ExecutionContextIT {
 
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
-            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
-            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
-                var executionContext = ktx.createExecutionContext();
-                futures.add(executors.submit(() -> {
-                    for (long relId : relIds) {
-                        assertTrue(executionContext.dataRead().relationshipExists(relId));
-                    }
-                    executionContext.complete();
-                }));
-                contexts.add(executionContext);
+            try (Statement statement = ktx.acquireStatement()) {
+                var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+                var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+                for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
+                    var executionContext = ktx.createExecutionContext();
+                    futures.add(executors.submit(() -> {
+                        for (long relId : relIds) {
+                            assertTrue(executionContext.dataRead().relationshipExists(relId));
+                        }
+                        executionContext.complete();
+                    }));
+                    contexts.add(executionContext);
+                }
+                Futures.getAll(futures);
+                closeAllUnchecked(contexts);
             }
-            Futures.getAll(futures);
-            closeAllUnchecked(contexts);
         }
     }
 
@@ -200,28 +209,30 @@ public class ExecutionContextIT {
 
         try (Transaction transaction = databaseAPI.beginTx()) {
             var ktx = ((InternalTransaction) transaction).kernelTransaction();
-            var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
-            var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
-            for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
-                var executionContext = ktx.createExecutionContext();
-                futures.add(executors.submit(() -> {
-                    for (long nodeId : nodeIds) {
-                        assertTrue(executionContext.dataRead().nodeExists(nodeId));
-                        if (nodeId % 100 == 0) {
-                            executionContext.report();
+            try (Statement statement = ktx.acquireStatement()) {
+                var futures = new ArrayList<Future<?>>(NUMBER_OF_WORKERS);
+                var contexts = new ArrayList<ExecutionContext>(NUMBER_OF_WORKERS);
+                for (int i = 0; i < NUMBER_OF_WORKERS; i++) {
+                    var executionContext = ktx.createExecutionContext();
+                    futures.add(executors.submit(() -> {
+                        for (long nodeId : nodeIds) {
+                            assertTrue(executionContext.dataRead().nodeExists(nodeId));
+                            if (nodeId % 100 == 0) {
+                                executionContext.report();
+                            }
                         }
-                    }
-                    executionContext.complete();
-                }));
-                contexts.add(executionContext);
-            }
-            Futures.getAll(futures);
-            closeAllUnchecked(contexts);
+                        executionContext.complete();
+                    }));
+                    contexts.add(executionContext);
+                }
+                Futures.getAll(futures);
+                closeAllUnchecked(contexts);
 
-            var tracer = ktx.cursorContext().getCursorTracer();
-            assertEquals(numPins, tracer.pins());
-            assertEquals(numPins, tracer.unpins());
-            assertEquals(numPins, tracer.hits());
+                var tracer = ktx.cursorContext().getCursorTracer();
+                assertEquals(numPins, tracer.pins());
+                assertEquals(numPins, tracer.unpins());
+                assertEquals(numPins, tracer.hits());
+            }
         }
     }
 
@@ -230,7 +241,8 @@ public class ExecutionContextIT {
         for (int i = 0; i < 1024; i++) {
             try (Transaction transaction = databaseAPI.beginTx()) {
                 var ktx = ((InternalTransaction) transaction).kernelTransaction();
-                try (var executionContext = ktx.createExecutionContext()) {
+                try (var statement = ktx.acquireStatement();
+                        var executionContext = ktx.createExecutionContext()) {
                     executionContext.complete();
                 }
             }
@@ -240,9 +252,9 @@ public class ExecutionContextIT {
     @Test
     void testTransactionTerminationCheck() {
         try (Transaction transaction = databaseAPI.beginTx()) {
-            var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            var ktx = ((InternalTransaction) transaction).kernelTransaction();
             try (Statement statement = ktx.acquireStatement();
-                    var executionContext = ktx.createNewExecutionContext()) {
+                    var executionContext = ktx.createExecutionContext()) {
                 try {
                     var read = executionContext.dataRead();
                     ktx.markForTermination(Status.Transaction.Terminated);
@@ -259,11 +271,11 @@ public class ExecutionContextIT {
     @Test
     void shouldDetectWhenExecutionContextOutlivesItsTransaction() {
         ExecutionContext executionContext;
-        KernelTransactionImplementation originalKtx;
+        KernelTransaction originalKtx;
         try (Transaction transaction = databaseAPI.beginTx()) {
-            originalKtx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+            originalKtx = ((InternalTransaction) transaction).kernelTransaction();
             try (Statement statement = originalKtx.acquireStatement()) {
-                executionContext = originalKtx.createNewExecutionContext();
+                executionContext = originalKtx.createExecutionContext();
             }
         }
 
@@ -279,7 +291,7 @@ public class ExecutionContextIT {
                 Transaction transaction = databaseAPI.beginTx();
                 transactions.add(transaction);
 
-                var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
+                var ktx = ((InternalTransaction) transaction).kernelTransaction();
 
                 if (originalKtx == ktx) {
                     assertThatThrownBy(() -> executionContext.dataRead().nodeExists(1))
@@ -299,8 +311,8 @@ public class ExecutionContextIT {
     void shouldFailToCrateExecutionContextForTransactionWithState() {
         try (Transaction transaction = databaseAPI.beginTx()) {
             transaction.createNode();
-            var ktx = (KernelTransactionImplementation) ((InternalTransaction) transaction).kernelTransaction();
-            assertThatThrownBy(ktx::createNewExecutionContext)
+            var ktx = ((InternalTransaction) transaction).kernelTransaction();
+            assertThatThrownBy(ktx::createExecutionContext)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(
                             "Execution context cannot be used for transactions with non-empty transaction state");

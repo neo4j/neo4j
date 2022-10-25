@@ -101,7 +101,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
-import org.neo4j.kernel.impl.api.parallel.LegacyThreadExecutionContext;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -463,9 +462,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     executionContextCursorTracer,
                     transactionCursorContext,
                     executionContextRead,
+                    executionContextTokenRead,
                     executionContextStoreCursors,
                     indexingService.getMonitor(),
                     executionContextMemoryTracker,
+                    securityAuthorizationHandler,
                     List.of(executionContextStorageReader, executionContextLockClient));
         };
     }
@@ -555,11 +556,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public ExecutionContext createExecutionContext() {
-        return new LegacyThreadExecutionContext(
-                this, contextFactory, storageEngine, config, allStoreHolder.monitor(), transactionMemoryPool);
-    }
-
-    public ExecutionContext createNewExecutionContext() {
         if (hasTxStateWithChanges()) {
             throw new IllegalStateException(
                     "Execution context cannot be used for transactions with non-empty transaction state");

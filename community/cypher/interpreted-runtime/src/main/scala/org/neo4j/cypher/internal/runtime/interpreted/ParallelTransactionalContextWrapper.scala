@@ -72,13 +72,13 @@ class ParallelTransactionalContextWrapper(
   // TODO: We eventually want to support memory tracking through ThreadExecutionContext, but currently memory tracking is disabled in parallel runtime anyway
   override def memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE // kernelExecutionContext.memoryTracker()
 
-  override def locks: Locks = tc.kernelTransaction.locks() // kernelExecutionContext.locks()
+  override def locks: Locks = kernelExecutionContext.locks()
 
   override def dataRead: Read = kernelExecutionContext.dataRead()
 
   override def dataWrite: Write = unsupported()
 
-  override def tokenRead: TokenRead = tc.kernelTransaction.tokenRead() // kernelExecutionContext.tokenRead()
+  override def tokenRead: TokenRead = kernelExecutionContext.tokenRead()
 
   override def tokenWrite: TokenWrite = unsupported()
 
@@ -90,13 +90,12 @@ class ParallelTransactionalContextWrapper(
 
   override def procedures: Procedures = kernelExecutionContext.procedures()
 
-  override def securityContext: SecurityContext =
-    tc.kernelTransaction.securityContext() // kernelExecutionContext.securityContext()
+  override def securityContext: SecurityContext = kernelExecutionContext.securityContext()
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler =
-    tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
+    kernelExecutionContext.securityAuthorizationHandler()
 
-  override def accessMode: AccessMode = kernelExecutionContext.accessMode
+  override def accessMode: AccessMode = kernelExecutionContext.securityContext().mode()
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 

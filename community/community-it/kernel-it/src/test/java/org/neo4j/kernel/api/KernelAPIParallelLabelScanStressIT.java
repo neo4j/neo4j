@@ -79,9 +79,10 @@ class KernelAPIParallelLabelScanStressIT {
                 kernel,
                 N_THREADS,
                 tx -> {
+                    var statement = tx.acquireStatement();
                     var executionContext = tx.createExecutionContext();
                     var cursor = tx.cursors().allocateNodeLabelIndexCursor(executionContext.cursorContext());
-                    return new WorkerContext<>(cursor, executionContext, tx);
+                    return new WorkerContext<>(cursor, executionContext, tx, statement);
                 },
                 (read, workerContext) ->
                         labelScan(read, workerContext, nodeLabelIndex, labels[random.nextInt(labels.length)]));

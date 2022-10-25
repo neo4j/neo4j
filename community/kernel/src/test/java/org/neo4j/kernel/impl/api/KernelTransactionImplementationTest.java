@@ -782,7 +782,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         int workerCount = 4;
         ExecutorService executorService = Executors.newFixedThreadPool(workerCount);
 
-        try (var transaction = newTransaction(AUTH_DISABLED)) {
+        try (var transaction = newTransaction(AUTH_DISABLED);
+                var statement = transaction.acquireStatement()) {
             List<ExecutionContext> executionContexts = new ArrayList<>(workerCount);
             List<Future<?>> futures = new ArrayList<>(workerCount);
             for (int i = 0; i < workerCount; i++) {

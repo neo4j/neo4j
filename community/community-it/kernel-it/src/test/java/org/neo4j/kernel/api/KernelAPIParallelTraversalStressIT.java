@@ -129,9 +129,11 @@ class KernelAPIParallelTraversalStressIT {
     static class NodeAndTraverseCursors implements AutoCloseable {
         final NodeCursor nodeCursor;
         final RelationshipTraversalCursor traversalCursor;
+        final Statement statement;
         private final ExecutionContext executionContext;
 
         NodeAndTraverseCursors(KernelTransaction tx, Kernel kernel) {
+            statement = tx.acquireStatement();
             executionContext = tx.createExecutionContext();
             nodeCursor = kernel.cursors().allocateNodeCursor(executionContext.cursorContext());
             traversalCursor = kernel.cursors().allocateRelationshipTraversalCursor(executionContext.cursorContext());
@@ -139,7 +141,7 @@ class KernelAPIParallelTraversalStressIT {
 
         @Override
         public void close() throws Exception {
-            closeAllUnchecked(executionContext);
+            closeAllUnchecked(statement, executionContext);
         }
 
         public void complete() {
