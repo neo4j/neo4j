@@ -183,7 +183,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
             // could experience failures if proceeding to commit the transaction before it is finished.
             execution.await();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            // For some reason await() throws the same error that has already been passed to onError()
+            // in case an error has occurred on request() or cancel().
+            // We need to ignore it here.
+            if (error != null && error != e) {
+                error.addSuppressed(e);
+            }
+            // We also do not register a new error as a result of calling await().
         }
     }
 
