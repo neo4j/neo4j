@@ -80,6 +80,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PR
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
@@ -100,6 +101,8 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.database.DatabaseId
+import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.storageengine.api.StoreIdProvider
@@ -108,6 +111,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
+
+import java.util.UUID
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -338,40 +343,42 @@ case class ShowDatabasesExecutionPlanner(
     val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
 
     val accessibleDatabases =
-      transaction.findNodes(DATABASE_NAME_LABEL, PRIMARY_PROPERTY, true).asScala.foldLeft[Map[String, DatabaseType]](
-        Map.empty
-      ) { (acc, dbNameNode) =>
-        val dbName = dbNameNode.getProperty(DATABASE_NAME_PROPERTY).toString
-        val dbNode = Iterables.first(dbNameNode.getRelationships(TARGETS_RELATIONSHIP)).getEndNode
-        val dbType =
-          if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL) && dbNode.hasProperty(DATABASE_VIRTUAL_PROPERTY)) Composite
-          else Standard
-        val isDefault = dbName.equals(defaultDatabaseName)
-        if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
-          acc + (dbName -> System)
-        } else if (allowsAllDatabaseManagement) {
-          acc + (dbName -> dbType)
-        } else if (allowsStandardDatabaseManagement && dbType == Standard) {
-          acc + (dbName -> dbType)
-        } else if (allowsCompositeDatabaseManagement && dbType == Composite) {
-          acc + (dbName -> dbType)
-        } else {
-          (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
-            // denied
-            case (Some(false), _, _, _)    => acc
-            case (_, Some(false), _, _)    => acc
-            case (_, _, Some(false), true) => acc
+      transaction.findNodes(DATABASE_NAME_LABEL, PRIMARY_PROPERTY, true).asScala
+        .foldLeft[Map[DatabaseId, DatabaseType]](
+          Map.empty
+        ) { (acc, dbNameNode) =>
+          val dbName = dbNameNode.getProperty(DATABASE_NAME_PROPERTY).toString
+          val dbNode = Iterables.first(dbNameNode.getRelationships(TARGETS_RELATIONSHIP)).getEndNode
+          val dbUUID = DatabaseIdFactory.from(UUID.fromString(dbNode.getProperty(DATABASE_UUID_PROPERTY).toString))
+          val dbType =
+            if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL) && dbNode.hasProperty(DATABASE_VIRTUAL_PROPERTY)) Composite
+            else Standard
+          val isDefault = dbName.equals(defaultDatabaseName)
+          if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
+            acc + (dbUUID -> System)
+          } else if (allowsAllDatabaseManagement) {
+            acc + (dbUUID -> dbType)
+          } else if (allowsStandardDatabaseManagement && dbType == Standard) {
+            acc + (dbUUID -> dbType)
+          } else if (allowsCompositeDatabaseManagement && dbType == Composite) {
+            acc + (dbUUID -> dbType)
+          } else {
+            (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
+              // denied
+              case (Some(false), _, _, _)    => acc
+              case (_, Some(false), _, _)    => acc
+              case (_, _, Some(false), true) => acc
 
-            // granted
-            case (Some(true), _, _, _)    => acc + (dbName -> dbType)
-            case (_, Some(true), _, _)    => acc + (dbName -> dbType)
-            case (_, _, Some(true), true) => acc + (dbName -> dbType)
+              // granted
+              case (Some(true), _, _, _)    => acc + (dbUUID -> dbType)
+              case (_, Some(true), _, _)    => acc + (dbUUID -> dbType)
+              case (_, _, Some(true), true) => acc + (dbUUID -> dbType)
 
-            // no privilege
-            case _ => acc
+              // no privilege
+              case _ => acc
+            }
           }
         }
-      }
 
     val username = Option(securityContext.subject().executingUser()) match {
       case None       => Values.NO_VALUE
@@ -407,12 +414,12 @@ case class ShowDatabasesExecutionPlanner(
     }
   }
 
-  private def lookupCachedInfo(typeMap: Map[String, DatabaseType]): List[AnyValue] = {
+  private def lookupCachedInfo(typeMap: Map[DatabaseId, DatabaseType]): List[AnyValue] = {
     val dbInfos = infoService.lookupCachedInfo(typeMap.keys.toSet.asJava).asScala
     dbInfos.map(info => BaseDatabaseInfoMapper.toMapValue(dbms, info, typeMap)).toList
   }
 
-  private def requestDetailedInfo(typeMap: Map[String, DatabaseType])(implicit
+  private def requestDetailedInfo(typeMap: Map[DatabaseId, DatabaseType])(implicit
   mapper: DatabaseInfoMapper[ExtendedDatabaseInfo]): List[AnyValue] = {
     val dbInfos = infoService.requestDetailedInfo(typeMap.keys.toSet.asJava).asScala
     dbInfos.map(info => mapper.toMapValue(dbms, info, typeMap)).toList
@@ -424,7 +431,7 @@ trait DatabaseInfoMapper[T <: DatabaseInfo] {
   def toMapValue(
     databaseManagementService: DatabaseManagementService,
     extendedDatabaseInfo: T,
-    typeMap: Map[String, DatabaseType]
+    typeMap: Map[DatabaseId, DatabaseType]
   ): MapValue
 }
 
@@ -433,9 +440,9 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
   override def toMapValue(
     databaseManagementService: DatabaseManagementService,
     extendedDatabaseInfo: DatabaseInfo,
-    typeMap: Map[String, DatabaseType]
+    typeMap: Map[DatabaseId, DatabaseType]
   ): MapValue = {
-    val databaseType = typeMap(extendedDatabaseInfo.namedDatabaseId().name())
+    val databaseType = typeMap(extendedDatabaseInfo.namedDatabaseId().databaseId())
     val (access, role) =
       if (databaseType == Composite) (DatabaseAccess.READ_ONLY.getStringRepr, Values.NO_VALUE)
       else (extendedDatabaseInfo.access().getStringRepr, Values.stringValue(extendedDatabaseInfo.role()))
@@ -489,7 +496,7 @@ object CommunityExtendedDatabaseInfoMapper extends DatabaseInfoMapper[ExtendedDa
   override def toMapValue(
     databaseManagementService: DatabaseManagementService,
     extendedDatabaseInfo: ExtendedDatabaseInfo,
-    typeMap: Map[String, DatabaseType]
+    typeMap: Map[DatabaseId, DatabaseType]
   ): MapValue =
     BaseDatabaseInfoMapper.toMapValue(databaseManagementService, extendedDatabaseInfo, typeMap).updatedWith(
       VirtualValues.map(

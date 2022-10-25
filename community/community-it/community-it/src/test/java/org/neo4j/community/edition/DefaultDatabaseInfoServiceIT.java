@@ -21,15 +21,24 @@ package org.neo4j.community.edition;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 
 import java.util.HashSet;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseInfoService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -64,19 +73,33 @@ public class DefaultDatabaseInfoServiceIT {
         // given
         var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
         var databaseInfoService = dependencyResolver.resolveDependency(DatabaseInfoService.class);
-        var nonExistingDatabase = "foo";
-        var existingDatabases = dbms.listDatabases();
+        var nonExistingDatabase = DatabaseIdFactory.from(UUID.randomUUID());
+        var existingDatabases =
+                dbms.listDatabases().stream().map(this::getIdForName).collect(Collectors.toSet());
         var allDatabases = new HashSet<>(existingDatabases);
         allDatabases.add(nonExistingDatabase);
 
         // when
         var results = databaseInfoService.lookupCachedInfo(allDatabases);
         var returnedDatabases = results.stream()
-                .map(databaseInfo -> databaseInfo.namedDatabaseId().name())
+                .map(databaseInfo -> databaseInfo.namedDatabaseId().databaseId())
                 .collect(Collectors.toSet());
 
         // then
         assertThat(returnedDatabases.size()).isEqualTo(existingDatabases.size());
         assertTrue(returnedDatabases.containsAll(existingDatabases));
+    }
+
+    DatabaseId getIdForName(String name) {
+        try (Transaction tx = dbms.database(SYSTEM_DATABASE_NAME).beginTx()) {
+            String temp = tx.findNodes(DATABASE_LABEL, DATABASE_NAME_PROPERTY, name)
+                    .next()
+                    .getProperty(DATABASE_UUID_PROPERTY)
+                    .toString();
+            return DatabaseIdFactory.from(UUID.fromString(temp));
+        } catch (Exception e) {
+            fail(e);
+            return null;
+        }
     }
 }

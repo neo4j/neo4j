@@ -31,6 +31,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -61,13 +62,13 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
     }
 
     @Override
-    public List<DatabaseInfo> lookupCachedInfo(Set<String> databaseNames) {
-        return createDatabaseInfoStream(databaseNames).collect(Collectors.toList());
+    public List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds) {
+        return createDatabaseInfoStream(databaseIds).collect(Collectors.toList());
     }
 
     @Override
-    public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<String> databaseNames) {
-        return createDatabaseInfoStream(databaseNames)
+    public List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds) {
+        return createDatabaseInfoStream(databaseIds)
                 .map(databaseInfo -> {
                     var db = databaseInfo.namedDatabaseId.databaseId();
                     var lastCommittedTxId = detailedDbInfoProvider.lastCommittedTxId(db);
@@ -77,9 +78,9 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
                 .collect(Collectors.toList());
     }
 
-    private Stream<DatabaseInfo> createDatabaseInfoStream(Set<String> databaseNames) {
-        return databaseNames.stream()
-                .map(idRepository::getByName)
+    private Stream<DatabaseInfo> createDatabaseInfoStream(Set<DatabaseId> databaseIds) {
+        return databaseIds.stream()
+                .map(idRepository::getById)
                 .flatMap(Optional::stream)
                 .map(this::createInfoForDatabase);
     }

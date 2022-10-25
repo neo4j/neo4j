@@ -21,24 +21,25 @@ package org.neo4j.dbms.database;
 
 import java.util.List;
 import java.util.Set;
+import org.neo4j.kernel.database.DatabaseId;
 
 public interface DatabaseInfoService {
     /**
      * Returns information about the given databases. For single instance one list item is returned per
      * database. In clustered setups one list item is returned per database per server.
-     *
+     * <p>
      * Information returned should be accessible and be able to return a quick result.
      *
-     * @param databaseNames databases the request is about
+     * @param databaseIds databases the request is about
      * @return a list containing one item per database per server
      */
-    List<DatabaseInfo> lookupCachedInfo(Set<String> databaseNames);
+    List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds);
 
     /**
      * Similar to {@link #lookupCachedInfo(Set)}  but with additional information that might require network calls.
      *
-     * @param databaseNames databases the request is about
+     * @param databaseIds databases the request is about
      * @return a list containing one item per database per server
      */
-    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<String> databaseNames);
+    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds);
 }
