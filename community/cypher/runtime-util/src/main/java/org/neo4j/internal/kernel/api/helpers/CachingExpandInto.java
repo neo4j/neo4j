@@ -51,7 +51,6 @@ import org.neo4j.storageengine.util.SingleDegree;
 
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.relationshipsCursor;
 import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -601,7 +600,9 @@ public class CachingExpandInto extends DefaultCloseListenable
             // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the shallow size of this cursor is discarded.
             long diff = innerMemoryTracker.estimatedHeapMemory() - EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE;
             long startNode = otherNode == secondNode ? firstNode : secondNode;
-            Direction relativeDirection = firstNode != secondNode && otherNode == firstNode ? INCOMING : OUTGOING;
+            Direction relativeDirection = otherNode == firstNode
+                    ? CachingExpandInto.this.direction.reverse()
+                    : CachingExpandInto.this.direction;
             degreeCache.put( startNode, relativeDirection, degree );
             relationshipCache.add( firstNode, secondNode, direction, connections, diff );
 
