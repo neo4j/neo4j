@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.shell.Main;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 public class CypherShellBoot {
 
@@ -38,6 +40,9 @@ public class CypherShellBoot {
     public static void main(String[] args) throws IOException, InterruptedException {
         jvmCheck();
 
+        // Ignore interrupt signals (ctrl+c), they are handled in the child process
+        Signal.handle(new Signal("INT"), new IgnoringSignalHandler());
+
         final var processBuilder = new ProcessBuilder(command(args));
         processBuilder.inheritIO();
         processBuilder.environment().putAll(environment());
@@ -47,9 +52,9 @@ public class CypherShellBoot {
         try {
             process = processBuilder.start();
             exitCode = process.waitFor();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (process != null) {
-                process.destroy();
+                process.destroyForcibly();
             }
             throw e;
         }
@@ -103,4 +108,9 @@ public class CypherShellBoot {
                 "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                 "--add-opens", "java.base/java.nio=ALL-UNNAMED");
     }
+}
+
+class IgnoringSignalHandler implements SignalHandler {
+    @Override
+    public void handle(Signal sig) {}
 }
