@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -160,20 +159,13 @@ public class CachingExpandInto extends DefaultCloseListenable
                 () -> positionCursorAndCalculateTotalDegreeIfCheap(
                         read, secondNode, nodeCursor,reverseDirection, types ) );
 
-        if ( secondDegree == 0 )
-        {
-            return Cursors.emptyTraversalCursor( read );
-        }
         boolean secondNodeHasCheapDegrees = secondDegree != EXPENSIVE_DEGREE;
 
         int firstDegree = degreeCache.getIfAbsentPut(
                 firstNode,
                 direction,
                 () -> positionCursorAndCalculateTotalDegreeIfCheap( read, firstNode, nodeCursor, direction, types ) );
-        if ( firstDegree == 0 )
-        {
-            return Cursors.emptyTraversalCursor( read );
-        }
+
         boolean firstNodeHasCheapDegrees = firstDegree != EXPENSIVE_DEGREE;
 
         // Both can determine degree cheaply, start with the one with the lesser degree
