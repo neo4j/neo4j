@@ -62,10 +62,13 @@ trait GraphIcing {
     // Create uniqueness constraint
 
     def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
-      val constraint = withTx(tx => {
+      var constraint = withTx(tx => {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       })
       awaitIndexesOnline()
+      constraint = withTx(tx => {
+        tx.schema().getConstraintByName(constraint.getName)
+      })
       constraint
     }
 
