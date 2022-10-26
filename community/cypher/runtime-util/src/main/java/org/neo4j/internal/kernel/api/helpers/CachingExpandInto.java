@@ -241,7 +241,7 @@ public class CachingExpandInto extends DefaultCloseListenable
             relDirection = direction.reverse();
         }
         return connectingRelationshipsCursor(
-                relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), toNode, firstNode, secondNode );
+                relationshipsCursor( traversalCursor, nodeCursor, types, relDirection ), toNode, firstNode, secondNode, relDirection );
     }
 
     public RelationshipTraversalCursor connectingRelationships(
@@ -314,9 +314,10 @@ public class CachingExpandInto extends DefaultCloseListenable
             final RelationshipTraversalCursor allRelationships,
             final long toNode,
             final long firstNode,
-            final long secondNode )
+            final long secondNode,
+            final Direction expandDirection )
     {
-        return new ExpandIntoSelectionCursor( allRelationships, scopedMemoryTracker, toNode, firstNode, secondNode );
+        return new ExpandIntoSelectionCursor( allRelationships, scopedMemoryTracker, toNode, firstNode, secondNode, expandDirection );
     }
 
     private class FromCachedSelectionCursor implements RelationshipTraversalCursor
@@ -487,6 +488,9 @@ public class CachingExpandInto extends DefaultCloseListenable
         private final long firstNode;
         private final long secondNode;
 
+        @Unmetered
+        private final Direction expandDirection;
+
         private int degree;
 
         private HeapTrackingArrayList<Relationship> connections;
@@ -501,12 +505,14 @@ public class CachingExpandInto extends DefaultCloseListenable
                                    MemoryTracker outerMemoryTracker,
                                    long otherNode,
                                    long firstNode,
-                                   long secondNode )
+                                   long secondNode,
+                                   Direction expandDirection )
         {
             this.allRelationships = allRelationships;
             this.otherNode = otherNode;
             this.firstNode = firstNode;
             this.secondNode = secondNode;
+            this.expandDirection = expandDirection;
             this.innerMemoryTracker = new ScopedMemoryTracker( outerMemoryTracker );
             this.connections = HeapTrackingArrayList.newArrayList( innerMemoryTracker );
             innerMemoryTracker.allocateHeap( EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE );
@@ -592,10 +598,7 @@ public class CachingExpandInto extends DefaultCloseListenable
             // We hand over both the inner memory tracker (via connections) and the connection to the cache. Only the shallow size of this cursor is discarded.
             long diff = innerMemoryTracker.estimatedHeapMemory() - EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE;
             long startNode = otherNode == secondNode ? firstNode : secondNode;
-            Direction relativeDirection = otherNode == firstNode
-                    ? CachingExpandInto.this.direction.reverse()
-                    : CachingExpandInto.this.direction;
-            degreeCache.put( startNode, relativeDirection, degree );
+            degreeCache.put(startNode, expandDirection, degree);
             relationshipCache.add( firstNode, secondNode, direction, connections, diff );
 
             close();
