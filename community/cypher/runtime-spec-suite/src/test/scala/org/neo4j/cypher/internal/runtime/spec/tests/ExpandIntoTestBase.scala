@@ -1005,21 +1005,24 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckProperty
   self: RuntimeTestSuite[CONTEXT] =>
 
   test("expand into should handle random graphs") {
-    def expandIntoPlan(relType: String) = {
+    def expandIntoPlan(relPattern: String) = {
       new LogicalQueryBuilder(this)
         .produceResults("from", "to", "rel")
         .projection("elementId(a) AS from", "elementId(b) AS to", "elementId(r) AS rel")
-        .expandInto(s"(a)-[r:$relType]->(b)")
+        .expandInto(s"(a)$relPattern(b)")
         .cartesianProduct()
         .|.allNodeScan("b")
         .allNodeScan("a")
         .build()
     }
-    val expandIntoR1 = expandIntoPlan("R1")
-    val expandIntoR2 = expandIntoPlan("R2")
-    val expandIntoR1OrR2 = expandIntoPlan("R1|R2")
+    val aLikesBPlan = expandIntoPlan("-[r:LIKES]->")
+    val bLikesAPlan = expandIntoPlan("<-[r:LIKES]-")
+    val aLikesBOrBLikesAPlan = expandIntoPlan("-[r:LIKES]-")
 
-    forAll(genRandomGraph(Seq("R1", "R2")), minSuccessful(20)) { createGraph =>
+    val aLovesB = expandIntoPlan("-[r:LOVES]->")
+    val aLikesOrLovesB = expandIntoPlan("-[r:LIKES|LOVES]->")
+
+    forAll(genRandomGraph(Seq("LIKES", "LOVES")), minSuccessful(20)) { createGraph =>
       val relationships = given {
         // Clean previous data
         tx.getAllRelationships.forEach(r => r.delete())
@@ -1032,20 +1035,33 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckProperty
         .filter(r => relTypePredicate(r.relType))
         .map(r => Array(r.from, r.to, r.id))
 
-      execute(expandIntoR1, runtime) should beColumns("from", "to", "rel")
-        .withRows(inAnyOrder(expected(_ == "R1")))
+      execute(aLikesBPlan, runtime) should beColumns("from", "to", "rel")
+        .withRows(inAnyOrder(expected(_ == "LIKES")))
 
-      execute(expandIntoR2, runtime) should beColumns("from", "to", "rel")
-        .withRows(inAnyOrder(expected(_ == "R2")))
+      val expectedReversed = relationships.filter(_.relType == "LIKES").map(r => Array(r.to, r.from, r.id))
+      execute(bLikesAPlan, runtime) should beColumns("from", "to", "rel")
+        .withRows(inAnyOrder(expectedReversed))
 
-      execute(expandIntoR1OrR2, runtime) should beColumns("from", "to", "rel")
-        .withRows(inAnyOrder(expected(relType => relType == "R1" || relType == "R2")))
+      val expectedBoth = relationships
+        .filter(_.relType == "LIKES")
+        .flatMap {
+          case r if r.from == r.to => Seq(Array(r.from, r.to, r.id))
+          case r                   => Seq(Array(r.from, r.to, r.id), Array(r.to, r.from, r.id))
+        }
+      execute(aLikesBOrBLikesAPlan, runtime) should beColumns("from", "to", "rel")
+        .withRows(inAnyOrder(expectedBoth))
+
+      execute(aLovesB, runtime) should beColumns("from", "to", "rel")
+        .withRows(inAnyOrder(expected(_ == "LOVES")))
+
+      execute(aLikesOrLovesB, runtime) should beColumns("from", "to", "rel")
+        .withRows(inAnyOrder(expected(relType => relType == "LIKES" || relType == "LOVES")))
     }
   }
 
   private def genRandomGraph(relTypes: Seq[String]): Gen[() => Seq[ThinRelationship]] = {
     val minNodes = 10
-    val maxNodes = 50
+    val maxNodes = 40
     val relationshipProb = 0.1
     for {
       nodeCount <- Gen.choose(minNodes, maxNodes)
