@@ -780,6 +780,20 @@ final case class DeallocateServers(dryRun: Boolean, serverNames: Seq[Either[Stri
 ) extends WriteAdministrationCommand {
   override def name: String = "DEALLOCATE DATABASES FROM SERVER"
 
+  override val isReadOnly: Boolean = dryRun
+
+  override def returnColumns: List[LogicalVariable] =
+    if (dryRun) {
+      List(
+        Variable("database")(position),
+        Variable("fromServerName")(position),
+        Variable("fromServerId")(position),
+        Variable("toServerName")(position),
+        Variable("toServerId")(position),
+        Variable("mode")(position)
+      )
+    } else List.empty
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
@@ -789,6 +803,20 @@ final case class ReallocateServers(dryRun: Boolean)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "REALLOCATE DATABASES"
+
+  override val isReadOnly: Boolean = dryRun
+
+  override def returnColumns: List[LogicalVariable] =
+    if (dryRun) {
+      List(
+        Variable("database")(position),
+        Variable("fromServerName")(position),
+        Variable("fromServerId")(position),
+        Variable("toServerName")(position),
+        Variable("toServerId")(position),
+        Variable("mode")(position)
+      )
+    } else List.empty
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
