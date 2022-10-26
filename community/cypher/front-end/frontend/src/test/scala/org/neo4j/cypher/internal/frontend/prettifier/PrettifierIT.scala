@@ -1629,10 +1629,18 @@ class PrettifierIT extends CypherFunSuite {
       """DEALLOCATE DATABASES FROM SERVER "abc"""",
     "deallocate database from server $name, 'abc'" ->
       """DEALLOCATE DATABASES FROM SERVERS $name, "abc"""",
+    "dryrun deallocate databases from server 'abc'" ->
+      """DRYRUN DEALLOCATE DATABASES FROM SERVER "abc"""",
+    "dryrun deallocate database from server $name, 'abc'" ->
+      """DRYRUN DEALLOCATE DATABASES FROM SERVERS $name, "abc"""",
     "reallocate database" ->
       """REALLOCATE DATABASES""",
     "reallocate databases" ->
       """REALLOCATE DATABASES""",
+    "dryrun reallocate database" ->
+      """DRYRUN REALLOCATE DATABASES""",
+    "dryrun reallocate databases" ->
+      """DRYRUN REALLOCATE DATABASES""",
     "show servers" ->
       "SHOW SERVERS",
     "show servers YIELD * where name = 'serverId' Return *" ->

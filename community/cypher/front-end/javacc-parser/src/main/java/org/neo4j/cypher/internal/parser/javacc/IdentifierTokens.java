@@ -72,6 +72,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRIVER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRYRUN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT;
@@ -281,6 +282,7 @@ public class IdentifierTokens {
             DISTINCT,
             DRIVER,
             DROP,
+            DRYRUN,
             DUMP,
             EACH,
             ELEMENT,

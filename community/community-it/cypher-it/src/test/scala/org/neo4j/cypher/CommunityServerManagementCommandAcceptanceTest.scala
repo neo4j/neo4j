@@ -58,6 +58,10 @@ class CommunityServerManagementCommandAcceptanceTest extends CommunityAdministra
     assertFailure("REALLOCATE DATABASES", "Unsupported administration command: REALLOCATE DATABASES")
   }
 
+  test("should fail on dryrun reallocating databases from community") {
+    assertFailure("DRYRUN REALLOCATE DATABASES", "Unsupported administration command: DRYRUN REALLOCATE DATABASES")
+  }
+
   test("should fail on deallocating server from community") {
     assertFailure(
       "DEALLOCATE DATABASES FROM SERVER 'name'",
@@ -66,6 +70,17 @@ class CommunityServerManagementCommandAcceptanceTest extends CommunityAdministra
     assertFailure(
       "DEALLOCATE DATABASES FROM SERVERS 'name', $badger",
       "Unsupported administration command: DEALLOCATE DATABASES FROM SERVERS 'name', $badger"
+    )
+  }
+
+  test("should fail on dryrun deallocating server from community") {
+    assertFailure(
+      "DRYRUN DEALLOCATE DATABASES FROM SERVER 'name'",
+      "Unsupported administration command: DRYRUN DEALLOCATE DATABASES FROM SERVER 'name'"
+    )
+    assertFailure(
+      "DRYRUN DEALLOCATE DATABASES FROM SERVERS 'name', $badger",
+      "Unsupported administration command: DRYRUN DEALLOCATE DATABASES FROM SERVERS 'name', $badger"
     )
   }
 

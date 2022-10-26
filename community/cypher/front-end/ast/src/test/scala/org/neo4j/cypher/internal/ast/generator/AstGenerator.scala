@@ -2320,10 +2320,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield DropServer(serverName)(pos)
 
   def _deallocateServer: Gen[DeallocateServers] = for {
+    dryRun <- boolean
     servers <- _listOfNameOfEither
-  } yield DeallocateServers(servers)(pos)
+  } yield DeallocateServers(dryRun, servers)(pos)
 
-  def _reallocateServers: Gen[ReallocateServers] = ReallocateServers()(pos)
+  def _reallocateServers: Gen[ReallocateServers] = for {
+    dryRun <- boolean
+  } yield ReallocateServers(dryRun)(pos)
 
   // Top level administration command
 

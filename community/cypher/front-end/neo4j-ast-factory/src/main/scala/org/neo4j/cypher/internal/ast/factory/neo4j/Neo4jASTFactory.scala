@@ -2194,11 +2194,12 @@ class Neo4jASTFactory(query: String)
 
   override def deallocateServers(
     p: InputPosition,
+    dryRun: Boolean,
     serverNames: util.List[SimpleEither[String, Parameter]]
   ): DeallocateServers =
-    DeallocateServers(serverNames.asScala.map(_.asScala).toList)(p)
+    DeallocateServers(dryRun, serverNames.asScala.map(_.asScala).toList)(p)
 
-  override def reallocateDatabases(p: InputPosition): ReallocateServers = ReallocateServers()(p)
+  override def reallocateDatabases(p: InputPosition, dryRun: Boolean): ReallocateServers = ReallocateServers(dryRun)(p)
 
   // Database commands
 

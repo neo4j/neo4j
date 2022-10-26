@@ -811,16 +811,18 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
 
-      case x @ DeallocateServers(serverNames) =>
+      case x @ DeallocateServers(dryRun, serverNames) =>
+        val dryRunString = if (dryRun) "DRYRUN " else ""
         val commandString = if (serverNames.length > 1) s"${x.name}S" else x.name
         val names = serverNames.map {
           case Left(s)          => expr.quote(s)
           case Right(parameter) => expr(parameter)
         }
-        s"$commandString ${names.mkString(", ")}"
+        s"$dryRunString$commandString ${names.mkString(", ")}"
 
-      case x @ ReallocateServers() =>
-        x.name
+      case x @ ReallocateServers(dryRun) =>
+        if (dryRun) s"DRYRUN ${x.name}"
+        else x.name
     }
     useString + commandString
   }

@@ -4872,7 +4872,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(DeallocateServer(privLhsLP, Left("s1")), 1.0),
+      attach(DeallocateServer(privLhsLP, dryRun = false, Seq(Left("s1"))), 1.0),
       adminPlanDescription
     )
 

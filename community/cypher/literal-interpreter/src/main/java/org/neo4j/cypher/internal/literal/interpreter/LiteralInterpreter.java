@@ -870,12 +870,12 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL deallocateServers(NULL p, List<SimpleEither<String, Object>> serverNames) {
+    public NULL deallocateServers(NULL p, boolean dryRun, List<SimpleEither<String, Object>> serverNames) {
         throw new UnsupportedOperationException("deallocateServers is not a literal");
     }
 
     @Override
-    public NULL reallocateDatabases(NULL p) {
+    public NULL reallocateDatabases(NULL p, boolean dryRun) {
         throw new UnsupportedOperationException("reallocateDatabases is not a literal");
     }
 

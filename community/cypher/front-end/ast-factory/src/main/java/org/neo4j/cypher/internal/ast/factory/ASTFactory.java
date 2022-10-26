@@ -566,9 +566,9 @@ public interface ASTFactory<
 
     ADMINISTRATION_COMMAND showServers(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 
-    ADMINISTRATION_COMMAND deallocateServers(POS p, List<SimpleEither<String, PARAMETER>> serverNames);
+    ADMINISTRATION_COMMAND deallocateServers(POS p, boolean dryRun, List<SimpleEither<String, PARAMETER>> serverNames);
 
-    ADMINISTRATION_COMMAND reallocateDatabases(POS p);
+    ADMINISTRATION_COMMAND reallocateDatabases(POS p, boolean dryRun);
 
     // Database Administration Commands
 

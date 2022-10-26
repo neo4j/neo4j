@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.ParameterConverter
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
@@ -57,7 +58,7 @@ case class UpdatingSystemCommandExecutionPlan(
   checkCredentialsExpired: Boolean = true,
   initAndFinally: InitAndFinally = NoInitAndFinally,
   parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
+  parameterConverter: ParameterConverter = (_, p) => p,
   parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty),
   assertPrivilegeAction: Transaction => Unit = _ => {}
 ) extends AdministrationChainedExecutionPlan(source) {

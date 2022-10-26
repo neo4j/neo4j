@@ -181,15 +181,19 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   // DEALLOCATE
 
   test("DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
-    assertAst(ast.DeallocateServers(Seq(literal("badger"), literal("snake")))(defaultPos))
+    assertAst(ast.DeallocateServers(dryRun = false, Seq(literal("badger"), literal("snake")))(defaultPos))
+  }
+
+  test("DRYRUN DEALLOCATE DATABASES FROM SERVER 'badger', 'snake'") {
+    assertAst(ast.DeallocateServers(dryRun = true, Seq(literal("badger"), literal("snake")))(InputPosition(7, 1, 8)))
   }
 
   test("DEALLOCATE DATABASES FROM SERVER $name") {
-    assertAst(ast.DeallocateServers(Seq(stringParam("name")))(defaultPos))
+    assertAst(ast.DeallocateServers(dryRun = false, Seq(stringParam("name")))(defaultPos))
   }
 
   test("DEALLOCATE DATABASE FROM SERVERS $name, 'foo'") {
-    assertAst(ast.DeallocateServers(Seq(stringParam("name"), literal("foo")))(defaultPos))
+    assertAst(ast.DeallocateServers(dryRun = false, Seq(stringParam("name"), literal("foo")))(defaultPos))
   }
 
   test("DEALLOCATE SERVERS $name, 'foo'") {
@@ -197,11 +201,15 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("REALLOCATE DATABASE") {
-    assertAst(ast.ReallocateServers()(defaultPos))
+    assertAst(ast.ReallocateServers(dryRun = false)(defaultPos))
   }
 
   test("REALLOCATE DATABASES") {
-    assertAst(ast.ReallocateServers()(defaultPos))
+    assertAst(ast.ReallocateServers(dryRun = false)(defaultPos))
+  }
+
+  test("DRYRUN REALLOCATE DATABASES") {
+    assertAst(ast.ReallocateServers(dryRun = true)(InputPosition(7, 1, 8)))
   }
 
   test("REALLOCATE SERVERS") {

@@ -979,21 +979,15 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           showServers.returns
         ))
 
-      case c @ DeallocateServers(names) =>
+      case c @ DeallocateServers(dryRun, names) =>
         val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
-        val plan = names.foldLeft(
-          plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction).asInstanceOf[
-            plans.AdministrationCommandLogicalPlan
-          ]
-        ) {
-          case (source, server) => plans.DeallocateServer(source, server)
-        }
-        Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
+        val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
+        Some(plans.LogSystemCommand(plans.DeallocateServer(assertAllowed, dryRun, names), prettifier.asString(c)))
 
-      case c @ ReallocateServers() =>
+      case c @ ReallocateServers(dryRun) =>
         val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
         Some(plans.LogSystemCommand(
-          plans.ReallocateServers(plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)),
+          plans.ReallocateServers(plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction), dryRun),
           prettifier.asString(c)
         ))
 

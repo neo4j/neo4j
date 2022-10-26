@@ -83,6 +83,8 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 }
 
 object AdministrationCommandRuntime {
+  type ParameterConverter = (Transaction, MapValue) => MapValue
+
   private[internal] val followerError = "Administration commands must be executed on the LEADER server."
   private val secureHasher = new SecureHasher
   private val internalPrefix: String = "__internal_"

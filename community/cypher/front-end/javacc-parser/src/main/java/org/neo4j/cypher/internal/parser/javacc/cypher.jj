@@ -425,6 +425,7 @@ TOKEN [IGNORE_CASE] :
     | < DOTDOT: ".." >
     | < DRIVER: "DRIVER" >
     | < DROP: "DROP" >
+    | < DRYRUN: "DRYRUN" >
     | < DUMP: "DUMP" >
     | < EACH: "EACH" >
     | < ENABLE: "ENABLE" >
@@ -3331,8 +3332,7 @@ STATEMENT_WITH_GRAPH CommandWithUseGraph( USE_CLAUSE useClause ) throws Exceptio
         | s=StartDatabase()
         | s=StopDatabase()
         | s=EnableServerCommand()
-        | s=DeallocateDatabaseFromServers()
-        | s=ReallocateDatabases()
+        | s=AllocationCommand()
     )
     {
         return astFactory.useGraph( s, useClause );
@@ -4457,7 +4457,24 @@ STATEMENT_WITH_GRAPH ShowServers( Token start, USE_CLAUSE useClause ):
     }
 }
 
-ADMINISTRATION_COMMAND DeallocateDatabaseFromServers():
+ADMINISTRATION_COMMAND AllocationCommand():
+{
+    boolean dryRun = false;
+    ADMINISTRATION_COMMAND s;
+}
+{
+    ( <DRYRUN> {dryRun = true;} )?
+    (
+        s=DeallocateDatabaseFromServers(dryRun)
+        | s=ReallocateDatabases(dryRun)
+    )
+    {
+        return s;
+    }
+}
+
+
+ADMINISTRATION_COMMAND DeallocateDatabaseFromServers(boolean dryRun):
 {
     Token start;
     List<SimpleEither<String, PARAMETER>> serverNames = new ArrayList<>();
@@ -4467,18 +4484,18 @@ ADMINISTRATION_COMMAND DeallocateDatabaseFromServers():
     start=<DEALLOCATE> ( <DATABASE> | <DATABASES> ) <FROM> ( <SERVER> | <SERVERS> )
     entry=StringOrParameter() { serverNames.add( entry ); } ( "," entry=StringOrParameter() { serverNames.add( entry ); } )*
     {
-        return astFactory.deallocateServers( pos( start ), serverNames );
+        return astFactory.deallocateServers( pos( start ), dryRun, serverNames );
     }
 }
 
-ADMINISTRATION_COMMAND ReallocateDatabases():
+ADMINISTRATION_COMMAND ReallocateDatabases(boolean dryRun):
 {
     Token start;
 }
 {
     start=<REALLOCATE> ( <DATABASE> | <DATABASES> )
     {
-        return astFactory.reallocateDatabases( pos( start ) );
+        return astFactory.reallocateDatabases( pos( start ), dryRun );
     }
 }
 
@@ -6024,6 +6041,7 @@ Token UnescapedSymbolicNameString() :
         | t=<DISTINCT>
         | t=<DRIVER>
         | t=<DROP>
+        | t=<DRYRUN>
         | t=<DUMP>
         | t=<EACH>
         | t=<ELEMENT>

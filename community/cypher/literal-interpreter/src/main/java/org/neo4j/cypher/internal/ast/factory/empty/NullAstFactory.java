@@ -1199,12 +1199,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL deallocateServers(NULL p, List<SimpleEither<String, NULL>> serverNames) {
+    public NULL deallocateServers(NULL p, boolean dryRun, List<SimpleEither<String, NULL>> serverNames) {
         return null;
     }
 
     @Override
-    public NULL reallocateDatabases(NULL p) {
+    public NULL reallocateDatabases(NULL p, boolean dryRun) {
         return null;
     }
 
