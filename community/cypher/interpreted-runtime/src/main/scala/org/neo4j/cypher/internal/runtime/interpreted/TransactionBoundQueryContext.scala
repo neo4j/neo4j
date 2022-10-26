@@ -97,6 +97,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore
 import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.TokenSet
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
@@ -535,22 +536,8 @@ private[internal] class TransactionBoundReadQueryContext(
     reads().singleNode(id, cursor)
   }
 
-  override def singleNodePositioned(id: Long, cursor: NodeCursor): Unit = {
-    reads().singleNode(id, cursor)
-    if (!cursor.next() && reads().nodeDeletedInTransaction(id)) {
-      throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction")
-    }
-  }
-
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = {
     reads().singleRelationship(id, cursor)
-  }
-
-  override def singleRelationshipPositioned(id: Long, cursor: RelationshipScanCursor): Unit = {
-    reads().singleRelationship(id, cursor)
-    if (!cursor.next() && reads().relationshipDeletedInTransaction(id)) {
-      throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction")
-    }
   }
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = {
@@ -565,13 +552,31 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def isALabelSetOnNode(node: Long, nodeCursor: NodeCursor): Boolean = {
-    singleNodePositioned(node, nodeCursor)
-    nodeCursor.hasLabel()
+    singleNode(node, nodeCursor)
+    if (nodeCursor.next()) {
+      nodeCursor.hasLabel()
+    } else {
+      // NOTE: always returning false would be nicer but is not correct according to TCK
+      if (reads().nodeDeletedInTransaction(node)) {
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+      } else {
+        false
+      }
+    }
   }
 
   private def getLabelTokenSetForNode(node: Long, nodeCursor: NodeCursor) = {
-    singleNodePositioned(node, nodeCursor)
-    nodeCursor.labels()
+    singleNode(node, nodeCursor)
+    if (nodeCursor.next()) {
+      nodeCursor.labels()
+    } else {
+      // NOTE: always returning TokenSet.NONE would be nicer here but is not correct according to TCK
+      if (reads().nodeDeletedInTransaction(node)) {
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+      } else {
+        TokenSet.NONE
+      }
+    }
   }
 
   override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = {

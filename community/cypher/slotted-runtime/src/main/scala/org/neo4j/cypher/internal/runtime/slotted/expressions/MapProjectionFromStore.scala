@@ -53,10 +53,14 @@ abstract class MapProjectionFromStore extends Expression with SlottedExpression 
       Values.NO_VALUE
     } else {
       val cursor = entityCursor(id, state)
-      val values = entityGetProperties(cursor, state.cursors.propertyCursor, tokens.tokens())
-      val result = new MapValueBuilder(values.length)
-      values.indices.foreach(i => result.add(nameAliases(i), values(i)))
-      result.build()
+      if (!cursor.next()) {
+        Values.NO_VALUE
+      } else {
+        val values = entityGetProperties(cursor, state.cursors.propertyCursor, tokens.tokens())
+        val result = new MapValueBuilder(values.length)
+        values.indices.foreach(i => result.add(nameAliases(i), values(i)))
+        result.build()
+      }
     }
   }
 
@@ -70,7 +74,7 @@ case class NodeProjectionFromStore(entityOffset: Int, entries: Seq[PropertyMapEn
 
   override protected def entityCursor(id: Long, state: QueryState): EntityCursor = {
     val cursor = state.cursors.nodeCursor
-    state.query.singleNodePositioned(id, cursor)
+    state.query.singleNode(id, cursor)
     cursor
   }
 }
@@ -80,7 +84,7 @@ case class RelationshipProjectionFromStore(entityOffset: Int, entries: Seq[Prope
 
   override protected def entityCursor(id: Long, state: QueryState): EntityCursor = {
     val cursor = state.cursors.relationshipScanCursor
-    state.query.singleRelationshipPositioned(id, cursor)
+    state.query.singleRelationship(id, cursor)
     cursor
   }
 }
