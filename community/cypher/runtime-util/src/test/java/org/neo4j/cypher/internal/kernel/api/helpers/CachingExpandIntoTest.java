@@ -179,7 +179,7 @@ class CachingExpandIntoTest
         findConnections( expandInto, cursor, 42, 43, 5 );
 
         // Then, degree will be cached during expansion
-        verify( cursor, times( 3 ) ).degree( any( RelationshipSelection.class ) );
+        verify( cursor, times( 4 ) ).degree( any( RelationshipSelection.class ) );
 
         assertReleasesHeap( expandInto );
     }
