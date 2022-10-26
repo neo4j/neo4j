@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.locking.forseti;
 import org.junit.jupiter.api.Nested;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.actors.Actor;
@@ -45,7 +46,7 @@ public class LockingCompatibilityTest {
      */
     protected boolean isAwaitingLockAcquisition(Actor actor) throws Exception {
         actor.untilWaitingIn(ForsetiClient.class.getDeclaredMethod(
-                "waitFor", ForsetiLockManager.Lock.class, ResourceType.class, long.class, int.class));
+                "waitFor", ForsetiLockManager.Lock.class, ResourceType.class, long.class, LockType.class, int.class));
         return true;
     }
 

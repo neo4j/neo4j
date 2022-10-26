@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.AcquireLockTimeoutException;
@@ -74,7 +75,9 @@ public abstract class LockCompatibilityTestSupport {
 
     @BeforeEach
     public void before() {
-        locks = suite.createLockManager(Config.defaults(), Clocks.nanoClock());
+        locks = suite.createLockManager(
+                Config.defaults(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true),
+                Clocks.nanoClock());
         clientA = locks.newClient();
         clientB = locks.newClient();
         clientC = locks.newClient();

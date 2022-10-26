@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -162,6 +163,28 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
             t2.close();
             t3.close();
             t4.close();
+        }
+    }
+
+    @Test
+    void shouldIncludeDeadlockCycleForSimpleUpdateDeadlock() throws Exception {
+        // given
+        var resource = 10L;
+        try (var t1 = new LockWorker("T1", locks);
+                var t2 = new LockWorker("T1", locks)) {
+            t1.getReadLock(resource, true);
+            t2.getReadLock(resource, true);
+            var t1ExclusiveAcquire = t1.getWriteLock(resource, false);
+            assertThatThrownBy(() -> {
+                        try {
+                            t2.getWriteLock(resource, true).get();
+                        } finally {
+                            t2.releaseReadLock(resource);
+                        }
+                    })
+                    .hasMessageContaining(
+                            "NODE(10)-[SHARED_OWNER]->(tx:0)-[WAITING_FOR_EXCLUSIVE]->(NODE(10))-[SHARED_OWNER]->(tx:1)-[WAITING_FOR_EXCLUSIVE]->(NODE(10)");
+            t1ExclusiveAcquire.get();
         }
     }
 
