@@ -799,6 +799,27 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  test("merge and typed project endpoints with empty input") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r:R]->(m)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues())
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(
+      nodesCreated = 2,
+      relationshipsCreated = 1
+    )
+  }
+
   test("merge and project endpoints with non-matching type input") {
 
     val (_, rels) = given {
