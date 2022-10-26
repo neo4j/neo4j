@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.runtime.memory
 
 import org.neo4j.cypher.internal.runtime.memory.TransactionBoundMemoryTrackerForOperatorProvider.TransactionBoundMemoryTracker
 import org.neo4j.cypher.result.OperatorProfile
-import org.neo4j.memory.DualScopedHeapMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
@@ -73,7 +72,7 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
   class TransactionBoundMemoryTracker(
     transactionMemoryTracker: MemoryTracker,
     queryGlobalMemoryTracker: HeapMemoryTracker
-  ) extends ScopedMemoryTracker(transactionMemoryTracker) with DualScopedHeapMemoryTracker {
+  ) extends ScopedMemoryTracker(transactionMemoryTracker) {
 
     override def allocateHeap(bytes: Long): Unit = {
       // Forward to transaction memory tracker
@@ -87,22 +86,6 @@ object TransactionBoundMemoryTrackerForOperatorProvider {
       super.releaseHeap(bytes)
       // Forward to the queryGlobalMemoryTracker
       queryGlobalMemoryTracker.releaseHeap(bytes)
-    }
-
-    override def allocateHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
-      case x: DualScopedHeapMemoryTracker =>
-        x.allocateHeapOuter(bytes)
-        queryGlobalMemoryTracker.allocateHeap(bytes)
-      case _ =>
-        allocateHeap(bytes)
-    }
-
-    override def releaseHeapOuter(bytes: Long): Unit = transactionMemoryTracker match {
-      case x: DualScopedHeapMemoryTracker =>
-        x.releaseHeapOuter(bytes)
-        queryGlobalMemoryTracker.releaseHeap(bytes)
-      case _ =>
-        releaseHeap(bytes)
     }
   }
 }

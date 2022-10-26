@@ -155,31 +155,6 @@ class RebindableDualScopedMemoryTrackerTest {
     }
 
     @Test
-    void explicitlyHeapAllocateOnOuter() {
-        scopedMemoryTracker.allocateNative(10);
-        scopedMemoryTracker.releaseNative(2);
-        scopedMemoryTracker.allocateHeap(12);
-        scopedMemoryTracker.releaseHeap(1);
-
-        MemoryTracker inner = new LocalMemoryTracker();
-        scopedMemoryTracker.setInnerDelegate(inner);
-
-        scopedMemoryTracker.allocateNative(7);
-        scopedMemoryTracker.releaseNative(3);
-        scopedMemoryTracker.allocateHeap(10);
-        scopedMemoryTracker.releaseHeap(4);
-
-        scopedMemoryTracker.allocateHeapOuter(2000);
-        scopedMemoryTracker.releaseHeapOuter(1000);
-
-        assertEquals(8, memoryTracker.usedNativeMemory());
-        assertEquals(1011, memoryTracker.estimatedHeapMemory());
-
-        assertEquals(4, inner.usedNativeMemory());
-        assertEquals(6, inner.estimatedHeapMemory());
-    }
-
-    @Test
     void delegatesToInnerUntilCloseInner() {
         scopedMemoryTracker.allocateNative(10);
         scopedMemoryTracker.releaseNative(2);

@@ -27,12 +27,9 @@ package org.neo4j.memory;
  * The inner delegate memory tracker can be reset with {@link #closeInner()}, after which all subsequent allocation and
  * release calls will go back to get routed to the outer scoped memory tracker again.
  * <p>
- * There is also support for explicitly forcing recording allocation and release of heap memory on the outer scope with
- * the {@link DualScopedHeapMemoryTracker} interface.
- * <p>
  * This class is intended to simplify the management of recording allocations over inner transactions.
  */
-public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker implements DualScopedHeapMemoryTracker {
+public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
     private MemoryTracker innerDelegate;
     private long innerTrackedNative;
     private long innerTrackedHeap;
@@ -93,16 +90,6 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker imple
         } else {
             super.releaseHeap(bytes);
         }
-    }
-
-    @Override
-    public void allocateHeapOuter(long bytes) {
-        super.allocateHeap(bytes);
-    }
-
-    @Override
-    public void releaseHeapOuter(long bytes) {
-        super.releaseHeap(bytes);
     }
 
     @Override
