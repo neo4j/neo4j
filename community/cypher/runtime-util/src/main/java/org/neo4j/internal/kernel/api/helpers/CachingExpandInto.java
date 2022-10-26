@@ -144,6 +144,20 @@ public class CachingExpandInto extends DefaultCloseListenable {
             return new FromCachedSelectionCursor(connections, read, firstNode, secondNode);
         }
 
+        // Make sure we actually read the node once so that the nodeCursor is initialized,
+        // later uses can use positionCursor which will avoid re-reading the same node.
+        read.singleNode(firstNode, nodeCursor);
+        if (!nodeCursor.next()) {
+            return Cursors.emptyTraversalCursor(read);
+        }
+        boolean firstNodeHasCheapDegrees = nodeCursor.supportsFastDegreeLookup();
+        int firstDegree = degreeCache.getIfAbsentPut(firstNode, direction, () -> {
+            if (!nodeCursor.supportsFastDegreeLookup()) {
+                return EXPENSIVE_DEGREE;
+            }
+            return calculateTotalDegree(nodeCursor, direction, types);
+        });
+
         Direction reverseDirection = direction.reverse();
         int secondDegree = degreeCache.getIfAbsentPut(
                 secondNode,
@@ -152,13 +166,6 @@ public class CachingExpandInto extends DefaultCloseListenable {
                         read, secondNode, nodeCursor, reverseDirection, types));
 
         boolean secondNodeHasCheapDegrees = secondDegree != EXPENSIVE_DEGREE;
-
-        int firstDegree = degreeCache.getIfAbsentPut(
-                firstNode,
-                direction,
-                () -> positionCursorAndCalculateTotalDegreeIfCheap(read, firstNode, nodeCursor, direction, types));
-
-        boolean firstNodeHasCheapDegrees = firstDegree != EXPENSIVE_DEGREE;
 
         // Both can determine degree cheaply, start with the one with the lesser degree
         if (firstNodeHasCheapDegrees && secondNodeHasCheapDegrees) {
@@ -177,13 +184,11 @@ public class CachingExpandInto extends DefaultCloseListenable {
             // we'll use the degree in the tx-state to decide what node to start with.
             int txStateDegreeFirst = calculateDegreeInTxState(firstNode, selection(types, direction));
             int txStateDegreeSecond = calculateDegreeInTxState(secondNode, selection(types, reverseDirection));
+            boolean startOnFirstNode = txStateDegreeSecond == txStateDegreeFirst
+                    ? nodeCursor.nodeReference() == firstNode
+                    : txStateDegreeSecond > txStateDegreeFirst;
             return expandFromNodeWithLesserDegree(
-                    nodeCursor,
-                    traversalCursor,
-                    firstNode,
-                    types,
-                    secondNode,
-                    txStateDegreeSecond >= txStateDegreeFirst);
+                    nodeCursor, traversalCursor, firstNode, types, secondNode, startOnFirstNode);
         }
     }
 
@@ -193,7 +198,8 @@ public class CachingExpandInto extends DefaultCloseListenable {
             long firstNode,
             int[] types,
             long secondNode) {
-        if (positionCursor(read, nodeCursor, firstNode)) {
+        read.singleNode(firstNode, nodeCursor);
+        if (nodeCursor.next()) {
             nodeCursor.relationshipsTo(traversalCursor, selection(types, direction), secondNode);
             return traversalCursor;
         } else {
@@ -257,7 +263,6 @@ public class CachingExpandInto extends DefaultCloseListenable {
     private static int positionCursorAndCalculateTotalDegreeIfCheap(
             Read read, long node, NodeCursor nodeCursor, Direction direction, int[] types) {
         if (!positionCursor(read, nodeCursor, node)) {
-
             return 0;
         }
         if (!nodeCursor.supportsFastDegreeLookup()) {
