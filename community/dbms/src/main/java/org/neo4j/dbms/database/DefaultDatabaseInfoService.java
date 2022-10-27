@@ -37,9 +37,6 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class DefaultDatabaseInfoService implements DatabaseInfoService {
-    @Deprecated
-    private static final String OLD_ROLE_LABEL = "standalone";
-
     private final DatabaseIdRepository idRepository;
     private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
@@ -100,7 +97,6 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
                 access,
                 address,
                 null,
-                OLD_ROLE_LABEL,
                 DatabaseInfo.ROLE_PRIMARY,
                 true,
                 status,

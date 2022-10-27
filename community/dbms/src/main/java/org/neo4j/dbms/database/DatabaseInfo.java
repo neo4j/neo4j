@@ -40,10 +40,6 @@ public class DatabaseInfo {
     final DatabaseAccess access;
     final SocketAddress boltAddress;
     final SocketAddress catchupAddress;
-
-    @Deprecated
-    final String oldRole;
-
     final String role;
     final boolean writer;
     final String status;
@@ -55,7 +51,6 @@ public class DatabaseInfo {
             DatabaseAccess access,
             SocketAddress boltAddress,
             SocketAddress catchupAddress,
-            String oldRole,
             String role,
             boolean writer,
             String status,
@@ -65,7 +60,6 @@ public class DatabaseInfo {
         this.access = access;
         this.boltAddress = boltAddress;
         this.catchupAddress = catchupAddress;
-        this.oldRole = oldRole;
         this.role = role;
         this.writer = writer;
         this.status = status;
@@ -89,7 +83,6 @@ public class DatabaseInfo {
                 access,
                 boltAddress,
                 catchupAddress,
-                oldRole,
                 role,
                 writer,
                 status,
@@ -131,11 +124,6 @@ public class DatabaseInfo {
         return Optional.ofNullable(catchupAddress);
     }
 
-    @Deprecated
-    public String oldRole() {
-        return oldRole;
-    }
-
     public String role() {
         return role;
     }
@@ -167,7 +155,6 @@ public class DatabaseInfo {
                 && access == that.access
                 && Objects.equals(boltAddress, that.boltAddress)
                 && Objects.equals(catchupAddress, that.catchupAddress)
-                && Objects.equals(oldRole, that.oldRole)
                 && Objects.equals(role, that.role)
                 && Objects.equals(status, that.status)
                 && Objects.equals(statusMessage, that.statusMessage);
@@ -176,16 +163,7 @@ public class DatabaseInfo {
     @Override
     public int hashCode() {
         return Objects.hash(
-                namedDatabaseId,
-                serverId,
-                access,
-                boltAddress,
-                catchupAddress,
-                oldRole,
-                role,
-                writer,
-                status,
-                statusMessage);
+                namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, writer, status, statusMessage);
     }
 
     @Override
@@ -195,8 +173,7 @@ public class DatabaseInfo {
                 + serverId + ", access="
                 + access + ", boltAddress="
                 + boltAddress + ", catchupAddress="
-                + catchupAddress + ", oldRole='"
-                + oldRole + '\'' + ", role='"
+                + catchupAddress + ", role='"
                 + role + '\'' + ", writer="
                 + writer + ", status='"
                 + status + '\'' + ", statusMessage='"

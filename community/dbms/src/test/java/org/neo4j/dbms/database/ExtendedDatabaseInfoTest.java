@@ -30,21 +30,7 @@ class ExtendedDatabaseInfoTest {
     void shouldReturnEmptyLastCommittedTxId() {
         // given
         var databaseInfo = new ExtendedDatabaseInfo(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                null,
-                null,
-                COMMITTED_TX_ID_NOT_AVAILABLE,
-                -1,
-                null,
-                1,
-                0);
+                null, null, null, null, null, null, false, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -1, null, 1, 0);
 
         // when
         var result = databaseInfo.lastCommittedTxId();
@@ -57,21 +43,7 @@ class ExtendedDatabaseInfoTest {
     void shouldReturnEmptyTxCommitLag() {
         // given
         var databaseInfo = new ExtendedDatabaseInfo(
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                null,
-                null,
-                COMMITTED_TX_ID_NOT_AVAILABLE,
-                -42,
-                null,
-                1,
-                0);
+                null, null, null, null, null, null, false, null, null, COMMITTED_TX_ID_NOT_AVAILABLE, -42, null, 1, 0);
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -84,7 +56,7 @@ class ExtendedDatabaseInfoTest {
     void shouldReturnEmptyStoreId() {
         // given
         var databaseInfo = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, false, null, null, 3, -42, StoreId.UNKNOWN, 1, 0);
+                null, null, null, null, null, null, false, null, null, 3, -42, StoreId.UNKNOWN, 1, 0);
 
         // when
         var result = databaseInfo.storeId();
@@ -99,7 +71,6 @@ class ExtendedDatabaseInfoTest {
         var expectedLastCommittedTxId = 5040;
         var expectedStoreId = new StoreId(1, 1, "engine", "format", 1, 1);
         var databaseInfo = new ExtendedDatabaseInfo(
-                null,
                 null,
                 null,
                 null,
@@ -129,7 +100,7 @@ class ExtendedDatabaseInfoTest {
         // given
         var txCommitLag = -1;
         var databaseInfo = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, false, null, null, 5040, txCommitLag, null, 1, 0);
+                null, null, null, null, null, null, false, null, null, 5040, txCommitLag, null, 1, 0);
 
         // when
         var result = databaseInfo.txCommitLag();
@@ -142,9 +113,9 @@ class ExtendedDatabaseInfoTest {
     void shouldBeEqualIfConstructedWithDifferentTxCommitLagButNoCommittedTxIdAvailable() {
         // given
         var databaseInfo1 = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, false, null, null, -1, -7, StoreId.UNKNOWN, 1, 0);
+                null, null, null, null, null, null, false, null, null, -1, -7, StoreId.UNKNOWN, 1, 0);
         var databaseInfo2 = new ExtendedDatabaseInfo(
-                null, null, null, null, null, null, null, false, null, null, -1, -50, StoreId.UNKNOWN, 1, 0);
+                null, null, null, null, null, null, false, null, null, -1, -50, StoreId.UNKNOWN, 1, 0);
 
         // then
         assertThat(databaseInfo1).isEqualTo(databaseInfo2);

@@ -52,7 +52,6 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             DatabaseAccess accessFromConfig,
             SocketAddress boltAddress,
             SocketAddress catchupAddress,
-            String oldRole,
             String role,
             boolean writer,
             String status,
@@ -68,7 +67,6 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
                 accessFromConfig,
                 boltAddress,
                 catchupAddress,
-                oldRole,
                 role,
                 writer,
                 status,
@@ -169,8 +167,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
                 + serverId + ", access="
                 + access + ", boltAddress="
                 + boltAddress + ", catchupAddress="
-                + catchupAddress + ", oldRole='"
-                + oldRole + '\'' + ", role='"
+                + catchupAddress + ", role='"
                 + role + '\'' + ", writer="
                 + writer + ", status='"
                 + status + '\'' + ", statusMessage='"
