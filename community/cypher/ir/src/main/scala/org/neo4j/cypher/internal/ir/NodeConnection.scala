@@ -90,7 +90,10 @@ final case class PatternRelationship(
 }
 
 object PatternRelationship {
-  implicit val byName: Ordering[PatternRelationship] = Ordering.by { patternRel: PatternRelationship => patternRel.name }
+
+  implicit val byName: Ordering[PatternRelationship] = Ordering.by { patternRel: PatternRelationship =>
+    patternRel.name
+  }
 }
 
 sealed trait PatternLength {
@@ -137,13 +140,13 @@ case class VariableGrouping(singletonName: String, groupName: String) {
 }
 
 final case class QuantifiedPathPattern(
-                                        leftBinding: NodeBinding,
-                                        rightBinding: NodeBinding,
-                                        pattern: QueryGraph,
-                                        repetition: Repetition,
-                                        nodeVariableGroupings: Set[VariableGrouping],
-                                        relationshipVariableGroupings: Set[VariableGrouping]
-                                      ) extends NodeConnection {
+  leftBinding: NodeBinding,
+  rightBinding: NodeBinding,
+  pattern: QueryGraph,
+  repetition: Repetition,
+  nodeVariableGroupings: Set[VariableGrouping],
+  relationshipVariableGroupings: Set[VariableGrouping]
+) extends NodeConnection {
 
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer

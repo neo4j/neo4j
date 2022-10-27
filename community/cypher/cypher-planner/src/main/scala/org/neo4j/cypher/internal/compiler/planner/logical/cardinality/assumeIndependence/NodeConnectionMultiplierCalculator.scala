@@ -30,26 +30,29 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Unspecified
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.util.Cardinality.SINGLE
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Selectivity
-import org.neo4j.cypher.internal.util.UpperBound.Limited
 
 object NodeConnectionMultiplierCalculator {
   val MAX_VAR_LENGTH = 32
@@ -78,7 +81,11 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
   def nodeConnectionMultiplier(
     pattern: NodeConnection,
     labels: LabelInfo
-  )(implicit semanticTable: SemanticTable, cardinalityModel: CardinalityModel): Multiplier = {
+  )(
+    implicit semanticTable: SemanticTable,
+    cardinalityModel: CardinalityModel,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Multiplier = {
     val totalNbrOfNodes = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes
     val Seq(labelsOnLhs, labelsOnRhs) =
@@ -103,38 +110,13 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
           )
         case qpp: QuantifiedPathPattern =>
           qppMultiplier(
-            labelsOnLhs,
-            labelsOnRhs,
             qpp,
             lhsCardinality,
             rhsCardinality,
-            totalNbrOfNodes
+            totalNbrOfNodes,
+            labels
           )
       }
-    }
-  }
-
-  // TODO go through parameters
-  private def qppMultiplier(
-    labelsOnLhs: Seq[TokenSpec[LabelId]],
-    labelsOnRhs: Seq[TokenSpec[LabelId]],
-    qpp: QuantifiedPathPattern,
-    lhsCardinality: Cardinality,
-    rhsCardinality: Cardinality,
-    totalNbrOfNodes: Cardinality
-  )(implicit semanticTable: SemanticTable, cardinalityModel: CardinalityModel): Multiplier = {
-    qpp.repetition match {
-      case Repetition(1, Limited(1)) =>
-//        calculateMultiplierForSingleRelHop(
-//          types,
-//          labelsOnLhs,
-//          labelsOnRhs,
-//          pattern.dir,
-//          lhsCardinality,
-//          rhsCardinality,
-//          totalNbrOfNodes
-//        )
-      ???
     }
   }
 
@@ -212,6 +194,79 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
         // Different lengths are exclusive, we we can simply add the Multipliers.
         multipliersPerLength.sum
     }
+  }
+
+  private def qppMultiplier(
+    qpp: QuantifiedPathPattern,
+    outerLhsCardinality: Cardinality,
+    outerRhsCardinality: Cardinality,
+    totalNbrOfNodes: Cardinality,
+    labelInfo: LabelInfo
+  )(
+    implicit semanticTable: SemanticTable,
+    cardinalityModel: CardinalityModel,
+    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
+  ): Multiplier = {
+
+    val max = Math.min(qpp.repetition.max.limit.getOrElse(MAX_VAR_LENGTH.toLong), MAX_VAR_LENGTH).toInt
+    val min = Math.min(qpp.repetition.min, max).toInt
+
+    val multipliersPerStep = for (length <- min to max) yield {
+      length match {
+        case 0 =>
+          Multiplier.ofDivision(1, totalNbrOfNodes).getOrElse(Multiplier.ZERO)
+
+        case _ =>
+          val rightToLeftLabelPredicates =
+            copyLabelPredicates(qpp, from = qpp.rightBinding.inner, to = qpp.leftBinding.inner)
+          val leftToRightLabelPredicates =
+            copyLabelPredicates(qpp, from = qpp.leftBinding.inner, to = qpp.rightBinding.inner)
+
+          val stepMultipliers = for (i <- 1 to length) yield {
+            val stepQg = {
+              val extraPredicatesForStep = {
+                val leftNodePredicates = if (i > 1) rightToLeftLabelPredicates else Vector()
+                val rightNodePredicates = if (length > 1 && i < length) leftToRightLabelPredicates else Vector()
+                val predicatesFromOuterNodes = Vector(
+                  Option.when(i == 1) { copyOuterLabelPredicatesToInner(qpp.leftBinding, labelInfo) },
+                  Option.when(i == length) { copyOuterLabelPredicatesToInner(qpp.rightBinding, labelInfo) }
+                ).flatten
+
+                leftNodePredicates ++ rightNodePredicates ++ predicatesFromOuterNodes
+              }
+
+              qpp.pattern.addPredicates(extraPredicatesForStep: _*)
+            }
+
+            val stepCardinality = cardinalityModel.apply(
+              queryPart = RegularSinglePlannerQuery(queryGraph = stepQg),
+              labelInfo = labelInfo,
+              relTypeInfo = Map.empty,
+              semanticTable = semanticTable,
+              indexPredicateProviderContext = indexPredicateProviderContext,
+              cardinalityModel = cardinalityModel
+            )
+
+            val labelsOnL = mapToLabelTokenSpecs(stepQg.selections.labelsOnNode(qpp.leftBinding.inner))
+            val labelsOnR = mapToLabelTokenSpecs(stepQg.selections.labelsOnNode(qpp.rightBinding.inner))
+
+            val lhsCardinality =
+              if (i == 1) outerLhsCardinality
+              else totalNbrOfNodes * calculateLabelSelectivity(labelsOnL, totalNbrOfNodes)
+
+            val rhsCardinality =
+              if (i == length) outerRhsCardinality
+              else totalNbrOfNodes * calculateLabelSelectivity(labelsOnR, totalNbrOfNodes)
+
+            val stepMultiplier =
+              Multiplier.ofDivision(stepCardinality, lhsCardinality * rhsCardinality).getOrElse(Multiplier.ZERO)
+
+            if (i == length) stepMultiplier else stepMultiplier * Multiplier(rhsCardinality.amount)
+          }
+          stepMultipliers.product * uniquenessSelectivityForNRels(length)
+      }
+    }
+    multipliersPerStep.sum
   }
 
   private def calculateMultiplierForSingleRelHop(
@@ -306,6 +361,19 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
       input.toIndexedSeq.map(rel =>
         semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       )
+
+  private def copyLabelPredicates(qpp: QuantifiedPathPattern, from: String, to: String): Vector[HasLabels] = {
+    val pos = InputPosition.NONE
+    qpp.pattern.selections
+      .labelPredicates.getOrElse(from, Set.empty)
+      .map(_.copy(expression = Variable(to)(pos))(pos))
+      .toVector
+  }
+
+  private def copyOuterLabelPredicatesToInner(binding: NodeBinding, labelInfo: LabelInfo): HasLabels = {
+    val pos = InputPosition.NONE
+    HasLabels(Variable(binding.inner)(pos), labelInfo.getOrElse(binding.outer, Set.empty).toVector)(pos)
+  }
 }
 
 /**

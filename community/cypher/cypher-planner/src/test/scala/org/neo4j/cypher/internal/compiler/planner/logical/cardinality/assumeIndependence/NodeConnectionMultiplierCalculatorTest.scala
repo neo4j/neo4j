@@ -46,7 +46,7 @@ import scala.collection.mutable
 
 class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  implicit private val cardModel: CardinalityModel = new CardinalityModel {
+  implicit private val cardinalityModel: CardinalityModel = new CardinalityModel {
 
     override def apply(
       queryPart: PlannerQueryPart,
@@ -55,8 +55,11 @@ class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstCons
       semanticTable: SemanticTable,
       indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
       cardinalityModel: CardinalityModel
-    ): Cardinality = ???
+    ): Cardinality = Cardinality.SINGLE
   }
+
+  implicit private val indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext =
+    IndexCompatiblePredicatesProviderContext.default
 
   test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]

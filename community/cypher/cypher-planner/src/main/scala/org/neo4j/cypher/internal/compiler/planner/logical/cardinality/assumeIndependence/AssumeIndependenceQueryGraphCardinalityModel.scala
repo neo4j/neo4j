@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardin
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
@@ -165,7 +164,11 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
       .filter {
         case r: PatternRelationship if qg.argumentIds.contains(r.name) => false
         case _                                                         => true
-      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels)(semanticTable, cardinalityModel))
+      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels)(
+        semanticTable,
+        cardinalityModel,
+        indexPredicateProviderContext
+      ))
 
     patternMultipliers.product * expressionSelectivity
   }

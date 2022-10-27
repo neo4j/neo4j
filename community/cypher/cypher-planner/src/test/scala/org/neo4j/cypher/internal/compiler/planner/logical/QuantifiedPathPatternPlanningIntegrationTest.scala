@@ -44,7 +44,17 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setRelationshipCardinality("()-[:S]->()", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
     .setRelationshipCardinality("(:N)-[]->()", 10)
+    .setRelationshipCardinality("(:N)-[]->(:N)", 10)
+    .setRelationshipCardinality("(:N)-[]->(:NN)", 10)
     .setRelationshipCardinality("(:NN)-[]->()", 10)
+    .setRelationshipCardinality("(:NN)-[]->(:N)", 10)
+    .setRelationshipCardinality("(:NN)-[]->(:NN)", 10)
+    .setRelationshipCardinality("(:User)-[]->()", 10)
+    .setRelationshipCardinality("(:User)-[]->(:N)", 10)
+    .setRelationshipCardinality("(:User)-[]->(:NN)", 10)
+    .setRelationshipCardinality("()-[]->(:User)", 10)
+    .setRelationshipCardinality("(:User)-[:R]->()", 10)
+    .setRelationshipCardinality("(:N)-[:R]->()", 10)
     .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
     .build()
 
@@ -422,7 +432,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test("Should plan two consecutive quantified path patterns with a join") {
-    val query = "MATCH (u:User&N) ((n)-[r]->(m))+ (x) ((a)-[r2]-(b))+ (v:User) RETURN n, m"
+    val query = "MATCH (u:User&N) ((n)-[r]->(m))+ (x) ((a)-[r2]-(b))+ (v:User) USING JOIN ON x RETURN n, m"
 
     val plan = planner.plan(query).stripProduceResults
     val `(u) ((n)-[r]->(m))+ (x)` = TrailParameters(
@@ -823,15 +833,17 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
   test("Should start with higher cardinality label if first expansion is cheaper") {
     val planner = plannerBuilder()
-      .setAllNodesCardinality(110)
+      .setAllNodesCardinality(160)
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("B", 100)
-      .setLabelCardinality("C", 10)
+      .setLabelCardinality("C", 60)
       .setRelationshipCardinality("(:B)-[:R]->(:C)", 2)
+      .setRelationshipCardinality("(:B)-[:R]->(:B)", 2)
       .setRelationshipCardinality("(:B)-[:R]->()", 2)
-      .setRelationshipCardinality("()-[:R]->(:C)", 200)
+      .setRelationshipCardinality("()-[:R]->(:C)", 400)
+      .setRelationshipCardinality("(:C)-[:R]->(:C)", 400)
+      .setRelationshipCardinality("(:C)-[:R]->(:B)", 400)
       .setRelationshipCardinality("()-[:R]->()", 1000)
-      .enablePrintCostComparisons()
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
@@ -839,12 +851,115 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val plan = planner.plan(query).stripProduceResults
 
-    // TODO full plan assertion
-    plan.printLogicalPlanBuilderString()
-    plan.leftmostLeaf should equal(
-      planner.subPlanBuilder()
-        .nodeByLabelScan("b1", "B")
-        .build()
+    val trailParameters = TrailParameters(
+      min = 3,
+      max = UpperBound.Limited(3),
+      start = "b1",
+      end = "c1",
+      innerStart = "b2",
+      innerEnd = "c2",
+      groupNodes = Set(("b2", "b2"), ("c2", "c2")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set()
     )
+
+    plan shouldBe planner.subPlanBuilder()
+      .filter("c1:C")
+      .trail(trailParameters)
+      .|.filter("c2:C")
+      .|.expandAll("(b2)-[r:R]->(c2)")
+      .|.filter("b2:B")
+      .|.argument("b2")
+      .nodeByLabelScan("b1", "B")
+      .build()
+  }
+
+  test("should go into trail with lower cardinality first") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(10000)
+      .setLabelCardinality("X", 40)
+      .setLabelCardinality("A", 500)
+      .setLabelCardinality("B", 800)
+      .setLabelCardinality("N", 500)
+      .setLabelCardinality("M", 500)
+      .setLabelCardinality("P", 20)
+      .setLabelCardinality("Q", 30)
+      .setRelationshipCardinality("()-[:REL]->()", 10000)
+      .setRelationshipCardinality("(:N)-[:REL]->()", 500)
+      .setRelationshipCardinality("()-[:REL]->(:M)", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->(:M)", 500)
+      .setRelationshipCardinality("(:A)-[:REL]->(:N)", 500)
+      .setRelationshipCardinality("(:N)-[:REL]->(:M)", 500)
+      .setRelationshipCardinality("(:N)-[:REL]->(:N)", 500)
+      .setRelationshipCardinality("(:M)-[:REL]->(:M)", 500)
+      .setRelationshipCardinality("(:M)-[:REL]->(:N)", 500)
+      .setRelationshipCardinality("(:N)-[:REL]->(:X)", 500)
+      .setRelationshipCardinality("(:M)-[:REL]->(:X)", 500)
+      .setRelationshipCardinality("(:P)-[:REL]->()", 10)
+      .setRelationshipCardinality("()-[:REL]->(:Q)", 10)
+      .setRelationshipCardinality("(:P)-[:REL]->(:Q)", 10)
+      .setRelationshipCardinality("(:P)-[:REL]->(:P)", 10)
+      .setRelationshipCardinality("(:P)-[:REL]->(:B)", 10)
+      .setRelationshipCardinality("(:Q)-[:REL]->(:Q)", 10)
+      .setRelationshipCardinality("(:Q)-[:REL]->(:P)", 10)
+      .setRelationshipCardinality("(:Q)-[:REL]->(:B)", 10)
+      .setRelationshipCardinality("(:X)-[:REL]->(:Q)", 10)
+      .setRelationshipCardinality("(:X)-[:REL]->(:P)", 10)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A) ((n:N)-[r1:REL]->(m:M)){3} (x:X) ((p:P)-[r2:REL]->(q:Q)){3} (b:B) 
+        |RETURN *""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val n_r1_m_trail = TrailParameters(
+      min = 3,
+      max = UpperBound.Limited(3),
+      start = "x",
+      end = "a",
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r1", "r1")),
+      innerRelationships = Set("r1"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set("r2")
+    )
+
+    val p_r2_q_trail = TrailParameters(
+      min = 3,
+      max = UpperBound.Limited(3),
+      start = "x",
+      end = "b",
+      innerStart = "p",
+      innerEnd = "q",
+      groupNodes = Set(("p", "p"), ("q", "q")),
+      groupRelationships = Set(("r2", "r2")),
+      innerRelationships = Set("r2"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set()
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .filter("a:A")
+      .trail(n_r1_m_trail)
+      .|.filter("n:N")
+      .|.expandAll("(m)<-[r1:REL]-(n)")
+      .|.filter("m:M")
+      .|.argument("m")
+      .filter("b:B")
+      .trail(p_r2_q_trail)
+      .|.filter("q:Q")
+      .|.expandAll("(p)-[r2:REL]->(q)")
+      .|.filter("p:P")
+      .|.argument("p")
+      .nodeByLabelScan("x", "X")
+      .build()
   }
 }
