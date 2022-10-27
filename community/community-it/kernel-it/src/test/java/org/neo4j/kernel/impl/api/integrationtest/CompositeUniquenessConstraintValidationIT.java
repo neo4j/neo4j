@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -31,8 +32,10 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -42,11 +45,13 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension(configurationCallback = "configure")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CompositeUniquenessConstraintValidationIT {
     @Inject
@@ -54,9 +59,15 @@ public class CompositeUniquenessConstraintValidationIT {
 
     private ConstraintDescriptor constraintDescriptor;
     private int label;
+    private int type;
     private int[] propIds;
     private KernelTransaction transaction;
     protected Kernel kernel;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
+    }
 
     public static Stream<Arguments> parameterValues() {
         return Stream.of(
@@ -82,10 +93,10 @@ public class CompositeUniquenessConstraintValidationIT {
 
         newTransaction();
         // This transaction allocates all the tokens we'll need in this test.
-        // We rely on token ids being allocated sequentially, from and including zero.
         TokenWrite tokenWrite = transaction.tokenWrite();
         tokenWrite.labelGetOrCreateForName("Label0");
         label = tokenWrite.labelGetOrCreateForName("Label1");
+        type = tokenWrite.relationshipTypeGetOrCreateForName("Type1");
         propIds = new int[10];
         for (int i = 0; i < propIds.length; i++) {
             propIds[i] = tokenWrite.propertyKeyGetOrCreateForName("prop" + i);
@@ -102,6 +113,15 @@ public class CompositeUniquenessConstraintValidationIT {
         commit();
     }
 
+    private void setupRelConstraintDescriptor(int nbrOfProperties) throws KernelException {
+        newTransaction();
+        constraintDescriptor = transaction
+                .schemaWrite()
+                .uniquePropertyConstraintCreate(
+                        IndexPrototype.uniqueForSchema(forRelType(type, propertyIds(nbrOfProperties))));
+        commit();
+    }
+
     @AfterEach
     public void clean() throws Exception {
         if (transaction != null) {
@@ -115,6 +135,12 @@ public class CompositeUniquenessConstraintValidationIT {
 
         try (KernelTransaction tx =
                 kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+            try (RelationshipScanCursor rels = tx.cursors().allocateRelationshipScanCursor(tx.cursorContext())) {
+                tx.dataRead().allRelationshipsScan(rels);
+                while (rels.next()) {
+                    tx.dataWrite().relationshipDelete(rels.relationshipReference());
+                }
+            }
             try (NodeCursor node = tx.cursors().allocateNodeCursor(tx.cursorContext())) {
                 tx.dataRead().allNodesScan(node);
                 while (node.next()) {
@@ -139,6 +165,24 @@ public class CompositeUniquenessConstraintValidationIT {
         transaction.dataWrite().nodeDelete(node);
         long newNode = createLabeledNode(label);
         setProperties(newNode, lhs);
+
+        // then does not fail
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteRelationship(Object[] lhs, Object[] rhs)
+            throws Exception {
+        setupRelConstraintDescriptor(lhs.length);
+
+        // given
+        long rel = createRelWithProps(type, lhs);
+
+        // when
+        newTransaction();
+        transaction.dataWrite().relationshipDelete(rel);
+        createRelWithPropsInCurrentTx(type, lhs);
 
         // then does not fail
         commit();
@@ -184,6 +228,24 @@ public class CompositeUniquenessConstraintValidationIT {
 
     @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
     @MethodSource("parameterValues")
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveRelProperty(Object[] lhs, Object[] rhs)
+            throws Exception {
+        setupRelConstraintDescriptor(lhs.length);
+
+        // given
+        long rel = createRelWithProps(type, lhs);
+
+        // when
+        newTransaction();
+        transaction.dataWrite().relationshipRemoveProperty(rel, propIds[0]);
+        createRelWithPropsInCurrentTx(type, lhs);
+
+        // then does not fail
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty(Object[] lhs, Object[] rhs)
             throws Exception {
         setupConstraintDescriptor(lhs.length);
@@ -196,6 +258,24 @@ public class CompositeUniquenessConstraintValidationIT {
         transaction.dataWrite().nodeSetProperty(node, propIds[0], Values.of("Alive!"));
         long newNode = createLabeledNode(label);
         setProperties(newNode, lhs);
+
+        // then does not fail
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeRelProperty(Object[] lhs, Object[] rhs)
+            throws Exception {
+        setupRelConstraintDescriptor(lhs.length);
+
+        // given
+        long rel = createRelWithProps(type, lhs);
+
+        // when
+        newTransaction();
+        transaction.dataWrite().relationshipSetProperty(rel, propIds[0], Values.of("Alive!"));
+        createRelWithPropsInCurrentTx(type, lhs);
 
         // then does not fail
         commit();
@@ -225,6 +305,25 @@ public class CompositeUniquenessConstraintValidationIT {
 
     @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
     @MethodSource("parameterValues")
+    public void shouldPreventConflictingDataInTx_Rels(Object[] lhs, Object[] rhs) throws Throwable {
+        setupRelConstraintDescriptor(lhs.length);
+
+        newTransaction();
+        long r1 = createRel(type);
+        long r2 = createRel(type);
+        setRelProperties(r1, lhs);
+        int lastPropertyOffset = lhs.length - 1;
+        setRelProperties(r2, lhs, lastPropertyOffset);
+
+        assertThatThrownBy(() -> setRelProperty(r2, propIds[lastPropertyOffset], lhs[lastPropertyOffset]))
+                .isInstanceOf(UniquePropertyValueValidationException.class);
+
+        // Then should fail
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
     public void shouldEnforceOnSetProperty(Object[] lhs, Object[] rhs) throws Exception {
         setupConstraintDescriptor(lhs.length);
 
@@ -238,6 +337,25 @@ public class CompositeUniquenessConstraintValidationIT {
         setProperties(node, lhs, lastPropertyOffset);
 
         assertThatThrownBy(() -> setProperty(node, propIds[lastPropertyOffset], lhs[lastPropertyOffset]))
+                .isInstanceOf(UniquePropertyValueValidationException.class);
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
+    public void shouldEnforceOnSetRelProperty(Object[] lhs, Object[] rhs) throws Exception {
+        setupRelConstraintDescriptor(lhs.length);
+
+        // given
+        createRelWithProps(type, lhs);
+
+        // when
+        newTransaction();
+        long rel = createRel(type);
+        int lastPropertyOffset = lhs.length - 1;
+        setRelProperties(rel, lhs, lastPropertyOffset);
+
+        assertThatThrownBy(() -> setRelProperty(rel, propIds[lastPropertyOffset], lhs[lastPropertyOffset]))
                 .isInstanceOf(UniquePropertyValueValidationException.class);
         commit();
     }
@@ -274,6 +392,24 @@ public class CompositeUniquenessConstraintValidationIT {
         setProperties(nodeB, rhs, lastPropertyOffset);
 
         assertThatThrownBy(() -> setProperty(nodeB, propIds[lastPropertyOffset], rhs[lastPropertyOffset]))
+                .isInstanceOf(UniquePropertyValueValidationException.class);
+        commit();
+    }
+
+    @ParameterizedTest(name = "{0}: lhs={1}, rhs={2}")
+    @MethodSource("parameterValues")
+    public void shouldEnforceOnSetRelPropertyInTx(Object[] lhs, Object[] rhs) throws Exception {
+        setupRelConstraintDescriptor(lhs.length);
+
+        // when
+        newTransaction();
+        long relA = createRelWithPropsInCurrentTx(type, lhs);
+
+        long relB = createRel(type);
+        int lastPropertyOffset = lhs.length - 1;
+        setRelProperties(relB, rhs, lastPropertyOffset);
+
+        assertThatThrownBy(() -> setRelProperty(relB, propIds[lastPropertyOffset], rhs[lastPropertyOffset]))
                 .isInstanceOf(UniquePropertyValueValidationException.class);
         commit();
     }
@@ -319,8 +455,17 @@ public class CompositeUniquenessConstraintValidationIT {
         transaction.dataWrite().nodeSetProperty(nodeId, propertyId, Values.of(value));
     }
 
+    private void setRelProperty(long relId, int propertyId, Object value) throws KernelException {
+        transaction.dataWrite().relationshipSetProperty(relId, propertyId, Values.of(value));
+    }
+
     private long createNode() throws KernelException {
         return transaction.dataWrite().nodeCreate();
+    }
+
+    private long createRel(int typeId) throws KernelException {
+        long nodeId = createNode();
+        return transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
     }
 
     private long createNodeWithLabelAndProps(int labelId, Object[] propertyValues) throws KernelException {
@@ -332,14 +477,41 @@ public class CompositeUniquenessConstraintValidationIT {
         return nodeId;
     }
 
+    private long createRelWithPropsInCurrentTx(int typeId, Object[] propertyValues) throws KernelException {
+        long nodeId = createNode();
+        long relId = transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        setRelProperties(relId, propertyValues);
+        return relId;
+    }
+
+    private long createRelWithProps(int typeId, Object[] propertyValues) throws KernelException {
+        newTransaction();
+        long nodeId = createNode();
+        long relId = transaction.dataWrite().relationshipCreate(nodeId, type, nodeId);
+        setRelProperties(relId, propertyValues);
+        commit();
+        return relId;
+    }
+
     private void setProperties(long nodeId, Object[] propertyValues) throws KernelException {
         setProperties(nodeId, propertyValues, propertyValues.length);
+    }
+
+    private void setRelProperties(long relId, Object[] propertyValues) throws KernelException {
+        setRelProperties(relId, propertyValues, propertyValues.length);
     }
 
     private void setProperties(long nodeId, Object[] propertyValues, int numOfValues) throws KernelException {
         assertThat(numOfValues).isLessThanOrEqualTo(propIds.length);
         for (int i = 0; i < numOfValues; i++) {
             setProperty(nodeId, propIds[i], propertyValues[i]);
+        }
+    }
+
+    private void setRelProperties(long relId, Object[] propertyValues, int numOfValues) throws KernelException {
+        assertThat(numOfValues).isLessThanOrEqualTo(propIds.length);
+        for (int i = 0; i < numOfValues; i++) {
+            setRelProperty(relId, propIds[i], propertyValues[i]);
         }
     }
 

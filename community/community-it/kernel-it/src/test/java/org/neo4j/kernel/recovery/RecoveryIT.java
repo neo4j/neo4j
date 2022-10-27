@@ -376,7 +376,6 @@ class RecoveryIT {
             tx.schema().constraintFor(label).assertPropertyIsUnique(property).create();
             tx.commit();
         }
-        awaitIndexesOnline(database);
 
         for (int i = 0; i < numberOfNodes; i++) {
             try (Transaction tx = database.beginTx()) {
@@ -393,8 +392,6 @@ class RecoveryIT {
 
         GraphDatabaseAPI recoveredDatabase = createDatabase();
         try {
-            awaitIndexesOnline(recoveredDatabase);
-
             // let's verify that the constraint has recovered with all values
             // by trying to create duplicates of all nodes under the constraint
             for (int i = 0; i < numberOfNodes; i++) {
@@ -404,6 +401,52 @@ class RecoveryIT {
                         Node node = tx.createNode(label);
 
                         node.setProperty(property, finalInt);
+                        tx.commit();
+                    }
+                });
+            }
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
+    void recoverDatabaseWithRelConstraint() throws Exception {
+        GraphDatabaseService database = createDatabase();
+
+        int numberOfRels = 10;
+        String property = "prop";
+        RelationshipType type = RelationshipType.withName("myType");
+
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().constraintFor(type).assertPropertyIsUnique(property).create();
+            tx.commit();
+        }
+
+        for (int i = 0; i < numberOfRels; i++) {
+            try (Transaction tx = database.beginTx()) {
+                Node node = tx.createNode();
+                Relationship rel = node.createRelationshipTo(node, type);
+                rel.setProperty(property, i);
+                tx.commit();
+            }
+        }
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        recoverDatabase();
+
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        try {
+            // let's verify that the constraint has recovered with all values
+            // by trying to create duplicates of all relationships under the constraint
+            for (int i = 0; i < numberOfRels; i++) {
+                int finalInt = i;
+                assertThrows(ConstraintViolationException.class, () -> {
+                    try (Transaction tx = recoveredDatabase.beginTx()) {
+                        Node node = tx.createNode();
+                        Relationship rel = node.createRelationshipTo(node, type);
+                        rel.setProperty(property, finalInt);
                         tx.commit();
                     }
                 });
@@ -1557,7 +1600,8 @@ class RecoveryIT {
                     .setClock(fakeClock)
                     .setInternalLogProvider(logProvider)
                     .setConfig(GraphDatabaseSettings.keep_logical_logs, "keep_all")
-                    .setConfig(logical_log_rotation_threshold, logThreshold);
+                    .setConfig(logical_log_rotation_threshold, logThreshold)
+                    .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
             builder = additionalConfiguration(builder);
         }
     }

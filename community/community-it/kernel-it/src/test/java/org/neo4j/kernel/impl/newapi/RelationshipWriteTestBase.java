@@ -23,11 +23,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.Test;
@@ -35,14 +41,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 @SuppressWarnings("Duplicates")
 @ExtendWith(RandomExtension.class)
@@ -520,6 +531,157 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
                 assertProperties(relationshipCursor, propertyCursor, expectedProperties);
             }
         });
+    }
+
+    @Test
+    void relationshipApplyChangesShouldCheckUniquenessAfterAllChanges() throws Exception {
+        // Given
+        RelationshipType type = RelationshipType.withName("Type");
+        String key1Name = "key1";
+        String key2Name = "key2";
+        try (Transaction tx = graphDb.beginTx()) {
+            tx.schema()
+                    .constraintFor(type)
+                    .assertPropertyIsUnique(key1Name)
+                    .assertPropertyIsUnique(key2Name)
+                    .create();
+            tx.commit();
+        }
+        long rel;
+        try (Transaction tx = graphDb.beginTx()) {
+            Node n1 = tx.createNode();
+            Relationship r1 = n1.createRelationshipTo(n1, type);
+            r1.setProperty(key1Name, "A");
+            r1.setProperty(key2Name, "B");
+            rel = r1.getId();
+            Node n2 = tx.createNode();
+            Relationship r2 = n2.createRelationshipTo(n2, type);
+            r2.setProperty(key1Name, "A");
+            r2.setProperty(key2Name, "C");
+            tx.commit();
+        }
+
+        // When
+        try (KernelTransaction tx = beginTransaction()) {
+            int key1 = tx.tokenRead().propertyKey(key1Name);
+            int key2 = tx.tokenRead().propertyKey(key2Name);
+            MutableIntObjectMap<Value> propertyChanges = IntObjectMaps.mutable.empty();
+            propertyChanges.put(key2, stringValue("C"));
+            propertyChanges.put(key1, stringValue("D"));
+            tx.dataWrite().relationshipApplyChanges(rel, propertyChanges);
+            tx.commit();
+        }
+
+        // Then
+        try (Transaction tx = graphDb.beginTx()) {
+            try (ResourceIterator<Relationship> relationships =
+                    tx.findRelationships(type, map(key1Name, "D", key2Name, "C"))) {
+                assertThat(relationships.hasNext()).isTrue();
+                assertThat(relationships.next().getId()).isEqualTo(rel);
+                assertThat(relationships.hasNext()).isFalse();
+            }
+        }
+    }
+
+    @Test
+    void relationshipApplyChangesShouldEnforceUniquenessCorrectly() throws Exception {
+        // Given
+        long[] rels = new long[30];
+        RelationshipType[] types = new RelationshipType[4];
+        String[] keys = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            types[i] = RelationshipType.withName("Type" + i);
+            keys[i] = "key" + i;
+        }
+        try (Transaction tx = graphDb.beginTx()) {
+            for (int i = 0; i < rels.length; i++) {
+                Node node = tx.createNode();
+                Relationship rel = node.createRelationshipTo(node, random.among(types));
+                rels[i] = rel.getId();
+            }
+            tx.commit();
+        }
+
+        List<RelationshipType> constraintTypes = new ArrayList<>();
+        List<String[]> constraintPropertyKeys = new ArrayList<>();
+        try (Transaction tx = graphDb.beginTx()) {
+            // Create one single-key constraint
+            {
+                RelationshipType constraintType = random.among(types);
+                String constraintKey = random.among(keys);
+                tx.schema()
+                        .constraintFor(constraintType)
+                        .assertPropertyIsUnique(constraintKey)
+                        .create();
+                constraintTypes.add(constraintType);
+                constraintPropertyKeys.add(new String[] {constraintKey});
+            }
+            // Create one double-key constraint
+            {
+                RelationshipType constraintType = random.among(types);
+                String[] constraintKeys = random.selection(keys, 2, 2, false);
+                tx.schema()
+                        .constraintFor(constraintType)
+                        .assertPropertyIsUnique(constraintKeys[0])
+                        .assertPropertyIsUnique(constraintKeys[1])
+                        .create();
+                constraintTypes.add(constraintType);
+                constraintPropertyKeys.add(constraintKeys);
+            }
+            tx.commit();
+        }
+        int[] keyIds = new int[keys.length];
+        try (KernelTransaction tx = beginTransaction()) {
+            for (int i = 0; i < keys.length; i++) {
+                keyIds[i] = tx.tokenWrite().propertyKeyGetOrCreateForName(keys[i]);
+            }
+        }
+
+        // Race
+        Race race = new Race().withEndCondition(() -> false);
+        race.addContestants(
+                1,
+                throwing(() -> {
+                    try (KernelTransaction tx = beginTransaction()) {
+                        long rel = random.among(rels);
+                        MutableIntObjectMap<Value> properties = IntObjectMaps.mutable.empty();
+                        for (int key : random.selection(keyIds, 1, 4, false)) {
+                            Value value = random.nextFloat() < 0.2 ? NO_VALUE : intValue(random.nextInt(5));
+                            properties.put(key, value);
+                        }
+                        tx.dataWrite().relationshipApplyChanges(rel, properties);
+                        tx.commit();
+                    } catch (UniquePropertyValueValidationException e) {
+                        // This is OK and somewhat expected to happen for some of the operations, it's what we test here
+                    }
+                }),
+                150);
+        race.goUnchecked();
+
+        // Then, check so that all data really conforms to the uniqueness constraints
+        try (Transaction tx = graphDb.beginTx()) {
+            for (int i = 0; i < constraintTypes.size(); i++) {
+                RelationshipType type = constraintTypes.get(i);
+                String[] propertyKeys = constraintPropertyKeys.get(i);
+                Set<ValueTuple> entries = new HashSet<>();
+                try (ResourceIterator<Relationship> relsWithType = tx.findRelationships(type)) {
+                    while (relsWithType.hasNext()) {
+                        Relationship rel = relsWithType.next();
+                        Map<String, Object> properties = rel.getProperties(propertyKeys);
+
+                        if (properties.size() == propertyKeys.length) {
+                            Object[] values = new Object[propertyKeys.length];
+                            for (int v = 0; v < propertyKeys.length; v++) {
+                                String key = propertyKeys[v];
+                                values[v] = properties.get(key);
+                            }
+                            assertThat(entries.add(ValueTuple.of(values))).isTrue();
+                        }
+                    }
+                }
+            }
+            tx.commit();
+        }
     }
 
     private static long createRelationship(RelationshipType type) {

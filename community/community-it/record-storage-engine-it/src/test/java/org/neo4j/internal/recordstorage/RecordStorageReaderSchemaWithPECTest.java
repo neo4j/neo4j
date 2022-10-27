@@ -26,6 +26,7 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         // Given
         createUniquenessConstraint(label1, propertyKey);
         createUniquenessConstraint(label2, propertyKey);
+        createRelUniquenessConstraint(relType1, propertyKey);
+        createRelUniquenessConstraint(relType2, propertyKey);
         createNodeKeyConstraint(label1, otherPropertyKey);
         createNodeKeyConstraint(label2, otherPropertyKey);
         createRelKeyConstraint(relType1, propertyKey);
@@ -74,6 +77,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
                 .contains(
                         uniqueForLabel(labelId1, propKeyId),
                         uniqueForLabel(labelId2, propKeyId),
+                        uniqueForSchema(SchemaDescriptors.forRelType(relTypeId, propKeyId)),
+                        uniqueForSchema(SchemaDescriptors.forRelType(relTypeId2, propKeyId)),
                         nodeKeyForLabel(labelId1, propKeyId2),
                         nodeKeyForLabel(labelId2, propKeyId2),
                         keyForSchema(SchemaDescriptors.forRelType(relTypeId, propKeyId)),
@@ -136,6 +141,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         createRelKeyConstraint(relType1, propertyKey);
         createRelKeyConstraint(relType2, otherPropertyKey);
 
+        createRelUniquenessConstraint(relType1, propertyKey);
+        createRelUniquenessConstraint(relType2, otherPropertyKey);
+
         // When
         Set<ConstraintDescriptor> constraints =
                 asSet(storageReader.constraintsGetForRelationshipType(relationshipTypeId(relType2)));
@@ -144,7 +152,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
                 relationshipPropertyExistenceDescriptor(relType2, propertyKey),
                 relationshipPropertyExistenceDescriptor(relType2, otherPropertyKey),
-                relKeyConstraintDescriptor(relType2, otherPropertyKey));
+                relKeyConstraintDescriptor(relType2, otherPropertyKey),
+                relUniqueConstraintDescriptor(relType2, otherPropertyKey));
 
         assertEquals(expectedConstraints, constraints);
     }
@@ -161,6 +170,9 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         createRelKeyConstraint(relType1, propertyKey);
         createRelKeyConstraint(relType1, otherPropertyKey);
 
+        createRelUniquenessConstraint(relType1, propertyKey);
+        createRelUniquenessConstraint(relType1, otherPropertyKey);
+
         // When
         int relTypeId = relationshipTypeId(relType1);
         int propKeyId = propertyKeyId(propertyKey);
@@ -170,7 +182,8 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         // Then
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
                 relationshipPropertyExistenceDescriptor(relType1, propertyKey),
-                relKeyConstraintDescriptor(relType1, propertyKey));
+                relKeyConstraintDescriptor(relType1, propertyKey),
+                relUniqueConstraintDescriptor(relType1, propertyKey));
 
         assertEquals(expectedConstraints, constraints);
     }
@@ -179,6 +192,12 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase {
         int labelId = labelId(label);
         int propKeyId = propertyKeyId(propertyKey);
         return uniqueForLabel(labelId, propKeyId);
+    }
+
+    private ConstraintDescriptor relUniqueConstraintDescriptor(RelationshipType type, String propertyKey) {
+        int typeId = relationshipTypeId(type);
+        int propKeyId = propertyKeyId(propertyKey);
+        return uniqueForSchema(SchemaDescriptors.forRelType(typeId, propKeyId));
     }
 
     private ConstraintDescriptor nodeKeyConstraintDescriptor(Label label, String propertyKey) {

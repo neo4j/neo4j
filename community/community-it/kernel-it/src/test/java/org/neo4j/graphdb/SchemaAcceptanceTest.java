@@ -723,6 +723,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     @Test
+    void shouldCreateRelUniquenessConstraint() {
+        // WHEN
+        ConstraintDefinition constraint = createRelUniquenessConstraint(relType, propertyKey);
+
+        // THEN
+        try (Transaction tx = db.beginTx()) {
+            constraint = tx.schema().getConstraintByName(constraint.getName());
+            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
+            assertEquals(relType.name(), constraint.getRelationshipType().name());
+            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
+            assertEquals("constraint_c5954bea", constraint.getName());
+            tx.commit();
+        }
+    }
+
+    @Test
     void shouldCreateNamedUniquenessConstraint() {
         // When
         ConstraintDefinition constraint = createUniquenessConstraint("MyConstraint", label, propertyKey);
@@ -732,6 +748,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             constraint = tx.schema().getConstraintByName(constraint.getName());
             assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
             assertEquals(label.name(), constraint.getLabel().name());
+            assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
+            assertEquals("MyConstraint", constraint.getName());
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldCreateNamedRelUniquenessConstraint() {
+        // When
+        ConstraintDefinition constraint = createRelUniquenessConstraint("MyConstraint", relType, propertyKey);
+
+        // Then
+        try (Transaction tx = db.beginTx()) {
+            constraint = tx.schema().getConstraintByName(constraint.getName());
+            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
+            assertEquals(relType.name(), constraint.getRelationshipType().name());
             assertEquals(asSet(propertyKey), Iterables.asSet(constraint.getPropertyKeys()));
             assertEquals("MyConstraint", constraint.getName());
             tx.commit();
@@ -755,6 +787,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     @Test
+    void shouldCreateRelUniquenessConstraintWithMultipleProperties() {
+        // WHEN
+        ConstraintDefinition constraint = createRelUniquenessConstraint(relType, propertyKey, secondPropertyKey);
+
+        // THEN
+        try (Transaction tx = db.beginTx()) {
+            constraint = tx.schema().getConstraintByName(constraint.getName());
+            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
+            assertEquals(relType.name(), constraint.getRelationshipType().name());
+            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
+            assertEquals("constraint_ba789ec", constraint.getName());
+            tx.commit();
+        }
+    }
+
+    @Test
     void shouldCreateNamedUniquenessConstraintWithMultipleProperties() {
         // WHEN
         ConstraintDefinition constraint =
@@ -765,6 +813,23 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             constraint = tx.schema().getConstraintByName(constraint.getName());
             assertEquals(ConstraintType.UNIQUENESS, constraint.getConstraintType());
             assertEquals(label.name(), constraint.getLabel().name());
+            assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
+            assertEquals("MyConstraint", constraint.getName());
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldCreateNamedRelUniquenessConstraintWithMultipleProperties() {
+        // WHEN
+        ConstraintDefinition constraint =
+                createRelUniquenessConstraint("MyConstraint", relType, propertyKey, secondPropertyKey);
+
+        // THEN
+        try (Transaction tx = db.beginTx()) {
+            constraint = tx.schema().getConstraintByName(constraint.getName());
+            assertEquals(ConstraintType.RELATIONSHIP_UNIQUENESS, constraint.getConstraintType());
+            assertEquals(relType.name(), constraint.getRelationshipType().name());
             assertEquals(asSet(propertyKey, secondPropertyKey), Iterables.asSet(constraint.getPropertyKeys()));
             assertEquals("MyConstraint", constraint.getName());
             tx.commit();
@@ -2255,6 +2320,32 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         dropIndexBackedConstraintAndCreateSlightlyDifferentInSameTxMustSucceed(db, initial, similar);
     }
 
+    @Test
+    void dropRelUniquenessConstraintAndCreateSimilarUniquenessInSameTxMustThrow() {
+        ConstraintCreateOperation initial = (schema, prop, name) -> schema.constraintFor(relType)
+                .assertPropertyIsUnique(prop)
+                .withName(name)
+                .create();
+        ConstraintCreateOperation similar = (schema, prop, name) -> schema.constraintFor(relType)
+                .assertPropertyIsUnique(prop)
+                .withName(name)
+                .create();
+        dropIndexBackedConstraintAndCreateSimilarInSameTxMustThrow(db, initial, similar);
+    }
+
+    @Test
+    void dropRelUniquenessConstraintAndCreateDifferentUniquenessInSameTxMustSucceed() {
+        ConstraintCreateOperation initial = (schema, prop, name) -> schema.constraintFor(relType)
+                .assertPropertyIsUnique(prop)
+                .withName(name)
+                .create();
+        ConstraintCreateOperation similar = (schema, prop, name) -> schema.constraintFor(relType)
+                .assertPropertyIsUnique(prop)
+                .withName(name)
+                .create();
+        dropIndexBackedConstraintAndCreateSlightlyDifferentInSameTxMustSucceed(db, initial, similar);
+    }
+
     /**
      * This test describes a problem where if you crash during index population
      * when creating a constraint the constraint will never be created but the
@@ -2645,6 +2736,26 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     private ConstraintDefinition createUniquenessConstraint(String name, Label label, String... properties) {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator creator = tx.schema().constraintFor(label);
+
+            for (String property : properties) {
+                creator = creator.assertPropertyIsUnique(property);
+            }
+
+            creator = creator.withName(name);
+            ConstraintDefinition constraint = creator.create();
+            tx.commit();
+            return constraint;
+        }
+    }
+
+    private ConstraintDefinition createRelUniquenessConstraint(RelationshipType type, String... properties) {
+        return createRelUniquenessConstraint(null, type, properties);
+    }
+
+    private ConstraintDefinition createRelUniquenessConstraint(
+            String name, RelationshipType type, String... properties) {
+        try (Transaction tx = db.beginTx()) {
+            ConstraintCreator creator = tx.schema().constraintFor(type);
 
             for (String property : properties) {
                 creator = creator.assertPropertyIsUnique(property);

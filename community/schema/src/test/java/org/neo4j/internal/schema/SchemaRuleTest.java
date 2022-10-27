@@ -142,6 +142,8 @@ class SchemaRuleTest {
             .withOwningConstraintId(1);
     private final ConstraintDescriptor uniqueLabelConstraint =
             ConstraintDescriptorFactory.uniqueForSchema(labelSchema, RANGE);
+    private final ConstraintDescriptor uniqueRelTypeConstraint =
+            ConstraintDescriptorFactory.uniqueForSchema(relTypeSchema, RANGE);
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema(labelSchema);
     private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.keyForSchema(labelSchema, RANGE);
     private final ConstraintDescriptor relKeyConstraint =
@@ -153,6 +155,10 @@ class SchemaRuleTest {
     private final ConstraintDescriptor uniqueLabelConstraintNamed = uniqueLabelConstraint
             .withName("uniqueLabelConstraintNamed")
             .withId(1)
+            .withOwnedIndexId(1);
+    private final ConstraintDescriptor uniqueRelTypeConstraintNamed = uniqueRelTypeConstraint
+            .withName("uniqueRelTypeConstraintNamed")
+            .withId(7)
             .withOwnedIndexId(1);
     private final ConstraintDescriptor existsLabelConstraintNamed =
             existsLabelConstraint.withName("existsLabelConstraintNamed").withId(2);
@@ -191,6 +197,7 @@ class SchemaRuleTest {
         assertName(nodeFtsPrototype, "index_99c88876");
         assertName(relFtsPrototype, "index_9c14864e");
         assertName(uniqueLabelConstraint, "constraint_dbf17751");
+        assertName(uniqueRelTypeConstraint, "constraint_f05b6188");
         assertName(existsLabelConstraint, "constraint_b23c1483");
         assertName(nodeKeyConstraint, "constraint_75ad9cd9");
         assertName(relKeyConstraint, "constraint_675015ed");
@@ -252,6 +259,9 @@ class SchemaRuleTest {
                 nodeFtsPrototype2);
         assertUserDescription(
                 "Constraint( type='UNIQUENESS', schema=(:`La:bel` {`prop:erty`, prop1}) )", uniqueLabelConstraint2);
+        assertUserDescription(
+                "Constraint( type='RELATIONSHIP UNIQUENESS', schema=()-[:Type1 {prop2, prop3}]-() )",
+                uniqueRelTypeConstraint);
 
         assertUserDescription(
                 "Index( name='rangeLabelPrototypeNamed', type='RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
@@ -347,6 +357,9 @@ class SchemaRuleTest {
         assertUserDescription(
                 "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",
                 uniqueLabelConstraintNamed);
+        assertUserDescription(
+                "Constraint( id=7, name='uniqueRelTypeConstraintNamed', type='RELATIONSHIP UNIQUENESS', schema=()-[:Type1 {prop2, prop3}]-(), ownedIndex=1 )",
+                uniqueRelTypeConstraintNamed);
         assertUserDescription(
                 "Constraint( id=2, name='existsLabelConstraintNamed', type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )",
                 existsLabelConstraintNamed);

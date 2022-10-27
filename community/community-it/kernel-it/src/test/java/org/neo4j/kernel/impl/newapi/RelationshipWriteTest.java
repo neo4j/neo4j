@@ -19,9 +19,17 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
 public class RelationshipWriteTest extends RelationshipWriteTestBase<WriteTestSupport> {
     @Override
     public WriteTestSupport newTestSupport() {
-        return new WriteTestSupport();
+        return new WriteTestSupport() {
+            @Override
+            protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
+                return super.configure(builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
+            }
+        };
     }
 }

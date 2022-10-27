@@ -37,6 +37,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
@@ -177,6 +178,20 @@ public abstract class RecordStorageReaderTestBase {
         int labelId = getOrCreateLabelId(label);
         int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId);
+        constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
+        txState.constraintDoAdd(constraint);
+        apply(txState);
+        return index;
+    }
+
+    protected IndexDescriptor createRelUniquenessConstraint(RelationshipType type, String propertyKey)
+            throws Exception {
+        IndexDescriptor index = createUniqueIndex(type, propertyKey);
+        TxState txState = new TxState();
+        int typeId = getOrCreateRelationshipTypeId(type);
+        int propertyKeyId = getOrCreatePropertyKeyId(propertyKey);
+        UniquenessConstraintDescriptor constraint =
+                ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptors.forRelType(typeId, propertyKeyId));
         constraint = constraint.withName(index.getName()).withOwnedIndexId(index.getId());
         txState.constraintDoAdd(constraint);
         apply(txState);

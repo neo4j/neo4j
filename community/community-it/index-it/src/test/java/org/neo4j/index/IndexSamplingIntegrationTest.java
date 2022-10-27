@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -109,9 +110,7 @@ class IndexSamplingIntegrationTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = Entity.class,
-            names = {"NODE"})
+    @EnumSource(value = Entity.class)
     void shouldSampleUniqueIndex(Entity entity) throws Throwable {
         // Given / When
         final var deletions = new MutableInt();
@@ -150,7 +149,9 @@ class IndexSamplingIntegrationTest {
 
     private void populateDatabaseThenTriggerIndexResamplingOnNextStartup(Consumer<GraphDatabaseService> consumer)
             throws IOException {
-        final var managementService = new TestDatabaseManagementServiceBuilder(layout).build();
+        final var managementService = new TestDatabaseManagementServiceBuilder(layout)
+                .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true)
+                .build();
         final DatabaseLayout databaseLayout;
         try {
             final var db = managementService.database(DEFAULT_DATABASE_NAME);
@@ -171,7 +172,9 @@ class IndexSamplingIntegrationTest {
         DatabaseManagementService managementService = null;
         try {
             // Then
-            managementService = new TestDatabaseManagementServiceBuilder(layout).build();
+            managementService = new TestDatabaseManagementServiceBuilder(layout)
+                    .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true)
+                    .build();
             GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency(Kernel.class);
@@ -234,7 +237,11 @@ class IndexSamplingIntegrationTest {
 
             @Override
             void createConstraint(Transaction tx, String schemaName, String token, String property) {
-                throw new IllegalStateException("Uniqueness constraint is not supported for relationships");
+                tx.schema()
+                        .constraintFor(RelationshipType.withName(token))
+                        .assertPropertyIsUnique(property)
+                        .withName(schemaName)
+                        .create();
             }
 
             @Override

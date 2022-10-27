@@ -22,82 +22,100 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
 import org.neo4j.test.extension.OtherThreadExtension;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension(configurationCallback = "configure")
 @ExtendWith(OtherThreadExtension.class)
 public class UniquenessConstraintValidationConcurrencyIT {
+    private static String TOKEN = "Token1";
+    private static String KEY = "key1";
+    private static String VALUE = "value1";
+    private static String VALUE2 = "value2";
+
     @Inject
     private GraphDatabaseService database;
 
     @Inject
     private OtherThread otherThread;
 
-    @Test
-    void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception {
-        createTestConstraint();
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowConcurrentCreationOfNonConflictingData(EntityControl entityControl) throws Exception {
+        createTestConstraint(entityControl);
 
         try (var tx = database.beginTx()) {
-            tx.createNode(label("Label1")).setProperty("key1", "value1");
-            assertTrue(
-                    otherThread.execute(createNode("Label1", "key1", "value2")).get());
+            entityControl.createEntityWithTokenAndProp(tx, VALUE);
+            assertTrue(otherThread.execute(createEntity(entityControl, VALUE2)).get());
         }
     }
 
-    @Test
-    void shouldPreventConcurrentCreationOfConflictingData() throws Exception {
-        createTestConstraint();
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldPreventConcurrentCreationOfConflictingData(EntityControl entityControl) throws Exception {
+        createTestConstraint(entityControl);
 
         Future<Boolean> result;
         try (var tx = database.beginTx()) {
-            tx.createNode(label("Label1")).setProperty("key1", "value1");
+            entityControl.createEntityWithTokenAndProp(tx, VALUE);
             try {
-                result = otherThread.execute(createNode("Label1", "key1", "value1"));
+                result = otherThread.execute(createEntity(entityControl, VALUE));
             } finally {
                 waitUntilWaiting();
             }
             tx.commit();
         }
-        assertFalse(result.get(), "node creation should fail");
+        assertFalse(result.get(), "entity creation should fail");
     }
 
-    @Test
-    void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack() throws Exception {
-        createTestConstraint();
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowOtherTransactionToCompleteIfFirstTransactionRollsBack(EntityControl entityControl)
+            throws Exception {
+        createTestConstraint(entityControl);
 
         // when
         Future<Boolean> result;
         try (var tx = database.beginTx()) {
-            tx.createNode(label("Label1")).setProperty("key1", "value1");
+            entityControl.createEntityWithTokenAndProp(tx, VALUE);
             try {
-                result = otherThread.execute(createNode("Label1", "key1", "value1"));
+                result = otherThread.execute(createEntity(entityControl, VALUE));
             } finally {
                 waitUntilWaiting();
             }
             tx.rollback();
         }
-        assertTrue(result.get(), "node creation should fail");
+        assertTrue(result.get(), "entity creation should succeed");
     }
 
-    private void createTestConstraint() {
+    private void createTestConstraint(EntityControl entityControl) {
         try (var transaction = database.beginTx()) {
-            transaction
-                    .schema()
-                    .constraintFor(label("Label1"))
-                    .assertPropertyIsUnique("key1")
-                    .create();
+            entityControl.constraint(transaction.schema()).create();
             transaction.commit();
         }
     }
@@ -110,10 +128,10 @@ public class UniquenessConstraintValidationConcurrencyIT {
         }
     }
 
-    public Callable<Boolean> createNode(final String label, final String propertyKey, final Object propertyValue) {
+    public Callable<Boolean> createEntity(EntityControl entityControl, String propertyValue) {
         return () -> {
             try (Transaction tx = database.beginTx()) {
-                tx.createNode(label(label)).setProperty(propertyKey, propertyValue);
+                entityControl.createEntityWithTokenAndProp(tx, propertyValue);
 
                 tx.commit();
                 return true;
@@ -121,5 +139,36 @@ public class UniquenessConstraintValidationConcurrencyIT {
                 return false;
             }
         };
+    }
+
+    enum EntityControl {
+        NODE {
+            @Override
+            ConstraintCreator constraint(Schema schema) {
+                return schema.constraintFor(label(TOKEN)).assertPropertyIsUnique(KEY);
+            }
+
+            @Override
+            void createEntityWithTokenAndProp(Transaction tx, String value) {
+                tx.createNode(label(TOKEN)).setProperty(KEY, value);
+            }
+        },
+        RELATIONSHIP {
+            @Override
+            ConstraintCreator constraint(Schema schema) {
+                return schema.constraintFor(withName(TOKEN)).assertPropertyIsUnique(KEY);
+            }
+
+            @Override
+            void createEntityWithTokenAndProp(Transaction tx, String value) {
+                Node node = tx.createNode();
+                node.createRelationshipTo(node, RelationshipType.withName(TOKEN))
+                        .setProperty(KEY, value);
+            }
+        };
+
+        abstract ConstraintCreator constraint(Schema schema);
+
+        abstract void createEntityWithTokenAndProp(Transaction tx, String value);
     }
 }

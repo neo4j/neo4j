@@ -26,21 +26,40 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class UniquenessConstraintValidationIT extends KernelIntegrationTest {
+    private static String TOKEN = "Token1";
+    private static String KEY = "key1";
+    private static String VALUE = "value1";
+
+    @Override
+    protected TestDatabaseManagementServiceBuilder configure(
+            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
+        return super.configure(
+                databaseManagementServiceBuilder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
+    }
+
     private static long createLabeledNode(KernelTransaction transaction, String label) throws KernelException {
         long node = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName(label);
@@ -63,18 +82,19 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         return node;
     }
 
-    @Test
-    void shouldEnforceOnSetProperty() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldEnforceOnSetProperty(EntityControl entityControl) throws Exception {
         // given
-        constrainedNode("Label1", "key1", "value1");
+        constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when/then
-        long node = createLabeledNode(transaction, "Label1");
+        long entity = entityControl.createEntityWithToken(transaction, TOKEN);
         UniquePropertyValueValidationException e = assertThrows(UniquePropertyValueValidationException.class, () -> {
-            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName("key1");
-            transaction.dataWrite().nodeSetProperty(node, propertyKeyId, Values.of("value1"));
+            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(KEY);
+            entityControl.setProperty(transaction.dataWrite(), entity, propertyKeyId, Values.of(VALUE));
         });
         assertThat(e.getUserMessage(transaction.tokenRead())).contains("`key1` = 'value1'");
         commit();
@@ -85,11 +105,11 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         // Given
         // a node with a constrained label and a long value
         long propertyValue = 285414114323346805L;
-        long firstNode = constrainedNode("label1", "key1", propertyValue);
+        long firstNode = constrainedNode(TOKEN, KEY, propertyValue);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
-        long node = createLabeledNode(transaction, "label1");
+        long node = createLabeledNode(transaction, TOKEN);
 
         assertNotEquals(firstNode, node);
 
@@ -99,7 +119,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         propertyValue++;
         // note how propertyValue is definitely not equal to propertyValue++ but they do equal if they are cast to
         // double
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName("key1");
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(KEY);
         transaction.dataWrite().nodeSetProperty(node, propertyKeyId, Values.of(propertyValue));
 
         // Then
@@ -110,16 +130,16 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     @Test
     void shouldEnforceUniquenessConstraintOnAddLabelForNumberPropertyOnNodeNotFromTransaction() throws Exception {
         // given
-        constrainedNode("Label1", "key1", 1);
+        constrainedNode(TOKEN, KEY, 1);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
-        long node = createNode(transaction, "key1", 1);
+        long node = createNode(transaction, KEY, 1);
         commit();
 
         // when/then
         KernelTransaction transaction2 = newTransaction(AnonymousContext.writeToken());
         UniquePropertyValueValidationException e = assertThrows(UniquePropertyValueValidationException.class, () -> {
-            int label = transaction2.tokenWrite().labelGetOrCreateForName("Label1");
+            int label = transaction2.tokenWrite().labelGetOrCreateForName(TOKEN);
             transaction2.dataWrite().nodeAddLabel(node, label);
         });
         assertThat(e.getUserMessage(transaction2.tokenRead())).contains("`key1` = 1");
@@ -130,14 +150,14 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     @Test
     void shouldEnforceUniquenessConstraintOnAddLabelForStringProperty() throws Exception {
         // given
-        constrainedNode("Label1", "key1", "value1");
+        constrainedNode(TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when/then
-        long node = createNode(transaction, "key1", "value1");
+        long node = createNode(transaction, KEY, VALUE);
         UniquePropertyValueValidationException e = assertThrows(UniquePropertyValueValidationException.class, () -> {
-            int label = transaction.tokenWrite().labelGetOrCreateForName("Label1");
+            int label = transaction.tokenWrite().labelGetOrCreateForName(TOKEN);
             transaction.dataWrite().nodeAddLabel(node, label);
         });
         assertThat(e.getUserMessage(transaction.tokenRead())).contains("`key1` = 'value1'");
@@ -145,88 +165,96 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         commit();
     }
 
-    @Test
-    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteEntity(EntityControl entityControl)
+            throws Exception {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long entity = constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        transaction.dataWrite().nodeDelete(node);
-        createLabeledNode(transaction, "Label1", "key1", "value1");
+        entityControl.deleteEntity(transaction.dataWrite(), entity);
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of(VALUE));
         commit();
     }
 
     @Test
     void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long node = constrainedNode(TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        int label = transaction.tokenWrite().labelGetOrCreateForName("Label1");
+        int label = transaction.tokenWrite().labelGetOrCreateForName(TOKEN);
         transaction.dataWrite().nodeRemoveLabel(node, label);
-        createLabeledNode(transaction, "Label1", "key1", "value1");
+        createLabeledNode(transaction, TOKEN, KEY, VALUE);
         commit();
     }
 
-    @Test
-    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty(EntityControl entityControl)
+            throws Exception {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long entity = constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        int key = transaction.tokenRead().propertyKey("key1");
-        transaction.dataWrite().nodeRemoveProperty(node, key);
-        createLabeledNode(transaction, "Label1", "key1", "value1");
+        int key = transaction.tokenRead().propertyKey(KEY);
+        entityControl.removeProperty(transaction.dataWrite(), entity, key);
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of(VALUE));
         commit();
     }
 
-    @Test
-    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty(EntityControl entityControl)
+            throws Exception {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long entity = constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName("key1");
-        transaction.dataWrite().nodeSetProperty(node, propertyKeyId, Values.of("value2"));
-        createLabeledNode(transaction, "Label1", "key1", "value1");
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(KEY);
+        entityControl.setProperty(transaction.dataWrite(), entity, propertyKeyId, Values.of("value2"));
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of(VALUE));
         commit();
     }
 
-    @Test
-    void shouldPreventConflictingDataInSameTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldPreventConflictingDataInSameTransaction(EntityControl entityControl) throws Exception {
         // given
-        constrainedNode("Label1", "key1", "value1");
+        constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when/then
-        createLabeledNode(transaction, "Label1", "key1", "value2");
-        UniquePropertyValueValidationException e = assertThrows(UniquePropertyValueValidationException.class, () -> {
-            createLabeledNode(transaction, "Label1", "key1", "value2");
-        });
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of("value2"));
+        UniquePropertyValueValidationException e = assertThrows(
+                UniquePropertyValueValidationException.class,
+                () -> entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of("value2")));
         assertThat(e.getUserMessage(transaction.tokenRead())).contains("`key1` = 'value2'");
 
         commit();
     }
 
-    @Test
-    void shouldAllowNoopPropertyUpdate() throws KernelException {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowNoopPropertyUpdate(EntityControl entityControl) throws KernelException {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long entity = constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        int key = transaction.tokenWrite().propertyKeyGetOrCreateForName("key1");
-        transaction.dataWrite().nodeSetProperty(node, key, Values.of("value1"));
+        int key = transaction.tokenWrite().propertyKeyGetOrCreateForName(KEY);
+        entityControl.setProperty(transaction.dataWrite(), entity, key, Values.of(VALUE));
 
         // then should not throw exception
         commit();
@@ -235,36 +263,40 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     @Test
     void shouldAllowNoopLabelUpdate() throws KernelException {
         // given
-        long node = constrainedNode("Label1", "key1", "value1");
+        long node = constrainedNode(TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        int label = transaction.tokenWrite().labelGetOrCreateForName("Label1");
+        int label = transaction.tokenWrite().labelGetOrCreateForName(TOKEN);
         transaction.dataWrite().nodeAddLabel(node, label);
 
         // then should not throw exception
         commit();
     }
 
-    @Test
-    void shouldAllowCreationOfNonConflictingData() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityControl.class)
+    void shouldAllowCreationOfNonConflictingData(EntityControl entityControl) throws Exception {
         // given
-        constrainedNode("Label1", "key1", "value1");
+        constrainedEntity(entityControl, TOKEN, KEY, VALUE);
 
         KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
 
         // when
-        createNode(transaction, "key1", "value1");
-        createLabeledNode(transaction, "Label2", "key1", "value1");
-        createLabeledNode(transaction, "Label1", "key1", "value2");
-        createLabeledNode(transaction, "Label1", "key2", "value1");
+        createNode(transaction, KEY, VALUE);
+        entityControl.createEntityWithTokenAndProp(transaction, "Token2", KEY, Values.of(VALUE));
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, KEY, Values.of("value2"));
+        entityControl.createEntityWithTokenAndProp(transaction, TOKEN, "key2", Values.of(VALUE));
 
         commit();
 
         // then
         transaction = newTransaction(AnonymousContext.writeToken());
-        assertEquals(5, countNodes(transaction), "number of nodes");
+        assertEquals(
+                entityControl == EntityControl.NODE ? 5 : 4,
+                entityControl.countEntities(transaction),
+                "number of entities");
         rollback();
     }
 
@@ -329,19 +361,47 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         commit();
     }
 
-    private long constrainedNode(String labelName, String propertyKey, Object propertyValue) throws KernelException {
+    private long constrainedEntity(
+            EntityControl entityControl, String tokenName, String propertyKey, Object propertyValue)
+            throws KernelException {
         long node;
+        int token;
+        int key;
         {
             KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
-            int label = transaction.tokenWrite().labelGetOrCreateForName(labelName);
+            token = entityControl.getOrCreateToken(transaction.tokenWrite(), tokenName);
+            key = transaction.tokenWrite().propertyKeyGetOrCreateForName(propertyKey);
+            node = entityControl.createEntityWithTokenAndProp(
+                    transaction.dataWrite(), token, key, Values.of(propertyValue));
+            commit();
+        }
+        createConstraint(entityControl.schema(token, key));
+        return node;
+    }
+
+    private long constrainedNode(String labelName, String propertyKey, Object propertyValue) throws KernelException {
+        long node;
+        int label;
+        int key;
+        {
+            KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+            label = transaction.tokenWrite().labelGetOrCreateForName(labelName);
             node = transaction.dataWrite().nodeCreate();
             transaction.dataWrite().nodeAddLabel(node, label);
-            int key = transaction.tokenWrite().propertyKeyGetOrCreateForName(propertyKey);
+            key = transaction.tokenWrite().propertyKeyGetOrCreateForName(propertyKey);
             transaction.dataWrite().nodeSetProperty(node, key, Values.of(propertyValue));
             commit();
         }
-        createConstraint(labelName, propertyKey);
+        createConstraint(forLabel(label, key));
         return node;
+    }
+
+    private ConstraintDescriptor createConstraint(SchemaDescriptor schema) throws KernelException {
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        ConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate(uniqueForSchema(schema));
+        commit();
+
+        return constraint;
     }
 
     private ConstraintDescriptor createConstraint(String label, String propertyKey) throws KernelException {
@@ -358,5 +418,139 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         commit();
 
         return constraint;
+    }
+
+    enum EntityControl {
+        NODE {
+            @Override
+            int getOrCreateToken(TokenWrite tokenWrite, String tokenName) throws KernelException {
+                return tokenWrite.labelGetOrCreateForName(tokenName);
+            }
+
+            @Override
+            long createEntityWithToken(KernelTransaction tx, String tokenName) throws KernelException {
+                int token = getOrCreateToken(tx.tokenWrite(), tokenName);
+                Write write = tx.dataWrite();
+                long node = write.nodeCreate();
+                write.nodeAddLabel(node, token);
+                return node;
+            }
+
+            @Override
+            long createEntityWithTokenAndProp(Write write, int token, int propKey, Value value) throws KernelException {
+                long node = write.nodeCreate();
+                write.nodeAddLabel(node, token);
+                write.nodeSetProperty(node, propKey, value);
+                return node;
+            }
+
+            @Override
+            long createEntityWithTokenAndProp(KernelTransaction tx, String token, String propKey, Value value)
+                    throws KernelException {
+                int tok = tx.tokenWrite().labelGetOrCreateForName(token);
+                int prop = tx.tokenWrite().propertyKeyGetOrCreateForName(propKey);
+                return createEntityWithTokenAndProp(tx.dataWrite(), tok, prop, value);
+            }
+
+            @Override
+            void setProperty(Write write, long entity, int propKey, Value value) throws KernelException {
+                write.nodeSetProperty(entity, propKey, value);
+            }
+
+            @Override
+            void removeProperty(Write write, long entity, int propKey) throws KernelException {
+                write.nodeRemoveProperty(entity, propKey);
+            }
+
+            @Override
+            void deleteEntity(Write write, long entity) {
+                write.nodeDelete(entity);
+            }
+
+            @Override
+            int countEntities(KernelTransaction tx) {
+                return KernelIntegrationTest.countNodes(tx);
+            }
+
+            @Override
+            SchemaDescriptor schema(int token, int propKey) {
+                return forLabel(token, propKey);
+            }
+        },
+        RELATIONSHIP {
+            @Override
+            int getOrCreateToken(TokenWrite tokenWrite, String tokenName) throws KernelException {
+                return tokenWrite.relationshipTypeGetOrCreateForName(tokenName);
+            }
+
+            @Override
+            long createEntityWithToken(KernelTransaction tx, String tokenName) throws KernelException {
+                int token = getOrCreateToken(tx.tokenWrite(), tokenName);
+                Write write = tx.dataWrite();
+                long node = write.nodeCreate();
+                return write.relationshipCreate(node, token, node);
+            }
+
+            @Override
+            long createEntityWithTokenAndProp(Write write, int token, int propKey, Value value) throws KernelException {
+                long node = write.nodeCreate();
+                long rel = write.relationshipCreate(node, token, node);
+                write.relationshipSetProperty(rel, propKey, value);
+                return rel;
+            }
+
+            @Override
+            long createEntityWithTokenAndProp(KernelTransaction tx, String token, String propKey, Value value)
+                    throws KernelException {
+                int tok = tx.tokenWrite().relationshipTypeGetOrCreateForName(token);
+                int prop = tx.tokenWrite().propertyKeyGetOrCreateForName(propKey);
+                return createEntityWithTokenAndProp(tx.dataWrite(), tok, prop, value);
+            }
+
+            @Override
+            void setProperty(Write write, long entity, int propKey, Value value) throws KernelException {
+                write.relationshipSetProperty(entity, propKey, value);
+            }
+
+            @Override
+            void removeProperty(Write write, long entity, int propKey) throws KernelException {
+                write.relationshipRemoveProperty(entity, propKey);
+            }
+
+            @Override
+            void deleteEntity(Write write, long entity) {
+                write.relationshipDelete(entity);
+            }
+
+            @Override
+            int countEntities(KernelTransaction tx) {
+                return KernelIntegrationTest.countRelationships(tx);
+            }
+
+            @Override
+            SchemaDescriptor schema(int token, int propKey) {
+                return forRelType(token, propKey);
+            }
+        };
+
+        abstract int getOrCreateToken(TokenWrite tokenWrite, String tokenName) throws KernelException;
+
+        abstract long createEntityWithToken(KernelTransaction tx, String tokenName) throws KernelException;
+
+        abstract long createEntityWithTokenAndProp(Write write, int token, int propKey, Value value)
+                throws KernelException;
+
+        abstract long createEntityWithTokenAndProp(KernelTransaction tx, String token, String propKey, Value value)
+                throws KernelException;
+
+        abstract void setProperty(Write write, long entity, int propKey, Value value) throws KernelException;
+
+        abstract void removeProperty(Write write, long entity, int propKey) throws KernelException;
+
+        abstract void deleteEntity(Write write, long entity);
+
+        abstract int countEntities(KernelTransaction tx);
+
+        abstract SchemaDescriptor schema(int token, int propKey);
     }
 }

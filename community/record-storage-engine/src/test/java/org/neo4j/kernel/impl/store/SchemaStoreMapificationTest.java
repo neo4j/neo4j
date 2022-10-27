@@ -53,53 +53,63 @@ import org.neo4j.values.storable.Values;
 class SchemaStoreMapificationTest {
     private static final RandomSchema RANDOM_SCHEMA = new RandomSchema();
 
-    private LabelSchemaDescriptor labelSchema = SchemaDescriptors.forLabel(1, 2, 3);
-    private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptors.forRelType(1, 2, 3);
-    private FulltextSchemaDescriptor fulltextNodeSchema =
+    private final LabelSchemaDescriptor labelSchema = SchemaDescriptors.forLabel(1, 2, 3);
+    private final RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptors.forRelType(1, 2, 3);
+    private final FulltextSchemaDescriptor fulltextNodeSchema =
             SchemaDescriptors.fulltext(NODE, new int[] {1, 2}, new int[] {1, 2});
-    private FulltextSchemaDescriptor fulltextRelSchema =
+    private final FulltextSchemaDescriptor fulltextRelSchema =
             SchemaDescriptors.fulltext(RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2});
-    private IndexProviderDescriptor tree = new IndexProviderDescriptor("range", "1.0");
-    private IndexProviderDescriptor fts = new IndexProviderDescriptor("fulltext", "1.0");
-    private IndexDescriptor labelIndex =
+    private final IndexProviderDescriptor tree = new IndexProviderDescriptor("range", "1.0");
+    private final IndexProviderDescriptor fts = new IndexProviderDescriptor("fulltext", "1.0");
+    private final IndexDescriptor labelIndex =
             forSchema(labelSchema, tree).withName("labelIndex").materialise(1);
-    private IndexDescriptor labelUniqueIndex =
+    private final IndexDescriptor labelUniqueIndex =
             uniqueForSchema(labelSchema, tree).withName("labelUniqueIndex").materialise(1);
-    private IndexDescriptor relTypeIndex =
+    private final IndexDescriptor relTypeIndex =
             forSchema(relTypeSchema, tree).withName("relTypeIndex").materialise(1);
-    private IndexDescriptor relTypeUniqueIndex =
+    private final IndexDescriptor relTypeUniqueIndex =
             uniqueForSchema(relTypeSchema, tree).withName("relTypeUniqueIndex").materialise(1);
-    private IndexDescriptor nodeFtsIndex = forSchema(fulltextNodeSchema, fts)
+    private final IndexDescriptor nodeFtsIndex = forSchema(fulltextNodeSchema, fts)
             .withIndexType(FULLTEXT)
             .withName("nodeFtsIndex")
             .materialise(1);
-    private IndexDescriptor relFtsIndex = forSchema(fulltextRelSchema, fts)
+    private final IndexDescriptor relFtsIndex = forSchema(fulltextRelSchema, fts)
             .withIndexType(FULLTEXT)
             .withName("relFtsIndex")
             .materialise(1);
     // Text is not an index type we support for constraints but let's see that we can actually store/read it correctly
-    private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema(labelSchema, TEXT)
+    private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema(
+                    labelSchema, TEXT)
             .withName("uniqueLabelConstraint")
             .withId(1);
-    private ConstraintDescriptor nodeKeyConstraint =
+    private final ConstraintDescriptor nodeKeyConstraint =
             keyForSchema(labelSchema, TEXT).withName("nodeKeyConstraint").withId(1);
-    private ConstraintDescriptor uniqueLabelConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
+    private final ConstraintDescriptor uniqueLabelConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
                     labelSchema, RANGE)
             .withName("uniqueLabelConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);
-    private ConstraintDescriptor existsLabelConstraint =
+    private final ConstraintDescriptor existsLabelConstraint =
             existsForSchema(labelSchema).withName("existsLabelConstraint").withId(1);
-    private ConstraintDescriptor nodeKeyConstraintWithType = keyForSchema(labelSchema, RANGE)
+    private final ConstraintDescriptor nodeKeyConstraintWithType = keyForSchema(labelSchema, RANGE)
             .withName("nodeKeyConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);
-    private ConstraintDescriptor existsRelTypeConstraint =
+    private final ConstraintDescriptor existsRelTypeConstraint =
             existsForSchema(relTypeSchema).withName("existsRelTypeConstraint").withId(1);
     private final ConstraintDescriptor relKeyConstraint =
             keyForSchema(relTypeSchema, TEXT).withName("relKeyConstraint").withId(1);
     private final ConstraintDescriptor relKeyConstraintWithType = keyForSchema(relTypeSchema, RANGE)
             .withName("relKeyConstraintWithType")
+            .withOwnedIndexId(7)
+            .withId(1);
+    private final ConstraintDescriptor uniqueRelTypeConstraint = ConstraintDescriptorFactory.uniqueForSchema(
+                    relTypeSchema, TEXT)
+            .withName("uniqueRelTypeConstraint")
+            .withId(1);
+    private final ConstraintDescriptor uniqueRelTypeConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
+                    relTypeSchema, RANGE)
+            .withName("uniqueRelTypelConstraintWithType")
             .withOwnedIndexId(7)
             .withId(1);
 
@@ -246,6 +256,35 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
                 "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueLabelConstraintWithType);
+    }
+
+    @Test
+    void setUniqueRelTypeConstraintWithOtherTypeDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraint"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("TEXT"));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueRelTypeConstraint);
+    }
+
+    @Test
+    void setUniqueRelTypeConstraintWithTypeDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("uniqueRelTypeConstraintWithType"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("UNIQUE"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue("RANGE"),
+                "__org.neo4j.SchemaRule.ownedIndexId", Values.longValue(7));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(uniqueRelTypeConstraintWithType);
     }
 
     @Test

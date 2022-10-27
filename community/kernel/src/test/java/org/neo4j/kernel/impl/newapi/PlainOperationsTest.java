@@ -1130,29 +1130,6 @@ public class PlainOperationsTest extends OperationsTest {
     }
 
     @Test
-    void indexedBackedConstraintCreateMustThrowOnRelationshipSchemas() throws Exception {
-        // given
-        when(tokenHolders.relationshipTypeTokens().getTokenById(anyInt())).thenReturn(new NamedToken("RelType", 123));
-        when(tokenHolders.propertyKeyTokens().getTokenById(anyInt())).thenReturn(new NamedToken("prop", 456));
-        SchemaDescriptor schema = forRelType(this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds());
-        IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
-                .withName("constraint name")
-                .withIndexProvider(RangeIndexProvider.DESCRIPTOR);
-        IndexDescriptor constraintIndex = prototype.materialise(42);
-        when(constraintIndexCreator.createUniquenessConstraintIndex(any(), any(), eq(prototype), any()))
-                .thenReturn(constraintIndex);
-        IndexProxy indexProxy = mock(IndexProxy.class);
-        when(indexProxy.getDescriptor()).thenReturn(constraintIndex);
-        when(indexingService.getIndexProxy(constraintIndex)).thenReturn(indexProxy);
-        when(storageReader.constraintsGetForSchema(schema)).thenReturn(Collections.emptyIterator());
-        when(storageReader.indexGetForSchema(schema)).thenReturn(Collections.emptyIterator());
-
-        // when
-        var e = assertThrows(KernelException.class, () -> operations.uniquePropertyConstraintCreate(prototype));
-        assertThat(e.getUserMessage(tokenHolders)).contains("relationship type schema");
-    }
-
-    @Test
     void indexedBackedConstraintCreateMustThrowOnAnyTokenSchemas() throws Exception {
         // given
         SchemaDescriptor schema = SchemaDescriptors.forAnyEntityTokens(NODE);

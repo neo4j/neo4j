@@ -28,11 +28,17 @@ import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFacto
 import static org.neo4j.kernel.impl.index.schema.FailingNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 
 import java.nio.file.Path;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.common.EntityType;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.IndexingTestUtil;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
@@ -51,19 +57,20 @@ class ConstraintIndexFailureIT {
     @Inject
     private TestDirectory directory;
 
-    @Test
-    void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed() throws Exception {
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldFailToValidateConstraintsIfUnderlyingIndexIsFailed(EntityType entityType) throws Exception {
         // given a perfectly normal constraint
         Path dir = directory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(dir)
                 // use delegating index provider with custom descriptor, so it can be replaced with failing provider
                 .addExtension(new BuiltInDelegatingIndexProviderFactory(new RangeIndexProviderFactory(), DESCRIPTOR))
                 .noOpSystemGraphInitializer()
+                .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true)
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
-            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider(
-                    tx, DESCRIPTOR, label("Label1"), "key1");
+            createConstraint(entityType, tx);
             tx.commit();
         } finally {
             managementService.shutdown();
@@ -79,14 +86,33 @@ class ConstraintIndexFailureIT {
         db = managementService.database(DEFAULT_DATABASE_NAME);
         // when
         try (Transaction tx = db.beginTx()) {
-            var e = assertThrows(ConstraintViolationException.class, () -> tx.createNode(label("Label1"))
-                    .setProperty("key1", "value1"));
+            var e = assertThrows(ConstraintViolationException.class, () -> createData(entityType, tx));
             assertThat(e.getCause()).isInstanceOf(UnableToValidateConstraintException.class);
             assertThat(e.getCause().getCause().getMessage())
                     .contains("The index is in a failed state:")
                     .contains(INITIAL_STATE_FAILURE_MESSAGE);
         } finally {
             managementService.shutdown();
+        }
+    }
+
+    private void createConstraint(EntityType entityType, TransactionImpl tx) throws KernelException {
+        switch (entityType) {
+            case NODE -> IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider(
+                    tx, DESCRIPTOR, label("Label1"), "key1");
+            case RELATIONSHIP -> IndexingTestUtil.createRelPropUniqueConstraintWithSpecifiedProvider(
+                    tx, DESCRIPTOR, RelationshipType.withName("Type1"), "key1");
+        }
+    }
+
+    private void createData(EntityType entityType, Transaction tx) {
+        switch (entityType) {
+            case NODE -> tx.createNode(label("Label1")).setProperty("key1", "value1");
+            case RELATIONSHIP -> {
+                Node node = tx.createNode();
+                node.createRelationshipTo(node, RelationshipType.withName("Type1"))
+                        .setProperty("key1", "value1");
+            }
         }
     }
 }
