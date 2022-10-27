@@ -145,7 +145,8 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   private val cannotUseTextIndexMessage =
-    "Cannot use text index hint `USING TEXT INDEX a:User(name)` in this context: The hint specifies using a text index but no matching predicate was found."
+    "Cannot use text index hint `USING TEXT INDEX a:User(name)` in this context: The hint specifies using a text index but no matching predicate was found. " +
+      "For more information on when a text index is applicable, please consult the documentation on the use of text indexes."
 
   test("should throw when finding plan that does not solve all pattern nodes") {
     val query = RegularSinglePlannerQuery(

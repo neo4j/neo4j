@@ -190,7 +190,7 @@ object VerifyBestPlan {
   }
 
   /**
-   * The given hint cannot be fulfilled because the properties used for this hint a
+   * The given hint cannot be fulfilled because the properties used for this hint are not of the correct type.
    * @param hint the offending hint
    */
   case class WrongPropertyTypeHint(hint: UsingIndexHint, foundPredicates: Set[IndexCompatiblePredicate]) {
@@ -321,7 +321,7 @@ object VerifyBestPlan {
   }
 
   /**
-   * Tests whether there  exists a predicate on the given property that can be used by a text index. And if not, return the predicates searched through.
+   * Tests whether there exists a predicate on the given property that can be used by a text index. And if not, return the predicates searched through.
    */
   private def hasPropertyOfTypeText(
     variable: Variable,

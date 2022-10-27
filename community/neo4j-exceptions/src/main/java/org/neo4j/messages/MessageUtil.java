@@ -69,7 +69,7 @@ public class MessageUtil {
                     + " or in supported predicates in `WHERE` (either directly or as part of a top-level `AND` or `OR`), but %2$s found."
                     + " %5$s"
                     + " Note that %1$s must be specified on a non-optional %4$s.";
-    private static final String HINT_TEXT_INDEX_DETAIL = "The hint specifies using a text index but %s.";
+    private static final String HINT_TEXT_INDEX_DETAIL = "The hint specifies using a text index but %s";
 
     /**
      * authentication & authorization messages
@@ -153,11 +153,23 @@ public class MessageUtil {
                 switch (foundPredicates) {
                     case NONE ->
                     // this should be caught semantic checking but let's provide a meaningful error message anyways
-                    "no matching predicate was found";
-                    case SINGULAR -> "the predicate found cannot be used by a text index";
-                    case PLURAL -> "none of the predicates found can be used by a text index";
+                    "no matching predicate was found.";
+                    case SINGULAR -> "the predicate found cannot be used by a text index.";
+                    case PLURAL -> "none of the predicates found can be used by a text index.";
                 };
-        return createHintError("text index", hintSerialization, HINT_TEXT_INDEX_DETAIL.formatted(predicatesString));
+        String suggestion;
+        if (foundPredicates != Numerus.NONE) {
+            suggestion =
+                    " You could try to convert the compared value to string by calling `toString()` on it or by testing whether it is a string using `STARTS WITH`.";
+        } else {
+            suggestion = "";
+        }
+        String documentation =
+                " For more information on when a text index is applicable, please consult the documentation on the use of text indexes.";
+        return createHintError(
+                "text index",
+                hintSerialization,
+                HINT_TEXT_INDEX_DETAIL.formatted(predicatesString + suggestion + documentation));
     }
 
     public static String createMissingPropertyLabelHintError(
