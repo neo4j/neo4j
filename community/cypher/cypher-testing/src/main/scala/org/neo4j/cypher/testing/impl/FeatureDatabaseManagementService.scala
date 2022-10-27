@@ -31,6 +31,8 @@ import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.graphdb.schema.IndexDefinition
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
@@ -101,6 +103,13 @@ case class FeatureDatabaseManagementService(
   private val executorFactory: CypherExecutorFactory,
   private val databaseName: Option[String] = None
 ) {
+
+  private val droppableIndexTypes = Set(
+    IndexType.TEXT,
+    IndexType.POINT,
+    IndexType.RANGE,
+    IndexType.FULLTEXT
+  )
   def closeFactory(): Unit = executorFactory.close()
 
   private val database: GraphDatabaseFacade =
@@ -130,11 +139,17 @@ case class FeatureDatabaseManagementService(
     try {
       val schema = tx.schema()
       schema.getConstraints.forEach(c => c.drop());
-      schema.getIndexes.forEach(i => i.drop());
+      schema.getIndexes.forEach(i => if (shouldDrop(i)) i.drop());
       tx.commit()
     } finally {
       tx.close()
     }
+  }
+
+  private def shouldDrop(index: IndexDefinition): Boolean = {
+    // Avoid dropping indexes that are part of the default installation
+    // Like the node label index and relationship type index.
+    droppableIndexTypes.contains(index.getIndexType)
   }
 
   def unregisterProcedures(procedures: Seq[QualifiedName]): Unit = {
