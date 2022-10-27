@@ -638,6 +638,7 @@ public class Operations implements Write, SchemaWrite {
                             constraint,
                             VALIDATION,
                             new IndexEntryConflictException(
+                                    NODE,
                                     valueCursor.nodeReference(),
                                     NO_SUCH_NODE,
                                     PropertyIndexQuery.asValueTuple(propertyValues)),
@@ -695,6 +696,7 @@ public class Operations implements Write, SchemaWrite {
                             constraint,
                             VALIDATION,
                             new IndexEntryConflictException(
+                                    RELATIONSHIP,
                                     valueCursor.relationshipReference(),
                                     NO_SUCH_RELATIONSHIP,
                                     PropertyIndexQuery.asValueTuple(propertyValues)),

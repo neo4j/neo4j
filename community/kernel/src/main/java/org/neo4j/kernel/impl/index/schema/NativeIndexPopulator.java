@@ -99,10 +99,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
-        mainConflictDetector = new ThrowingConflictDetector<>(!descriptor.isUnique());
+        mainConflictDetector = new ThrowingConflictDetector<>(
+                !descriptor.isUnique(), descriptor.schema().entityType());
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesConflictDetector = new ThrowingConflictDetector<>(true);
+        updatesConflictDetector =
+                new ThrowingConflictDetector<>(true, descriptor.schema().entityType());
     }
 
     @Override

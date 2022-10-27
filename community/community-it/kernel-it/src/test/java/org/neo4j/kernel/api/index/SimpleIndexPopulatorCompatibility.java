@@ -458,9 +458,9 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         catch (Exception e) {
                             Throwable root = getRootCause(e);
                             if (root instanceof IndexEntryConflictException conflict) {
-                                assertEquals(nodeId1, conflict.getExistingNodeId());
+                                assertEquals(nodeId1, conflict.getExistingEntityId());
                                 assertEquals(ValueTuple.of(value), conflict.getPropertyValues());
-                                assertEquals(nodeId2, conflict.getAddedNodeId());
+                                assertEquals(nodeId2, conflict.getAddedEntityId());
                             } else {
                                 throw e;
                             }

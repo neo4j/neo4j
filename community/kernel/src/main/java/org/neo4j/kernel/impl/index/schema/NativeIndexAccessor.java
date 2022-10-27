@@ -78,7 +78,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             ImmutableSet<OpenOption> openOptions) {
         super(databaseIndexContext, layout, indexFiles, descriptor, openOptions);
         singleUpdater = new NativeIndexUpdater<>(
-                layout.newKey(), indexUpdateIgnoreStrategy(), new ThrowingConflictDetector<>(true));
+                layout.newKey(),
+                indexUpdateIgnoreStrategy(),
+                new ThrowingConflictDetector<>(true, descriptor.schema().entityType()));
         headerWriter = new NativeIndexHeaderWriter(BYTE_ONLINE);
     }
 
@@ -96,7 +98,10 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
         try {
             if (parallel) {
                 return new NativeIndexUpdater<>(
-                                layout.newKey(), indexUpdateIgnoreStrategy(), new ThrowingConflictDetector<>(true))
+                                layout.newKey(),
+                                indexUpdateIgnoreStrategy(),
+                                new ThrowingConflictDetector<>(
+                                        true, descriptor.schema().entityType()))
                         .initialize(tree.writer(cursorContext));
             } else {
                 return singleUpdater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
@@ -133,7 +138,10 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                         throws IndexEntryConflictException {
                                     switch (conflictHandler.indexEntryConflict(existingNodeId, addedNodeId, toReport)) {
                                         case THROW -> throw new IndexEntryConflictException(
-                                                existingNodeId, addedNodeId, toReport);
+                                                descriptor.schema().entityType(),
+                                                existingNodeId,
+                                                addedNodeId,
+                                                toReport);
                                         case DELETE -> {
                                             /*then just skip it*/
                                         }

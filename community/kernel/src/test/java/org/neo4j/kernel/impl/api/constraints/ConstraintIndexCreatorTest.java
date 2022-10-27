@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -136,7 +137,7 @@ class ConstraintIndexCreatorTest {
         when(indexProxy.getDescriptor()).thenReturn(index);
         when(schemaRead.indexGetForName(constraint.getName())).thenReturn(IndexDescriptor.NO_INDEX, index);
 
-        IndexEntryConflictException cause = new IndexEntryConflictException(2, 1, Values.of("a"));
+        IndexEntryConflictException cause = new IndexEntryConflictException(NODE, 2, 1, Values.of("a"));
         doThrow(new IndexPopulationFailedKernelException("some index", cause))
                 .when(indexProxy)
                 .awaitStoreScanCompleted(anyLong(), any());

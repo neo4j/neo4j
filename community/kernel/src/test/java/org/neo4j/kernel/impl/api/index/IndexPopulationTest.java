@@ -114,7 +114,7 @@ class IndexPopulationTest {
                 return new IndexUpdater() {
                     @Override
                     public void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException {
-                        throw new IndexEntryConflictException(0, 1, Values.numberValue(0));
+                        throw new IndexEntryConflictException(EntityType.NODE, 0, 1, Values.numberValue(0));
                     }
 
                     @Override

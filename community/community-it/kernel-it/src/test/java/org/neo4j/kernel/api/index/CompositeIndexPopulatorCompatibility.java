@@ -129,9 +129,9 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                         }
                         // then
                         catch (IndexEntryConflictException conflict) {
-                            assertEquals(nodeId1, conflict.getExistingNodeId());
+                            assertEquals(nodeId1, conflict.getExistingEntityId());
                             assertEquals(ValueTuple.of(value1, value2), conflict.getPropertyValues());
-                            assertEquals(nodeId2, conflict.getAddedNodeId());
+                            assertEquals(nodeId2, conflict.getAddedEntityId());
                         }
                     },
                     false);

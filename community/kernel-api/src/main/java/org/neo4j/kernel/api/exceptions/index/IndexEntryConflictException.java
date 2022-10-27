@@ -20,10 +20,12 @@
 package org.neo4j.kernel.api.exceptions.index;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -33,8 +35,8 @@ import org.neo4j.values.storable.ValueTuple;
 
 public class IndexEntryConflictException extends KernelException {
     private final ValueTuple propertyValues;
-    private final long addedNodeId;
-    private final long existingNodeId;
+    private final long addedEntityId;
+    private final long existingEntityId;
 
     /**
      * Make IOUtils happy
@@ -42,40 +44,60 @@ public class IndexEntryConflictException extends KernelException {
     public IndexEntryConflictException(String message, Throwable cause) {
         super(Status.Schema.ConstraintViolation, message, cause);
         propertyValues = null;
-        addedNodeId = -1;
-        existingNodeId = -1;
+        addedEntityId = -1;
+        existingEntityId = -1;
     }
 
-    public IndexEntryConflictException(long existingNodeId, long addedNodeId, Value... propertyValue) {
-        this(existingNodeId, addedNodeId, ValueTuple.of(propertyValue));
+    public IndexEntryConflictException(
+            EntityType entityType, long existingEntityId, long addedEntityId, Value... propertyValue) {
+        this(entityType, existingEntityId, addedEntityId, ValueTuple.of(propertyValue));
     }
 
-    public IndexEntryConflictException(long existingNodeId, long addedNodeId, ValueTuple propertyValues) {
+    public IndexEntryConflictException(
+            EntityType entityType, long existingEntityId, long addedEntityId, ValueTuple propertyValues) {
         super(
                 Status.Schema.ConstraintViolation,
-                "Both node %d and node %d share the property value %s",
-                existingNodeId,
-                addedNodeId,
+                "Both %s %d and %s %d share the property value %s",
+                entityType == NODE ? "node" : "relationship",
+                existingEntityId,
+                entityType == NODE ? "node" : "relationship",
+                addedEntityId,
                 propertyValues);
-        this.existingNodeId = existingNodeId;
-        this.addedNodeId = addedNodeId;
+        this.existingEntityId = existingEntityId;
+        this.addedEntityId = addedEntityId;
         this.propertyValues = propertyValues;
     }
 
     public String evidenceMessage(TokenNameLookup tokenNameLookup, SchemaDescriptor schema) {
         assert schema.getPropertyIds().length == propertyValues.size();
 
-        String labelName = Arrays.stream(schema.getEntityTokenIds())
-                .mapToObj(tokenNameLookup::labelGetName)
-                .collect(Collectors.joining("`, `", "`", "`"));
-        if (addedNodeId == NO_SUCH_NODE) {
+        String entityName;
+        String tokenName;
+        if (schema.entityType() == NODE) {
+            entityName = "Node";
+            tokenName = Arrays.stream(schema.getEntityTokenIds())
+                    .mapToObj(tokenNameLookup::labelGetName)
+                    .collect(Collectors.joining("`, `", "label `", "`"));
+        } else {
+            entityName = "Relationship";
+            tokenName = Arrays.stream(schema.getEntityTokenIds())
+                    .mapToObj(tokenNameLookup::relationshipTypeGetName)
+                    .collect(Collectors.joining("`, `", "relationship type `", "`"));
+        }
+
+        if (addedEntityId == NO_SUCH_ENTITY) {
             return format(
-                    "Node(%d) already exists with label %s and %s",
-                    existingNodeId, labelName, propertyString(tokenNameLookup, schema.getPropertyIds()));
+                    "%s(%d) already exists with %s and %s",
+                    entityName, existingEntityId, tokenName, propertyString(tokenNameLookup, schema.getPropertyIds()));
         } else {
             return format(
-                    "Both Node(%d) and Node(%d) have the label %s and %s",
-                    existingNodeId, addedNodeId, labelName, propertyString(tokenNameLookup, schema.getPropertyIds()));
+                    "Both %s(%d) and %s(%d) have the %s and %s",
+                    entityName,
+                    existingEntityId,
+                    entityName,
+                    addedEntityId,
+                    tokenName,
+                    propertyString(tokenNameLookup, schema.getPropertyIds()));
         }
     }
 
@@ -87,12 +109,12 @@ public class IndexEntryConflictException extends KernelException {
         return propertyValues.getOnlyValue();
     }
 
-    public long getAddedNodeId() {
-        return addedNodeId;
+    public long getAddedEntityId() {
+        return addedEntityId;
     }
 
-    public long getExistingNodeId() {
-        return existingNodeId;
+    public long getExistingEntityId() {
+        return existingEntityId;
     }
 
     @Override
@@ -106,8 +128,8 @@ public class IndexEntryConflictException extends KernelException {
 
         IndexEntryConflictException that = (IndexEntryConflictException) o;
 
-        return addedNodeId == that.addedNodeId
-                && existingNodeId == that.existingNodeId
+        return addedEntityId == that.addedEntityId
+                && existingEntityId == that.existingEntityId
                 && !(propertyValues != null
                         ? !propertyValues.equals(that.propertyValues)
                         : that.propertyValues != null);
@@ -116,17 +138,17 @@ public class IndexEntryConflictException extends KernelException {
     @Override
     public int hashCode() {
         int result = propertyValues != null ? propertyValues.hashCode() : 0;
-        result = 31 * result + (int) (addedNodeId ^ (addedNodeId >>> 32));
-        result = 31 * result + (int) (existingNodeId ^ (existingNodeId >>> 32));
+        result = 31 * result + (int) (addedEntityId ^ (addedEntityId >>> 32));
+        result = 31 * result + (int) (existingEntityId ^ (existingEntityId >>> 32));
         return result;
     }
 
     @Override
     public String toString() {
         return "IndexEntryConflictException{" + "propertyValues="
-                + propertyValues + ", addedNodeId="
-                + addedNodeId + ", existingNodeId="
-                + existingNodeId + '}';
+                + propertyValues + ", addedEntityId="
+                + addedEntityId + ", existingEntityId="
+                + existingEntityId + '}';
     }
 
     private String propertyString(TokenNameLookup tokenNameLookup, int[] propertyIds) {

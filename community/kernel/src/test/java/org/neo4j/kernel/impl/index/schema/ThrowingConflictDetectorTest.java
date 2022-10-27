@@ -25,13 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.ValueMerger.MergeResult;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 class ThrowingConflictDetectorTest {
-    private final ThrowingConflictDetector<RangeKey> detector = new ThrowingConflictDetector<>(true);
+    private final ThrowingConflictDetector<RangeKey> detector = new ThrowingConflictDetector<>(true, EntityType.NODE);
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds() {
@@ -47,8 +48,8 @@ class ThrowingConflictDetectorTest {
         // then
         assertSame(MergeResult.UNCHANGED, mergeResult);
         var e = assertThrows(IndexEntryConflictException.class, () -> detector.checkConflict(array(value)));
-        assertEquals(entityId1, e.getExistingNodeId());
-        assertEquals(entityId2, e.getAddedNodeId());
+        assertEquals(entityId1, e.getExistingEntityId());
+        assertEquals(entityId2, e.getAddedEntityId());
         assertEquals(value, e.getSinglePropertyValue());
     }
 

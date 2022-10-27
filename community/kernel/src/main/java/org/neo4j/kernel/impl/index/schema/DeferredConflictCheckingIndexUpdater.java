@@ -98,7 +98,8 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater {
                         long firstEntityId = client.next();
                         if (client.hasNext()) {
                             long secondEntityId = client.next();
-                            throw new IndexEntryConflictException(firstEntityId, secondEntityId, tuple);
+                            throw new IndexEntryConflictException(
+                                    indexDescriptor.schema().entityType(), firstEntityId, secondEntityId, tuple);
                         }
                     }
                 }
