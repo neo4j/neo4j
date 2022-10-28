@@ -286,7 +286,7 @@ case class QueryGraph(
       quantifiedPathPatterns.flatMap(_.pattern.allKnownPropertiesOnIdentifier(idName))
 
   def coveredIdsForPatterns: Set[String] = {
-    val patternRelIds = patternRelationships.flatMap(_.coveredIds)
+    val patternRelIds = nodeConnections.flatMap(_.coveredIds)
     patternNodes ++ patternRelIds
   }
 
