@@ -32,17 +32,9 @@ import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues
 
-class ConstantCachedInTest extends CachedInTest {
-  override def createPredicate(lhs: Variable, rhs: Expression): Predicate = ConstantCachedIn(lhs, rhs, Id.INVALID_ID)
-}
+class CachedInTest extends CypherFunSuite {
 
-class DynamicConstantInTest extends CachedInTest {
-  override def createPredicate(lhs: Variable, rhs: Expression): Predicate = DynamicCachedIn(lhs, rhs, Id.INVALID_ID)
-}
-
-abstract class CachedInTest extends CypherFunSuite {
-
-  protected def createPredicate(lhs: Variable, rhs: Expression): Predicate
+  protected def createPredicate(lhs: Variable, rhs: Expression): Predicate = CachedIn(lhs, rhs, Id.INVALID_ID)
 
   test("tests") {
     // given

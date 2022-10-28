@@ -26,20 +26,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.operations.CypherFunctions
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
-
-import scala.collection.mutable
 
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
  */
-case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
+case class CachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
 
-  // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
     val listValue = list(ctx, state)
     if (listValue eq Values.NO_VALUE) {
@@ -69,72 +63,5 @@ case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends
   override def arguments: Seq[Expression] = Seq(list)
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(ConstantCachedIn(value.rewrite(f), list.rewrite(f), id))
-}
-
-object EvaluateIn {
-  // Boolean boxing was showing up in micro benchmarks
-  private[this] val someFalse = Some(false)
-  private[this] val someTrue = Some(true)
-
-  def apply(value: AnyValue, list: ListValue): Option[Boolean] = {
-    CypherFunctions.in(value, list) match {
-      case BooleanValue.FALSE => someFalse
-      case BooleanValue.TRUE  => someTrue
-      case Values.NO_VALUE    => None
-    }
-  }
-}
-
-class ReferenceCacheKey(private val reference: AnyRef) {
-
-  override def equals(other: Any): Boolean = other match {
-    case otherCacheKey: ReferenceCacheKey => reference eq otherCacheKey.reference
-    case _                                => false
-  }
-
-  override def hashCode(): Int = System.identityHashCode(reference)
-}
-
-class ConcurrentLRUCache[K, V](maxSizePerThread: Int) extends InLRUCache[K, V] {
-
-  private val threadLocalCache =
-    ThreadLocal.withInitial[mutable.ArrayDeque[(K, V)]](() => new mutable.ArrayDeque[(K, V)](maxSizePerThread))
-  override val maxSize: Int = maxSizePerThread
-
-  override def cache: mutable.ArrayDeque[(K, V)] = threadLocalCache.get()
-}
-
-class SingleThreadedLRUCache[K, V](override val maxSize: Int) extends InLRUCache[K, V] {
-  override val cache: mutable.ArrayDeque[(K, V)] = new mutable.ArrayDeque[(K, V)](maxSize)
-}
-
-abstract class InLRUCache[K, V] {
-  def maxSize: Int
-  def cache: mutable.ArrayDeque[(K, V)]
-
-  def getOrElseUpdate(key: K, f: => V): V = {
-    val idx = findIndex(key)
-    val entry =
-      if (idx == -1) {
-        if (cache.size == maxSize) cache.remove(maxSize - 1)
-        (key, f)
-      } else {
-        cache.remove(idx)
-      }
-    cache.prepend(entry)
-    entry._2
-  }
-
-  // Boxing of booleans showed up in micro benchmarks when using the scala method
-  private def findIndex(key: K): Int = {
-    var i = 0
-    while (i < cache.size) {
-      if (cache(i)._1 == key) {
-        return i
-      }
-      i += 1
-    }
-    -1
-  }
+    f(CachedIn(value.rewrite(f), list.rewrite(f), id))
 }

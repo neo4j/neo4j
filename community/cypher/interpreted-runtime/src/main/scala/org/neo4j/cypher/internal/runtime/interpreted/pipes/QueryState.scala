@@ -31,12 +31,10 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
+import org.neo4j.cypher.operations.InCache
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -57,7 +55,7 @@ class QueryState(
   val memoryTrackerForOperatorProvider: MemoryTrackerForOperatorProvider,
   val decorator: PipeDecorator = NullPipeDecorator,
   val initialContext: Option[CypherRow] = None,
-  val cachedIn: InLRUCache[Any, InCheckContainer] = createDefaultInCache(),
+  val cachedIn: InCache = createDefaultInCache(),
   val lenientCreateRelationship: Boolean = false,
   val prePopulateResults: Boolean = false,
   val input: InputDataStream = NoInput
@@ -237,9 +235,7 @@ class QueryState(
   override def close(): Unit = {
     if (!_closed) {
       cursors.close()
-      cachedIn.cache.foreach {
-        case (f, g) => g.checker.close()
-      }
+      cachedIn.close()
       query.close()
     }
     _closed = true
@@ -252,7 +248,7 @@ object QueryState {
 
   val inCacheMaxSize: Int = 16
 
-  def createDefaultInCache(): InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = inCacheMaxSize)
+  def createDefaultInCache(): InCache = new InCache(inCacheMaxSize)
 
   def apply(
     query: QueryContext,
@@ -268,7 +264,7 @@ object QueryState {
     doProfile: Boolean,
     decorator: PipeDecorator,
     initialContext: Option[CypherRow],
-    cachedIn: InLRUCache[Any, InCheckContainer],
+    cachedIn: InCache,
     lenientCreateRelationship: Boolean,
     prePopulateResults: Boolean,
     input: InputDataStream
@@ -307,7 +303,7 @@ object QueryState {
     queryHeapHighWatermarkTracker: QueryMemoryTracker,
     decorator: PipeDecorator,
     initialContext: Option[CypherRow],
-    cachedIn: InLRUCache[Any, InCheckContainer],
+    cachedIn: InCache,
     lenientCreateRelationship: Boolean,
     prePopulateResults: Boolean,
     input: InputDataStream
