@@ -648,7 +648,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
   test("Should plan quantified path pattern with a WHERE clause with references to previous MATCH") {
     val query =
-      "MATCH (a) WITH a.prop AS prop SKIP 0 MATCH ((n)-[]->(m) WHERE n.prop > prop)+ RETURN n, m" // TODO remove SKIP 0
+      "MATCH (a) WITH a.prop AS prop MATCH ((n)-[]->(m) WHERE n.prop > prop)+ RETURN n, m"
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[]->(m))+` = TrailParameters(
@@ -674,7 +674,40 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.|.argument("m", "prop")
         .|.allNodeScan("anon_2", "prop")
         .projection("a.prop AS prop")
-        .skip(0)
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should plan quantified path pattern with a WHERE clause with multiple references to previous MATCH") {
+    val query = "MATCH (a), (b) MATCH (a) ((n)-[r]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b) RETURN n, m"
+
+    val plan = planner.plan(query).stripProduceResults
+    val `((n)-[r]->(m))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "b",
+      end = "anon_9",
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .filter("anon_9 = a")
+        .trail(`((n)-[r]->(m))+`)
+        .|.filter("cacheNFromStore[n.prop] > cacheN[a.prop]", "cacheNFromStore[n.prop] > cacheN[b.prop]")
+        .|.expandAll("(m)<-[r]-(n)")
+        .|.argument("m", "a", "b")
+        .cartesianProduct()
+        .|.cacheProperties("cacheNFromStore[b.prop]")
+        .|.allNodeScan("b")
+        .cacheProperties("cacheNFromStore[a.prop]")
         .allNodeScan("a")
         .build()
     )

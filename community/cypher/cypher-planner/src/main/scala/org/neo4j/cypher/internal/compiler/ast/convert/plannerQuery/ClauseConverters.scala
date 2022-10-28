@@ -473,10 +473,24 @@ object ClauseConverters {
   ): PlannerQueryBuilder = {
     val patternContent = clause.pattern.destructed(anonymousVariableNameGenerator)
 
+    def qppHasDependencyToPreviousClauses: Boolean = {
+      val qppDependencies = patternContent.quantifiedPathPatterns.flatMap(_.dependencies).toSet
+      val availableVars = acc.currentlyAvailableVariables
+      qppDependencies.intersect(availableVars).nonEmpty
+    }
+
+    // If a QPP depends on a variable from a previous clause, we need to insert a horizon.
+    val accWithMaybeHorizon =
+      if (qppHasDependencyToPreviousClauses)
+        acc
+          .withHorizon(PassthroughAllHorizon())
+          .withTail(RegularSinglePlannerQuery(QueryGraph()))
+      else acc
+
     val selections = asSelections(clause.where)
 
     if (clause.optional) {
-      acc.amendQueryGraph { qg =>
+      accWithMaybeHorizon.amendQueryGraph { qg =>
         qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
@@ -491,7 +505,7 @@ object ClauseConverters {
         )
       }
     } else {
-      acc.amendQueryGraph {
+      accWithMaybeHorizon.amendQueryGraph {
         qg =>
           qg
             .addSelections(selections)
