@@ -123,16 +123,6 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
-    public void freezeLocks() {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
-    public void thawLocks() {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
     public CursorFactory cursors() {
         throw new UnsupportedOperationException("not implemented");
     }

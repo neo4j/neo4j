@@ -646,10 +646,6 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def databaseId: NamedDatabaseId
 
-  def freezeLocks(): Unit
-
-  def thawLocks(): Unit
-
   @VisibleForTesting
   def validateSameDB[E <: Entity](entity: E): Unit
 

@@ -73,7 +73,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -110,7 +109,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.locking.FrozenLockClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
@@ -190,7 +188,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
     private OverridableSecurityContext overridableSecurityContext;
-    private volatile Locks.Client lockClient;
+    private final Locks.Client lockClient;
     private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;
     private volatile boolean closing;
@@ -920,7 +918,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if (hasChanges()) {
                 schemaTransactionVersionReset();
-                forceThawLocks();
                 lockClient.prepareForCommit();
 
                 // Gather up commands from the various sources
@@ -1067,35 +1064,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return operations.locks();
     }
 
-    @Override
-    public void freezeLocks() {
-        Locks.Client locks = lockClient;
-        if (!(locks instanceof FrozenLockClient)) {
-            this.lockClient = new FrozenLockClient(locks);
-        } else {
-            ((FrozenLockClient) locks).freeze();
-        }
-    }
-
-    @Override
-    public void thawLocks() throws LocksNotFrozenException {
-        Locks.Client locks = lockClient;
-        if (locks instanceof FrozenLockClient frozenLocks) {
-            if (frozenLocks.thaw()) {
-                lockClient = frozenLocks.getRealLockClient();
-            }
-        } else {
-            throw new LocksNotFrozenException();
-        }
-    }
-
-    private void forceThawLocks() {
-        Locks.Client locks = lockClient;
-        if (locks instanceof FrozenLockClient) {
-            lockClient = ((FrozenLockClient) locks).getRealLockClient();
-        }
-    }
-
     public Locks.Client lockClient() {
         assertOpen();
         return lockClient;
@@ -1159,7 +1127,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void reset() {
         terminationReleaseLock.lock();
         try {
-            forceThawLocks();
             lockClient.close();
             terminationReason = null;
             type = null;

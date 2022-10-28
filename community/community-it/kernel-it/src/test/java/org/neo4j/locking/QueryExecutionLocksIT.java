@@ -60,7 +60,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -763,16 +762,6 @@ class QueryExecutionLocksIT {
         @Override
         public Locks locks() {
             return locks;
-        }
-
-        @Override
-        public void freezeLocks() {
-            internal.freezeLocks();
-        }
-
-        @Override
-        public void thawLocks() throws LocksNotFrozenException {
-            internal.thawLocks();
         }
 
         @Override

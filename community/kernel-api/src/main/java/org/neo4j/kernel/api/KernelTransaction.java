@@ -40,9 +40,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.LocksNotFrozenException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
@@ -175,24 +173,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return The lock operations of the graph.
      */
     Locks locks();
-
-    /**
-     * Forbid acquisition and releasing of locks on this transaction. Any call through the kernel API that
-     * requires a lock to be acquired or released will throw a {@link FrozenLocksException}. Calling `freezeLocks`
-     * several times will nest the freezing.
-     *
-     * A transaction can be opened to new lock interactions again by calling {@link KernelTransaction#thawLocks()}
-     * once for every freeze.
-     */
-    void freezeLocks();
-
-    /**
-     * Allow acquisition and releasing of locks on this transaction. Thaws one nesting of {@link KernelTransaction#freezeLocks()},
-     * which restores the Transaction to normal operation if there has been the same number of freeze and thaw calls.
-     *
-     * @throws LocksNotFrozenException if the locks were not frozen.
-     */
-    void thawLocks() throws LocksNotFrozenException;
 
     /**
      * @return The cursor factory

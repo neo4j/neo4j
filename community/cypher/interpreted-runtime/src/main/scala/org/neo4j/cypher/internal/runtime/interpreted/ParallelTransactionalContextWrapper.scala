@@ -128,10 +128,6 @@ class ParallelTransactionalContextWrapper(
 
   override def contextWithNewTransaction: ParallelTransactionalContextWrapper = unsupported()
 
-  override def freezeLocks(): Unit = tc.kernelTransaction.freezeLocks()
-
-  override def thawLocks(): Unit = tc.kernelTransaction.thawLocks()
-
   override def validateSameDB[E <: Entity](entity: E): Unit = tc.transaction().validateSameDB(entity)
 
   override def kernelTransaction: KernelTransaction = unsupported

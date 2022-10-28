@@ -159,10 +159,6 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
     TransactionalContextWrapper(newTC, threadSafeCursors)
   }
 
-  override def freezeLocks(): Unit = tc.kernelTransaction.freezeLocks()
-
-  override def thawLocks(): Unit = tc.kernelTransaction.thawLocks()
-
   override def validateSameDB[E <: Entity](entity: E): Unit = tc.transaction().validateSameDB(entity)
 
   override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {

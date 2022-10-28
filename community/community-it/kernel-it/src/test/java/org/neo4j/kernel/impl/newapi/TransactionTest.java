@@ -19,7 +19,61 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class TransactionTest extends TransactionTestBase<WriteTestSupport> {
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+
+import org.junit.jupiter.api.Test;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.KernelTransaction;
+
+class TransactionTest extends KernelAPIWriteTestBase<WriteTestSupport> {
+    @Test
+    void shouldRollbackWhenTxIsNotSuccess() throws Exception {
+        // GIVEN
+        long nodeId;
+        int labelId;
+        try (KernelTransaction tx = beginTransaction()) {
+            // WHEN
+            nodeId = tx.dataWrite().nodeCreate();
+            labelId = tx.tokenWrite().labelGetOrCreateForName("labello");
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
+
+            // OBS: not marked as tx.success();
+        }
+
+        // THEN
+        assertNoNode(nodeId);
+    }
+
+    @Test
+    void shouldRollbackWhenTxIsFailed() throws Exception {
+        // GIVEN
+        long nodeId;
+        int labelId;
+        try (KernelTransaction tx = beginTransaction()) {
+            // WHEN
+            nodeId = tx.dataWrite().nodeCreate();
+            labelId = tx.tokenWrite().labelGetOrCreateForName("labello");
+            tx.dataWrite().nodeAddLabel(nodeId, labelId);
+
+            tx.rollback();
+        }
+
+        // THEN
+        assertNoNode(nodeId);
+    }
+
+    // HELPERS
+
+    private static void assertNoNode(long nodeId) throws TransactionFailureException {
+        try (KernelTransaction tx = beginTransaction();
+                NodeCursor cursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT)) {
+            tx.dataRead().singleNode(nodeId, cursor);
+            assertFalse(cursor.next());
+        }
+    }
+
     @Override
     public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();

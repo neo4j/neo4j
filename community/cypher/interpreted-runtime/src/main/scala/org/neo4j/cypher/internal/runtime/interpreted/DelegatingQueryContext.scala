@@ -711,10 +711,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def memoryTracker: MemoryTracker = inner.memoryTracker
 
-  override def freezeLocks(): Unit = inner.freezeLocks()
-
-  override def thawLocks(): Unit = inner.thawLocks()
-
   override def validateSameDB[E <: Entity](entity: E): Unit = inner.validateSameDB(entity)
 
   override def elementIdMapper(): ElementIdMapper = inner.elementIdMapper()
