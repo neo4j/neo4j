@@ -973,8 +973,15 @@ case class LogicalPlanProducer(
     previouslyBoundRelationshipGroups: Set[String]
   ): LogicalPlan = {
 
+    val innerPlanSolvedQG = solveds.get(innerPlan.id).asSinglePlannerQuery.queryGraph
+    // We added this argument in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
+    val innerPlanSolvedQGWithFixedArgs =
+      innerPlanSolvedQG.withArgumentIds(innerPlanSolvedQG.argumentIds - startBinding.inner)
+
+    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQGWithFixedArgs)
+
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-      .addQuantifiedPathPattern(pattern)
+      .addQuantifiedPathPattern(solvedPattern)
       .addPredicates(predicates: _*))
 
     val providedOrder = providedOrders.get(source.id).fromLeft
