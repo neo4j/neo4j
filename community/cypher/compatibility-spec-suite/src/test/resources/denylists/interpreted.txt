@@ -9,3 +9,6 @@ Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested f
 Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"
 Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"
 Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"
+
+// TODO Unmute when openCypher has been released
+?Feature "Aggregation5 - Collect": Scenario "OPTIONAL MATCH and `collect()` on node property"
