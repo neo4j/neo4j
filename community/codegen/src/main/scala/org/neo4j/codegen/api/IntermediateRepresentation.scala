@@ -1043,6 +1043,34 @@ object IntermediateRepresentation {
       )
     )
 
+  def privateMethod[OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9](name: String)(
+    implicit out: Manifest[OUT],
+    in1: Manifest[IN1],
+    in2: Manifest[IN2],
+    in3: Manifest[IN3],
+    in4: Manifest[IN4],
+    in5: Manifest[IN5],
+    in6: Manifest[IN6],
+    in7: Manifest[IN7],
+    in8: Manifest[IN8],
+    in9: Manifest[IN9]
+  ): PrivateMethod =
+    PrivateMethod(
+      typeRef(out),
+      name,
+      Seq(
+        typeRef(in1),
+        typeRef(in2),
+        typeRef(in3),
+        typeRef(in4),
+        typeRef(in5),
+        typeRef(in6),
+        typeRef(in7),
+        typeRef(in8),
+        typeRef(in9)
+      )
+    )
+
   def param[TYPE](name: String)(implicit typ: Manifest[TYPE]): Parameter = Parameter(typeRef(typ), name)
 
   def param(name: String, typeReference: TypeReference): Parameter = Parameter(typeReference, name)
