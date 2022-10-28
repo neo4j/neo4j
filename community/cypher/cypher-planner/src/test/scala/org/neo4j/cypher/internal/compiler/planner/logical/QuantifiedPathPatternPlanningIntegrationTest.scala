@@ -646,6 +646,40 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
   }
 
+  test("Should plan quantified path pattern with a WHERE clause with references to previous MATCH") {
+    val query =
+      "MATCH (a) WITH a.prop AS prop SKIP 0 MATCH ((n)-[]->(m) WHERE n.prop > prop)+ RETURN n, m" // TODO remove SKIP 0
+
+    val plan = planner.plan(query).stripProduceResults
+    val `((n)-[]->(m))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_2",
+      end = "anon_0",
+      innerStart = "m",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("anon_4", "anon_8")),
+      innerRelationships = Set("anon_4"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .apply()
+        .|.trail(`((n)-[]->(m))+`)
+        .|.|.filter("n.prop > prop")
+        .|.|.expandAll("(m)<-[anon_4]-(n)")
+        .|.|.argument("m", "prop")
+        .|.allNodeScan("anon_2", "prop")
+        .projection("a.prop AS prop")
+        .skip(0)
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
   test("Should plan quantified path pattern with inlined predicates") {
     val query = "MATCH (:User) ((n:N&NN {prop: 5} WHERE n.foo > 0)-[r:!REL WHERE r.prop > 0]->(m))+ RETURN n, m"
 
@@ -705,7 +739,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .filter("anon_8 = m")
         .trail(`(n)((n_inner)-[r_inner]->(m_inner))+ (m)`)
         .|.expandAll("(n_inner)-[r_inner]->(m_inner)")
-        .|.argument("n_inner")
+        .|.argument("n_inner", "m", "n")
         .skip(1)
         .cartesianProduct()
         .|.allNodeScan("m")

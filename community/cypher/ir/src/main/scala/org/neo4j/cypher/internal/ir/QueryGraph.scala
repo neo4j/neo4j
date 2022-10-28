@@ -232,6 +232,9 @@ case class QueryGraph(
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patterns)
 
+  def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
+    copy(quantifiedPathPatterns = patterns)
+
   def withAddedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patternRelationships ++ patterns)
 

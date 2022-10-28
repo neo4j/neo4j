@@ -122,29 +122,6 @@ object PlannerQueryBuilder {
   def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
     PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
 
-  def inlineRelationshipTypePredicates(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-    plannerQuery.amendQueryGraph { qg =>
-      val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] = findRelationshipTypePredicatesPerSymbol(qg)
-
-      final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
-
-      val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
-        case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
-          if (rel.types.nonEmpty) resultSoFar
-          else {
-            typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
-              Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
-            }
-          }
-      }
-
-      qg.copy(
-        patternRelationships = result.newPatternRelationships,
-        selections = qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates)
-      )
-    }.updateTail(inlineRelationshipTypePredicates)
-  }
-
   private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {
     qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
       // WHERE r:REL
@@ -175,6 +152,13 @@ object PlannerQueryBuilder {
   }
 
   def finalizeQuery(q: SinglePlannerQuery): SinglePlannerQuery = {
+
+    def fixArgumentIds(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = plannerQuery.foldMap {
+      case (head, tail) =>
+        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
+        val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
+        tail.withQueryGraph(newTailGraph)
+    }
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
       val optionalMatches = plannerQuery.queryGraph.optionalMatches
@@ -208,11 +192,16 @@ object PlannerQueryBuilder {
       updatePQ.updateTail(fixArgumentIdsOnMerge)
     }
 
-    val fixedArgumentIds = q.foldMap {
-      case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
-        val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
-        tail.withQueryGraph(newTailGraph)
+    def fixArgumentIdsOnQPPs(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
+      val qpps = plannerQuery.queryGraph.quantifiedPathPatterns
+      val arguments = plannerQuery.queryGraph.argumentIds
+
+      // A QPP can currently only refer to variables from previous clauses,
+      // so we can use the arguments of the current QG
+      val qppsWithArguments = qpps.map(qpp => qpp.copy(pattern = qpp.pattern.withArgumentIds(arguments)))
+      plannerQuery
+        .amendQueryGraph(_.withQuantifiedPathPatterns(qppsWithArguments))
+        .updateTail(fixArgumentIdsOnQPPs)
     }
 
     def groupInequalities(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
@@ -224,6 +213,29 @@ object PlannerQueryBuilder {
             Selections(newPredicates)
         })
         .updateTail(groupInequalities)
+    }
+
+    def inlineRelationshipTypePredicates(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
+      plannerQuery.amendQueryGraph { qg =>
+        val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] = findRelationshipTypePredicatesPerSymbol(qg)
+
+        final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
+
+        val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
+          case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
+            if (rel.types.nonEmpty) resultSoFar
+            else {
+              typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
+                Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
+              }
+            }
+        }
+
+        qg.copy(
+          patternRelationships = result.newPatternRelationships,
+          selections = qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates)
+        )
+      }.updateTail(inlineRelationshipTypePredicates)
     }
 
     def fixStandaloneArgumentPatternNodes(part: SinglePlannerQuery): SinglePlannerQuery = {
@@ -241,10 +253,14 @@ object PlannerQueryBuilder {
         .updateTail(fixStandaloneArgumentPatternNodes)
     }
 
-    val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
-    val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
-    val withInlinedTypePredicates = inlineRelationshipTypePredicates(groupedInequalities)
-    fixStandaloneArgumentPatternNodes(withInlinedTypePredicates)
+    Option(q)
+      .map(fixArgumentIds)
+      .map(fixArgumentIdsOnOptionalMatch)
+      .map(fixArgumentIdsOnMerge)
+      .map(fixArgumentIdsOnQPPs)
+      .map(groupInequalities)
+      .map(inlineRelationshipTypePredicates)
+      .map(fixStandaloneArgumentPatternNodes)
+      .get
   }
 }

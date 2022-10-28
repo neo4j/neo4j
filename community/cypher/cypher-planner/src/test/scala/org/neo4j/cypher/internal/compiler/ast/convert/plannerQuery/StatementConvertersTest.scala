@@ -1927,7 +1927,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             SemanticDirection.OUTGOING,
             Seq.empty,
             SimplePatternLength
-          ))
+          )),
+        argumentIds = Set("a")
       ),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
       nodeVariableGroupings = Set(VariableGrouping(n, n), VariableGrouping(m, m)),
