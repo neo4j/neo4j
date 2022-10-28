@@ -1686,7 +1686,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val combiner = IndependenceCombiner
     val planContext = mockPlanContext(stats)
     val calculator = ExpressionSelectivityCalculator(
-      planContext,
+      planContext.statistics,
       combiner,
       planningTextIndexesEnabled,
       planningRangeIndexesEnabled,

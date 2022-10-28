@@ -90,7 +90,7 @@ case class CompositeExpressionSelectivityCalculator(
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
   private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(
-    planContext,
+    planContext.statistics,
     combiner,
     planningTextIndexesEnabled,
     planningRangeIndexesEnabled,

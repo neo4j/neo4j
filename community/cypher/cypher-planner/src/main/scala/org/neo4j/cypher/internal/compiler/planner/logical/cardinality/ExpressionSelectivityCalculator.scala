@@ -78,10 +78,10 @@ import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
@@ -94,14 +94,12 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.StringType
 
 case class ExpressionSelectivityCalculator(
-  planContext: PlanContext,
+  stats: GraphStatistics,
   combiner: SelectivityCombiner,
   planningTextIndexesEnabled: Boolean,
   planningRangeIndexesEnabled: Boolean,
   planningPointIndexesEnabled: Boolean
 ) {
-
-  private val stats = planContext.statistics
 
   /**
    * Index type priority to be used to calculate selectivities of exists predicates, given that a substring predicate is used.
