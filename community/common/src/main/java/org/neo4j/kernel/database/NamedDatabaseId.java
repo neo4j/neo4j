@@ -21,7 +21,6 @@ package org.neo4j.kernel.database;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -83,7 +82,7 @@ public class NamedDatabaseId implements Comparable<NamedDatabaseId> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(databaseId);
+        return databaseId.hashCode();
     }
 
     @Override
