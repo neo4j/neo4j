@@ -468,6 +468,18 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
+  test("MATCH (a), (b) MATCH (a) ((n)-[]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (a), (b) MATCH (a2) ((n)-[]->(m) WHERE ALL(a IN n.prop WHERE a > 2) )+ (b2) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH (a) ((n)-[]->(m) WHERE ALL(a IN n.prop WHERE a > 2) )+ (b) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
   // access group variables without aggregation
   test("MATCH (x)-->(y)((a)-[e]->(b))+(s)-->(u) WHERE e.weight < 4 RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(

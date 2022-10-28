@@ -322,7 +322,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           withScopedStateWithVariablesFromRecordedScope(q) {
             // Here we import the variables from the previously recorded scope when we did all declarations.
             check(ctx)(pattern) chain
-              q.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
+              q.optionalWhereExpression.foldSemanticCheck(Where.checkExpression) chain
+              recordCurrentScope(q) // We need to overwrite the recorded scope of q for later checks.
           }
 
       case ParenthesizedPath(NamedPatternPart(variable, _)) =>
@@ -569,23 +570,28 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def ensureNoReferencesOutFromQuantifiedPath(pattern: Pattern): SemanticCheck = {
     val quantifiedPathPatterns = pattern.patternParts.flatMap(_.element.folder.findAllByClass[QuantifiedPath])
-    quantifiedPathPatterns.foldSemanticCheck { qpp =>
-      val definitionsInQpp = qpp.allVariables
+    quantifiedPathPatterns.foldSemanticCheck { qpp => (state: SemanticState) =>
+      val qppScope = state.recordedScopes(qpp)
 
-      val definitionsInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
+      val qppDependencies = qppScope.declarationsAndDependencies.dependencies
 
-      val definitionsOutsideQpp = definitionsInPattern.diff(definitionsInQpp)
+      // Since we don't open a new scope for a new MATCH clause,
+      // this may contain declarations from previous MATCH clauses.
+      val declarationsInCurrentScope = state.currentScope.declarationsAndDependencies.declarations
 
-      val referencesInQpp = qpp.folder.findAllByClass[LogicalVariable]
-      val crossReferences = referencesInQpp.filter(definitionsOutsideQpp.contains)
-      crossReferences.foldSemanticCheck { variable =>
+      val variablesInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
+      val declarationsInPattern = variablesInPattern.map(SymbolUse(_)).filter(declarationsInCurrentScope)
+
+      val referencesFromQppToPattern = qppDependencies.intersect(declarationsInPattern).toSeq
+      val errors = referencesFromQppToPattern.map { symbolUse =>
         val stringifiedQpp = stringifier.patterns(qpp)
-        error(
+        SemanticError(
           s"""From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-             |In this case, ${variable.name} is defined in the same `MATCH` clause as $stringifiedQpp.""".stripMargin,
-          variable.position
+             |In this case, ${symbolUse.name} is defined in the same `MATCH` clause as $stringifiedQpp.""".stripMargin,
+          symbolUse.asVariable.position
         )
       }
+      SemanticCheckResult(state, errors)
     }
   }
 
