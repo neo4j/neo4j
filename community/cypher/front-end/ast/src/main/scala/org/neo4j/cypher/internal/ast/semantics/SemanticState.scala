@@ -57,7 +57,7 @@ final case class SymbolUse(use: Ref[LogicalVariable]) {
    *         A use of a different variable by reference equality will get a different name.
    *         The String includes the name and position of the variable.
    */
-  private[semantics] def uniqueName: String = s"${asVariable.name}@${asVariable.position.offset}(${use.id})"
+  private[semantics] def uniqueName: String = s"${asVariable.name}@${asVariable.position.offset}(${use.toIdString})"
 
   /**
    * @return The position of the variable and a unique id.
