@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
@@ -1300,6 +1301,15 @@ public final class CypherFunctions {
         }
 
         return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+    }
+
+    @CalledFromGeneratedCode
+    public static Value in(AnyValue findMe, AnyValue lookIn, InCache cache, MemoryTracker memoryTracker) {
+        if (lookIn == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        return cache.check(findMe, asList(lookIn), memoryTracker);
     }
 
     @CalledFromGeneratedCode
