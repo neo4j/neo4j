@@ -453,6 +453,13 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     )
   }
 
+  test("MATCH p=(x)-->(y), ((a)-[e]->(b {h: nodes(p)[0].prop}))* (s)-->(u) RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, p is defined in the same `MATCH` clause as ((a)-[e]->(b {h: (nodes(p)[0]).prop}))*.""".stripMargin
+    )
+  }
+
   test("MATCH (x)-->(y) MATCH (y) ((a)-[e]->(b {h: x.h}))* (s)-->(u) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }

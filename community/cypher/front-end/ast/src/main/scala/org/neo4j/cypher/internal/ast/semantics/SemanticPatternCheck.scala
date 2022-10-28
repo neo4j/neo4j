@@ -572,7 +572,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     quantifiedPathPatterns.foldSemanticCheck { qpp =>
       val definitionsInQpp = qpp.allVariables
 
-      val definitionsInPattern = pattern.patternParts.flatMap(_.element.allVariables).toSet
+      val definitionsInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
 
       val definitionsOutsideQpp = definitionsInPattern.diff(definitionsInQpp)
 
