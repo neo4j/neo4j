@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
@@ -56,18 +56,20 @@ case class LogicalPlanningContext(
   metrics: Metrics,
   semanticTable: SemanticTable,
   strategy: QueryGraphSolver,
-  predicatesAsUnionMaxSize: Int,
+  predicatesAsUnionMaxSize: Int = GraphDatabaseInternalSettings.predicates_as_union_max_size.defaultValue(),
   input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
   // When planning tails, this gives contextual information about the plan of the so-far solved
   // query graphs, which will be connected with an Apply with the tail-query graph plan.
   outerPlan: Option[LogicalPlan] = None,
   isInSubquery: Boolean = false,
   notificationLogger: InternalNotificationLogger,
-  useErrorsOverWarnings: Boolean = false,
-  errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
-  errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
-  legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
-  csvBufferSize: Int = 2 * 1024 * 1024,
+  useErrorsOverWarnings: Boolean = GraphDatabaseSettings.cypher_hints_error.defaultValue(),
+  errorIfShortestPathFallbackUsedAtRuntime: Boolean =
+    GraphDatabaseSettings.forbid_exhaustive_shortestpath.defaultValue(),
+  errorIfShortestPathHasCommonNodesAtRuntime: Boolean =
+    GraphDatabaseSettings.forbid_shortestpath_common_nodes.defaultValue(),
+  legacyCsvQuoteEscaping: Boolean = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
+  csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
   updateStrategy: UpdateStrategy = defaultUpdateStrategy,
   planningAttributes: PlanningAttributes,
