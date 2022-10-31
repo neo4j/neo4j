@@ -113,6 +113,12 @@ case class QueryOptions(
   def withExecutionMode(executionMode: CypherExecutionMode): QueryOptions =
     copy(queryOptions = queryOptions.copy(executionMode = executionMode))
 
+  /**
+   * Even though the materializedEntitiesMode does influence planning,
+   * it is not included in the cache key for 2 reasons.
+   * - The option is only true iff running a Fabric query and a fabric query cannot equal a non-Fabric query.
+   * - It would break users of this method since this is expected to be a String that can be parsed back by the pre-parser.
+   */
   def cacheKey: String = {
     val key = queryOptions.cacheKey
     if (key.isBlank) key else "CYPHER " + key
