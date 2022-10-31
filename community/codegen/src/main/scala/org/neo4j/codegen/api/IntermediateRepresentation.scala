@@ -1337,9 +1337,9 @@ object IntermediateRepresentation {
 
   def load[TYPE](variable: String)(implicit typ: Manifest[TYPE]): Load = Load(variable, typeRef(typ))
 
-  def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name, variable.typ)
+  def load(variable: LocalVariable): Load = Load(variable.name, variable.typ)
 
-  def load(parameter: Parameter): IntermediateRepresentation = Load(parameter.name, parameter.typ)
+  def load(parameter: Parameter): Load = Load(parameter.name, parameter.typ)
 
   def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]): Cast = Cast(typeRef(to), expression)
 

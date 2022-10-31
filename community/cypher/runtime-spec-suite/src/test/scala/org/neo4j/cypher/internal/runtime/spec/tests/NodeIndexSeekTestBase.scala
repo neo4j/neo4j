@@ -1526,6 +1526,29 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  testWithIndex(_.supports(EXACT), s"should support filter in in the same pipeline") { index =>
+    val propertyType = randomAmong(index.querySupport(EXACT))
+    val nodes = given(randomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("1 IN [1,2,3]")
+      .nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        paramExpr = Some(toExpression(lookFor)),
+        indexType = index.indexType
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter(propFilter(equalTo(lookFor)))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
   private def propFilter(predicate: Value => Boolean): Node => Boolean = {
     n => n.hasProperty("prop") && predicate.apply(asValue(n.getProperty("prop")))
   }
