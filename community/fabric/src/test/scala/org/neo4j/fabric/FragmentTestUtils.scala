@@ -24,7 +24,6 @@ import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
