@@ -836,29 +836,26 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setAllNodesCardinality(160)
       .setAllRelationshipsCardinality(1000)
       .setLabelCardinality("B", 100)
-      .setLabelCardinality("C", 60)
+      .setLabelCardinality("C", 10)
       .setRelationshipCardinality("(:B)-[:R]->(:C)", 2)
-      .setRelationshipCardinality("(:B)-[:R]->(:B)", 2)
       .setRelationshipCardinality("(:B)-[:R]->()", 2)
-      .setRelationshipCardinality("()-[:R]->(:C)", 400)
-      .setRelationshipCardinality("(:C)-[:R]->(:C)", 400)
-      .setRelationshipCardinality("(:C)-[:R]->(:B)", 400)
-      .setRelationshipCardinality("()-[:R]->()", 1000)
+      .setRelationshipCardinality("()-[:R]->(:C)", 500)
+      .setRelationshipCardinality("()-[:R]->()", 500)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
-    val query = "MATCH (b1:B) ( (b2:B)-[r:R]->(c2:C) ){3} (c1:C) RETURN *"
+    val query = "MATCH (b:B) ( (x)-[r:R]->(y) ){3} (c:C) RETURN *"
 
     val plan = planner.plan(query).stripProduceResults
 
     val trailParameters = TrailParameters(
       min = 3,
       max = UpperBound.Limited(3),
-      start = "b1",
-      end = "c1",
-      innerStart = "b2",
-      innerEnd = "c2",
-      groupNodes = Set(("b2", "b2"), ("c2", "c2")),
+      start = "b",
+      end = "c",
+      innerStart = "x",
+      innerEnd = "y",
+      groupNodes = Set(("x", "x"), ("y", "y")),
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set(),
@@ -866,13 +863,11 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
 
     plan shouldBe planner.subPlanBuilder()
-      .filter("c1:C")
+      .filter("c:C")
       .trail(trailParameters)
-      .|.filter("c2:C")
-      .|.expandAll("(b2)-[r:R]->(c2)")
-      .|.filter("b2:B")
-      .|.argument("b2")
-      .nodeByLabelScan("b1", "B")
+      .|.expandAll("(x)-[r:R]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("b", "B")
       .build()
   }
 
