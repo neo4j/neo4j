@@ -190,6 +190,8 @@ public final class SettingMigrators {
                 "unsupported.dbms.uris.rest",
                 "unsupported.dbms.reserved.page.header.bytes",
                 "unsupported.dbms.index.default_fulltext_provider",
+                "unsupported.dbms.lock_manager",
+                "internal.dbms.lock_manager",
                 "cypher.default_language_version",
                 "dbms.logs.query.allocation_logging_enabled",
                 "dbms.track_query_allocation",
@@ -508,7 +510,6 @@ public final class SettingMigrators {
                         "unsupported.dbms.io.controller.consider.external.enabled",
                         "internal.dbms.io.controller.consider.external.enabled"),
                 new Mapping("unsupported.dbms.kernel_id", "internal.dbms.kernel_id"),
-                new Mapping("unsupported.dbms.lock_manager", "internal.dbms.lock_manager"),
                 new Mapping(
                         "unsupported.dbms.lock_manager.verbose_deadlocks",
                         "internal.dbms.lock_manager.verbose_deadlocks"),

@@ -21,7 +21,6 @@ package org.neo4j.dbms.database;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -40,8 +39,6 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -53,10 +50,6 @@ public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseCont
     public AbstractDatabaseContextFactory(GlobalModule globalModule, IdContextFactory idContextFactory) {
         this.globalModule = globalModule;
         this.idContextFactory = idContextFactory;
-    }
-
-    public static Supplier<Locks> createLockSupplier(GlobalModule globalModule, LocksFactory lockFactory) {
-        return () -> createLockManager(lockFactory, globalModule.getGlobalConfig(), globalModule.getGlobalClock());
     }
 
     public static TokenHolders createTokenHolderProvider(Supplier<Kernel> kernelSupplier) {

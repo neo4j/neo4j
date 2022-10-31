@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
@@ -93,6 +94,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
@@ -115,6 +118,7 @@ import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -143,6 +147,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
@@ -721,6 +726,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         memoryTracker,
                         contextFactory,
                         indexProvidersAccess);
+    }
+
+    @Override
+    public Locks createLocks(Config config, SystemNanoClock clock) {
+        if ("multiversion".equals(config.get(db_format))) {
+            return Locks.NO_LOCKS;
+        }
+        return new ForsetiLockManager(config, clock, ResourceTypes.values());
     }
 
     @Override

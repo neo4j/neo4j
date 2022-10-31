@@ -19,9 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
-
-import java.util.function.Supplier;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -29,19 +26,20 @@ import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactory<StandaloneDatabaseContext> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
-    private final Supplier<Locks> locksSupplier;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
 
@@ -53,8 +51,6 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
             DefaultDatabaseContextFactoryComponents components) {
         super(globalModule, idContextFactory);
         this.transactionStatsFactory = transactionStatsFactory;
-        this.locksSupplier = createLockSupplier(
-                globalModule, createLockFactory(globalModule.getGlobalConfig(), globalModule.getLogService()));
         this.commitProcessFactory = commitProcessFactory;
         this.components = components;
     }
@@ -71,21 +67,26 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
         private Creator(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
             var databaseConfig = new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig());
             var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
+            StorageEngineFactory storageEngineFactory = DatabaseCreationContext.selectStorageEngine(
+                    globalModule.getFileSystem(), globalModule.getNeo4jLayout(), databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
                     databaseOptions.mode(),
                     namedDatabaseId,
                     globalModule,
                     globalModule.getGlobalDependencies(),
-                    databaseConfig,
                     contextFactory,
                     new CommunityVersionStorageFactory(),
+                    databaseConfig,
+                    globalModule.getGlobalMonitors(),
+                    LeaseService.NO_LEASES,
+                    storageEngineFactory,
                     new StandardConstraintSemantics(),
                     new CommunityCypherEngineProvider(),
                     transactionStatsFactory.create(),
                     ModularDatabaseCreationContext.defaultFileWatcherFilter(),
                     AccessCapabilityFactory.configDependent(),
                     ExternalIdReuseConditionProvider.NONE,
-                    locksSupplier.get(),
+                    storageEngineFactory.createLocks(globalModule.getGlobalConfig(), globalModule.getGlobalClock()),
                     idContextFactory.createIdContext(namedDatabaseId, contextFactory),
                     commitProcessFactory,
                     createTokenHolderProvider(this::kernel),

@@ -81,11 +81,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.lucene.max_partition_size", INT, null).build();
 
     @Internal
-    @Description("Name of the lock manager to be used, as defined in the corresponding LocksFactory.")
-    public static final Setting<String> lock_manager =
-            newBuilder("internal.dbms.lock_manager", STRING, "forseti").build();
-
-    @Internal
     @Description("Include additional information in deadlock descriptions.")
     public static final Setting<Boolean> lock_manager_verbose_deadlocks = newBuilder(
                     "internal.dbms.lock_manager.verbose_deadlocks", BOOL, false)

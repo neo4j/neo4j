@@ -63,6 +63,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
@@ -73,6 +74,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
 /**
@@ -377,6 +379,8 @@ public interface StorageEngineFactory {
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
             IndexProvidersAccess indexProvidersAccess);
+
+    Locks createLocks(Config config, SystemNanoClock clock);
 
     /**
      * Calculates the optimal amount of memory that this consistency checker would want to have to perform optimally in terms of fitting
