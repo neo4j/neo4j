@@ -49,18 +49,18 @@ object SlotConfigurationUtils {
    * Use this to make a specialized getter function for a slot,
    * that given an ExecutionContext returns an AnyValue.
    */
-  def makeGetValueFromSlotFunctionFor(slot: Slot): CypherRow => AnyValue =
+  def makeGetValueFromSlotFunctionFor(slot: Slot): ReadableRow => AnyValue =
     slot match {
       case LongSlot(offset, false, CTNode) =>
-        (context: CypherRow) =>
+        (context: ReadableRow) =>
           VirtualValues.node(context.getLongAt(offset))
 
       case LongSlot(offset, false, CTRelationship) =>
-        (context: CypherRow) =>
+        (context: ReadableRow) =>
           VirtualValues.relationship(context.getLongAt(offset))
 
       case LongSlot(offset, true, CTNode) =>
-        (context: CypherRow) => {
+        (context: ReadableRow) => {
           val nodeId = context.getLongAt(offset)
           if (nodeId == PRIMITIVE_NULL)
             Values.NO_VALUE
@@ -68,7 +68,7 @@ object SlotConfigurationUtils {
             VirtualValues.node(nodeId)
         }
       case LongSlot(offset, true, CTRelationship) =>
-        (context: CypherRow) => {
+        (context: ReadableRow) => {
           val relId = context.getLongAt(offset)
           if (relId == PRIMITIVE_NULL)
             Values.NO_VALUE
@@ -76,7 +76,7 @@ object SlotConfigurationUtils {
             VirtualValues.relationship(relId)
         }
       case RefSlot(offset, _, _) =>
-        (context: CypherRow) =>
+        (context: ReadableRow) =>
           context.getRefAt(offset)
 
       case _ =>

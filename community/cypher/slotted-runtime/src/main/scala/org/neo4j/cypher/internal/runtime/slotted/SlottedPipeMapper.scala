@@ -142,6 +142,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.isRefSlotAndNotAlias
@@ -1444,7 +1445,8 @@ class SlottedPipeMapper(
           previouslyBoundRelationshipGroups.map(r => lhsSlots(r)),
           slots,
           rhsSlots,
-          argumentSize
+          argumentSize,
+          reverseGroupVariableProjections
         )(id = id)
 
       case _ =>
@@ -1540,6 +1542,7 @@ class SlottedPipeMapper(
           slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
         case (MetaDataSlotKey(k), slot) => slot.offset < argumentSize.nReferences && lhsSlots.hasMetaDataSlot(k)
         case (key: ApplyPlanSlotKey, _) => throw new InternalException(s"Unexpected slot key $key")
+        case (key: OuterNestedApplyPlanSlotKey, _) => throw new InternalException(s"Unexpected slot key $key")
       })
 
     val (sharedLongSlots, sharedRefSlots) = sharedSlots.partition(_.isLongSlot)
@@ -1607,6 +1610,8 @@ class SlottedPipeMapper(
         }
       case SlotWithKeyAndAliases(key: ApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
+      case SlotWithKeyAndAliases(key: OuterNestedApplyPlanSlotKey, _, _) =>
+        throw new InternalException(s"Unexpected slot key $key")
     })
     rhsSlots.foreachSlotAndAliases({
       case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
@@ -1626,6 +1631,8 @@ class SlottedPipeMapper(
           rhsArgRefSlots += (key -> slot)
         }
       case SlotWithKeyAndAliases(key: ApplyPlanSlotKey, _, _) =>
+        throw new InternalException(s"Unexpected slot key $key")
+      case SlotWithKeyAndAliases(key: OuterNestedApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
     })
 
@@ -1695,8 +1702,9 @@ object SlottedPipeMapper {
         toSlots.get(key).foreach { toSlot =>
           slotMappings += SlotMapping(fromSlot.offset, toSlot.offset, fromSlot.isLongSlot, toSlot.isLongSlot)
         }
-      case SlotWithKeyAndAliases(_: VariableSlotKey, _, _)  => // do nothing, part of arguments
-      case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) => // do nothing, part of arguments
+      case SlotWithKeyAndAliases(_: VariableSlotKey, _, _)             => // do nothing, part of arguments
+      case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _)            => // do nothing, part of arguments
+      case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) => // do nothing, part of arguments
       case SlotWithKeyAndAliases(CachedPropertySlotKey(cnp), _, _) =>
         val offset = fromSlots.getCachedPropertyOffsetFor(cnp)
         if (offset >= argumentSize.nReferences) {
@@ -1827,6 +1835,10 @@ object SlottedPipeMapper {
         }
       case (ApplyPlanSlotKey(id), slot) =>
         out.getArgumentSlot(id).map {
+          outArgumentSlot => CopyLongSlot(slot.offset, outArgumentSlot.offset)
+        }
+      case (OuterNestedApplyPlanSlotKey(id), slot) =>
+        out.getNestedArgumentSlot(id).map {
           outArgumentSlot => CopyLongSlot(slot.offset, outArgumentSlot.offset)
         }
     }.flatten

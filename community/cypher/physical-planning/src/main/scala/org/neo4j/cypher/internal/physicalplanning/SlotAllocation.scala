@@ -142,9 +142,11 @@ import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADA
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.NO_ARGUMENT
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotMetaData
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotsAndArgument
+import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.TRAIL_STATE_METADATA_KEY
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
@@ -215,10 +217,10 @@ object SlotAllocation {
     availableExpressionVariables: AvailableExpressionVariables,
     config: CypherRuntimeConfiguration,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    allocateArgumentSlots: Boolean = false
+    allocatePipelinedSlots: Boolean = false
   ): SlotMetaData =
     new SingleQuerySlotAllocator(
-      allocateArgumentSlots,
+      allocatePipelinedSlots,
       breakingPolicy,
       availableExpressionVariables,
       config,
@@ -226,6 +228,7 @@ object SlotAllocation {
     ).allocateSlots(lp, semanticTable, None)
 
   final val LOAD_CSV_METADATA_KEY: String = "csv"
+  final val TRAIL_STATE_METADATA_KEY = "trailState"
 }
 
 /**
@@ -340,7 +343,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           planStack.push((nullable, current))
           val argumentSlots = resultStack.getFirst
           if (allocateArgumentSlots) {
-            argumentSlots.newArgument(current.id)
+            current match {
+              case _: Trail =>
+                // Trail requires 2 arguments: one per incoming LHS row (regular ApplyPlan case), and one per RHS invocation (QPP repetition)
+                argumentSlots.newNestedArgument(current.id)
+                argumentSlots.newArgument(current.id)
+              case _ =>
+                argumentSlots.newArgument(current.id)
+            }
           }
           allocateLhsOfApply(current, nullable, argumentSlots, semanticTable)
           val lhsSlots = allocations.get(left.id)
@@ -925,6 +935,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
         }
         result
 
@@ -948,6 +961,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             result.newMetaData(key)
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+          // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
         }
         result
@@ -973,6 +989,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
+
+          case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
+          // nested apply plan slots are already in the argument, and don't have to be added here
         }
         result
 
@@ -992,6 +1011,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
               result.newMetaData(key)
             case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
+            // apply plan slots are already in the argument, and don't have to be added here
+            case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
             // apply plan slots are already in the argument, and don't have to be added here
           },
           skipFirst = argument.argumentSize
@@ -1046,6 +1067,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             // i.e. if the union sits _under_ the apply with this id
             if (rhs.hasArgumentSlot(id)) {
               result.newArgument(id)
+            }
+          case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(id), _, _) =>
+            // nested apply plan slots need to be copied if both sides have them,
+            // i.e. if the union sits _under_ the trail with this id
+            if (rhs.hasNestedArgumentSlot(id)) {
+              result.newNestedArgument(id)
             }
         })
 
@@ -1102,13 +1129,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         rhs
 
-      case Trail(_, _, _, _, end, _, _, groupNodes, groupRelationships, _, _, _, _) =>
+      case _: Trail =>
         recordArgument(lp)
-        val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
-        result.newLong(end, nullable, CTNode)
-        groupNodes.foreach(n => result.newReference(n.groupName, false, CTList(CTNode)))
-        groupRelationships.foreach(r => result.newReference(r.groupName, false, CTList(CTRelationship)))
-        result
+        breakingPolicy.invoke(lp, rhs, argument.slotConfiguration, applyPlans(lp.id))
 
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
@@ -1134,10 +1157,18 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case _             => lhs.newReference(variableName, true, CTAny)
         }
 
-      case Trail(_, _, _, _, _, innerStart, _, _, _, _, _, _, _) =>
+      case Trail(_, _, _, _, end, innerStart, _, groupNodes, groupRelationships, _, _, _, _) =>
         // The slot for the per-repetition inner node variable of Trail needs to be available as an argument on the RHS of the Trail
         // so we allocate it on the LHS (even though its value will not be needed after the Trail is done).
-        lhs.newLong(innerStart, false, CTNode) // nullable?
+        // Additionally, to avoid copying rows emitted by Trail, all Trail slots are allocated on the LHS.
+
+        lhs.newLong(innerStart, nullable, CTNode)
+        lhs.newLong(end, nullable, CTNode)
+        groupNodes.foreach(n => lhs.newReference(n.groupName, false, CTList(CTNode)))
+        groupRelationships.foreach(r => lhs.newReference(r.groupName, false, CTList(CTRelationship)))
+        if (allocateArgumentSlots) {
+          lhs.newMetaData(TRAIL_STATE_METADATA_KEY)
+        }
 
       case _ =>
     }

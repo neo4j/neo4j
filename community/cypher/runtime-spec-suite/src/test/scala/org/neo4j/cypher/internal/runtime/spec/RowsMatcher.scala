@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
+import org.neo4j.cypher.internal.runtime.spec.RowDiffStringBuilder.PARTIALLY_ORDERED_GROUP_SEPARATOR
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 import org.neo4j.values.SequenceValue
@@ -115,6 +117,14 @@ object NoRowsMatcher extends RowsMatcher {
 abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
 
   protected def matchSorted(expRowsRaw: IndexedSeq[ListValue], gotRowsRaw: IndexedSeq[ListValue]): RowMatchResult = {
+    matchSorted(expRowsRaw, gotRowsRaw, new RowDiffStringBuilder())
+  }
+
+  protected def matchSorted(
+    expRowsRaw: IndexedSeq[ListValue],
+    gotRowsRaw: IndexedSeq[ListValue],
+    diffString: RowDiffStringBuilder
+  ): RowMatchResult = {
 
     def mapRow(mapper: ValueMapper[AnyValue])(row: ListValue): ListValue = {
       val array = new Array[AnyValue](row.length())
@@ -132,7 +142,6 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
 
     var expI = 0
     var gotI = 0
-    val diffString = new RowDiffStringBuilder()
     var matchStreak = 0
 
     while (expI < expRows.size && gotI < gotRows.size) {
@@ -189,6 +198,58 @@ case class EqualInAnyOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder
     val sortedExpected = expected.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
     val sortedRows = rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
     matchSorted(sortedExpected, sortedRows)
+  }
+
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
+    Rows.pretty(rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
+}
+
+case class EqualInPartialOrder(expecteds: IndexedSeq[IndexedSeq[Array[AnyValue]]], listInAnyOrder: Boolean = false)
+    extends EqualRowsMatcher(listInAnyOrder) {
+
+  override def toString: String =
+    expecteds.map(formatRows).mkString(RowDiffStringBuilder.PARTIALLY_ORDERED_GROUP_SEPARATOR) + " in partial order"
+
+  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
+    val diffString = new RowDiffStringBuilder()
+    var success = true
+    var i = 0
+    var rowsOffset = 0
+    while (i < expecteds.length) {
+      if (i > 0) {
+        diffString.onEndGroup()
+      }
+      val expectedRows = expecteds(i)
+      checkOnlyWhenAssertionsAreEnabled(expectedRows.nonEmpty, "Matcher does not support empty row groups")
+      val endOffset = rowsOffset + expectedRows.length
+      val actualRows = rows.slice(rowsOffset, endOffset)
+      rowsOffset = endOffset
+      val sortedExpected = expectedRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+      val sortedRows = actualRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+      matchSorted(sortedExpected, sortedRows, diffString) match {
+        case RowsMatch =>
+        case RowsDontMatch(_) =>
+          success = false
+      }
+      i += 1
+    }
+
+    if (rowsOffset < rows.length) {
+      val endOffset = rows.length
+      val actualRows = rows.slice(rowsOffset, endOffset)
+      val sortedRows = actualRows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+      matchSorted(IndexedSeq.empty, sortedRows, diffString) match {
+        case RowsMatch =>
+        case RowsDontMatch(_) =>
+          success = false
+      }
+    }
+
+    if (success) {
+      RowsMatch
+    } else {
+      RowsDontMatch(diffString.result)
+    }
   }
 
   override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String =
@@ -425,8 +486,16 @@ abstract class Sort extends RowOrderMatcher {
   protected def wantedOrder(cmp: Int): Boolean
 }
 
+object RowDiffStringBuilder {
+  val PARTIALLY_ORDERED_GROUP_SEPARATOR = "    --- <group boundary> ---\n"
+}
+
 class RowDiffStringBuilder {
   private val sb = new mutable.StringBuilder()
+
+  def onEndGroup(): Unit = {
+    sb ++= PARTIALLY_ORDERED_GROUP_SEPARATOR
+  }
 
   def onMatchStreak(size: Int): Unit = {
     sb ++= s"    ... $size matching rows ...\n"

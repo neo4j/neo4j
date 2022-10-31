@@ -889,11 +889,6 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     ) should equal(expectedCost)
   }
 
-  test("trail cost {0}") {
-    val testCase = trailTestCase(0, Limited(0))
-    assertTrailHasExpectedCost(testCase, testCase.lhsCost)
-  }
-
   test("trail cost {X, 1}") {
     val testCase0_1 = trailTestCase(0, Limited(1))
     val testCase1_1 = trailTestCase(1, Limited(1))

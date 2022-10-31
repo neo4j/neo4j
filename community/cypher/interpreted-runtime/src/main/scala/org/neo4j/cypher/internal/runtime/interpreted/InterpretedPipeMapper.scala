@@ -1553,7 +1553,8 @@ case class InterpretedPipeMapper(
           groupRelationships,
           innerRelationships,
           previouslyBoundRelationships,
-          previouslyBoundRelationshipGroups
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
         )(id = id)
 
       case x =>

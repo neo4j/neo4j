@@ -687,6 +687,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     EqualInAnyOrder(anyValues, listInAnyOrder)
   }
 
+  def inPartialOrder(rowGroups: Iterable[Iterable[Array[_]]], listInAnyOrder: Boolean = false): RowsMatcher = {
+    val anyValues = rowGroups.map(rows => rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq).toIndexedSeq
+    EqualInPartialOrder(anyValues, listInAnyOrder)
+  }
+
   def singleColumn(values: Iterable[Any], listInAnyOrder: Boolean = false): RowsMatcher = {
     val anyValues = values.map(x => Array(ValueUtils.asAnyValue(x))).toIndexedSeq
     EqualInAnyOrder(anyValues, listInAnyOrder)

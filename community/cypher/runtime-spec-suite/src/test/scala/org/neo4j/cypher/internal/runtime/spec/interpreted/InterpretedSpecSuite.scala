@@ -111,6 +111,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.OptionalFailureTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedAggregationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedTrailTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedUnionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialTop1TestBase
@@ -431,7 +432,9 @@ class InterpretedRelationshipTypeScanTest
 class InterpretedUnionRelationshipTypeTest
     extends UnionRelationshipTypeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
-class InterpretedTrailTest extends TrailTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedTrailTest
+    extends TrailTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+    with OrderedTrailTestBase[CommunityRuntimeContext]
 
 //UPDATING
 class InterpretedEmptyResultTest extends EmptyResultTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

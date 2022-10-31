@@ -34,6 +34,7 @@ object UpperBound {
   }
 
   case class Limited(n: Long) extends UpperBound {
+    require(n > 0)
     override def isGreaterThan(count: Long): Boolean = count < n
     override def limit: Option[Long] = Some(n)
   }

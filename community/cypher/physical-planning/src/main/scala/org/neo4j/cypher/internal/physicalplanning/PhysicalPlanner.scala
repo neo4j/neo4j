@@ -44,7 +44,7 @@ object PhysicalPlanner {
     breakingPolicy: PipelineBreakingPolicy,
     config: CypherRuntimeConfiguration,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    allocateArgumentSlots: Boolean = false
+    allocatePipelinedSlots: Boolean = false
   ): PhysicalPlan = {
     DebugSupport.PHYSICAL_PLANNING.log(
       "======== BEGIN Physical Planning with %-31s ===========================",
@@ -60,7 +60,7 @@ object PhysicalPlanner {
       availableExpressionVars,
       config,
       anonymousVariableNameGenerator,
-      allocateArgumentSlots
+      allocatePipelinedSlots
     )
     val slottedRewriter = new SlottedRewriter(tokenContext)
     val finalLogicalPlan = slottedRewriter(withSlottedParameters, slotMetaData.slotConfigurations)

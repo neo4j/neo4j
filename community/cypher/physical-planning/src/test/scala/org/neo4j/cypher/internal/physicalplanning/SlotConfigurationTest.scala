@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
@@ -203,6 +204,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
       .newLong("y", nullable = false, CTNode)
       .addAlias("z", "x")
       .newArgument(Id(0))
+      .newNestedArgument(Id(0))
 
     val acc = new SlotAccumulator
 
@@ -214,7 +216,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
       Seq(
         OnLongVar("x", LongSlot(0, nullable = false, CTNode), Set("z")),
         OnLongVar("y", LongSlot(1, nullable = false, CTNode), Set.empty),
-        OnApplyPlanId(Id(0))
+        OnApplyPlanId(Id(0)),
+        OnNestedApplyPlanId(Id(0))
       ),
       Seq.empty
     )
@@ -230,6 +233,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     slots.addAlias("bb", "b")
     slots.addAlias("bbb", "b")
     slots.newArgument(Id(1))
+    slots.newNestedArgument(Id(1))
 
     slots.newReference("c", nullable = false, CTNode)
     slots.newMetaData("cc")
@@ -253,7 +257,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     acc should haveEventsInOrder(
       Seq(
         OnLongVar("b", LongSlot(2, nullable = false, CTNode), Set("bb", "bbb")),
-        OnApplyPlanId(Id(1))
+        OnApplyPlanId(Id(1)),
+        OnNestedApplyPlanId(Id(1))
       ),
       Seq(
         OnRefVar("cc", RefSlot(1, nullable = false, CTAny), Set.empty),
@@ -275,6 +280,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     slots.addAlias("bb", "b")
     slots.addAlias("bbb", "b")
     slots.newArgument(Id(1))
+    slots.newNestedArgument(Id(1))
 
     slots.newReference("c", nullable = false, CTNode)
     slots.newMetaData("cc")
@@ -297,7 +303,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
         OnApplyPlanId(Id(0)),
         OnLongVar("a", LongSlot(1, nullable = false, CTNode), Set("aa")),
         OnLongVar("b", LongSlot(2, nullable = false, CTNode), Set("bb", "bbb")),
-        OnApplyPlanId(Id(1))
+        OnApplyPlanId(Id(1)),
+        OnNestedApplyPlanId(Id(1))
       ),
       Seq(
         OnRefVar("c", RefSlot(0, nullable = false, CTNode), Set.empty),
@@ -320,6 +327,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     slots.addAlias("bb", "b")
     slots.addAlias("bbb", "b")
     slots.newArgument(Id(1))
+    slots.newNestedArgument(Id(1))
 
     slots.newReference("c", nullable = false, CTNode)
     slots.newReference("d", nullable = false, CTNode)
@@ -343,7 +351,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
         OnApplyPlanId(Id(0)),
         OnLongVar("a", LongSlot(1, nullable = false, CTNode), Set.empty),
         OnLongVar("b", LongSlot(2, nullable = false, CTNode), Set.empty),
-        OnApplyPlanId(Id(1))
+        OnApplyPlanId(Id(1)),
+        OnNestedApplyPlanId(Id(1))
       ),
       Seq(
         OnRefVar("c", RefSlot(0, nullable = false, CTNode), Set.empty),
@@ -498,6 +507,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
   sealed trait LongEvent
   case class OnLongVar(string: String, slot: Slot, aliases: collection.Set[String]) extends LongEvent with HasSlot
   case class OnApplyPlanId(id: Id) extends LongEvent
+  case class OnNestedApplyPlanId(id: Id) extends LongEvent
   sealed trait RefEvent
   case class OnRefVar(string: String, slot: Slot, aliases: collection.Set[String]) extends RefEvent with HasSlot
   case class OnCachedProp(cp: ASTCachedProperty.RuntimeKey) extends RefEvent
@@ -521,6 +531,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
           refEvents += OnRefVar(key, slot, aliases)
         case ApplyPlanSlotKey(id) =>
           longEvents += OnApplyPlanId(id)
+        case OuterNestedApplyPlanSlotKey(id) =>
+          longEvents += OnNestedApplyPlanId(id)
       }
     }
 
@@ -539,6 +551,8 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
           refEvents += OnRefVar(key, slot, Set.empty[String])
         case ApplyPlanSlotKey(id) =>
           longEvents += OnApplyPlanId(id)
+        case OuterNestedApplyPlanSlotKey(id) =>
+          longEvents += OnNestedApplyPlanId(id)
       }
     }
   }

@@ -74,7 +74,8 @@ case class TrailPipe(
   groupRelationships: Set[VariableGrouping],
   innerRelationships: Set[String],
   previouslyBoundRelationships: Set[String],
-  previouslyBoundRelationshipGroups: Set[String]
+  previouslyBoundRelationshipGroups: Set[String],
+  reverseGroupVariableProjections: Boolean
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   private val groupNodeNames = groupNodes.toArray.sortBy(_.singletonName)
@@ -240,12 +241,16 @@ case class TrailPipe(
     val res = new Array[(String, AnyValue)](newSize)
     var i = 0
     while (i < newGroupNodes.size()) {
-      res(i) = (groupNodeNames(i).groupName, newGroupNodes.get(i))
+      val groupNodes = newGroupNodes.get(i)
+      val projectedGroupNodes = if (reverseGroupVariableProjections) groupNodes.reverse() else groupNodes
+      res(i) = (groupNodeNames(i).groupName, projectedGroupNodes)
       i += 1
     }
     var j = 0
     while (j < newGroupRels.size()) {
-      res(i) = (groupRelationshipNames(j).groupName, newGroupRels.get(j))
+      val groupRels = newGroupRels.get(j)
+      val projectedGroupRels = if (reverseGroupVariableProjections) groupRels.reverse() else groupRels
+      res(i) = (groupRelationshipNames(j).groupName, projectedGroupRels)
       j += 1
       i += 1
     }

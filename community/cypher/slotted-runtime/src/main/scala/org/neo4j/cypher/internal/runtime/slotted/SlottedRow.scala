@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -485,6 +486,8 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
       case SlotWithKeyAndAliases(MetaDataSlotKey(key), slot, _) => tuples ::= ((s"MetaData($key)", refs(slot.offset)))
       case SlotWithKeyAndAliases(ApplyPlanSlotKey(id), slot, _) =>
         tuples ::= ((s"Apply-Plan($id)", Values.longValue(longs(slot.offset))))
+      case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(id), slot, _) =>
+        tuples ::= ((s"Nested-Apply-Plan($id)", Values.longValue(longs(slot.offset))))
     })
     tuples.iterator
   }

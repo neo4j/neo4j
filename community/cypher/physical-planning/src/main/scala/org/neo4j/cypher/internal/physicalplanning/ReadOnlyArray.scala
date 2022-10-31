@@ -37,6 +37,10 @@ class ReadOnlyArray[T](private val inner: Array[T]) {
 
   def apply(i: Int): T = inner(i)
 
+  def filter(predicate: T => Boolean): ReadOnlyArray[T] = {
+    new ReadOnlyArray[T](inner.filter(predicate))
+  }
+
   def map[U](f: T => U): ReadOnlyArray[U] = {
     val result = new Array[Any](length)
     var i = 0

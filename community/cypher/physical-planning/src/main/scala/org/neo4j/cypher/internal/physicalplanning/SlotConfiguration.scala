@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
@@ -59,6 +60,7 @@ object SlotConfiguration {
   case class VariableSlotKey(name: String) extends SlotKey
   case class CachedPropertySlotKey(property: ASTCachedProperty.RuntimeKey) extends SlotKey
   case class ApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
+  case class OuterNestedApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class MetaDataSlotKey(name: String) extends SlotKey
 
   case class SlotWithKeyAndAliases(key: SlotKey, slot: Slot, aliases: collection.Set[String])
@@ -243,8 +245,24 @@ class SlotConfiguration private (
     }
     if (applyPlanId != Id.INVALID_ID) { // Top level argument is not allocated
       slots.put(ApplyPlanSlotKey(applyPlanId), LongSlot(numberOfLongs, nullable = false, CTAny))
-      numberOfLongs = numberOfLongs + 1
+      numberOfLongs += 1
     }
+    this
+  }
+
+  /**
+   * Use for [[ApplyPlan]]s that have two levels of arguments, e.g., [[Trail]].
+   */
+  def newNestedArgument(applyPlanId: Id): SlotConfiguration = {
+    require(!finalized)
+    if (slots.contains(OuterNestedApplyPlanSlotKey(applyPlanId))) {
+      throw new IllegalStateException(s"Should only add argument once per plan, got plan with $applyPlanId twice")
+    }
+    if (applyPlanId == Id.INVALID_ID) {
+      throw new IllegalStateException(s"Nested argument can not be a Top Level argument")
+    }
+    slots.put(OuterNestedApplyPlanSlotKey(applyPlanId), LongSlot(numberOfLongs, nullable = false, CTAny))
+    numberOfLongs += 1
     this
   }
 
@@ -320,12 +338,6 @@ class SlotConfiguration private (
     case _                 => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
-  def getLongSlotFor(name: String): Slot = slots.get(VariableSlotKey(name)) match {
-    case Some(s: LongSlot) => s
-    case Some(s)           => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
-    case _                 => throw new InternalException(s"Uh oh... There was no slot for `$name`")
-  }
-
   def getArgumentLongOffsetFor(applyPlanId: Id): Int = {
     if (applyPlanId == Id.INVALID_ID) {
       TopLevelArgument.SLOT_OFFSET
@@ -333,6 +345,21 @@ class SlotConfiguration private (
       slots.getOrElse(
         ApplyPlanSlotKey(applyPlanId),
         throw new InternalException(s"No argument slot allocated for plan with $applyPlanId")
+      ).offset
+    }
+  }
+
+  /**
+   * Returns the outer-level argument, for an [[ApplyPlan]] that has two-level/nested arguments.
+   * E.g., the LHS argument for [[Trail]].
+   */
+  def getOuterNestedArgumentLongOffsetFor(applyPlanId: Id): Int = {
+    if (applyPlanId == Id.INVALID_ID) {
+      TopLevelArgument.SLOT_OFFSET
+    } else {
+      slots.getOrElse(
+        OuterNestedApplyPlanSlotKey(applyPlanId),
+        throw new InternalException(s"No nested argument slot allocated for plan with $applyPlanId")
       ).offset
     }
   }
@@ -475,6 +502,8 @@ class SlotConfiguration private (
           other.newCachedProperty(key, shouldDuplicate = true)
         case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _)          => other.newMetaData(key)
         case SlotWithKeyAndAliases(ApplyPlanSlotKey(applyPlanId), _, _) => other.newArgument(applyPlanId)
+        case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(applyPlanId), _, _) =>
+          other.newNestedArgument(applyPlanId)
       },
       skipFirst
     )
@@ -516,8 +545,13 @@ class SlotConfiguration private (
 
   def hasArgumentSlot(applyPlanId: Id): Boolean = slots.contains(ApplyPlanSlotKey(applyPlanId))
 
+  def hasNestedArgumentSlot(applyPlanId: Id): Boolean = slots.contains(OuterNestedApplyPlanSlotKey(applyPlanId))
+
   def getArgumentSlot(applyPlanId: Id): Option[LongSlot] =
     slots.get(ApplyPlanSlotKey(applyPlanId)).asInstanceOf[Option[LongSlot]]
+
+  def getNestedArgumentSlot(applyPlanId: Id): Option[LongSlot] =
+    slots.get(OuterNestedApplyPlanSlotKey(applyPlanId)).asInstanceOf[Option[LongSlot]]
 
   def hasMetaDataSlot(key: String): Boolean = slots.contains(MetaDataSlotKey(key))
 

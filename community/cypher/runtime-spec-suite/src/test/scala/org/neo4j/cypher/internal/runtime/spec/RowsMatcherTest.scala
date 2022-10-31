@@ -31,6 +31,7 @@ import scala.util.Random
 class RowsMatcherTest extends CypherFunSuite with TestName {
 
   private val NO_ROWS = IndexedSeq[Array[AnyValue]]()
+  private val NO_PARTIAL_ROWS = IndexedSeq[IndexedSeq[Array[AnyValue]]]()
 
   test("AnyRowsMatcher") {
     AnyRowsMatcher.matchesRaw(Array[String](), NO_ROWS) should be(true)
@@ -154,6 +155,223 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
           |""".stripMargin.replace("\r\n", "\n")
       )
     )
+  }
+
+  test("EqualInPartialOrder") {
+    // should behave the same as EqualInAnyOrder when there is only one group
+
+    EqualInPartialOrder(NO_PARTIAL_ROWS).matchesRaw(Array[String](), NO_ROWS) should be(true)
+    EqualInPartialOrder(NO_PARTIAL_ROWS).matchesRaw(Array("a"), NO_ROWS) should be(true)
+    EqualInPartialOrder(NO_PARTIAL_ROWS).matchesRaw(Array("a"), Array(row(1))) should be(false)
+    EqualInPartialOrder(IndexedSeq(Array(row(1)))).matchesRaw(Array("a"), Array(row(1))) should be(true)
+    EqualInPartialOrder(IndexedSeq(Array(row(2)))).matchesRaw(Array("a"), Array(row(1))) should be(false)
+
+    EqualInPartialOrder(IndexedSeq(Array(row(1, 0, 4)))).matchesRaw(
+      Array("X", "Y", "Z"),
+      Array(row(1, 0, 4))
+    ) should be(true)
+    EqualInPartialOrder(IndexedSeq(Array(row(1, 0, 5)))).matchesRaw(
+      Array("X", "Y", "Z"),
+      Array(row(1, 0, 4))
+    ) should be(false)
+
+    val rows = Array(
+      row(1, 0, 4),
+      row(4, 0, 4),
+      row(4, 0, 4),
+      row(1, 2, 4),
+      row(2, 0, 4)
+    )
+
+    val singleRowsGroup: IndexedSeq[IndexedSeq[Array[AnyValue]]] = IndexedSeq(rows)
+
+    EqualInPartialOrder(singleRowsGroup).matchesRaw(Array("X", "Y", "Z"), rows) should be(true)
+    EqualInPartialOrder(singleRowsGroup).matchesRaw(Array("X", "Y", "Z"), rows.tail :+ rows.head) should be(true)
+    EqualInPartialOrder(singleRowsGroup).matchesRaw(Array("X", "Y", "Z"), rows.reverse) should be(true)
+    EqualInPartialOrder(singleRowsGroup).matchesRaw(Array("X", "Y", "Z"), rows :+ rows.head) should be(false)
+
+    // should work with single row groups
+
+    val oneRowGroups: IndexedSeq[IndexedSeq[Array[AnyValue]]] = IndexedSeq(
+      Array(
+        row(1, 0, 4)
+      ),
+      Array(
+        row(4, 0, 4)
+      ),
+      Array(
+        row(4, 0, 4)
+      )
+    )
+
+    EqualInPartialOrder(oneRowGroups).matchesRaw(Array("X", "Y", "Z"), oneRowGroups.flatten) should be(true)
+    EqualInPartialOrder(oneRowGroups).matchesRaw(Array("X", "Y", "Z"), oneRowGroups.take(2).flatten) should be(false)
+
+    // should work with multi-row groups
+
+    val multiRowGroups: IndexedSeq[IndexedSeq[Array[AnyValue]]] = IndexedSeq(
+      Array(
+        row(4, 0, 1)
+      ),
+      Array(
+        row(4, 0, 2),
+        row(4, 0, 3)
+      ),
+      Array(
+        row(4, 0, 4),
+        row(4, 0, 5)
+      )
+    )
+
+    EqualInPartialOrder(multiRowGroups).matchesRaw(Array("X", "Y", "Z"), multiRowGroups.flatten) should be(true)
+    EqualInPartialOrder(multiRowGroups).matchesRaw(Array("X", "Y", "Z"), multiRowGroups.take(2).flatten) should be(
+      false
+    )
+
+    val oneRowMovedAcrossGroupBoundary: IndexedSeq[Array[AnyValue]] = Array(
+      row(4, 0, 1),
+      row(4, 0, 2),
+      row(4, 0, 4),
+      row(4, 0, 3), // row moved into "next group"
+      row(4, 0, 5)
+    )
+
+    EqualInPartialOrder(multiRowGroups).matchesRaw(Array("X", "Y", "Z"), oneRowMovedAcrossGroupBoundary) should be(
+      false
+    )
+
+    val rowsMovedWithinGroupBoundaries: IndexedSeq[Array[AnyValue]] = Array(
+      row(4, 0, 1),
+      row(4, 0, 3),
+      row(4, 0, 2),
+      row(4, 0, 5),
+      row(4, 0, 4)
+    )
+
+    EqualInPartialOrder(multiRowGroups).matchesRaw(Array("X", "Y", "Z"), rowsMovedWithinGroupBoundaries) should be(true)
+  }
+
+  test("EqualInPartialOrder.matches") {
+    // should behave the same as EqualInAnyOrder when there is only one group
+
+    val rows = (0 until 100).map(i => row(i * 100))
+    val rowsAt21 = (0 until 7).map(i => row(2100 + i))
+
+    val singleRowsGroup: IndexedSeq[IndexedSeq[Array[AnyValue]]] = IndexedSeq(rows)
+
+    EqualInPartialOrder(singleRowsGroup).matches(Array("X"), rows) should be(RowsMatch)
+
+    EqualInPartialOrder(singleRowsGroup).matches(Array("X"), rows.take(73) ++ rowsAt21 ++ rows.drop(87)) should be(
+      RowsDontMatch(
+        """    ... 22 matching rows ...
+          | + Int(2100)
+          | + Int(2101)
+          | + Int(2102)
+          | + Int(2103)
+          | + Int(2104)
+          | + Int(2105)
+          | + Int(2106)
+          |    ... 51 matching rows ...
+          | - Int(7300)
+          | - Int(7400)
+          | - Int(7500)
+          | - Int(7600)
+          | - Int(7700)
+          | - Int(7800)
+          | - Int(7900)
+          | - Int(8000)
+          | - Int(8100)
+          | - Int(8200)
+          | - Int(8300)
+          | - Int(8400)
+          | - Int(8500)
+          | - Int(8600)
+          |    ... 13 matching rows ...
+          |""".stripMargin.replace("\r\n", "\n")
+      )
+    )
+
+    EqualInPartialOrder(singleRowsGroup).matches(Array("X"), rows.slice(1, 99) :+ row(-1) :+ row(999999)) should be(
+      RowsDontMatch(
+        """ + Int(-1)
+          | - Int(0)
+          |    ... 98 matching rows ...
+          | - Int(9900)
+          | + Int(999999)
+          |""".stripMargin.replace("\r\n", "\n")
+      )
+    )
+
+    // should work with multi-row groups
+
+    val expectedGroupedRows: IndexedSeq[IndexedSeq[Array[AnyValue]]] = IndexedSeq(
+      Array(
+        row(1),
+        row(2)
+      ),
+      Array(
+        row(3),
+        row(4),
+        row(5)
+      ),
+      Array(
+        row(6)
+      )
+    )
+
+    val actualGroupedRowsIsLonger: IndexedSeq[Array[AnyValue]] = Array(
+      row(0), // extra
+      // ---
+      row(2),
+      row(1),
+      // ---
+      row(4),
+      row(3),
+      row(5),
+      row(5), // extra
+      // ---
+      // row(6), // removed
+      row(7) // extra
+    )
+
+    EqualInPartialOrder(expectedGroupedRows).matches(Array("X"), actualGroupedRowsIsLonger) should be(RowsDontMatch(
+      """ + Int(0)
+        | - Int(1)
+        |    ... 1 matching rows ...
+        |    --- <group boundary> ---
+        | + Int(1)
+        |    ... 2 matching rows ...
+        | - Int(5)
+        |    --- <group boundary> ---
+        | + Int(5)
+        | - Int(6)
+        | + Int(5)
+        | + Int(7)
+        |""".stripMargin.replace("\r\n", "\n")
+    ))
+
+    val actualGroupedRowsIsShorter: IndexedSeq[Array[AnyValue]] = Array(
+      row(0), // extra
+      // ---
+      row(2),
+      row(1),
+      // ---
+      row(4),
+      row(3)
+    )
+
+    EqualInPartialOrder(expectedGroupedRows).matches(Array("X"), actualGroupedRowsIsShorter) should be(RowsDontMatch(
+      """ + Int(0)
+        | - Int(1)
+        |    ... 1 matching rows ...
+        |    --- <group boundary> ---
+        | + Int(1)
+        |    ... 2 matching rows ...
+        | - Int(5)
+        |    --- <group boundary> ---
+        | - Int(6)
+        |""".stripMargin.replace("\r\n", "\n")
+    ))
   }
 
   test("listInAnyOrder basic") {

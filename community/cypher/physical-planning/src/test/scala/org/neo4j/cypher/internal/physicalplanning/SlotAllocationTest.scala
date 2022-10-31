@@ -1320,7 +1320,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       NO_EXPR_VARS,
       config,
       new AnonymousVariableNameGenerator(),
-      allocateArgumentSlots = true
+      allocatePipelinedSlots = true
     ).slotConfigurations
 
     // then

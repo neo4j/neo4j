@@ -872,15 +872,20 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery0 = new LogicalQueryBuilder(this)
       .produceResults("n")
       .create(createNode("a", "Label")) // 6
+      .optional("n")
       .apply(fromSubquery = true)
       .|.create(createNode("a", "Label")) // 5
+      .|.optional("n")
       .|.apply(fromSubquery = true)
       .|.|.create(createNode("a", "Label")) // 4
+      .|.|.optional("n")
       .|.|.apply(fromSubquery = true)
       .|.|.|.create(createNode("a", "Label")) // 3
+      .|.|.|.optional("n")
       .|.|.|.apply(fromSubquery = true)
       .|.|.|.|.create(createNode("a", "Label")) // 2
     val logicalQuery = logicalQuery0
+      .|.|.|.|.optional("n")
       .|.|.|.|.apply(fromSubquery = true)
       .|.|.|.|.|.create(createNode("a", "Label")) // 1
       .|.|.|.|.|.argument("n")
