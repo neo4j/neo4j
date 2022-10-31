@@ -834,11 +834,14 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
   }
 
   private val AB = N * Asel * Bsel
+  private val BC = N * Bsel * Csel
+
   private val A_T1_AB_sel = A_T1_B_sel.min(A_T1_A_sel)
   private val B_T1_AB_sel = B_T1_B_sel.min(B_T1_A_sel)
   private val AB_T1_B_sel = A_T1_B_sel.min(B_T1_B_sel)
   private val AB_T1_A_sel = A_T1_A_sel.min(B_T1_A_sel)
   private val AB_T1_AB_sel = Seq(AB_T1_A_sel, AB_T1_B_sel, A_T1_AB_sel, B_T1_AB_sel).min
+  private val B_T1_BC_sel = B_T1_B_sel.min(B_T1_C_sel)
 
   private val qpp2_2 =
     A * A_T1_AB_sel * AB * AB_T1_B_sel * B * uniquenessSelectivityForNRels(2).factor
@@ -871,6 +874,37 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
 
   test("QPP {2, 3} with labels on inner variables should equal sum 2..2 and 3..3") {
     queryShouldHaveCardinality("MATCH (n) ((a:A)-[r:T1]->(b:B)){2, 3} (m)", qpp2_2 + qpp3_3)
+  }
+
+  test("QPP {2, 3} with labels on inner and outer variables should equal non-QPP") {
+    val q =
+      """
+        |CALL {
+        |  MATCH
+        |    (x:A),
+        |    (x:B)-[:T1]->(y:B),
+        |    (y:B)-[:T1]->(z:B),
+        |    (z:C)
+        |  RETURN 1 AS result
+        | UNION ALL
+        |  MATCH
+        |    (p:A),
+        |    (p:B)-[:T1]->(q:B),
+        |    (q:B)-[:T1]->(r:B),
+        |    (r:B)-[:T1]->(s:B),
+        |    (s:C)
+        |  RETURN 1 AS result
+        |}
+        |""".stripMargin
+
+    val cardinality2_2 =
+      AB * AB_T1_B_sel * B * B_T1_BC_sel * BC * uniquenessSelectivityForNRels(2).factor
+
+    val cardinality3_3 =
+      AB * AB_T1_B_sel * B * B_T1_B_sel * B * B_T1_BC_sel * BC * uniquenessSelectivityForNRels(3).factor
+
+    queryShouldHaveCardinality(q, cardinality2_2 + cardinality3_3)
+    queryShouldHaveCardinality("MATCH (n:A) ((a:B)-[r:T1]->(b:B)){2, 3} (m:C)", cardinality2_2 + cardinality3_3)
   }
 
   test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH ()-[r]->()") {
