@@ -21,10 +21,7 @@ case class Repetition(min: Long, max: UpperBound)
 sealed trait UpperBound {
   def isGreaterThan(count: Long): Boolean
 
-  def limit: Option[Long] = this match {
-    case UpperBound.Unlimited  => None
-    case UpperBound.Limited(n) => Some(n)
-  }
+  def limit: Option[Long]
 }
 
 object UpperBound {
@@ -33,9 +30,11 @@ object UpperBound {
 
   case object Unlimited extends UpperBound {
     override def isGreaterThan(count: Long): Boolean = true
+    override def limit: Option[Long] = None
   }
 
   case class Limited(n: Long) extends UpperBound {
     override def isGreaterThan(count: Long): Boolean = count < n
+    override def limit: Option[Long] = Some(n)
   }
 }

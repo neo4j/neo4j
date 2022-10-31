@@ -208,6 +208,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Multiplier = {
 
+    // See patternRelationshipMultiplier case VarPatternLength
+
     val max = Math.min(qpp.repetition.max.limit.getOrElse(MAX_VAR_LENGTH.toLong), MAX_VAR_LENGTH).toInt
     val min = Math.min(qpp.repetition.min, max).toInt
 
@@ -226,7 +228,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             val stepQg = {
               val extraPredicatesForStep = {
                 val leftNodePredicates = if (i > 1) rightToLeftLabelPredicates else Vector()
-                val rightNodePredicates = if (length > 1 && i < length) leftToRightLabelPredicates else Vector()
+                val rightNodePredicates = if (i < length) leftToRightLabelPredicates else Vector()
                 val predicatesFromOuterNodes = Vector(
                   Option.when(i == 1) { copyOuterLabelPredicatesToInner(qpp.leftBinding, labelInfo) },
                   Option.when(i == length) { copyOuterLabelPredicatesToInner(qpp.rightBinding, labelInfo) }

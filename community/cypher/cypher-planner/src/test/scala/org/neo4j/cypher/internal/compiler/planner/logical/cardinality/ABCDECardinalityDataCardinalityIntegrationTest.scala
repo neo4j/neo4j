@@ -769,7 +769,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..1]->(b:B)", varLength1_1)
   }
 
-  test("QPP 1..1 should be equal to non-QPP") {
+  test("QPP {1} should be equal to non-QPP") {
     queryShouldHaveCardinality("MATCH (:A)-[:T1]->(:B)", varLength1_1)
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){1} (:B)", varLength1_1)
     queryShouldHaveCardinality("MATCH (:A) ((:A)-[:T1]->(:B)){1} (:B)", varLength1_1)
@@ -779,7 +779,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..1]->(b:B)", varLength0_0 + varLength1_1)
   }
 
-  test("QPP 0..1 should equal sum of 0..0 and 1..1") {
+  test("QPP {0, 1} should equal sum of 0..0 and 1..1") {
     queryShouldHaveCardinality("MATCH (:A) (()-[r:T1]->()){0, 1} (b:B)", varLength0_0 + varLength1_1)
   }
 
@@ -798,16 +798,16 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*0..2]->(b:B)", varLength0_0 + varLength1_1 + varLength2_2)
   }
 
-  test("QPP 2..2 should be equal to non-QPP") {
+  test("QPP {2} should be equal to non-QPP") {
     queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->(:B)", varLength2_2)
     queryShouldHaveCardinality("MATCH (:A) (()-[r:T1]->()){2,2} (:B)", varLength2_2)
   }
 
-  test("QPP 1..2 should equal sum of 1..1 and 2..2") {
+  test("QPP {1, 2} should equal sum of 1..1 and 2..2") {
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){1,2} (:B)", varLength1_1 + varLength2_2)
   }
 
-  test("QPP 0..2 should equal sum of 0..0 and 1..1 and 2..2") {
+  test("QPP {0, 2} should equal sum of 0..0 and 1..1 and 2..2") {
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){0,2} (:B)", varLength0_0 + varLength1_1 + varLength2_2)
   }
 
@@ -824,12 +824,12 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (a:A)-[r:T1*1..3]->(b:B)", varLength1_1 + varLength2_2 + varLength3_3)
   }
 
-  test("QPP 3..3 should be equal to non-QPP") {
+  test("QPP {3} should be equal to non-QPP") {
     queryShouldHaveCardinality("MATCH (:A)-[:T1]->()-[:T1]->()-[:T1]->(:B)", varLength3_3)
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){3} (:B)", varLength3_3)
   }
 
-  test("QPP 1..3 should equal sum of 1..1 and 2..2 and 3..3") {
+  test("QPP {1,3} should equal sum of 1..1 and 2..2 and 3..3") {
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){1,3} (:B)", varLength1_1 + varLength2_2 + varLength3_3)
   }
 
@@ -846,7 +846,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
   private val qpp3_3 =
     A * A_T1_AB_sel * AB * AB_T1_AB_sel * AB * AB_T1_B_sel * B * uniquenessSelectivityForNRels(3).factor
 
-  test("QPP 2..2 with labels on inner variables should be equal to non-QPP") {
+  test("QPP {2} with labels on inner variables should be equal to non-QPP") {
     val q =
       """MATCH
         |  (x:A)-[:T1]->(y:B),
@@ -857,7 +857,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (n) ((a:A)-[r:T1]->(b:B)){2} (m)", qpp2_2)
   }
 
-  test("QPP 3..3 with labels on inner variables should be equal to non-QPP") {
+  test("QPP {3} with labels on inner variables should be equal to non-QPP") {
     val q =
       """MATCH
         |  (n:A)-[:T1]->(m:B),
@@ -869,7 +869,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (n) ((a:A)-[r:T1]->(b:B)){3} (m)", qpp3_3)
   }
 
-  test("QPP 2..3 with labels on inner variables should equal sum 2..2 and 3..3") {
+  test("QPP {2, 3} with labels on inner variables should equal sum 2..2 and 3..3") {
     queryShouldHaveCardinality("MATCH (n) ((a:A)-[r:T1]->(b:B)){2, 3} (m)", qpp2_2 + qpp3_3)
   }
 
