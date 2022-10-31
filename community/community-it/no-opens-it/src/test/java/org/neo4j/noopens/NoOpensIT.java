@@ -28,7 +28,6 @@ import java.nio.Buffer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
@@ -67,15 +66,6 @@ public class NoOpensIT {
                 OFF_HEAP,
                 "db.tx_state.memory_allocation is set to OFF_HEAP but unsafe access to java.nio.DirectByteBuffer is not available."
                         + " Defaulting to ON_HEAP.");
-    }
-
-    @Test
-    void warningFromManagedNetworkBuffers() {
-        runTest(
-                GraphDatabaseInternalSettings.managed_network_buffers,
-                true,
-                "internal.dbms.memory.managed_network_buffers is set to true but unsafe access to java.nio.DirectByteBuffer is not available. "
-                        + "Managed network buffers are not enabled.");
     }
 
     public static void assertByteBufferClosed() {

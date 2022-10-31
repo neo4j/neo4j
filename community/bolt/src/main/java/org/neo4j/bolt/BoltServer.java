@@ -66,7 +66,6 @@ import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transport.BoltMemoryPool;
-import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -115,7 +114,6 @@ public class BoltServer extends LifecycleAdapter {
     private final AuthManager loopbackAuthManager;
     private final MemoryPools memoryPools;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
-    private final CentralBufferMangerHolder centralBufferMangerHolder;
     private final ConnectionHintProvider connectionHintProvider;
 
     private final ExecutorServiceFactory executorServiceFactory;
@@ -148,7 +146,6 @@ public class BoltServer extends LifecycleAdapter {
             AuthManager loopbackAuthManager,
             MemoryPools memoryPools,
             DefaultDatabaseResolver defaultDatabaseResolver,
-            CentralBufferMangerHolder centralBufferMangerHolder,
             TransactionManager transactionManager) {
         this.dbmsInfo = dbmsInfo;
         this.jobScheduler = jobScheduler;
@@ -163,7 +160,6 @@ public class BoltServer extends LifecycleAdapter {
         this.loopbackAuthManager = loopbackAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.centralBufferMangerHolder = centralBufferMangerHolder;
         this.connectionHintProvider = connectionHintProviderFunction.apply(config);
 
         this.executorServiceFactory = new ThreadPoolExecutorServiceFactory(
@@ -398,12 +394,6 @@ public class BoltServer extends LifecycleAdapter {
     }
 
     private ByteBufAllocator getBufferAllocator() {
-        // check if there is a Netty buffer allocator managed centrally
-        // such allocator has also memory management done centrally
-        if (centralBufferMangerHolder.getNettyBufferAllocator() != null) {
-            return centralBufferMangerHolder.getNettyBufferAllocator();
-        }
-
         PooledByteBufAllocator allocator = NETTY_BUF_ALLOCATOR.get();
         BoltMemoryPool pool = new BoltMemoryPool(memoryPools, allocator.metric());
         connectorLife.add(new BoltMemoryPoolLifeCycleAdapter(pool));

@@ -36,8 +36,6 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.buffer.CentralBufferMangerHolder;
-import org.neo4j.buffer.NettyMemoryManagerWrapper;
 import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.capabilities.DBMSCapabilities;
 import org.neo4j.collection.Dependencies;
@@ -56,7 +54,6 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -146,7 +143,6 @@ public class GlobalModule {
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
-    private final CentralBufferMangerHolder centralBufferMangerHolder;
     private final TransactionManager transactionManager;
     private final IOControllerService ioControllerService;
     private final CapabilitiesService capabilitiesService;
@@ -204,8 +200,6 @@ public class GlobalModule {
         globalConfig.addListener(
                 memory_transaction_global_max_size, (before, after) -> transactionsMemoryPool.setSize(after));
         globalDependencies.satisfyDependency(memoryPools);
-
-        centralBufferMangerHolder = createCentralBufferManger(logService);
 
         var recentQueryBuffer = new RecentQueryBuffer(
                 globalConfig.get(data_collector_max_recent_query_count),
@@ -435,25 +429,6 @@ public class GlobalModule {
         return () -> new OffHeapCollectionsFactory(sharedBlockAllocator);
     }
 
-    private CentralBufferMangerHolder createCentralBufferManger(LogService logService) {
-        // since network buffers are currently the only use of the central byte buffer manager ...
-        if (!globalConfig.get(GraphDatabaseInternalSettings.managed_network_buffers)) {
-            return CentralBufferMangerHolder.EMPTY;
-        }
-        if (!UnsafeUtil.unsafeByteBufferAccessAvailable()) {
-            var log = logService.getInternalLog(GlobalModule.class);
-            log.warn(
-                    GraphDatabaseInternalSettings.managed_network_buffers.name() + " is set to true"
-                            + " but unsafe access to java.nio.DirectByteBuffer is not available. Managed network buffers are not enabled.");
-            return CentralBufferMangerHolder.EMPTY;
-        }
-
-        var bufferPool = new NeoByteBufferPool(memoryPools, jobScheduler);
-        globalLife.add(bufferPool);
-        var nettyAllocator = new NettyMemoryManagerWrapper(bufferPool);
-        return new CentralBufferMangerHolder(nettyAllocator, bufferPool);
-    }
-
     private static IOControllerService loadIOControllerService() {
         return Services.loadByPriority(IOControllerService.class)
                 .orElseThrow(
@@ -570,10 +545,6 @@ public class GlobalModule {
 
     public SystemGraphComponents getSystemGraphComponents() {
         return systemGraphComponents;
-    }
-
-    public CentralBufferMangerHolder getCentralBufferMangerHolder() {
-        return centralBufferMangerHolder;
     }
 
     public TransactionManager getTransactionManager() {

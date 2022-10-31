@@ -414,7 +414,6 @@ public class DatabaseManagementServiceFactory {
                 edition.getBoltLoopbackAuthManager(),
                 globalModule.getMemoryPools(),
                 edition.getDefaultDatabaseResolver(),
-                globalModule.getCentralBufferMangerHolder(),
                 globalModule.getTransactionManager());
     }
 

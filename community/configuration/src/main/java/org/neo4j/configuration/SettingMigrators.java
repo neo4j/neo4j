@@ -177,6 +177,7 @@ public final class SettingMigrators {
                 "unsupported.cypher.parser",
                 "unsupported.dbms.block_remote_alias",
                 "unsupported.dbms.large_cluster.enable",
+                "unsupported.dbms.memory.managed_network_buffers",
                 "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader",
                 "unsupported.dbms.lucene.ephemeral",
                 "unsupported.dbms.recovery.ignore_store_id_validation",

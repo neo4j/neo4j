@@ -866,13 +866,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Whether or not DBMS's byte buffer manager should be used for network stack buffers instead "
-            + "of each network library managing its buffers on its own")
-    public static final Setting<Boolean> managed_network_buffers = newBuilder(
-                    "internal.dbms.memory.managed_network_buffers", BOOL, false)
-            .build();
-
-    @Internal
     @Description("The maximum number of cached entries in count store (based) stores ")
     public static final Setting<Integer> counts_store_max_cached_entries = newBuilder(
                     "internal.dbms.memory.counts_store_max_cached_entries", INT, 1_000_000)
