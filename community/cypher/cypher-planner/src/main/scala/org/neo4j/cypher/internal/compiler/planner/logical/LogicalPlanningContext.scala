@@ -79,7 +79,7 @@ case class LogicalPlanningContext(
   debugOptions: CypherDebugOptions,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   cancellationChecker: CancellationChecker,
-  planningTextIndexesEnabled: Boolean = true,
+  planningTextIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
   planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
   planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
   useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
