@@ -24,8 +24,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV5_0;
 
-@ServiceProvider
-public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements RecordFormats.Factory {
+public class StandardFormatWithMinorVersionBump extends StandardV5_0 {
     public static final RecordFormats RECORD_FORMATS = new StandardFormatWithMinorVersionBump();
     public static final String NAME = "Standard-Format-With-Minor-Version-Bump";
 
@@ -46,13 +45,16 @@ public class StandardFormatWithMinorVersionBump extends StandardV5_0 implements 
         return true;
     }
 
-    @Override
-    public String getName() {
-        return NAME;
-    }
+    @ServiceProvider
+    public static class Factory implements RecordFormats.Factory {
+        @Override
+        public String getName() {
+            return NAME;
+        }
 
-    @Override
-    public RecordFormats newInstance() {
-        return RECORD_FORMATS;
+        @Override
+        public RecordFormats newInstance() {
+            return RECORD_FORMATS;
+        }
     }
 }

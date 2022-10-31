@@ -47,10 +47,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
-public abstract class PageAlignedTestFormat extends BaseRecordFormats implements RecordFormats.Factory {
+public abstract class PageAlignedTestFormat extends BaseRecordFormats {
     private final String name;
-    private int majorFormatVersion;
-    private int minorFormatVersion;
+    private final int majorFormatVersion;
+    private final int minorFormatVersion;
 
     protected PageAlignedTestFormat(String name, int majorFormatVersion, int minorFormatVersion) {
         super(ALIGNED_V5_0, new RecordFormatFamilyCapability(FormatFamily.ALIGNED));
@@ -129,16 +129,10 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
     public boolean formatUnderDevelopment() {
         return true;
     }
 
-    @ServiceProvider
     public static class WithMinorVersionBump extends PageAlignedTestFormat {
         public static final RecordFormats RECORD_FORMATS = new WithMinorVersionBump();
         public static final String NAME = "Page-Aligned-Format-With-Minor-Version-Bump";
@@ -150,13 +144,20 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
                     PageAlignedV5_0.RECORD_FORMATS.minorVersion() + 1);
         }
 
-        @Override
-        public RecordFormats newInstance() {
-            return RECORD_FORMATS;
+        @ServiceProvider
+        public static class Factory implements RecordFormats.Factory {
+            @Override
+            public String getName() {
+                return NAME;
+            }
+
+            @Override
+            public RecordFormats newInstance() {
+                return RECORD_FORMATS;
+            }
         }
     }
 
-    @ServiceProvider
     public static class WithMajorVersionBump extends PageAlignedTestFormat {
         public static final RecordFormats RECORD_FORMATS = new WithMajorVersionBump();
         public static final String NAME = "Page-Aligned-Format-With-Major-Version-Bump";
@@ -168,9 +169,17 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats implements
                     PageAlignedV5_0.RECORD_FORMATS.minorVersion());
         }
 
-        @Override
-        public RecordFormats newInstance() {
-            return RECORD_FORMATS;
+        @ServiceProvider
+        public static class Factory implements RecordFormats.Factory {
+            @Override
+            public String getName() {
+                return NAME;
+            }
+
+            @Override
+            public RecordFormats newInstance() {
+                return RECORD_FORMATS;
+            }
         }
     }
 }
