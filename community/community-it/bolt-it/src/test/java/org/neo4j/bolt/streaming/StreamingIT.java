@@ -260,7 +260,7 @@ public class StreamingIT {
             Consumer<PackstreamBuf> legacyNodeIdAssertions,
             Consumer<PackstreamBuf> nodeIdAssertions) {
         PackstreamBufAssertions.assertThat(buf)
-                .containsInt(0)
+                .containsAInt()
                 .satisfies(legacyNodeIdAssertions)
                 .containsString("PLAYED_IN")
                 .containsMap(properties ->

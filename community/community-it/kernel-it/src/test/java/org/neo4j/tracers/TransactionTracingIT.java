@@ -202,7 +202,7 @@ class TransactionTracingIT {
 
             assertThatTracing(database)
                     .record(pins(5).noFaults().skipUnpins())
-                    .freki(pins(2).noFaults().skipUnpins())
+                    .freki(pins(1).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }
     }

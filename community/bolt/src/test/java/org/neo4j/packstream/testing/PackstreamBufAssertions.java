@@ -121,6 +121,16 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
         return this;
     }
 
+    public PackstreamBufAssertions containsAInt() {
+        try {
+            this.actual.readInt();
+        } catch (UnexpectedTypeException ex) {
+            fail(ex);
+            return this;
+        }
+        return this;
+    }
+
     public PackstreamBufAssertions containsString(Consumer<String> assertions) {
         String actual;
         try {

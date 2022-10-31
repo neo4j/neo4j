@@ -85,7 +85,7 @@ public class LegacyStreamingIT {
 
     private static void assertLegacyIdRelationship(PackstreamBuf buf, Consumer<PackstreamBuf> nodeIdAssertions) {
         PackstreamBufAssertions.assertThat(buf)
-                .containsInt(0)
+                .containsAInt()
                 .satisfies(nodeIdAssertions)
                 .containsString("PLAYED_IN")
                 .containsMap(properties ->

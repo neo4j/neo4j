@@ -90,7 +90,7 @@ class RequireTransactionIT {
             relationship = tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("type"));
             tx.commit();
         }
-        Executable executable = () -> transaction.getNodeById(relationship.getId());
+        Executable executable = () -> transaction.getRelationshipById(relationship.getId());
         checkTransactionRequirement(transaction, executable);
     }
 

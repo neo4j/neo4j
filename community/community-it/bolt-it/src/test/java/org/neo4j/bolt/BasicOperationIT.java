@@ -224,7 +224,7 @@ public class BasicOperationIT {
                         .containsLengthPrefixMarker(Type.LIST, 1)
                         // Legacy relationships do not include elementId fields
                         .containsStruct(0x52, wire.getProtocolVersion().major() >= 5 ? 8 : 5)
-                        .containsInt(0)
+                        .containsAInt() // This is the relationship id
                         .containsInt(-1)
                         .containsInt(-1)
                         .containsString("")
