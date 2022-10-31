@@ -72,7 +72,6 @@ import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
 import org.neo4j.kernel.api.impl.fulltext.DefaultFulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
@@ -938,26 +937,11 @@ public class Database extends LifecycleAdapter
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
         kernelTransactions.terminateTransactions();
 
-        var maxWaitTime = databaseConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout );
-        var endTime = clock.millis() + maxWaitTime.toMillis();
-        boolean haveClosingTransactions;
-        while ( (haveClosingTransactions = kernelTransactions.haveClosingTransaction()) && clock.millis() < endTime )
+        while ( kernelTransactions.haveClosingTransaction() )
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
-
-        var numClosingTransactions = haveClosingTransactions
-                ? kernelTransactions.executingTransactions().stream().filter( KernelTransactionHandle::isClosing ).count()
-                : 0;
-        if ( numClosingTransactions > 0 )
-        {
-            msgLog.info( "There are still %d transactions closing after the max wait time of %s elapsed. " +
-                    "This may result in a need for recovery on next start", numClosingTransactions, maxWaitTime );
-        }
-        else
-        {
-            msgLog.info( "All transactions are closed." );
-        }
+        msgLog.info( "All transactions are closed." );
     }
 
     public Config getConfig()
