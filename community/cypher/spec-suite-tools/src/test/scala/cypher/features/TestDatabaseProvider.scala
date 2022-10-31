@@ -25,20 +25,21 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import java.util.concurrent.CopyOnWriteArrayList
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 class TestDatabaseProvider(dbBuilder: () => TestDatabaseManagementServiceBuilder) {
-  private val managementService: ThreadLocal[DatabaseManagementService] = new ThreadLocal[DatabaseManagementService]
+
+  private val managementServices: ThreadLocal[mutable.Map[Map[Setting[_], Object], DatabaseManagementService]] =
+    ThreadLocal.withInitial(() => mutable.Map.empty)
 
   private val testDbms: CopyOnWriteArrayList[DatabaseManagementService] =
     new CopyOnWriteArrayList[DatabaseManagementService]
 
   def get(config: Map[Setting[_], Object]): DatabaseManagementService = {
     this.synchronized {
-      if (managementService.get() == null) {
-        managementService.set(createManagementService(config, dbBuilder))
-      }
-      managementService.get()
+      val servicesByConfig = managementServices.get()
+      servicesByConfig.getOrElseUpdate(config, createManagementService(config, dbBuilder))
     }
   }
 
