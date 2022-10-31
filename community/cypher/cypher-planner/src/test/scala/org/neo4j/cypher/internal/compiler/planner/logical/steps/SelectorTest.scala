@@ -100,56 +100,6 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(Selection(Seq(predicate1, predicate2), inner))
   }
 
-  test(
-    "when two predicates not already solved are solvable, should not greedily pick the first but cost compare the alternative orders"
-  ) {
-    // Given
-    val context = newMockedLogicalPlanningContext(planContext)
-
-    val eqs = equals(prop("x", "prop"), literalInt(10))
-    val hl = hasLabels("x", "X")
-
-    val selections = Selections.from(Seq(eqs, hl))
-    val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
-
-    val qg = QueryGraph(patternNodes = Set("x"), selections = selections)
-    val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered, selectHasLabelWithJoin)
-
-    val expectedPlan = Selection(Seq(eqs, hl), inner)
-
-    var didVerify = false
-    val verifyingContext = context.copy(
-      costComparisonListener = new CostComparisonListener {
-        override def report[X, Score: Ordering](
-          projector: X => LogicalPlan,
-          input: Iterable[X],
-          inputOrdering: X => Score,
-          context: LogicalPlanningContext,
-          resolved: => String,
-          resolvedPerPlan: LogicalPlan => String,
-          heuristic: SelectorHeuristic
-        ): Unit = {
-          val plans = input.map(projector).toSet
-          plans should equal(Set(
-            expectedPlan,
-            Selection(
-              Seq(eqs),
-              NodeHashJoin(Set("x"), inner, NodeByLabelScan("x", labelName("X"), Set.empty, IndexOrderNone))
-            )
-          ))
-          didVerify = true
-        }
-      }
-    )
-
-    // When
-    val result = selector(inner, qg, InterestingOrderConfig.empty, verifyingContext)
-
-    // Then
-    result should equal(expectedPlan)
-    didVerify should be(true)
-  }
-
   test("when a predicate is already solved, it should not be applied again") {
     // Given
     val context = newMockedLogicalPlanningContext(planContext)

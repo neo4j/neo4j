@@ -110,7 +110,7 @@ class CypherConfiguration private (val config: Config) {
   val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
   val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
 
-  val varExpandRelationshipIdSetThreshold =
+  val varExpandRelationshipIdSetThreshold: Integer =
     config.get(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold)
 
   val extractLiterals: ExtractLiteral = config.get(GraphDatabaseInternalSettings.extract_literals)

@@ -60,7 +60,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -470,7 +469,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize,
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
-        costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         idGen = idGen,
         executionModel = config.executionModel,
@@ -501,7 +499,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize,
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
-        costComparisonListener = devNullListener,
         planningAttributes = planningAttributes,
         idGen = idGen,
         executionModel = config.executionModel,

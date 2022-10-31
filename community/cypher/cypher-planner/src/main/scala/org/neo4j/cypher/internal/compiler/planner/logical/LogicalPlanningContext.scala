@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
@@ -65,7 +67,6 @@ case class LogicalPlanningContext(
   legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
   csvBufferSize: Int = 2 * 1024 * 1024,
   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-  costComparisonListener: CostComparisonListener,
   planningAttributes: PlanningAttributes,
   indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext =
     IndexCompatiblePredicatesProviderContext.default,
@@ -84,6 +85,12 @@ case class LogicalPlanningContext(
   planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
   useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
 ) {
+
+  val costComparisonListener: CostComparisonListener =
+    if (debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE"))
+      SystemOutCostLogger
+    else
+      devNullListener
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
     copy(input = input.withLimitSelectivityConfig(cfg))

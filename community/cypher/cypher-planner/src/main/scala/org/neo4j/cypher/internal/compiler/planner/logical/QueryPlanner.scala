@@ -72,15 +72,6 @@ case object QueryPlanner
   }
 
   def getLogicalPlanningContext(from: LogicalPlanState, context: PlannerContext): LogicalPlanningContext = {
-    val printCostComparisons =
-      context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
-
-    val costComparisonListener =
-      if (printCostComparisons)
-        SystemOutCostLogger
-      else
-        devNullListener
-
     val planningAttributes = from.planningAttributes
     val logicalPlanProducer =
       LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
@@ -97,7 +88,6 @@ case object QueryPlanner
       config = QueryPlannerConfiguration.default.withUpdateStrategy(context.updateStrategy),
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping,
       csvBufferSize = context.config.csvBufferSize,
-      costComparisonListener = costComparisonListener,
       planningAttributes = planningAttributes,
       idGen = context.logicalPlanIdGen,
       executionModel = context.executionModel,

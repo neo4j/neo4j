@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfigurat
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -275,7 +274,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
       config = QueryPlannerConfiguration.default,
-      costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       idGen = idGen,
       executionModel = ExecutionModel.default,
@@ -307,7 +305,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
       csvBufferSize = config.csvBufferSize,
       config = QueryPlannerConfiguration.default,
-      costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       idGen = idGen,
       executionModel = ExecutionModel.default,
