@@ -184,8 +184,8 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     ParsingConfig(
       extractLiterals = ExtractLiteral.NEVER,
       parameterTypeMapping = Map.empty,
-      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures,
-      obfuscateLiterals = cypherCompilerConfig.obfuscateLiterals
+      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures(),
+      obfuscateLiterals = cypherCompilerConfig.obfuscateLiterals()
     )
 
   def pipeLine(
@@ -432,9 +432,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planContext,
         mock[ExpressionEvaluator],
         config.executionModel,
-        cypherConfig.planningTextIndexesEnabled,
-        cypherConfig.planningRangeIndexesEnabled,
-        cypherConfig.planningPointIndexesEnabled
+        cypherConfig.planningTextIndexesEnabled(),
+        cypherConfig.planningRangeIndexesEnabled(),
+        cypherConfig.planningPointIndexesEnabled()
       )
 
       ContextHelper.create(
@@ -466,7 +466,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
-        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize,
+        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
         planningAttributes = planningAttributes,
@@ -496,7 +496,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
-        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize,
+        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
         input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
         planningAttributes = planningAttributes,

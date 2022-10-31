@@ -171,9 +171,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planContext,
       newExpressionEvaluator,
       ExecutionModel.default,
-      CypherPlannerConfiguration.defaults().planningTextIndexesEnabled,
-      CypherPlannerConfiguration.defaults().planningRangeIndexesEnabled,
-      CypherPlannerConfiguration.defaults().planningPointIndexesEnabled
+      CypherPlannerConfiguration.defaults().planningTextIndexesEnabled(),
+      CypherPlannerConfiguration.defaults().planningRangeIndexesEnabled(),
+      CypherPlannerConfiguration.defaults().planningPointIndexesEnabled()
     )
   }
 
@@ -268,11 +268,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       metrics,
       semanticTable,
       strategy,
-      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize,
+      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
       QueryGraphSolverInput(Map.empty, Map.empty),
       notificationLogger = notificationLogger,
       useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping(),
       config = QueryPlannerConfiguration.default,
       planningAttributes = planningAttributes,
       idGen = idGen,
@@ -298,12 +298,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       metrics,
       semanticTable,
       strategy,
-      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize,
+      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
       QueryGraphSolverInput(Map.empty, Map.empty),
       notificationLogger = notificationLogger,
       useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
-      csvBufferSize = config.csvBufferSize,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping(),
+      csvBufferSize = config.csvBufferSize(),
       config = QueryPlannerConfiguration.default,
       planningAttributes = planningAttributes,
       idGen = idGen,

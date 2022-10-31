@@ -69,7 +69,7 @@ class CommunityCompilerFactory(
       if (plannerConfig.planSystemCommands)
         CommunityAdministrationCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
       else
-        CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
+        CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings())
 
     CypherCurrentCompiler(
       planner,

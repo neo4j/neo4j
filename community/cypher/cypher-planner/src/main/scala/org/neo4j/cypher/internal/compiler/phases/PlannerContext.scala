@@ -121,9 +121,9 @@ object PlannerContext {
       planContext,
       evaluator,
       executionModel,
-      config.planningTextIndexesEnabled,
-      config.planningRangeIndexesEnabled,
-      config.planningPointIndexesEnabled
+      config.planningTextIndexesEnabled(),
+      config.planningRangeIndexesEnabled(),
+      config.planningPointIndexesEnabled()
     )
 
     new PlannerContext(

@@ -141,8 +141,8 @@ object CypherPlanner {
       case IDPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
         val solverConfig = new ConfigurableIDPSolverConfig(
-          maxTableSize = config.idpMaxTableSize,
-          iterationDurationLimit = config.idpIterationDuration
+          maxTableSize = config.idpMaxTableSize(),
+          iterationDurationLimit = config.idpIterationDuration()
         )
         (monitor, solverConfig)
       case DPPlannerName =>
@@ -331,9 +331,9 @@ case class CypherPlanner(
     val containsUpdates: Boolean = syntacticQuery.statement().containsUpdates
     val executionModel = inferredRuntime match {
       case CypherRuntimeOption.pipelined =>
-        BatchedSingleThreaded(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
+        BatchedSingleThreaded(config.pipelinedBatchSizeSmall(), config.pipelinedBatchSizeBig())
       case CypherRuntimeOption.parallel if !containsUpdates =>
-        BatchedParallel(config.pipelinedBatchSizeSmall, config.pipelinedBatchSizeBig)
+        BatchedParallel(config.pipelinedBatchSizeSmall(), config.pipelinedBatchSizeBig())
       case _ => Volcano
     }
 

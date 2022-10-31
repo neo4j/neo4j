@@ -917,9 +917,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      plannerConfiguration.planningTextIndexesEnabled,
-      plannerConfiguration.planningRangeIndexesEnabled,
-      plannerConfiguration.planningPointIndexesEnabled
+      plannerConfiguration.planningTextIndexesEnabled(),
+      plannerConfiguration.planningRangeIndexesEnabled(),
+      plannerConfiguration.planningPointIndexesEnabled()
     )
 
     val context = ContextHelper.create(
@@ -954,7 +954,10 @@ class StatisticsBackedLogicalPlanningConfiguration(
 
   def queryGraphSolver(plannerConfiguration: CypherPlannerConfiguration): QueryGraphSolver = {
     val iDPSolverConfig =
-      new ConfigurableIDPSolverConfig(plannerConfiguration.idpMaxTableSize, plannerConfiguration.idpIterationDuration)
+      new ConfigurableIDPSolverConfig(
+        plannerConfiguration.idpMaxTableSize(),
+        plannerConfiguration.idpIterationDuration()
+      )
 
     if (options.connectComponentsPlanner) {
       LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents.queryGraphSolver(

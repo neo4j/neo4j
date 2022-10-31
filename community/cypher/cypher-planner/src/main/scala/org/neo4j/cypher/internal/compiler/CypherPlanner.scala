@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -67,9 +69,9 @@ case class CypherPlanner[Context <: PlannerContext](
       if (config.planSystemCommands)
         systemPipeLine
       else if (context.debugOptions.toStringEnabled)
-        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures) andThen DebugPrinter
+        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures()) andThen DebugPrinter
       else
-        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures)
+        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures())
 
     pipeLine.transform(state, context)
   }
@@ -89,10 +91,10 @@ case class CypherPlanner[Context <: PlannerContext](
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     CompilationPhases.parsing(ParsingConfig(
-      extractLiterals = config.extractLiterals,
-      semanticFeatures = config.enabledSemanticFeatures,
+      extractLiterals = config.extractLiterals(),
+      semanticFeatures = config.enabledSemanticFeatures(),
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
-      obfuscateLiterals = config.obfuscateLiterals
+      obfuscateLiterals = config.obfuscateLiterals()
     )).transform(startState, context)
   }
 
@@ -121,31 +123,142 @@ object CypherPlannerConfiguration {
 
 }
 
+/**
+ * Static configuration for the planner.
+ *
+ * Any field below must either be a static configuration, or one that does not affect caching.
+ * If you introduce a dynamic setting here, you will have to make sure it ends up in the relevant cache keys.
+ */
 class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
-  def queryCacheSize: Int = config.queryCacheSize
 
-  def statsDivergenceCalculator: StatsDivergenceCalculator =
-    StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator)
-  def useErrorsOverWarnings: Boolean = config.useErrorsOverWarnings
-  def idpMaxTableSize: Int = config.idpMaxTableSize
-  def idpIterationDuration: Long = config.idpIterationDuration
-  def errorIfShortestPathFallbackUsedAtRuntime: Boolean = config.errorIfShortestPathFallbackUsedAtRuntime
-  def errorIfShortestPathHasCommonNodesAtRuntime: Boolean = config.errorIfShortestPathHasCommonNodesAtRuntime
-  def legacyCsvQuoteEscaping: Boolean = config.legacyCsvQuoteEscaping
-  def csvBufferSize: Int = config.csvBufferSize
+  val queryCacheSize: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.query_cache_size.dynamic())
+    () => config.queryCacheSize
+  }
 
-  def nonIndexedLabelWarningThreshold: Long =
-    cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
-  def obfuscateLiterals: Boolean = config.obfuscateLiterals
-  def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
-  def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
+  val statsDivergenceCalculator: () => StatsDivergenceCalculator = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(Seq(
+      GraphDatabaseSettings.query_statistics_divergence_threshold,
+      GraphDatabaseInternalSettings.query_statistics_divergence_target,
+      GraphDatabaseSettings.cypher_min_replan_interval,
+      GraphDatabaseInternalSettings.cypher_replan_interval_target,
+      GraphDatabaseInternalSettings.cypher_replan_algorithm
+    ).forall(!_.dynamic()))
+    () => StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator)
+  }
 
-  def enabledSemanticFeatures: Seq[SemanticFeature] =
-    CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
-  def planningTextIndexesEnabled: Boolean = config.planningTextIndexesEnabled
-  def planningRangeIndexesEnabled: Boolean = config.planningRangeIndexesEnabled
-  def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled
-  def predicatesAsUnionMaxSize: Int = config.predicatesAsUnionMaxSize
-  def extractLiterals: ExtractLiteral = config.extractLiterals
-  def useLegacyShortestPath: Boolean = config.useLegacyShortestPath
+  val useErrorsOverWarnings: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.cypher_hints_error.dynamic())
+    () => config.useErrorsOverWarnings
+  }
+
+  val idpMaxTableSize: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold.dynamic()
+    )
+    () => config.idpMaxTableSize
+  }
+
+  val idpIterationDuration: () => Long = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold.dynamic()
+    )
+    () => config.idpIterationDuration
+  }
+
+  val errorIfShortestPathFallbackUsedAtRuntime: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_exhaustive_shortestpath.dynamic())
+    () => config.errorIfShortestPathFallbackUsedAtRuntime
+  }
+
+  val errorIfShortestPathHasCommonNodesAtRuntime: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.forbid_shortestpath_common_nodes.dynamic())
+    () => config.errorIfShortestPathHasCommonNodesAtRuntime
+  }
+
+  val legacyCsvQuoteEscaping: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_legacy_quote_escaping.dynamic())
+    () => config.legacyCsvQuoteEscaping
+  }
+
+  val csvBufferSize: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(!GraphDatabaseSettings.csv_buffer_size.dynamic())
+    () => config.csvBufferSize
+  }
+
+  val nonIndexedLabelWarningThreshold: () => Long = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold.dynamic()
+    )
+    () => cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
+  }
+
+  val obfuscateLiterals: () => Boolean = {
+    // Is dynamic, but documented to not affect caching.
+    () => config.obfuscateLiterals
+  }
+
+  val pipelinedBatchSizeSmall: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.dynamic()
+    )
+    () => config.pipelinedBatchSizeSmall
+  }
+
+  val pipelinedBatchSizeBig: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.dynamic()
+    )
+    () => config.pipelinedBatchSizeBig
+  }
+
+  val enabledSemanticFeatures: () => Seq[SemanticFeature] = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features.dynamic()
+    )
+    () => CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
+  }
+
+  val planningTextIndexesEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_text_indexes_enabled.dynamic()
+    )
+    () => config.planningTextIndexesEnabled
+  }
+
+  val planningRangeIndexesEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_range_indexes_enabled.dynamic()
+    )
+    () => config.planningRangeIndexesEnabled
+  }
+
+  val planningPointIndexesEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_point_indexes_enabled.dynamic()
+    )
+    () => config.planningPointIndexesEnabled
+  }
+
+  val predicatesAsUnionMaxSize: () => Int = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.predicates_as_union_max_size.dynamic()
+    )
+    () => config.predicatesAsUnionMaxSize
+  }
+
+  val extractLiterals: () => ExtractLiteral = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.extract_literals.dynamic()
+    )
+    () => config.extractLiterals
+  }
+
+  // FIXME
+  val useLegacyShortestPath: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic()
+    )
+    () => config.useLegacyShortestPath
+  }
 }

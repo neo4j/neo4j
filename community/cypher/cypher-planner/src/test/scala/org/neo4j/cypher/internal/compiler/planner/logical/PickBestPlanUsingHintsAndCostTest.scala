@@ -212,7 +212,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       metrics,
       null,
       null,
-      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize,
+      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
       notificationLogger = devNullLogger,
       planningAttributes = planningAttributes,
       idGen = idGen,
