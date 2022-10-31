@@ -23,6 +23,8 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
@@ -67,6 +69,7 @@ case class LogicalPlanningContext(
   legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
   csvBufferSize: Int = 2 * 1024 * 1024,
   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+  updateStrategy: UpdateStrategy = defaultUpdateStrategy,
   planningAttributes: PlanningAttributes,
   indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext =
     IndexCompatiblePredicatesProviderContext.default,

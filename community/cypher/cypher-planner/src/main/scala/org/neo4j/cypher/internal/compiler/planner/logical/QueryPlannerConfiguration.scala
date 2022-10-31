@@ -130,8 +130,7 @@ object QueryPlannerConfiguration {
         applyOptional,
         outerHashJoin
       ),
-      leafPlanners = LeafPlannerList(allLeafPlanners(LeafPlanRestrictions.NoRestrictions)),
-      updateStrategy = defaultUpdateStrategy
+      leafPlanners = LeafPlannerList(allLeafPlanners(LeafPlanRestrictions.NoRestrictions))
     )
 
   }
@@ -141,8 +140,7 @@ case class QueryPlannerConfiguration(
   leafPlanners: LeafPlannerIterable,
   applySelections: PlanSelector,
   optionalSolvers: Seq[OptionalSolver],
-  pickBestCandidate: CandidateSelectorFactory,
-  updateStrategy: UpdateStrategy
+  pickBestCandidate: CandidateSelectorFactory
 ) {
 
   def toKit(interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): QueryPlannerKit =
@@ -152,9 +150,6 @@ case class QueryPlannerConfiguration(
     )
 
   def withLeafPlanners(leafPlanners: LeafPlannerIterable): QueryPlannerConfiguration = copy(leafPlanners = leafPlanners)
-
-  def withUpdateStrategy(updateStrategy: UpdateStrategy): QueryPlannerConfiguration =
-    copy(updateStrategy = updateStrategy)
 }
 
 case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {

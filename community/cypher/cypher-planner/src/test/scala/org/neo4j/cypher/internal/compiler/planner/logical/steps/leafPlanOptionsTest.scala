@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CandidateSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
@@ -88,8 +87,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         },
       applySelections = (plan, _, _, _) => plan,
       optionalSolvers = Seq.empty,
-      leafPlanners = LeafPlannerList(planner),
-      updateStrategy = defaultUpdateStrategy
+      leafPlanners = LeafPlannerList(planner)
     )
 
   test("empty query graph") {
@@ -222,8 +220,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         },
       applySelections = (_, _, _, _) => plan,
       optionalSolvers = Seq.empty,
-      leafPlanners = LeafPlannerList(IndexedSeq(allNodesScanLeafPlanner, projectionPlanner)),
-      updateStrategy = defaultUpdateStrategy
+      leafPlanners = LeafPlannerList(IndexedSeq(allNodesScanLeafPlanner, projectionPlanner))
     )
 
     new given().withLogicalPlanningContext { (_, ctx) =>
@@ -262,8 +259,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         },
       applySelections = (plan, _, _, _) => plan,
       optionalSolvers = Seq.empty,
-      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner)),
-      updateStrategy = defaultUpdateStrategy
+      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner))
     )
 
     new given().withLogicalPlanningContext { (_, ctx) =>
@@ -304,8 +300,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         },
       applySelections = (plan, _, _, _) => plan,
       optionalSolvers = Seq.empty,
-      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner)),
-      updateStrategy = defaultUpdateStrategy
+      leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner))
     )
 
     new given().withLogicalPlanningContext { (_, ctx) =>

@@ -219,7 +219,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   }
 
   override def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     if (alwaysEager)
       context.logicalPlanProducer.planEager(inputPlan, context, ListSet(EagernessReason.UpdateStrategyEager))
     else {
@@ -232,7 +232,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   }
 
   override def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     if (alwaysEager)
       context.logicalPlanProducer.planEager(inputPlan, context, ListSet(EagernessReason.UpdateStrategyEager))
     else {
@@ -246,7 +246,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
 
   // NOTE: This does not check conflict within the query itself (like tailReadWriteEagerizeNonRecursive)
   override def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     if (alwaysEager)
       context.logicalPlanProducer.planEager(inputPlan, context, ListSet(EagernessReason.UpdateStrategyEager))
     else {
@@ -261,7 +261,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   }
 
   override def headWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     if (alwaysEager)
       context.logicalPlanProducer.planEager(inputPlan, context, ListSet(EagernessReason.UpdateStrategyEager))
     else {
@@ -277,7 +277,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   }
 
   override def tailWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     if (alwaysEager)
       context.logicalPlanProducer.planEager(inputPlan, context, ListSet(EagernessReason.UpdateStrategyEager))
     else {
@@ -293,7 +293,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   }
 
   override def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
-    val alwaysEager = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.updateStrategy.alwaysEager
     val pcWrappedPlan = inputPlan match {
       case ProcedureCall(left, call) if call.signature.eager =>
         context.logicalPlanProducer.planProcedureCall(
