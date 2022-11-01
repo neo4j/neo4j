@@ -134,7 +134,9 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         ctx.writeAndFlush(new ProtocolNegotiationResponse(protocol.version()));
 
         // KeepAliveHandler needs the FrameSignalEncoder to send outbound NOOPs
-        ctx.pipeline().addLast(new FrameSignalEncoder(protocol.frameSignalFilter()));
+        ctx.pipeline()
+                .addLast(new StateSignalFilterHandler())
+                .addLast(new FrameSignalEncoder(protocol.frameSignalFilter()));
 
         if (this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle)) {
             ctx.channel()
