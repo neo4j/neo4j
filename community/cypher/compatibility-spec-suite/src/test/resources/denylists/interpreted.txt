@@ -12,3 +12,6 @@ Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full exist
 
 // TODO Unmute when openCypher has been released
 ?Feature "Aggregation5 - Collect": Scenario "OPTIONAL MATCH and `collect()` on node property"
+
+// Timezone update 2022b changed the expected result, exclude until all the JVMs have been upgraded
+?Feature "Temporal2 - Create Temporal Values from a String": Scenario "Should parse date time with named time zone from string": Example "4"
