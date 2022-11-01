@@ -214,7 +214,11 @@ class PartitionedIndexStorageTest {
     }
 
     private void createRandomFile(Path rootFolder) throws IOException {
-        Path file = rootFolder.resolve(RandomStringUtils.randomNumeric(5));
+        Path file;
+        do {
+            file = rootFolder.resolve(RandomStringUtils.randomNumeric(5));
+        } while (fs.fileExists(file));
+
         try (StoreChannel channel = fs.write(file);
                 var scopedBuffer = new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
             channel.writeAll(scopedBuffer.getBuffer());
@@ -222,7 +226,11 @@ class PartitionedIndexStorageTest {
     }
 
     private Path createRandomFolder(Path rootFolder) throws IOException {
-        Path folder = rootFolder.resolve(RandomStringUtils.randomNumeric(5));
+        Path folder;
+        do {
+            folder = rootFolder.resolve(RandomStringUtils.randomNumeric(5));
+        } while (fs.fileExists(folder));
+
         fs.mkdirs(folder);
         return folder;
     }
