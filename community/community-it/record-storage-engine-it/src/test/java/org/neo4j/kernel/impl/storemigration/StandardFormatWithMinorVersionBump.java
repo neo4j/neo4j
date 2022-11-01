@@ -53,7 +53,7 @@ public class StandardFormatWithMinorVersionBump extends StandardV5_0 {
         }
 
         @Override
-        public RecordFormats newInstance() {
+        public RecordFormats getInstance() {
             return RECORD_FORMATS;
         }
     }

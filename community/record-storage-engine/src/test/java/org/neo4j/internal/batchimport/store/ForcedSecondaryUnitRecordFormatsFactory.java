@@ -31,7 +31,7 @@ public class ForcedSecondaryUnitRecordFormatsFactory implements RecordFormats.Fa
     }
 
     @Override
-    public RecordFormats newInstance() {
+    public RecordFormats getInstance() {
         return ForcedSecondaryUnitRecordFormats.DEFAULT_RECORD_FORMATS;
     }
 }

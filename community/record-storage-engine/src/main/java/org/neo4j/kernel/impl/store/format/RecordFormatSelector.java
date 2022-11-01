@@ -307,7 +307,7 @@ public class RecordFormatSelector {
 
         private static Iterable<RecordFormats> loadFormats() {
             Iterable<RecordFormats.Factory> loadableFormatFactories = Services.loadAll(RecordFormats.Factory.class);
-            Iterable<RecordFormats> loadableFormats = map(RecordFormats.Factory::newInstance, loadableFormatFactories);
+            Iterable<RecordFormats> loadableFormats = map(RecordFormats.Factory::getInstance, loadableFormatFactories);
             return concat(KNOWN_FORMATS, loadableFormats);
         }
     }

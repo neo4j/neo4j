@@ -152,7 +152,7 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats {
             }
 
             @Override
-            public RecordFormats newInstance() {
+            public RecordFormats getInstance() {
                 return RECORD_FORMATS;
             }
         }
@@ -177,7 +177,7 @@ public abstract class PageAlignedTestFormat extends BaseRecordFormats {
             }
 
             @Override
-            public RecordFormats newInstance() {
+            public RecordFormats getInstance() {
                 return RECORD_FORMATS;
             }
         }

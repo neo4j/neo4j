@@ -44,7 +44,7 @@ public interface RecordFormats {
 
     @Service
     interface Factory extends NamedService {
-        RecordFormats newInstance();
+        RecordFormats getInstance();
     }
 
     /**
