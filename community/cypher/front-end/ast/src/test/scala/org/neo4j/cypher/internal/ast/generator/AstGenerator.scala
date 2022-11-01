@@ -266,6 +266,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.listOfSizeBetween
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
@@ -437,6 +438,12 @@ object AstGenerator {
     }
   }
 
+  def listOfSizeBetween[T](minSize: Int, maxSize: Int, elementGenerator: Gen[T]): Gen[List[T]] = {
+    for {
+      minRequiredElements <- sequence(Iterable.fill(minSize)(elementGenerator))(Buildable.buildableCanBuildFrom)
+      additionalElements <- listOfN(maxSize - minSize, elementGenerator)
+    } yield minRequiredElements.toList ++ additionalElements
+  }
 }
 
 /**
@@ -576,7 +583,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield res
 
   def _predicateComparisonChain: Gen[Expression] = for {
-    exprs <- listOfN(4, _expression)
+    exprs <- listOfSizeBetween(2, 4, _expression)
     pairs = exprs.sliding(2)
     gens = pairs.map(p => _predicateComparisonPar(p.head, p.last)).toList
     chain <- sequence(gens)(Buildable.buildableCanBuildFrom)
