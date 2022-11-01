@@ -298,7 +298,9 @@ class ExecutionContextFunctionIT {
             var handle = executionContext.procedures().functionGet(new QualifiedName(List.of("datetime"), "realtime"));
             AnyValue result = executionContext.procedures().builtInFunctionCall(handle.id(), new AnyValue[0]);
             assertThat(result).isInstanceOf(DateTimeValue.class);
-            assertThat(((DateTimeValue) result).asObjectCopy()).isAfter(referenceDateTime);
+            // Why equal? The clock is not ticking quick enough on some platforms to return different time
+            // for two requests for current time following quickly after each other
+            assertThat(((DateTimeValue) result).asObjectCopy()).isAfterOrEqualTo(referenceDateTime);
         });
     }
 
