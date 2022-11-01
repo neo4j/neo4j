@@ -102,9 +102,7 @@ class ToStringFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyC
   }
 
   test("toStringOrNull should not throw an exception for any value") {
-    val generator: Gen[Any] = for {
-      v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double], Gen.posNum[Int])
-    } yield v
+    val generator: Gen[Any] = Gen.oneOf[Any](Gen.numStr, Gen.alphaStr, Gen.posNum[Double], Gen.posNum[Int])
 
     forAll(generator) { s =>
       {

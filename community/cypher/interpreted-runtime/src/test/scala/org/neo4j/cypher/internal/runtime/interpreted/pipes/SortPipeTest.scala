@@ -62,9 +62,9 @@ class SortPipeTest extends CypherFunSuite {
       SortPipe(source, InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"), Ascending("y"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> "A", "y" -> 100),
-      Map("x" -> "B", "y" -> 10),
-      Map("x" -> "B", "y" -> 20)
+      Map[String, Any]("x" -> "A", "y" -> 100),
+      Map[String, Any]("x" -> "B", "y" -> 10),
+      Map[String, Any]("x" -> "B", "y" -> 20)
     ))
   }
 

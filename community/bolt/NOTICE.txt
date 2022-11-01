@@ -73,7 +73,7 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/KQueue
   Netty/Transport/Native/Unix/Common
   picocli
-  Scala Compiler
+  Scala Reflect
   WMI4Java
 
 BSD - Scala License

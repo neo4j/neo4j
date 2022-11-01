@@ -46,8 +46,9 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     }
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
+    val expected: List[Map[String, Any]] = lhsData.map(_ + rhsData)
 
-    result should beEquivalentTo(lhsData.map(_ + rhsData))
+    result should beEquivalentTo(expected)
   }
 
   test("Close should close current RHS and LHS.") {

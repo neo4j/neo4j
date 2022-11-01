@@ -57,6 +57,7 @@ Apache Software License, Version 2.0
   jackson-databind
   Java Concurrency Tools Core Library
   Java Native Access
+  java-diff-utils
   Jettison
   jPowerShell
   jProcesses
@@ -65,6 +66,7 @@ Apache Software License, Version 2.0
   mercator
   picocli
   Scala Compiler
+  Scala Reflect
   Scalap
   WMI4Java
 

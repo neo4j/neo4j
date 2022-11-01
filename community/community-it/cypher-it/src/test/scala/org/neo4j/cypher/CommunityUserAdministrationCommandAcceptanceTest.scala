@@ -97,7 +97,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val result = execute("SHOW USERS YIELD user, passwordChangeRequired")
 
     // THEN
-    result.toSet should be(Set(Map("user" -> defaultUsername, "passwordChangeRequired" -> true)))
+    result.toSet should be(Set(Map[String, Any]("user" -> defaultUsername, "passwordChangeRequired" -> true)))
   }
 
   test("should show users with yield and where, default user") {
@@ -105,7 +105,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val result = execute(s"SHOW USERS YIELD user, passwordChangeRequired WHERE user = '$defaultUsername'")
 
     // THEN
-    result.toSet should be(Set(Map("user" -> defaultUsername, "passwordChangeRequired" -> true)))
+    result.toSet should be(Set(Map[String, Any]("user" -> defaultUsername, "passwordChangeRequired" -> true)))
   }
 
   test("should show users with yield and where, created user") {
@@ -116,7 +116,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val result = execute(s"SHOW USERS YIELD user, passwordChangeRequired WHERE user = '$username'")
 
     // THEN
-    result.toList should be(List(Map("user" -> username, "passwordChangeRequired" -> true)))
+    result.toList should be(List(Map[String, Any]("user" -> username, "passwordChangeRequired" -> true)))
   }
 
   test("should show users with yield and skip") {
@@ -186,8 +186,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     result.toSet should be(Set(
-      Map("count" -> 1, "passwordChangeRequired" -> true),
-      Map("count" -> 1, "passwordChangeRequired" -> false)
+      Map[String, Any]("count" -> 1, "passwordChangeRequired" -> true),
+      Map[String, Any]("count" -> 1, "passwordChangeRequired" -> false)
     ))
   }
 

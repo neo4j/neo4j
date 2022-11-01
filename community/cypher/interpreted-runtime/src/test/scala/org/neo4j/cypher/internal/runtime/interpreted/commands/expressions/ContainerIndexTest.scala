@@ -76,7 +76,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("handles java map lookup") {
-    implicit val expression = literal(Map("a" -> 1, "b" -> "foo").asJava)
+    implicit val expression = literal(Map[String, Any]("a" -> 1, "b" -> "foo").asJava)
 
     idx("a") should equal(longValue(1))
     idx("b") should equal(Values.stringValue("foo"))

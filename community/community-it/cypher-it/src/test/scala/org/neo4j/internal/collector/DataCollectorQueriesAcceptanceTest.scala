@@ -176,7 +176,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
             "lhs" -> Map(
               "id" -> 1,
               "operator" -> "EagerAggregation",
-              "lhs" -> Map(
+              "lhs" -> Map[String, Any](
                 "id" -> 2,
                 "operator" -> "AllNodesScan"
               )
@@ -192,7 +192,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           "queryExecutionPlan" -> Map(
             "id" -> 0,
             "operator" -> "ProduceResults",
-            "lhs" -> Map(
+            "lhs" -> Map[String, Any](
               "id" -> 1,
               "operator" -> "NodeCountFromCountStore"
             )

@@ -97,7 +97,7 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   picocli
-  Scala Compiler
+  Scala Reflect
   WMI4Java
 
 BSD - Scala License

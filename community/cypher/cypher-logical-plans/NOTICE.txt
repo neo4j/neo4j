@@ -36,7 +36,7 @@ Apache Software License, Version 2.0
   Java Native Access
   Jettison
   LZ4 and xxHash
-  Scala Compiler
+  Scala Reflect
 
 BSD - Scala License
   Scala Library

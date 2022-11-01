@@ -951,7 +951,7 @@ object LogicalPlanToPlanBuilderString {
         Seq(
           wrapInQuotations(expressionStringifier(url)),
           wrapInQuotations(variableName),
-          format,
+          format.toString,
           fieldTerminatorStr
         ).mkString(", ")
       case Apply(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"

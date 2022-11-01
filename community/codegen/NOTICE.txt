@@ -38,7 +38,7 @@ Apache Software License, Version 2.0
   LZ4 and xxHash
   magnolia
   mercator
-  Scala Compiler
+  Scala Reflect
 
 BSD - Scala License
   Scala Library

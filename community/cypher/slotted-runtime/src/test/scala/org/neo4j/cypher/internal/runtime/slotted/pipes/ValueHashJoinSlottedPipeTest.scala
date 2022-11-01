@@ -149,7 +149,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
 
     // then
     testableResult(result, slotInfoForJoin) should equal(
-      List(Map("arg1" -> 42L, "arg2" -> intValue(666), "a" -> intValue(2), "b" -> intValue(2)))
+      List(Map[String, Any]("arg1" -> 42L, "arg2" -> intValue(666), "a" -> intValue(2), "b" -> intValue(2)))
     )
   }
 

@@ -34,9 +34,11 @@ Apache Software License, Version 2.0
   Caffeine cache
   IPAddress
   Java Native Access
+  java-diff-utils
   Jettison
   LZ4 and xxHash
   Scala Compiler
+  Scala Reflect
   scala-xml
   scalacheck-1.16
   scalactic

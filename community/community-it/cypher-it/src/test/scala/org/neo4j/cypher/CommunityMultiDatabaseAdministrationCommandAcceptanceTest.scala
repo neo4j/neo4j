@@ -390,7 +390,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE YIELD name RETURN count(name) as count, name")
 
     // THEN
-    result.toSet should be(Set(Map("count" -> 1, "name" -> DEFAULT_DATABASE_NAME)))
+    result.toSet should be(Set(Map[String, Any]("count" -> 1, "name" -> DEFAULT_DATABASE_NAME)))
   }
 
   test("should show databases with yield, return and skip") {

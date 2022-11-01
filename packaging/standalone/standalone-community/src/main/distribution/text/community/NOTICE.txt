@@ -132,7 +132,7 @@ Apache Software License, Version 2.0
   protobufjs
   request
   rxjs
-  Scala Compiler
+  Scala Reflect
   tslib
   tunnel-agent
   WMI4Java

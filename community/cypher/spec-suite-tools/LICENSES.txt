@@ -77,7 +77,7 @@ Apache Software License, Version 2.0
   openCypher TCK API
   openCypher TCK Features and Graphs
   picocli
-  Scala Compiler
+  Scala Reflect
   scala-collection-compat
   WMI4Java
 ------------------------------------------------------------------------------
