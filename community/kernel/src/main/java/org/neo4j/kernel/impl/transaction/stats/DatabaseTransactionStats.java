@@ -70,8 +70,8 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
 
     @Override
     public void upgradeToWriteTransaction() {
-        activeWriteTransactionCount.increment();
         activeReadTransactionCount.decrementAndGet();
+        activeWriteTransactionCount.increment();
     }
 
     @Override
