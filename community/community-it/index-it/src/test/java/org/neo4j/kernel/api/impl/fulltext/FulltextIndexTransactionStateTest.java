@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.Set;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,7 +90,9 @@ class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport {
             tx.commit();
         }
         try (Transaction tx = db.beginTx()) {
-            entityUtil.assertQueryFindsIdsInOrder(tx, "value", entityIdA, entityIdB);
+            var bothEntitiesResult = new String[] {entityIdA, entityIdB};
+            Arrays.sort(bothEntitiesResult);
+            entityUtil.assertQueryFindsIdsInOrder(tx, "value", bothEntitiesResult);
 
             entityUtil.deleteEntity(tx, entityIdA);
             entityUtil.assertQueryFindsIdsInOrder(tx, "value", entityIdB);
