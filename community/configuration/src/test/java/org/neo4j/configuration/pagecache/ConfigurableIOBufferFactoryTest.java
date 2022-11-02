@@ -21,11 +21,9 @@ package org.neo4j.configuration.pagecache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_buffered_flush_enabled;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -52,14 +50,13 @@ class ConfigurableIOBufferFactoryTest {
     }
 
     @Test
-    @Disabled
     void defaultBufferCreation() {
         var config = Config.defaults();
         var memoryTracker = new ScopedMemoryTracker(INSTANCE);
         var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
         try (var ioBuffer = bufferFactory.createBuffer()) {
-            assertTrue(ioBuffer.isEnabled());
-            assertThat(memoryTracker.usedNativeMemory()).isGreaterThan(0);
+            assertFalse(ioBuffer.isEnabled());
+            assertThat(memoryTracker.usedNativeMemory()).isZero();
         }
         assertThat(memoryTracker.usedNativeMemory()).isZero();
     }
