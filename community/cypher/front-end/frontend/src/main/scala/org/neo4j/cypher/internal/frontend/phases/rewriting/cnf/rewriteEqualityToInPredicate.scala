@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.DeterministicFunctionInvocation
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.In
@@ -37,9 +38,15 @@ import org.neo4j.cypher.internal.util.bottomUp
 /**
  * Normalize equality predicates into IN comparisons.
  */
-case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case class rewriteEqualityToInPredicate(semanticTable: SemanticTable) extends Rewriter {
 
-  override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = bottomUp(Rewriter.lift {
+    // if the value on the RHS depends on something else, we might use this Equals for a value hash join
+    case predicate @ Equals(_, rhs)
+      if rhs.dependencies.exists(variable =>
+        semanticTable.isNode(variable) || semanticTable.isRelationship(variable)
+      ) =>
+      predicate
     // if f is deterministic: f(a) = value => f(a) IN [value]
     case predicate@Equals(DeterministicFunctionInvocation(invocation), value) =>
       In(invocation, ListLiteral(Seq(value))(value.position))(predicate.position)
@@ -53,7 +60,18 @@ case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequ
       In(prop, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   })
 
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+  def apply(that: AnyRef): AnyRef = {
+    instance.apply(that)
+  }
+}
+
+case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step
+    with PlanPipelineTransformerFactory {
+
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter =
+    rewriteEqualityToInPredicate(from.semanticTable())
+
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def postConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn)
 

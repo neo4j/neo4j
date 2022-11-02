@@ -792,17 +792,25 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Order by label variable in a plan where NIJ is not possible, with 1 relationship pattern on the RHS") {
-      val plan = new given {
-        indexOn("B", "prop").providesOrder(orderCapability)
-      }.getLogicalPlanFor(s"MATCH (a:A), (b:B)-[r]-(c) WHERE a.prop = b.prop - c.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(10000)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 100)
+        .setRelationshipCardinality("()-[]->()", 50000)
+        .setRelationshipCardinality("(:B)-[]->()", 50)
+        .addNodeIndex("B", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .build()
 
-      plan._2 should equal(
-        new LogicalPlanBuilder()
+      planner.plan(
+        s"MATCH (a:A), (b:B)-[r]->(c) WHERE a.prop > b.prop - c.prop RETURN a ORDER BY a $cypherToken"
+      ) should equal(
+        planner.planBuilder()
           .produceResults("a")
-          .filter("a.prop = b.prop - c.prop")
+          .filter("cacheN[a.prop] > b.prop - c.prop")
           .cartesianProduct()
-          .|.expand("(b)-[r]-(c)")
+          .|.expandAll("(b)-[r]->(c)")
           .|.nodeByLabelScan("b", "B", IndexOrderNone)
+          .cacheProperties("cacheNFromStore[a.prop]")
           .nodeByLabelScan("a", "A", plannedOrder)
           .build()
       )
@@ -1557,7 +1565,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")), true, Seq(Descending(s"$variable.prop1"))),
       (s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC", BOTH, IndexOrderDescending, false,
         Seq.empty, false, Seq.empty)
-    ) 
+    )
   }
 
   test("Order by index backed for composite node index on more properties") {
@@ -1572,7 +1580,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       "n.prop3" -> cachedNodeProp("n", "prop3"),
       "n.prop4" -> cachedNodeProp("n", "prop4")
     )
-    
+
     compositeIndexOrderByMorePropsTestData("n").foreach {
       case (orderByString, orderCapability, indexOrder, fullSort, sortItems, partialSort, alreadySorted) =>
         // When

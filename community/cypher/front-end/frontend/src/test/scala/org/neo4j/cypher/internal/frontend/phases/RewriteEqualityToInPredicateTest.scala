@@ -83,6 +83,30 @@ class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingT
       "WITH 'TYPE' as x MATCH (a)-[r]->() WHERE type(r) IN [x] RETURN r")
   }
 
+  test("do not rewrite if expressions depend on previously bound nodes (both functions)") {
+    assertNotRewritten("MATCH (a), (b) WHERE toString(a.prop) = toString(b.prop) RETURN a, b")
+  }
+
+  test("do not rewrite if expressions depend on previously bound nodes (RHS function)") {
+    assertNotRewritten("MATCH (a), (b) WHERE a.prop = toString(b.prop) RETURN a, b")
+  }
+
+  test("do not rewrite if expressions depend on previously bound nodes (LHS function)") {
+    assertNotRewritten("MATCH (a), (b) WHERE toString(a.prop) = b.prop RETURN a, b")
+  }
+
+  test("do not rewrite if expressions depend on previously bound relationships (both functions)") {
+    assertNotRewritten("MATCH (a)-[r]->(c), (b)-[s]->(d) WHERE toString(r.prop) = toString(s.prop) RETURN a, b")
+  }
+
+  test("do not rewrite if expressions depend on previously bound relationships (RHS function)") {
+    assertNotRewritten("MATCH (a)-[r]->(c), (b)-[s]->(d) WHERE r.prop = toString(s.prop) RETURN a, b")
+  }
+
+  test("do not rewrite if expressions depend on previously bound relationships (LHS function)") {
+    assertNotRewritten("MATCH (a)-[r]->(c), (b)-[s]->(d) WHERE toString(r.prop) = s.prop RETURN a, b")
+  }
+
   test("MATCH (a) WHERE labels(a) = ['Label'] (no dependencies on the RHS)") {
     assertRewritten(
       "MATCH (a) WHERE labels(a) = ['Label'] RETURN a",
