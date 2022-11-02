@@ -1295,7 +1295,7 @@ case class LogicalPlanProducer(
     left: LogicalPlan,
     right: LogicalPlan,
     join: Equals,
-    originalPredicate: Equals,
+    originalPredicate: Expression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val plannerQuery = solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery

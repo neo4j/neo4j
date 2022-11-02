@@ -228,4 +228,67 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeByLabelScan("a", "A")
       .build()))
   }
+
+  test("should plan value hash join for the output of two functions being compared") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 20)
+      .build()
+
+    planner.plan(
+      """MATCH (a:A), (b:B)
+        |  WHERE toString(a.prop) = toString(b.prop)
+        |RETURN a, b""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        .valueHashJoin("toString(a.prop) = toString(b.prop)")
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test("should plan value hash join for the output of a function on RHS being compared") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 20)
+      .build()
+
+    planner.plan(
+      """MATCH (a:A), (b:B)
+        |  WHERE a.prop = toString(b.prop)
+        |RETURN a, b""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        .valueHashJoin("a.prop = toString(b.prop)")
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test("should plan value hash join for the output of a function on LHS being compared") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 20)
+      .build()
+
+    planner.plan(
+      """MATCH (a:A), (b:B)
+        |  WHERE toString(a.prop) = b.prop
+        |RETURN a, b""".stripMargin
+    ) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        .valueHashJoin("b.prop = toString(a.prop)")
+        .|.nodeByLabelScan("a", "A")
+        .nodeByLabelScan("b", "B")
+        .build()
+    )
+  }
 }

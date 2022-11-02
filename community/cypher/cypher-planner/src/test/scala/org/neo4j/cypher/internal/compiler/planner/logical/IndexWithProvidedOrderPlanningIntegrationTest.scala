@@ -1027,20 +1027,25 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Order by label variable in a plan where NIJ is not possible, with 1 relationship pattern on the RHS"
     ) {
-      val plan = new given {
-        indexOn("B", "prop").providesOrder(orderCapability)
-      }.getLogicalPlanFor(
-        s"MATCH (a:A), (b:B)-[r]-(c) WHERE a.prop = b.prop - c.prop RETURN a ORDER BY a $cypherToken",
-        stripProduceResults = false
-      )
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(10000)
+        .setLabelCardinality("A", 1)
+        .setLabelCardinality("B", 100)
+        .setRelationshipCardinality("()-[]->()", 50000)
+        .setRelationshipCardinality("(:B)-[]->()", 50)
+        .addNodeIndex("B", Seq("prop"), 0.001, 0.001, providesOrder = orderCapability)
+        .build()
 
-      plan._1 should equal(
-        new LogicalPlanBuilder()
+      planner.plan(
+        s"MATCH (a:A), (b:B)-[r]->(c) WHERE a.prop > b.prop - c.prop RETURN a ORDER BY a $cypherToken"
+      ) should equal(
+        planner.planBuilder()
           .produceResults("a")
-          .filter("a.prop = b.prop - c.prop")
+          .filter("cacheN[a.prop] > b.prop - c.prop")
           .cartesianProduct()
-          .|.expand("(b)-[r]-(c)")
+          .|.expandAll("(b)-[r]->(c)")
           .|.nodeByLabelScan("b", "B", IndexOrderNone)
+          .cacheProperties("cacheNFromStore[a.prop]")
           .nodeByLabelScan("a", "A", plannedOrder)
           .build()
       )

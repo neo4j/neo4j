@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.JoinPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -312,7 +313,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(equalityComparison))
 
     // then
-    result should equal(Set(equalityComparison))
+    result should equal(Set(JoinPredicate(equalityComparison, equalityComparison)))
   }
 
   test("if one side is a literal, it's not a value join") {
@@ -354,7 +355,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val result = cartesianProductsOrValueJoins.joinPredicateCandidates(Seq(pred1, pred2, pred3))
 
     // then
-    result should be(Set(pred2))
+    result should be(Set(JoinPredicate(pred2, pred2)))
   }
 
   test("find predicates that depend on two different qgs is possible") {

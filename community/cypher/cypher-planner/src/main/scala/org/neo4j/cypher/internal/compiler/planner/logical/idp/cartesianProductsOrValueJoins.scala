@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -413,15 +415,21 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       ) && !planB.bestResult.satisfiesExpressionDependencies(join.lhs) && planA != planB
     } yield {
       val hashJoinAB = kit.select(
-        context.logicalPlanProducer.planValueHashJoin(planA.bestResult, planB.bestResult, join, join, context),
+        context.logicalPlanProducer.planValueHashJoin(
+          planA.bestResult,
+          planB.bestResult,
+          join.predicateToPlan,
+          join.originalPredicate,
+          context
+        ),
         qg
       )
       val hashJoinBA = kit.select(
         context.logicalPlanProducer.planValueHashJoin(
           planB.bestResult,
           planA.bestResult,
-          join.switchSides,
-          join,
+          join.inversePredicateToPlan,
+          join.originalPredicate,
           context
         ),
         qg
@@ -585,15 +593,30 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       case _ => false
     }
 
+  case class JoinPredicate(
+    // this is the predicate found in the query graph
+    originalPredicate: Expression,
+    // this is the equals predicate used for the join
+    predicateToPlan: Equals
+  ) {
+    val lhs: Expression = predicateToPlan.lhs
+    val rhs: Expression = predicateToPlan.rhs
+    val inversePredicateToPlan = predicateToPlan.switchSides
+  }
+
   /**
    * Given all predicates, find the ones eligible for value hash joins.
    * Those are equality predicates where both sides have different non-empty dependencies.
    */
-  def joinPredicateCandidates(flatPredicates: Seq[Expression]): Set[Equals] = flatPredicates.collect {
+  def joinPredicateCandidates(flatPredicates: Seq[Expression]): Set[JoinPredicate] = flatPredicates.collect {
     case e @ Equals(l, r)
       if l.dependencies.nonEmpty &&
         r.dependencies.nonEmpty &&
-        r.dependencies != l.dependencies => e
+        r.dependencies != l.dependencies => JoinPredicate(e, e)
+    case in @ In(l, ListLiteral(Seq(r)))
+      if l.dependencies.nonEmpty &&
+        r.dependencies.nonEmpty &&
+        r.dependencies != l.dependencies => JoinPredicate(in, Equals(l, r)(in.position))
   }.toSet
 
   /**
