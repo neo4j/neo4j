@@ -51,12 +51,13 @@ import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 import org.neo4j.bolt.v44.BoltProtocolV44;
 import org.neo4j.bolt.v44.BoltProtocolV44ComponentFactory;
+import org.neo4j.bolt.v44.messaging.request.RouteMessage;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -447,6 +448,23 @@ public class BoltV44TransportIT
         // commit the transaction
         connection.send( util.chunk( CommitMessage.COMMIT_MESSAGE ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReplaceInvalidCharacters( Class<? extends TransportConnection> connectionClass ) throws Exception
+    {
+        init( connectionClass );
+
+        negotiateBoltV44();
+
+        connection.send( util.defaultRunAutoCommitTx( "create (x:\uD83E\uDD2F) return x;" ) );
+
+        // when an unknown multibyte character is parsed, it has the tendency to be split into a single invalid character thus breaking the encoding. In that
+        // case, we want to make sure that it is replaced with a known good character as the connection would be terminated without providing adequate feedback
+        // otherwise
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgFailure( Status.Statement.SyntaxError, "Invalid input '?'" ) ) );
     }
 
     private void negotiateBoltV44() throws Exception

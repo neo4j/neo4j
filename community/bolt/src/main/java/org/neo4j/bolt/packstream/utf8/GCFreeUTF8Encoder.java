@@ -171,9 +171,7 @@ public class GCFreeUTF8Encoder implements UTF8Encoder
                 }
                 if ( uc < 0 )
                 {
-                    // encode without replacement.
-                    throw new PackStreamException( String.format( "Failure when converting to UTF-8. " +
-                            "String: %s\n%s", new String( val, StandardCharsets.UTF_16 ), HexPrinter.hex( val ) ) );
+                    dst[dp++] = '?';
                 }
                 else
                 {
