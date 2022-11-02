@@ -34,12 +34,16 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.e
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.getEffectiveBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
@@ -113,6 +117,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Multiplier
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.WorkReduction
 
@@ -303,6 +308,9 @@ object CardinalityCostModel {
    */
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
     val noOfStoreAccesses = expression.folder.treeFold(0) {
+      case AndedPropertyInequalities(_: LogicalVariable, _: LogicalProperty, _: NonEmptyList[InequalityExpression]) =>
+        count =>
+          TraverseChildren(count - PROPERTY_ACCESS_DB_HITS) // Ignore the `property` grouping key in `AndedPropertyInequalities`, only count properties inside `properties`.
       case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) =>
         count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedProperty if cp.knownToAccessStore    => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)

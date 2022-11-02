@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.L
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -761,5 +762,30 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     }
 
     costWithLhsCardinality(0.5) should be < costWithLhsCardinality(1.0)
+  }
+
+  test("should only count properties inside the inequalities of an AndedPropertyInequalities") {
+
+    def costForPredicate(predicate: Expression): Cost = {
+      val builder = new LogicalPlanBuilder(wholePlan = false)
+
+      val plan =
+        builder
+          .filterExpression(predicate).withCardinality(36)
+          .nodeByLabelScan("a", "Foo").withCardinality(120)
+          .build()
+
+      costFor(
+        plan,
+        QueryGraphSolverInput.empty,
+        builder.getSemanticTable,
+        builder.cardinalities,
+        builder.providedOrders
+      )
+    }
+
+    val inequality = greaterThan(prop("a", "prop"), literalUnsignedInt(10))
+
+    costForPredicate(andedPropertyInequalities(inequality)) shouldEqual costForPredicate(inequality)
   }
 }
