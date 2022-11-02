@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 
+import java.util.Collections.EMPTY_SET
 import java.util.Collections.emptyList
 
 abstract class TrailTestBase[CONTEXT <: RuntimeContext](
@@ -642,6 +644,48 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         Array(n4, null, null, null)
       )
     )
+  }
+
+  test("should handle double relationship path with filter") {
+    val (n1, n2, n3, r1, r2) = given {
+      val n1 = tx.createNode()
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r1 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      val r2 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+      (n1, n2, n3, r1, r2)
+    }
+    val `() ((a)->[r]->(b)->[s]->(c))+ ()` : TrailParameters = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_start",
+      end = "anon_end",
+      innerStart = "a_inner",
+      innerEnd = "c_inner",
+      groupNodes = Set(("b_inner", "b"), ("c_inner", "c"), ("a_inner", "a")),
+      groupRelationships = Set(("r_inner", "r"), ("s_inner", "s")),
+      innerRelationships = Set("r_inner", "s_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty
+    )
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c", "r", "s")
+      .trail(`() ((a)->[r]->(b)->[s]->(c))+ ()`)
+      .|.filter("not s_inner = r_inner")
+      .|.expandAll("(b_inner)-[s_inner]->(c_inner)")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("a", "anon_start")
+      .allNodeScan("anon_start")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("a", "b", "c", "r", "s")
+      .withRows(
+        Seq(
+          Array(listOf(n1), listOf(n2), listOf(n3), listOf(r1), listOf(r2))
+        )
+      )
   }
 
   private def listOf(values: AnyRef*) = java.util.List.of(values: _*)

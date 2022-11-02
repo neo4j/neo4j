@@ -61,8 +61,8 @@ case class TrailSlottedPipe(
   endOffset: Int,
   innerStarOffset: Int,
   innerEndSlot: Slot,
-  groupNodes: Set[GroupSlot],
-  groupRelationships: Set[GroupSlot],
+  groupNodes: Array[GroupSlot],
+  groupRelationships: Array[GroupSlot],
   innerRelationships: Set[Slot],
   previouslyBoundRelationships: Set[Slot],
   previouslyBoundRelationshipGroups: Set[Slot],
@@ -76,11 +76,11 @@ case class TrailSlottedPipe(
 
   private val groupNodeGetters = groupNodes.map { case GroupSlot(s, _) =>
     makeGetPrimitiveRelationshipFromSlotFunctionFor(s)
-  }.toArray
+  }
 
   private val groupRelGetters = groupRelationships.map { case GroupSlot(s, _) =>
     makeGetPrimitiveRelationshipFromSlotFunctionFor(s)
-  }.toArray
+  }
   private val innerRelGetters = innerRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
 
   private val previouslyBoundRelGetters =
@@ -88,13 +88,13 @@ case class TrailSlottedPipe(
 
   private val previouslyBoundRelGroupGetters =
     previouslyBoundRelationshipGroups.map(s => makeGetValueFromSlotFunctionFor(s)).toArray
-  private val groupNodeSetters = groupNodes.map { case GroupSlot(_, s) => makeSetValueInSlotFunctionFor(s) }.toArray
+  private val groupNodeSetters = groupNodes.map { case GroupSlot(_, s) => makeSetValueInSlotFunctionFor(s) }
 
   private val groupRelSetters = groupRelationships.map { case GroupSlot(_, s) =>
     makeSetValueInSlotFunctionFor(s)
-  }.toArray
-  private val emptyGroupNodes = emptyLists(groupNodes.size)
-  private val emptyGroupRelationships = emptyLists(groupRelationships.size)
+  }
+  private val emptyGroupNodes = emptyLists(groupNodes.length)
+  private val emptyGroupRelationships = emptyLists(groupRelationships.length)
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
