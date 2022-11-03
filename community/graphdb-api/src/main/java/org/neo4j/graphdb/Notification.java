@@ -61,4 +61,12 @@ public interface Notification {
      * {@link org.neo4j.graphdb.InputPosition#empty} if no position is associated with this notification.
      */
     InputPosition getPosition();
+
+    /**
+     * Returns the category of this notification.
+     * @return the category of the notification.
+     */
+    default NotificationCategory getCategory() {
+        return NotificationCategory.UNKNOWN;
+    }
 }

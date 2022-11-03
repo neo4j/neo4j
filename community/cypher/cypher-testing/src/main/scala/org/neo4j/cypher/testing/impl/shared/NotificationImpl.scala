@@ -21,6 +21,7 @@ package org.neo4j.cypher.testing.impl.shared
 
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.NotificationCategory
 import org.neo4j.graphdb.SeverityLevel
 
 case class NotificationImpl(
@@ -28,13 +29,15 @@ case class NotificationImpl(
   title: String,
   description: String,
   severity: SeverityLevel,
-  position: InputPosition
+  position: InputPosition,
+  category: NotificationCategory
 ) extends Notification {
   override def getCode: String = code
   override def getTitle: String = title
   override def getDescription: String = description
   override def getSeverity: SeverityLevel = severity
   override def getPosition: InputPosition = position
+  override def getCategory: NotificationCategory = category
 }
 
 object NotificationImpl {
@@ -44,9 +47,17 @@ object NotificationImpl {
     title: String,
     description: String,
     severity: String,
-    position: InputPosition
+    position: InputPosition,
+    category: String
   ): NotificationImpl =
-    NotificationImpl(code, title, description, SeverityLevel.valueOf(severity), position)
+    NotificationImpl(
+      code,
+      title,
+      description,
+      SeverityLevel.valueOf(severity),
+      position,
+      NotificationCategory.valueOf(category)
+    )
 
   def fromRaw(
     code: String,
@@ -55,7 +66,9 @@ object NotificationImpl {
     severity: String,
     posOffset: Int,
     posLine: Int,
-    posColumn: Int
+    posColumn: Int,
+    category: String
   ): NotificationImpl =
-    fromRaw(code, title, description, severity, new InputPosition(posOffset, posLine, posColumn))
+    fromRaw(code, title, description, severity, new InputPosition(posOffset, posLine, posColumn), category)
+
 }

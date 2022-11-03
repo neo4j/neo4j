@@ -24,6 +24,7 @@ import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.driver.Result
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.NotificationCategory
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
@@ -47,7 +48,8 @@ case class DriverStatementResult(private val driverResult: Result) extends State
           n.severity,
           Option(n.position())
             .map(pos => new InputPosition(pos.offset(), pos.line(), pos.column()))
-            .getOrElse(InputPosition.empty)
+            .getOrElse(InputPosition.empty),
+          NotificationCategory.UNKNOWN.name()
         )
       )
 }

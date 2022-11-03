@@ -22,6 +22,7 @@ package org.neo4j.server.http.cypher.entity;
 import java.util.ArrayList;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.IntValue;
@@ -36,13 +37,21 @@ public class HttpNotification implements Notification {
     private final SeverityLevel severity;
     private final InputPosition inputPosition;
 
+    private final NotificationCategory category;
+
     private HttpNotification(
-            String code, String title, String description, String severity, InputPosition inputPosition) {
+            String code,
+            String title,
+            String description,
+            String severity,
+            InputPosition inputPosition,
+            String category) {
         this.code = code;
         this.title = title;
         this.description = description;
         this.severity = SeverityLevel.valueOf(severity);
         this.inputPosition = inputPosition;
+        this.category = NotificationCategory.valueOf(category);
     }
 
     public static Iterable<Notification> iterableFromAnyValue(AnyValue anyValue) {
@@ -70,7 +79,10 @@ public class HttpNotification implements Notification {
                     ((TextValue) mapValue.get("title")).stringValue(),
                     ((TextValue) mapValue.get("description")).stringValue(),
                     ((TextValue) mapValue.get("severity")).stringValue(),
-                    inputPosition));
+                    inputPosition,
+                    mapValue.containsKey("category")
+                            ? ((TextValue) mapValue.get("category")).stringValue()
+                            : NotificationCategory.UNKNOWN.name()));
         });
 
         return notifications;
@@ -99,5 +111,10 @@ public class HttpNotification implements Notification {
     @Override
     public InputPosition getPosition() {
         return inputPosition;
+    }
+
+    @Override
+    public NotificationCategory getCategory() {
+        return category;
     }
 }

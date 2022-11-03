@@ -54,7 +54,8 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
           n.severity,
           Option(n.position)
             .map(pos => new InputPosition(pos.offset, pos.line, pos.column))
-            .getOrElse(InputPosition.empty)
+            .getOrElse(InputPosition.empty),
+          n.category
         )
       )
       .toList
@@ -63,7 +64,15 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
 object HttpStatementResult {
   case class Response(results: Seq[Result], errors: Seq[Error], notifications: Option[Seq[Notification]])
   case class Error(code: String, message: String)
-  case class Notification(code: String, title: String, description: String, severity: String, position: Position)
+
+  case class Notification(
+    code: String,
+    title: String,
+    description: String,
+    severity: String,
+    position: Position,
+    category: String
+  )
   case class Position(offset: Int, line: Int, column: Int)
   case class Result(columns: Seq[String], data: Seq[Row])
   case class Row(row: Seq[AnyRef])
