@@ -856,13 +856,8 @@ case class Prettifier(
           val lhs = queryPart(union.part)
           val rhs = queryPart(union.query)
           val operation = union match {
-            case _: UnionAll      => s"${INDENT}UNION ALL"
-            case _: UnionDistinct => s"${INDENT}UNION"
-
-            case u: ProjectingUnionAll =>
-              s"${INDENT}UNION ALL mappings: (${u.unionMappings.map(asString).mkString(", ")})"
-            case u: ProjectingUnionDistinct =>
-              s"${INDENT}UNION mappings: (${u.unionMappings.map(asString).mkString(", ")})"
+            case _: UnionAll | _: ProjectingUnionAll           => s"${INDENT}UNION ALL"
+            case _: UnionDistinct | _: ProjectingUnionDistinct => s"${INDENT}UNION"
           }
           Seq(lhs, operation, rhs).mkString(NL)
       }

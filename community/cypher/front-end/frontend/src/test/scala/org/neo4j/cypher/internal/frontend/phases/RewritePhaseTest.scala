@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClaus
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -100,7 +99,7 @@ trait RewritePhaseTest {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
     val parsedAst = JavaCCParser.parse(queryText, exceptionFactory)
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger)))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
     if (astRewriteAndAnalyze) {
       ASTRewriter.rewrite(
         cleanedAst,

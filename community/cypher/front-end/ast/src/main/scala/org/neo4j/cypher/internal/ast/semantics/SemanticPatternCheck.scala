@@ -75,20 +75,20 @@ import org.neo4j.cypher.internal.util.topDown
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
-    ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern) chain
-      semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
+    semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) chain
       ensureNoReferencesOutFromQuantifiedPath(pattern) chain
       ensureNoRepeatedRelationships(pattern) chain
-      ensureNoRepeatedVarLengthRelationships(pattern)
+      ensureNoRepeatedVarLengthRelationships(pattern) chain
+      ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
-    ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern) chain
-      declareVariables(ctx, pattern.element) chain
+    declareVariables(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
       ensureNoRepeatedRelationships(pattern) chain
-      ensureNoRepeatedVarLengthRelationships(pattern)
+      ensureNoRepeatedVarLengthRelationships(pattern) chain
+      ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern)
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
@@ -657,12 +657,15 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     (state: SemanticState) => {
       val repetitions = astNode.folder.fold(List.empty[LogicalVariable]) {
         case RelationshipChain(_, RelationshipPattern(Some(rel), _, Some(_), _, _, _), _) =>
-          state.currentScope.localSymbol(rel.name) match {
-            case Some(_) =>
-              // var length relationship variable already defined
-              acc => acc ++ List(rel)
-            case _ =>
-              acc => acc
+          if (
+            state.currentScope.availableSymbolDefinitions.exists { s =>
+              s.name == rel.name && s.asVariable.position != rel.position
+            }
+          ) {
+            // var length relationship variable defined in a different position
+            acc => acc ++ List(rel)
+          } else {
+            acc => acc
           }
         case _ => acc => acc
       }

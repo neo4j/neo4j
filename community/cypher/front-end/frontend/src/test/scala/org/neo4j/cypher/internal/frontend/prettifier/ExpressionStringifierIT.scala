@@ -72,6 +72,7 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "EXISTS { MATCH (n)}" -> "EXISTS { MATCH (n) }",
       "EXISTS { MATCH (n) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n) WHERE n.prop = \"f\" }",
       "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",
+      "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f' RETURN n }" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\"\nRETURN n }",
       "COUNT {(n)}" -> "COUNT { (n) }",
       "COUNT {(n)<-[]->(m)}" -> "COUNT { (n)--(m) }",
       "COUNT {(n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "COUNT { (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",

@@ -86,6 +86,8 @@ public interface ASTFactory<
                 LABEL_EXPRESSION,
                 PARAMETER,
                 PATTERN,
+                QUERY,
+                WHERE,
                 VARIABLE,
                 PROPERTY,
                 MAP_PROJECTION_ITEM,

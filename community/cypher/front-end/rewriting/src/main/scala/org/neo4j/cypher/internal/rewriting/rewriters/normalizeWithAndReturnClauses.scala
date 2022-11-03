@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.ProjectionClause
@@ -46,7 +47,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -77,8 +77,7 @@ case object ExpressionsInOrderByAndWhereUseAliases extends Condition
  * RETURN prop AS prop
  */
 case class normalizeWithAndReturnClauses(
-  cypherExceptionFactory: CypherExceptionFactory,
-  notificationLogger: InternalNotificationLogger
+  cypherExceptionFactory: CypherExceptionFactory
 ) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = that match {
@@ -184,6 +183,13 @@ case class normalizeWithAndReturnClauses(
     case clause @ ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
       clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri))
 
+    case fullExists @ FullExistsExpression(query) =>
+      fullExists.copy(query = query.copy(part = rewriteTopLevelQueryPart(query.part))(query.position))(
+        fullExists.position,
+        fullExists.introducedVariables,
+        fullExists.scopeDependencies
+      )
+
     // Alias return items and rewrite ORDER BY and WHERE
     case clause @ ProjectionClause(_, ri: ReturnItems, orderBy, _, _, where) =>
       clause.verifyOrderByAggregationUse((s, i) => throw cypherExceptionFactory.syntaxException(s, i))
@@ -251,11 +257,8 @@ case class normalizeWithAndReturnClauses(
 
 case object normalizeWithAndReturnClauses extends Step with PreparatoryRewritingRewriterFactory {
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    notificationLogger: InternalNotificationLogger
-  ): Rewriter = {
-    normalizeWithAndReturnClauses(cypherExceptionFactory, notificationLogger)
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = {
+    normalizeWithAndReturnClauses(cypherExceptionFactory)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty

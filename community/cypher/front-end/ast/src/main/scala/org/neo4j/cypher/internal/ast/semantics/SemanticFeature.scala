@@ -48,6 +48,10 @@ object SemanticFeature {
     override def name: String = "CALL IN TRANSACTIONS status report and error handling"
   }
 
+  case object FullExistsSupport extends SemanticFeature with FeatureToString {
+    override def name: String = "Full Exists Expression support"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -55,7 +59,8 @@ object SemanticFeature {
     ExpressionsInViewInvocations,
     WithInitialQuerySignature,
     QuantifiedPathPatterns,
-    CallInTxsStatusAndErrorHandling
+    CallInTxsStatusAndErrorHandling,
+    FullExistsSupport
   )
 
   def fromString(str: String): SemanticFeature =

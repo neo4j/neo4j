@@ -423,7 +423,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL existsExpression(NULL p, List<NULL> nulls, NULL where) {
+    public NULL existsExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
         return null;
     }
 

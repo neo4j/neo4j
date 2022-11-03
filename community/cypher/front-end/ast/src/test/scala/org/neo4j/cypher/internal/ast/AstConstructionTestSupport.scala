@@ -603,7 +603,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       NodePattern(Some(nodeVar1), None, None, None)(pos),
       RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), None, None, None)(pos)
-    )(pos))(pos))(Set.empty)
+    )(pos))(pos))(Set.empty, Set.empty)
 
   def nodes(p: PathExpression): FunctionInvocation = {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)

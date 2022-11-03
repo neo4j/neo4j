@@ -194,16 +194,18 @@ object Metrics {
 
 trait ExpressionEvaluator {
 
-  def hasParameters(expr: Expression): Boolean = expr.inputs.exists {
-    case (Parameter(_, _), _) => true
-    case _                    => false
+  def hasParameters(expr: Expression): Boolean = expr.folder.findAllByClass[Expression].exists {
+    case Parameter(_, _) => true
+    case _               => false
   }
 
-  def isDeterministic(expr: Expression): Boolean = expr.inputs.forall {
-    case (func @ FunctionInvocation(_, _, _, _), _) if func.function == Rand || func.function == RandomUUID => false
-    // for UDFs we don't know but the result might be non-deterministic
-    case (_: ResolvedFunctionInvocation, _) => false
-    case _                                  => true
+  def isDeterministic(expr: Expression): Boolean = {
+    expr.folder.findAllByClass[Expression].forall {
+      case func @ FunctionInvocation(_, _, _, _) if func.function == Rand || func.function == RandomUUID => false
+      // for UDFs we don't know but the result might be non-deterministic
+      case _: ResolvedFunctionInvocation => false
+      case _                             => true
+    }
   }
 
   def evaluateExpression(expr: Expression): Option[Any]

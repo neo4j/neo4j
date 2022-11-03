@@ -315,9 +315,10 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     val innerVars = Set(pattern.nodes._1, pattern.name, pattern.nodes._2)
     val innerPreds = innerVars.flatMap(predicates.get)
 
+    val arguments = innerVars.intersect(elementsToKeep)
     val query = PlannerQuery(RegularSinglePlannerQuery(
       queryGraph = QueryGraph(
-        argumentIds = innerVars.intersect(elementsToKeep),
+        argumentIds = arguments,
         patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
         patternRelationships = Set(pattern),
         selections = Selections.from(innerPreds)
@@ -335,7 +336,11 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       query,
       anonymousVariableNameGenerator.nextName,
       s"EXISTS { MATCH $pattern$whereString }"
-    )(InputPosition.NONE)
+    )(
+      InputPosition.NONE,
+      Set.empty, // There is no reasonable way of calculating introduced variables, so IRExpressions should not be accessing it and it can be left blank
+      arguments.map(Variable(_)(InputPosition.NONE))
+    )
   }
 
   implicit class FlatMapWithTailable(in: IndexedSeq[QueryGraph]) {

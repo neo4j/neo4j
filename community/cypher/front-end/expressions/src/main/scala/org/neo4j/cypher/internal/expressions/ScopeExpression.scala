@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 // Scope expressions bundle together variables of a new scope
@@ -68,11 +69,19 @@ case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, 
 }
 
 /**
- * A scope expression which also keeps track of the scope around it.
+ * A scope expression which holds pre-computed dependencies from RecordScope.
+ * introducedVariables: Variables introduced by this scope
+ * scopeDependencies: Variables that are referencing outer scope variables
+ * subqueryAstNode: Refers to the inner ASTNode that can used to compute the dependencies
  */
-trait ExpressionWithOuterScope extends Expression {
+trait ExpressionWithComputedDependencies extends Expression {
   self: ScopeExpression =>
 
-  def outerScope: Set[LogicalVariable]
-  def withOuterScope(outerScope: Set[LogicalVariable]): Expression
+  override val introducedVariables: Set[LogicalVariable]
+  override val scopeDependencies: Set[LogicalVariable]
+
+  def subqueryAstNode: ASTNode
+
+  def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies
+  def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriterTest.relPattern
 import org.neo4j.cypher.internal.expressions.CountExpression
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -58,11 +60,15 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
   // All pattern elements have been named at this point, so the outer scope of PatternExpression is used to signal which expressions come from the outside.
   // In the test names, empty names denote anonymous notes, i.e. ones that do not come from the outside.
 
-  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator())
+  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
 
   test("Rewrite exists( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() ) > 0") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(from = Some("a"), relationships = Seq("FOO")))(pos))
+      createIrExpressions(Exists(patternExpression(
+        from = Some("a"),
+        relationships = Seq("FOO"),
+        scopeDependencies = Set(varFor("a"))
+      ))(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -70,7 +76,11 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Rewrite exists( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() ) > 0") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(to = Some("a"), relationships = Seq("FOO")))(pos))
+      createIrExpressions(Exists(patternExpression(
+        to = Some("a"),
+        relationships = Seq("FOO"),
+        scopeDependencies = Set(varFor("a"))
+      ))(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(0))(pos)
     getDegreeRewriter(incoming) should equal(expected)
   }
@@ -79,7 +89,11 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     "Rewrite exists( (a)-[:FOO|:BAR]->() ) to HasDegreeGreaterThan( (a)-[:FOO]->(), 0) OR HasDegreeGreaterThan( (a)-[:BAR]->(), 0)"
   ) {
     val incoming = createIrExpressions(Exists.asInvocation(
-      patternExpression(from = Some("a"), relationships = Seq("FOO", "BAR"))
+      patternExpression(
+        from = Some("a"),
+        relationships = Seq("FOO", "BAR"),
+        scopeDependencies = Set(varFor("a"))
+      )
     )(pos))
     val expected =
       ors(
@@ -95,7 +109,8 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       from = Some("a"),
       to = Some("b"),
       relationships = Seq("FOO"),
-      fromPropertyPredicate = Some(mapOf("prop" -> literalInt(5)))
+      fromPropertyPredicate = Some(mapOf("prop" -> literalInt(5))),
+      scopeDependencies = Set(varFor("a"))
     ))(pos))
 
     getDegreeRewriter(incoming) should equal(incoming)
@@ -103,7 +118,12 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Does not rewrite exists( (a)-[:FOO]->(b) )") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))(
+      createIrExpressions(Exists(patternExpression(
+        from = Some("a"),
+        to = Some("b"),
+        relationships = Seq("FOO"),
+        introducedVariables = Set(varFor("p"), varFor("a"), varFor("r"), varFor("b"))
+      ))(
         pos
       ))
 
@@ -114,12 +134,15 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     from: Option[String] = None,
     to: Option[String] = None,
     relationships: Seq[String] = Seq.empty,
-    fromPropertyPredicate: Option[Expression] = None
+    fromPropertyPredicate: Option[Expression] = None,
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
   ) = {
     PatternExpression(
       pattern = relPattern(from, to, relationships, fromPropertyPredicate)
     )(
-      outerScope = (from.toSet ++ to.toSet).map(varFor(_))
+      introducedVariables = introducedVariables,
+      scopeDependencies = scopeDependencies
     )
   }
 }
@@ -153,7 +176,9 @@ class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterC
     from: Option[String],
     to: Option[String],
     relationships: Seq[String],
-    predicate: Option[Expression]
+    predicate: Option[Expression],
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
   ): Expression = {
     Size(
       PatternComprehension(
@@ -163,7 +188,8 @@ class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterC
         projection = literalInt(1)
       )(
         position = pos,
-        outerScope = (from.toSet ++ to.toSet).map(varFor(_))
+        introducedVariables = introducedVariables,
+        scopeDependencies = scopeDependencies
       )
     )(pos)
   }
@@ -177,14 +203,17 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
     from: Option[String],
     to: Option[String],
     relationships: Seq[String],
-    predicate: Option[Expression]
+    predicate: Option[Expression],
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
   ): Expression = {
     CountExpression(
       pattern = Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
       optionalWhereExpression = predicate
     )(
       position = pos,
-      outerScope = (from.toSet ++ to.toSet).map(varFor(_))
+      introducedVariables = introducedVariables,
+      scopeDependencies = scopeDependencies
     )
   }
 
@@ -197,16 +226,22 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     from: Option[String] = None,
     to: Option[String] = None,
     relationships: Seq[String] = Seq.empty,
-    predicate: Option[Expression] = None
+    predicate: Option[Expression] = None,
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
   ): Expression
 
   protected def testNameExpr(pattern: String): String
 
-  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator())
+  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} to GetDegree( (a)-[:FOO]->() )") {
     val incoming =
-      createIrExpressions(makeInputExpression(from = Some("a"), relationships = Seq("FOO")))
+      createIrExpressions(makeInputExpression(
+        from = Some("a"),
+        relationships = Seq("FOO"),
+        scopeDependencies = Set(varFor("a"))
+      ))
     val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -214,7 +249,11 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} to GetDegree( (a)<-[:FOO]-() )") {
     val incoming =
-      createIrExpressions(makeInputExpression(to = Some("a"), relationships = Seq("FOO")))
+      createIrExpressions(makeInputExpression(
+        to = Some("a"),
+        relationships = Seq("FOO"),
+        scopeDependencies = Set(varFor("a"))
+      ))
     val expected = GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
@@ -222,7 +261,11 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO|:BAR]->()")} to GetDegree( (a)-[:FOO]->() ) + GetDegree( (a)-[:BAR]->() )") {
     val incoming =
-      createIrExpressions(makeInputExpression(from = Some("a"), relationships = Seq("FOO", "BAR")))
+      createIrExpressions(makeInputExpression(
+        from = Some("a"),
+        relationships = Seq("FOO", "BAR"),
+        scopeDependencies = Set(varFor("a"))
+      ))
     val expected =
       add(
         GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING)(pos),
@@ -234,7 +277,12 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Does not rewrite ${testNameExpr("[ (a)-[:FOO]->(b)")}") {
     val incoming =
-      createIrExpressions(makeInputExpression(from = Some("a"), to = Some("b"), relationships = Seq("FOO")))
+      createIrExpressions(makeInputExpression(
+        from = Some("a"),
+        to = Some("b"),
+        relationships = Seq("FOO"),
+        scopeDependencies = Set(varFor("a"), varFor("b"))
+      ))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
@@ -244,7 +292,8 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
       from = Some("a"),
       to = Some("b"),
       relationships = Seq("FOO"),
-      predicate = Some(prop("a", "prop"))
+      predicate = Some(prop("a", "prop")),
+      scopeDependencies = Set(varFor("a"), varFor("b"))
     ))(pos))
 
     getDegreeRewriter(incoming) should equal(incoming)
@@ -253,7 +302,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} > 5 to HasDegreeGreaterThan( (a)-[:FOO]->() , 5)") {
     val incoming =
       createIrExpressions(GreaterThan(
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
@@ -264,7 +313,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} > 5 to HasDegreeGreaterThan( (a)<-[:FOO]-() , 5)") {
     val incoming =
       createIrExpressions(GreaterThan(
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
@@ -276,7 +325,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(GreaterThan(
         literalInt(5),
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
@@ -287,7 +336,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(GreaterThan(
         literalInt(5),
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
@@ -296,7 +345,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} >= 5 to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
     val incoming = createIrExpressions(GreaterThanOrEqual(
-      makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
       literalInt(5)
     )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
@@ -306,7 +355,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} >= 5 to HasDegreeGreaterThanOrEqual( (a)<-[:FOO]-() , 5)") {
     val incoming = createIrExpressions(GreaterThanOrEqual(
-      makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+      makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
       literalInt(5)
     )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
@@ -317,7 +366,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite 5 >= ${testNameExpr("(a)-[:FOO]->()")} to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
     val incoming = createIrExpressions(GreaterThanOrEqual(
       literalInt(5),
-      makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
     )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
@@ -327,7 +376,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite 5 >= ${testNameExpr("()-[:FOO]->(a)")} to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
     val incoming = createIrExpressions(GreaterThanOrEqual(
       literalInt(5),
-      makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+      makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
     )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
@@ -337,7 +386,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} = 5 to HasDegree( (a)-[:FOO]->() , 5)") {
     val incoming =
       createIrExpressions(Equals(
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
@@ -348,7 +397,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} = 5 to HasDegree( (a)<-[:FOO]-() , 5)") {
     val incoming =
       createIrExpressions(Equals(
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
@@ -360,7 +409,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(Equals(
         literalInt(5),
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
@@ -371,7 +420,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(Equals(
         literalInt(5),
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
@@ -380,7 +429,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} <= 5 to HasDegreeLessThanOrEqual( (a)-[:FOO]->() , 5)") {
     val incoming = createIrExpressions(LessThanOrEqual(
-      makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
       literalInt(5)
     )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
@@ -391,7 +440,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} <= 5 to HasDegreeLessThanOrEqual( (a)<-[:FOO]-() , 5)") {
     val incoming =
       createIrExpressions(LessThanOrEqual(
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegreeLessThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
@@ -402,7 +451,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite 5 <= ${testNameExpr("(a)-[:FOO]->()")} to HasDegreeGreaterThanOrEqual( (a)-[:FOO]->() , 5)") {
     val incoming = createIrExpressions(LessThanOrEqual(
       literalInt(5),
-      makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+      makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
     )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(5))(pos)
 
@@ -413,7 +462,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(LessThanOrEqual(
         literalInt(5),
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegreeGreaterThanOrEqual(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 
@@ -423,7 +472,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} < 5 to HasDegreeLessThan( (a)-[:FOO]->() , 0)") {
     val incoming =
       createIrExpressions(LessThan(
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(
         pos
@@ -436,7 +485,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
   test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} < 5 to HasDegreeLessThan( (a)<-[:FOO]-() , 0)") {
     val incoming =
       createIrExpressions(LessThan(
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO")),
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a"))),
         literalInt(5)
       )(pos))
     val expected = HasDegreeLessThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
@@ -448,7 +497,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(LessThan(
         literalInt(5),
-        makeInputExpression(from = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(from = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(
         pos
       ))
@@ -461,7 +510,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
     val incoming =
       createIrExpressions(LessThan(
         literalInt(5),
-        makeInputExpression(to = Some("a"), relationships = Seq("FOO"))
+        makeInputExpression(to = Some("a"), relationships = Seq("FOO"), scopeDependencies = Set(varFor("a")))
       )(pos))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(5))(pos)
 

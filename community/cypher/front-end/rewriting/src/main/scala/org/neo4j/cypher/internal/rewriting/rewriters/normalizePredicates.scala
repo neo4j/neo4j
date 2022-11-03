@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -46,7 +46,7 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
+    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
   )
 
   override def getRewriter(
@@ -86,7 +86,7 @@ case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter
       p.copy(
         pattern = normalizer.replaceAllIn(p.pattern),
         predicate = newPredicate
-      )(p.position, p.outerScope)
+      )(p.position, p.introducedVariables, p.scopeDependencies)
 
     case qp @ QuantifiedPath(patternPart, _, optionalWhereExpression, _) =>
       val predicates = normalizer.extractAllFrom(patternPart)

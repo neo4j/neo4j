@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SymbolUse
-import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Variable
@@ -122,13 +122,18 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       case i: LogicalVariable if ambiguousNames(i.name) =>
         val renaming = createVariableRenaming(i, anonymousVariableNameGenerator)
         acc => TraverseChildren(acc + renaming)
-      case e: ExpressionWithOuterScope =>
-        val renamings = e.outerScope
+      case e: ExpressionWithComputedDependencies =>
+        val introducedVariablesRenamings = e.introducedVariables
           .filter(v => ambiguousNames(v.name))
           .foldLeft(Set[(Ref[LogicalVariable], LogicalVariable)]()) { (innerAcc, v) =>
             innerAcc + createVariableRenaming(v, anonymousVariableNameGenerator)
           }
-        acc => TraverseChildren(acc ++ renamings)
+        val scopeDependenciesRenamings = e.scopeDependencies
+          .filter(v => ambiguousNames(v.name))
+          .foldLeft(Set[(Ref[LogicalVariable], LogicalVariable)]()) { (innerAcc, v) =>
+            innerAcc + createVariableRenaming(v, anonymousVariableNameGenerator)
+          }
+        acc => TraverseChildren(acc ++ introducedVariablesRenamings ++ scopeDependenciesRenamings)
     }
   }
 
@@ -152,14 +157,20 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
           case Some(newVariable) => newVariable
           case None              => v
         }
-      case e: ExpressionWithOuterScope =>
-        val newOuterScope = e.outerScope.map(v => {
+      case e: ExpressionWithComputedDependencies =>
+        val newIntroducedVariables = e.introducedVariables.map(v => {
           renamings.get(Ref(v)) match {
             case Some(newVariable) => newVariable
             case None              => v
           }
         })
-        e.withOuterScope(newOuterScope)
+        val newScopeDependencies = e.scopeDependencies.map(v => {
+          renamings.get(Ref(v)) match {
+            case Some(newVariable) => newVariable
+            case None              => v
+          }
+        })
+        e.withIntroducedVariables(newIntroducedVariables).withScopeDependencies(newScopeDependencies)
     })
   )
 

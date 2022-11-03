@@ -16,26 +16,27 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class PatternExpression(pattern: RelationshipsPattern)(
-  override val outerScope: Set[LogicalVariable]
-) extends ScopeExpression with ExpressionWithOuterScope with SubqueryExpression {
+  val introducedVariables: Set[LogicalVariable],
+  val scopeDependencies: Set[LogicalVariable]
+) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
 
   override def position: InputPosition = pattern.position
 
-  private val patternVariables = pattern.element.allVariables
+  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(introducedVariables = introducedVariables, scopeDependencies)
 
-  override def introducedVariables: Set[LogicalVariable] = patternVariables -- outerScope
+  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(introducedVariables, scopeDependencies = scopeDependencies)
 
-  override def scopeDependencies: Set[LogicalVariable] = patternVariables intersect outerScope
-
-  override def withOuterScope(outerScope: Set[LogicalVariable]): PatternExpression =
-    copy()(outerScope)
+  override def subqueryAstNode: ASTNode = pattern
 
   override def dup(children: Seq[AnyRef]): this.type = {
     PatternExpression(
       children.head.asInstanceOf[RelationshipsPattern]
-    )(outerScope).asInstanceOf[this.type]
+    )(introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
 }

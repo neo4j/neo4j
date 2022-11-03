@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -76,6 +77,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setLabelCardinality("Foo", 10)
     .setLabelCardinality("Bar", 10)
     .setLabelCardinality("Person", 10)
+    .setLabelCardinality("Dog", 10)
     .setLabelCardinality("ComedyClub", 10)
     .setLabelCardinality("User", 10)
     .setLabelCardinality("Label", 10)
@@ -98,8 +100,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("()-[]->(:C)", 10)
     .setRelationshipCardinality("()-[]->(:D)", 10)
     .setRelationshipCardinality("()-[:KNOWS]-()", 10)
+    .setRelationshipCardinality("()-[:HAS_DOG]-()", 10)
     .setRelationshipCardinality("(:Person)-[:KNOWS]-()", 10)
+    .setRelationshipCardinality("(:Person)-[:HAS_DOG]-()", 10)
+    .setRelationshipCardinality("(:Dog)-[:HAS_DOG]-()", 10)
     .setRelationshipCardinality("(:Person)-[:KNOWS]-(:Person)", 10)
+    .setRelationshipCardinality("(:Person)-[:HAS_DOG]-(:Dog)", 10)
     .setRelationshipCardinality("()-[:WORKS_AT]-()", 10)
     .setRelationshipCardinality("(:ComedyClub)-[:WORKS_AT]-()", 10)
     .setRelationshipCardinality("()-[:FOLLOWS]-()", 10)
@@ -122,6 +128,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .addNodeIndex("FewProps", Seq("prop"), 1.0, 0.01)
     .addNodeIndex("SomeProps", Seq("prop"), 1.0, 0.1)
     .addNodeIndex("ManyProps", Seq("prop"), 1.0, 1.0)
+    .addSemanticFeature(SemanticFeature.FullExistsSupport)
     .build()
 
   private def reduceExpr(anonOffset: Int): ReduceExpression = reduce(
@@ -348,6 +355,43 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .antiSemiApply()
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should preserve inner query predicates when planning a Simple EXISTS"
+  ) {
+    val logicalPlan = planner.plan("MATCH (a) WHERE EXISTS{(a)-[r]->(b WHERE b.prop > 5)-[q]-() } RETURN a")
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.filter("not q = r")
+        .|.expandAll("(b)-[q]-(anon_0)")
+        .|.filter("b.prop > 5")
+        .|.expandAll("(a)-[r]->(b)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should preserve inner query predicates when planning a Full EXISTS"
+  ) {
+    val logicalPlan =
+      planner.plan("MATCH (a) WHERE EXISTS{ MATCH (a)-[r]->(b WHERE b.prop > 5)-[q]-() RETURN a } RETURN a")
+    logicalPlan should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a")
+        .semiApply()
+        .|.filter("not q = r")
+        .|.expandAll("(b)-[q]-(anon_0)")
+        .|.filter("b.prop > 5")
+        .|.expandAll("(a)-[r]->(b)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -2598,6 +2642,34 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "Transitive closure inside Exists should still work its magic"
+  ) {
+    val logicalPlan =
+      planner.plan(
+        """
+          |MATCH (person:Person)
+          |WHERE EXISTS {
+          |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+          |  WHERE person.name = dog.name AND person.name = 'Bosse' and dog.lastname = person.name
+          |}
+          |RETURN person.name
+      """.stripMargin
+      )
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("`person.name`")
+        .projection("cacheN[person.name] AS `person.name`")
+        .semiApply()
+        .|.filter("dog:Dog", "dog.name = 'Bosse'", "dog.lastname = 'Bosse'")
+        .|.expandAll("(person)-[anon_0:HAS_DOG]->(dog)")
+        .|.filter("cacheNFromStore[person.name] = 'Bosse'")
+        .|.argument("person")
+        .nodeByLabelScan("person", "Person", IndexOrderNone)
         .build()
     )
   }

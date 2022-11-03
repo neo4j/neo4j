@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Unique
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
@@ -67,11 +67,9 @@ import scala.util.control.TailCalls.TailRec
 
 case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
 
-case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Rewriter {
+case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
-  override def apply(that: AnyRef): AnyRef = instance(that)
-
-  private val rewriter = Rewriter.lift {
+  val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case m @ Match(_, pattern: Pattern, _, where) =>
       val rels: Seq[NodeConnection] = collectRelationships(pattern)
       val newWhere = withPredicates(m, rels, where)
@@ -96,7 +94,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
       qpp.copy(optionalWhereExpression = newWhere, variableGroupings = qpp.variableGroupings ++ newGroupings)(
         qpp.position
       )
-  }
+  })
 
   private def withPredicates(pattern: ASTNode, rels: Seq[NodeConnection], where: Option[Where]): Option[Where] = {
     val maybePredicate: Option[Expression] = createPredicateFor(rels, pattern.position)
@@ -112,8 +110,6 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
 
     newWhere
   }
-
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   def collectRelationships(pattern: ASTNode): Seq[NodeConnection] =
     pattern.folder.treeFold(Seq.empty[NodeConnection]) {
@@ -234,7 +230,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside PatternExpressions.
+    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
   )
 
   override def getRewriter(
@@ -242,7 +238,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory with Re
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = this
+  ): Rewriter = rewriter
 
   private[rewriters] def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     expression match {

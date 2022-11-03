@@ -16,17 +16,21 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.ExpressionWithOuterScope
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
-case class recordScopes(semanticState: SemanticState) extends Rewriter {
+case class computeDependenciesForExpressions(semanticState: SemanticState) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case x: ExpressionWithOuterScope =>
-      x.withOuterScope(semanticState.recordedScopes(x).availableSymbolDefinitions.map(_.asVariable))
+    case x: ExpressionWithComputedDependencies =>
+      val DeclarationsAndDependencies(declarations, dependencies) = semanticState.recordedScopes(x.subqueryAstNode)
+        .declarationsAndDependencies
+      x.withIntroducedVariables(declarations.map(_.asVariable))
+        .withScopeDependencies(dependencies.map(_.asVariable))
   })
 }

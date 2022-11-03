@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
@@ -42,7 +44,6 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -402,7 +403,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               x.namedPath.foldSemanticCheck(declareVariable(_, CTPath)) chain
               x.predicate.foldSemanticCheck(Where.checkExpression) chain
-              simple(x.projection)
+              simple(x.projection) chain
+              SemanticState.recordCurrentScope(x.pattern)
           } chain {
             val outerTypes: TypeGenerator = types(x.projection)(_).wrapInList
             specifyType(outerTypes, x)
@@ -472,7 +474,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                   }
                   SemanticCheckResult(state, errors)
                 }
-            }
+            } chain
+              SemanticState.recordCurrentScope(x.pattern)
           } chain
           specifyType(CTList(CTPath), x) chain {
             // Check the relationshipChain again with Pattern.SemanticContext.Expression to generate errors for node and relationship predicates
@@ -507,6 +510,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
             case Seq() => CTList(CTAny).covariant
             case _     => leastUpperBoundsOfTypes(x.expressions)(state).wrapInCovariantList
           }
+
         check(ctx, x.expressions) chain specifyType(possibleTypes, x)
 
       case x: ListSlice =>
@@ -696,21 +700,36 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         x.semanticCheck(ctx)
 
       // EXISTS
-      case x: ExistsExpression =>
+      case x: SimpleExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
-          withScopedStateWithVariablesFromRecordedScope(x) {
-            // saves us from leaking to the outside and import the variables from the previously recorded scope
+          withScopedState { // saves us from leaking to the outside
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
+              x.maybeWhere.foldSemanticCheck(_.semanticCheck) chain
+              SemanticState.recordCurrentScope(x.pattern)
+          }
+
+      case x: FullExistsExpression =>
+        whenState(!_.features.contains(SemanticFeature.FullExistsSupport)) {
+          error("Exists Expressions containing a regular query are not yet supported", x.position)
+        } chain
+          SemanticState.recordCurrentScope(x) chain
+          withScopedState {
+            x.query.semanticCheck chain
+              when(x.query.containsUpdates) {
+                SemanticError("An Exists Expression cannot contain any updates", x.position)
+              } chain
+              checkForShadowedVariables chain
+              SemanticState.recordCurrentScope(x.query)
           }
 
       // COUNT
       case x: CountExpression =>
         SemanticState.recordCurrentScope(x) chain
-          withScopedStateWithVariablesFromRecordedScope(x) {
+          withScopedState {
             // saves us from leaking to the outside and import the variables from the previously recorded scope
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression)
+              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression) chain
+              SemanticState.recordCurrentScope(x.pattern)
           } chain specifyType(CTInteger, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)
@@ -985,4 +1004,28 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           specifyType(types(x.expression), x)
         }
     }
+
+  private def checkForShadowedVariables: SemanticCheck = (inner: SemanticState) => {
+    val outerScopeSymbols = inner.currentScope.parent.get.scope.symbolTable
+    val innerScopeSymbols = inner.currentScope.scope.allSymbols
+
+    // If a variable of the same name exists, and there is a reference to that name that isn't the original
+    def isShadowed(s: Symbol): Boolean =
+      innerScopeSymbols.contains(s.name) &&
+        innerScopeSymbols(s.name).map(_.definition).diff(Set(s.definition)).nonEmpty
+
+    val shadowedSymbols = outerScopeSymbols.collect {
+      case (name, symbol) if isShadowed(symbol) =>
+        name -> innerScopeSymbols(name).find(_.definition != symbol.definition).get.definition.asVariable.position
+    }
+
+    val errors = shadowedSymbols.map {
+      case (varName, pos) => SemanticError(
+          s"The variable `$varName` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+          pos
+        )
+    }.toSeq
+
+    SemanticCheckResult(inner, errors)
+  }
 }

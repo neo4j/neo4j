@@ -387,7 +387,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
       ),
       "",
       ""
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
@@ -424,7 +424,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
       "",
       "",
       ""
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val qg = QueryGraph(
       patternNodes = Set("a"),

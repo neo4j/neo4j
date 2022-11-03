@@ -132,6 +132,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH p = ()-[s*]->() MATCH q = ()-[s*]->() RETURN p, q",
       "MATCH ()-[s*]-() WHERE COUNT {()-[s*]-()} > 2 RETURN s",
       "MATCH ()-[s*]-() WHERE EXISTS {()-[s*]-()} RETURN s",
+      "MATCH ()-[s*]-() RETURN [ ()-[s*]-() | s ] AS rs",
       """
         |MATCH ()-[r]->()
         |MATCH ()-[q]->()
@@ -152,7 +153,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val queries = Seq(
       "MATCH ()-[r*]->() RETURN r",
       "MATCH ()-[r*]->() WITH r as s MATCH ()-[r*]->() RETURN r, s",
-      "MATCH ()-[r*]-() RETURN [ ()-[r*]-() | r ] AS rs",
+      """MATCH ()-[r*]->()
+        |CALL {
+        | MATCH (a)-[r*]->()
+        | RETURN a AS a
+        |}
+        |RETURN r
+        |""".stripMargin,
       """
         |MATCH ()-[r*]->()
         |MATCH ()-[s*]->()

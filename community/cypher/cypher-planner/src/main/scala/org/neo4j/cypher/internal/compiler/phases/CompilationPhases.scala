@@ -119,7 +119,7 @@ object CompilationPhases {
     }
   }
 
-  private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+  def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen

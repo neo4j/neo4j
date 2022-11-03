@@ -16,11 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -32,7 +34,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
-import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -67,9 +69,17 @@ case class normalizeExistsPatternExpressions(
 
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
-      ExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
+      SimpleExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(
+        p.position,
+        p.introducedVariables,
+        p.scopeDependencies
+      )
     case Exists(p: PatternExpression) =>
-      ExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(p.position, p.outerScope)
+      SimpleExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(
+        p.position,
+        p.introducedVariables,
+        p.scopeDependencies
+      )
 
     case GreaterThan(CountLikeToExistsConverter(exists), SignedDecimalIntegerLiteral("0")) => exists
     case LessThan(SignedDecimalIntegerLiteral("0"), CountLikeToExistsConverter(exists))    => exists
@@ -83,7 +93,7 @@ case class normalizeExistsPatternExpressions(
 case object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[Condition] = Set(
-    PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
+    SubqueryExpressionsHaveSemanticInfo // Looks up type of subquery expressions
   )
 
   override def postConditions: Set[Condition] = Set(PatternExpressionAreWrappedInExists)
@@ -106,12 +116,23 @@ case object CountLikeToExistsConverter {
   def unapply(expression: Expression): Option[ExistsExpression] = expression match {
 
     // size([pt = (n)--(m) | pt])
-    case Size(p @ PatternComprehension(_, pattern, predicate, _)) =>
-      Some(ExistsExpression(Pattern(Seq(EveryPath(pattern.element)))(p.position), predicate)(p.position, p.outerScope))
+    case Size(p @ PatternComprehension(_, pattern, maybePredicate, _)) =>
+      Some(SimpleExistsExpression(
+        Pattern(Seq(EveryPath(pattern.element)))(p.position),
+        maybePredicate.map(mp => Where(mp)(mp.position))
+      )(
+        p.position,
+        p.introducedVariables,
+        p.scopeDependencies
+      ))
 
     // COUNT { (n)--(m) }
-    case ce @ CountExpression(pattern, predicate) =>
-      Some(ExistsExpression(pattern, predicate)(ce.position, ce.outerScope))
+    case ce @ CountExpression(pattern, maybePredicate) =>
+      Some(SimpleExistsExpression(pattern, maybePredicate.map(p => Where(p)(p.position)))(
+        ce.position,
+        ce.introducedVariables,
+        ce.scopeDependencies
+      ))
 
     case _ =>
       None

@@ -62,6 +62,11 @@ object Neo4jAdapter {
           SemanticFeature.QuantifiedPathPatterns.productPrefix
         ).asJava
       )
+    case "ExistsExpressionAcceptance" => Map[Setting[_], Object](
+        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
+          SemanticFeature.FullExistsSupport.productPrefix
+        ).asJava
+      )
     case _ => Map.empty
   }
 

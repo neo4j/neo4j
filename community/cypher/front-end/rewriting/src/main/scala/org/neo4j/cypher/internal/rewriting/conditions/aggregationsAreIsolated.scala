@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
+import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
-import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -36,7 +36,12 @@ case object aggregationsAreIsolated extends ValidatingCondition {
 object hasAggregateButIsNotAggregate extends (Expression => Boolean) {
 
   def apply(expression: Expression): Boolean = expression match {
-    case IsAggregate(_) => false
-    case e: Expression  => containsAggregate(e)
+    case IsAggregate(_)          => false
+    case _: FullExistsExpression => false // Full Exists contain Regular Queries which can have aggregations
+    case e: Expression =>
+      e.folder.treeFold[Boolean](false) {
+        case _: FullExistsExpression => SkipChildren(_)
+        case IsAggregate(_)          => _ => SkipChildren(true)
+      }
   }
 }

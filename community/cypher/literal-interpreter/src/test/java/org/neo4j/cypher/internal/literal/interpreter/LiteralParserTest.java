@@ -41,7 +41,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.parser.javacc.Cypher;
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
-import org.neo4j.cypher.internal.parser.javacc.ParseException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -55,7 +54,7 @@ public class LiteralParserTest {
     private final LiteralInterpreter interpreter = new LiteralInterpreter();
 
     @Test
-    void shouldInterpretNumbers() throws ParseException {
+    void shouldInterpretNumbers() throws Exception {
         assertEquals(0L, parseLiteral("0"));
         assertEquals(12345L, parseLiteral("12345"));
         assertEquals(-12345L, parseLiteral("-12345"));
@@ -85,7 +84,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretString() throws ParseException {
+    void shouldInterpretString() throws Exception {
         assertEquals("a string", parseLiteral("'a string'"));
 
         assertEquals("ÅÄü", parseLiteral("'ÅÄü'"));
@@ -94,24 +93,24 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretNull() throws ParseException {
+    void shouldInterpretNull() throws Exception {
         assertNull(parseLiteral("null"));
     }
 
     @Test
-    void shouldInterpretBoolean() throws ParseException {
+    void shouldInterpretBoolean() throws Exception {
         assertEquals(true, parseLiteral("true"));
         assertEquals(false, parseLiteral("false"));
     }
 
     @Test
-    void shouldInterpretList() throws ParseException {
+    void shouldInterpretList() throws Exception {
         assertThat((List<?>) parseLiteral("[1,2,3]"), contains(1L, 2L, 3L));
         assertThat((List<?>) parseLiteral(" [ 1, 2, 3 ] "), contains(1L, 2L, 3L));
     }
 
     @Test
-    void shouldInterpretNestedList() throws ParseException {
+    void shouldInterpretNestedList() throws Exception {
         List<?> list1 = (List<?>) parseLiteral("[1,[2,[3]]]");
 
         assertThat(list1, hasSize(2));
@@ -127,7 +126,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretMap() throws ParseException {
+    void shouldInterpretMap() throws Exception {
         assertThat((Map<?, ?>) parseLiteral("{}}"), anEmptyMap());
         assertThat(
                 (Map<?, ?>) parseLiteral("{age: 2}"),
@@ -145,7 +144,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretNestedMap() throws ParseException {
+    void shouldInterpretNestedMap() throws Exception {
         Map<?, ?> map1 = (Map<?, ?>) parseLiteral("{k1: 1, map2: {k2: 2, map3: {k3: 3}}}");
 
         assertThat(map1, aMapWithSize(2));
@@ -161,7 +160,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretDate() throws ParseException {
+    void shouldInterpretDate() throws Exception {
         DateValue date = DateValue.date(2020, 12, 10);
         assertEquals(date, parseLiteral("date('2020-12-10')"));
         assertEquals(date, parseLiteral("date({year:2020, month:12, day:10})"));
@@ -176,7 +175,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretDateTime() throws ParseException {
+    void shouldInterpretDateTime() throws Exception {
         DateTimeValue date = DateTimeValue.datetime(2020, 12, 10, 6, 41, 23, 0, DEFAULT_ZONE_ID);
         DateTimeValue dateTimeZone =
                 DateTimeValue.datetime(2020, 12, 10, 6, 41, 23, 0, ZoneId.of("America/Los_Angeles"));
@@ -194,7 +193,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretTime() throws ParseException {
+    void shouldInterpretTime() throws Exception {
         Instant instant = Instant.now();
         ZoneOffset currentOffsetForMyZone = DEFAULT_ZONE_ID.getRules().getOffset(instant);
         TimeValue date = TimeValue.time(6, 41, 23, 0, currentOffsetForMyZone);
@@ -208,7 +207,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretLocalTime() throws ParseException {
+    void shouldInterpretLocalTime() throws Exception {
         LocalTimeValue date = LocalTimeValue.localTime(6, 41, 23, 0);
         assertEquals(date, parseLiteral("localtime('6:41:23.0')"));
         assertEquals(date, parseLiteral("localtime({hour: 6, minute: 41, second: 23})"));
@@ -220,7 +219,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretLocalDateTime() throws ParseException {
+    void shouldInterpretLocalDateTime() throws Exception {
         LocalDateTimeValue date = LocalDateTimeValue.localDateTime(2020, 12, 10, 6, 41, 23, 0);
         assertEquals(date, parseLiteral("localdatetime('2020-12-10T6:41:23.0')"));
         assertEquals(
@@ -233,7 +232,7 @@ public class LiteralParserTest {
     }
 
     @Test
-    void shouldInterpretPoint() throws ParseException {
+    void shouldInterpretPoint() throws Exception {
         PointValue point = PointValue.parse("{ x:3, y:0 }");
         assertEquals(point, parseLiteral("point({ x:3, y:0 })"));
 
@@ -249,7 +248,7 @@ public class LiteralParserTest {
         assertNull(parseLiteral("point(null)"));
     }
 
-    private Object parseLiteral(String str) throws ParseException {
+    private Object parseLiteral(String str) throws Exception {
         return new Cypher<>(interpreter, new TestExceptionFactory(), new CypherCharStream(str)).Expression1();
     }
 }

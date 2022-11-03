@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.StateContainsSemanticTable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
-import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 
@@ -64,11 +64,11 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
     val rewrittenStatement =
       if (errors.isEmpty) {
         // Some expressions record some semantic information in themselves.
-        // This is done by the recordScopes rewriter.
+        // This is done by the computeDependenciesForExpressions rewriter.
         // We need to apply it after each pass of SemanticAnalysis.
-        from.statement().endoRewrite(recordScopes(state))
+        from.statement().endoRewrite(computeDependenciesForExpressions(state))
       } else {
-        // If we have errors we should rather avoid running recordScopes, since the state might be incomplete.
+        // If we have errors we should rather avoid running computeDependenciesForExpressions, since the state might be incomplete.
         from.statement()
       }
     from

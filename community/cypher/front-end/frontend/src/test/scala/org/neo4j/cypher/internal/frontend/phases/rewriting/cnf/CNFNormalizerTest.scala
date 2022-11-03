@@ -200,7 +200,10 @@ object CNFNormalizerTest {
   case object SemanticWrapper extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
 
     private val transformer =
-      SemanticAnalysis.getTransformer(pushdownPropertyReads = false, Seq(SemanticFeature.QuantifiedPathPatterns))
+      SemanticAnalysis.getTransformer(
+        pushdownPropertyReads = false,
+        Seq(SemanticFeature.QuantifiedPathPatterns, SemanticFeature.FullExistsSupport)
+      )
 
     override def preConditions: Set[Condition] = SemanticAnalysis.preConditions
 

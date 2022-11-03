@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.expressions.functions.Category
 import org.neo4j.cypher.internal.expressions.functions.FunctionWithName
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -65,24 +66,19 @@ case class PatternComprehension(
   projection: Expression
 )(
   val position: InputPosition,
-  override val outerScope: Set[LogicalVariable]
-) extends ScopeExpression with ExpressionWithOuterScope with SubqueryExpression {
+  val introducedVariables: Set[LogicalVariable],
+  val scopeDependencies: Set[LogicalVariable]
+) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
 
   self =>
 
-  override def withOuterScope(outerScope: Set[LogicalVariable]): PatternComprehension =
-    copy()(position, outerScope)
+  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
 
-  override val introducedVariables: Set[LogicalVariable] = {
-    val introducedInternally = namedPath.toSet ++ pattern.element.allVariables
-    introducedInternally -- outerScope
-  }
+  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
 
-  override def scopeDependencies: Set[LogicalVariable] =
-    (namedPath.toSet ++
-      pattern.element.allVariables ++
-      predicate.fold(Set.empty[LogicalVariable])(_.dependencies) ++
-      projection.dependencies) intersect outerScope
+  override def subqueryAstNode: ASTNode = pattern
 
   override def dup(children: Seq[AnyRef]): this.type = {
     PatternComprehension(
@@ -90,7 +86,7 @@ case class PatternComprehension(
       children(1).asInstanceOf[RelationshipsPattern],
       children(2).asInstanceOf[Option[Expression]],
       children(3).asInstanceOf[Expression]
-    )(position, outerScope).asInstanceOf[this.type]
+    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
 }
 

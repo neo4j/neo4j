@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -179,8 +178,5 @@ case object rewriteShowQuery extends Step with PreparatoryRewritingRewriterFacto
     }
   }
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    notificationLogger: InternalNotificationLogger
-  ): Rewriter = instance
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

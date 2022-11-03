@@ -146,24 +146,6 @@ abstract class Expression extends ASTNode {
     }))
   }
 
-  /** 
-   * List of child expressions together with any of its dependencies introduced
-   * by any of its parent expressions (where this expression is the root of the tree).
-   */
-  def inputs: Seq[(Expression, Set[LogicalVariable])] =
-    this.folder.treeFold(TreeAcc[Seq[(Expression, Set[LogicalVariable])]](Seq.empty)) {
-      case scope: ScopeExpression =>
-        acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
-            .mapData(pairs => pairs :+ (scope -> acc.variablesInScope))
-          TraverseChildrenNewAccForSiblings(newAcc, _.popScope)
-
-      case expr: Expression =>
-        acc =>
-          val newAcc = acc.mapData(pairs => pairs :+ (expr -> acc.variablesInScope))
-          TraverseChildren(newAcc)
-    }.data
-
   /**
    * Return true is this expression contains an aggregating expression.
    */

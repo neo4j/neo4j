@@ -37,6 +37,8 @@ public interface ASTExpressionFactory<
         LABEL_EXPRESSION,
         PARAMETER,
         PATTERN,
+        QUERY,
+        WHERE,
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
         MAP_PROJECTION_ITEM,
@@ -187,7 +189,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION patternExpression(POS p, PATTERN pattern);
 
-    EXPRESSION existsExpression(POS p, List<PATTERN> patterns, EXPRESSION where);
+    EXPRESSION existsExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
 
     EXPRESSION countExpression(POS p, List<PATTERN> patterns, EXPRESSION where);
 

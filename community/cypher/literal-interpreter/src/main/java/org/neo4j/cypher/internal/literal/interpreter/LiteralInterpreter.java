@@ -1486,7 +1486,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object existsExpression(NULL p, List<NULL> nulls, Object where) {
+    public Object existsExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
         throw new UnsupportedOperationException("existsExpression is not a literal");
     }
 

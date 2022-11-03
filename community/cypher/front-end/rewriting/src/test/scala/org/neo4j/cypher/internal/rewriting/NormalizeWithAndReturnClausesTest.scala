@@ -16,21 +16,19 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.FullExistsSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
-import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest {
   private val exceptionFactory = OpenCypherExceptionFactory(None)
-  private val notificationLogger = new RecordingNotificationLogger()
-  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(exceptionFactory, notificationLogger)
+  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(exceptionFactory)
 
   test("ensure variables are aliased") {
     assertRewrite(
@@ -113,6 +111,46 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |  RETURN p {.foo, .bar} AS p, m AS m
         |}
         |RETURN n AS n, m AS m, p AS p
+      """.stripMargin
+    )
+  }
+
+  test("ensure returns are aliased in Exists expressions") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE EXISTS {
+        |  RETURN CASE
+        |       WHEN true THEN 1
+        |       ELSE 2
+        |    END
+        |}
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |  WHERE EXISTS { RETURN CASE WHEN true THEN 1 ELSE 2 END AS `CASE
+        |       WHEN true THEN 1
+        |       ELSE 2
+        |    END` }
+        |RETURN n AS n
+      """.stripMargin
+    )
+  }
+
+  test("ensure returns of a variable are aliased in Exists expressions") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE EXISTS {
+        |  MATCH (n)
+        |  RETURN n
+        |}
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |  WHERE EXISTS {
+        |  MATCH (n)
+        |  RETURN n AS n
+        |}
+        |RETURN n AS n
       """.stripMargin
     )
   }
@@ -1006,12 +1044,29 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   test("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") {
-    a[SyntaxException] shouldBe thrownBy { rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") }
+    a[SyntaxException] shouldBe thrownBy {
+      rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n")
+    }
+  }
+
+  private def rewrite(originalQuery: String, expectedQuery: String): SemanticCheckResult = {
+    val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
+    val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
+    val result = endoRewrite(original)
+    assert(
+      result === expected,
+      s"""
+    $originalQuery
+    should be rewritten to:
+    $expectedQuery
+    but was rewritten to:${prettifier.asString(result)}"""
+    )
+    result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, FullExistsSupport))
   }
 
   override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
-    // Expect no warnings
-    assertRewriteAndWarnings(originalQuery, expectedQuery, Set.empty)
+    val checkResult = rewrite(originalQuery, expectedQuery)
+    assert(checkResult.errors === Seq())
   }
 
   protected def assertRewriteAndSemanticError(
@@ -1019,38 +1074,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     expectedQuery: String,
     semanticErrors: String*
   ): Unit = {
-    val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
-    val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
-    val result = endoRewrite(original)
-    assert(
-      result === expected,
-      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
-    )
-
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
+    val checkResult = rewrite(originalQuery, expectedQuery)
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
     semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")
     )
-  }
-
-  protected def assertRewriteAndWarnings(
-    originalQuery: String,
-    expectedQuery: String,
-    expectedWarnings: Set[InternalNotification]
-  ): Unit = {
-    notificationLogger.clear()
-    val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
-    val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
-    val result = endoRewrite(original)
-    assert(
-      result === expected,
-      s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}"
-    )
-
-    val checkResult = result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
-    assert(checkResult.errors === Seq())
-    notificationLogger.notifications should equal(expectedWarnings)
   }
 
   protected def assertNotRewrittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {

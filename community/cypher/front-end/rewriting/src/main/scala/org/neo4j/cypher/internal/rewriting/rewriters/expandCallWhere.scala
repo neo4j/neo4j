@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -57,8 +56,5 @@ case object expandCallWhere extends Step with PreparatoryRewritingRewriterFactor
       query.copy(clauses = newClauses)(query.position)
   })
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    notificationLogger: InternalNotificationLogger
-  ): Rewriter = instance
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

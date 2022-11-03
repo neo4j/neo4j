@@ -42,7 +42,7 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
       ) _) _,
       None,
       literalString("foo")
-    )(pos, Set.empty)
+    )(pos, Set.empty, Set.empty)
 
     inlineNamedPathsInPatternComprehensions.instance(input) should equal(input)
   }
@@ -58,11 +58,12 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
       ) _) _,
       None,
       literalString("foo")
-    )(pos, Set.empty)
+    )(pos, Set(varFor("r"), varFor("b"), varFor("p")), Set(varFor("a")))
 
     inlineNamedPathsInPatternComprehensions.instance(input) should equal(input.copy(namedPath = None)(
       pos,
-      input.outerScope
+      input.introducedVariables,
+      input.scopeDependencies
     ))
   }
 
@@ -78,11 +79,11 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
       RelationshipsPattern(element) _,
       None,
       varFor("p")
-    )(pos, Set.empty)
+    )(pos, Set(varFor("p"), varFor("a"), varFor("r"), varFor("b")), Set.empty)
     val output = input.copy(
       namedPath = None,
       projection = PathExpression(projectNamedPaths.patternPartPathExpression(element))(pos)
-    )(pos, input.outerScope)
+    )(pos, input.introducedVariables, input.scopeDependencies)
 
     inlineNamedPathsInPatternComprehensions.instance(input) should equal(output)
   }
@@ -99,11 +100,11 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
       RelationshipsPattern(element) _,
       Some(varFor("p")),
       literalString("foo")
-    )(pos, Set.empty)
+    )(pos, Set(varFor("p"), varFor("a"), varFor("r"), varFor("b")), Set.empty)
     val output = input.copy(
       namedPath = None,
       predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element)) _)
-    )(pos, input.outerScope)
+    )(pos, input.introducedVariables, input.scopeDependencies)
 
     inlineNamedPathsInPatternComprehensions.instance(input) should equal(output)
   }
@@ -120,12 +121,12 @@ class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with As
       RelationshipsPattern(element) _,
       Some(varFor("p")),
       varFor("p")
-    )(pos, Set.empty)
+    )(pos, Set(varFor("p"), varFor("a"), varFor("r"), varFor("b")), Set.empty)
     val output = input.copy(
       namedPath = None,
       predicate = Some(PathExpression(projectNamedPaths.patternPartPathExpression(element)) _),
       projection = PathExpression(projectNamedPaths.patternPartPathExpression(element))(pos)
-    )(pos, input.outerScope)
+    )(pos, input.introducedVariables, input.scopeDependencies)
 
     inlineNamedPathsInPatternComprehensions.instance(input) should equal(output)
   }

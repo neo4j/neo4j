@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.ast
 
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -30,5 +32,26 @@ case class ListIRExpression(
   variableToCollectName: String,
   collectionName: String,
   solvedExpressionAsString: String
-)(val position: InputPosition)
-    extends IRExpression(query, solvedExpressionAsString)
+)(
+  val position: InputPosition,
+  override val introducedVariables: Set[LogicalVariable],
+  override val scopeDependencies: Set[LogicalVariable]
+) extends IRExpression(query, solvedExpressionAsString)(introducedVariables, scopeDependencies) {
+
+  self =>
+
+  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
+
+  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    ListIRExpression(
+      children.head.asInstanceOf[PlannerQuery],
+      children(1).asInstanceOf[String],
+      children(2).asInstanceOf[String],
+      children(3).asInstanceOf[String]
+    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
+  }
+}

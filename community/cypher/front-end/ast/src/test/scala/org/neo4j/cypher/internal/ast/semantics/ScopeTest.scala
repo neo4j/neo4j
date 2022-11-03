@@ -17,11 +17,13 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.SymbolUses
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.intSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.nodeSymbol
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.scope
 import org.neo4j.cypher.internal.ast.semantics.ScopeTestHelper.stringSymbol
+import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeZipper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 //noinspection ZeroIndexToHead
@@ -90,6 +92,31 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
       "tag" -> Set(tags.definition),
       "book" -> Set(books1.definition, books2.definition)
     ))
+  }
+
+  test("Should compute declarations and dependencies correctly for simple scope") {
+    val names = symbolUses("name", 1)
+    val roots = symbolUses("root", 2)
+    val tags = symbolUses("tag", 1)
+    val books1 = symbolUses("book", 1)
+    val books2 = symbolUses("book", 1)
+
+    val child = scope(
+      stringSymbol("name", names), // new declaration
+      nodeSymbol("root", roots), // same as in parent
+      nodeSymbol("tag", tags), // new declaration
+      nodeSymbol("book", books1) // new declaration
+    )()
+    val parent = scope(
+      nodeSymbol("root", roots), // dependency brought in to child scope
+      nodeSymbol("book", books2) // different location to book1 so not a dependency
+    )(child)
+    val childScopeLocation = parent.location.down.get
+
+    val DeclarationsAndDependencies(declarations, dependencies) = childScopeLocation.declarationsAndDependencies
+
+    declarations should equal(Set(names.definition, tags.definition, books1.definition))
+    dependencies should equal(Set(roots.definition))
   }
 
   test("Should build variable map for simple scope tree") {

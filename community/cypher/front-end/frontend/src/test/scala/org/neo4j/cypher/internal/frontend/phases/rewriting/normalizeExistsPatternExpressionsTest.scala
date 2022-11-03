@@ -20,9 +20,8 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
-import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -213,7 +212,7 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter =
       inSequence(
-        recordScopes(checkResult.state),
+        computeDependenciesForExpressions(checkResult.state),
         normalizeExistsPatternExpressions(checkResult.state),
         simplifyPredicates(checkResult.state)
       )

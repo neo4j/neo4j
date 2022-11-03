@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
 import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -55,7 +58,10 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
-case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
+case class CreateIrExpressions(
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  semanticTable: SemanticTable
+) extends Rewriter {
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   private val patternNormalizer = PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
@@ -132,22 +138,50 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
     case exists @ Exists(pe @ PatternExpression(pattern)) =>
       val existsVariableName = anonymousVariableNameGenerator.nextName
       val query = getPlannerQuery(pattern, pe.dependencies.map(_.name), None, RegularQueryProjection())
-      ExistsIRExpression(query, existsVariableName, stringifier(exists))(exists.position)
+      ExistsIRExpression(query, existsVariableName, stringifier(exists))(
+        exists.position,
+        pe.introducedVariables,
+        pe.scopeDependencies
+      )
 
     /**
      * Rewrites exists{ (n)-[anon_0]->(anon_1:M)} into
      * IR for MATCH (n)-[anon_0]->(anon_1:M)
      *
      */
-    case existsExpression @ ExistsExpression(pattern, optionalWhereExpression) =>
+    case existsExpression @ SimpleExistsExpression(pattern, maybeWhere) =>
       val existsVariableName = anonymousVariableNameGenerator.nextName
+      val optionalWhereExpression = maybeWhere.map(_.expression)
       val query = getPlannerQuery(
         pattern,
         existsExpression.dependencies.map(_.name),
         optionalWhereExpression,
         RegularQueryProjection()
       )
-      ExistsIRExpression(query, existsVariableName, stringifier(existsExpression))(existsExpression.position)
+      ExistsIRExpression(query, existsVariableName, stringifier(existsExpression))(
+        existsExpression.position,
+        existsExpression.introducedVariables,
+        existsExpression.scopeDependencies
+      )
+
+    /**
+     * Rewrites exists{ MATCH (n)-[anon_0]->(anon_1:M) RETURN n} into
+     * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n
+     *
+     */
+    case existsExpression @ FullExistsExpression(q) =>
+      val existsVariableName = anonymousVariableNameGenerator.nextName
+      val plannerQuery = toPlannerQuery(
+        q,
+        semanticTable,
+        anonymousVariableNameGenerator,
+        existsExpression.scopeDependencies.map(_.name)
+      )
+      ExistsIRExpression(plannerQuery, existsVariableName, stringifier(existsExpression))(
+        existsExpression.position,
+        existsExpression.introducedVariables,
+        existsExpression.scopeDependencies
+      )
 
     /**
      * Rewrites (n)-[anon_0]->(anon_1:M) into
@@ -164,7 +198,11 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         None,
         RegularQueryProjection(Map(variableToCollectName -> pathExpression))
       )
-      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pe))(pe.position)
+      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pe))(
+        pe.position,
+        pe.introducedVariables,
+        pe.scopeDependencies
+      )
 
     /**
      * namedPaths in PatternComprehensions have already been rewritten away by [[inlineNamedPathsInPatternComprehensions]].
@@ -181,7 +219,11 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         predicate,
         RegularQueryProjection(Map(variableToCollectName -> projection))
       )
-      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pc))(pc.position)
+      ListIRExpression(query, variableToCollectName, collectionName, stringifier(pc))(
+        pc.position,
+        pc.introducedVariables,
+        pc.scopeDependencies
+      )
 
     /**
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
@@ -201,7 +243,7 @@ case class CreateIrExpressions(anonymousVariableNameGenerator: AnonymousVariable
         query = query,
         countVariableName = countVariableName,
         solvedExpressionAsString = stringifier(ce)
-      )(ce.position)
+      )(ce.position, ce.introducedVariables, ce.scopeDependencies)
 
     case PatternComprehension(Some(_), _, _, _) =>
       throw new IllegalStateException(

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClaus
 import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -270,12 +269,12 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val rewriter =
       if (rewriteShowCommand)
         inSequence(
-          normalizeWithAndReturnClauses(exceptionFactory, devNullLogger),
+          normalizeWithAndReturnClauses(exceptionFactory),
           rewriteShowQuery.instance,
           expandShowWhere.instance
         )
       else
-        inSequence(normalizeWithAndReturnClauses(exceptionFactory, devNullLogger))
+        inSequence(normalizeWithAndReturnClauses(exceptionFactory))
     JavaCCParser.parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 

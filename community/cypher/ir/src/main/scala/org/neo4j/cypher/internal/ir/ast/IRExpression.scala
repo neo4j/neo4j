@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.ir.ast
 
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ASTNode
 
 /**
  * An Expression that contains a subquery, represented in IR.
@@ -34,16 +34,11 @@ import org.neo4j.cypher.internal.util.InputPosition
 abstract class IRExpression(
   val query: PlannerQuery,
   solvedExpressionAsString: String
-) extends ScopeExpression {
+)(val introducedVariables: Set[LogicalVariable], val scopeDependencies: Set[LogicalVariable])
+    extends ScopeExpression with ExpressionWithComputedDependencies {
 
   override def asCanonicalStringVal: String = solvedExpressionAsString
 
-  // There is no way of sensibly computing the introduced variables, so let's throw an exception
-  // if this is called on an IRExpression
-  override def introducedVariables: Set[LogicalVariable] =
-    throw new UnsupportedOperationException("Must not call introducedVariables on IRExpression")
-
-  // When IRExpression supports Union subqueries, this implementation needs to change.
-  override def scopeDependencies: Set[LogicalVariable] =
-    query.query.asSinglePlannerQuery.queryGraph.argumentIds.map(Variable(_)(InputPosition.NONE))
+  override def subqueryAstNode: ASTNode =
+    throw new UnsupportedOperationException("Must not try to access an ASTNode on an IRExpression")
 }

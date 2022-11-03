@@ -143,6 +143,7 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -268,6 +269,7 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -347,7 +349,6 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -1135,7 +1136,7 @@ class Neo4jASTFactory(query: String)
       RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(relationshipPatternPosition),
       Option(where),
       projection
-    )(p, Set.empty)
+    )(p, Set.empty, Set.empty)
 
   override def reduceExpression(
     p: InputPosition,
@@ -1165,14 +1166,29 @@ class Neo4jASTFactory(query: String)
         ShortestPathExpression(paths)
       case _ =>
         PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(
+          Set.empty,
           Set.empty
         )
     }
 
-  override def existsExpression(p: InputPosition, patterns: util.List[PatternPart], where: Expression): Expression = {
-    val patternParts = patterns.asScala.toList
-    val patternPos = patternParts.head.position
-    ExistsExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
+  override def existsExpression(
+    p: InputPosition,
+    patterns: util.List[PatternPart],
+    query: Query,
+    where: Where
+  ): Expression = {
+    if (query != null) {
+      query.part match {
+        case SingleQuery(Seq(m @ Match(false, _, Seq(), _))) =>
+          SimpleExistsExpression(m.pattern, m.where)(p, Set.empty, Set.empty)
+        case _ =>
+          FullExistsExpression(query)(p, Set.empty, Set.empty)
+      }
+    } else {
+      val patternParts = patterns.asScala.toList
+      val patternPos = patternParts.head.position
+      SimpleExistsExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty, Set.empty)
+    }
   }
 
   override def countExpression(
@@ -1182,7 +1198,7 @@ class Neo4jASTFactory(query: String)
   ): Expression = {
     val patternParts = patterns.asScala.toList
     val patternPos = patternParts.head.position
-    CountExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
+    CountExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty, Set.empty)
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

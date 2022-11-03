@@ -17,25 +17,24 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
@@ -256,17 +255,38 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     )
   )
 
-  test("should rewrite outer scope variables of EXISTS even if not used in expression") {
-    val query = "MATCH (n) WHERE EXISTS { MATCH (p:Label) } WITH n as m, 1 as n RETURN m, n"
+  test("should rewrite introduced variables and scope dependencies of EXISTS even if not used in expression") {
+    val query = "MATCH (n) WHERE EXISTS { MATCH (p:Label) } WITH n as m, 1 as p RETURN m, p"
 
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val outerScope = statement.folder.treeFold(Set.empty[LogicalVariable]) {
-      case expr: ExistsExpression =>
-        acc => TraverseChildren(acc ++ expr.outerScope)
-    }
+    val existsExpression = statement.folder.treeFindByClass[SimpleExistsExpression].get
 
-    outerScope.map(_.name) should be(Set("  n@0"))
+    existsExpression.introducedVariables.map(_.name) should be(Set("  p@0"))
+    existsExpression.scopeDependencies.map(_.name) should be(Set.empty)
+  }
+
+  test("should rewrite introduced variables and scope dependencies of full EXISTS") {
+    val query = "MATCH (n), (m) WHERE EXISTS { MATCH (p:Label)-[r]-(m) RETURN p } WITH n as m, 1 as p RETURN m"
+
+    val statement = prepareFrom(query, rewriterPhaseUnderTest, SemanticFeature.FullExistsSupport).statement()
+
+    val existsExpression = statement.folder.treeFindByClass[FullExistsExpression].get
+
+    existsExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r"))
+    existsExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
+  }
+
+  test("should rewrite introduced variables and scope dependencies of full EXISTS with nested ScopeExpression") {
+    val query =
+      "MATCH (n), (m) WHERE EXISTS { MATCH (p:Label)-[r]-(m) WHERE all(i IN p.booleans WHERE i) RETURN p } WITH n as m, 1 as p RETURN m"
+
+    val statement = prepareFrom(query, rewriterPhaseUnderTest, SemanticFeature.FullExistsSupport).statement()
+
+    val existsExpression = statement.folder.treeFindByClass[FullExistsExpression].get
+
+    existsExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r", "i"))
+    existsExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
   }
 
   // noinspection ZeroIndexToHead

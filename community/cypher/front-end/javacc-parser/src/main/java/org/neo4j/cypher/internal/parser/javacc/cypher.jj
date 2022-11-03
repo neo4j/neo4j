@@ -1462,7 +1462,7 @@ TOKEN :
 }
 
 /** Root production. */
-List<STATEMENT> Statements() throws Exception :
+List<STATEMENT> Statements() throws Exception:
 {
     STATEMENT x;
     List<STATEMENT> stmts = new ArrayList<>();
@@ -1547,7 +1547,7 @@ STATEMENT SingleQueryOrCommandWithUseClause( USE_CLAUSE useClause ) throws Excep
     }
 }
 
-void PeriodicCommitQueryHintFailure() throws Exception :
+void PeriodicCommitQueryHintFailure() throws Exception:
 {
     Token tPeriodicCommit;
 }
@@ -1640,7 +1640,7 @@ CLAUSE Clause() throws Exception:
 
 // USE
 
-USE_CLAUSE UseClause() :
+USE_CLAUSE UseClause() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -1657,7 +1657,7 @@ USE_CLAUSE UseClause() :
 
 // RETURN
 
-RETURN_CLAUSE ReturnClause() :
+RETURN_CLAUSE ReturnClause() throws Exception:
 {
     Token t;
     RETURN_CLAUSE clause = null;
@@ -1670,7 +1670,7 @@ RETURN_CLAUSE ReturnClause() :
     }
 }
 
-RETURN_CLAUSE ReturnBody( Token t ) :
+RETURN_CLAUSE ReturnBody( Token t ) throws Exception:
 {
     Token skipPosition = null;
     Token limitPosition = null;
@@ -1692,7 +1692,7 @@ RETURN_CLAUSE ReturnBody( Token t ) :
     }
 }
 
-RETURN_ITEM ReturnItem() :
+RETURN_ITEM ReturnItem() throws Exception:
 {
     EXPRESSION e;
     VARIABLE v = null;
@@ -1714,7 +1714,7 @@ RETURN_ITEM ReturnItem() :
     }
 }
 
-RETURN_ITEMS ReturnItems() :
+RETURN_ITEMS ReturnItems() throws Exception:
 {
     Token returnItemsPosition;
     RETURN_ITEM x;
@@ -1731,7 +1731,7 @@ RETURN_ITEMS ReturnItems() :
     }
 }
 
-ORDER_ITEM OrderItem() :
+ORDER_ITEM OrderItem() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -1745,7 +1745,7 @@ ORDER_ITEM OrderItem() :
     )
 }
 
-EXPRESSION Skip() :
+EXPRESSION Skip() throws Exception:
 {
     EXPRESSION e;
 }
@@ -1756,7 +1756,7 @@ EXPRESSION Skip() :
     }
 }
 
-EXPRESSION Limit() :
+EXPRESSION Limit() throws Exception:
 {
     EXPRESSION e; }
 {
@@ -1768,7 +1768,7 @@ EXPRESSION Limit() :
 
 // WHERE
 
-WHERE WhereClause() :
+WHERE WhereClause() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -1782,7 +1782,7 @@ WHERE WhereClause() :
 
 // WITH
 
-CLAUSE WithClause() :
+CLAUSE WithClause() throws Exception:
 {
     Token t;
     RETURN_CLAUSE returnClause;
@@ -1797,7 +1797,7 @@ CLAUSE WithClause() :
 
 // CREATE
 
-CLAUSE CreateClause() :
+CLAUSE CreateClause() throws Exception:
 {
     Token t;
     List<PATTERN> patterns;
@@ -1811,7 +1811,7 @@ CLAUSE CreateClause() :
 
 // SET
 
-SET_CLAUSE SetClause() :
+SET_CLAUSE SetClause() throws Exception:
 {
     Token t;
     SET_ITEM item;
@@ -1824,7 +1824,7 @@ SET_CLAUSE SetClause() :
     }
 }
 
-SET_ITEM SetItem() :
+SET_ITEM SetItem() throws Exception:
 {
     EXPRESSION e;
     PROPERTY p;
@@ -1840,7 +1840,7 @@ SET_ITEM SetItem() :
 
 // REMOVE
 
-CLAUSE RemoveClause() :
+CLAUSE RemoveClause() throws Exception:
 {
     Token t;
     REMOVE_ITEM item;
@@ -1853,7 +1853,7 @@ CLAUSE RemoveClause() :
     }
 }
 
-REMOVE_ITEM RemoveItem() :
+REMOVE_ITEM RemoveItem() throws Exception:
 {
     EXPRESSION e;
     PROPERTY p;
@@ -1867,7 +1867,7 @@ REMOVE_ITEM RemoveItem() :
 
 // DELETE
 
-CLAUSE DeleteClause() :
+CLAUSE DeleteClause() throws Exception:
 {
     Token detachT = null;
     Token t;
@@ -1884,7 +1884,7 @@ CLAUSE DeleteClause() :
 
 // MATCH
 
-CLAUSE MatchClause() :
+CLAUSE MatchClause() throws Exception:
 {
     Token optionalT = null;
     Token t;
@@ -1951,7 +1951,7 @@ HINT IndexHintBody( HintIndexType indexType, POS p ) :
 
 // MERGE
 
-CLAUSE MergeClause() :
+CLAUSE MergeClause() throws Exception:
 {
     Token t;
     Token onToken;
@@ -1976,7 +1976,7 @@ CLAUSE MergeClause() :
 
 // UNWIND
 
-CLAUSE UnwindClause() :
+CLAUSE UnwindClause() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -1990,7 +1990,7 @@ CLAUSE UnwindClause() :
 
 // CALL
 
-CLAUSE CallClause() :
+CLAUSE CallClause() throws Exception:
 {
     Token t;
     Token procedureNamePosition;
@@ -2057,7 +2057,7 @@ CALL_RESULT_ITEM ProcedureResultItem() :
 
 // LOAD CSV
 
-CLAUSE LoadCSVClause() :
+CLAUSE LoadCSVClause() throws Exception:
 {
     Token t;
     boolean headers = false;
@@ -2137,7 +2137,7 @@ SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() throws Ex
     }
 }
 
-SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS SubqueryInTransactionsBatchParameters() :
+SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS SubqueryInTransactionsBatchParameters() throws Exception:
 {
     Token t;
     EXPRESSION batchSize;
@@ -2175,7 +2175,7 @@ SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS SubqueryInTransactionsReportParameter
 
 // PATTERN
 
-List<PATTERN> PatternList() :
+List<PATTERN> PatternList() throws Exception:
 {
     PATTERN p;
     List<PATTERN> patterns = new ArrayList<>();
@@ -2187,7 +2187,7 @@ List<PATTERN> PatternList() :
     }
 }
 
-PATTERN Pattern() :
+PATTERN Pattern() throws Exception:
 {
     VARIABLE v;
     PATTERN p;
@@ -2215,7 +2215,7 @@ PATTERN_QUANTIFIER Quantifier() :
     | range = <TIMES> { return astFactory.starPathQuantifier(pos(range)); }
 }
 
-PATTERN AnonymousPattern() :
+PATTERN AnonymousPattern() throws Exception:
 {
     PATTERN p;
 }
@@ -2229,7 +2229,7 @@ PATTERN AnonymousPattern() :
     }
 }
 
-PATTERN ShortestPathPattern() :
+PATTERN ShortestPathPattern() throws Exception:
 {
     Token t;
     PATTERN p;
@@ -2239,7 +2239,7 @@ PATTERN ShortestPathPattern() :
     | t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
 }
 
-PATTERN_ATOM MaybeQuantifiedRelationshipPattern() :
+PATTERN_ATOM MaybeQuantifiedRelationshipPattern() throws Exception:
 {
   REL_PATTERN rel;
   PATTERN_QUANTIFIER q = null;
@@ -2258,7 +2258,7 @@ PATTERN_ATOM MaybeQuantifiedRelationshipPattern() :
     }
 }
 
-PATTERN EveryPathPattern() :
+PATTERN EveryPathPattern() throws Exception:
 {
     NODE_PATTERN n;
     PATTERN_ATOM r;
@@ -2287,7 +2287,7 @@ PATTERN EveryPathPattern() :
       }
 }
 
-PATTERN EveryPathPatternNonEmpty() :
+PATTERN EveryPathPatternNonEmpty() throws Exception:
 {
     NODE_PATTERN n;
     REL_PATTERN r;
@@ -2306,7 +2306,7 @@ PATTERN EveryPathPatternNonEmpty() :
       }
 }
 
-NODE_PATTERN NodePattern() :
+NODE_PATTERN NodePattern() throws Exception:
 {
     Token t;
     VARIABLE v = null;
@@ -2326,7 +2326,7 @@ NODE_PATTERN NodePattern() :
     }
 }
 
-PATTERN_ATOM ParenthesizedPath() :
+PATTERN_ATOM ParenthesizedPath() throws Exception:
 {
     Token t;
     PATTERN p;
@@ -2388,7 +2388,7 @@ List<StringPos<POS>> LabelOrRelTypes() :
     }
 }
 
-EXPRESSION Properties() :
+EXPRESSION Properties() throws Exception:
 {
     EXPRESSION e;
 }
@@ -2402,7 +2402,7 @@ EXPRESSION Properties() :
     }
 }
 
-REL_PATTERN RelationshipPattern() :
+REL_PATTERN RelationshipPattern() throws Exception:
 {
     Token firstToken = token;
     Token t;
@@ -2597,7 +2597,7 @@ LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
 
 // EXPRESSIONS
 
-EXPRESSION Expression() :
+EXPRESSION Expression() throws Exception:
 {
     EXPRESSION e;
 }
@@ -2608,7 +2608,7 @@ EXPRESSION Expression() :
     }
 }
 
-EXPRESSION Expression12() :
+EXPRESSION Expression12() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2621,7 +2621,7 @@ EXPRESSION Expression12() :
     }
 }
 
-EXPRESSION Expression11() :
+EXPRESSION Expression11() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2634,7 +2634,7 @@ EXPRESSION Expression11() :
     }
 }
 
-EXPRESSION Expression10() :
+EXPRESSION Expression10() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2647,7 +2647,7 @@ EXPRESSION Expression10() :
     }
 }
 
-EXPRESSION Expression9() :
+EXPRESSION Expression9() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2666,7 +2666,7 @@ EXPRESSION Expression9() :
  * Implements comparison operation chaining. That is that expressions like `a < b < c` are interpreted as `a < b AND b < c`.
  * See https://neo4j.com/docs/cypher-manual/current/syntax/operators/#cypher-operations-chaining
  */
-EXPRESSION Expression8() :
+EXPRESSION Expression8() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2700,7 +2700,7 @@ EXPRESSION Expression8() :
     }
 }
 
-EXPRESSION Expression7() :
+EXPRESSION Expression7() throws Exception:
 {
     EXPRESSION e;
 }
@@ -2711,7 +2711,7 @@ EXPRESSION Expression7() :
     }
 }
 
-EXPRESSION ComparisonExpression6( EXPRESSION lhs ) :
+EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
 {
     Token t;
     EXPRESSION rhs;
@@ -2728,7 +2728,7 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) :
     )
 }
 
-EXPRESSION Expression6() :
+EXPRESSION Expression6() throws Exception:
 {
     Token t;
     EXPRESSION lhs;
@@ -2744,7 +2744,7 @@ EXPRESSION Expression6() :
     }
 }
 
-EXPRESSION Expression5() :
+EXPRESSION Expression5() throws Exception:
 {
     Token t;
     EXPRESSION lhs;
@@ -2761,7 +2761,7 @@ EXPRESSION Expression5() :
     }
 }
 
-EXPRESSION Expression4() :
+EXPRESSION Expression4() throws Exception:
 {
     Token t;
     EXPRESSION lhs;
@@ -2774,7 +2774,7 @@ EXPRESSION Expression4() :
     }
 }
 
-EXPRESSION Expression3() :
+EXPRESSION Expression3() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -2790,7 +2790,7 @@ EXPRESSION Expression3() :
     }
 }
 
-EXPRESSION Expression2() :
+EXPRESSION Expression2() throws Exception:
 {
     EXPRESSION e;
 }
@@ -2801,7 +2801,7 @@ EXPRESSION Expression2() :
     }
 }
 
-EXPRESSION PostFix1( EXPRESSION subject ) :
+EXPRESSION PostFix1( EXPRESSION subject ) throws Exception:
 {
     Token t;
     EXPRESSION e1 = null;
@@ -2832,7 +2832,7 @@ PROPERTY Property( EXPRESSION subject ) :
     }
 }
 
-PROPERTY PropertyExpression() :
+PROPERTY PropertyExpression() throws Exception:
 {
     EXPRESSION subject;
     PROPERTY p;
@@ -2844,7 +2844,7 @@ PROPERTY PropertyExpression() :
     }
 }
 
-EXPRESSION Expression1() :
+EXPRESSION Expression1() throws Exception:
 {
     EXPRESSION e = null;
     Token t;
@@ -2888,7 +2888,7 @@ EXPRESSION Expression1() :
     }
 }
 
-EXPRESSION CaseExpression() :
+EXPRESSION CaseExpression() throws Exception:
 {
     Token t;
     EXPRESSION caseExpr = null;
@@ -2915,7 +2915,7 @@ EXPRESSION CaseExpression() :
     }
 }
 
-EXPRESSION ListComprehension() :
+EXPRESSION ListComprehension() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -2932,7 +2932,7 @@ EXPRESSION ListComprehension() :
     }
 }
 
-EXPRESSION PatternComprehension() :
+EXPRESSION PatternComprehension() throws Exception:
 {
     Token t;
     Token relationshipPatternPosition;
@@ -2956,13 +2956,13 @@ EXPRESSION PatternComprehension() :
     }
 }
 
-void PatternComprehensionPrefix() :
+void PatternComprehensionPrefix() throws Exception:
 {}
 {
     <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() ( <WHERE> | <BAR> )
 }
 
-EXPRESSION ReduceExpression() :
+EXPRESSION ReduceExpression() throws Exception:
 {
     Token t;
     VARIABLE acc;
@@ -2983,7 +2983,7 @@ EXPRESSION ReduceExpression() :
     }
 }
 
-EXPRESSION AllExpression() :
+EXPRESSION AllExpression() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -2997,7 +2997,7 @@ EXPRESSION AllExpression() :
     }
 }
 
-EXPRESSION AnyExpression() :
+EXPRESSION AnyExpression() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -3011,7 +3011,7 @@ EXPRESSION AnyExpression() :
     }
 }
 
-EXPRESSION NoneExpression() :
+EXPRESSION NoneExpression() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -3025,7 +3025,7 @@ EXPRESSION NoneExpression() :
     }
 }
 
-EXPRESSION SingleExpression() :
+EXPRESSION SingleExpression() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -3039,7 +3039,7 @@ EXPRESSION SingleExpression() :
     }
 }
 
-EXPRESSION PatternExpression() :
+EXPRESSION PatternExpression() throws Exception:
 {
     PATTERN p;
     Token t;
@@ -3052,7 +3052,7 @@ EXPRESSION PatternExpression() :
     }
 }
 
-EXPRESSION ShortestPathExpression() :
+EXPRESSION ShortestPathExpression() throws Exception:
 {
     PATTERN p;
     Token t;
@@ -3065,7 +3065,7 @@ EXPRESSION ShortestPathExpression() :
     }
 }
 
-EXPRESSION MapProjection() :
+EXPRESSION MapProjection() throws Exception:
 {
     Token t;
     VARIABLE v;
@@ -3079,7 +3079,7 @@ EXPRESSION MapProjection() :
     }
 }
 
-MAP_PROJECTION_ITEM MapProjectionItem() :
+MAP_PROJECTION_ITEM MapProjectionItem() throws Exception:
 {
     Token t;
     StringPos<POS> p;
@@ -3093,20 +3093,24 @@ MAP_PROJECTION_ITEM MapProjectionItem() :
     | <DOT> t=<TIMES> { return astFactory.mapProjectionAll( pos( t ) ); }
 }
 
-EXPRESSION ExistsExpression() :
+EXPRESSION ExistsExpression() throws Exception:
 {
     Token t;
-    List<PATTERN> patterns;
-    EXPRESSION where = null;
+    List<PATTERN> patterns = null;
+    QUERY q = null;
+    WHERE where = null;
 }
 {
-    t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
+    t=<EXISTS>
+    <LCURLY>
+        (q=RegularQuery() | (patterns=PatternList() ( where=WhereClause() )?))
+    <RCURLY>
     {
-    return astFactory.existsExpression( pos( t ), patterns, where );
-}
+        return astFactory.existsExpression( pos( t ), patterns, q, where );
+    }
 }
 
-EXPRESSION CountExpression() :
+EXPRESSION CountExpression() throws Exception:
 {
     Token t;
     List<PATTERN> patterns;
@@ -3157,7 +3161,7 @@ EXPRESSION SignedIntegerLiteral():
     }
 }
 
-EXPRESSION ListLiteral() :
+EXPRESSION ListLiteral() throws Exception:
 {
     Token t;
     EXPRESSION e;
@@ -3170,7 +3174,7 @@ EXPRESSION ListLiteral() :
     }
 }
 
-EXPRESSION MapLiteral() :
+EXPRESSION MapLiteral() throws Exception:
 {
     Token t;
     StringPos<POS> key;
@@ -3209,7 +3213,7 @@ PARAMETER Parameter( ParameterType type ) :
     )
 }
 
-EXPRESSION FunctionInvocation() :
+EXPRESSION FunctionInvocation()  throws Exception:
 {
     Token before = token;
     Token nameSpaceToken;
@@ -3381,7 +3385,7 @@ STATEMENT_WITH_GRAPH AlterCommand() throws Exception:
 
 // SHOW commands
 
-STATEMENT ShowCommand( USE_CLAUSE useClause ) :
+STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
 {
     Token start = null;
     Token showCommandType = null;
@@ -3452,7 +3456,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT TerminateCommand( USE_CLAUSE useClause ) :
+STATEMENT TerminateCommand( USE_CLAUSE useClause ) throws Exception:
 {
     Token start = null;
     List<CLAUSE> clauses = null;
@@ -3471,7 +3475,7 @@ STATEMENT TerminateCommand( USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
+STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
 }
@@ -3488,7 +3492,7 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) :
+STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     Token constraintType = null;
     STATEMENT statement = null;
@@ -3507,7 +3511,7 @@ STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) :
+STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     Token constraintType = null;
     STATEMENT statement = null;
@@ -3524,7 +3528,7 @@ STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) :
+STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
 }
@@ -3539,7 +3543,7 @@ STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) :
     }
 }
 
-STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) :
+STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
 {
     STATEMENT statement = null;
 }
@@ -3571,7 +3575,7 @@ RETURN_ITEM YieldItem() :
     }
 }
 
-YIELD YieldClause():
+YIELD YieldClause() throws Exception:
 {
     Token start;
     Token skipPosition = null;
@@ -3599,7 +3603,7 @@ YIELD YieldClause():
     }
 }
 
-STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType ):
+STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType ) throws Exception:
 {
     // all and btree indexes
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3638,7 +3642,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
     }
 }
 
-STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType):
+STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType) throws Exception:
 {
   // fulltext, text and lookup indexes
   List<CLAUSE> clauses = new ArrayList<>();
@@ -3670,7 +3674,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilte
     }
 }
 
-STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
+STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
 {
     // all, node key, uniqueness and old valid existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3709,7 +3713,7 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
     }
 }
 
-STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
+STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
 {
     // old deprecated existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3729,7 +3733,7 @@ STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowComm
     }
 }
 
-STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ):
+STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
 {
     // new existence constraints
     List<CLAUSE> clauses = new ArrayList<>();
@@ -3765,7 +3769,7 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowComm
     }
 }
 
-STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
+STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     List<CLAUSE> clauses = new ArrayList<>();
     if (useClause != null)
@@ -3810,7 +3814,7 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ):
     }
 }
 
-STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes functionType ):
+STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes functionType ) throws Exception:
 {
     List<CLAUSE> clauses = new ArrayList<>();
     if (useClause != null)
@@ -3855,7 +3859,7 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     }
 }
 
-List<CLAUSE> ShowTransactions( Token start ):
+List<CLAUSE> ShowTransactions( Token start ) throws Exception:
 {
     List<CLAUSE> clauses = new LinkedList<>();
     SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(new ArrayList<>());
@@ -3901,7 +3905,7 @@ List<CLAUSE> ShowTransactions( Token start ):
     }
 }
 
-List<CLAUSE> TerminateTransactions( Token start ):
+List<CLAUSE> TerminateTransactions( Token start ) throws Exception:
 {
     List<CLAUSE> clauses = new LinkedList<>();
     SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(new ArrayList<>());
@@ -3947,7 +3951,7 @@ List<CLAUSE> TerminateTransactions( Token start ):
     }
 }
 
-List<CLAUSE> showOrTerminateTransactions():
+List<CLAUSE> showOrTerminateTransactions() throws Exception:
 {
     Token start = null;
     List<CLAUSE> clauses = null;
@@ -3962,7 +3966,7 @@ List<CLAUSE> showOrTerminateTransactions():
     }
 }
 
-SimpleEither<List<String>, EXPRESSION> transactionIds():
+SimpleEither<List<String>, EXPRESSION> transactionIds() throws Exception:
 {
     List<String> ids = new ArrayList<>();
     EXPRESSION expr = null;
@@ -4210,7 +4214,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
     }
 }
 
-SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace):
+SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace) throws Exception:
 {
     boolean ifNotExists = false;
     boolean isNode = false;
@@ -4249,7 +4253,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace):
         }
 }
 
-SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ):
+SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ) throws Exception:
 {
     boolean ifNotExists = false;
     boolean isNode = false;
@@ -4391,7 +4395,7 @@ ADMINISTRATION_COMMAND RevokeCommand() throws Exception:
 
 // Server commands
 
-ADMINISTRATION_COMMAND EnableServerCommand():
+ADMINISTRATION_COMMAND EnableServerCommand() throws Exception:
 {
     Token start;
     SimpleEither<String, PARAMETER> serverName = null;
@@ -4405,7 +4409,7 @@ ADMINISTRATION_COMMAND EnableServerCommand():
     }
 }
 
-ADMINISTRATION_COMMAND AlterServer( Token start ):
+ADMINISTRATION_COMMAND AlterServer( Token start ) throws Exception:
 {
     SimpleEither<String, PARAMETER> serverName = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
@@ -4440,7 +4444,7 @@ ADMINISTRATION_COMMAND DropServer( Token start ):
     }
 }
 
-STATEMENT_WITH_GRAPH ShowServers( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowServers( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
@@ -4548,7 +4552,7 @@ ADMINISTRATION_COMMAND RenameRole( Token start ):
     }
 }
 
-STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showAll ):
+STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showAll ) throws Exception:
 {
     boolean withUsers = false;
     YIELD yield = null;
@@ -4787,7 +4791,7 @@ Optional<DATABASE_NAME> HomeDatabase( Token start, Optional<DATABASE_NAME> homeD
     }
 }
 
-STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
@@ -4803,7 +4807,7 @@ STATEMENT_WITH_GRAPH ShowUsers( Token start, USE_CLAUSE useClause ):
     }
 }
 
-STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
@@ -4820,7 +4824,7 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 
 // Privilege commands
 
-STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     boolean asCommand = false;
     boolean asRevoke = false;
@@ -4845,7 +4849,7 @@ STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ):
     }
 }
 
-STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     List<SimpleEither<String, PARAMETER>> roles = null;
     boolean asCommand = false;
@@ -4872,7 +4876,7 @@ STATEMENT_WITH_GRAPH ShowRolePrivileges( Token start, USE_CLAUSE useClause ):
     }
 }
 
-STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     List<SimpleEither<String, PARAMETER>> users = null;
     boolean asCommand = false;
@@ -5415,7 +5419,7 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ) throws Exc
 {
     <DATABASE> databaseName=SymbolicAliasName()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    ( <TOPOLOGY> 
+    ( <TOPOLOGY>
             ( count=<UNSIGNED_DECIMAL_INTEGER>
                 (
                     (errorStart=<PRIMARY> | errorStart=<PRIMARIES>){ assertNotAlreadySet(primaries, errorStart, topologyMultiplePrimaryError); }  {primaries = count;}
@@ -5431,13 +5435,13 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ) throws Exc
             replace, databaseName.getLocalAliasName(astFactory),
             ifNotExists,
             wait,
-            options, 
+            options,
             (primaries != null) ? Integer.parseInt(primaries.image) : null,
             (secondaries != null) ? Integer.parseInt(secondaries.image) : null);
     }
 }
 
-SimpleEither<Map<String, EXPRESSION>, PARAMETER> Options() :
+SimpleEither<Map<String, EXPRESSION>, PARAMETER> Options() throws Exception:
 {
      SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
@@ -5572,7 +5576,7 @@ WAIT_CLAUSE WaitClause():
     }
 }
 
-STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ):
+STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     DATABASE_SCOPE scope;
     YIELD yield = null;
@@ -5730,7 +5734,7 @@ ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
     }
 }
 
-STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ):
+STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     AliasName<DATABASE_NAME, PARAMETER> aliasName = null;
     WHERE where = null;
@@ -5912,7 +5916,7 @@ SimpleEither<String, PARAMETER> StringOrParameter():
     | parameter=Parameter( ParameterType.STRING ) { return SimpleEither.<String, PARAMETER>right( parameter ); }
 }
 
-SimpleEither<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
+SimpleEither<Map<String, EXPRESSION>, PARAMETER> MapOrParameter() throws Exception:
 {
     Map<String, EXPRESSION> map = null;
     PARAMETER parameter;
@@ -5922,7 +5926,7 @@ SimpleEither<Map<String, EXPRESSION>, PARAMETER> MapOrParameter():
     | parameter=Parameter( ParameterType.MAP ) { return SimpleEither.<Map<String,EXPRESSION>,PARAMETER>right( parameter ); }
 }
 
-Map<String, EXPRESSION> Map():
+Map<String, EXPRESSION> Map()  throws Exception:
 {
     Token key;
     EXPRESSION expr;

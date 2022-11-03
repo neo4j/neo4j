@@ -1167,7 +1167,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("ProduceResult") {
     assertGood(
       attach(ProduceResult(lhsLP, Seq("a", "b", "c\nd")), 12.0),
-      planDescription(id, "ProduceResults", SingleChild(lhsPD), Seq(details(Seq("a", "b", "cd"))), Set("a"))
+      planDescription(id, "ProduceResults", SingleChild(lhsPD), Seq(details(Seq("a", "b", "`c d`"))), Set("a"))
     )
   }
 

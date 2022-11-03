@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -206,7 +205,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       ),
       "",
       ""
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val predicate = Predicate(Set("a"), subqueryExpression)
     val selections = Selections(Set(predicate))

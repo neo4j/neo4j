@@ -55,16 +55,17 @@ object StatementConverters {
   /**
    * Convert an AST SingleQuery into an IR SinglePlannerQuery
    */
-  def toPlannerQuery(
+  private def toPlannerQuery(
     q: SingleQuery,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    importedVariables: Set[String]
   ): SinglePlannerQuery = {
-    val importedVariables: Set[String] = q.importWith.map((wth: With) =>
+    val allImportedVars = importedVariables ++ q.importWith.map((wth: With) =>
       wth.returnItems.items.map(_.name).toSet
     ).getOrElse(Set.empty)
 
-    val builder = PlannerQueryBuilder(semanticTable, importedVariables)
+    val builder = PlannerQueryBuilder(semanticTable, allImportedVars)
     addClausesToPlannerQueryBuilder(q.clauses, builder, anonymousVariableNameGenerator).build()
   }
 
@@ -109,28 +110,33 @@ object StatementConverters {
   def toPlannerQuery(
     query: Query,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    importedVariables: Set[String] = Set.empty
   ): PlannerQuery = {
-    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator))
-    val plannerQueryPart = toPlannerQueryPart(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator)
+    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable))
+    val plannerQueryPart =
+      toPlannerQueryPart(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
     PlannerQuery(plannerQueryPart)
   }
 
   def toPlannerQueryPart(
     queryPart: QueryPart,
     semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    importedVariables: Set[String] = Set.empty
   ): PlannerQueryPart = {
     val nodes = findBlacklistedNodes(queryPart)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
     queryPart match {
       case singleQuery: SingleQuery =>
-        toPlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator)
+        toPlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
       case unionQuery: ast.ProjectingUnion =>
-        val part: PlannerQueryPart = toPlannerQueryPart(unionQuery.part, semanticTable, anonymousVariableNameGenerator)
-        val query: SinglePlannerQuery = toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator)
+        val part: PlannerQueryPart =
+          toPlannerQueryPart(unionQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        val query: SinglePlannerQuery =
+          toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll      => false

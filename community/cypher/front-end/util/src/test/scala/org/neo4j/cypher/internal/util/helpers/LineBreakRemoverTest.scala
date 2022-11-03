@@ -26,6 +26,6 @@ class LineBreakRemoverTest extends CypherFunSuite {
   }
 
   test("should remove line breaks") {
-    removeLineBreaks("\na \rb\n c\n") should equal("a b c")
+    removeLineBreaks("\na \rb\n c\n") should equal(" a  b  c ")
   }
 }

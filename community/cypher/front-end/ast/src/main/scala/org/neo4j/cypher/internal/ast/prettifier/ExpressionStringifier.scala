@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -36,7 +38,6 @@ import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -127,6 +128,8 @@ private class DefaultExpressionStringifier(
   override val patterns: PatternStringifier = PatternStringifier(this)
 
   override val pathSteps: PathStepStringifier = PathStepStringifier(this)
+
+  private val prettifier: Prettifier = Prettifier(this)
 
   override def apply(ast: Expression): String =
     stringify(ast)
@@ -327,10 +330,14 @@ private class DefaultExpressionStringifier(
         // These are not really expressions, they are part of expressions
         ""
 
-      case ExistsExpression(pat, where) =>
+      case SimpleExistsExpression(pat, where) =>
         val p = patterns.apply(pat)
-        val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
+        val w = where.map(wh => s" WHERE ${inner(ast)(wh.expression)}").getOrElse("")
         s"EXISTS { MATCH $p$w }"
+
+      case FullExistsExpression(q) =>
+        val p = prettifier.asString(q)
+        s"EXISTS { $p }"
 
       case CountExpression(relChain, where) =>
         val p = patterns.apply(relChain)

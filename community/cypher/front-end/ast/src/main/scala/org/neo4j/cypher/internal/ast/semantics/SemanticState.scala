@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -105,6 +106,8 @@ final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSp
 
 object Scope {
   val empty: Scope = Scope(symbolTable = HashMap.empty, children = Vector())
+
+  case class DeclarationsAndDependencies(declarations: Set[SymbolUse], dependencies: Set[SymbolUse])
 }
 
 final case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
@@ -252,6 +255,15 @@ object SemanticState {
 
     def updateVariable(variable: String, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]): ScopeLocation =
       location.replace(scope.updateVariable(variable, types, definition, uses))
+
+    def declarationsAndDependencies: DeclarationsAndDependencies = {
+      val allDefinitions = scope.allSymbolDefinitions.values.flatten.toSet
+      val parentDefinitions = parent.get.availableSymbolDefinitions
+      val (dependencies, declarations) = allDefinitions.partition { definition =>
+        parentDefinitions.contains(definition)
+      }
+      DeclarationsAndDependencies(declarations, dependencies)
+    }
   }
 
   def recordCurrentScope(node: ASTNode): SemanticCheck =

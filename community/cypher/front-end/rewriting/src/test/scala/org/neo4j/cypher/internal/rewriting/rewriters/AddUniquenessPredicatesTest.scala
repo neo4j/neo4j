@@ -66,6 +66,13 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
   }
 
+  test("uniqueness check is done for one variable length relationship inside an EXISTS Expression") {
+    assertRewrite(
+      "MATCH (a) WHERE EXISTS { MATCH (b)-[r*0..1]->(c) RETURN 1 } RETURN *",
+      s"MATCH (a) WHERE EXISTS { MATCH (b)-[r*0..1]->(c) WHERE ${unique("r")} RETURN 1 } RETURN *"
+    )
+  }
+
   test("uniqueness check is done between relationships of simple and variable pattern lengths") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
@@ -91,8 +98,8 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d) RETURN *",
-      s"""MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d) 
-         |WHERE ${disjoint("r3", "r2")} AND NOT r1 IN r3 AND ${unique("r3", 1)} AND ${unique("r2", 3)} 
+      s"""MATCH (a)-[r1:R1]->(b)-[r2:R2*0..1]->(c)-[r3:R1|R2*0..1]->(d)
+         |WHERE ${disjoint("r3", "r2")} AND NOT r1 IN r3 AND ${unique("r3", 1)} AND ${unique("r2", 3)}
          |RETURN *""".stripMargin
     )
   }
@@ -109,8 +116,8 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   test("no uniqueness check between relationships of variable and variable pattern lengths of different type") {
     assertRewrite(
       "MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c) RETURN *",
-      s"""MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c) 
-         |WHERE ${unique("r2")} AND ${unique("r1", 2)} 
+      s"""MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c)
+         |WHERE ${unique("r2")} AND ${unique("r1", 2)}
          |RETURN *""".stripMargin
     )
   }
@@ -190,7 +197,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     // WHEN
     val result = parsed.endoRewrite(inSequence(
       nameAllPatternElements(new AnonymousVariableNameGenerator),
-      AddUniquenessPredicates
+      AddUniquenessPredicates.rewriter
     ))
 
     // THEN
@@ -232,8 +239,13 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
 
     assertRewrite(
+      "MATCH (c) WHERE EXISTS { MATCH (a)-[r1]->(b) (()-[r2]->())* RETURN 1 } RETURN *",
+      s"MATCH (c) WHERE EXISTS { MATCH (a)-[r1]->(b) (()-[r2]->())* WHERE NOT r1 IN r2 AND ${unique("r2")} RETURN 1 } RETURN *"
+    )
+
+    assertRewrite(
       "MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->())* RETURN *",
-      s"""MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->() WHERE NOT (r3 = r2))* 
+      s"""MATCH (a)-[r1]->(b) (()-[r2]->()-[r3]->() WHERE NOT (r3 = r2))*
          |WHERE NOT r1 IN (r2 + r3) AND ${unique("r2 + r3")}
          |RETURN *""".stripMargin
     )
@@ -259,14 +271,14 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
 
     assertRewrite(
       "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R3]->())* RETURN *",
-      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R3]->())* 
+      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R3]->())*
          |WHERE ${unique("r2 + r3")}
          |RETURN *""".stripMargin
     )
 
     assertRewrite(
       "MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R1]->())* RETURN *",
-      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R1]->())* 
+      s"""MATCH (a)-[r1:R1]->(b) (()-[r2:R2]->()-[r3:R1]->())*
          |WHERE NOT r1 IN r3 AND ${unique("r2 + r3")}
          |RETURN *""".stripMargin
     )
@@ -282,14 +294,14 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   test("uniqueness check is done between QPPs and QPPs") {
     assertRewrite(
       "MATCH (()-[r1]->())+ (()-[r2]->())+ RETURN *",
-      s"""MATCH (()-[r1]->())+ (()-[r2]->())+ 
+      s"""MATCH (()-[r1]->())+ (()-[r2]->())+
          |WHERE ${disjoint("r1", "r2")} AND ${unique("r1", 1)} AND ${unique("r2", 3)}
          |RETURN *""".stripMargin
     )
 
     assertRewrite(
       "MATCH (()-[r1]->()-[r2]->())+ (()-[r3]->()-[r4]->())+ RETURN *",
-      s"""MATCH (()-[r1]->()-[r2]->() WHERE NOT (r2 = r1))+ (()-[r3]->()-[r4]->() WHERE NOT (r4 = r3))+ 
+      s"""MATCH (()-[r1]->()-[r2]->() WHERE NOT (r2 = r1))+ (()-[r3]->()-[r4]->() WHERE NOT (r4 = r3))+
          |WHERE ${disjoint("r1 + r2", "r3 + r4")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
          |RETURN *""".stripMargin
     )
@@ -298,7 +310,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   test("no uniqueness check between QPPs and QPPs of different type") {
     assertRewrite(
       "MATCH (()-[r1:R1]->())+ (()-[r2:R2]->())+ RETURN *",
-      s"""MATCH (()-[r1:R1]->())+ (()-[r2:R2]->())+ 
+      s"""MATCH (()-[r1:R1]->())+ (()-[r2:R2]->())+
          |WHERE ${unique("r1")} AND ${unique("r2", 2)}
          |RETURN *""".stripMargin
     )
@@ -306,7 +318,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     // Here there is no overlap between the first and the second QPP, so no need for a disjoint.
     assertRewrite(
       "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R3]->()-[r4:R4]->())+ RETURN *",
-      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R3]->()-[r4:R4]->())+ 
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R3]->()-[r4:R4]->())+
          |WHERE ${unique("r1 + r2")} AND ${unique("r3 + r4", 2)}
          |RETURN *""".stripMargin
     )
@@ -315,7 +327,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     // But since the trail operator puts everything into one big set anyway, we put all relationships in disjoint.
     assertRewrite(
       "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R2]->())+ RETURN *",
-      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R2]->())+ 
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R2]->())+
          |WHERE ${disjoint("r1 + r2", "r3 + r4")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
          |RETURN *""".stripMargin
     )
@@ -323,7 +335,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     // Here some relationships overlap.
     assertRewrite(
       "MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R4]->())+ RETURN *",
-      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R4]->())+ 
+      s"""MATCH (()-[r1:R1]->()-[r2:R2]->())+ (()-[r3:R1]->()-[r4:R4]->())+
          |WHERE ${disjoint("r1", "r3")} AND ${unique("r1 + r2", 1)} AND ${unique("r3 + r4", 3)}
          |RETURN *""".stripMargin
     )
@@ -382,7 +394,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   }
 
   def rewriterUnderTest: Rewriter = inSequence(
-    AddUniquenessPredicates,
+    AddUniquenessPredicates.rewriter,
     UniquenessRewriter(new AnonymousVariableNameGenerator)
   )
 }

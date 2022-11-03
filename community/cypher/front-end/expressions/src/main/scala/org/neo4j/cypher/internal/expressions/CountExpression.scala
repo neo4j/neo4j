@@ -16,34 +16,30 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class CountExpression(pattern: Pattern, optionalWhereExpression: Option[Expression])(
   val position: InputPosition,
-  override val outerScope: Set[LogicalVariable]
-) extends ScopeExpression with ExpressionWithOuterScope with SubqueryExpression {
+  val introducedVariables: Set[LogicalVariable],
+  val scopeDependencies: Set[LogicalVariable]
+) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
 
   self =>
 
-  private val patternElements: Seq[PatternElement] = pattern.patternParts.map(_.element)
+  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
 
-  private val allVariablesInPatternElements: Set[LogicalVariable] =
-    patternElements.folder.findAllByClass[LogicalVariable].toSet
+  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
 
-  override val introducedVariables: Set[LogicalVariable] = allVariablesInPatternElements -- outerScope
-
-  override def withOuterScope(outerScope: Set[LogicalVariable]): CountExpression = copy()(position, outerScope)
-
-  override def scopeDependencies: Set[LogicalVariable] =
-    (allVariablesInPatternElements ++ optionalWhereExpression.fold(Set.empty[LogicalVariable])(
-      _.dependencies
-    )) intersect outerScope
+  override def subqueryAstNode: ASTNode = pattern
 
   override def dup(children: Seq[AnyRef]): this.type = {
     CountExpression(
       children(0).asInstanceOf[Pattern],
       children(1).asInstanceOf[Option[Expression]]
-    )(position, outerScope).asInstanceOf[this.type]
+    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
 
   override def isConstantForQuery: Boolean = optionalWhereExpression.forall(_.isConstantForQuery)

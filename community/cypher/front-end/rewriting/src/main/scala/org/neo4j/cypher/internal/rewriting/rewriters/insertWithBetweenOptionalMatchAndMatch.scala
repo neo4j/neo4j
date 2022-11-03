@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -58,8 +57,5 @@ case object insertWithBetweenOptionalMatchAndMatch extends Step with Preparatory
       SingleQuery(newClauses)(sq.position)
   })
 
-  override def getRewriter(
-    cypherExceptionFactory: CypherExceptionFactory,
-    notificationLogger: InternalNotificationLogger
-  ): Rewriter = instance
+  override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

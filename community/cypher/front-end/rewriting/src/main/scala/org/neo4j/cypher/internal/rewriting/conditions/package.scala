@@ -21,8 +21,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 
 package object conditions {
-  case object PatternExpressionsHaveSemanticInfo extends Condition
+  case object SubqueryExpressionsHaveSemanticInfo extends Condition
   case object PatternExpressionAreWrappedInExists extends Condition
+  case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
   // This means that there is a SemanticTable, not that it is up to date
   case object StateContainsSemanticTable extends Condition
 
@@ -30,7 +31,7 @@ package object conditions {
    * A collection of all conditions that require semantic info available for some AST nodes
    */
   val SemanticInfoAvailable: Set[StepSequencer.Condition] = Set(
-    PatternExpressionsHaveSemanticInfo,
+    SubqueryExpressionsHaveSemanticInfo,
     ProjectionClausesHaveSemanticInfo
   )
 }

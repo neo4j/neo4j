@@ -29,7 +29,7 @@ object LineBreakRemover {
   })
 
   def removeLineBreaks(s: String): String =
-    lineBreaksPattern.matcher(s).replaceAll("")
+    lineBreaksPattern.matcher(s).replaceAll(" ")
 
   /**
    * Removes line breaks from any Strings found while traversing the tree of the given argument.

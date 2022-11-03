@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -64,6 +63,30 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
         |WITH owner AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
         |WITH `  UNNAMED0` AS owner, `  UNNAMED1` > 0 AS collected
         |  ORDER BY owner.foo
+        |RETURN owner AS owner
+      """.stripMargin
+    )
+  }
+
+  test("rewrites query inside Full Exists Expression") {
+    assertRewrite(
+      """
+        |MATCH (owner)
+        |WHERE EXISTS {
+        | WITH owner, count(*) > 0 AS collected
+        | MATCH (dog)
+        | WHERE dog.ownerCount = collected
+        | RETURN owner
+        |}
+        |RETURN owner
+      """.stripMargin,
+      """
+        |MATCH (owner)
+        |  WHERE EXISTS { WITH owner AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
+        |WITH `  UNNAMED0` AS owner, `  UNNAMED1` > 0 AS collected
+        |MATCH (dog)
+        |  WHERE dog.ownerCount = collected
+        |RETURN owner AS owner }
         |RETURN owner AS owner
       """.stripMargin
     )
@@ -252,8 +275,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   override protected def parseForRewriting(queryText: String): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
     super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeWithAndReturnClauses(
-      exceptionFactory,
-      devNullLogger
+      exceptionFactory
     )))
   }
 }

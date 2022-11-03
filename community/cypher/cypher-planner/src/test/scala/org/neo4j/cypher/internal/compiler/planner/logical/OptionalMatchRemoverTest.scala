@@ -40,10 +40,10 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeExistsPatternExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
-import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -838,12 +838,12 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       LabelExpressionPredicateNormalizer.instance,
       normalizeExistsPatternExpressions(orgAstState),
       normalizeHasLabelsAndHasType(orgAstState),
-      AddUniquenessPredicates,
+      AddUniquenessPredicates.rewriter,
       flattenBooleanOperators,
       insertWithBetweenOptionalMatchAndMatch.instance
     ))
     // recordScopes needs a new run of SemanticChecker, after normalizeExistsPatternExpressions has introduced new ExpressionWithOuterScope
-    val ast = ast_0.endoRewrite(recordScopes(SemanticChecker.check(ast_0).state))
+    val ast = ast_0.endoRewrite(computeDependenciesForExpressions(SemanticChecker.check(ast_0).state))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)

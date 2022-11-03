@@ -708,7 +708,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos)
+    )(pos, Set.empty, Set.empty)
     val predicate = Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
 
@@ -771,7 +771,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
@@ -803,7 +803,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
@@ -835,7 +835,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
@@ -1188,7 +1188,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (`owner`)-[`$relName`]-(`$nodeName`) }"
-    )(pos)
+    )(pos, Set.empty, Set.empty)
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),
@@ -1534,7 +1534,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  test("should insert ExistsIRExpression in Selections when having an exists in a subquery") {
+  test("should insert ExistsIRExpression in Selections when having a simple exists in a subquery") {
     val query = buildSinglePlannerQuery("MATCH (n)-[r]->(m) WHERE EXISTS { (o)-[r2]->(m)-[r3]->(q) } RETURN *")
     val m = varFor("m")
     val o = varFor("o")
@@ -1563,7 +1563,51 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ),
         existsVariableName,
         "EXISTS { MATCH (o)-[r2]->(m)-[r3]->(q) }"
-      )(pos)
+      )(pos, Set.empty, Set.empty)
+    )))
+  }
+
+  test("should insert ExistsIRExpression in Selections when having a full exists in a subquery") {
+    val query = buildSinglePlannerQuery(
+      "MATCH (n)-[r]->(m) WHERE EXISTS { MATCH (n) RETURN n AS name UNION MATCH (m) RETURN m AS name } RETURN *"
+    )
+    val m = varFor("m")
+    val n = varFor("n")
+
+    val existsVariableName = "anon_3"
+    val firstQuery = RegularSinglePlannerQuery(
+      QueryGraph(
+        patternNodes = Set(n.name),
+        patternRelationships = Set(),
+        argumentIds = Set("m", "n"),
+        selections = Selections(Set(Predicate(Set("n"), assertIsNode("n"))))
+      ),
+      horizon = RegularQueryProjection(Map("name" -> varFor("n")))
+    )
+    val secondQuery = RegularSinglePlannerQuery(
+      QueryGraph(
+        patternNodes = Set(m.name),
+        patternRelationships = Set(),
+        argumentIds = Set("m", "n"),
+        selections = Selections(Set(Predicate(Set("m"), assertIsNode("m"))))
+      ),
+      horizon = RegularQueryProjection(Map("name" -> varFor("m")))
+    )
+
+    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
+      Set("n", "m"),
+      ExistsIRExpression(
+        PlannerQuery(
+          UnionQuery(
+            firstQuery,
+            secondQuery,
+            unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
+            distinct = true
+          )
+        ),
+        existsVariableName,
+        "EXISTS { MATCH (n)\nRETURN n AS `name`\nUNION\nMATCH (m)\nRETURN m AS `name` }"
+      )(pos, Set.empty, Set.empty)
     )))
   }
 
@@ -1903,7 +1947,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ),
         existsVariableName,
         s"EXISTS { MATCH (a) ((`n`)-[`r`]->(`m`))+ (`$m_outer`) }"
-      )(pos)
+      )(pos, Set.empty, Set.empty)
     )))
   }
 

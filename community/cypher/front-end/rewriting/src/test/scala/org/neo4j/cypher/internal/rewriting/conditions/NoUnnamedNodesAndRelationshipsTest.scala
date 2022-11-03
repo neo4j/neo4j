@@ -163,6 +163,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val relationshipPattern: RelationshipPattern = relationship(None)
     val where: Where =
       Where(PatternExpression(RelationshipsPattern(chain(nodePattern, relationshipPattern, nodePattern)) _)(
+        Set.empty,
         Set.empty
       )) _
     val ast: ASTNode = SingleQuery(Seq(
@@ -210,7 +211,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       ) _,
       None,
       literalString("foo")
-    )(pos, Set.empty)
+    )(pos, Set.empty, Set.empty)
 
     condition(input) should equal(Seq(
       s"NodePattern at ${nodePattern.position} is unnamed",
@@ -231,7 +232,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       ) _,
       None,
       literalString("foo")
-    )(pos, Set.empty)
+    )(pos, Set(varFor("p"), varFor("a"), varFor("r"), varFor("b")), Set.empty)
 
     condition(input) shouldBe empty
   }

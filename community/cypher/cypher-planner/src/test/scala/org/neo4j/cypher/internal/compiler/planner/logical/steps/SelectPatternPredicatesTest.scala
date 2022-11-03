@@ -22,14 +22,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.ExistsExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
@@ -49,7 +47,6 @@ import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.SemiApply
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SelectPatternPredicatesTest extends SelectPatternPredicatesTestBase {
@@ -94,7 +91,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     ),
     "",
     s"exists((a)-[`$relName`]->(`$nodeName`))"
-  )(pos)
+  )(pos, Set.empty, Set.empty)
 
   private val subqueryExp2 = ExistsIRExpression(
     PlannerQuery(
@@ -109,7 +106,7 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     ),
     "",
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
-  )(pos)
+  )(pos, Set.empty, Set.empty)
 
   private val pattern: Pattern = Pattern(Seq(EveryPath(relChain))) _
 

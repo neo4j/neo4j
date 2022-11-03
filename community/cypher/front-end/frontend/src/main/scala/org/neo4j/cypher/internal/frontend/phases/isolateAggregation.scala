@@ -61,7 +61,7 @@ import org.neo4j.cypher.internal.util.topDown
 case object isolateAggregation extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def instance(from: BaseState, context: BaseContext): Rewriter =
-    bottomUp(rewriter(from), _.isInstanceOf[Expression], context.cancellationChecker)
+    bottomUp(rewriter(from), cancellation = context.cancellationChecker)
 
   private def rewriter(from: BaseState) = Rewriter.lift {
     case q @ SingleQuery(clauses) =>
