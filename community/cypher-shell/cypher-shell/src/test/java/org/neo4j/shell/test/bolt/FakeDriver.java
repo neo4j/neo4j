@@ -24,6 +24,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Metrics;
 import org.neo4j.driver.Session;
@@ -51,6 +52,12 @@ public class FakeDriver implements Driver {
     public Session session(SessionConfig sessionConfig) {
         sessionConfigs.add(sessionConfig);
         return new FakeSession();
+    }
+
+    @Override
+    public <T extends BaseSession> T session(Class<T> aClass, SessionConfig sessionConfig) {
+        sessionConfigs.add(sessionConfig);
+        return (T) new FakeSession();
     }
 
     @Override

@@ -100,7 +100,7 @@ class BoltStateHandlerTest {
 
     @BeforeEach
     void setup() {
-        when(mockDriver.session(any())).thenReturn(new FakeSession());
+        when(mockDriver.session(any(SessionConfig.class))).thenReturn(new FakeSession());
     }
 
     @Test
@@ -351,7 +351,7 @@ class BoltStateHandlerTest {
         BoltResult boltResult =
                 boltStateHandler.runUserCypher("RETURN 999", new HashMap<>()).get();
 
-        verify(driverMock, times(2)).session(any());
+        verify(driverMock, times(2)).session(any(SessionConfig.class));
         verify(sessionMock, times(2)).run(any(Query.class), eq(userTxConf));
 
         assertEquals("999", boltResult.getRecords().get(0).get(0).toString());
@@ -470,7 +470,7 @@ class BoltStateHandlerTest {
         when(sessionMock.run(eq("CALL db.ping()"), eq(systemTxConf))).thenReturn(failing);
         when(sessionMock.run(eq("RETURN 1"), eq(systemTxConf))).thenReturn(other);
         Driver driverMock = mock(Driver.class);
-        when(driverMock.session(any())).thenReturn(sessionMock);
+        when(driverMock.session(any(SessionConfig.class))).thenReturn(sessionMock);
         OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler(driverMock);
 
         // when
@@ -540,7 +540,7 @@ class BoltStateHandlerTest {
 
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(resultMock, db1SessionMock, "Neo4j/9.4.1-ALPHA", "database1");
-        when(driverMock.session(any())).thenAnswer(arg -> {
+        when(driverMock.session(any(SessionConfig.class))).thenAnswer(arg -> {
             SessionConfig sc = (SessionConfig) arg.getArguments()[0];
             switch (sc.database().get()) {
                 case "database1":
@@ -619,7 +619,7 @@ class BoltStateHandlerTest {
         var mockTx = mock(Transaction.class);
         doThrow(new ClientException("Failed to commit :(")).when(mockTx).commit();
         when(mockSession.beginTransaction(any())).thenReturn(mockTx);
-        when(mockDriver.session(any())).thenReturn(mockSession);
+        when(mockDriver.session(any(SessionConfig.class))).thenReturn(mockSession);
 
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
@@ -634,7 +634,7 @@ class BoltStateHandlerTest {
         var mockTx = mock(Transaction.class);
         doThrow(new ClientException("Failed to rollback :(")).when(mockTx).rollback();
         when(mockSession.beginTransaction(any())).thenReturn(mockTx);
-        when(mockDriver.session(any())).thenReturn(mockSession);
+        when(mockDriver.session(any(SessionConfig.class))).thenReturn(mockSession);
 
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
@@ -684,7 +684,7 @@ class BoltStateHandlerTest {
         when(sessionMock.isOpen()).thenReturn(true);
         when(sessionMock.run(eq("CALL db.ping()"), eq(systemTxConf))).thenReturn(resultMock);
         when(sessionMock.run(anyString(), any(Value.class))).thenReturn(resultMock);
-        when(driverMock.session(any())).thenReturn(sessionMock);
+        when(driverMock.session(any(SessionConfig.class))).thenReturn(sessionMock);
 
         return driverMock;
     }

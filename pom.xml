@@ -146,7 +146,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.19.0</log4j.version>
     <slf4j.version>2.0.3</slf4j.version>
-    <neo4j-java-driver.version>5.1.0</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.2.0</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
   </properties>
 
