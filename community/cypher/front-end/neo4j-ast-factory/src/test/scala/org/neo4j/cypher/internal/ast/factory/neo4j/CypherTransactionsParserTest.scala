@@ -130,77 +130,12 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
     gives(expected)
   }
 
-  test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status") {
+  test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status") {
     val expected =
       subqueryCallInTransactions(
         inTransactionsParameters(
           None,
-          Some(InTransactionsErrorParameters(OnErrorBreak)(pos)),
-          Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
-        ),
-        create(nodePat(Some("n")))
-      )
-    gives(expected)
-  }
-
-  test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status ON ERROR BREAK") {
-    val expected =
-      subqueryCallInTransactions(
-        inTransactionsParameters(
           None,
-          Some(InTransactionsErrorParameters(OnErrorBreak)(pos)),
-          Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
-        ),
-        create(nodePat(Some("n")))
-      )
-    gives(expected)
-  }
-
-  test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR FAIL REPORT STATUS AS status") {
-    val expected =
-      subqueryCallInTransactions(
-        inTransactionsParameters(
-          None,
-          Some(InTransactionsErrorParameters(OnErrorFail)(pos)),
-          Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
-        ),
-        create(nodePat(Some("n")))
-      )
-    gives(expected)
-  }
-
-  test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR CONTINUE") {
-    val expected =
-      subqueryCallInTransactions(
-        inTransactionsParameters(
-          None,
-          Some(InTransactionsErrorParameters(OnErrorContinue)(pos)),
-          None
-        ),
-        create(nodePat(Some("n")))
-      )
-    gives(expected)
-  }
-
-  test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS ON ERROR BREAK REPORT STATUS AS status") {
-    val expected =
-      subqueryCallInTransactions(
-        inTransactionsParameters(
-          Some(InTransactionsBatchParameters(literalInt(50))(pos)),
-          Some(InTransactionsErrorParameters(OnErrorBreak)(pos)),
-          Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
-        ),
-        create(nodePat(Some("n")))
-      )
-    gives(expected)
-  }
-
-  test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS ON ERROR FAIL REPORT STATUS AS status") {
-    val expected =
-      subqueryCallInTransactions(
-        inTransactionsParameters(
-          Some(InTransactionsBatchParameters(literalInt(50))(pos)),
-          Some(InTransactionsErrorParameters(OnErrorFail)(pos)),
           Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
         ),
         create(nodePat(Some("n")))
@@ -221,18 +156,95 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
     gives(expected)
   }
 
-  test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS ON ERROR CONTINUE REPORT STATUS AS status") {
+  test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status OF 50 ROWS") {
     val expected =
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(50))(pos)),
-          Some(InTransactionsErrorParameters(OnErrorContinue)(pos)),
+          None,
           Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
         ),
         create(nodePat(Some("n")))
       )
     gives(expected)
   }
+
+  // For each error behaviour, allow all possible orders of OF ROWS, ON ERROR and REPORT STATUS
+  Seq(
+    ("BREAK", OnErrorBreak),
+    ("FAIL", OnErrorFail),
+    ("CONTINUE", OnErrorContinue)
+  ).foreach {
+
+    case (errorKeyword, errorBehaviour) =>
+      val errorString = s"ON ERROR $errorKeyword"
+      val rowString = "OF 50 ROWS"
+      val statusString = "REPORT STATUS AS status"
+
+      val errorRowPermutations = List(errorString, rowString).permutations.toList
+      val errorStatusPermutations = List(errorString, statusString).permutations.toList
+      val errorRowStatusPermutations = List(errorString, rowString, statusString).permutations.toList
+
+      test(s"CALL { CREATE (n) } IN TRANSACTIONS $errorString") {
+        val expected =
+          subqueryCallInTransactions(
+            inTransactionsParameters(
+              None,
+              Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+              None
+            ),
+            create(nodePat(Some("n")))
+          )
+        gives(expected)
+      }
+
+      errorRowPermutations.foreach(permutation =>
+        test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                Some(InTransactionsBatchParameters(literalInt(50))(pos)),
+                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+                None
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives(expected)
+        }
+      )
+
+      errorStatusPermutations.foreach(permutation =>
+        test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)}") {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                None,
+                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+                Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives(expected)
+        }
+      )
+
+      errorRowStatusPermutations.foreach(permutation =>
+        test(s"CALL { CREATE (n) } IN TRANSACTIONS ${permutation.head} ${permutation(1)} ${permutation(2)}") {
+          val expected =
+            subqueryCallInTransactions(
+              inTransactionsParameters(
+                Some(InTransactionsBatchParameters(literalInt(50))(pos)),
+                Some(InTransactionsErrorParameters(errorBehaviour)(pos)),
+                Some(InTransactionsReportParameters(Variable("status")(pos))(pos))
+              ),
+              create(nodePat(Some("n")))
+            )
+          gives(expected)
+        }
+      )
+  }
+
+  // Negative tests
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK ON ERROR CONTINUE") {
     assertFailsWithMessageStart(
@@ -244,7 +256,7 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE") {
     assertFailsWithMessageContains(
       testName,
-      "Encountered \" \"CONTINUE\" \"CONTINUE\"\" at line 1, column 52.\n\nWas expecting one of:\n\n<EOF> \n    \"ON\" ...\n    \"REPORT\" ..."
+      "Encountered \" \"CONTINUE\" \"CONTINUE\"\" at line 1, column 52.\n\nWas expecting one of:\n\n<EOF> \n    \"OF\" ...\n    \"ON\" ...\n    \"REPORT\" ..."
     )
   }
 
@@ -259,6 +271,13 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
     assertFailsWithMessageStart(
       testName,
       "Duplicated REPORT STATUS parameter"
+    )
+  }
+
+  test("CALL { CREATE (n) } IN TRANSACTIONS OF 5 ROWS ON ERROR BREAK REPORT STATUS AS status OF 42 ROWS") {
+    assertFailsWithMessageStart(
+      testName,
+      "Duplicated OF ROWS parameter"
     )
   }
 }

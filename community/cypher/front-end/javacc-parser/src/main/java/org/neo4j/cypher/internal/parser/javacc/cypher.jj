@@ -2117,17 +2117,18 @@ SUBQUERY_IN_TRANSACTIONS_PARAMETERS SubqueryInTransactionsParameters() throws Ex
     SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS batchParams = null;
     SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS errorParams = null;
     SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS reportParams = null;
+    String repeatedBatch = "Duplicated OF ROWS parameter";
     String repeatedOnError = "Duplicated ON ERROR parameter";
     String repeatedReport = "Duplicated REPORT STATUS parameter";
 }
 {
     t=<IN> <TRANSACTIONS>
-    (batchParams=SubqueryInTransactionsBatchParameters())?
-    // The 2 parameters for CALL IN TRANSACTIONS:
-    // ON ERROR CONTINUE / BREAK / FAIL and REPORT STATUS, can appear
+    // The 3 parameters for CALL IN TRANSACTIONS:
+    // ON ERROR CONTINUE / BREAK / FAIL, OF ROWS and REPORT STATUS, can appear
     // in any order and shouldn't be duplicated
     (
         (
+            { assertNotAlreadySet( batchParams, t, repeatedBatch ); } batchParams=SubqueryInTransactionsBatchParameters() |
             { assertNotAlreadySet( errorParams, t, repeatedOnError ); } errorParams=SubqueryInTransactionsErrorParameters() |
             { assertNotAlreadySet( reportParams, t, repeatedReport ); } reportParams=SubqueryInTransactionsReportParameters()
         )
