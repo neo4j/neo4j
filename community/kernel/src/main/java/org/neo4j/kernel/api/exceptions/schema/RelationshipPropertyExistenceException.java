@@ -21,8 +21,10 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import static java.lang.String.format;
 
+import java.util.function.Function;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
@@ -41,6 +43,17 @@ public class RelationshipPropertyExistenceException extends ConstraintValidation
                 phase,
                 format("Relationship(%s)", relationshipId),
                 tokenNameLookup);
+        this.schema = schema;
+        this.relationshipId = relationshipId;
+    }
+
+    public RelationshipPropertyExistenceException(
+            RelationTypeSchemaDescriptor schema,
+            Function<RelationTypeSchemaDescriptor, ConstraintDescriptor> constraintFunc,
+            ConstraintValidationException.Phase phase,
+            long relationshipId,
+            TokenNameLookup tokenNameLookup) {
+        super(constraintFunc.apply(schema), phase, format("Relationship(%s)", relationshipId), tokenNameLookup);
         this.schema = schema;
         this.relationshipId = relationshipId;
     }

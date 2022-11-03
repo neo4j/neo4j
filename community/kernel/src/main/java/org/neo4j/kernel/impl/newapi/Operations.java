@@ -1819,7 +1819,7 @@ public class Operations implements Write, SchemaWrite {
                 allStoreHolder.nodeLabelScan(
                         session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
                 constraintSemantics.validateNodePropertyExistenceConstraint(
-                        cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token);
+                        cursor, nodeCursor, propertyCursor, schema, token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
@@ -1827,7 +1827,7 @@ public class Operations implements Write, SchemaWrite {
                 constraintSemantics.validateNodePropertyExistenceConstraint(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
                         propertyCursor,
-                        schema.asLabelSchemaDescriptor(),
+                        schema,
                         token);
             }
         }
