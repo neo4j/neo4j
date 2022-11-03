@@ -211,7 +211,6 @@ public class TransactionImpl implements InternalTransaction {
 
     @Override
     public void commit() {
-        // System.out.print("Commit on thread " + Thread.currentThread().getName() + "\n");
         commit(KernelTransaction.NO_MONITOR);
     }
 
@@ -222,7 +221,6 @@ public class TransactionImpl implements InternalTransaction {
     @Override
     public void rollback() {
         if (isOpen()) {
-            // System.out.print("Rollback on thread " + Thread.currentThread().getName() + "\n");
             safeTerminalOperation(KernelTransaction::rollback);
         }
     }

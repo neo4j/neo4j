@@ -108,6 +108,8 @@ class StandardInternalExecutionResult(
 
   override def await(): Boolean = runtimeResult.await()
 
+  override def awaitCleanup(): Unit = runtimeResult.awaitCleanup()
+
   /*
   ======= META DATA ==========
    */

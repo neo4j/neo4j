@@ -181,7 +181,7 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
         try {
             // We wait since cancelling could be asynchronous on some runtimes, and the caller
             // could experience failures if proceeding to commit the transaction before it is finished.
-            execution.await();
+            execution.awaitCleanup();
         } catch (Exception e) {
             // For some reason await() throws the same error that has already been passed to onError()
             // in case an error has occurred on request() or cancel().

@@ -178,6 +178,9 @@ class ClosingExecutionResult private (
     hasMore
   }
 
+  override def awaitCleanup(): Unit = {
+    inner.awaitCleanup()
+  }
 }
 
 object ClosingExecutionResult {
