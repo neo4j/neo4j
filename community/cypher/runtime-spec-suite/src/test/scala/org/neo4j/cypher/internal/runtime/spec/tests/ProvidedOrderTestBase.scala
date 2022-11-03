@@ -1013,7 +1013,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("semi apply should keep order of lhs") {
-    val input = Range(0, sizeHint).map(_ => randomValues.nextInt())
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -1031,7 +1031,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("apply with semi apply on the rhs should keep order of lhs") {
-    val input = Range(0, sizeHint).map(_ => randomValues.nextInt())
+    val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
