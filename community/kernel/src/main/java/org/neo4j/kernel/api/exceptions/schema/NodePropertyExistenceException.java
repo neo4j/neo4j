@@ -26,22 +26,11 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class NodePropertyExistenceException extends ConstraintValidationException {
     private final long nodeId;
     private final LabelSchemaDescriptor schema;
-
-    public NodePropertyExistenceException(
-            LabelSchemaDescriptor schema,
-            ConstraintValidationException.Phase phase,
-            long nodeId,
-            TokenNameLookup tokenNameLookup) {
-        super(ConstraintDescriptorFactory.existsForSchema(schema), phase, format("Node(%d)", nodeId), tokenNameLookup);
-        this.schema = schema;
-        this.nodeId = nodeId;
-    }
 
     public NodePropertyExistenceException(
             LabelSchemaDescriptor schema,
