@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.executor;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -138,7 +139,12 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL> {
         this.shutDown = true;
         try {
             for (var processor : processors) {
-                processor.endSignal.await();
+                while (!processor.endSignal.await(1, SECONDS)) {
+                    if (panic.get() != null) {
+                        // we in panic there is nothing to wait here.
+                        return;
+                    }
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
