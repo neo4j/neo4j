@@ -199,7 +199,7 @@ class UnionRelationshipTypeIndexCursorTest {
             var unionCursor = ascendingUnionRelationshipTypeIndexCursor(tx, typesToLookFor, cursors);
 
             // then
-            assertThat(asList(unionCursor)).isEqualTo(relsToFind);
+            assertThat(asList(unionCursor)).containsExactlyInAnyOrderElementsOf(relsToFind);
         }
     }
 

@@ -447,7 +447,7 @@ class BFSPruningVarExpandCursorTest {
             var expander = outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, b1, a2, b2, end, b3));
+            assertThat(asList(expander)).containsExactlyInAnyOrder(a1, b1, a2, b2, end, b3);
         }
     }
 
@@ -913,13 +913,13 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
         }
     }
 
@@ -1015,17 +1015,17 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, a));
+                    .containsExactlyInAnyOrder(b, c, a);
         }
     }
 
@@ -1103,21 +1103,21 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d));
+                    .containsExactlyInAnyOrder(a, b, c, d);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d));
+                    .containsExactlyInAnyOrder(b, c, d);
             assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d));
+                    .containsExactlyInAnyOrder(a, b, c, d);
             assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d));
+                    .containsExactlyInAnyOrder(b, c, d);
             assertThat(asList(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d));
+                    .containsExactlyInAnyOrder(a, b, c, d);
             assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, a));
+                    .containsExactlyInAnyOrder(b, c, d, a);
         }
     }
 
@@ -1149,23 +1149,23 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d, e));
+                    .containsExactlyInAnyOrder(a, b, c, d, e);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e));
+                    .containsExactlyInAnyOrder(b, c, d, e);
             assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d, e));
+                    .containsExactlyInAnyOrder(a, b, c, d, e);
             assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e));
+                    .containsExactlyInAnyOrder(b, c, d, e);
             assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e));
+                    .containsExactlyInAnyOrder(b, c, d, e);
             assertThat(asList(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d, e));
+                    .containsExactlyInAnyOrder(a, b, c, d, e);
             assertThat(asList(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e, a));
+                    .containsExactlyInAnyOrder(b, c, d, e, a);
         }
     }
 
@@ -1202,17 +1202,17 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b1, b2, b3));
+                    .containsExactlyInAnyOrder(a, b1, b2, b3);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3));
+                    .containsExactlyInAnyOrder(b1, b2, b3);
             assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b1, b2, b3, c1, c2, c3));
+                    .containsExactlyInAnyOrder(a, b1, b2, b3, c1, c2, c3);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3));
+                    .containsExactlyInAnyOrder(b1, b2, b3, c1, c2, c3);
             assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b1, b2, b3, c1, c2, c3));
+                    .containsExactlyInAnyOrder(a, b1, b2, b3, c1, c2, c3);
             assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, a));
+                    .containsExactlyInAnyOrder(b1, b2, b3, c1, c2, c3, a);
         }
     }
 
@@ -1287,19 +1287,19 @@ class BFSPruningVarExpandCursorTest {
             assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
             assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c));
+                    .containsExactlyInAnyOrder(a, b, c);
             assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
+                    .containsExactlyInAnyOrder(b, c);
             assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e));
+                    .containsExactlyInAnyOrder(b, c, d, e);
             assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e, f, g));
+                    .containsExactlyInAnyOrder(b, c, d, e, f, g);
             assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e, f, g));
+                    .containsExactlyInAnyOrder(b, c, d, e, f, g);
             assertThat(asList(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(a, b, c, d, e, f, g));
+                    .containsExactlyInAnyOrder(a, b, c, d, e, f, g);
             assertThat(asList(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(List.of(b, c, d, e, f, g));
+                    .containsExactlyInAnyOrder(b, c, d, e, f, g);
         }
     }
 
