@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -103,7 +103,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException {
+    public void validate() throws IndexPopulationFailedKernelException, IncompleteConstraintValidationException {
         getDelegate().validate();
     }
 

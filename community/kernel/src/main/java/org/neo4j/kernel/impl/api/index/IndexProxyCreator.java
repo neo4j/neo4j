@@ -93,7 +93,7 @@ class IndexProxyCreator {
                 // The index is added among those that need activation when updating the schemaRule with
                 // owningConstraintId,
                 // see IndexTransactionApplierFactory#processSchemaCommand in UPDATE.
-                return new TentativeConstraintIndexProxy(flipper, onlineProxy, tokenNameLookup);
+                return new TentativeConstraintIndexProxy(flipper, onlineProxy);
             }
             return onlineProxy;
         });

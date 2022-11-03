@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -105,7 +105,12 @@ public interface IndexProxy extends MinimalIndexAccessor {
 
     void activate() throws IndexActivationFailedKernelException;
 
-    void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
+    /**
+     * @throws IncompleteConstraintValidationException if the data is violating the constraint.
+     * This Exception should be caught and turned into a complete exception by the caller of this
+     * method.
+     */
+    void validate() throws IndexPopulationFailedKernelException, IncompleteConstraintValidationException;
 
     /**
      * Validates a {@link Value} so that it's OK to later apply to the index. This method is designed to be

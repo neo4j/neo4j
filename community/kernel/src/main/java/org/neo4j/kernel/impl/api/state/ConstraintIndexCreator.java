@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -138,6 +139,8 @@ public class ConstraintIndexCreator {
                 reacquiredLock = true;
 
                 indexingService.getIndexProxy(index).validate();
+            } catch (IncompleteConstraintValidationException e) {
+                throw e.turnIntoRealException(constraint, transaction.tokenRead());
             } catch (IndexNotFoundKernelException e) {
                 String indexString = index.userDescription(transaction.tokenRead());
                 throw new TransactionFailureException(

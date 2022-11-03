@@ -22,15 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -60,13 +57,10 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
     private final FlippableIndexProxy flipper;
     private final OnlineIndexProxy target;
     private final Collection<IndexEntryConflictException> failures = new CopyOnWriteArrayList<>();
-    private final TokenNameLookup tokenNameLookup;
 
-    TentativeConstraintIndexProxy(
-            FlippableIndexProxy flipper, OnlineIndexProxy target, TokenNameLookup tokenNameLookup) {
+    TentativeConstraintIndexProxy(FlippableIndexProxy flipper, OnlineIndexProxy target) {
         this.flipper = flipper;
         this.target = target;
-        this.tokenNameLookup = tokenNameLookup;
     }
 
     @Override
@@ -126,14 +120,10 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
     }
 
     @Override
-    public void validate() throws UniquePropertyValueValidationException {
+    public void validate() throws IncompleteConstraintValidationException {
         if (!failures.isEmpty()) {
-            SchemaDescriptor descriptor = getDescriptor().schema();
-            throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForSchema(descriptor),
-                    ConstraintValidationException.Phase.VERIFICATION,
-                    new HashSet<>(failures),
-                    tokenNameLookup);
+            throw new IncompleteConstraintValidationException(
+                    ConstraintValidationException.Phase.VERIFICATION, new HashSet<>(failures));
         }
     }
 

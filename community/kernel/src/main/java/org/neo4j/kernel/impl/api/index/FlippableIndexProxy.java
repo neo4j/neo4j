@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
@@ -275,7 +275,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy {
     }
 
     @Override
-    public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException {
+    public void validate() throws IndexPopulationFailedKernelException, IncompleteConstraintValidationException {
         lock.readLock().lock();
         try {
             delegate.validate();
