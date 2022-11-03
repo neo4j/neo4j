@@ -97,8 +97,7 @@ public class ConstraintIndexCreator {
             IndexBackedConstraintDescriptor constraint,
             IndexPrototype prototype,
             PropertyExistenceEnforcer propertyExistenceEnforcer)
-            throws TransactionFailureException, CreateConstraintFailureException,
-                    UniquePropertyValueValidationException, AlreadyConstrainedException {
+            throws KernelException {
         String constraintString = constraint.userDescription(transaction.tokenRead());
         log.debug("Starting constraint creation: %s.", constraintString);
 
@@ -118,37 +117,40 @@ public class ConstraintIndexCreator {
         ResourceType keyType = constraint.schema().keyType();
         long[] lockingKeys = constraint.schema().lockingKeys();
         try {
-            locks.acquireShared(transaction.lockTracer(), keyType, lockingKeys);
-            IndexProxy proxy = indexingService.getIndexProxy(index);
+            try {
+                locks.acquireShared(transaction.lockTracer(), keyType, lockingKeys);
+                IndexProxy proxy = indexingService.getIndexProxy(index);
 
-            // Release the LABEL/TYPE WRITE lock during index population.
-            // At this point the integrity of the constraint to be created was checked
-            // while holding the lock and the index rule backing the soon-to-be-created constraint
-            // has been created. Now it's just the population left, which can take a long time
-            locks.releaseExclusive(keyType, lockingKeys);
+                // Release the LABEL/TYPE WRITE lock during index population.
+                // At this point the integrity of the constraint to be created was checked
+                // while holding the lock and the index rule backing the soon-to-be-created constraint
+                // has been created. Now it's just the population left, which can take a long time
+                locks.releaseExclusive(keyType, lockingKeys);
 
-            awaitConstraintIndexPopulation(constraint, proxy, transaction);
-            log.debug("Constraint %s populated, starting verification.", constraintString);
+                awaitConstraintIndexPopulation(constraint, proxy, transaction);
+                log.debug("Constraint %s populated, starting verification.", constraintString);
 
-            // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
-            // Acquire LABEL/TYPE WRITE lock and verify the constraints here in this user transaction
-            // and if everything checks out then it will be held until after the constraint has been
-            // created and activated.
-            locks.acquireExclusive(transaction.lockTracer(), keyType, lockingKeys);
-            reacquiredLock = true;
+                // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
+                // Acquire LABEL/TYPE WRITE lock and verify the constraints here in this user transaction
+                // and if everything checks out then it will be held until after the constraint has been
+                // created and activated.
+                locks.acquireExclusive(transaction.lockTracer(), keyType, lockingKeys);
+                reacquiredLock = true;
 
-            indexingService.getIndexProxy(index).validate();
-            validatePropertyExistenceConstraint(constraint, propertyExistenceEnforcer, index);
+                indexingService.getIndexProxy(index).validate();
+            } catch (IndexNotFoundKernelException e) {
+                String indexString = index.userDescription(transaction.tokenRead());
+                throw new TransactionFailureException(
+                        format("Index (%s) that we just created does not exist.", indexString), e);
+            } catch (InterruptedException | IndexPopulationFailedKernelException e) {
+                throw new CreateConstraintFailureException(constraint, e);
+            }
+
+            propertyExistenceEnforcer.existenceEnforcement(index.schema());
 
             log.debug("Constraint %s verified.", constraintString);
             success = true;
             return index;
-        } catch (IndexNotFoundKernelException e) {
-            String indexString = index.userDescription(transaction.tokenRead());
-            throw new TransactionFailureException(
-                    format("Index (%s) that we just created does not exist.", indexString), e);
-        } catch (InterruptedException | IndexPopulationFailedKernelException e) {
-            throw new CreateConstraintFailureException(constraint, e);
         } finally {
             if (!success) {
                 if (!reacquiredLock) {
@@ -159,21 +161,6 @@ public class ConstraintIndexCreator {
                     dropUniquenessConstraintIndex(index);
                 }
             }
-        }
-    }
-
-    private void validatePropertyExistenceConstraint(
-            IndexBackedConstraintDescriptor constraint,
-            PropertyExistenceEnforcer propertyExistenceEnforcer,
-            IndexDescriptor index)
-            throws CreateConstraintFailureException {
-        try {
-            propertyExistenceEnforcer.existenceEnforcement(index.schema());
-        } catch (KernelException e) {
-            CreateConstraintFailureException createConstraintFailureException = new CreateConstraintFailureException(
-                    constraint, "Failed during property existence validation: " + e.getMessage());
-            createConstraintFailureException.addSuppressed(e);
-            throw createConstraintFailureException;
         }
     }
 

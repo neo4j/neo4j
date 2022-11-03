@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -47,9 +48,6 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -318,9 +316,7 @@ class ConstraintIndexCreatorTest {
     }
 
     @Test
-    void logMessagesAboutConstraintCreation()
-            throws SchemaKernelException, UniquePropertyValueValidationException, TransactionFailureException,
-                    IndexNotFoundKernelException {
+    void logMessagesAboutConstraintCreation() throws KernelException {
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexingService indexingService = mock(IndexingService.class);
         when(indexingService.getIndexProxy(index)).thenReturn(indexProxy);
