@@ -58,7 +58,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 @BoltTestExtension
 public class StreamingIT {
 
-    @BoltTestExtension
+    @ProtocolTest
     void shouldStreamWhenStatementIdNotProvided(BoltWire wire, @Authenticated TransportConnection connection)
             throws IOException {
         // begin a transaction
@@ -108,7 +108,7 @@ public class StreamingIT {
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
-    @BoltTestExtension
+    @ProtocolTest
     void shouldSendAndReceiveStatementIds(BoltWire wire, @Authenticated TransportConnection connection)
             throws IOException {
         // begin a transaction
@@ -198,7 +198,7 @@ public class StreamingIT {
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
-    @BoltTestExtension
+    @ProtocolTest
     void shouldAcceptTransactionType(BoltWire wire, @Authenticated TransportConnection connection) throws Exception {
         connection
                 .send(wire.begin("neo4j", null, null, "implicit"))
