@@ -27,7 +27,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
@@ -96,7 +95,6 @@ public class DynamicIndexStoreViewIT {
                 NullLogProvider.getInstance());
     }
 
-    @Disabled("disabled until we have token indexes on by default")
     @Test
     void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() throws Throwable {
         // Given
@@ -116,7 +114,6 @@ public class DynamicIndexStoreViewIT {
         storeScan.stop();
     }
 
-    @Disabled("disabled until we have token indexes on by default")
     @Test
     void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() throws Throwable {
         // Given

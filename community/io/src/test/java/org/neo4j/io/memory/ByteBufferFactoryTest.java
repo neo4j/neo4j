@@ -44,10 +44,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.util.concurrent.Futures;
 
 class ByteBufferFactoryTest {
@@ -155,21 +153,5 @@ class ByteBufferFactoryTest {
             assertEquals(1, seenBuffers.get(i).size());
         }
         factory.close();
-    }
-
-    @Disabled
-    void releaseAllBuffersReleaseMemoryFromThreadLocalBuffers() {
-        var memoryTracker = new LocalMemoryTracker();
-        var factory = heapBufferFactory(10);
-        factory.acquireThreadLocalBuffer(memoryTracker);
-        factory.releaseThreadLocalBuffer();
-        factory.acquireThreadLocalBuffer(memoryTracker);
-        factory.releaseThreadLocalBuffer();
-        factory.acquireThreadLocalBuffer(memoryTracker);
-        factory.releaseThreadLocalBuffer();
-
-        assertEquals(10, memoryTracker.estimatedHeapMemory());
-
-        assertEquals(0, memoryTracker.estimatedHeapMemory());
     }
 }
