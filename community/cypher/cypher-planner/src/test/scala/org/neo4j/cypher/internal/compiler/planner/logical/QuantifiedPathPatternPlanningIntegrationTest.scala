@@ -783,4 +783,41 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
+  test("should plan an index seek with multiple predicates on RHS of Trail") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(5000)
+      .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("()-[:REL]->()", 5000)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 10)
+      .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val q = "MATCH (n) ((x)<-[r1:REL]-(a:A WHERE a.prop > 100 AND a.prop < 123)-[r2:REL]->(y))+ (m) RETURN *"
+
+    val plan = planner.plan(q).stripProduceResults
+    val params = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "n",
+      end = "m",
+      innerStart = "x",
+      innerEnd = "y",
+      groupNodes = Set(("y", "y"), ("x", "x"), ("a", "a")),
+      groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
+      innerRelationships = Set("r1", "r2"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set()
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .trail(params)
+      .|.filter("not r2 = r1")
+      .|.expandAll("(a)-[r2:REL]->(y)")
+      .|.expandInto("(x)<-[r1:REL]-(a)")
+      .|.nodeIndexOperator("a:A(100 < prop < 123)", argumentIds = Set("x"))
+      .allNodeScan("n")
+      .build()
+  }
 }

@@ -77,7 +77,11 @@ case class QueryGraph(
   def nonEmpty: Boolean = !isEmpty
 
   def mapSelections(f: Selections => Selections): QueryGraph =
-    copy(selections = f(selections), optionalMatches = optionalMatches.map(_.mapSelections(f)))
+    copy(
+      selections = f(selections),
+      optionalMatches = optionalMatches.map(_.mapSelections(f)),
+      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(pattern = qpp.pattern.mapSelections(f)))
+    )
 
   def addPatternNodes(nodes: String*): QueryGraph =
     copy(patternNodes = patternNodes ++ nodes)
