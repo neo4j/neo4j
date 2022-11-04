@@ -17,16 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import org.junit.jupiter.api.Nested;
 import org.neo4j.configuration.Config;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.lock.ResourceType;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.time.SystemNanoClock;
 
 /** Base for locking tests. */
-public abstract class LockingCompatibilityTestSuite {
-    protected abstract Locks createLockManager(Config config, SystemNanoClock clock);
+public class LockingCompatibilityTest {
+    protected Locks createLockManager(Config config, SystemNanoClock clock) {
+        return new ForsetiLockManager(config, clock, ResourceTypes.values());
+    }
 
     /**
      * Implementing this requires intricate knowledge of implementation of the particular locks client.
@@ -38,68 +43,72 @@ public abstract class LockingCompatibilityTestSuite {
      * @return {@code true} if the wait details marks a wait on a lock acquisition, otherwise {@code false}
      * so that a new thread wait/block will be registered and this method called again.
      */
-    protected abstract boolean isAwaitingLockAcquisition(Actor actor) throws Exception;
+    protected boolean isAwaitingLockAcquisition(Actor actor) throws Exception {
+        actor.untilWaitingIn(ForsetiClient.class.getDeclaredMethod(
+                "waitFor", ForsetiLockManager.Lock.class, ResourceType.class, long.class, int.class));
+        return true;
+    }
 
     @Nested
     class AcquireAndReleaseLocks extends AcquireAndReleaseLocksCompatibility {
         AcquireAndReleaseLocks() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class Deadlock extends DeadlockCompatibility {
         Deadlock() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class LockReentrancy extends LockReentrancyCompatibility {
         LockReentrancy() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class RWLock extends RWLockCompatibility {
         RWLock() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class Stop extends StopCompatibility {
         Stop() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class Close extends CloseCompatibility {
         Close() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class AcquisitionTimeout extends AcquisitionTimeoutCompatibility {
         AcquisitionTimeout() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class Tracer extends TracerCompatibility {
         Tracer() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 
     @Nested
     class ActiveLocks extends ActiveLocksListingCompatibility {
         ActiveLocks() {
-            super(LockingCompatibilityTestSuite.this);
+            super(LockingCompatibilityTest.this);
         }
     }
 }

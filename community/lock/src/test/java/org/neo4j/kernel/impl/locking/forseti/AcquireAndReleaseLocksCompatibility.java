@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,6 +26,7 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.lock.LockTracer;
 
 /**
@@ -33,7 +34,7 @@ import org.neo4j.lock.LockTracer;
  * For testing "stacking" locks on the same client, see {@link LockReentrancyCompatibility}.
  **/
 abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTestSupport {
-    AcquireAndReleaseLocksCompatibility(LockingCompatibilityTestSuite suite) {
+    AcquireAndReleaseLocksCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

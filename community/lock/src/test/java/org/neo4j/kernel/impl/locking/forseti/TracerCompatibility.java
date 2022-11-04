@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.String.format;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -32,7 +32,7 @@ import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 
 abstract class TracerCompatibility extends LockCompatibilityTestSupport {
-    TracerCompatibility(LockingCompatibilityTestSuite suite) {
+    TracerCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -43,7 +44,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
 abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
-    RWLockCompatibility(LockingCompatibilityTestSuite suite) {
+    RWLockCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

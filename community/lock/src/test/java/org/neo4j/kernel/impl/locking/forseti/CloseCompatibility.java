@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,13 +27,15 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 abstract class CloseCompatibility extends LockCompatibilityTestSupport {
-    CloseCompatibility(LockingCompatibilityTestSuite suite) {
+    CloseCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

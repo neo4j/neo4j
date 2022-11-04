@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -45,7 +47,7 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
     private Locks.Client client;
     private Locks.Client client2;
 
-    AcquisitionTimeoutCompatibility(LockingCompatibilityTestSuite suite) {
+    AcquisitionTimeoutCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

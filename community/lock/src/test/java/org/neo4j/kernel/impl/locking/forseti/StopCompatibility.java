@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +49,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -64,7 +67,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
 
     private Locks.Client client;
 
-    StopCompatibility(LockingCompatibilityTestSuite suite) {
+    StopCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

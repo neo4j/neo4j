@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -58,7 +59,7 @@ public abstract class LockCompatibilityTestSupport {
     @Inject
     public TestDirectory testDir;
 
-    protected final LockingCompatibilityTestSuite suite;
+    protected final LockingCompatibilityTest suite;
 
     protected Locks locks;
     protected Locks.Client clientA;
@@ -67,7 +68,7 @@ public abstract class LockCompatibilityTestSupport {
 
     private final Map<Locks.Client, Actor> clientToThreadMap = new HashMap<>();
 
-    public LockCompatibilityTestSupport(LockingCompatibilityTestSuite suite) {
+    public LockCompatibilityTestSupport(LockingCompatibilityTest suite) {
         this.suite = suite;
     }
 

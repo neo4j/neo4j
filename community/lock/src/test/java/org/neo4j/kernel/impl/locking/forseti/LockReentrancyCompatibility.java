@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
 abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport {
-    LockReentrancyCompatibility(LockingCompatibilityTestSuite suite) {
+    LockReentrancyCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

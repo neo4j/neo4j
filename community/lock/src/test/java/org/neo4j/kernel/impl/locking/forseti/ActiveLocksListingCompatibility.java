@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
@@ -41,7 +41,7 @@ import org.neo4j.lock.LockType;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupport {
-    ActiveLocksListingCompatibility(LockingCompatibilityTestSuite suite) {
+    ActiveLocksListingCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.neo4j.lock.ResourceTypes.NODE;
 
@@ -33,7 +33,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.lock.LockTracer;
 
 abstract class DeadlockCompatibility extends LockCompatibilityTestSupport {
-    DeadlockCompatibility(LockingCompatibilityTestSuite suite) {
+    DeadlockCompatibility(LockingCompatibilityTest suite) {
         super(suite);
     }
 
