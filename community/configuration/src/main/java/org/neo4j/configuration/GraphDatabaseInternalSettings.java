@@ -84,6 +84,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("Include additional information in deadlock descriptions.")
     public static final Setting<Boolean> lock_manager_verbose_deadlocks = newBuilder(
                     "internal.dbms.lock_manager.verbose_deadlocks", BOOL, false)
+            .dynamic()
             .build();
 
     @Internal

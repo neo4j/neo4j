@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
@@ -150,6 +152,9 @@ public class ForsetiLockManager implements Locks {
         boolean isClosed();
     }
 
+    private final Config config;
+    private final SettingChangeListener<Boolean> verboseDeadlocksSettingListener;
+
     /** Pointers to lock maps, one array per resource type. */
     private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
 
@@ -160,11 +165,12 @@ public class ForsetiLockManager implements Locks {
     private final AtomicLong clientIds = new AtomicLong();
 
     private final SystemNanoClock clock;
-    private final boolean verboseDeadlocks;
+    private volatile boolean verboseDeadlocks;
     private volatile boolean closed;
 
     @SuppressWarnings("unchecked")
     public ForsetiLockManager(Config config, SystemNanoClock clock, ResourceType... resourceTypes) {
+        this.config = config;
         int maxResourceId = findMaxResourceId(resourceTypes);
         this.lockMaps = new ConcurrentMap[maxResourceId];
         this.resourceTypes = new ResourceType[maxResourceId];
@@ -174,7 +180,9 @@ public class ForsetiLockManager implements Locks {
             this.resourceTypes[type.typeId()] = type;
         }
         this.clock = clock;
-        this.verboseDeadlocks = config.get(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks);
+        this.verboseDeadlocks = config.get(lock_manager_verbose_deadlocks);
+        this.verboseDeadlocksSettingListener = (oldValue, newValue) -> verboseDeadlocks = newValue;
+        config.addListener(lock_manager_verbose_deadlocks, verboseDeadlocksSettingListener);
     }
 
     /**
@@ -216,6 +224,7 @@ public class ForsetiLockManager implements Locks {
 
     @Override
     public void close() {
-        this.closed = true;
+        config.removeListener(lock_manager_verbose_deadlocks, verboseDeadlocksSettingListener);
+        closed = true;
     }
 }
