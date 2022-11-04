@@ -139,6 +139,7 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -1323,6 +1324,53 @@ case class LogicalPlan2PlanDescription(
             PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength),
             isSingle
           ),
+          nodePredicates,
+          relPredicates,
+          pathPredicates,
+          _,
+          _
+        ) =>
+        val patternRelationshipInfo =
+          expandExpressionDescription(fromName, Some(relName), relTypes.map(_.name), toName, dir, patternLength)
+
+        val pathName = asPrettyString(maybePathName.getOrElse("p"))
+
+        val (_, nodeAndRelPredicatesDescription) =
+          varExpandPredicateDescriptions(nodePredicates, relPredicates, pathName)
+
+        val standalonePathPredicatesDescription = pathPredicates.map(asPrettyString(_)).mkPrettyString(" AND ")
+
+        val predicatesDescription = (pathPredicates.isEmpty, (nodePredicates ++ relPredicates).isEmpty) match {
+          case (true, true)  => pretty""
+          case (false, true) => pretty" WHERE ${standalonePathPredicatesDescription}"
+          case (true, false) => nodeAndRelPredicatesDescription
+          case (false, false) =>
+            Seq(nodeAndRelPredicatesDescription, standalonePathPredicatesDescription).mkPrettyString(" AND  ")
+        }
+
+        val pathPrefix =
+          if ((pathPredicates ++ nodePredicates ++ relPredicates).isEmpty && maybePathName.isEmpty) {
+            pretty""
+          } else {
+            pretty"$pathName = "
+          }
+
+        PlanDescriptionImpl(
+          id,
+          "ShortestPath",
+          children,
+          Seq(Details(pretty"$pathPrefix$patternRelationshipInfo$predicatesDescription")),
+          variables,
+          withRawCardinalities
+        )
+
+      case LegacyFindShortestPaths(
+          _,
+          ShortestPathPattern(
+            maybePathName,
+            PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength),
+            isSingle
+          ),
           predicates,
           _,
           _
@@ -1344,7 +1392,7 @@ case class LogicalPlan2PlanDescription(
 
         PlanDescriptionImpl(
           id,
-          "ShortestPath",
+          "LegacyShortestPath",
           children,
           Seq(Details(pretty"$pathName$patternRelationshipInfo$predicatesInfo")),
           variables,
@@ -2033,9 +2081,9 @@ case class LogicalPlan2PlanDescription(
    */
   private def varExpandPredicateDescriptions(
     nodePredicates: Seq[VariablePredicate],
-    relationshipPredicates: Seq[VariablePredicate]
+    relationshipPredicates: Seq[VariablePredicate],
+    pathName: PrettyString = pretty"p"
   ): (PrettyString, PrettyString) = {
-    val pathName = pretty"p"
     val predicateStrings = nodePredicates.map(buildNodePredicatesDescription(_, pathName)) ++
       relationshipPredicates.map(buildRelationshipPredicatesDescription(_, pathName))
 

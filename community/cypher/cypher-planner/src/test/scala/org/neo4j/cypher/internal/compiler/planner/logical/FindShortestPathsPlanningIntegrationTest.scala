@@ -20,6 +20,18 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
@@ -79,4 +91,176 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("a", "X")
       .build()
   }
+
+  test("finds shortest path do fallback") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .build()
+    val plan =
+      cfg.plan("MATCH (a), (b), p=shortestPath((a)-[r*]->(b)) WHERE length(p) > 1 RETURN b").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .antiConditionalApply("p")
+      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.projection("length(p) AS anon_0")
+      .|.filter("length(p) > 1")
+      .|.projection(
+        Map("p" ->
+          PathExpression(
+            NodePathStep(
+              varFor("a"),
+              multiRelationshipPathStep("r", OUTGOING, "b")
+            )(pos)
+          )(pos))
+      )
+      .|.expand("(a)-[r*]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .|.argument("a", "b")
+      .apply()
+      .|.optional("a", "b")
+      .|.shortestPath("(a)-[r*]->(b)", Some("p"), pathPredicates = Seq("length(p) > 1"), withFallback = true)
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("finds shortest path do fallback with per step relationship predicates from relationship list") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .build()
+    val plan =
+      cfg.plan(
+        """
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
+          |WHERE length(p) > 1 
+          |AND all(r IN rs WHERE r.prop > 1)
+          |RETURN b"""
+          .stripMargin
+      ).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .antiConditionalApply("p")
+      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.projection("length(p) AS anon_0")
+      .|.filter("length(p) > 1", "all(r IN rs WHERE cacheRFromStore[r.prop] > 1)")
+      .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
+      .|.expand(
+        "(a)-[rs*]->(b)",
+        expandMode = ExpandInto,
+        projectedDir = OUTGOING,
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] > 1"))
+      )
+      .|.argument("a", "b")
+      .apply()
+      .|.optional("a", "b")
+      .|.shortestPath(
+        "(a)-[rs*]->(b)",
+        Some("p"),
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] > 1")),
+        pathPredicates = Seq("length(p) > 1"),
+        withFallback = true
+      )
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("finds shortest path do fallback with per step relationship predicates from path") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .build()
+    val plan =
+      cfg.plan(
+        """
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
+          |WHERE length(p) > 1 
+          |AND all(r IN relationships(p) WHERE r.prop > 1)
+          |RETURN b"""
+          .stripMargin
+      ).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .antiConditionalApply("p")
+      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.projection("length(p) AS anon_0")
+      .|.filter("length(p) > 1", "all(r IN relationships(p) WHERE cacheRFromStore[r.prop] > 1)")
+      .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
+      .|.expand("(a)-[rs*]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .|.argument("a", "b")
+      .apply()
+      .|.optional("a", "b")
+      .|.shortestPath(
+        "(a)-[rs*]->(b)",
+        Some("p"),
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] > 1")),
+        pathPredicates = Seq("length(p) > 1"),
+        withFallback = true
+      )
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("finds shortest path do fallback with per step node predicates from path") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 100)
+      .build()
+    val plan =
+      cfg.plan(
+        """
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
+          |WHERE length(p) > 1 
+          |AND all(n IN nodes(p) WHERE n.prop > 1)
+          |RETURN b"""
+          .stripMargin
+      ).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .antiConditionalApply("p")
+      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.projection("length(p) AS anon_0")
+      .|.filter("length(p) > 1", "all(n IN nodes(p) WHERE cacheNFromStore[n.prop] > 1)")
+      .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
+      .|.expand("(a)-[rs*]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .|.argument("a", "b")
+      .apply()
+      .|.optional("a", "b")
+      .|.shortestPath(
+        "(a)-[rs*]->(b)",
+        Some("p"),
+        nodePredicates = Seq(Predicate("n", "cacheNFromStore[n.prop] > 1")),
+        pathPredicates = Seq("length(p) > 1"),
+        withFallback = true
+      )
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  private def pos: InputPosition = DummyPosition(0)
+  private def varFor(name: String): Variable = Variable(name)(pos)
+
+  private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {
+    PathExpression(
+      NodePathStep(
+        varFor(fromNode),
+        multiRelationshipPathStep(rels, OUTGOING, toNode)
+      )(pos)
+    )(pos)
+  }
+
+  private def multiRelationshipPathStep(
+    rel: String,
+    dir: SemanticDirection,
+    toNode: String
+  ): MultiRelationshipPathStep =
+    MultiRelationshipPathStep(varFor(rel), dir, Some(varFor(toNode)), NilPathStep()(pos))(pos)
+
 }

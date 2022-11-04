@@ -141,7 +141,11 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
     val converters = new ExpressionConverters(
       SlottedExpressionConverters(physicalPlan),
-      CommunityExpressionConverter(ReadTokenContext.EMPTY, anonymousVariableNameGenerator)
+      CommunityExpressionConverter(
+        ReadTokenContext.EMPTY,
+        anonymousVariableNameGenerator,
+        CypherRuntimeConfiguration.defaultConfiguration
+      )
     )
 
     val fallback = InterpretedPipeMapper(

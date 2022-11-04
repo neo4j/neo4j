@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
@@ -76,7 +77,11 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
   when(emptyExpression.children).thenReturn(Seq.empty)
 
   private val expressionConverter =
-    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+    new ExpressionConverters(CommunityExpressionConverter(
+      ReadTokenContext.EMPTY,
+      new AnonymousVariableNameGenerator(),
+      CypherRuntimeConfiguration.defaultConfiguration
+    ))
 
   private def convertExpression(astExpression: internal.expressions.Expression): Expression = {
     def resolveTokens(expr: Expression, ctx: ReadTokenContext): Expression = expr match {

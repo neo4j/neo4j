@@ -19,47 +19,35 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.Expander
-import org.neo4j.cypher.internal.runtime.KernelPredicate
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.AllInList
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.NoneInList
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ands
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.exceptions.SyntaxException
-import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.Relationship
-import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.helpers.BiDirectionalBFS
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.PathReference
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case class ShortestPathExpression(
   shortestPathPattern: ShortestPath,
-  perStepPredicates: Seq[Predicate] = Seq.empty,
-  fullPathPredicates: Seq[Predicate] = Seq.empty,
-  withFallBack: Boolean = false,
   disallowSameNode: Boolean = true,
   operatorId: Id = Id.INVALID_ID
 ) extends Expression {
-
-  val predicates: Seq[Predicate] = perStepPredicates ++ fullPathPredicates
 
   def apply(row: ReadableRow, state: QueryState): AnyValue = {
     apply(row, state, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(operatorId.x))
@@ -69,84 +57,63 @@ case class ShortestPathExpression(
     if (anyStartpointsContainNull(row)) {
       Values.NO_VALUE
     } else {
-      val start = getEndPoint(row, state, shortestPathPattern.left)
-      val end = getEndPoint(row, state, shortestPathPattern.right)
+      val sourceNodeId = getEndPointId(row, state, shortestPathPattern.left)
+      val targetNodeId = getEndPointId(row, state, shortestPathPattern.right)
       if (
-        !shortestPathPattern.allowZeroLength && disallowSameNode && start
-          .equals(end)
+        !shortestPathPattern.allowZeroLength && disallowSameNode && sourceNodeId
+          .equals(targetNodeId)
       ) throw new ShortestPathCommonEndNodesForbiddenException
-      getMatches(row, start, end, state, memoryTracker)
+      getMatches(sourceNodeId, targetNodeId, state, memoryTracker)
     }
   }
 
   private def getMatches(
-    ctx: ReadableRow,
-    start: VirtualNodeValue,
-    end: VirtualNodeValue,
+    sourceNodeId: Long,
+    targetNodeId: Long,
     state: QueryState,
     memoryTracker: MemoryTracker
   ): AnyValue = {
-    val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander(), state)
-    val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
-    /* This test is made after a full shortest path candidate has been produced,
-     * accepting or disqualifying it as appropriate.
-     */
-    val cypherRow = ctx.asInstanceOf[CypherRow] // TODO: less ugly solution to evaluating predicates
-    val shortestPathPredicate = createShortestPathPredicate(cypherRow, maybePredicate, state)
 
-    if (shortestPathPattern.single) {
-      val result = state.query
-        .singleShortestPath(
-          start.id(),
-          end.id(),
-          shortestPathPattern.maxDepth.getOrElse(Int.MaxValue),
-          expander,
-          shortestPathPredicate,
-          nodePredicates,
-          memoryTracker
-        )
-      if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
-        Values.NO_VALUE
-      else result.map(ValueUtils.fromPath).getOrElse(Values.NO_VALUE)
-    } else {
-      val result = state.query
-        .allShortestPath(
-          start.id(),
-          end.id(),
-          shortestPathPattern.maxDepth.getOrElse(Int.MaxValue),
-          expander,
-          shortestPathPredicate,
-          nodePredicates,
-          memoryTracker
-        )
-        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }
-        .map(ValueUtils.fromPath)
-        .toArray
-      // Here we immediately exhaust allShortestPath, thus no need to connect to an outer ClosingIterator.
-      // If we ever expose a `getMatchesIterator` (which would be useful), then we need to connect!
-      VirtualValues.list(result: _*)
-    }
+    val types = RelationshipTypes(shortestPathPattern.relTypes.toArray)
+
+    val nodeCursor = state.query.nodeCursor()
+    val traversalCursor = state.query.traversalCursor()
+
+    val biDirectionalBFS = new BiDirectionalBFS(
+      sourceNodeId,
+      targetNodeId,
+      types.types(state.query),
+      shortestPathPattern.dir,
+      shortestPathPattern.maxDepth.getOrElse(Int.MaxValue),
+      shortestPathPattern.single,
+      state.query.transactionalContext.dataRead,
+      nodeCursor,
+      traversalCursor,
+      memoryTracker,
+      LongPredicates.alwaysTrue(),
+      (_: RelationshipTraversalCursor) => true
+    )
+    val shortestPathIterator = biDirectionalBFS.shortestPathIterator((_: PathReference) => true)
+
+    val matches =
+      if (shortestPathPattern.single) {
+        if (shortestPathIterator.hasNext) {
+          shortestPathIterator.next()
+        } else
+          Values.NO_VALUE
+      } else {
+        VirtualValues.list(shortestPathIterator.asScala.toList: _*)
+      }
+    biDirectionalBFS.close()
+    nodeCursor.close()
+    traversalCursor.close()
+    matches
   }
 
-  private def createShortestPathPredicate(
-    incomingCtx: CypherRow,
-    maybePredicate: Option[Predicate],
-    state: QueryState
-  ): KernelPredicate[Path] =
-    new KernelPredicate[Path] {
-
-      override def test(path: Path): Boolean = maybePredicate.forall {
-        predicate =>
-          incomingCtx.set(shortestPathPattern.pathName, ValueUtils.fromPath(path))
-          incomingCtx.set(shortestPathPattern.relIterator.get, ValueUtils.asListOfEdges(path.relationships()))
-          predicate.isTrue(incomingCtx, state)
-      } && (!withFallBack || ShortestPathExpression.noDuplicates(path.relationships.asScala))
-    }
-
-  private def getEndPoint(ctx: ReadableRow, state: QueryState, start: SingleNode): VirtualNodeValue = {
+  private def getEndPointId(ctx: ReadableRow, state: QueryState, start: SingleNode): Long = {
     try {
       ctx.getByName(start.name) match {
-        case node: VirtualNodeValue => node
+        case node: VirtualNodeValue => node.id()
         case _                      => throw new CypherTypeException(s"${start.name} is not a node")
       }
     } catch {
@@ -161,153 +128,12 @@ case class ShortestPathExpression(
     (ctx.getByName(shortestPathPattern.left.name) eq Values.NO_VALUE) ||
       (ctx.getByName(shortestPathPattern.right.name) eq Values.NO_VALUE)
 
-  override def children: Seq[AstNode[_]] = Seq(shortestPathPattern) ++ perStepPredicates ++ fullPathPredicates
+  override def children: Seq[AstNode[_]] = Seq(shortestPathPattern)
 
   override def arguments: Seq[Expression] = Seq.empty
 
   override def rewrite(f: Expression => Expression): Expression =
     f(ShortestPathExpression(shortestPathPattern.rewrite(f), operatorId = operatorId))
-
-  private def cypherPositivePredicatesAsExpander(
-    incomingCtx: ReadableRow,
-    variableOffset: Int,
-    predicate: Predicate,
-    state: QueryState
-  ) = new KernelPredicate[Entity] {
-
-    override def test(t: Entity): Boolean = {
-      state.expressionVariables(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
-      predicate.isTrue(incomingCtx, state)
-    }
-  }
-
-  private def cypherNegativePredicatesAsExpander(
-    incomingCtx: ReadableRow,
-    variableOffset: Int,
-    predicate: Predicate,
-    state: QueryState
-  ) = new KernelPredicate[Entity] {
-
-    override def test(t: Entity): Boolean = {
-      state.expressionVariables(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
-      !predicate.isTrue(incomingCtx, state)
-    }
-  }
-
-  private def findPredicate(predicate: Predicate) = predicate match {
-    case CoercedPredicate(inner: ExtendedExpression) => inner.legacy
-    case _                                           => predicate
-  }
-
-  // TODO we shouldn't do this matching at runtime but instead figure this out in planning
-  private def addAllOrNoneRelationshipExpander(
-    ctx: ReadableRow,
-    currentExpander: Expander,
-    all: Boolean,
-    predicate: Predicate,
-    relVariableOffset: Int,
-    state: QueryState
-  ): Expander = {
-    currentExpander.addRelationshipFilter(
-      if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-      else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-    )
-  }
-
-  // TODO we shouldn't do this matching at runtime but instead figure this out in planning
-  private def addAllOrNoneNodeExpander(
-    ctx: ReadableRow,
-    currentExpander: Expander,
-    all: Boolean,
-    predicate: Predicate,
-    relVariableOffset: Int,
-    currentNodePredicates: Seq[KernelPredicate[Entity]],
-    state: QueryState
-  ): (Expander, Seq[KernelPredicate[Entity]]) = {
-    val filter =
-      if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-      else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-
-    (currentExpander.addNodeFilter(filter), currentNodePredicates :+ filter)
-  }
-
-  private def makeRelationshipTypeExpander(): Expander =
-    if (shortestPathPattern.relTypes.isEmpty) {
-      Expanders.allTypes(shortestPathPattern.dir)
-    } else {
-      shortestPathPattern.relTypes.foldLeft(Expanders.typeDir()) {
-        case (e, t) => e.add(t, shortestPathPattern.dir)
-      }
-    }
-
-  // TODO we should have made these decisions at plan time and not match on expressions here
-  private def addPredicates(
-    ctx: ReadableRow,
-    relTypeAndDirExpander: Expander,
-    state: QueryState
-  ): (Expander, Seq[KernelPredicate[Entity]]) =
-    if (perStepPredicates.isEmpty) (relTypeAndDirExpander, Seq())
-    else
-      perStepPredicates.map(findPredicate).foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[Entity]]())) {
-        case ((currentExpander, currentNodePredicates: Seq[KernelPredicate[Entity]]), predicate) =>
-          predicate match {
-            case NoneInList(relFunction, _, variableOffset, innerPredicate) if isRelationshipsFunction(relFunction) =>
-              val expander = addAllOrNoneRelationshipExpander(
-                ctx,
-                currentExpander,
-                all = false,
-                innerPredicate,
-                variableOffset,
-                state
-              )
-              (expander, currentNodePredicates)
-            case AllInList(relFunction, _, variableOffset, innerPredicate) if isRelationshipsFunction(relFunction) =>
-              val expander = addAllOrNoneRelationshipExpander(
-                ctx,
-                currentExpander,
-                all = true,
-                innerPredicate,
-                variableOffset,
-                state
-              )
-              (expander, currentNodePredicates)
-            case NoneInList(nodeFunction, _, variableOffset, innerPredicate) if isNodesFunction(nodeFunction) =>
-              addAllOrNoneNodeExpander(
-                ctx,
-                currentExpander,
-                all = false,
-                innerPredicate,
-                variableOffset,
-                currentNodePredicates,
-                state
-              )
-            case AllInList(nodeFunction, _, variableOffset, innerPredicate) if isNodesFunction(nodeFunction) =>
-              addAllOrNoneNodeExpander(
-                ctx,
-                currentExpander,
-                all = true,
-                innerPredicate,
-                variableOffset,
-                currentNodePredicates,
-                state
-              )
-            case _ => (currentExpander, currentNodePredicates)
-          }
-      }
-
-  @scala.annotation.tailrec
-  private def isNodesFunction(expression: Expression): Boolean = expression match {
-    case _: NodesFunction      => true
-    case e: ExtendedExpression => isNodesFunction(e.legacy)
-    case _                     => false
-  }
-
-  @scala.annotation.tailrec
-  private def isRelationshipsFunction(expression: Expression): Boolean = expression match {
-    case _: RelationshipFunction => true
-    case e: ExtendedExpression   => isRelationshipsFunction(e.legacy)
-    case _                       => false
-  }
 }
 
 object ShortestPathExpression {

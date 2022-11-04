@@ -39,7 +39,8 @@ object CypherRuntimeConfiguration {
       enableMonitors = config.enableMonitors,
       executionPlanCacheSize = config.executionPlanCacheSize,
       renderPlanDescription = config.renderPlanDescription,
-      varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold
+      varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold,
+      useLegacyShortestPath = config.useLegacyShortestPath
     )
   }
 
@@ -57,7 +58,8 @@ case class CypherRuntimeConfiguration(
   enableMonitors: Boolean,
   executionPlanCacheSize: Int,
   renderPlanDescription: Boolean,
-  varExpandRelationshipIdSetThreshold: Int
+  varExpandRelationshipIdSetThreshold: Int,
+  useLegacyShortestPath: Boolean
 ) {
 
   Preconditions.checkArgument(

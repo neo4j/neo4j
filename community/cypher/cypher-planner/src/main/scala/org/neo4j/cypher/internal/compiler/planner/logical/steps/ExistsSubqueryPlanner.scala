@@ -77,8 +77,14 @@ final case class ExistsSubqueryPlannerWithCaching() extends ExistsSubqueryPlanne
       // LogicalPlanningContext from the cache key.
       // When adding a new field to LogicalPlanningContext, consider if this assumption still holds. If not, add relevant
       // fields to the cache key below.
-      case LogicalPlanningContext(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) =>
-        ()
+              
+      // @formatter:off
+      case LogicalPlanningContext(
+          _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _,
+          useLegacyShortestPath
+        ) =>
+        useLegacyShortestPath
+      // @formatter:on
     }
   }
 }

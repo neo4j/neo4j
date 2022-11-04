@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccParserTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
@@ -89,7 +90,11 @@ class CaseExpressionTest
   }
 
   private val converters =
-    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+    new ExpressionConverters(CommunityExpressionConverter(
+      ReadTokenContext.EMPTY,
+      new AnonymousVariableNameGenerator(),
+      CypherRuntimeConfiguration.defaultConfiguration
+    ))
 
   override def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
     converters.toCommandExpression(Id.INVALID_ID, astNode)

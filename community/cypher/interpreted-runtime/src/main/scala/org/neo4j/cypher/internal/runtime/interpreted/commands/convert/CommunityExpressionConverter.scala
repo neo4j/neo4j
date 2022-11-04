@@ -119,6 +119,7 @@ import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
@@ -147,7 +148,8 @@ import org.neo4j.values.storable.Values.intValue
 
 case class CommunityExpressionConverter(
   tokenContext: ReadTokenContext,
-  anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  runtimeConfig: CypherRuntimeConfiguration
 ) extends ExpressionConverter {
 
   override def toCommandProjection(
@@ -228,8 +230,15 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.LogicalProperty    => toCommandProperty(id, e, self)
       case ParameterFromSlot(offset, name, _)         => commands.expressions.ParameterFromSlot(offset, name)
       case e: internal.expressions.CaseExpression     => caseExpression(id, e, self)
-      case e: internal.expressions.ShortestPathExpression => commands.expressions
+      case e: internal.expressions.ShortestPathExpression if (!runtimeConfig.useLegacyShortestPath) =>
+        commands.expressions
           .ShortestPathExpression(
+            e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head,
+            operatorId = id
+          )
+      case e: internal.expressions.ShortestPathExpression if (runtimeConfig.useLegacyShortestPath) =>
+        commands.expressions
+          .LegacyShortestPathExpression(
             e.pattern.asLegacyPatterns(id, None, self, anonymousVariableNameGenerator).head,
             operatorId = id
           )

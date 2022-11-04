@@ -147,4 +147,5 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def planningPointIndexesEnabled: Boolean = config.planningPointIndexesEnabled
   def predicatesAsUnionMaxSize: Int = config.predicatesAsUnionMaxSize
   def extractLiterals: ExtractLiteral = config.extractLiterals
+  def useLegacyShortestPath: Boolean = config.useLegacyShortestPath
 }

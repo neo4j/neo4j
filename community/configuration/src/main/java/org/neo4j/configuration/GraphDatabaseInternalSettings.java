@@ -137,6 +137,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("This is used to disable the new shortest path implementation and instead use the old one.")
+    public static final Setting<Boolean> use_legacy_shortest_path = newBuilder(
+                    "internal.cypher.use_legacy_shortest_path", BOOL, false)
+            .dynamic()
+            .build();
+
+    @Internal
     @Description("Choose the expression engine. The default is to only compile expressions that are hot, if 'COMPILED' "
             + "is chosen all expressions will be compiled directly and if 'INTERPRETED' is chosen expressions will "
             + "never be compiled.")

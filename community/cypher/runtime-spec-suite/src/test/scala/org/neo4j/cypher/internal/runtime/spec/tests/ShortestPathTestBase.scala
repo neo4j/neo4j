@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -196,7 +197,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .shortestPath(
         "(x)-[r:A*]->(y)",
         Some("path"),
-        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${forbidden.getId})")
+        nodePredicates = Seq(Predicate("n", s"id(n) <> ${forbidden.getId}"))
       )
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
@@ -224,7 +225,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .shortestPath(
         "(x)-[r:A*]->(y)",
         Some("path"),
-        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})")
+        nodePredicates = Seq(Predicate("n", s"id(n) <> ${start.getId}"))
       )
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)
@@ -250,7 +251,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .shortestPath(
         "(X)-[r:A*]->(y)",
         Some("path"),
-        predicates = Seq(s"All(n in nodes(path) WHERE id(n) <> ${start.getId})")
+        nodePredicates = Seq(Predicate("n", s"id(n) <> ${start.getId}"))
       )
       .projection("x AS X")
       .cartesianProduct()
@@ -281,7 +282,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .shortestPath(
         "(x)-[r:A*]->(y)",
         Some("path"),
-        predicates = Seq(s"All(rel in relationships(path) WHERE id(rel) <> ${forbidden.getId})")
+        relationshipPredicates = Seq(Predicate("rel", s"id(rel) <> ${forbidden.getId}"))
       ) // OBS: r != rel
       .cartesianProduct()
       .|.nodeByLabelScan("y", "END", IndexOrderNone)

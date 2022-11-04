@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractShortestPathPredicates
-import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternElement
@@ -40,11 +41,10 @@ import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 
-case object planShortestPaths {
+case object planLegacyShortestPaths {
 
   def apply(
     inner: LogicalPlan,
@@ -53,51 +53,36 @@ case object planShortestPaths {
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val patternRelationship = shortestPaths.rel
-    val relName = patternRelationship.name
-    val pathNameOpt = shortestPaths.name
-
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
-
     def predicateAppliesToShortestPath(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
       p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
         // And filter with predicates that explicitly depend on shortestPath variables
         (p.dependencies intersect variables).nonEmpty
 
-    // The predicates which apply to the shortest path pattern will be solved by this operator
-    val solvedPredicates = queryGraph.selections.predicates.collect {
+    val predicates = queryGraph.selections.predicates.collect {
       case p @ Predicate(_, expr) if predicateAppliesToShortestPath(p) => expr
+    }.toIndexedSeq
+
+    def doesNotDependOnFullPath(predicate: Expression): Boolean = {
+      (predicate.dependencies.map(_.name) intersect variables).isEmpty
     }
 
-    val (
-      nodePredicates: Set[VariablePredicate],
-      relPredicates: Set[VariablePredicate],
-      nonExtractedPerStepPredicates: Set[Expression]
-    ) =
-      extractShortestPathPredicates(solvedPredicates, pathNameOpt, Some(relName))
+    val (_, needFallbackPredicates) = predicates.partition {
+      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) =>
+        true
+      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) =>
+        true
+      case _ => false
+    }
 
-    val pathPredicates = solvedPredicates.diff(nonExtractedPerStepPredicates)
-
-    if (pathPredicates.nonEmpty) {
-      planShortestPathsWithFallback(
-        inner,
-        shortestPaths,
-        nodePredicates,
-        relPredicates,
-        pathPredicates,
-        solvedPredicates,
-        queryGraph,
-        context
-      )
+    if (needFallbackPredicates.nonEmpty) {
+      planLegacyShortestPathsWithFallback(inner, shortestPaths, predicates, queryGraph, context)
     } else {
-      context.logicalPlanProducer.planShortestPath(
+      context.logicalPlanProducer.planLegacyShortestPath(
         inner,
         shortestPaths,
-        nodePredicates,
-        relPredicates,
-        pathPredicates,
-        solvedPredicates,
+        predicates,
         withFallBack = false,
         disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime,
         context = context
@@ -112,13 +97,10 @@ case object planShortestPaths {
     PathExpression(step)(pos)
   }
 
-  private def planShortestPathsWithFallback(
+  private def planLegacyShortestPathsWithFallback(
     inner: LogicalPlan,
     shortestPath: ShortestPathPattern,
-    nodePredicates: Set[VariablePredicate],
-    relPredicates: Set[VariablePredicate],
-    pathPredicates: Set[Expression],
-    solvedPredicates: Set[Expression],
+    predicates: Seq[Expression],
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
   ) = {
@@ -136,13 +118,10 @@ case object planShortestPaths {
       context = context
     )
 
-    val lhsSp = lpp.planShortestPath(
+    val lhsSp = lpp.planLegacyShortestPath(
       lhsArgument,
       shortestPath,
-      nodePredicates,
-      relPredicates,
-      pathPredicates,
-      solvedPredicates,
+      predicates,
       withFallBack = true,
       disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime,
       context = context
@@ -161,18 +140,18 @@ case object planShortestPaths {
       if (context.errorIfShortestPathFallbackUsedAtRuntime) {
         lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException, context)
       } else {
-        buildPlanShortestPathsFallbackPlans(shortestPath, rhsArgument, solvedPredicates.toSeq, queryGraph, context)
+        buildPlanLegacyShortestPathsFallbackPlans(shortestPath, rhsArgument, predicates, queryGraph, context)
       }
 
     // We have to force the plan to solve what we actually solve
     val solved = context.planningAttributes.solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
-      _.addShortestPath(shortestPath).addPredicates(solvedPredicates.toSeq: _*)
+      _.addShortestPath(shortestPath).addPredicates(predicates: _*)
     )
 
     lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get), context, Some(solved))
   }
 
-  private def buildPlanShortestPathsFallbackPlans(
+  private def buildPlanLegacyShortestPathsFallbackPlans(
     shortestPath: ShortestPathPattern,
     rhsArgument: LogicalPlan,
     predicates: Seq[Expression],
@@ -188,9 +167,6 @@ case object planShortestPaths {
     // We assume there is always a path name (either explicit or auto-generated)
     val pathName = shortestPath.name.get
 
-    // TODO: When the path is named, we need to redo the projectNamedPaths stuff so that
-    // we can extract the per step predicates again
-
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsVarExpand =
       expandSolverStep.produceLogicalPlan(queryGraph, pattern, rhsArgument, from, rhsArgument.availableSymbols, context)
@@ -199,7 +175,6 @@ case object planShortestPaths {
     val map = Map(pathName -> createPathExpression(shortestPath.expr.element))
     val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, Some(map), context)
 
-    // TODO: Don't filter with the per step predicates we already extracted.
     // Filter using predicates
     val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, context)
 

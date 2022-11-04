@@ -27,12 +27,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Find the shortest paths between two nodes, as specified by 'shortestPath'. For each shortest path found produce a
  * row containing the source row and the found path.
  */
-case class FindShortestPaths(
+case class LegacyFindShortestPaths(
   override val source: LogicalPlan,
   shortestPath: ShortestPathPattern,
-  perStepNodePredicates: Seq[VariablePredicate] = Seq.empty,
-  perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
-  pathPredicates: Seq[Expression] = Seq.empty,
+  predicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
   disallowSameNode: Boolean = true
 )(implicit idGen: IdGen)

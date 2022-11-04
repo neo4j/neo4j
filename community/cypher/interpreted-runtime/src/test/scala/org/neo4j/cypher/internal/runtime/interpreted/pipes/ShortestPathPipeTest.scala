@@ -29,9 +29,6 @@ import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
-import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
@@ -45,22 +42,25 @@ import java.util.Collections
 class ShortestPathPipeTest extends CypherFunSuite {
 
   test("should be lazy") {
-    val shortestPath = ShortestPath(
-      pathName = "p",
-      left = SingleNode("start"),
-      right = SingleNode("end"),
-      relTypes = Seq.empty,
-      dir = SemanticDirection.OUTGOING,
-      allowZeroLength = true,
-      maxDepth = None,
-      single = true,
-      relIterator = None
-    )
     val n1 = mock[Node]
     when(n1.getElementId).thenReturn("dummy")
     when(n1.getRelationships).thenReturn(Iterables.emptyResourceIterable[Relationship]())
     val input = new FakePipe(Seq.fill(10)(Map("start" -> n1, "end" -> n1)))
-    val pipe = ShortestPathPipe(input, ShortestPathExpression(shortestPath))()
+    val pipe = ShortestPathPipe(
+      input,
+      "start",
+      "end",
+      "p",
+      None,
+      RelationshipTypes(Array.empty[String]),
+      SemanticDirection.OUTGOING,
+      VarLengthPredicate.NONE,
+      Seq.empty,
+      true,
+      true,
+      true,
+      None
+    )()
     val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
     val p = mock[Path]
     when(p.nodes()).thenReturn(java.util.List.of[Node](n1))

@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
@@ -443,7 +444,8 @@ object CardinalityCostModel {
         // Sorting 99 rows has cost 0.2 per row.
         DEFAULT_COST_PER_ROW * Math.log(cardinality.amount + 1)
 
-      case _: FindShortestPaths => 12.0
+      case _: FindShortestPaths       => 12.0
+      case _: LegacyFindShortestPaths => 12.0
 
       case _ // Default
         => DEFAULT_COST_PER_ROW

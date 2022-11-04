@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.ContainsSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EndsWithSearchMode
@@ -162,6 +163,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -905,26 +907,8 @@ case class LogicalPlanProducer(
         .addPredicates(solvedPredicates.toSeq: _*)
         .addPredicates(uniquePredicate))
 
-      val solver = SubqueryExpressionSolver.solverFor(source, context)
-
-      /**
-       * `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The ListSubqueryExpressionSolver needs
-       * to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
-       * or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward,
-       * the easiest solution is this one: we wrap each predicate in a FilterScope, give it to the ListSubqueryExpressionSolver,
-       * and then extract it from the FilterScope again.
-       */
-      def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
-        val filterScope = FilterScope(variablePredicate.variable, Some(variablePredicate.predicate))(
-          variablePredicate.predicate.position
-        )
-        val rewrittenFilterScope = solver.solve(filterScope).asInstanceOf[FilterScope]
-        VariablePredicate(rewrittenFilterScope.variable, rewrittenFilterScope.innerPredicate.get)
-      }
-
-      val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
-      val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
-      val rewrittenSource = solver.rewrittenPlan()
+      val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
+        solveSubqueryExpressionsForExtractedPredicates(source, nodePredicates, relationshipPredicates, context)
       annotate(
         VarExpand(
           source = rewrittenSource,
@@ -945,6 +929,35 @@ case class LogicalPlanProducer(
       )
 
     case _ => throw new InternalException("Expected a varlength path to be here")
+  }
+
+  /**
+   * `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The ListSubqueryExpressionSolver needs
+   * to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
+   * or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward,
+   * the easiest solution is this one: we wrap each predicate in a FilterScope, give it to the ListSubqueryExpressionSolver,
+   * and then extract it from the FilterScope again.
+   */
+  private def solveSubqueryExpressionsForExtractedPredicates(
+    source: LogicalPlan,
+    nodePredicates: Set[VariablePredicate],
+    relationshipPredicates: Set[VariablePredicate],
+    context: LogicalPlanningContext
+  ): (Set[VariablePredicate], Set[VariablePredicate], LogicalPlan) = {
+    val solver = SubqueryExpressionSolver.solverFor(source, context)
+
+    def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
+      val filterScope = FilterScope(variablePredicate.variable, Some(variablePredicate.predicate))(
+        variablePredicate.predicate.position
+      )
+      val rewrittenFilterScope = solver.solve(filterScope).asInstanceOf[FilterScope]
+      VariablePredicate(rewrittenFilterScope.variable, rewrittenFilterScope.innerPredicate.get)
+    }
+
+    val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
+    val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
+    val rewrittenSource = solver.rewrittenPlan()
+    (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource)
   }
 
   def planTrail(
@@ -2008,6 +2021,42 @@ case class LogicalPlanProducer(
   def planShortestPath(
     inner: LogicalPlan,
     shortestPaths: ShortestPathPattern,
+    nodePredicates: Set[VariablePredicate],
+    relPredicates: Set[VariablePredicate],
+    pathPredicates: Set[Expression],
+    solvedPredicates: Set[Expression],
+    withFallBack: Boolean,
+    disallowSameNode: Boolean = true,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+
+    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
+      _.addShortestPath(shortestPaths).addPredicates(solvedPredicates.toSeq: _*)
+    )
+
+    val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
+      solveSubqueryExpressionsForExtractedPredicates(inner, nodePredicates, relPredicates, context)
+
+    annotate(
+      FindShortestPaths(
+        rewrittenSource,
+        shortestPaths,
+        rewrittenNodePredicates.toSeq,
+        rewrittenRelationshipPredicates.toSeq,
+        pathPredicates.toSeq,
+        withFallBack,
+        disallowSameNode
+      ),
+      solved,
+      providedOrders.get(rewrittenSource.id).fromLeft,
+      context
+    )
+  }
+
+  @deprecated("Uses the old shortest path implementation. Available for feature toggle. use planShortestPath instead.")
+  def planLegacyShortestPath(
+    inner: LogicalPlan,
+    shortestPaths: ShortestPathPattern,
     predicates: Seq[Expression],
     withFallBack: Boolean,
     disallowSameNode: Boolean = true,
@@ -2018,7 +2067,7 @@ case class LogicalPlanProducer(
     )
     val (rewrittenPredicates, rewrittenInner) = SubqueryExpressionSolver.ForMulti.solve(inner, predicates, context)
     annotate(
-      FindShortestPaths(rewrittenInner, shortestPaths, rewrittenPredicates, withFallBack, disallowSameNode),
+      LegacyFindShortestPaths(rewrittenInner, shortestPaths, rewrittenPredicates, withFallBack, disallowSameNode),
       solved,
       providedOrders.get(rewrittenInner.id).fromLeft,
       context

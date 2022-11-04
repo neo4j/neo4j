@@ -59,6 +59,16 @@ public class PathReference extends VirtualPathValue {
         return relationships;
     }
 
+    public ListValue relationshipsAsList() {
+
+        int size = relationships.length;
+        ListValueBuilder builder = ListValueBuilder.newListBuilder(size);
+        for (int i = 0; i < size; i++) {
+            builder.add(VirtualValues.relationship(relationships[i]));
+        }
+        return builder.build();
+    }
+
     @Override
     public int size() {
         return relationships.length;

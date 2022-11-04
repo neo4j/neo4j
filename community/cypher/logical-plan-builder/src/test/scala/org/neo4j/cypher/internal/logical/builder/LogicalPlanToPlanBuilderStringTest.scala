@@ -231,14 +231,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .shortestPath("(x)-[r*0..0]->(y)", pathName = Some("path"))
       .shortestPath("(x)<-[r*0..1]-(y)")
       .shortestPath("(x)-[r*2..5]-(y)", all = true)
-      .shortestPath("(x)-[r:REL*1..2]-(y)", predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)"))
+      .shortestPath("(x)-[r:REL*1..2]-(y)", relationshipPredicates = Seq(Predicate("n", "id(n) <> 5")))
       .shortestPath("(x)-[r:REL|LER*1..2]-(y)")
       .shortestPath("(x)-[r*1..2]-(y)")
       .shortestPath(
         "(x)-[r*1..2]->(y)",
         pathName = Some("path"),
         all = true,
-        predicates = Seq("all(n IN nodes(path) WHERE id(n) <> 5)", "all(rel IN relationships(path) WHERE id(rel) <> 7)")
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5")),
+        relationshipPredicates = Seq(Predicate("rel", "id(rel) <> 7"))
       )
       .shortestPath("(x)-[r*1..2]->(y)", disallowSameNode = false)
       .shortestPath("(x)-[r*1..3]->(y)", withFallback = true)

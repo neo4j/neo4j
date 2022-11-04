@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatis
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.planLegacyShortestPaths
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
@@ -147,7 +148,12 @@ case class IDPQueryGraphSolver(
   ): LogicalPlan =
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
-        val shortestPath = planShortestPaths(plan, qg, sp, context)
+        val shortestPath =
+          if (context.useLegacyShortestPath) {
+            planLegacyShortestPaths(plan, qg, sp, context)
+          } else {
+            planShortestPaths(plan, qg, sp, context)
+          }
         kit.select(shortestPath, qg)
       case (plan, _) => plan
     }

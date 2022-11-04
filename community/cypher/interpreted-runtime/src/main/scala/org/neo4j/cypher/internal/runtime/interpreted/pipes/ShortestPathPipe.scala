@@ -19,61 +19,164 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
+import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
+import org.neo4j.internal.kernel.api.helpers.BiDirectionalBFS
+import org.neo4j.values.virtual.PathReference
+import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import java.util.function.Predicate
 
-/**
- * Shortest pipe inserts a single shortest path between two already found nodes
- */
-case class ShortestPathPipe(source: Pipe, shortestPathExpression: ShortestPathExpression)(val id: Id = Id.INVALID_ID)
+case class ShortestPathPipe(
+  source: Pipe,
+  sourceNodeName: String,
+  targetNodeName: String,
+  pathName: String,
+  relsNameOpt: Option[String],
+  types: RelationshipTypes,
+  direction: SemanticDirection,
+  filteringStep: VarLengthPredicate,
+  pathPredicates: Seq[commands.predicates.Predicate],
+  returnOneShortestPathOnly: Boolean,
+  disallowSameNode: Boolean,
+  allowZeroLength: Boolean,
+  maxDepth: Option[Int]
+)(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
+  self =>
 
-  private val shortestPathCommand = shortestPathExpression.shortestPathPattern
-  private def pathName = shortestPathCommand.pathName
-
-  protected def internalCreateResults(
+  override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+    if (disallowSameNode && sourceNodeName == targetNodeName) {
+      throw new ShortestPathCommonEndNodesForbiddenException
+    } else {
 
-    input.flatMap(ctx => {
-      val result = shortestPathExpression(ctx, state, memoryTracker) match {
-        case in: ListValue             => in
-        case v if v eq Values.NO_VALUE => VirtualValues.EMPTY_LIST
-        case path: VirtualPathValue    => VirtualValues.list(path)
-      }
+      val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
-      val iterator = shortestPathCommand.relIterator match {
-        case Some(relName) =>
-          result.iterator().asScala.map {
-            case path: VirtualPathValue =>
-              val relations = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
-              rowFactory.copyWith(ctx, pathName, path, relName, relations)
+      val nodeCursor = state.query.nodeCursor()
+      state.query.resources.trace(nodeCursor)
+      val traversalCursor = state.query.traversalCursor()
+      state.query.resources.trace(traversalCursor)
 
-            case value =>
-              throw new InternalException(s"Expected path, got '$value'")
+      // Create empty BiDirectionalBFS here and (re)set with source/target nodes and predicates for each row below.
+      val biDirectionalBFS = BiDirectionalBFS.newEmptyBiDirectionalBFS(
+        types.types(state.query),
+        direction,
+        maxDepth.getOrElse(Int.MaxValue),
+        returnOneShortestPathOnly,
+        state.query.transactionalContext.dataRead,
+        nodeCursor,
+        traversalCursor,
+        memoryTracker
+      )
+
+      val output = input.flatMap {
+        row =>
+          {
+            (row.getByName(sourceNodeName), row.getByName(targetNodeName)) match {
+
+              case (sourceNode: VirtualNodeValue, targetNode: VirtualNodeValue) =>
+                val pathPredicateWithContext = new Predicate[PathReference] {
+                  def test(path: PathReference): Boolean = {
+                    if (pathPredicates.nonEmpty) { // Don't set values in row if not needed
+                      row.set(pathName, path)
+                      relsNameOpt match {
+                        case Some(relsName) => row.set(relsName, path.relationshipsAsList())
+                        case _              =>
+                      }
+                      pathPredicates.forall(pred => pred.isTrue(row, state))
+                    } else {
+                      true
+                    }
+                  }
+                }
+
+                if (
+                  filteringStep.filterNode(row, state)(sourceNode) && filteringStep.filterNode(row, state)(targetNode)
+                ) {
+                  val pathsIterator =
+                    if (sourceNode == targetNode) {
+                      if (!allowZeroLength && disallowSameNode) {
+                        throw new ShortestPathCommonEndNodesForbiddenException
+                      } else if (allowZeroLength) {
+                        val path = VirtualValues.pathReference(Array[Long](sourceNode.id()), Array.empty[Long])
+                        if (pathPredicateWithContext.test(path)) {
+                          ClosingIterator.single(
+                            path
+                          )
+                        } else {
+                          ClosingIterator.empty
+                        }
+                      } else {
+                        ClosingIterator.empty
+                      }
+                    } else {
+
+                      val (nodePredicate, relationshipPredicate) =
+                        VarLengthPredicate.createPredicates(filteringStep, state, row)
+
+                      biDirectionalBFS.resetForNewRow(
+                        sourceNode.id(),
+                        targetNode.id(),
+                        nodePredicate,
+                        relationshipPredicate
+                      )
+
+                      val shortestPaths = biDirectionalBFS.shortestPathIterator(pathPredicateWithContext)
+                      if (returnOneShortestPathOnly) {
+                        if (shortestPaths.hasNext) {
+                          ClosingIterator.single(shortestPaths.next())
+                        } else {
+                          ClosingIterator.empty
+                        }
+                      } else {
+                        ClosingIterator.asClosingIterator(shortestPaths)
+                      }
+                    }
+
+                  relsNameOpt match {
+                    case Some(relsName) =>
+                      pathsIterator.map {
+                        case path: VirtualPathValue =>
+                          val rels = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
+                          rowFactory.copyWith(row, pathName, path, relsName, rels)
+
+                        case value =>
+                          throw new InternalException(s"Expected path, got '$value'")
+                      }
+                    case None =>
+                      pathsIterator.map {
+                        case path: VirtualPathValue =>
+                          rowFactory.copyWith(row, pathName, path)
+
+                        case value =>
+                          throw new InternalException(s"Expected path, got '$value'")
+                      }
+                  }
+
+                } else {
+                  ClosingIterator.empty
+                }
+
+              case (IsNoValue(), _) | (_, IsNoValue()) => ClosingIterator.empty
+              case value =>
+                throw new InternalException(
+                  s"Expected to find a node at '($sourceNodeName, $targetNodeName)' but found $value instead"
+                )
+            }
           }
-        case None =>
-          result.iterator().asScala.map {
-            case path: VirtualPathValue =>
-              rowFactory.copyWith(ctx, pathName, path)
-
-            case value =>
-              throw new InternalException(s"Expected path, got '$value'")
-          }
       }
-      iterator.asClosingIterator
-    })
+      output.closing(nodeCursor).closing(traversalCursor).closing(biDirectionalBFS)
+    }
   }
 }

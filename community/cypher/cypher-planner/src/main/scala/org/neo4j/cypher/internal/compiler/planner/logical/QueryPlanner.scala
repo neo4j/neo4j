@@ -107,7 +107,8 @@ case object QueryPlanner
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled,
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled,
       planningPointIndexesEnabled = context.config.planningPointIndexesEnabled,
-      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize
+      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize,
+      useLegacyShortestPath = context.config.useLegacyShortestPath
     )
   }
 

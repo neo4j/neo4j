@@ -449,27 +449,51 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pattern: String,
     pathName: Option[String] = None,
     all: Boolean = false,
-    predicates: Seq[String] = Seq.empty,
+    nodePredicates: Seq[Predicate] = Seq.empty,
+    relationshipPredicates: Seq[Predicate] = Seq.empty,
+    pathPredicates: Seq[String] = Seq.empty,
     withFallback: Boolean = false,
     disallowSameNode: Boolean = true
   ): IMPL =
-    shortestPathSolver(pattern, pathName, all, predicates.map(parseExpression), withFallback, disallowSameNode)
+    shortestPathSolver(
+      pattern,
+      pathName,
+      all,
+      nodePredicates.map(_.asVariablePredicate),
+      relationshipPredicates.map(_.asVariablePredicate),
+      pathPredicates.map(parseExpression),
+      withFallback,
+      disallowSameNode
+    )
 
   def shortestPathExpr(
     pattern: String,
     pathName: Option[String] = None,
     all: Boolean = false,
-    predicates: Seq[Expression] = Seq.empty,
+    nodePredicates: Seq[VariablePredicate] = Seq.empty,
+    relationshipPredicates: Seq[VariablePredicate] = Seq.empty,
+    pathPredicates: Seq[Expression] = Seq.empty,
     withFallback: Boolean = false,
     disallowSameNode: Boolean = true
   ): IMPL =
-    shortestPathSolver(pattern, pathName, all, predicates, withFallback, disallowSameNode)
+    shortestPathSolver(
+      pattern,
+      pathName,
+      all,
+      nodePredicates,
+      relationshipPredicates,
+      pathPredicates,
+      withFallback,
+      disallowSameNode
+    )
 
   private def shortestPathSolver(
     pattern: String,
     pathName: Option[String],
     all: Boolean,
-    predicates: Seq[Expression],
+    nodePredicates: Seq[VariablePredicate],
+    relationshipPredicates: Seq[VariablePredicate],
+    pathPredicates: Seq[Expression],
     withFallback: Boolean,
     disallowSameNode: Boolean
   ): IMPL = {
@@ -510,7 +534,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           )(pos),
           !all
         )(pos)),
-        predicates,
+        nodePredicates,
+        relationshipPredicates,
+        pathPredicates,
         withFallback,
         disallowSameNode
       )(_)

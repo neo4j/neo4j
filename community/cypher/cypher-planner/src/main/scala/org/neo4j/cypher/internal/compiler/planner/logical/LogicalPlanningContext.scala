@@ -81,7 +81,8 @@ case class LogicalPlanningContext(
   cancellationChecker: CancellationChecker,
   planningTextIndexesEnabled: Boolean = true,
   planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
-  planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue()
+  planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
+  useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
 ) {
 
   def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =

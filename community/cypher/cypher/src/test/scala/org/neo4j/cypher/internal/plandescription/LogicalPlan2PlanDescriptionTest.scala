@@ -3825,7 +3825,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("FindShortestPaths") {
-    val predicate = Equals(prop("r", "prop"), parameter("  AUTOSTRING1", CTString))(pos)
+    val relPredicate =
+      VariablePredicate(varFor("r"), Equals(prop("r", "prop"), parameter("  AUTOSTRING1", CTString))(pos))
 
     // with(out) relationship types
     // length variations
@@ -3846,6 +3847,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
+          Seq.empty,
+          Seq.empty,
           Seq.empty
         ),
         2345.0
@@ -3875,6 +3878,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
+          Seq.empty,
+          Seq.empty,
           Seq.empty
         ),
         2345.0
@@ -3904,6 +3909,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
+          Seq.empty,
+          Seq.empty,
           Seq.empty
         ),
         2345.0
@@ -3933,7 +3940,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
-          Seq(predicate)
+          Seq.empty,
+          Seq(relPredicate),
+          Seq.empty
         ),
         2345.0
       ),
@@ -3941,7 +3950,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ShortestPath",
         SingleChild(lhsPD),
-        Seq(details(s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE r.prop = $$autostring_1")),
+        Seq(details(
+          s"${anonVar("12")} = (a)-[r:R*2..4]-(y) WHERE all(r IN relationships(${anonVar("12")}) WHERE r.prop = $$autostring_1)"
+        )),
         Set("r", "a", "y", anonVar("12"))
       )
     )
@@ -3952,7 +3963,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         FindShortestPaths(
           lhsLP,
           ShortestPathPattern(
-            None,
+            Some("  UNNAMED12"),
             PatternRelationship(
               "r",
               ("a", "  UNNAMED2"),
@@ -3962,7 +3973,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
-          Seq(predicate)
+          Seq.empty,
+          Seq(relPredicate),
+          Seq.empty
         ),
         2345.0
       ),
@@ -3970,8 +3983,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ShortestPath",
         SingleChild(lhsPD),
-        Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")),
-        Set("r", "a", anonVar("2"))
+        Seq(details(
+          s"${anonVar("12")} = (a)-[r:R*2..]-(${anonVar("2")}) WHERE all(r IN relationships(${anonVar("12")}) WHERE r.prop = $$autostring_1)"
+        )),
+        Set("r", "a", anonVar("2"), anonVar("12"))
       )
     )
 
@@ -3981,7 +3996,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         FindShortestPaths(
           lhsLP,
           ShortestPathPattern(
-            None,
+            Some("  UNNAMED12"),
             PatternRelationship(
               "r",
               ("a", "  UNNAMED2"),
@@ -3991,7 +4006,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             ),
             single = true
           )(null),
-          Seq(predicate)
+          Seq.empty,
+          Seq(relPredicate),
+          Seq.empty
         ),
         2345.0
       ),
@@ -3999,8 +4016,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ShortestPath",
         SingleChild(lhsPD),
-        Seq(details(s"(a)-[r:R*]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")),
-        Set("r", "a", anonVar("2"))
+        Seq(details(
+          s"${anonVar("12")} = (a)-[r:R*]-(${anonVar("2")}) WHERE all(r IN relationships(${anonVar("12")}) WHERE r.prop = $$autostring_1)"
+        )),
+        Set("r", "a", anonVar("2"), anonVar("12"))
       )
     )
   }

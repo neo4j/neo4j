@@ -280,7 +280,41 @@ object LogicalPlanToPlanBuilderString {
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$modeStr$pDirStr$nPredStr$rPredStr """.trim
-      case FindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
+      case FindShortestPaths(
+          _,
+          shortestPath,
+          nodePredicates,
+          relationshipPredicates,
+          pathPredicates,
+          withFallBack,
+          disallowSameNode
+        ) =>
+        val fbStr = if (withFallBack) ", withFallback = true" else ""
+        val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
+        shortestPath match {
+          case ShortestPathPattern(
+              maybePathName,
+              PatternRelationship(relName, (from, to), dir, types, length),
+              single
+            ) =>
+            val lenStr = length match {
+              case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"
+              case SimplePatternLength        => ""
+            }
+            val (dirStrA, dirStrB) = arrows(dir)
+            val typeStr = relTypeStr(types)
+            val pNameStr = maybePathName.map(p => s", pathName = Some(${wrapInQuotations(p)})").getOrElse("")
+            val allStr = if (single) "" else ", all = true"
+            val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
+            val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
+            val pPredStr =
+              if (pathPredicates.isEmpty) ""
+              else ", pathPredicates = Seq(" + wrapInQuotationsAndMkString(
+                pathPredicates.map(expressionStringifier(_))
+              ) + ")"
+            s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$dsnStr """.trim
+        }
+      case LegacyFindShortestPaths(_, shortestPath, predicates, withFallBack, disallowSameNode) =>
         val fbStr = if (withFallBack) ", withFallback = true" else ""
         val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
         shortestPath match {

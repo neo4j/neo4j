@@ -43,7 +43,13 @@ public class HeapTrackingLongObjectHashMap<V> extends LongObjectHashMap<V> imple
         return new HeapTrackingLongObjectHashMap<>(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    public HeapTrackingLongObjectHashMap(MemoryTracker memoryTracker, int trackedCapacity) {
+    static <V> HeapTrackingLongObjectHashMap<V> createLongObjectHashMap(
+            MemoryTracker memoryTracker, int initialCapacity) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE + arraysHeapSize(initialCapacity));
+        return new HeapTrackingLongObjectHashMap<>(memoryTracker, initialCapacity);
+    }
+
+    protected HeapTrackingLongObjectHashMap(MemoryTracker memoryTracker, int trackedCapacity) {
         this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = trackedCapacity;
     }

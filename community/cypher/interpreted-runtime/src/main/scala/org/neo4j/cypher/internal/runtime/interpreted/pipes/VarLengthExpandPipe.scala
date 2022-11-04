@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -28,9 +29,15 @@ import org.neo4j.cypher.internal.runtime.RelationshipContainer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipe.projectBackwards
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.function.Predicates
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.relationship
+
+import java.util.function.LongPredicate
+import java.util.function.Predicate
 
 trait VarLengthPredicate {
   def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean
@@ -42,6 +49,34 @@ object VarLengthPredicate {
   val NONE: VarLengthPredicate = new VarLengthPredicate {
     override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = true
     override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = true
+  }
+
+  def createPredicates(
+    filteringStep: VarLengthPredicate,
+    state: QueryState,
+    row: CypherRow
+  ): (LongPredicate, Predicate[RelationshipTraversalCursor]) = {
+
+    def toLongPredicate(f: Long => Boolean): LongPredicate = (value: Long) => f(value)
+
+    filteringStep match {
+      case VarLengthPredicate.NONE =>
+        (LongPredicates.alwaysTrue(), Predicates.alwaysTrue[RelationshipTraversalCursor]())
+      case _ =>
+        val nodePredicate = toLongPredicate(t => filteringStep.filterNode(row, state)(VirtualValues.node(t)))
+        val relationshipPredicate = new Predicate[RelationshipTraversalCursor] {
+          override def test(t: RelationshipTraversalCursor): Boolean = {
+            filteringStep.filterRelationship(row, state)(relationship(
+              t.relationshipReference(),
+              t.originNodeReference(),
+              t.targetNodeReference(),
+              t.`type`()
+            ))
+          }
+        }
+
+        (nodePredicate, relationshipPredicate)
+    }
   }
 }
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthExpandPipe.bfsIterator
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
-import org.neo4j.function.Predicates
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander
@@ -40,7 +38,6 @@ import org.neo4j.io.IOUtils
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.virtual.VirtualValues.relationship
 
 import java.util.function.LongPredicate
 import java.util.function.Predicate
@@ -67,7 +64,8 @@ case class BFSPruningVarLengthExpandPipe(
           row.getByName(fromName) match {
             case node: VirtualNodeValue =>
               if (filteringStep.filterNode(row, state)(node)) {
-                val (nodePredicate, relationshipPredicate) = createPredicates(state, row)
+                val (nodePredicate, relationshipPredicate) =
+                  VarLengthPredicate.createPredicates(filteringStep, state, row)
                 val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
                 val expand = bfsIterator(
                   state.query,
@@ -95,31 +93,6 @@ case class BFSPruningVarLengthExpandPipe(
               throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
           }
         }
-    }
-  }
-
-  private def createPredicates(
-    state: QueryState,
-    row: CypherRow
-  ): (LongPredicate, Predicate[RelationshipTraversalCursor]) = {
-    def toLongPredicate(f: Long => Boolean): LongPredicate = (value: Long) => f(value)
-    filteringStep match {
-      case VarLengthPredicate.NONE =>
-        (LongPredicates.alwaysTrue(), Predicates.alwaysTrue[RelationshipTraversalCursor]())
-      case _ =>
-        val nodePredicate = toLongPredicate(t => filteringStep.filterNode(row, state)(VirtualValues.node(t)))
-        val relationshipPredicate = new Predicate[RelationshipTraversalCursor] {
-          override def test(t: RelationshipTraversalCursor): Boolean = {
-            filteringStep.filterRelationship(row, state)(relationship(
-              t.relationshipReference(),
-              t.originNodeReference(),
-              t.targetNodeReference(),
-              t.`type`()
-            ))
-          }
-        }
-
-        (nodePredicate, relationshipPredicate)
     }
   }
 

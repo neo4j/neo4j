@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.createParameterArray
@@ -105,7 +106,11 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 object SimpleInternalExpressionEvaluator {
 
   private val CONVERTERS =
-    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+    new ExpressionConverters(CommunityExpressionConverter(
+      ReadTokenContext.EMPTY,
+      new AnonymousVariableNameGenerator(),
+      CypherRuntimeConfiguration.defaultConfiguration
+    ))
 
   object ExpressionParser {
 

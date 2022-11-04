@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
+import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -84,7 +85,11 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
 
   private val converters =
-    new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
+    new ExpressionConverters(CommunityExpressionConverter(
+      ReadTokenContext.EMPTY,
+      new AnonymousVariableNameGenerator(),
+      CypherRuntimeConfiguration.defaultConfiguration
+    ))
 
   private val pipeMapper =
     InterpretedPipeMapper(

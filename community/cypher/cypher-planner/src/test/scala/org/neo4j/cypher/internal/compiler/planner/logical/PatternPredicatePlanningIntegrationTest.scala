@@ -27,13 +27,12 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
@@ -60,6 +59,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
@@ -1382,14 +1382,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       nestedCollection,
       add(varFor("sum", pos), varFor("x", pos))
     )
-    val expr = NoneIterablePredicate(
-      FilterScope(varFor("n", pos), Some(equals(prop("n", "foo", pos), reduceExprWithNestedPlan)))(pos),
-      function("nodes", varFor("p", pos))
-    )(pos)
+
+    val nodePred =
+      VariablePredicate(varFor("n", pos), Not(equals(prop("n", "foo", pos), reduceExprWithNestedPlan))(pos))
+
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .shortestPathExpr("(n)-[r*1..6]-(n2)", pathName = Some("p"), predicates = Seq(expr))
+      .shortestPathExpr("(n)-[r*1..6]-(n2)", pathName = Some("p"), nodePredicates = Seq(nodePred))
       .cartesianProduct()
       .|.allNodeScan("n2")
       .allNodeScan("n")
@@ -2249,25 +2249,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.expandAll("(a)<-[anon_1]-(b)")
         .|.argument("a")
         .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should use count store for two count aggregations separated by a subquery") {
-    val query = """MATCH (n)
-                  |WITH count(n) as nodeCount
-                  |CALL {
-                  |  MATCH ()-[r:REL]->()
-                  |  RETURN count(r) as relCount
-                  |}
-                  |RETURN nodeCount, relCount;""".stripMargin
-
-    planner.plan(query) should equal(
-      planner.planBuilder()
-        .produceResults("nodeCount", "relCount")
-        .cartesianProduct(true)
-        .|.relationshipCountFromCountStore("relCount", None, Seq("REL"), None)
-        .nodeCountFromCountStore("nodeCount", Seq(None))
         .build()
     )
   }

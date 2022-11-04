@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
-import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -82,6 +81,7 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
@@ -177,9 +177,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Create
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.LegacyShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.RemoveLabelsOperation
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
@@ -228,6 +228,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LegacyShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
@@ -830,10 +831,10 @@ case class InterpretedPipeMapper(
         val runtimeProperties = properties.toArray.map(buildExpression(_))
         CachePropertiesPipe(source, runtimeProperties)(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandAll) =>
+      case Expand(_, fromName, dir, types: Seq[internal.expressions.RelTypeName], toName, relName, ExpandAll) =>
         ExpandAllPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
-      case Expand(_, fromName, dir, types: Seq[RelTypeName], toName, relName, ExpandInto) =>
+      case Expand(_, fromName, dir, types: Seq[internal.expressions.RelTypeName], toName, relName, ExpandInto) =>
         ExpandIntoPipe(source, fromName, relName, toName, dir, RelationshipTypes(types.toArray))(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
@@ -937,7 +938,7 @@ case class InterpretedPipeMapper(
 
       case Top(_, sortItems, _) if sortItems.isEmpty => source
 
-      case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
+      case Top(_, sortItems, internal.expressions.SignedDecimalIntegerLiteral("1")) =>
         Top1Pipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(
           id = id
         )
@@ -957,7 +958,13 @@ case class InterpretedPipeMapper(
 
       case PartialTop(_, _, stillToSortSuffix, _, _) if stillToSortSuffix.isEmpty => source
 
-      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, SignedDecimalIntegerLiteral("1"), _) =>
+      case PartialTop(
+          _,
+          alreadySortedPrefix,
+          stillToSortSuffix,
+          internal.expressions.SignedDecimalIntegerLiteral("1"),
+          _
+        ) =>
         PartialTop1Pipe(
           source,
           InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
@@ -1056,7 +1063,56 @@ case class InterpretedPipeMapper(
           }
         OrderedAggregationPipe(source, tableFactory)(id = id)
 
-      case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
+      case FindShortestPaths(
+          _,
+          shortestPathPattern,
+          perStepNodePredicates,
+          perStepRelPredicates,
+          pathPredicates,
+          _,
+          disallowSameNode
+        ) =>
+        val single = shortestPathPattern.expr.single
+
+        val filteringStep = varLengthPredicates(id, perStepNodePredicates, perStepRelPredicates)
+        val commandPathPredicates = pathPredicates.map(buildPredicate(id, _))
+
+        val patternRelationship = shortestPathPattern.rel
+
+        val (sourceNodeName, targetNodeName) = patternRelationship.nodes
+
+        val rel = shortestPathPattern.expr.element match {
+          case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
+            relationshipPattern
+          case _ =>
+            throw new IllegalStateException("This should be caught during semantic checking")
+        }
+
+        val (allowZeroLength, maxDepth) = rel.length match {
+          case Some(Some(internal.expressions.Range(lower, max))) =>
+            (lower.exists(_.value == 0L), max.map(_.value.toInt))
+          case None => (false, Some(1)) // non-varlength case
+          case _    => (false, None)
+        }
+
+        val pathName = shortestPathPattern.name.getOrElse(anonymousVariableNameGenerator.nextName)
+        ShortestPathPipe(
+          source,
+          sourceNodeName,
+          targetNodeName,
+          pathName,
+          rel.variable.map(_.name),
+          RelationshipTypes(patternRelationship.types.toArray),
+          patternRelationship.dir,
+          filteringStep,
+          commandPathPredicates,
+          single,
+          disallowSameNode,
+          allowZeroLength,
+          maxDepth
+        )(id)
+
+      case LegacyFindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(
           id,
           shortestPathPattern.name,
@@ -1078,7 +1134,7 @@ case class InterpretedPipeMapper(
         val commandPerStepPredicates = perStepPredicates.map(p => buildPredicate(id, p))
         val commandFullPathPredicates = fullPathPredicates.map(p => buildPredicate(id, p))
 
-        val commandExpression = ShortestPathExpression(
+        val commandExpression = LegacyShortestPathExpression(
           legacyShortestPath,
           commandPerStepPredicates,
           commandFullPathPredicates,
@@ -1086,7 +1142,7 @@ case class InterpretedPipeMapper(
           disallowSameNode,
           id
         )
-        ShortestPathPipe(source, commandExpression)(id = id)
+        LegacyShortestPathPipe(source, commandExpression)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable)(id = id)
@@ -1309,28 +1365,29 @@ case class InterpretedPipeMapper(
     }
   }
 
-  private def varLengthPredicates(
+  def asCommand(id: Id)(variablePredicate: VariablePredicate): (CypherRow, QueryState, AnyValue) => Boolean = {
+    val command = buildPredicate(id, variablePredicate.predicate)
+    val ev = ExpressionVariable.cast(variablePredicate.variable)
+
+    (context: CypherRow, state: QueryState, entity: AnyValue) => {
+      state.expressionVariables(ev.offset) = entity
+      command.isTrue(context, state)
+    }
+  }
+
+  def varLengthPredicates(
     id: Id,
     nodePredicates: Seq[VariablePredicate],
     relationshipPredicates: Seq[VariablePredicate]
   ): VarLengthPredicate = {
 
     // Creates commands out of the predicates
-    def asCommand(variablePredicate: VariablePredicate): (CypherRow, QueryState, AnyValue) => Boolean = {
-      val command = buildPredicate(id, variablePredicate.predicate)
-      val ev = ExpressionVariable.cast(variablePredicate.variable)
-
-      (context: CypherRow, state: QueryState, entity: AnyValue) => {
-        state.expressionVariables(ev.offset) = entity
-        command.isTrue(context, state)
-      }
-    }
 
     (nodePredicates, relationshipPredicates) match {
       case (Seq(), Seq()) => VarLengthPredicate.NONE
       case _ =>
-        val nodeCommands = nodePredicates.map(asCommand)
-        val relCommands = relationshipPredicates.map(asCommand)
+        val nodeCommands = nodePredicates.map(asCommand(id))
+        val relCommands = relationshipPredicates.map(asCommand(id))
 
         new VarLengthPredicate {
           override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean =
@@ -1471,7 +1528,7 @@ case class InterpretedPipeMapper(
     }
   }
 
-  private def buildPredicate(id: Id, expr: internal.expressions.Expression): Predicate =
+  private def buildPredicate(id: Id, expr: expressions.Expression): Predicate =
     expressionConverters.toCommandPredicate(id, expr)
       .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
