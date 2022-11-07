@@ -54,7 +54,7 @@ object skipAndLimit extends PlanTransformer {
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
           case (Some(skipExpr), Some(limitExpr)) =>
-            context.logicalPlanProducer.planSkipAndLimit(
+            context.staticComponents.logicalPlanProducer.planSkipAndLimit(
               plan,
               skipExpr,
               limitExpr,
@@ -64,10 +64,10 @@ object skipAndLimit extends PlanTransformer {
             )
 
           case (Some(skipExpr), _) =>
-            context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
+            context.staticComponents.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
 
           case (_, Some(limitExpr)) if shouldPlanExhaustiveLimit(plan) =>
-            context.logicalPlanProducer.planExhaustiveLimit(
+            context.staticComponents.logicalPlanProducer.planExhaustiveLimit(
               plan,
               limitExpr,
               limitExpr,
@@ -76,7 +76,13 @@ object skipAndLimit extends PlanTransformer {
             )
 
           case (_, Some(limitExpr)) =>
-            context.logicalPlanProducer.planLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
+            context.staticComponents.logicalPlanProducer.planLimit(
+              plan,
+              limitExpr,
+              limitExpr,
+              query.interestingOrder,
+              context = context
+            )
 
           case _ =>
             plan

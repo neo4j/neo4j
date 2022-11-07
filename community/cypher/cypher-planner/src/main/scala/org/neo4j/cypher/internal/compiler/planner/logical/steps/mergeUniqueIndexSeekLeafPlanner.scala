@@ -55,7 +55,7 @@ object mergeUniqueIndexSeekLeafPlanner
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
-      context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+      context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
     val resultPlans: Set[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
 
@@ -73,7 +73,7 @@ object mergeUniqueIndexSeekLeafPlanner
     grouped.map {
       case (id, plans) =>
         plans.reduce[LogicalPlan] {
-          case (p1, p2) => context.logicalPlanProducer.planAssertSameNode(id, p1, p2, context)
+          case (p1, p2) => context.staticComponents.logicalPlanProducer.planAssertSameNode(id, p1, p2, context)
         }
     }.toSet
   }
@@ -101,7 +101,7 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
   }
 
   override def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan = {
-    context.logicalPlanProducer.planNodeUniqueIndexSeek(
+    context.staticComponents.logicalPlanProducer.planNodeUniqueIndexSeek(
       solution.idName,
       solution.label,
       solution.properties,

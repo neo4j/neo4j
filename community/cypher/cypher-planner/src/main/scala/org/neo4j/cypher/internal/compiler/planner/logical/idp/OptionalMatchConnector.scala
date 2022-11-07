@@ -40,7 +40,7 @@ case object OptionalMatchConnector
     // A map from each OPTIONAL MATCH QueryGraph to solvers that can connect the plan for that optional match
     // to the current LHS plan.
     val optionalSolvers: Map[QueryGraph, Seq[OptionalSolver.Solver]] = queryGraph.optionalMatches.map { optionalQG =>
-      optionalQG -> context.config.optionalSolvers.map { getSolver =>
+      optionalQG -> context.plannerState.config.optionalSolvers.map { getSolver =>
         getSolver.solver(optionalQG, queryGraph, interestingOrderConfig, context)
       }
     }.toMap

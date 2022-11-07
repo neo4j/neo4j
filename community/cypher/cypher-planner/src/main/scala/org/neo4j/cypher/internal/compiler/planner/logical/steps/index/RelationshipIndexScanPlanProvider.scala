@@ -70,7 +70,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
       originalPattern: PatternRelationship,
       hiddenSelections: Seq[Expression]
     ): LogicalPlan =
-      context.logicalPlanProducer.planRelationshipIndexScan(
+      context.staticComponents.logicalPlanProducer.planRelationshipIndexScan(
         idName = solution.indexScanParameters.idName,
         relationshipType = solution.indexScanParameters.token,
         patternForLeafPlan = patternForLeafPlan,

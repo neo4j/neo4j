@@ -70,12 +70,18 @@ case object applyOptional extends OptionalSolver {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): OptionalSolver.Solver = {
-    val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
-    val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
+    val innerContext: LogicalPlanningContext =
+      context.withModifiedPlannerState(_.withFusedLabelInfo(enclosingQg.selections.labelInfo))
+    val inner = context.staticComponents.queryGraphSolver.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) =>
       inner.allResults.map { inner =>
-        val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
-        val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
+        val rhs = context.staticComponents.logicalPlanProducer.planOptional(
+          inner,
+          lhs.availableSymbols,
+          innerContext,
+          optionalQg
+        )
+        val applied = context.staticComponents.logicalPlanProducer.planApply(lhs, rhs, context)
 
         // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
         // is not a fair comparison (as they cannot be rewritten to something cheaper).
@@ -108,7 +114,8 @@ case object outerHashJoin extends OptionalSolver {
       }
       val rhsQG = optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint]))
 
-      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrderConfig, context)
+      val BestResults(side2Plan, side2SortedPlan) =
+        context.staticComponents.queryGraphSolver.plan(rhsQG, interestingOrderConfig, context)
 
       (side1Plan: LogicalPlan) => {
         if (joinNodes.forall(side1Plan.availableSymbols)) {
@@ -132,7 +139,7 @@ case object outerHashJoin extends OptionalSolver {
     rhs: LogicalPlan,
     solvedHints: Set[UsingJoinHint]
   ): LogicalPlan =
-    context.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
+    context.staticComponents.logicalPlanProducer.planLeftOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
 
   private def rightOuterJoin(
     context: LogicalPlanningContext,
@@ -141,5 +148,5 @@ case object outerHashJoin extends OptionalSolver {
     lhs: LogicalPlan,
     solvedHints: Set[UsingJoinHint]
   ): LogicalPlan =
-    context.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
+    context.staticComponents.logicalPlanProducer.planRightOuterHashJoin(joinNodes, lhs, rhs, solvedHints, context)
 }

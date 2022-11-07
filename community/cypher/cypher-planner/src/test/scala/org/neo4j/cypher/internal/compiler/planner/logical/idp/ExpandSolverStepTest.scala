@@ -64,8 +64,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (_, ctx) =>
-      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(
+      val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
+      ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
         RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
       )
@@ -81,8 +81,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (_, ctx) =>
-      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(
+      val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
+      ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
         RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
       )
@@ -107,8 +107,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new given().withLogicalPlanningContext { (_, ctx) =>
-      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(
+      val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
+      ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
         RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
       )
@@ -125,8 +125,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (_, ctx) =>
-      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c", "r2", "d")
-      ctx.planningAttributes.solveds.set(
+      val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "c", "r2", "d")
+      ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
         RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d"))
       )
@@ -150,8 +150,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
 
     new given().withLogicalPlanningContext { (_, ctx) =>
-      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
-      ctx.planningAttributes.solveds.set(
+      val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
+      ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
         RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
       )

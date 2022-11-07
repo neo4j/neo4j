@@ -36,8 +36,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         Set(hasLabels("n", "A")),
         Set.empty,
         context.semanticTable,
-        context.planContext,
-        context.indexCompatiblePredicatesProviderContext
+        context.staticComponents.planContext,
+        context.plannerState.indexCompatiblePredicatesProviderContext
       )
       compatiblePredicates.size shouldBe 1
       val predicate = isNotNull(prop("n", "prop1"))
@@ -56,8 +56,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         Set(hasLabels("n", "A")),
         Set.empty,
         context.semanticTable,
-        context.planContext,
-        context.indexCompatiblePredicatesProviderContext
+        context.staticComponents.planContext,
+        context.plannerState.indexCompatiblePredicatesProviderContext
       )
       compatiblePredicates shouldBe empty
     }

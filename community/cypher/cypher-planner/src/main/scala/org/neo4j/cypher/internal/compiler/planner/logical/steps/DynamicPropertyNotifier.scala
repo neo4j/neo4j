@@ -56,18 +56,18 @@ object DynamicPropertyNotifier {
 
     if (indexedLabelOrRelTypes.nonEmpty) {
       val indexedLabelOrRelTypeNames: Set[String] = indexedLabelOrRelTypes.map(_.name)
-      context.notificationLogger.log(notification(indexedLabelOrRelTypeNames))
+      context.staticComponents.notificationLogger.log(notification(indexedLabelOrRelTypeNames))
     }
   }
 
   private def withNodeIndex(labelName: LabelName, context: LogicalPlanningContext): Boolean = {
     val maybeLabelId = context.semanticTable.id(labelName)
-    maybeLabelId.fold(false)(context.planContext.indexExistsForLabel(_))
+    maybeLabelId.fold(false)(context.staticComponents.planContext.indexExistsForLabel(_))
   }
 
   private def withRelIndex(relTypeName: RelTypeName, context: LogicalPlanningContext): Boolean = {
     val maybeRelTypeId = context.semanticTable.id(relTypeName)
-    maybeRelTypeId.fold(false)(context.planContext.indexExistsForRelType(_))
+    maybeRelTypeId.fold(false)(context.staticComponents.planContext.indexExistsForRelType(_))
   }
 
   def findNonSolvableIdentifiers(

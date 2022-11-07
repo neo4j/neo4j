@@ -254,11 +254,8 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => config.extractLiterals
   }
 
-  // FIXME
   val useLegacyShortestPath: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic()
-    )
+    // Is dynamic, but documented to not affect caching.
     () => config.useLegacyShortestPath
   }
 }

@@ -111,7 +111,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     context: LogicalPlanningContext,
     selections: Selections = Selections()
   ): LogicalPlan = {
-    newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, selections = selections)
+    newMockedLogicalPlan(Set("a", "b"), context.staticComponents.planningAttributes, selections = selections)
   }
 
   private def getSimpleLogicalPlanWithAandBandR(
@@ -119,7 +119,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     selections: Selections = Selections()
   ): LogicalPlan = {
     newMockedLogicalPlanWithPatterns(
-      context.planningAttributes,
+      context.staticComponents.planningAttributes,
       Set("a", "b"),
       Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
       selections = selections
@@ -155,7 +155,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       )
     )
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
-    val plan = newMockedLogicalPlan(context.planningAttributes, "b")
+    val plan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "b")
 
     a[InternalException] should be thrownBy {
       VerifyBestPlan(plan, query, context)
@@ -268,7 +268,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).copy(planningTextIndexesEnabled = true)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandB(context, selections = textSelections("a")),
@@ -291,7 +291,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).copy(planningTextIndexesEnabled = true)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandBandR(context, selections = textSelections("r")),
@@ -314,7 +314,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).copy(planningTextIndexesEnabled = true)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandB(context),
@@ -337,7 +337,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).copy(planningTextIndexesEnabled = true)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandBandR(context),
@@ -374,7 +374,11 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       useErrorsOverWarnings = false
     )
     val plan: LogicalPlan =
-      newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newNodeIndexHint()))
+      newMockedLogicalPlan(
+        Set("a", "b"),
+        context.staticComponents.planningAttributes,
+        hints = Set[Hint](newNodeIndexHint())
+      )
 
     VerifyBestPlan(plan, newQueryWithNodeIndexHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
@@ -388,7 +392,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       useErrorsOverWarnings = false
     )
     val plan: LogicalPlan = newMockedLogicalPlanWithPatterns(
-      context.planningAttributes,
+      context.staticComponents.planningAttributes,
       Set("a", "b"),
       Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
       hints = Set[Hint](newRelationshipIndexHint())
@@ -406,7 +410,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       useErrorsOverWarnings = false
     )
     val plan: LogicalPlan =
-      newMockedLogicalPlan(Set("a", "b"), context.planningAttributes, hints = Set[Hint](newJoinHint()))
+      newMockedLogicalPlan(Set("a", "b"), context.staticComponents.planningAttributes, hints = Set[Hint](newJoinHint()))
 
     VerifyBestPlan(plan, newQueryWithJoinHint(), context) // should not throw
     notificationLogger.notifications should be(empty)
@@ -444,8 +448,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       planContext = planContext,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = true
-    )
-      .copy(planningTextIndexesEnabled = false)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = false))
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
@@ -475,8 +478,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       planContext = planContext,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = true
-    )
-      .copy(planningTextIndexesEnabled = false)
+    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = false))
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
@@ -520,7 +522,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val context =
       newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false), useErrorsOverWarnings = true)
-    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+    val plan = newMockedLogicalPlanWithSolved(context.staticComponents.planningAttributes, Set("a"), solved)
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(plan, expected, context)
@@ -549,7 +551,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val context =
       newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
-    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+    val plan = newMockedLogicalPlanWithSolved(context.staticComponents.planningAttributes, Set("a"), solved)
 
     the[InvalidHintException] thrownBy {
       VerifyBestPlan(plan, expected, context)
@@ -578,7 +580,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val context =
       newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
-    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+    val plan = newMockedLogicalPlanWithSolved(context.staticComponents.planningAttributes, Set("a"), solved)
 
     the[InvalidHintException] thrownBy {
       VerifyBestPlan(plan, expected, context)
@@ -602,7 +604,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val context =
       newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = true), useErrorsOverWarnings = true)
-    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, Set("a"), solved)
+    val plan = newMockedLogicalPlanWithSolved(context.staticComponents.planningAttributes, Set("a"), solved)
 
     the[InvalidHintException] thrownBy {
       VerifyBestPlan(plan, expected, context)

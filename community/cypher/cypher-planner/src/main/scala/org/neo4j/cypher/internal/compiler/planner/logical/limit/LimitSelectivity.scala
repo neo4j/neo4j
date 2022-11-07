@@ -67,12 +67,12 @@ object LimitSelectivity {
           val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ =>
             proj.withPagination(proj.queryPagination.withLimit(None))
           ))
-          val cardinalityModel = context.metrics.cardinality(
+          val cardinalityModel = context.staticComponents.metrics.cardinality(
             _: PlannerQueryPart,
-            context.input.labelInfo,
-            context.input.relTypeInfo,
+            context.plannerState.input.labelInfo,
+            context.plannerState.input.relTypeInfo,
             context.semanticTable,
-            context.indexCompatiblePredicatesProviderContext
+            context.plannerState.indexCompatiblePredicatesProviderContext
           )
 
           val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)

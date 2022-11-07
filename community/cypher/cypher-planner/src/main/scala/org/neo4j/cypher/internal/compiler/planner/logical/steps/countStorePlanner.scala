@@ -52,7 +52,7 @@ case object countStorePlanner {
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
         countStorePlan.map { plan =>
           val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), context)
-          context.logicalPlanProducer.planHorizonSelection(
+          context.staticComponents.logicalPlanProducer.planHorizonSelection(
             projectionPlan,
             selections.flatPredicates,
             InterestingOrderConfig.empty,
@@ -183,7 +183,7 @@ case object countStorePlanner {
         // this is the case where the count can be answered using the counts of the provided labels
 
         val allLabels = patternNodes.toList.map(n => findLabel(n, selections))
-        Some(context.logicalPlanProducer.planCountStoreNodeAggregation(
+        Some(context.staticComponents.logicalPlanProducer.planCountStoreNodeAggregation(
           query,
           columnName,
           allLabels,
@@ -234,7 +234,7 @@ case object countStorePlanner {
     context: LogicalPlanningContext
   ): Boolean = {
     propertyKeyName.forall(prop =>
-      context.planContext.hasRelationshipPropertyExistenceConstraint(relTypeName.name, prop.name)
+      context.staticComponents.planContext.hasRelationshipPropertyExistenceConstraint(relTypeName.name, prop.name)
     )
   }
 
@@ -243,7 +243,9 @@ case object countStorePlanner {
     propertyKeyName: Option[PropertyKeyName],
     context: LogicalPlanningContext
   ): Boolean = {
-    propertyKeyName.forall(prop => context.planContext.hasNodePropertyExistenceConstraint(labelName.name, prop.name))
+    propertyKeyName.forall(prop =>
+      context.staticComponents.planContext.hasNodePropertyExistenceConstraint(labelName.name, prop.name)
+    )
   }
 
   /**
@@ -265,7 +267,7 @@ case object countStorePlanner {
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
         if variableName.forall(_ == relId) && noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]): Option[LogicalPlan] =
-          Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(
+          Some(context.staticComponents.logicalPlanProducer.planCountStoreRelationshipAggregation(
             query,
             columnName,
             fromLabel,

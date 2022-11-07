@@ -100,7 +100,7 @@ object SortPlanner {
   ): LogicalPlan =
     maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved) match {
       case Some(sortedPlan) =>
-        if (sortedPlan == plan) context.logicalPlanProducer.updateSolvedForSortedItems(
+        if (sortedPlan == plan) context.staticComponents.logicalPlanProducer.updateSolvedForSortedItems(
           sortedPlan,
           interestingOrderConfig.orderToReport,
           context
@@ -119,7 +119,9 @@ object SortPlanner {
     context: LogicalPlanningContext,
     plan: LogicalPlan
   ): Satisfaction =
-    interestingOrderConfig.orderToSolve.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))
+    interestingOrderConfig.orderToSolve.satisfiedBy(
+      context.staticComponents.planningAttributes.providedOrders.get(plan.id)
+    )
 
   case class SatisfiedForPlan(plan: LogicalPlan) {
 
@@ -151,7 +153,9 @@ object SortPlanner {
     def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
       projection
         .collectFirst { case (key, e) if e == expression => key }
-        .getOrElse(ExpressionStringifier.pretty(_ => context.anonymousVariableNameGenerator.nextName).apply(expression))
+        .getOrElse(ExpressionStringifier.pretty(_ =>
+          context.staticComponents.anonymousVariableNameGenerator.nextName
+        ).apply(expression))
     }
 
     def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {
@@ -201,7 +205,7 @@ object SortPlanner {
     if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id))) {
       if (satisfiedPrefix.isEmpty) {
         // Full sort required
-        Some(context.logicalPlanProducer.planSort(
+        Some(context.staticComponents.logicalPlanProducer.planSort(
           projected2,
           sortColumns,
           providedOrderColumns,
@@ -211,7 +215,7 @@ object SortPlanner {
       } else {
         // Partial sort suffices
         val (prefixColumnOrders, suffixColumnOrders) = sortColumns.splitAt(satisfiedPrefix.length)
-        Some(context.logicalPlanProducer.planPartialSort(
+        Some(context.staticComponents.logicalPlanProducer.planPartialSort(
           projected2,
           prefixColumnOrders,
           suffixColumnOrders,

@@ -58,7 +58,7 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
             rightGoal <- componentsGoal.subGoals(1)
             rightPlan <- table(rightGoal).iterator
 
-            containsOptionals = context.planningAttributes.solveds.get(
+            containsOptionals = context.staticComponents.planningAttributes.solveds.get(
               rightPlan.id
             ).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
             if !containsOptionals

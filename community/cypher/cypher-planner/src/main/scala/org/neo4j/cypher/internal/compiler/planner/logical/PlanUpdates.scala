@@ -137,22 +137,34 @@ case object PlanUpdates extends UpdatesPlanner {
           case s: SimpleMutatingPattern => s
         }
         if (allPatterns.length == sideEffects.length) {
-          context.logicalPlanProducer.planForeach(source, foreach, context, foreach.expression, sideEffects)
+          context.staticComponents.logicalPlanProducer.planForeach(
+            source,
+            foreach,
+            context,
+            foreach.expression,
+            sideEffects
+          )
         } else {
-          val innerLeaf = context.logicalPlanProducer.planArgument(
+          val innerLeaf = context.staticComponents.logicalPlanProducer.planArgument(
             Set.empty,
             Set.empty,
             source.availableSymbols + foreach.variable,
             context
           )
           val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)
-          context.logicalPlanProducer.planForeachApply(source, innerUpdatePlan, foreach, context, foreach.expression)
+          context.staticComponents.logicalPlanProducer.planForeachApply(
+            source,
+            innerUpdatePlan,
+            foreach,
+            context,
+            foreach.expression
+          )
         }
 
       // CREATE ()
       // CREATE (a)-[:R]->(b)
       // CREATE (), (a)-[:R]->(b), (x)-[:X]->(y)-[:Y]->(z {prop:2})
-      case p: CreatePattern => context.logicalPlanProducer.planCreate(source, p, context)
+      case p: CreatePattern => context.staticComponents.logicalPlanProducer.planCreate(source, p, context)
 
       // MERGE ()
       case p: MergeNodePattern =>
@@ -181,73 +193,75 @@ case object PlanUpdates extends UpdatesPlanner {
         )
 
       // SET n:Foo:Bar
-      case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
+      case pattern: SetLabelPattern =>
+        context.staticComponents.logicalPlanProducer.planSetLabel(source, pattern, context)
 
       // SET n.prop = 42
       case pattern: SetNodePropertyPattern =>
-        context.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
 
       // SET n.prop1 = 42, n.prop2 = 42
       case pattern: SetNodePropertiesPattern =>
-        context.logicalPlanProducer.planSetNodeProperties(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetNodeProperties(source, pattern, context)
 
       // SET r.prop = 42
       case pattern: SetRelationshipPropertyPattern =>
-        context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
 
       // SET r.prop1 = 42, r.prop2 = 42
       case pattern: SetRelationshipPropertiesPattern =>
-        context.logicalPlanProducer.planSetRelationshipProperties(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetRelationshipProperties(source, pattern, context)
 
       // SET x.prop = 42
       case pattern: SetPropertyPattern =>
-        context.logicalPlanProducer.planSetProperty(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetProperty(source, pattern, context)
 
       // SET x.prop1 = 42, x.prop2 = 42
       case pattern: SetPropertiesPattern =>
-        context.logicalPlanProducer.planSetProperties(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetProperties(source, pattern, context)
 
       // SET n += {p1: ..., p2: ...}
       case pattern: SetNodePropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, context)
 
       // SET r += {p1: ..., p2: ...}
       case pattern: SetRelationshipPropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, context)
 
       // SET x += {p1: ..., p2: ...}
       case pattern: SetPropertiesFromMapPattern =>
-        context.logicalPlanProducer.planSetPropertiesFromMap(source, pattern, context)
+        context.staticComponents.logicalPlanProducer.planSetPropertiesFromMap(source, pattern, context)
 
       // REMOVE n:Foo:Bar
-      case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)
+      case pattern: RemoveLabelPattern =>
+        context.staticComponents.logicalPlanProducer.planRemoveLabel(source, pattern, context)
 
       // DELETE a
       case p: DeleteExpression =>
         val delete = p.expression match {
           // DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rel
           case Variable(r) if context.semanticTable.isRelationship(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE path
           case PathExpression(_) =>
-            context.logicalPlanProducer.planDeletePath(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeletePath(source, p, context)
 
           // DELETE users[{i}]
           case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollection(n) =>
-            context.logicalPlanProducer.planDeleteNode(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rels[{i}]
           case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollection(r) =>
-            context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE expr
           case _ =>
-            context.logicalPlanProducer.planDeleteExpression(source, p, context)
+            context.staticComponents.logicalPlanProducer.planDeleteExpression(source, p, context)
         }
         delete
     }
@@ -298,21 +312,27 @@ case object PlanUpdates extends UpdatesPlanner {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
-      val mergeReadPart = ctx.strategy.plan(matchGraph, interestingOrderConfig, ctx).result
-      if (context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph != matchGraph)
+      val mergeReadPart = ctx.staticComponents.queryGraphSolver.plan(matchGraph, interestingOrderConfig, ctx).result
+      if (
+        context.staticComponents.planningAttributes.solveds.get(
+          mergeReadPart.id
+        ).asSinglePlannerQuery.queryGraph != matchGraph
+      )
         throw new InternalException(
-          s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph"
+          s"The planner was unable to successfully plan the MERGE read:\n${context.staticComponents.planningAttributes.solveds.get(mergeReadPart.id).asSinglePlannerQuery.queryGraph}\n not equal to \n$matchGraph"
         )
       mergeReadPart
     }
-    val producer: LogicalPlanProducer = context.logicalPlanProducer
+    val producer: LogicalPlanProducer = context.staticComponents.logicalPlanProducer
 
     // Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
     val leafPlannerList = LeafPlannerList(IndexedSeq(mergeUniqueIndexSeekLeafPlanner))
-    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
+    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.plannerState.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
-      context.withUpdatedLabelInfo(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+      context.withModifiedPlannerState(_
+        .withUpdatedLabelInfo(source, context.staticComponents.planningAttributes.solveds)
+        .copy(config = context.plannerState.config.withLeafPlanners(leafPlanners)))
     val read = mergeRead(innerContext)
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds

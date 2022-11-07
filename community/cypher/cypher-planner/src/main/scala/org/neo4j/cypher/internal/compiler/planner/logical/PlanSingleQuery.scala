@@ -45,10 +45,16 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
     val limitSelectivityConfigs = LimitSelectivityConfig.forAllParts(query, context)
 
     val bestPlan = for {
-      (plans, context) <- headPlanner.plan(query, context.withLimitSelectivityConfig(limitSelectivityConfigs.head))
+      (plans, context) <- headPlanner.plan(
+        query,
+        context.withModifiedPlannerState(_.withLimitSelectivityConfig(limitSelectivityConfigs.head))
+      )
       (plans, context) <- planRemainingParts(plans, query, context, limitSelectivityConfigs)
-      (plans, context) <- unnestEager(plans, context.withLimitSelectivityConfig(LimitSelectivityConfig.default))
-      pickBest = context.config.pickBestCandidate(context)
+      (plans, context) <- unnestEager(
+        plans,
+        context.withModifiedPlannerState(_.withLimitSelectivityConfig(LimitSelectivityConfig.default))
+      )
+      pickBest = context.plannerState.config.pickBestCandidate(context)
       bestPlan <- pickBest(plans.allResults.to(Iterable), s"best finalized plan for ${query.queryGraph}")
     } yield {
       bestPlan
@@ -78,19 +84,19 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
           plans,
           queryPart,
           prevQueryPart.interestingOrder,
-          context
+          context.withModifiedPlannerState(_
             .withLimitSelectivityConfig(limitSelectivityConfig)
-            .withLastSolvedQueryPart(prevQueryPart)
+            .withLastSolvedQueryPart(prevQueryPart))
         )
     }
   }
 
   private def unnestEager(plans: BestPlans, context: LogicalPlanningContext): StepResult = {
     val unnest = EagerAnalyzer.unnestEager(
-      context.planningAttributes.solveds,
-      context.planningAttributes.cardinalities,
-      context.planningAttributes.providedOrders,
-      Attributes(context.idGen)
+      context.staticComponents.planningAttributes.solveds,
+      context.staticComponents.planningAttributes.cardinalities,
+      context.staticComponents.planningAttributes.providedOrders,
+      Attributes(context.staticComponents.idGen)
     )
 
     val unnestedPlans = plans.map(_.endoRewrite(unnest))
@@ -109,7 +115,7 @@ trait MatchPlanner {
   protected def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans
 
   final def plan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans =
-    doPlan(query, context.withActivePlanner(PlannerType.Match), rhsPart)
+    doPlan(query, context.withModifiedPlannerState(_.withActivePlanner(PlannerType.Match)), rhsPart)
 }
 
 trait EventHorizonPlanner {
@@ -127,7 +133,12 @@ trait EventHorizonPlanner {
     prevInterestingOrder: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): BestResults[LogicalPlan] =
-    doPlanHorizon(plannerQuery, incomingPlans, prevInterestingOrder, context.withActivePlanner(PlannerType.Horizon))
+    doPlanHorizon(
+      plannerQuery,
+      incomingPlans,
+      prevInterestingOrder,
+      context.withModifiedPlannerState(_.withActivePlanner(PlannerType.Horizon))
+    )
 }
 
 trait HeadPlanner {

@@ -42,6 +42,9 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -459,23 +462,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningPointIndexesEnabled = false
       )
       val planningAttributes = PlanningAttributes.newAttributes
-      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
-      val ctx = LogicalPlanningContext(
-        planContext = planContext,
-        logicalPlanProducer = logicalPlanProducer,
-        metrics = metrics,
-        semanticTable = semanticTable,
-        strategy = queryGraphSolver,
-        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
-        input = QueryGraphSolverInput.empty,
-        notificationLogger = devNullLogger,
-        planningAttributes = planningAttributes,
-        idGen = idGen,
-        executionModel = config.executionModel,
-        debugOptions = CypherDebugOptions.default,
-        anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-        cancellationChecker = CancellationChecker.NeverCancelled
-      )
+      val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)
     }
 
@@ -489,24 +476,32 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningPointIndexesEnabled = false
       )
       val planningAttributes = newStubbedPlanningAttributes
+      val ctx = newLogicalPlanningContext(metrics, planningAttributes)
+      f(config, ctx)
+    }
+
+    private def newLogicalPlanningContext(metrics: Metrics, planningAttributes: PlanningAttributes) = {
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
-      val ctx = LogicalPlanningContext(
+      val staticComponents = StaticComponents(
         planContext = planContext,
-        logicalPlanProducer = logicalPlanProducer,
-        metrics = metrics,
-        semanticTable = semanticTable,
-        strategy = queryGraphSolver,
-        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
-        input = QueryGraphSolverInput.empty,
         notificationLogger = devNullLogger,
         planningAttributes = planningAttributes,
+        logicalPlanProducer = logicalPlanProducer,
+        queryGraphSolver = queryGraphSolver,
+        metrics = metrics,
         idGen = idGen,
+        anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+        cancellationChecker = CancellationChecker.NeverCancelled,
+        semanticTable = semanticTable
+      )
+
+      val settings = Settings(
         executionModel = config.executionModel,
         debugOptions = CypherDebugOptions.default,
-        anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-        cancellationChecker = CancellationChecker.NeverCancelled
+        predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize()
       )
-      f(config, ctx)
+
+      LogicalPlanningContext(staticComponents, settings)
     }
   }
 

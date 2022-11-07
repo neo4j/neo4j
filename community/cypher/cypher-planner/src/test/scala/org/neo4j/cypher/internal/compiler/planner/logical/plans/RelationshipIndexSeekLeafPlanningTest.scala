@@ -81,7 +81,9 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexSeekPlanProvider), restrictions)
 
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =
-    ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
+    ctx.staticComponents.planningAttributes.solveds.get(
+      plan.id
+    ).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
 
   private def queryGraph(types: Seq[String], semanticDirection: SemanticDirection, predicates: Expression*) =
     QueryGraph(
@@ -547,7 +549,9 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .build()
       ))
       val plan = resultPlans.head
-      ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(Set(hint))
+      ctx.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(
+        Set(hint)
+      )
     }
   }
 
@@ -574,7 +578,9 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .build()
       ))
       val plan = resultPlans.head
-      ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(Set(hint))
+      ctx.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(
+        Set(hint)
+      )
     }
   }
 
@@ -602,7 +608,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
 
       // We should not consider solutions that use an implicit r.foo IS NOT NULL, since we have one explicitly in the query
       // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
-      val implicitIsNotNullSolutions = ctx.planningAttributes.solveds.toSeq
+      val implicitIsNotNullSolutions = ctx.staticComponents.planningAttributes.solveds.toSeq
         .filter(_.hasValue)
         .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicatesSet)
         .filter(_ == Set(rPropLessThanLit42))

@@ -52,7 +52,7 @@ object aggregation {
       if (groupingExpressionsMap.isEmpty && aggregations.size == 1) {
         val key = aggregations.keys.head // just checked that there is only one key
         val value: Expression = aggregations(key)
-        val providedOrder = context.planningAttributes.providedOrders.get(rewrittenPlan.id)
+        val providedOrder = context.staticComponents.planningAttributes.providedOrders.get(rewrittenPlan.id)
 
         def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
@@ -78,14 +78,14 @@ object aggregation {
       }
 
     if (projectionMapForLimit.nonEmpty) {
-      val projectedPlan = context.logicalPlanProducer.planRegularProjection(
+      val projectedPlan = context.staticComponents.logicalPlanProducer.planRegularProjection(
         rewrittenPlan,
         projectionMapForLimit,
         None,
         context
       )
 
-      context.logicalPlanProducer.planLimitForAggregation(
+      context.staticComponents.logicalPlanProducer.planLimitForAggregation(
         projectedPlan,
         reportedGrouping = aggregation.groupingExpressions,
         reportedAggregation = aggregation.aggregationExpressions,
@@ -93,12 +93,12 @@ object aggregation {
         context = context
       )
     } else {
-      val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
+      val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
       val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
         leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
       if (orderToLeverage.isEmpty) {
-        context.logicalPlanProducer.planAggregation(
+        context.staticComponents.logicalPlanProducer.planAggregation(
           rewrittenPlan,
           newGroupingExpressionsMap,
           aggregations,
@@ -108,7 +108,7 @@ object aggregation {
           context
         )
       } else {
-        context.logicalPlanProducer.planOrderedAggregation(
+        context.staticComponents.logicalPlanProducer.planOrderedAggregation(
           rewrittenPlan,
           newGroupingExpressionsMap,
           aggregations,

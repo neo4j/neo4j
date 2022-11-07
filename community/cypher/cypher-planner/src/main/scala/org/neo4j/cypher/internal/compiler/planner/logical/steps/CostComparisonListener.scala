@@ -104,7 +104,7 @@ object SystemOutCostLogger extends CostComparisonListener {
 
     def costString(rootPlan: LogicalPlan)(plan: LogicalPlan) = {
       val cost = planCost((rootPlan.id, plan.id)).gummyBears
-      val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
+      val cardinality = context.staticComponents.planningAttributes.cardinalities.get(plan.id).amount
       val effectiveCardinality = planEffectiveCardinality((rootPlan.id, plan.id)).amount
       val costStr = magenta(" // cost ") + magenta_bold(cost.toString)
       val cardStr = magenta(", cardinality ") + magenta_bold(cardinality.toString)
@@ -116,7 +116,7 @@ object SystemOutCostLogger extends CostComparisonListener {
     }
 
     def planPrefixDotString(rootPlan: LogicalPlan)(plan: LogicalPlan) = {
-      val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
+      val cardinality = context.staticComponents.planningAttributes.cardinalities.get(plan.id).amount
       val effectiveCardinality = planEffectiveCardinality((rootPlan.id, plan.id)).amount
       if (cardinality > effectiveCardinality) cyan_background(".") else "."
     }
@@ -140,11 +140,11 @@ object SystemOutCostLogger extends CostComparisonListener {
           // Update cost and effective cardinality for each subplan
           context.cost.costFor(
             plan,
-            context.input,
+            context.plannerState.input,
             context.semanticTable,
-            context.planningAttributes.cardinalities,
-            context.planningAttributes.providedOrders,
-            context.accessedAndAggregatingProperties,
+            context.staticComponents.planningAttributes.cardinalities,
+            context.staticComponents.planningAttributes.providedOrders,
+            context.plannerState.accessedAndAggregatingProperties,
             monitor
           )
           val winner = if (index == 0) green(" [winner]") else ""
@@ -152,7 +152,7 @@ object SystemOutCostLogger extends CostComparisonListener {
           val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
           val planWithCosts =
             LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
-          val hints = context.planningAttributes.solveds.get(plan.id).numHints
+          val hints = context.staticComponents.planningAttributes.solveds.get(plan.id).numHints
           val heuristicValue = heuristic.tieBreaker(plan)
           val extra = s"(hints: $hints, heuristic: $heuristicValue)"
 

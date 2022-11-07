@@ -47,7 +47,8 @@ case class Selector(
     val pickBest = pickBestFactory(context)
     val candidateGenerators = candidateGeneratorFactories.map(_.generator())
 
-    val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds, queryGraph.selections, input)
+    val unsolvedPredicates =
+      unsolvedPreds(context.staticComponents.planningAttributes.solveds, queryGraph.selections, input)
 
     def selectIt(plan: LogicalPlan, stillUnsolvedPredicates: Set[Expression]): LogicalPlan = {
       val candidates = candidateGenerators.flatMap(generator =>

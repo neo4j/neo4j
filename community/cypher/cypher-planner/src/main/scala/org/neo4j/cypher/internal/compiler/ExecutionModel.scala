@@ -65,6 +65,11 @@ sealed trait ExecutionModel {
    * The check is invoked on each plan under an Apply and the implementation is not expected to recurse into it children.
    */
   def invalidatesProvidedOrder(plan: LogicalPlan): Boolean
+
+  /**
+   * @return any fields that are relevant for caching
+   */
+  def cacheKey(): Seq[Any]
 }
 
 object ExecutionModel {
@@ -77,14 +82,61 @@ object ExecutionModel {
       VolcanoBatchSize
     override def providedOrderPreserving: Boolean = true
     override def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = false
+
+    /**
+     * We do not include the ExecutionModel itself, since we also have a compiler for each runtime (see CompilerLibrary).
+     */
+    override def cacheKey(): Seq[Any] = Seq.empty
   }
 
   case class BatchedSingleThreaded(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
     override def providedOrderPreserving: Boolean = true
+
+    /**
+     * We do not include the ExecutionModel itself, since we also have a compiler for each runtime (see CompilerLibrary).
+     */
+    override def cacheKey(): Seq[Any] = this match {
+      // Note: This extra match is here to trigger a compilation error whenever the Signature of Settings is changed,
+      // to make the author aware and make them think about whether they want to include a new field in the cache key.
+      case BatchedSingleThreaded(
+          smallBatchSize: Int,
+          bigBatchSize: Int
+        ) =>
+        val builder = Seq.newBuilder[Any]
+
+        if (GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.dynamic())
+          builder.addOne(smallBatchSize)
+
+        if (GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.dynamic())
+          builder.addOne(bigBatchSize)
+
+        builder.result()
+    }
   }
 
   case class BatchedParallel(smallBatchSize: Int, bigBatchSize: Int) extends Batched {
     override def providedOrderPreserving: Boolean = false
+
+    /**
+     * We do not include the ExecutionModel itself, since we also have a compiler for each runtime (see CompilerLibrary).
+     */
+    override def cacheKey(): Seq[Any] = this match {
+      // Note: This extra match is here to trigger a compilation error whenever the Signature of Settings is changed,
+      // to make the author aware and make them think about whether they want to include a new field in the cache key.
+      case BatchedParallel(
+          smallBatchSize: Int,
+          bigBatchSize: Int
+        ) =>
+        val builder = Seq.newBuilder[Any]
+
+        if (GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small.dynamic())
+          builder.addOne(smallBatchSize)
+
+        if (GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.dynamic())
+          builder.addOne(bigBatchSize)
+
+        builder.result()
+    }
   }
 
   abstract class Batched extends ExecutionModel {

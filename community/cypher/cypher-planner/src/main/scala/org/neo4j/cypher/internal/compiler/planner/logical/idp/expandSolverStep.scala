@@ -143,7 +143,7 @@ object expandSolverStep {
    */
   private def planQPPInner(qpp: QuantifiedPathPattern, context: LogicalPlanningContext): LogicalPlan = {
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
-    context.strategy.plan(qpp.pattern, InterestingOrderConfig.empty, context).result
+    context.staticComponents.queryGraphSolver.plan(qpp.pattern, InterestingOrderConfig.empty, context).result
   }
 
   /**
@@ -157,7 +157,7 @@ object expandSolverStep {
     fromLeft: Boolean,
     context: LogicalPlanningContext
   ): QuantifiedPathPattern = {
-    val newName = context.anonymousVariableNameGenerator.nextName
+    val newName = context.staticComponents.anonymousVariableNameGenerator.nextName
     val qppWithNewEndBindingOuterName =
       if (fromLeft) {
         qpp.copy(rightBinding = qpp.rightBinding.copy(outer = newName))
@@ -198,7 +198,7 @@ object expandSolverStep {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    context.logicalPlanProducer.planProjectEndpoints(
+    context.staticComponents.logicalPlanProducer.planProjectEndpoints(
       plan,
       start,
       isStartInScope,
@@ -283,7 +283,15 @@ object expandSolverStep {
 
     patternRel.length match {
       case SimplePatternLength =>
-        context.logicalPlanProducer.planSimpleExpand(sourcePlan, nodeId, dir, otherSide, patternRel, mode, context)
+        context.staticComponents.logicalPlanProducer.planSimpleExpand(
+          sourcePlan,
+          nodeId,
+          dir,
+          otherSide,
+          patternRel,
+          mode,
+          context
+        )
 
       case _: VarPatternLength =>
         val availablePredicates: collection.Seq[Expression] =
@@ -301,7 +309,7 @@ object expandSolverStep {
             targetNodeIsBound = mode.equals(ExpandInto)
           )
 
-        context.logicalPlanProducer.planVarExpand(
+        context.staticComponents.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
           from = nodeId,
           dir = dir,
@@ -394,7 +402,7 @@ object expandSolverStep {
     val previouslyBoundRelationships = uniquenessPredicates.flatMap(_.previouslyBoundRelationships).toSet
     val previouslyBoundRelationshipGroups = uniquenessPredicates.flatMap(_.previouslyBoundRelationshipGroups).toSet
 
-    context.logicalPlanProducer.planTrail(
+    context.staticComponents.logicalPlanProducer.planTrail(
       source = sourcePlan,
       pattern = quantifiedPathPattern,
       startBinding = startBinding,

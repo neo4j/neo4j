@@ -83,7 +83,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       patternForLeafPlan: PatternRelationship,
       originalPattern: PatternRelationship,
       hiddenSelections: Seq[Expression]
-    ): LogicalPlan = context.logicalPlanProducer.planRelationshipIndexSeek(
+    ): LogicalPlan = context.staticComponents.logicalPlanProducer.planRelationshipIndexSeek(
       idName = indexMatch.variableName,
       typeToken = indexMatch.relationshipTypeToken,
       properties = predicateSet.indexedProperties(context),

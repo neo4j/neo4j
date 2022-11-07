@@ -237,7 +237,9 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =
-    ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
+    ctx.staticComponents.planningAttributes.solveds.get(
+      plan.id
+    ).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
 
   test("index scan with values when there is an index on the property") {
     new given {
@@ -309,7 +311,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -333,7 +335,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -357,7 +359,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldBe empty
     }
   }
@@ -381,7 +383,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propStartsWithEmpty),
@@ -411,7 +413,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propStartsWithEmpty),
@@ -442,7 +444,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propLessThan12),
@@ -473,7 +475,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propLessThan12),
@@ -503,7 +505,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propNotEquals12),
@@ -533,7 +535,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propNotEquals12),
@@ -563,7 +565,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propEquals12),
@@ -593,7 +595,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propEquals12),
@@ -623,7 +625,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propRegexMatchJohnny),
@@ -653,7 +655,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propRegexMatchJohnny),
@@ -685,7 +687,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 IndexedProperty(PropertyKeyToken("baz", _), CanGetValue, NODE_TYPE)
               ) => ()
           }
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(
                 PartialPredicate(propIsNotNull, propContainsApa),
@@ -721,7 +723,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
               ) => ()
           }
 
-          ctx.planningAttributes.solveds.get(plan.id) should beLike {
+          ctx.staticComponents.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
               // Two combinations of predicates lead to identical plans, that semantically solve the same thing
               scanQG.selections.predicates.map(_.expr) should equal(Set(
@@ -959,7 +961,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -986,7 +988,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldBe empty
     }
   }
@@ -1013,7 +1015,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -1150,7 +1152,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(p @ NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
-          val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+          val plannedQG = ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.hints shouldEqual Set(hint)
       }
     }
@@ -1175,7 +1177,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(p @ NodeIndexEndsWithScan(`idName`, _, _, `litApa`, _, _, _)) =>
-          val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+          val plannedQG = ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.hints shouldEqual Set()
       }
     }
@@ -1254,7 +1256,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val ctxWithAggregation = ctx.withAggregationProperties(Set(PropertyAccess(idName, "prop")))
+      val ctxWithAggregation =
+        ctx.withModifiedPlannerState(_.withAggregationProperties(Set(PropertyAccess(idName, "prop"))))
       val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
         cfg.qg,
         InterestingOrderConfig.empty,

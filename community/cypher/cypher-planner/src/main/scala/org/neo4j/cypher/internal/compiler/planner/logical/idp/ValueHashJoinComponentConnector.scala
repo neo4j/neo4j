@@ -58,14 +58,14 @@ case object ValueHashJoinComponentConnector
             )
 
             plan <- Iterator(
-              context.logicalPlanProducer.planValueHashJoin(
+              context.staticComponents.logicalPlanProducer.planValueHashJoin(
                 leftPlan,
                 rightPlan,
                 predicate.predicateToPlan,
                 predicate.originalPredicate,
                 context
               ),
-              context.logicalPlanProducer.planValueHashJoin(
+              context.staticComponents.logicalPlanProducer.planValueHashJoin(
                 rightPlan,
                 leftPlan,
                 predicate.inversePredicateToPlan,

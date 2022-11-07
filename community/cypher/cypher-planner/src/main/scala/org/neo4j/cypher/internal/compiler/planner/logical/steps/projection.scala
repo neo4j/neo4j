@@ -34,7 +34,8 @@ object projection {
     projectionsToMarkSolved: Option[Map[String, Expression]],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
+    val stillToSolveProjection =
+      projectionsLeft(in, projectionsToPlan, context.staticComponents.planningAttributes.solveds)
     val solver = SubqueryExpressionSolver.solverFor(in, context)
     val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val plan = solver.rewrittenPlan()
@@ -50,9 +51,14 @@ object projection {
       }).toMap
 
     if (projectionsDiff.isEmpty) {
-      context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved)
+      context.staticComponents.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
+      context.staticComponents.logicalPlanProducer.planRegularProjection(
+        plan,
+        projectionsDiff,
+        projectionsToMarkSolved,
+        context
+      )
     }
   }
 

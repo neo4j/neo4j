@@ -76,7 +76,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
               .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
               .headOption
 
-            context.logicalPlanProducer.planRelationshipIndexStringSearchScan(
+            context.staticComponents.logicalPlanProducer.planRelationshipIndexStringSearchScan(
               idName = indexMatch.variableName,
               relationshipType = indexMatch.relationshipTypeToken,
               patternForLeafPlan = patternForLeafPlan,

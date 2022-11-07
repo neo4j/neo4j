@@ -46,11 +46,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val allNodesScanLeafPlanner: LeafPlanner = (qg, _, context) =>
-    qg.patternNodes.map(node => context.logicalPlanProducer.planAllNodesScan(node, Set.empty, context))
+    qg.patternNodes.map(node => context.staticComponents.logicalPlanProducer.planAllNodesScan(node, Set.empty, context))
 
   private val labelScanLeafPlanner: LeafPlanner = (qg, _, context) =>
     qg.patternNodes.map(node =>
-      context.logicalPlanProducer.planNodeByLabelScan(
+      context.staticComponents.logicalPlanProducer.planNodeByLabelScan(
         varFor(node),
         LabelName(node.toUpperCase())(pos),
         Seq.empty,

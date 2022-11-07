@@ -55,7 +55,7 @@ case class irExpressionRewriter(outerPlan: LogicalPlan, context: LogicalPlanning
     },
     // Do not rewrite anything inside the NestedPlanExpressions that we generate
     stopper = _.isInstanceOf[NestedPlanExpression],
-    cancellation = context.cancellationChecker
+    cancellation = context.staticComponents.cancellationChecker
   )
 
   override def apply(that: AnyRef): AnyRef = instance(that)

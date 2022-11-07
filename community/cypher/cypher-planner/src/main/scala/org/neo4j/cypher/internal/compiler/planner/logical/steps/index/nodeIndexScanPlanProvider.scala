@@ -64,7 +64,7 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
     val distinctSolutions = mergeSolutions(solutions)
 
     distinctSolutions.map(solution =>
-      context.logicalPlanProducer.planNodeIndexScan(
+      context.staticComponents.logicalPlanProducer.planNodeIndexScan(
         idName = solution.indexScanParameters.idName,
         label = solution.indexScanParameters.token,
         properties = solution.indexScanParameters.properties,

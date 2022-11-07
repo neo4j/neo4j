@@ -40,7 +40,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    if (!context.planContext.canLookupNodesByLabel) {
+    if (!context.staticComponents.planContext.canLookupNodesByLabel) {
       Iterator.empty
     } else {
       unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {
@@ -51,7 +51,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
             variable,
             context.providedOrderFactory
           )
-          val labelScan = context.logicalPlanProducer.planNodeByLabelScan(
+          val labelScan = context.staticComponents.logicalPlanProducer.planNodeByLabelScan(
             variable,
             labelName,
             Seq(s),
@@ -61,7 +61,13 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
             context
           )
           val plan =
-            context.logicalPlanProducer.planNodeHashJoin(Set(variable.name), input, labelScan, Set.empty, context)
+            context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+              Set(variable.name),
+              input,
+              labelScan,
+              Set.empty,
+              context
+            )
           SelectionCandidate(plan, Set(s))
       }
     }

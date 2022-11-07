@@ -42,7 +42,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      !context.planContext.canLookupRelationshipsByType ||
+      !context.staticComponents.planContext.canLookupRelationshipsByType ||
         queryGraph.argumentIds.contains(pattern.name) ||
         skipIDs.contains(pattern.name) ||
         skipIDs.contains(pattern.left) ||
@@ -78,7 +78,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
       _,
       context.providedOrderFactory
     )
-    context.logicalPlanProducer.planUnionRelationshipByTypeScan(
+    context.staticComponents.logicalPlanProducer.planUnionRelationshipByTypeScan(
       name,
       types,
       patternForLeafPlan,

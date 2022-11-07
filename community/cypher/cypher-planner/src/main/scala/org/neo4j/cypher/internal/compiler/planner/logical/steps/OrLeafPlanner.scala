@@ -344,14 +344,14 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
-    val pickBest = context.config.pickBestCandidate(context)
-    val select = context.config.applySelections
+    val pickBest = context.plannerState.config.pickBestCandidate(context)
+    val select = context.plannerState.config.applySelections
 
     // The queryGraph without any predicates
     val bareQg = predicateKinds.foldLeft(qg)((accQg, dp) => dp.stripAllFromQueryGraph(accQg))
 
     def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
-      context.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+      context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
     def findPlansPerPredicate(disjunction: DisjunctionForOneVariable): Array[Array[LogicalPlan]] = {
       // Collect any other top-level predicates that only use this variable
@@ -410,11 +410,13 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
         case Array(singlePlan) => singlePlan
         case _                 =>
           // Determines if we can plan OrderedUnion
-          val maybeSortColumn = Option(context.planningAttributes.providedOrders(plans.head.id))
+          val maybeSortColumn = Option(context.staticComponents.planningAttributes.providedOrders(plans.head.id))
             // We only support a sorted union if the plans are sorted by a single column.
             .filter(_.columns.size == 1)
             // All plans must be ordered by the same thing.
-            .filter(head => plans.tail.map(p => context.planningAttributes.providedOrders(p.id)).forall(_ == head))
+            .filter(head =>
+              plans.tail.map(p => context.staticComponents.planningAttributes.providedOrders(p.id)).forall(_ == head)
+            )
             .flatMap(_.columns.headOption)
             // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
             .collect {
@@ -427,20 +429,30 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
             case (p1, p2) =>
               maybeSortColumn match {
                 case Some((_, sortColumn)) =>
-                  context.logicalPlanProducer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
-                case None => context.logicalPlanProducer.planUnion(p1, p2, List(), context)
+                  context.staticComponents.logicalPlanProducer.planOrderedUnion(
+                    p1,
+                    p2,
+                    List(),
+                    Seq(sortColumn),
+                    context
+                  )
+                case None => context.staticComponents.logicalPlanProducer.planUnion(p1, p2, List(), context)
               }
           }
 
           // Plan a single Distinct on top
           val orPlan = maybeSortColumn match {
             case Some((sortVariable, _)) =>
-              context.logicalPlanProducer.planOrderedDistinctForUnion(unionPlan, Seq(sortVariable), context)
-            case None => context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
+              context.staticComponents.logicalPlanProducer.planOrderedDistinctForUnion(
+                unionPlan,
+                Seq(sortVariable),
+                context
+              )
+            case None => context.staticComponents.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
           }
 
           // Update solved with the joinedSolvedQueryGraph
-          context.logicalPlanProducer.updateSolvedForOr(orPlan, joinedSolvedQueryGraph, context)
+          context.staticComponents.logicalPlanProducer.updateSolvedForOr(orPlan, joinedSolvedQueryGraph, context)
       }
     }
 
@@ -449,7 +461,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       disjunction <- predicateKind.findDisjunctions(qg)
       // Maximum number of predicates on a single variable after which we give up trying to plan a distinct union to avoid stack overflow errors.
       // It was introduced after a query with > 7k types in a single relationship pattern landed us in trouble.
-      if disjunction.predicates.size <= context.predicatesAsUnionMaxSize
+      if disjunction.predicates.size <= context.settings.predicatesAsUnionMaxSize
       // No point in doing OR leaf planning for less than 2 predicates
       if disjunction.predicates.size >= 2
       plansPerExpression = findPlansPerPredicate(disjunction)

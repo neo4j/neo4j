@@ -70,7 +70,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       }
 
     val goalSize = goal.size
-    val planProducer = context.logicalPlanProducer
+    val planProducer = context.staticComponents.logicalPlanProducer
     val builder = Vector.newBuilder[LogicalPlan]
 
     for {
@@ -82,7 +82,8 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       lhs <- table(leftGoal).iterator
       rhs <- table(rightGoal).iterator
     } {
-      val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
+      val overlappingNodes =
+        computeOverlappingNodes(lhs, rhs, context.staticComponents.planningAttributes.solveds, argumentsToRemove)
       if (overlappingNodes.nonEmpty) {
         val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
         // If the overlapping symbols contain more than the overlapping nodes, that means
@@ -94,7 +95,10 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
         ) {
           if (VERBOSE) {
             println(
-              s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}"
+              s"${show(leftGoal, nodes(lhs, context.staticComponents.planningAttributes.solveds))} overlap ${show(
+                rightGoal,
+                nodes(rhs, context.staticComponents.planningAttributes.solveds)
+              )} on ${showNames(overlappingNodes)}"
             )
           }
           // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here

@@ -41,7 +41,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
         resolvedPerPlan: LogicalPlan => String,
         heuristic: SelectorHeuristic
       ): Option[X] = {
-        context.costComparisonListener.report(
+        context.settings.costComparisonListener.report(
           projector,
           input,
           (plan: X) => score(projector, plan, heuristic, context),
@@ -70,14 +70,14 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
     val plan = projector(input)
     val cost = costs.costFor(
       plan,
-      context.input,
+      context.plannerState.input,
       context.semanticTable,
-      context.planningAttributes.cardinalities,
-      context.planningAttributes.providedOrders,
-      context.accessedAndAggregatingProperties,
+      context.staticComponents.planningAttributes.cardinalities,
+      context.staticComponents.planningAttributes.providedOrders,
+      context.plannerState.accessedAndAggregatingProperties,
       CostModelMonitor.DEFAULT
     ).gummyBears
-    val hints = context.planningAttributes.solveds.get(plan.id).numHints
+    val hints = context.staticComponents.planningAttributes.solveds.get(plan.id).numHints
     val tieBreaker = heuristic.tieBreaker(plan)
     (-hints, cost, -tieBreaker)
   }

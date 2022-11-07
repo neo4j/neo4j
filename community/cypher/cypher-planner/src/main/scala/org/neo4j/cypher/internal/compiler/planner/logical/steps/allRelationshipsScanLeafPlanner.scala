@@ -48,7 +48,7 @@ case class allRelationshipsScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
           queryGraph.argumentIds,
           relationship,
           context,
-          context.logicalPlanProducer.planAllRelationshipsScan(
+          context.staticComponents.logicalPlanProducer.planAllRelationshipsScan(
             name,
             _,
             _,

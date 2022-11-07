@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
@@ -75,32 +75,37 @@ case object QueryPlanner
     val planningAttributes = from.planningAttributes
     val logicalPlanProducer =
       LogicalPlanProducer(context.metrics.cardinality, planningAttributes, context.logicalPlanIdGen)
-    LogicalPlanningContext(
+
+    val staticComponents = StaticComponents(
       planContext = context.planContext,
-      logicalPlanProducer = logicalPlanProducer,
-      metrics = getMetricsFrom(context),
-      semanticTable = from.semanticTable(),
-      strategy = context.queryGraphSolver,
       notificationLogger = context.notificationLogger,
+      planningAttributes = planningAttributes,
+      logicalPlanProducer = logicalPlanProducer,
+      queryGraphSolver = context.queryGraphSolver,
+      metrics = getMetricsFrom(context),
+      idGen = context.logicalPlanIdGen,
+      anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+      cancellationChecker = context.cancellationChecker,
+      semanticTable = from.semanticTable()
+    )
+
+    val settings = Settings(
+      executionModel = context.executionModel,
+      updateStrategy = context.updateStrategy,
+      debugOptions = context.debugOptions,
+      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize(),
       useErrorsOverWarnings = context.config.useErrorsOverWarnings(),
       errorIfShortestPathFallbackUsedAtRuntime = context.config.errorIfShortestPathFallbackUsedAtRuntime(),
       errorIfShortestPathHasCommonNodesAtRuntime = context.config.errorIfShortestPathHasCommonNodesAtRuntime(),
-      config = QueryPlannerConfiguration.default,
-      updateStrategy = context.updateStrategy,
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping(),
       csvBufferSize = context.config.csvBufferSize(),
-      planningAttributes = planningAttributes,
-      idGen = context.logicalPlanIdGen,
-      executionModel = context.executionModel,
-      debugOptions = context.debugOptions,
-      anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
-      cancellationChecker = context.cancellationChecker,
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled(),
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled(),
       planningPointIndexesEnabled = context.config.planningPointIndexesEnabled(),
-      predicatesAsUnionMaxSize = context.config.predicatesAsUnionMaxSize(),
       useLegacyShortestPath = context.config.useLegacyShortestPath()
     )
+
+    LogicalPlanningContext(staticComponents, settings)
   }
 
   private def getMetricsFrom(context: PlannerContext) =
@@ -129,7 +134,12 @@ case object QueryPlanner
     }
 
     val planWithProduceResults =
-      context.logicalPlanProducer.planProduceResult(plan, produceResultColumns, lastInterestingOrder, context)
+      context.staticComponents.logicalPlanProducer.planProduceResult(
+        plan,
+        produceResultColumns,
+        lastInterestingOrder,
+        context
+      )
     VerifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
     planWithProduceResults
   }
@@ -185,16 +195,30 @@ case object plannerQueryPartPlanner {
 
         val partPlan = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
         val partPlanWithProjection =
-          context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
+          context.staticComponents.logicalPlanProducer.planProjectionForUnionMapping(
+            partPlan,
+            projectionsForPart,
+            context
+          )
 
         val queryPlan = planSingleQuery.plan(query, context)
         val queryPlanWithProjection =
-          context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, None, context)
+          context.staticComponents.logicalPlanProducer.planRegularProjection(
+            queryPlan,
+            projectionsForQuery,
+            None,
+            context
+          )
 
         val unionPlan =
-          context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
+          context.staticComponents.logicalPlanProducer.planUnion(
+            partPlanWithProjection,
+            queryPlanWithProjection,
+            unionMappings,
+            context
+          )
         if (distinct && distinctifyUnions)
-          context.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
+          context.staticComponents.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
         else
           unionPlan
     }
@@ -207,15 +231,16 @@ case object plannerQueryPartPlanner {
     subqueryExpression: IRExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val labelInfo = context.planningAttributes.solveds.get(outerPlan.id).asSinglePlannerQuery.lastLabelInfo
-    planSubquery(subqueryExpression, context.withFusedLabelInfo(labelInfo))
+    val labelInfo =
+      context.staticComponents.planningAttributes.solveds.get(outerPlan.id).asSinglePlannerQuery.lastLabelInfo
+    planSubquery(subqueryExpression, context.withModifiedPlannerState(_.withFusedLabelInfo(labelInfo)))
   }
 
   /**
    * Plan a subquery from an IRExpression with the given context.
    */
   def planSubquery(subqueryExpression: IRExpression, context: LogicalPlanningContext): LogicalPlan =
-    plan(subqueryExpression.query.query, context.forSubquery())
+    plan(subqueryExpression.query.query, context.withModifiedPlannerState(_.forSubquery()))
 }
 
 trait SingleQueryPlanner {

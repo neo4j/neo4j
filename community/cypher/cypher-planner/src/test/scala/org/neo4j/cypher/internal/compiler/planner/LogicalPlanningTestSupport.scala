@@ -45,6 +45,8 @@ import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.NameDeduplication
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -217,9 +219,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
       override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
         val context = invocation.getArgument[LogicalPlanningContext](2)
-        val solveds = context.planningAttributes.solveds
-        val cardinalities = context.planningAttributes.cardinalities
-        val providedOrders = context.planningAttributes.providedOrders
+        val solveds = context.staticComponents.planningAttributes.solveds
+        val cardinalities = context.staticComponents.planningAttributes.cardinalities
+        val providedOrders = context.staticComponents.planningAttributes.providedOrders
         solveds.set(plan.id, SinglePlannerQuery.empty)
         cardinalities.set(plan.id, 0.0)
         providedOrders.set(plan.id, ProvidedOrder.empty)
@@ -234,9 +236,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(strategy.plan(any(), any(), any())).thenAnswer(new Answer[BestResults[LogicalPlan]] {
       override def answer(invocation: InvocationOnMock): BestResults[LogicalPlan] = {
         val context = invocation.getArgument[LogicalPlanningContext](2)
-        val solveds = context.planningAttributes.solveds
-        val cardinalities = context.planningAttributes.cardinalities
-        val providedOrders = context.planningAttributes.providedOrders
+        val solveds = context.staticComponents.planningAttributes.solveds
+        val cardinalities = context.staticComponents.planningAttributes.cardinalities
+        val providedOrders = context.staticComponents.planningAttributes.providedOrders
         Seq(plan, sortedPlan).foreach { p =>
           solveds.set(p.id, SinglePlannerQuery.empty)
           cardinalities.set(p.id, 0.0)
@@ -262,24 +264,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     useErrorsOverWarnings: Boolean = false
   ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
-    LogicalPlanningContext(
+    newLogicalPlanningContextWithGivenAttributes(
       planContext,
-      LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen),
       metrics,
       semanticTable,
       strategy,
-      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
-      QueryGraphSolverInput(Map.empty, Map.empty),
-      notificationLogger = notificationLogger,
-      useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping(),
-      config = QueryPlannerConfiguration.default,
-      planningAttributes = planningAttributes,
-      idGen = idGen,
-      executionModel = ExecutionModel.default,
-      debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-      cancellationChecker = CancellationChecker.NeverCancelled
+      notificationLogger,
+      useErrorsOverWarnings,
+      planningAttributes
     )
   }
 
@@ -292,26 +284,48 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     useErrorsOverWarnings: Boolean = false
   ): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
-    LogicalPlanningContext(
+    newLogicalPlanningContextWithGivenAttributes(
       planContext,
-      LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen),
       metrics,
       semanticTable,
       strategy,
-      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
-      QueryGraphSolverInput(Map.empty, Map.empty),
+      notificationLogger,
+      useErrorsOverWarnings,
+      planningAttributes
+    )
+  }
+
+  private def newLogicalPlanningContextWithGivenAttributes(
+    planContext: PlanContext,
+    metrics: Metrics,
+    semanticTable: SemanticTable,
+    strategy: QueryGraphSolver,
+    notificationLogger: InternalNotificationLogger,
+    useErrorsOverWarnings: Boolean,
+    planningAttributes: PlanningAttributes
+  ): LogicalPlanningContext = {
+    val staticComponents = StaticComponents(
+      planContext = planContext,
       notificationLogger = notificationLogger,
-      useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping(),
-      csvBufferSize = config.csvBufferSize(),
-      config = QueryPlannerConfiguration.default,
       planningAttributes = planningAttributes,
+      logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen),
+      queryGraphSolver = strategy,
+      metrics = metrics,
       idGen = idGen,
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      cancellationChecker = CancellationChecker.NeverCancelled,
+      semanticTable = semanticTable
+    )
+
+    val settings = Settings(
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-      cancellationChecker = CancellationChecker.NeverCancelled
+      predicatesAsUnionMaxSize = config.predicatesAsUnionMaxSize(),
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping()
     )
+
+    LogicalPlanningContext(staticComponents, settings)
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

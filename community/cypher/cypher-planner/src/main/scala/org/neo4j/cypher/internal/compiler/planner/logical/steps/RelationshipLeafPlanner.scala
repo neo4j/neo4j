@@ -79,7 +79,7 @@ object RelationshipLeafPlanner {
     } else {
       // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
       // and plan a Selection after the seek so that both sides are the same
-      val newRightNode = context.anonymousVariableNameGenerator.nextName
+      val newRightNode = context.staticComponents.anonymousVariableNameGenerator.nextName
       val nodePredicate = equalsPredicate(relationship.right, newRightNode)
       val newRelationship = relationship.copy(nodes = (relationship.left, newRightNode))
       relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, Seq(nodePredicate))
@@ -96,8 +96,10 @@ object RelationshipLeafPlanner {
     context: LogicalPlanningContext
   ): (String, String) = {
     val (left, right) = oldNodes
-    val newLeft = if (!argumentIds.contains(left)) left else context.anonymousVariableNameGenerator.nextName
-    val newRight = if (!argumentIds.contains(right)) right else context.anonymousVariableNameGenerator.nextName
+    val newLeft =
+      if (!argumentIds.contains(left)) left else context.staticComponents.anonymousVariableNameGenerator.nextName
+    val newRight =
+      if (!argumentIds.contains(right)) right else context.staticComponents.anonymousVariableNameGenerator.nextName
     (newLeft, newRight)
   }
 

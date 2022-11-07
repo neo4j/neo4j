@@ -113,7 +113,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
         applicablePlan match {
           case Some(t @ PlannedComponent(solvedQg, p)) =>
-            val candidates = context.config.optionalSolvers
+            val candidates = context.plannerState.config.optionalSolvers
               .flatMap(getSolver =>
                 getSolver.solver(firstOptionalMatch, qg, interestingOrderConfig, context).connect(p.bestResult)
               )
@@ -179,7 +179,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       require(comp.plan.bestResultFulfillingReq.isEmpty, s"Expected only bestResult for component $comp")
       val plan = comp.plan.bestResult
       val asSortedAsPossible = SatisfiedForPlan(plan)
-      val providedOrder = context.planningAttributes.providedOrders(plan.id)
+      val providedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
       interestingOrderConfig.orderToSolve.satisfiedBy(providedOrder) match {
         case asSortedAsPossible() => true
         case _                    => false
@@ -247,14 +247,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val maybeSortedComponent = theSortedComponent(plans, kit)
 
     def sortCriteria(c: Component): (Cost, Cardinality) = {
-      val cardinality = context.planningAttributes.cardinalities(c.plan.id)
+      val cardinality = context.staticComponents.planningAttributes.cardinalities(c.plan.id)
       val cost = context.cost.costFor(
         c.plan,
-        context.input,
+        context.plannerState.input,
         context.semanticTable,
-        context.planningAttributes.cardinalities,
-        context.planningAttributes.providedOrders,
-        context.accessedAndAggregatingProperties,
+        context.staticComponents.planningAttributes.cardinalities,
+        context.staticComponents.planningAttributes.providedOrders,
+        context.plannerState.accessedAndAggregatingProperties,
         CostModelMonitor.DEFAULT
       )
       (cost, cardinality)
@@ -269,10 +269,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         components
       } else {
         val maxCardinality = components
-          .map(c => context.planningAttributes.cardinalities(c.plan.id))
+          .map(c => context.staticComponents.planningAttributes.cardinalities(c.plan.id))
           .filter(_ >= Cardinality.SINGLE)
           .product(NumericCardinality)
-        val ordering: CartesianOrdering = context.executionModel.cartesianOrdering(maxCardinality)
+        val ordering: CartesianOrdering = context.settings.executionModel.cartesianOrdering(maxCardinality)
         components.map { c => (c, sortCriteria(c)) }.sortBy(_._2)(ordering).map(_._1)
       }
 
@@ -301,7 +301,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
      */
     def cross(allPlans: Seq[Component]): Component = allPlans.reduceRight[Component] {
       case (l, r) =>
-        val cp = context.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context)
+        val cp = context.staticComponents.logicalPlanProducer.planCartesianProduct(l.plan, r.plan, context)
         val cpWithSelection = if (considerSelections) kit.select(cp, qg) else cp
         Component(l.queryGraph ++ r.queryGraph, cpWithSelection)
     }
@@ -326,7 +326,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   ): Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
     (for (t1 @ PlannedComponent(qg1, p1) <- plans; t2 @ PlannedComponent(qg2, p2) <- plans if p1 != p2) yield {
       val crossProduct =
-        kit.select(context.logicalPlanProducer.planCartesianProduct(p1.bestResult, p2.bestResult, context), qg)
+        kit.select(
+          context.staticComponents.logicalPlanProducer.planCartesianProduct(p1.bestResult, p2.bestResult, context),
+          qg
+        )
       (PlannedComponent(qg1 ++ qg2, BestResults(crossProduct, None)), (t1, t2))
     }).toMap
   }
@@ -415,7 +418,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       ) && !planB.bestResult.satisfiesExpressionDependencies(join.lhs) && planA != planB
     } yield {
       val hashJoinAB = kit.select(
-        context.logicalPlanProducer.planValueHashJoin(
+        context.staticComponents.logicalPlanProducer.planValueHashJoin(
           planA.bestResult,
           planB.bestResult,
           join.predicateToPlan,
@@ -425,7 +428,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         qg
       )
       val hashJoinBA = kit.select(
-        context.logicalPlanProducer.planValueHashJoin(
+        context.staticComponents.logicalPlanProducer.planValueHashJoin(
           planB.bestResult,
           planA.bestResult,
           join.inversePredicateToPlan,
@@ -438,14 +441,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       Set(
         (
           PlannedComponent(
-            context.planningAttributes.solveds.get(hashJoinAB.id).asSinglePlannerQuery.lastQueryGraph,
+            context.staticComponents.planningAttributes.solveds.get(hashJoinAB.id).asSinglePlannerQuery.lastQueryGraph,
             BestResults(hashJoinAB, None)
           ),
           t1 -> t2
         ),
         (
           PlannedComponent(
-            context.planningAttributes.solveds.get(hashJoinBA.id).asSinglePlannerQuery.lastQueryGraph,
+            context.staticComponents.planningAttributes.solveds.get(hashJoinBA.id).asSinglePlannerQuery.lastQueryGraph,
             BestResults(hashJoinBA, None)
           ),
           t1 -> t2
@@ -471,7 +474,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
     // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
     val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals = context.planningAttributes.solveds.get(
+    val containsOptionals = context.staticComponents.planningAttributes.solveds.get(
       rhsInputPlan.id
     ).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
 
@@ -492,7 +495,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         result =>
           val resultWithSelection = kit.select(result, fullQG)
           PlannedComponent(
-            context.planningAttributes.solveds.get(resultWithSelection.id).asSinglePlannerQuery.lastQueryGraph,
+            context.staticComponents.planningAttributes.solveds.get(
+              resultWithSelection.id
+            ).asSinglePlannerQuery.lastQueryGraph,
             BestResults(resultWithSelection, None)
           )
       }
@@ -520,7 +525,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
     // Also keep any hints we might have gotten in the rhsQG so they get considered during planning
     val rhsQgWithLhsArguments =
-      context.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
+      context.staticComponents.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
         .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq)
         .addPredicates(predicate)
         .addHints(rhsQG.hints)
@@ -529,13 +534,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       predicate.dependencies.map(_.name).partition(lhsQG.idsWithoutOptionalMatchesOrUpdates.contains)
     rightSymbols.toSeq match {
       case Seq(rightSymbol) =>
-        val contextForRhs = context.withUpdatedLabelInfo(lhsPlan)
-          .withConfig(context.config.withLeafPlanners(
+        val contextForRhs = context.withModifiedPlannerState(_
+          .withUpdatedLabelInfo(lhsPlan, context.staticComponents.planningAttributes.solveds)
+          .withConfig(context.plannerState.config.withLeafPlanners(
             QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexSeekPlansFor(
               rightSymbol,
               leftSymbols
             ))
-          ))
+          )))
 
         val rhsPlans =
           try {
@@ -557,7 +563,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         // this confuses the cost model
         rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.collect {
           case rhsPlan if containsDependentIndexSeeks(rhsPlan) =>
-            context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
+            context.staticComponents.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
         })
       case _ =>
         // If there are more than one dependency on RHS symbols, no index can solve the predicate

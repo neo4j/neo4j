@@ -48,10 +48,10 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
       val plan = pattern match {
         case p: ExistsIRExpression =>
           val rhs = rhsPlan(lhs, p, context)
-          context.logicalPlanProducer.planSemiApply(lhs, rhs, p, context)
+          context.staticComponents.logicalPlanProducer.planSemiApply(lhs, rhs, p, context)
         case p @ Not(e: ExistsIRExpression) =>
           val rhs = rhsPlan(lhs, e, context)
-          context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
+          context.staticComponents.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
         case o @ Ors(exprs) =>
           val (subqueryExpressions, expressions) = exprs.partition {
             case ExistsIRExpression(_, _, _)      => true
@@ -64,7 +64,7 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
             exprs.forall(solvedPredicates.contains),
             "planPredicates is supposed to solve all predicates in an OR clause."
           )
-          context.logicalPlanProducer.solvePredicate(plan, o)
+          context.staticComponents.logicalPlanProducer.solvePredicate(plan, o)
       }
       SelectionCandidate(plan, Set(pattern))
     }
@@ -106,11 +106,11 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     subqueryExpressions.toList match {
       case (p: ExistsIRExpression) :: Nil =>
         val rhs = rhsPlan(lhs, p, context)
-        planSelect(p, rhs, context.logicalPlanProducer.planSelectOrSemiApply)
+        planSelect(p, rhs, context.staticComponents.logicalPlanProducer.planSelectOrSemiApply)
 
       case (p @ Not(expr: ExistsIRExpression)) :: Nil =>
         val rhs = rhsPlan(lhs, expr, context)
-        planSelect(p, rhs, context.logicalPlanProducer.planSelectOrAntiSemiApply)
+        planSelect(p, rhs, context.staticComponents.logicalPlanProducer.planSelectOrAntiSemiApply)
 
       case (p: ExistsIRExpression) :: tail =>
         val rhs = rhsPlan(lhs, p, context)
@@ -133,12 +133,12 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     letExpression: Option[Expression],
     context: LogicalPlanningContext
   ) = {
-    val (idName, ident) = freshId(existsExpression, context.anonymousVariableNameGenerator)
+    val (idName, ident) = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName, context), ident)
+      (context.staticComponents.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName, context), ident)
     else
       (
-        context.logicalPlanProducer.planLetSelectOrSemiApply(
+        context.staticComponents.logicalPlanProducer.planLetSelectOrSemiApply(
           lhs,
           rhs,
           idName,
@@ -157,12 +157,12 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     letExpression: Option[Expression],
     context: LogicalPlanningContext
   ) = {
-    val (idName, ident) = freshId(existsExpression, context.anonymousVariableNameGenerator)
+    val (idName, ident) = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName, context), ident)
+      (context.staticComponents.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName, context), ident)
     else
       (
-        context.logicalPlanProducer.planLetSelectOrAntiSemiApply(
+        context.staticComponents.logicalPlanProducer.planLetSelectOrAntiSemiApply(
           lhs,
           rhs,
           idName,
@@ -182,10 +182,10 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     // We compute LabelInfo here instead of using plannerQueryPartPlanner.planSubqueryWithLabelInfo
     // This has the benefit of a smaller cache key (just the labelInfo, and not the whole plan).
     val labelInfo =
-      context.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
+      context.staticComponents.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
         // We only retain the relevant label infos to get more cache hits.
         .view.filterKeys(arguments).toMap
-    context.strategy.planInnerOfExistsSubquery(subquery, labelInfo, context)
+    context.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(subquery, labelInfo, context)
   }
 
   def onePredicate(expressions: Set[Expression]): Expression =

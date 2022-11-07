@@ -140,7 +140,7 @@ object leafPlanOptions extends LeafPlanFinder {
     context: LogicalPlanningContext
   ): Boolean =
     properties.exists(prop =>
-      context.indexCompatiblePredicatesProviderContext.aggregatingProperties.contains(PropertyAccess(
+      context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties.contains(PropertyAccess(
         varName,
         prop.propertyKeyToken.name
       ))
@@ -151,6 +151,8 @@ object leafPlanOptions extends LeafPlanFinder {
     properties: Seq[IndexedProperty],
     context: LogicalPlanningContext
   ): Boolean =
-    properties.exists(prop => context.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name)))
+    properties.exists(prop =>
+      context.plannerState.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name))
+    )
 
 }

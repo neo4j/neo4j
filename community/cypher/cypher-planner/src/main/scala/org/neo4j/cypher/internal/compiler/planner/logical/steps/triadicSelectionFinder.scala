@@ -167,11 +167,11 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
 
       val left =
         if (leftPredicates.nonEmpty)
-          context.logicalPlanProducer.planSelection(exp1, leftPredicates, context)
+          context.staticComponents.logicalPlanProducer.planSelection(exp1, leftPredicates, context)
         else
           exp1
 
-      val argument = context.logicalPlanProducer.planArgument(
+      val argument = context.staticComponents.logicalPlanProducer.planArgument(
         patternNodes = Set(exp2.from),
         patternRels = Set(exp1.relName),
         other = Set.empty,
@@ -185,7 +185,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
           case PatternRelationship(_, (`to`, `from`), _, _, _) => true
           case _                                               => false
         }.get
-        context.logicalPlanProducer.planSimpleExpand(
+        context.staticComponents.logicalPlanProducer.planSimpleExpand(
           argument,
           exp2.from,
           exp2.dir,
@@ -197,11 +197,11 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
       }
       val right =
         if (incomingPredicates.nonEmpty)
-          context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, context)
+          context.staticComponents.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, context)
         else
           newExpand2
 
-      Seq(context.logicalPlanProducer.planTriadicSelection(
+      Seq(context.staticComponents.logicalPlanProducer.planTriadicSelection(
         positivePredicate,
         left,
         exp1.from,

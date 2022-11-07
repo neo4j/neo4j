@@ -145,7 +145,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       context: LogicalPlanningContext,
       rhsPart: Boolean
     ): BestPlans = {
-      log += ((context.input.activePlanner, context.input.limitSelectivity))
+      log += ((context.plannerState.input.activePlanner, context.plannerState.input.limitSelectivity))
       planMatch.plan(query, context, rhsPart)
     }
   }
@@ -158,7 +158,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       prevInterestingOrder: Option[InterestingOrder],
       context: LogicalPlanningContext
     ): BestResults[LogicalPlan] = {
-      log += ((context.input.activePlanner, context.input.limitSelectivity))
+      log += ((context.plannerState.input.activePlanner, context.plannerState.input.limitSelectivity))
       PlanEventHorizon.planHorizon(plannerQuery, incomingPlans, prevInterestingOrder, context)
     }
   }

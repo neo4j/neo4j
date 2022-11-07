@@ -118,7 +118,7 @@ case class IDPQueryGraphSolver(
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): BestPlans = {
-    val kit = kitWithShortestPathSupport(context.config.toKit(interestingOrderConfig, context), context)
+    val kit = kitWithShortestPathSupport(context.plannerState.config.toKit(interestingOrderConfig, context), context)
     val components = queryGraph.connectedComponents
     val plannedComponents =
       if (components.isEmpty)
@@ -149,7 +149,7 @@ case class IDPQueryGraphSolver(
     qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
         val shortestPath =
-          if (context.useLegacyShortestPath) {
+          if (context.settings.useLegacyShortestPath) {
             planLegacyShortestPaths(plan, qg, sp, context)
           } else {
             planShortestPaths(plan, qg, sp, context)
@@ -173,7 +173,7 @@ case class IDPQueryGraphSolver(
     context: LogicalPlanningContext,
     kit: QueryPlannerKit
   ): Seq[PlannedComponent] = {
-    val plan = context.logicalPlanProducer.planQueryArgument(queryGraph, context)
+    val plan = context.staticComponents.logicalPlanProducer.planQueryArgument(queryGraph, context)
     val result: LogicalPlan = kit.select(plan, queryGraph)
     monitor.emptyComponentPlanned(queryGraph, result)
     Seq(PlannedComponent(queryGraph, BestResults(result, None)))

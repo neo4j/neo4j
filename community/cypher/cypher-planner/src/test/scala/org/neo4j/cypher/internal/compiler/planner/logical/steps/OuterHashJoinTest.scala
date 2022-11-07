@@ -104,7 +104,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
@@ -148,7 +148,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, Set(aNode))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
@@ -156,7 +156,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       RightOuterHashJoin(Set(aNode), innerPlan, left)
     )
     plans.map { p =>
-      context.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.lastQueryGraph.allHints
+      context.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.lastQueryGraph.allHints
     } foreach {
       _ should equal(theHint)
     }
@@ -196,7 +196,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, io, context).connect(left).toSeq
 

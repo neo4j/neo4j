@@ -61,13 +61,13 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
     val indexMatches = findIndexMatchesForQueryGraph(
       qg,
       context.semanticTable,
-      context.planContext,
-      context.indexCompatiblePredicatesProviderContext,
+      context.staticComponents.planContext,
+      context.plannerState.indexCompatiblePredicatesProviderContext,
       interestingOrderConfig,
       context.providedOrderFactory,
-      context.planningTextIndexesEnabled,
-      context.planningRangeIndexesEnabled,
-      context.planningPointIndexesEnabled
+      context.settings.planningTextIndexesEnabled,
+      context.settings.planningRangeIndexesEnabled,
+      context.settings.planningPointIndexesEnabled
     )
 
     // Find plans solving given property predicates together with any label predicates from QG

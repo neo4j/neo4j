@@ -938,7 +938,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -963,7 +963,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       }
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -1260,7 +1260,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _
           )) =>
-          val plannedQG = ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+          val plannedQG = ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
           plannedQG.selections.flatPredicates.toSet shouldEqual Set(
             nPropInLit42,
             nFooIsNotNull,
@@ -1270,7 +1270,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // We should not consider solutions that use an implicit n.foo IS NOT NULL, since we have one explicitly in the query
       // Otherwise we risk mixing up the solveds, since the plans would be exactly the same
-      val implicitIsNotNullSolutions = ctx.planningAttributes.solveds.toSeq
+      val implicitIsNotNullSolutions = ctx.staticComponents.planningAttributes.solveds.toSeq
         .filter(_.hasValue)
         .map(_.value.asSinglePlannerQuery.queryGraph.selections.flatPredicatesSet)
         .filter(_ == Set(nPropInLit42, hasLabel("Awesome")))

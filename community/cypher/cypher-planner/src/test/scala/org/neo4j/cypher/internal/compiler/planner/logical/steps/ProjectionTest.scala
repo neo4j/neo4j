@@ -47,7 +47,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
   }
@@ -64,7 +64,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projectionsToMarkSolved)
     )
   }
@@ -79,7 +79,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(startPlan)
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
   }
@@ -95,7 +95,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // then
     val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(startPlan, actualProjections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
   }
@@ -110,7 +110,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Projection(startPlan, projections))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
   }
@@ -131,7 +131,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val plan =
       newMockedLogicalPlanWithSolved(
-        context.planningAttributes,
+        context.staticComponents.planningAttributes,
         idNames = ids,
         solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
         availablePropertiesFromIndexes = availablePropertiesFromIndexes

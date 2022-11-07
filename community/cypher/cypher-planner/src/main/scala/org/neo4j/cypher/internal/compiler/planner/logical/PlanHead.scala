@@ -41,9 +41,9 @@ case class PlanHead(
   ): (BestPlans, LogicalPlanningContext) = {
     val aggregationPropertyAccesses = PropertyAccessHelper.findAggregationPropertyAccesses(headQuery)
     val localPropertyAccesses = PropertyAccessHelper.findLocalPropertyAccesses(headQuery)
-    val updatedContext = context
+    val updatedContext = context.withModifiedPlannerState(_
       .withAggregationProperties(aggregationPropertyAccesses)
-      .withAccessedProperties(localPropertyAccesses ++ aggregationPropertyAccesses)
+      .withAccessedProperties(localPropertyAccesses ++ aggregationPropertyAccesses))
 
     val plans = countStorePlanner(headQuery, updatedContext) match {
       case Some(plan) =>
@@ -54,7 +54,7 @@ case class PlanHead(
         val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, headQuery, updatedContext))
 
         val plansWithHorizon = eventHorizonPlanner.planHorizon(headQuery, plansWithInput, None, updatedContext)
-        plansWithHorizon.map(context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(
+        plansWithHorizon.map(context.staticComponents.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(
           _,
           headQuery,
           updatedContext
@@ -62,9 +62,10 @@ case class PlanHead(
     }
 
     val contextForTail =
-      updatedContext.withUpdatedLabelInfo(
-        plans.bestResult
-      ) // cardinality should be the same for all plans, let's use the first one
+      updatedContext.withModifiedPlannerState(_.withUpdatedLabelInfo(
+        plans.bestResult,
+        updatedContext.staticComponents.planningAttributes.solveds
+      )) // cardinality should be the same for all plans, let's use the first one
     (plans, contextForTail)
   }
 
@@ -81,8 +82,8 @@ case class PlanHead(
 
     headQuery.queryInput match {
       case Some(variables) =>
-        val inputPlan = context.logicalPlanProducer.planInput(variables, context)
-        context.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
+        val inputPlan = context.staticComponents.logicalPlanProducer.planInput(variables, context)
+        context.staticComponents.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
       case None => planWithUpdates
     }
   }

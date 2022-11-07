@@ -1126,10 +1126,14 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         "EXISTS { MATCH (a), (x) }"
       )(pos, Set(varFor("x")), Set(varFor("a")))
 
-      val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
-      val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val plan = ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val planAgain = ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
       val planWithDifferentLabelInfo =
-        ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo("a" -> Set(labelName("REL"))), ctx)
+        ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(
+          exists,
+          LabelInfo("a" -> Set(labelName("REL"))),
+          ctx
+        )
 
       (plan eq planAgain) shouldBe true
       (plan eq planWithDifferentLabelInfo) shouldBe false
@@ -1157,8 +1161,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         "EXISTS { MATCH (a), (x) }"
       )(pos, Set(varFor("x")), Set(varFor("a")))
 
-      val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
-      val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val plan = ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
+      val planAgain = ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
 
       (plan eq planAgain) shouldBe false
     }

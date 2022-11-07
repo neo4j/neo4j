@@ -91,7 +91,9 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     RelationshipIndexLeafPlanner(Seq(RelationshipIndexStringSearchScanPlanProvider), restrictions)
 
   private def solvedPredicates(plan: LogicalPlan, ctx: LogicalPlanningContext) =
-    ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
+    ctx.staticComponents.planningAttributes.solveds.get(
+      plan.id
+    ).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
 
   private def queryGraph(types: Seq[String], semanticDirection: SemanticDirection, predicates: Expression*) =
     QueryGraph(
@@ -293,7 +295,9 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
           .build()
       ))
       val plan = resultPlans.head
-      ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(Set(hint))
+      ctx.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should equal(
+        Set(hint)
+      )
     }
   }
 
@@ -320,7 +324,9 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
           .build()
       ))
       val plan = resultPlans.head
-      ctx.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should be(empty)
+      ctx.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.queryGraph.hints should be(
+        empty
+      )
     }
   }
 
@@ -739,7 +745,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -775,7 +781,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldBe empty
     }
   }
@@ -997,7 +1003,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldEqual Set(hint)
     }
   }
@@ -1033,7 +1039,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
       ))
 
       resultPlans.map(p =>
-        ctx.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
+        ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
       ).head.hints shouldBe empty
     }
   }

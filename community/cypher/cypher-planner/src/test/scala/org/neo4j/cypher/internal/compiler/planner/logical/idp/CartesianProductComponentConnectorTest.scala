@@ -36,13 +36,13 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
-      val kit = ctx.config.toKit(order, ctx)
+      val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
       val fullQg = nQg ++ mQg
 
-      val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n")
-      val mPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m")
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
       table.put(register(registry, nQg), sorted = false, nPlan)
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)

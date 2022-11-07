@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.PlannerState
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanner
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
@@ -43,7 +45,7 @@ case object ExistsSubqueryPlanner extends ExistsSubqueryPlanner {
     labelInfo: LabelInfo,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val subqueryContext = context.withFusedLabelInfo(labelInfo)
+    val subqueryContext = context.withModifiedPlannerState(_.withFusedLabelInfo(labelInfo))
     plannerQueryPartPlanner.planSubquery(subquery, subqueryContext)
   }
 }
@@ -77,13 +79,12 @@ final case class ExistsSubqueryPlannerWithCaching() extends ExistsSubqueryPlanne
       // LogicalPlanningContext from the cache key.
       // When adding a new field to LogicalPlanningContext, consider if this assumption still holds. If not, add relevant
       // fields to the cache key below.
-              
-      // @formatter:off
       case LogicalPlanningContext(
-          _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _
+          _,
+          _,
+          PlannerState(_, _, _, _, _, _)
         ) =>
         ()
-      // @formatter:on
     }
   }
 }

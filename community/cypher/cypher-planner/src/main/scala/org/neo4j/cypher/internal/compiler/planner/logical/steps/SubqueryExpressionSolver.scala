@@ -171,7 +171,7 @@ object SubqueryExpressionSolver {
 
   class SolverForLeafPlan(argumentIds: Set[String], context: LogicalPlanningContext)
       extends Solver(
-        context.logicalPlanProducer.ForSubqueryExpressionSolver.planArgument(
+        context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planArgument(
           argumentIds,
           context
         ), // When we have a leaf plan, we start with a single row on the LHS of the RollUpApply
@@ -191,7 +191,11 @@ object SubqueryExpressionSolver {
           // We did not change anything. No need to wrap the leaf plan in an apply.
           leafPlan
         case _ =>
-          context.logicalPlanProducer.ForSubqueryExpressionSolver.planApply(lhsOfApply, leafPlan, context)
+          context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planApply(
+            lhsOfApply,
+            leafPlan,
+            context
+          )
       }
     }
   }
@@ -218,7 +222,7 @@ object SubqueryExpressionSolver {
   ): (LogicalPlan, Variable) = {
     val collectionName = maybeKey.getOrElse(expr.collectionName)
     val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
-    val producedPlan = context.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
+    val producedPlan = context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
       source,
       subQueryPlan,
       collectionName,
@@ -241,7 +245,11 @@ object SubqueryExpressionSolver {
       plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, exprToPlan, context)
     }
     val producedPlan =
-      context.logicalPlanProducer.ForSubqueryExpressionSolver.planCountExpressionApply(source, subQueryPlan, context)
+      context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planCountExpressionApply(
+        source,
+        subQueryPlan,
+        context
+      )
 
     (producedPlan, Variable(countVariableName)(expr.position))
   }
@@ -266,7 +274,13 @@ object SubqueryExpressionSolver {
     maybeKey: Option[String],
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) =
-    solveUsingLetSemiApplyVariant(source, expr, maybeKey, context.logicalPlanProducer.planLetSemiApply, context)
+    solveUsingLetSemiApplyVariant(
+      source,
+      expr,
+      maybeKey,
+      context.staticComponents.logicalPlanProducer.planLetSemiApply,
+      context
+    )
 
   private def solveUsingLetAntiSemiApply(
     source: LogicalPlan,
@@ -274,7 +288,13 @@ object SubqueryExpressionSolver {
     maybeKey: Option[String],
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) =
-    solveUsingLetSemiApplyVariant(source, expr, maybeKey, context.logicalPlanProducer.planLetAntiSemiApply, context)
+    solveUsingLetSemiApplyVariant(
+      source,
+      expr,
+      maybeKey,
+      context.staticComponents.logicalPlanProducer.planLetAntiSemiApply,
+      context
+    )
 
   private def solveUsingLetSelectOrSemiApply(
     source: LogicalPlan,
@@ -287,7 +307,7 @@ object SubqueryExpressionSolver {
       source,
       expr,
       maybeKey,
-      context.logicalPlanProducer.planLetSelectOrSemiApply(_, _, _, orExpression, _),
+      context.staticComponents.logicalPlanProducer.planLetSelectOrSemiApply(_, _, _, orExpression, _),
       context
     )
 
@@ -302,7 +322,7 @@ object SubqueryExpressionSolver {
       source,
       expr,
       maybeKey,
-      context.logicalPlanProducer.planLetSelectOrAntiSemiApply(_, _, _, orExpression, _),
+      context.staticComponents.logicalPlanProducer.planLetSelectOrAntiSemiApply(_, _, _, orExpression, _),
       context
     )
 
@@ -320,7 +340,7 @@ object SubqueryExpressionSolver {
     context: LogicalPlanningContext
   ): RewriteResult = {
     val subqueryExpressions: Seq[IRExpression] =
-      expression.folder(context.cancellationChecker).findAllByClass[IRExpression]
+      expression.folder(context.staticComponents.cancellationChecker).findAllByClass[IRExpression]
 
     // First rewrite all IR expressions with RollupApply/Apply/LetSemiApply/..., where it is possible.
     val RewriteResult(finalPlan, expressionAfterRollupApply, finalIntroducedVariables) = {
@@ -406,7 +426,7 @@ object SubqueryExpressionSolver {
               case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
               case _                     => false
             },
-            cancellation = context.cancellationChecker
+            cancellation = context.staticComponents.cancellationChecker
           )
           val rewrittenExpression = currentExpression.endoRewrite(rewriter)
 
@@ -432,7 +452,7 @@ object SubqueryExpressionSolver {
   }
 
   private def qualifiesForRewriting(exp: AnyRef, context: LogicalPlanningContext): Boolean =
-    exp.folder(context.cancellationChecker).treeExists {
+    exp.folder(context.staticComponents.cancellationChecker).treeExists {
       case _: IRExpression => true
     }
 
@@ -489,11 +509,12 @@ object SubqueryExpressionSolver {
       unsolvedPredicates.filter(containsExistsSubquery).foldLeft((Seq.empty[Expression], lhs)) {
         case ((solvedExprs, plan), p: ExistsIRExpression) =>
           val rhs = SelectPatternPredicates.rhsPlan(plan, p, context)
-          val solvedPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, rhs, p, context)
+          val solvedPlan = context.staticComponents.logicalPlanProducer.planSemiApplyInHorizon(plan, rhs, p, context)
           (solvedExprs :+ p, solvedPlan)
         case ((solvedExprs, plan), not @ Not(e: ExistsIRExpression)) =>
           val rhs = SelectPatternPredicates.rhsPlan(plan, e, context)
-          val solvedPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, rhs, not, context)
+          val solvedPlan =
+            context.staticComponents.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, rhs, not, context)
           (solvedExprs :+ not, solvedPlan)
         case ((solvedExprs, plan), o @ Ors(exprs)) =>
           val (existsExpressions, expressions) = exprs.partition {
@@ -509,7 +530,7 @@ object SubqueryExpressionSolver {
               exprs.forall(solvedPredicates.contains),
               "planPredicates is supposed to solve all predicates in an OR clause."
             )
-            val solvedPlan = context.logicalPlanProducer.solvePredicateInHorizon(planWithPredicates, o)
+            val solvedPlan = context.staticComponents.logicalPlanProducer.solvePredicateInHorizon(planWithPredicates, o)
             (solvedExprs :+ o, solvedPlan)
           } else (solvedExprs, plan)
         case (acc, _) => acc

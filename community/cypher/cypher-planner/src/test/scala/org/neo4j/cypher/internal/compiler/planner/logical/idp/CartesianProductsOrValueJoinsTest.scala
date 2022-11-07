@@ -193,15 +193,18 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     }.withLogicalPlanningContext { (cfg, context) =>
       val interestingOrder =
         InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode))))
-      val kit = context.config.toKit(interestingOrder, context)
-      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 10000.0, context.planningAttributes)
+      val kit = context.plannerState.config.toKit(interestingOrder, context)
+      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 10000.0, context.staticComponents.planningAttributes)
 
       val bestSortedPlanComponent = PlannedComponent(
         QueryGraph(patternNodes = Set(orderedNode)),
-        BestResults(nodeByLabelScan(orderedNode, "MANY", 10000.0, context.planningAttributes), Some(nodeIndexScanPlan))
+        BestResults(
+          nodeByLabelScan(orderedNode, "MANY", 10000.0, context.staticComponents.planningAttributes),
+          Some(nodeIndexScanPlan)
+        )
       )
       val bestPlanComponents = nodesWithCardinality
-        .map { case (n, c) => nodeByLabelScan(n, "FEW", c, context.planningAttributes) }
+        .map { case (n, c) => nodeByLabelScan(n, "FEW", c, context.staticComponents.planningAttributes) }
         .map(plan => PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None)))
       val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
 
@@ -397,9 +400,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       addTypeToSemanticTable(varFor("b"), CTNode)
       addTypeToSemanticTable(varFor("c"), CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(InterestingOrderConfig.empty, context)
+      val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
-      val singleComponents = input(context.planningAttributes)
+      val singleComponents = input(context.staticComponents.planningAttributes)
       val result = cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(
         singleComponents,
         cfg.qg,

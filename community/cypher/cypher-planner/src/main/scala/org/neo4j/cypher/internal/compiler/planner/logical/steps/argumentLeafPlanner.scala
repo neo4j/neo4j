@@ -36,6 +36,6 @@ case class argumentLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     if ((qg.argumentIds intersect ids).isEmpty)
       Set.empty
     else
-      Set(context.logicalPlanProducer.planQueryArgument(qg, context))
+      Set(context.staticComponents.logicalPlanProducer.planQueryArgument(qg, context))
   }
 }

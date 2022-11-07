@@ -40,6 +40,6 @@ case object CartesianProductComponentConnector
         (leftGoal, rightGoal) <- goal.coveringSplits
         leftPlan <- table(leftGoal).iterator
         rightPlan <- table(rightGoal).iterator
-      } yield context.logicalPlanProducer.planCartesianProduct(leftPlan, rightPlan, context)
+      } yield context.staticComponents.logicalPlanProducer.planCartesianProduct(leftPlan, rightPlan, context)
     }
 }

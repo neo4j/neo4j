@@ -41,10 +41,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return the same plan for an already sorted plan") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
       // Fake sort the plan
-      context.planningAttributes.solveds.set(inputPlan.id, RegularSinglePlannerQuery(interestingOrder = io))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+      context.staticComponents.planningAttributes.solveds.set(
+        inputPlan.id,
+        RegularSinglePlannerQuery(interestingOrder = io)
+      )
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -57,9 +60,9 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return the same plan for a plan with order from index") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
       // Fake sorted from index
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -73,7 +76,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH x] WITH x AS x ORDER BY x.foo
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -83,7 +86,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         Projection(inputPlan, Map("x.foo" -> prop("x", "foo"))),
         Seq(Ascending("x.foo"))
       )))
-      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
@@ -94,13 +97,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val io = InterestingOrder.required(RequiredOrderCandidate
         .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
         .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop"))))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      context.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
+      context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
         .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
         .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop"))))
     }
@@ -111,13 +114,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val io = InterestingOrder.required(RequiredOrderCandidate
         .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
         .desc(prop("y", "prop"), Map("y" -> varFor("yy"))))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      context.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
+      context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
         .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
         .desc(prop("y", "prop"), Map("y" -> varFor("yy"))))
     }
@@ -127,17 +130,20 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")).asc(varFor("m")))
       val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "n", "m")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "n", "m")
       // Fake sort the plan
-      context.planningAttributes.solveds.set(inputPlan.id, RegularSinglePlannerQuery(interestingOrder = solvedIO))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(varFor("n")))
+      context.staticComponents.planningAttributes.solveds.set(
+        inputPlan.id,
+        RegularSinglePlannerQuery(interestingOrder = solvedIO)
+      )
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(varFor("n")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
       sortedPlan should equal(Some(PartialSort(inputPlan, Seq(Ascending("n")), Seq(Ascending("m")))))
-      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
@@ -147,10 +153,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("x", "bar")))
       val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
       // Fake sort the plan
-      context.planningAttributes.solveds.set(inputPlan.id, RegularSinglePlannerQuery(interestingOrder = solvedIO))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+      context.staticComponents.planningAttributes.solveds.set(
+        inputPlan.id,
+        RegularSinglePlannerQuery(interestingOrder = solvedIO)
+      )
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -161,7 +170,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         Seq(Ascending("x.foo")),
         Seq(Ascending("x.bar"))
       )))
-      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
@@ -171,14 +180,14 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH x] WITH x.foo AS a ORDER BY a
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> prop("x", "foo"))))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
       sortedPlan should equal(Some(Sort(Projection(inputPlan, Map("a" -> prop("x", "foo"))), Seq(Ascending("a")))))
-      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("a" -> prop("x", "foo"))))
       )
     }
@@ -245,7 +254,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpr))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -260,8 +269,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpr))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExpr))
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
+      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExpr))
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -279,8 +288,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
+      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -296,8 +305,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
+      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(sortExprX))
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -314,7 +323,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "y")
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "y")
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -332,7 +341,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val plan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = planIfAsSortedAsPossible(plan, InterestingOrderConfig(io), context)
@@ -347,7 +356,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new given().withLogicalPlanningContext { (_, context) =>
       val sortOn = multiply(literalInt(2), add(literalInt(42), prop("x", "foo")))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortOn))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -357,7 +366,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         Projection(inputPlan, Map("2 * (42 + x.foo)" -> sortOn)),
         Seq(Ascending("2 * (42 + x.foo)"))
       )))
-      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
@@ -366,7 +375,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return None when unable to solve the required order") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes)
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes)
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -379,7 +388,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return None when no required order") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.empty
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
@@ -392,10 +401,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should do nothing to an already sorted plan") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
       // Fake sort the plan
-      context.planningAttributes.solveds.set(inputPlan.id, RegularSinglePlannerQuery(interestingOrder = io))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+      context.staticComponents.planningAttributes.solveds.set(
+        inputPlan.id,
+        RegularSinglePlannerQuery(interestingOrder = io)
+      )
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan =
@@ -403,8 +415,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(inputPlan)
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        context.planningAttributes.solveds.get(inputPlan.id)
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        context.staticComponents.planningAttributes.solveds.get(inputPlan.id)
       )
     }
   }
@@ -412,9 +424,9 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should do nothing to a plan but update solved with order from index") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
       // Fake sorted from index
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan =
@@ -422,8 +434,10 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(inputPlan)
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(RegularSinglePlannerQuery(interestingOrder =
-        io))
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        RegularSinglePlannerQuery(interestingOrder =
+          io)
+      )
     }
   }
 
@@ -431,7 +445,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH x] WITH x AS x ORDER BY x.foo
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan =
@@ -439,8 +453,10 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(Sort(Projection(inputPlan, Map("x.foo" -> prop("x", "foo"))), Seq(Ascending("x.foo"))))
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(RegularSinglePlannerQuery(interestingOrder =
-        io))
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        RegularSinglePlannerQuery(interestingOrder =
+          io)
+      )
     }
   }
 
@@ -448,7 +464,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH n, m] WITH n AS n ORDER BY m
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "m", "n")
 
       // When
       val sortedPlan =
@@ -456,8 +472,10 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(Sort(inputPlan, Seq(Ascending("m"))))
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(RegularSinglePlannerQuery(interestingOrder =
-        io))
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        RegularSinglePlannerQuery(interestingOrder =
+          io)
+      )
     }
   }
 
@@ -466,7 +484,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new given().withLogicalPlanningContext { (_, context) =>
       val sortOn = add(prop("x", "foo"), literalInt(42))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortOn))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan =
@@ -479,8 +497,10 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
           Seq(Ascending(sortOn.asCanonicalStringVal))
         )
       )
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(RegularSinglePlannerQuery(interestingOrder =
-        io))
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        RegularSinglePlannerQuery(interestingOrder =
+          io)
+      )
     }
   }
 
@@ -489,7 +509,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new given().withLogicalPlanningContext { (_, context) =>
       val sortOn = add(prop("x", "foo"), literalInt(42))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), Map("add" -> sortOn)))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan =
@@ -497,7 +517,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(Sort(Projection(inputPlan, Map("add" -> sortOn)), Seq(Ascending("add"))))
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("add" -> sortOn)))
       )
     }
@@ -509,7 +529,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val sortExpression = add(varFor("m"), literalInt(5))
 
     new given().withLogicalPlanningContext { (_, context) =>
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "n")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "n")
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpression, Map("m" -> mExpr)))
 
       // When
@@ -520,7 +540,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val projection1 = Projection(inputPlan, Map("m" -> mExpr))
       val projection2 = Projection(projection1, Map("m + 5" -> sortExpression))
       sortedPlan should equal(Sort(projection2, Seq(Ascending("m + 5"))))
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("m" -> mExpr)))
       )
     }
@@ -535,7 +555,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         varFor("bday"),
         Map("bday" -> bdayExp)
       ))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "p")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "p")
 
       // When
       val sortedPlan =
@@ -546,7 +566,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val projection2 = Projection(projection1, Map("p.name" -> prop("p", "name")))
       val sorted = Sort(projection2, Seq(Ascending("p.name"), Ascending("bday")))
       sortedPlan should equal(sorted)
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))
       )
     }
@@ -561,7 +581,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         "p",
         "name"
       )))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "p")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "p")
 
       // When
       val sortedPlan =
@@ -572,7 +592,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val projection2 = Projection(projection1, Map("p.name" -> prop("p", "name")))
       val sorted = Sort(projection2, Seq(Ascending("bday"), Ascending("p.name")))
       sortedPlan should equal(sorted)
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))
       )
     }
@@ -581,7 +601,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should give AssertionError when unable to solve the required order") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes)
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes)
 
       try {
         // When
@@ -596,7 +616,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should do nothing when no required order") {
     new given().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.empty
-      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
       val sortedPlan =
@@ -604,8 +624,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(inputPlan)
-      context.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        context.planningAttributes.solveds.get(inputPlan.id)
+      context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
+        context.staticComponents.planningAttributes.solveds.get(inputPlan.id)
       )
     }
   }

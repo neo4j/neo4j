@@ -34,9 +34,9 @@ case object planMatch extends MatchPlanner {
       query = query,
       isRhs = rhsPart,
       isHorizon = false,
-      disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
+      disallowSplittingTop = context.settings.debugOptions.disallowSplittingTopEnabled
     )
-    context.strategy.plan(
+    context.staticComponents.queryGraphSolver.plan(
       query.queryGraph,
       interestingOrderConfig,
       context

@@ -67,7 +67,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
             .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)
             .headOption
 
-          val plan = context.logicalPlanProducer.planNodeIndexStringSearchScan(
+          val plan = context.staticComponents.logicalPlanProducer.planNodeIndexStringSearchScan(
             idName = indexMatch.variableName,
             label = indexMatch.labelToken,
             properties = singlePredicateSet.indexedProperties(context),

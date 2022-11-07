@@ -59,15 +59,15 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(mProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
-      val kit = ctx.config.toKit(order, ctx)
+      val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 
-      val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n")
-      val mPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m")
-      ctx.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
-      ctx.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
+      ctx.staticComponents.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
+      ctx.staticComponents.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
       table.put(register(registry, nQg), sorted = false, nPlan)
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
@@ -119,17 +119,17 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(mProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
-      val kit = ctx.config.toKit(order, ctx)
+      val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternRelationships =
         Set(PatternRelationship("n", ("a", "b"), BOTH, Seq(relTypeName("N")), SimplePatternLength)))
       val mQg = QueryGraph(patternRelationships =
         Set(PatternRelationship("m", ("c", "d"), BOTH, Seq(relTypeName("M")), SimplePatternLength)))
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 
-      val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n", "a", "b")
-      val mPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m", "c", "d")
-      ctx.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
-      ctx.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "a", "b")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m", "c", "d")
+      ctx.staticComponents.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
+      ctx.staticComponents.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
       table.put(register(registry, nQg), sorted = false, nPlan)
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
@@ -191,17 +191,17 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(pProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
-      val kit = ctx.config.toKit(order, ctx)
+      val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
       val oQg = QueryGraph(patternNodes = Set("o")).addPredicates(labelOPred)
       val pQg = QueryGraph(patternNodes = Set("p")).addPredicates(labelPPred)
       val fullQg = (nQg ++ mQg ++ oQg ++ pQg).addPredicates(joinPred)
 
-      val noPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n", "o")
-      val mpPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m", "p")
-      ctx.planningAttributes.solveds.set(noPlan.id, RegularSinglePlannerQuery(nQg ++ oQg))
-      ctx.planningAttributes.solveds.set(mpPlan.id, RegularSinglePlannerQuery(mQg ++ pQg))
+      val noPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "o")
+      val mpPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m", "p")
+      ctx.staticComponents.planningAttributes.solveds.set(noPlan.id, RegularSinglePlannerQuery(nQg ++ oQg))
+      ctx.staticComponents.planningAttributes.solveds.set(mpPlan.id, RegularSinglePlannerQuery(mQg ++ pQg))
 
       // Register single plans
       val nId = registry.register(nQg)
@@ -245,7 +245,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       addTypeToSemanticTable(mProp, CTAny)
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
-      val kit = ctx.config.toKit(order, ctx)
+      val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
       val mQg = QueryGraph(
         patternNodes = Set("m"),
@@ -253,10 +253,10 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       ).addPredicates(labelMPred)
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 
-      val nPlan = fakeLogicalPlanFor(ctx.planningAttributes, "n")
-      val mPlan = fakeLogicalPlanFor(ctx.planningAttributes, "m")
-      ctx.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
-      ctx.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
+      ctx.staticComponents.planningAttributes.solveds.set(nPlan.id, RegularSinglePlannerQuery(nQg))
+      ctx.staticComponents.planningAttributes.solveds.set(mPlan.id, RegularSinglePlannerQuery(mQg))
       table.put(register(registry, nQg), sorted = false, nPlan)
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)

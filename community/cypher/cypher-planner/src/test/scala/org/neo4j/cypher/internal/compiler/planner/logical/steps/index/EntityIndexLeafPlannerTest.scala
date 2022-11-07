@@ -202,7 +202,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
           varFor("varName"),
-          context.indexCompatiblePredicatesProviderContext.aggregatingProperties,
+          context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties,
           Set("prop1", "prop2"),
           Set.empty
         )
@@ -223,7 +223,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
           varFor("varName"),
-          context.indexCompatiblePredicatesProviderContext.aggregatingProperties,
+          context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties,
           Set.empty,
           Set.empty
         )
@@ -325,8 +325,8 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
           predicates,
           argumentIds,
           context.semanticTable,
-          context.planContext,
-          context.indexCompatiblePredicatesProviderContext
+          context.staticComponents.planContext,
+          context.plannerState.indexCompatiblePredicatesProviderContext
         )
         expectedPredicatesOrArgs match {
           case Left(expectedPredicates) =>

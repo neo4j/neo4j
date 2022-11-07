@@ -52,7 +52,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(startPlan, x))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(skip = Some(x)))
     )
   }
@@ -70,7 +70,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Limit(startPlan, x))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x)))
     )
   }
@@ -88,7 +88,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(Limit(startPlan, add(x, y)), y))
-    context.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
+    context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y)))
     )
   }
@@ -110,7 +110,11 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(patternNodes = patternNodesInQG)
     val query = RegularSinglePlannerQuery(queryGraph = qg, interestingOrder = interestingOrder, horizon = projection)
 
-    val plan = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = patternNodesInQG, solved = solved)
+    val plan = newMockedLogicalPlanWithSolved(
+      context.staticComponents.planningAttributes,
+      idNames = patternNodesInQG,
+      solved = solved
+    )
 
     (query, context, plan)
   }

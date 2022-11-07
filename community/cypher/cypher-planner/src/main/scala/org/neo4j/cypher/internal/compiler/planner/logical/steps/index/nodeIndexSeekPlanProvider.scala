@@ -52,7 +52,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
 
   override protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan =
     if (solution.isUnique) {
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(
+      context.staticComponents.logicalPlanProducer.planNodeUniqueIndexSeek(
         solution.idName,
         solution.label,
         solution.properties,
@@ -66,7 +66,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.indexType
       )
     } else {
-      context.logicalPlanProducer.planNodeIndexSeek(
+      context.staticComponents.logicalPlanProducer.planNodeIndexSeek(
         solution.idName,
         solution.label,
         solution.properties,

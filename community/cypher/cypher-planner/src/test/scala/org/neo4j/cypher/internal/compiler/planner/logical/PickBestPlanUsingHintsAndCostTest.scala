@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
@@ -206,21 +208,27 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       planningPointIndexesEnabled = false
     )
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
-    val context = LogicalPlanningContext(
-      null,
-      producer,
-      metrics,
-      null,
-      null,
-      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
+
+    val staticComponents = StaticComponents(
+      planContext = null,
       notificationLogger = devNullLogger,
       planningAttributes = planningAttributes,
+      logicalPlanProducer = producer,
+      queryGraphSolver = null,
+      metrics = metrics,
       idGen = idGen,
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      cancellationChecker = CancellationChecker.NeverCancelled,
+      semanticTable = null
+    )
+
+    val settings = Settings(
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
-      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
-      cancellationChecker = CancellationChecker.NeverCancelled
+      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize()
     )
+
+    val context = LogicalPlanningContext(staticComponents, settings)
     pickBestPlanUsingHintsAndCost(context)(candidates, heuristic, "").get shouldBe theSameInstanceAs(winner)
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse, heuristic, "").get shouldBe theSameInstanceAs(winner)
   }

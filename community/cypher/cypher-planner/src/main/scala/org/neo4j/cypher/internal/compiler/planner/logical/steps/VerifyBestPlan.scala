@@ -63,7 +63,7 @@ object VerifyBestPlan {
   private val prettifier = Prettifier(ExpressionStringifier())
 
   def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
-    val constructed: PlannerQueryPart = context.planningAttributes.solveds.get(plan.id)
+    val constructed: PlannerQueryPart = context.staticComponents.planningAttributes.solveds.get(plan.id)
 
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context)
@@ -129,11 +129,11 @@ object VerifyBestPlan {
     val hints = unfulfillableIndexHints.missingIndexHints
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
-      if (context.useErrorsOverWarnings) {
+      if (context.settings.useErrorsOverWarnings) {
         throw hints.head.toException
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(hint.toNotification)
+          context.staticComponents.notificationLogger.log(hint.toNotification)
         }
       }
     }
@@ -146,11 +146,13 @@ object VerifyBestPlan {
   ): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
-      if (context.useErrorsOverWarnings) {
+      if (context.settings.useErrorsOverWarnings) {
         throw new JoinHintException(s"Unable to plan hash join. Instead, constructed\n$plan")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))
+          context.staticComponents.notificationLogger.log(
+            JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq)
+          )
         }
       }
     }
@@ -213,7 +215,7 @@ object VerifyBestPlan {
     query: PlannerQueryPart,
     context: LogicalPlanningContext
   ): UnfulfillableIndexHints = {
-    val planContext = context.planContext
+    val planContext = context.staticComponents.planContext
     val semanticTable = context.semanticTable
 
     def nodeIndexHintFulfillable(
@@ -225,15 +227,20 @@ object VerifyBestPlan {
       val propertyNames = properties.map(_.name)
 
       def textExists =
-        context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
-      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(
-        labelName,
-        propertyNames
-      )
-      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(
-        labelName,
-        propertyNames
-      )
+        context.settings.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(
+          labelName,
+          propertyNames
+        )
+      def rangeExists =
+        context.settings.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(
+          labelName,
+          propertyNames
+        )
+      def pointExists =
+        context.settings.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(
+          labelName,
+          propertyNames
+        )
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists
@@ -251,18 +258,21 @@ object VerifyBestPlan {
       val relTypeName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(
-        relTypeName,
-        propertyNames
-      )
-      def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(
-        relTypeName,
-        propertyNames
-      )
-      def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(
-        relTypeName,
-        propertyNames
-      )
+      def textExists =
+        context.settings.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(
+          relTypeName,
+          propertyNames
+        )
+      def rangeExists =
+        context.settings.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(
+          relTypeName,
+          propertyNames
+        )
+      def pointExists =
+        context.settings.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(
+          relTypeName,
+          propertyNames
+        )
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists

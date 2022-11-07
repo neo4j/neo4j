@@ -60,7 +60,7 @@ case class SingleComponentPlanner(
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans = {
-    val bestPlansPerAvailableSymbol = leafPlanFinder(context.config, qg, interestingOrderConfig, context)
+    val bestPlansPerAvailableSymbol = leafPlanFinder(context.plannerState.config, qg, interestingOrderConfig, context)
 
     val qppInnerPlans = new PrecomputedQPPInnerPlans(qg, context)
 
@@ -202,7 +202,7 @@ object SingleComponentPlanner {
     qppInnerPlans: QPPInnerPlans,
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
-    val solveds = context.planningAttributes.solveds
+    val solveds = context.staticComponents.planningAttributes.solveds
 
     val perLeafSolutions: Map[LogicalPlan, SinglePatternSolutions] = leaves.map { leaf =>
       val solvedQg = solveds.get(leaf.id).asSinglePlannerQuery.lastQueryGraph
@@ -280,7 +280,7 @@ object SingleComponentPlanner {
       planSinglePatternSide(
         qg,
         pattern,
-        context.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context),
+        context.staticComponents.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context),
         start,
         qppInnerPlans,
         context
@@ -306,16 +306,40 @@ object SingleComponentPlanner {
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
       val join1a = leftExpand.map(expand =>
-        context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints, context)
+        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+          endJoinNodes,
+          expand,
+          endPlan,
+          endJoinHints,
+          context
+        )
       )
       val join1b = leftExpand.map(expand =>
-        context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, endPlan, expand, endJoinHints, context)
+        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+          endJoinNodes,
+          endPlan,
+          expand,
+          endJoinHints,
+          context
+        )
       )
       val join2a = rightExpand.map(expand =>
-        context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, startPlan, expand, startJoinHints, context)
+        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+          startJoinNodes,
+          startPlan,
+          expand,
+          startJoinHints,
+          context
+        )
       )
       val join2b = rightExpand.map(expand =>
-        context.logicalPlanProducer.planNodeHashJoin(startJoinNodes, expand, startPlan, startJoinHints, context)
+        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+          startJoinNodes,
+          expand,
+          startPlan,
+          startJoinHints,
+          context
+        )
       )
       join1a ++ join1b ++ join2a ++ join2b
     case _ => None

@@ -35,5 +35,5 @@ case class allNodesLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     queryGraph.patternNodes
       .diff(queryGraph.argumentIds)
       .diff(skipIDs)
-      .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context))
+      .map(context.staticComponents.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds, context))
 }

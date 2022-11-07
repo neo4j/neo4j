@@ -48,7 +48,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val context = newMockedLogicalPlanningContext(planContext)
 
     val predicate = equals(literalInt(10), literalInt(10))
-    val inner = newMockedLogicalPlan(context.planningAttributes, "x")
+    val inner = newMockedLogicalPlan(context.staticComponents.planningAttributes, "x")
     val selections = Selections(Set(Predicate(inner.availableSymbols, predicate)))
 
     val qg = QueryGraph(selections = selections)
@@ -68,7 +68,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val predicate = propEquality(variable = "n", propKey = "prop", intValue = 42)
 
     val selections = Selections.from(predicate)
-    val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
+    val inner = newMockedLogicalPlanWithProjections(context.staticComponents.planningAttributes, "x")
 
     val qg = QueryGraph(selections = selections)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
@@ -88,7 +88,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val predicate2 = equals(literalInt(30), literalInt(10))
 
     val selections = Selections.from(Seq(predicate1, predicate2))
-    val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
+    val inner = newMockedLogicalPlanWithProjections(context.staticComponents.planningAttributes, "x")
 
     val qg = QueryGraph(selections = selections)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
@@ -107,7 +107,8 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val coveredIds = Set("x")
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, literalInt(1)))))
     val solved = RegularSinglePlannerQuery(qg)
-    val inner = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = Set("x"), solved = solved)
+    val inner =
+      newMockedLogicalPlanWithSolved(context.staticComponents.planningAttributes, idNames = Set("x"), solved = solved)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
     // When
@@ -123,7 +124,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val predicate = mock[Expression]
     val selections = Selections(Set(Predicate(Set("x", "y"), predicate)))
-    val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
+    val inner = newMockedLogicalPlanWithProjections(context.staticComponents.planningAttributes, "x")
     val qg = QueryGraph(selections = selections)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
 
@@ -167,7 +168,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
-    val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
+    val bPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "b")
     val selector = Selector(pickBestPlanUsingHintsAndCost, SelectPatternPredicates)
     // When
     val result = selector(bPlan, qg, InterestingOrderConfig.empty, context)

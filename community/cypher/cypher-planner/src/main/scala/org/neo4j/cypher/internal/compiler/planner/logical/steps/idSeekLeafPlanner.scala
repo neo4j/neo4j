@@ -91,8 +91,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
               case None =>
                 val producePlan = idType match {
-                  case IdType.Id        => context.logicalPlanProducer.planNodeByIdSeek _
-                  case IdType.ElementId => context.logicalPlanProducer.planNodeByElementIdSeek _
+                  case IdType.Id        => context.staticComponents.logicalPlanProducer.planNodeByIdSeek _
+                  case IdType.ElementId => context.staticComponents.logicalPlanProducer.planNodeByElementIdSeek _
                 }
 
                 Some(producePlan(variable, idValues, Seq(predicate), queryGraph.argumentIds, context))
@@ -114,8 +114,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     idType: IdType
   ): LogicalPlan = {
     val producePlan = idType match {
-      case IdType.Id        => context.logicalPlanProducer.planRelationshipByIdSeek _
-      case IdType.ElementId => context.logicalPlanProducer.planRelationshipByElementIdSeek _
+      case IdType.Id        => context.staticComponents.logicalPlanProducer.planRelationshipByIdSeek _
+      case IdType.ElementId => context.staticComponents.logicalPlanProducer.planRelationshipByElementIdSeek _
     }
 
     val name = originalPattern.name
