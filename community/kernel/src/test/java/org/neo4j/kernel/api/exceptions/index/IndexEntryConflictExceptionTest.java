@@ -80,8 +80,7 @@ class IndexEntryConflictExceptionTest {
         IndexEntryConflictException e = new IndexEntryConflictException(RELATIONSHIP, 0L, 1L, value);
 
         assertThat(e.evidenceMessage(tokens, schema))
-                .isEqualTo(
-                        "Both Relationship(0) and Relationship(1) have the relationship type `type1` and property `p2` = 'hi'");
+                .isEqualTo("Both Relationship(0) and Relationship(1) have the type `type1` and property `p2` = 'hi'");
     }
 
     @Test
@@ -91,7 +90,7 @@ class IndexEntryConflictExceptionTest {
                 new IndexEntryConflictException(RELATIONSHIP, 0L, StatementConstants.NO_SUCH_NODE, value);
 
         assertThat(e.evidenceMessage(tokens, schema))
-                .isEqualTo("Relationship(0) already exists with relationship type `type1` and property `p2` = 'hi'");
+                .isEqualTo("Relationship(0) already exists with type `type1` and property `p2` = 'hi'");
     }
 
     @Test
@@ -101,7 +100,7 @@ class IndexEntryConflictExceptionTest {
         IndexEntryConflictException e = new IndexEntryConflictException(RELATIONSHIP, 0L, 1L, values);
 
         assertThat(e.evidenceMessage(tokens, schema))
-                .isEqualTo("Both Relationship(0) and Relationship(1) have the relationship type `type1` and properties "
+                .isEqualTo("Both Relationship(0) and Relationship(1) have the type `type1` and properties "
                         + "`p2` = true, `p3` = 'hi', `p4` = [6, 4]");
     }
 }

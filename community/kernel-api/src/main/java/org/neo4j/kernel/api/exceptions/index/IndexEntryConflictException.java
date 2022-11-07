@@ -82,7 +82,7 @@ public class IndexEntryConflictException extends KernelException {
             entityName = "Relationship";
             tokenName = Arrays.stream(schema.getEntityTokenIds())
                     .mapToObj(tokenNameLookup::relationshipTypeGetName)
-                    .collect(Collectors.joining("`, `", "relationship type `", "`"));
+                    .collect(Collectors.joining("`, `", "type `", "`"));
         }
 
         if (addedEntityId == NO_SUCH_ENTITY) {
