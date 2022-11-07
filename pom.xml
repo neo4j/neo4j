@@ -90,6 +90,7 @@
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.kernel.impl.store.cursor.AbstractCachedStoreCursors.CHECK_READ_CURSORS=true
+      -Dorg.neo4j.kernel.impl.api.parallel.ParallelAccessCheck.CHECK_PARALLEL_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
       -Dorg.neo4j.internal.batchimport.Configuration.DEFAULT_BATCH_SIZE=10

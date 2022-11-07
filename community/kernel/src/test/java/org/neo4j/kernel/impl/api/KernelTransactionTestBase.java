@@ -104,6 +104,7 @@ class KernelTransactionTestBase {
     protected final AvailabilityGuard availabilityGuard = mock(AvailabilityGuard.class);
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock(Pool.class);
+    protected final Locks.Client locksClient = mock(Locks.Client.class);
     protected CollectionsFactory collectionsFactory;
 
     protected final Config config = Config.defaults();
@@ -182,7 +183,7 @@ class KernelTransactionTestBase {
             LeaseService leaseService, Config config, NamedDatabaseId databaseId) {
         Dependencies dependencies = new Dependencies();
         var locks = mock(Locks.class);
-        when(locks.newClient()).thenReturn(mock(Locks.Client.class));
+        when(locks.newClient()).thenReturn(locksClient);
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var memoryPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, ByteUnit.mebiBytes(4), null);
 

@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
@@ -1034,6 +1035,9 @@ public abstract class AllStoreHolder extends Read {
 
         @Override
         void performCheckBeforeOperation() {
+            if (ParallelAccessCheck.shouldPerformCheck()) {
+                ParallelAccessCheck.checkNotCypherWorkerThread();
+            }
             ktx.assertOpen();
         }
 

@@ -474,7 +474,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void markForTerminationInitializedTransaction(
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        Locks.Client locksClient = tx.lockClient();
 
         tx.markForTermination(Status.General.UnknownError);
 
@@ -487,7 +486,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void markForTerminationTerminatedTransaction(
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        Locks.Client locksClient = tx.lockClient();
         transactionInitializer.accept(tx);
 
         tx.markForTermination(Status.Transaction.Terminated);
@@ -504,12 +502,11 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing(
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        Locks.Client client = tx.lockClient();
         transactionInitializer.accept(tx);
         tx.markForTermination(Status.General.UnknownError);
 
         tx.close();
-        verify(client).stop();
+        verify(locksClient).stop();
         verify(transactionMonitor).transactionTerminated(isWriteTx);
     }
 
@@ -530,7 +527,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void terminatedTxMarkedForFailureClosesWithoutThrowing(
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        Locks.Client locksClient = tx.lockClient();
         transactionInitializer.accept(tx);
         tx.failure();
         tx.markForTermination(Status.General.UnknownError);
@@ -830,8 +826,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         transaction.txState().nodeDoCreate(5);
         RuntimeException foo = new RuntimeException("foo");
         RuntimeException bar = new RuntimeException("bar");
-        doThrow(foo).when(transaction.lockClient()).prepareForCommit();
-        doThrow(bar).when(transaction.lockClient()).close();
+        doThrow(foo).when(locksClient).prepareForCommit();
+        doThrow(bar).when(locksClient).close();
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(bar);
     }
 
@@ -848,7 +844,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         KernelTransactionImplementation transaction = newNotInitializedTransaction(leases);
         initialize(0, AUTH_DISABLED, 1000L, 1L, transaction);
         RuntimeException foo = new RuntimeException("foo");
-        doThrow(foo).when(transaction.lockClient()).close();
+        doThrow(foo).when(locksClient).close();
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(leases.expired());
     }
 

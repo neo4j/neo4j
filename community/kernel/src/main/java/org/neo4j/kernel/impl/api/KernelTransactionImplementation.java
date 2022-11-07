@@ -100,6 +100,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
+import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -295,7 +296,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
-        this.lockClient = locks.newClient();
+        this.lockClient = ParallelAccessCheck.maybeWrapLockClient(locks.newClient());
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
         DefaultPooledCursors cursors = new DefaultPooledCursors(
                 storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
