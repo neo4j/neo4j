@@ -770,7 +770,9 @@ public class Operations implements Write, SchemaWrite {
             ktx.securityAuthorizationHandler()
                     .assertAllowsSetProperty(
                             ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
-            checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
+            if (hasRelatedSchema) {
+                checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
+            }
 
             // no existing value, we just add it
             ktx.txState().nodeDoAddProperty(node, propertyKey, value);
@@ -781,7 +783,9 @@ public class Operations implements Write, SchemaWrite {
             ktx.securityAuthorizationHandler()
                     .assertAllowsSetProperty(
                             ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
-            checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
+            if (hasRelatedSchema) {
+                checkUniquenessConstraints(node, propertyKey, value, labels, existingPropertyKeyIds);
+            }
 
             // the value has changed to a new value
             ktx.txState().nodeDoChangeProperty(node, propertyKey, value);
@@ -1267,7 +1271,9 @@ public class Operations implements Write, SchemaWrite {
         if (existingValue == NO_VALUE) {
             ktx.securityAuthorizationHandler()
                     .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
-            checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
+            if (hasRelatedSchema) {
+                checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
+            }
             ktx.txState()
                     .relationshipDoReplaceProperty(
                             relationship,
@@ -1286,7 +1292,10 @@ public class Operations implements Write, SchemaWrite {
             if (propertyHasChanged(existingValue, value)) {
                 ktx.securityAuthorizationHandler()
                         .assertAllowsSetProperty(ktx.securityContext(), this::resolvePropertyKey, type, propertyKey);
-                checkRelationshipUniquenessConstraints(relationship, propertyKey, value, type, existingPropertyKeyIds);
+                if (hasRelatedSchema) {
+                    checkRelationshipUniquenessConstraints(
+                            relationship, propertyKey, value, type, existingPropertyKeyIds);
+                }
                 ktx.txState()
                         .relationshipDoReplaceProperty(
                                 relationship,
