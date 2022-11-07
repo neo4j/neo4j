@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.newapi.TestUtils.isNodeBased;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -80,7 +81,11 @@ abstract class TokenIndexOrderTestBase<TOKEN_INDEX_CURSOR extends Cursor>
 
                 tokenScan(indexOrder, tx, label, cursor);
 
-                assertTokenResultsInOrder(expected, cursor, indexOrder);
+                if (isNodeBased(tx)) {
+                    assertThat(exhaust(cursor)).containsExactlyInAnyOrderElementsOf(expected);
+                } else {
+                    assertTokenResultsInOrder(expected, cursor, indexOrder);
+                }
             }
         }
     }
@@ -92,12 +97,15 @@ abstract class TokenIndexOrderTestBase<TOKEN_INDEX_CURSOR extends Cursor>
 
     protected void assertTokenResultsInOrder(List<Long> expected, TOKEN_INDEX_CURSOR cursor, IndexOrder indexOrder) {
         expected.sort(indexOrder == IndexOrder.ASCENDING ? Comparator.naturalOrder() : Comparator.reverseOrder());
+        assertThat(exhaust(cursor)).isEqualTo(expected);
+    }
 
+    protected List<Long> exhaust(TOKEN_INDEX_CURSOR cursor) {
         var actual = new ArrayList<Long>();
         while (cursor.next()) {
             actual.add(entityReference(cursor));
         }
-        assertThat(actual).isEqualTo(expected);
+        return actual;
     }
 
     protected abstract long entityWithToken(KernelTransaction tx, String name) throws Exception;

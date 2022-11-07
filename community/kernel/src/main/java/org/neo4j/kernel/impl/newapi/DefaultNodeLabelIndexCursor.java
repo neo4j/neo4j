@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
 class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultNodeLabelIndexCursor>
@@ -38,44 +40,49 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     }
 
     @Override
-    LongSet createAddedInTxState(TransactionState txState, int token) {
-        return txState.nodesWithLabelChanged(token).getAdded().freeze();
+    protected boolean innerNext() {
+        return indexNext();
     }
 
     @Override
-    LongSet createDeletedInTxState(TransactionState txState, int token) {
+    protected LongIterator createAddedInTxState(TransactionState txState, int token, IndexOrder order) {
+        return sortTxState(txState.nodesWithLabelChanged(token).getAdded().freeze(), order);
+    }
+
+    @Override
+    protected LongSet createDeletedInTxState(TransactionState txState, int token) {
         return mergeToSet(
                 txState.addedAndRemovedNodes().getRemoved(),
                 txState.nodesWithLabelChanged(token).getRemoved());
     }
 
     @Override
-    void traceScan(KernelReadTracer tracer, int token) {
+    protected void traceScan(KernelReadTracer tracer, int token) {
         tracer.onLabelScan(token);
     }
 
     @Override
-    void traceNext(KernelReadTracer tracer, long entity) {
+    protected void traceNext(KernelReadTracer tracer, long entity) {
         tracer.onNode(entity);
     }
 
     @Override
-    boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
+    protected boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
         return accessMode.allowsTraverseAllNodesWithLabel(token);
     }
 
     @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+    protected boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
         if (accessMode.allowsTraverseAllLabels()) {
             return true;
         }
-        readEntity(read -> read.singleNode(entityReference, securityNodeCursor));
+        read.singleNode(entityReference, securityNodeCursor);
         return securityNodeCursor.next();
     }
 
     @Override
     public void node(NodeCursor cursor) {
-        readEntity(read -> read.singleNode(entityReference(), cursor));
+        read.singleNode(entityReference(), cursor);
     }
 
     @Override
@@ -97,6 +104,7 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
         }
     }
 
+    @Override
     public void release() {
         if (securityNodeCursor != null) {
             securityNodeCursor.close();

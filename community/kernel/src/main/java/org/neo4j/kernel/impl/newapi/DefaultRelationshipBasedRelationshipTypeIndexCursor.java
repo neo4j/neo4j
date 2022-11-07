@@ -19,45 +19,30 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 
 /**
- * {@link DefaultRelationshipTypeIndexCursor} which is relationship-based, i.e. the IDs driving the cursor are relationship IDs.
+ * {@link RelationshipTypeIndexCursor} which is relationship-based, i.e. the IDs driving the cursor are relationship IDs.
  * @see StorageEngineIndexingBehaviour
  */
-public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor {
+public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor
+        implements RelationshipTypeIndexCursor {
+
     private final DefaultRelationshipScanCursor relationshipScanCursor;
 
     DefaultRelationshipBasedRelationshipTypeIndexCursor(
             CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipScanCursor) {
         super(pool);
         this.relationshipScanCursor = relationshipScanCursor;
-    }
-
-    @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
-        if (accessMode.allowsTraverseAllRelTypes()) {
-            return true;
-        }
-        readEntity(read -> read.singleRelationship(entityReference, relationshipScanCursor));
-        return relationshipScanCursor.next();
-    }
-
-    @Override
-    public void source(NodeCursor cursor) {
-        checkReadFromStore();
-        read.singleNode(relationshipScanCursor.sourceNodeReference(), cursor);
-    }
-
-    @Override
-    public void target(NodeCursor cursor) {
-        checkReadFromStore();
-        read.singleNode(relationshipScanCursor.targetNodeReference(), cursor);
     }
 
     @Override
@@ -70,11 +55,6 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends Default
     public long targetNodeReference() {
         checkReadFromStore();
         return relationshipScanCursor.targetNodeReference();
-    }
-
-    @Override
-    public long relationshipReference() {
-        return entityReference();
     }
 
     @Override
@@ -96,19 +76,54 @@ public class DefaultRelationshipBasedRelationshipTypeIndexCursor extends Default
             // this relationship
             return true;
         }
+
         relationshipScanCursor.single(entity, read);
         return relationshipScanCursor.next();
-    }
-
-    private void checkReadFromStore() {
-        if (relationshipScanCursor.relationshipReference() != entity) {
-            throw new IllegalStateException("Relationship hasn't been read from store");
-        }
     }
 
     @Override
     public void release() {
         relationshipScanCursor.close();
         relationshipScanCursor.release();
+    }
+
+    @Override
+    public String toString() {
+        if (isClosed()) {
+            return "RelationshipTypeIndexCursor[closed state, relationship based]";
+        } else {
+            return "RelationshipTypeIndexCursor[relationship=" + relationshipReference() + ", relationship based]";
+        }
+    }
+
+    @Override
+    protected boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+        if (accessMode.allowsTraverseAllRelTypes()) {
+            return true;
+        }
+        read.singleRelationship(entityReference, relationshipScanCursor);
+        return relationshipScanCursor.next();
+    }
+
+    @Override
+    protected boolean innerNext() {
+        return indexNext();
+    }
+
+    @Override
+    protected LongIterator createAddedInTxState(TransactionState txState, int token, IndexOrder order) {
+        return sortTxState(
+                txState.relationshipsWithTypeChanged(token).getAdded().freeze(), order);
+    }
+
+    @Override
+    protected LongSet createDeletedInTxState(TransactionState txState, int token) {
+        return txState.addedAndRemovedRelationships().getRemoved().freeze();
+    }
+
+    private void checkReadFromStore() {
+        if (relationshipScanCursor.relationshipReference() != entity) {
+            throw new IllegalStateException("Relationship hasn't been read from store");
+        }
     }
 }

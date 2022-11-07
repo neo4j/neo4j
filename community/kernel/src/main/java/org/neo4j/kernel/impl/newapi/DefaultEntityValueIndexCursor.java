@@ -256,7 +256,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             throw new IllegalStateException(
                     "Index cursor cannot have transaction state with values and without values simultaneously");
         } else {
-            boolean next = innerNext();
+            boolean next = indexNext();
             if (tracer != null && next) {
                 traceOnEntity(tracer, entity);
             }
@@ -270,7 +270,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             sortedMergeJoin.setA(entityWithPropertyValues.getEntityId(), entityWithPropertyValues.getValues());
         }
 
-        if (sortedMergeJoin.needsB() && innerNext()) {
+        if (sortedMergeJoin.needsB() && indexNext()) {
             sortedMergeJoin.setB(entity, values);
         }
 

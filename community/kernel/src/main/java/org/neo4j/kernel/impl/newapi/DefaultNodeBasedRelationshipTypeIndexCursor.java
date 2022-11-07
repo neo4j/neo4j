@@ -19,24 +19,35 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 
 /**
- * {@link DefaultRelationshipTypeIndexCursor} which is node-based, i.e. the IDs driving the cursor are node IDs that contain
+ * {@link RelationshipTypeIndexCursor} which is node-based, i.e. the IDs driving the cursor are node IDs that contain
  * relationships of types we're interested in. For each node ID that we get from the underlying lookup index use the node cursor
  * to go there and read the relationships of the given type and iterate over those, then go to the next node ID from the lookup index, a.s.o.
  * @see StorageEngineIndexingBehaviour
  */
-public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor {
+public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelationshipTypeIndexCursor
+        implements RelationshipTypeIndexCursor {
+
     private final DefaultNodeCursor nodeCursor;
     private final DefaultRelationshipTraversalCursor relationshipTraversalCursor;
+
+    private RelationshipSelection selection;
 
     DefaultNodeBasedRelationshipTypeIndexCursor(
             CursorPool<DefaultRelationshipTypeIndexCursor> pool,
@@ -48,72 +59,59 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
     }
 
     @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
-        // Security is managed by the internal node/relatiosnhipTraversal cursors, so we don't need to do any additional
-        // checks here.
-        return true;
+    public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+        selection = RelationshipSelection.selection(token, Direction.OUTGOING);
+        // parent call will initialise the added/removed tx state.
+        // this is required as state must be determined on initialisation and NOT on first call to next
+        super.initialize(progressor, token, IndexOrder.NONE);
+    }
+
+    @Override
+    public void initialize(
+            IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+        selection = RelationshipSelection.selection(token, Direction.OUTGOING);
+        super.initialize(progressor, token, added, removed, accessMode);
     }
 
     @Override
     public boolean readFromStore() {
-        // The inner relationship traversal cursor is already placed at the current relationship
-        return true;
-    }
+        if (relationshipTraversalCursor.relationshipReference() == entity) {
+            // previous call to this method for this relationship already seems to have loaded this relationship
+            return true;
+        }
 
-    @Override
-    protected boolean innerNext() {
-        do {
-            if (relationshipTraversalCursor.next()) {
-                entity = relationshipTraversalCursor.relationshipReference();
-                return true;
-            }
-
-            // super.innerNext() will go to the next ID in the token scan index and eventually hit acceptEntity() on
-            // this instance
-            if (!super.innerNext()) {
-                return false;
-            }
-
-            nodeCursor.single(entity, read);
+        if (entityFromIndex != NO_ID) {
+            nodeCursor.single(entityFromIndex, read);
             if (nodeCursor.next()) {
-                nodeCursor.relationships(
-                        relationshipTraversalCursor, RelationshipSelection.selection(tokenId, Direction.OUTGOING));
+                nodeCursor.relationships(relationshipTraversalCursor, selection);
+                return relationshipTraversalCursor.next();
             }
-        } while (true);
-    }
+        }
 
-    @Override
-    public void source(NodeCursor cursor) {
-        read.singleNode(relationshipTraversalCursor.sourceNodeReference(), cursor);
-    }
-
-    @Override
-    public void target(NodeCursor cursor) {
-        read.singleNode(relationshipTraversalCursor.targetNodeReference(), cursor);
+        return false;
     }
 
     @Override
     public long sourceNodeReference() {
+        checkReadFromStore();
         return relationshipTraversalCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference() {
+        checkReadFromStore();
         return relationshipTraversalCursor.targetNodeReference();
     }
 
     @Override
-    public long relationshipReference() {
-        return entityReference();
-    }
-
-    @Override
-    public void properties(PropertyCursor cursor, PropertySelection selection) {
-        relationshipTraversalCursor.properties(cursor, selection);
+    public void properties(PropertyCursor cursor, PropertySelection propSelection) {
+        checkReadFromStore();
+        relationshipTraversalCursor.properties(cursor, propSelection);
     }
 
     @Override
     public Reference propertiesReference() {
+        checkReadFromStore();
         return relationshipTraversalCursor.propertiesReference();
     }
 
@@ -128,7 +126,89 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
 
     @Override
     public void release() {
+        nodeCursor.close();
         nodeCursor.release();
+        relationshipTraversalCursor.close();
         relationshipTraversalCursor.release();
+    }
+
+    @Override
+    public String toString() {
+        if (isClosed()) {
+            return "RelationshipTypeIndexCursor[closed state, node based]";
+        } else {
+            return "RelationshipTypeIndexCursor[relationship=" + relationshipReference() + ", node based]";
+        }
+    }
+
+    @Override
+    protected long nextEntity() {
+        return relationshipTraversalCursor.relationshipReference();
+    }
+
+    @Override
+    protected boolean innerNext() {
+        // this will do either:
+        do {
+            // all the tx state RELATIONSHIPS first
+            if (relationshipTraversalCursor.next()) {
+                return true;
+            }
+
+            // followed by any RELATIONSHIPS from the index
+            if (!indexNext()) {
+                return false;
+            }
+
+            // entityFromIndex will have been set via a call acceptEntity - which is a NODE id
+            nodeCursor.single(entityFromIndex, read);
+            if (nodeCursor.next()) {
+                nodeCursor.relationships(relationshipTraversalCursor, selection);
+                // calling next on the cursor will now return RELATIONSHIPS from the store for the returned NODE
+            }
+        } while (true);
+    }
+
+    @Override
+    protected LongIterator createAddedInTxState(TransactionState txState, int token, IndexOrder order) {
+        final var relationships = read.txState()
+                .relationshipsWithTypeChanged(token)
+                .getAdded()
+                .freeze()
+                .longIterator();
+        return new LongIterator() {
+            @Override
+            public boolean hasNext() {
+                return relationships.hasNext();
+            }
+
+            @Override
+            public long next() {
+                final var relationship = relationships.next();
+                // need to position the traversal cursor now we've found a relationship from the tx
+                // this is required to allow further access calls (ex readFromStore, sourceNodeReference, etc)
+                relationshipTraversalCursor.init(relationship, read);
+                // bail if the worst happens and the added relationships were incorrect to start with
+                return relationshipTraversalCursor.next() ? relationship : NO_ID;
+            }
+        };
+    }
+
+    @Override
+    protected LongSet createDeletedInTxState(TransactionState txState, int token) {
+        return read.txState().addedAndRemovedNodes().getRemoved().freeze();
+    }
+
+    @Override
+    protected boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+        // Security is managed by the internal node/relationshipTraversal cursors, so we don't need to do any additional
+        // checks here.
+        return true;
+    }
+
+    private void checkReadFromStore() {
+        if (relationshipTraversalCursor.relationshipReference() != entity) {
+            throw new IllegalStateException("Relationship hasn't been read from store");
+        }
     }
 }

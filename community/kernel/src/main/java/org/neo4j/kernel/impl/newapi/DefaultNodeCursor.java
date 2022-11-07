@@ -56,7 +56,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     StorageNodeCursor storeCursor;
     private final StorageNodeCursor securityStoreNodeCursor;
     private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
-    private long currentAddedInTx;
+    private long currentAddedInTx = NO_ID;
     private long single;
     private boolean isSingle;
     private AccessMode accessMode;
@@ -397,6 +397,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         return hasChanges;
     }
 
+    @SuppressWarnings("AssignmentUsedAsCondition")
     private void computeHasChanges() {
         checkHasChanges = false;
         if (hasChanges = read.hasTxStateWithChanges()) {

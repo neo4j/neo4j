@@ -27,7 +27,11 @@ import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCo
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.Relationship;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.RelationshipTypeScan;
+import static org.neo4j.kernel.impl.newapi.TestUtils.isNodeBased;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
@@ -44,19 +48,14 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G> {
-    private final int typeOne = 1;
-    private final int typeTwo = 2;
-    private final int typeThree = 3;
-
-    boolean isNodeBased() throws KernelException {
-        try (var tx = beginTransaction()) {
-            var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
-            return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
-        }
-    }
+    private static final int typeOne = 1;
+    private static final int typeTwo = 2;
+    private static final int typeThree = 3;
 
     @ParameterizedTest
     @EnumSource(value = IndexOrder.class)
@@ -85,6 +84,8 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         }
 
         try (KernelTransaction tx = beginTransaction()) {
+            final var assertOrder = isNodeBased(tx) ? IndexOrder.NONE : order;
+
             try (RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
                 MutableLongSet uniqueIds = new LongHashSet();
 
@@ -98,13 +99,13 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 relationshipTypeScan(tx, typeTwo, cursor, order);
 
                 // THEN
-                assertRelationships(cursor, uniqueIds, order, relTwo, relTwo2);
+                assertRelationships(cursor, uniqueIds, assertOrder, relTwo, relTwo2);
 
                 // WHEN
                 relationshipTypeScan(tx, typeThree, cursor, order);
 
                 // THEN
-                assertRelationships(cursor, uniqueIds, order, relThree, relThree2, relThree3);
+                assertRelationships(cursor, uniqueIds, assertOrder, relThree, relThree2, relThree3);
             }
         }
     }
@@ -112,36 +113,127 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     @ParameterizedTest
     @EnumSource(value = IndexOrder.class)
     void shouldFindRelationshipsByTypeInTx(IndexOrder order) throws KernelException {
+        final var propertyKeyName = "prop";
+        final var one = Values.intValue(1);
+        final var two = Values.intValue(2);
+
         long inStore;
         long inStore2;
         long deletedInTx;
         long createdInTx;
         long createdInTx2;
 
+        int propKey;
         try (KernelTransaction tx = beginTransaction()) {
+            propKey = tx.tokenWrite().propertyKeyCreateForName(propertyKeyName, false);
+
             inStore = createRelationship(tx.dataWrite(), typeOne);
             createRelationship(tx.dataWrite(), typeTwo);
             deletedInTx = createRelationship(tx.dataWrite(), typeOne);
             inStore2 = createRelationship(tx.dataWrite(), typeOne);
+            tx.dataWrite().relationshipSetProperty(inStore2, propKey, one);
             tx.commit();
         }
 
         try (KernelTransaction tx = beginTransaction()) {
+            final var assertOrder = isNodeBased(tx) ? IndexOrder.NONE : order;
+
             tx.dataWrite().relationshipDelete(deletedInTx);
             createdInTx = createRelationship(tx.dataWrite(), typeOne);
 
             createRelationship(tx.dataWrite(), typeTwo);
 
             createdInTx2 = createRelationship(tx.dataWrite(), typeOne);
+            tx.dataWrite().relationshipSetProperty(createdInTx2, propKey, two);
 
-            try (RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
+            try (RelationshipTypeIndexCursor relCursor =
+                    tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                relationshipTypeScan(tx, typeOne, cursor, order);
+                relationshipTypeScan(tx, typeOne, relCursor, order);
 
                 // then
-                assertRelationships(cursor, uniqueIds, order, inStore, inStore2, createdInTx, createdInTx2);
+                assertRelationships(relCursor, uniqueIds, assertOrder, inStore, inStore2, createdInTx, createdInTx2);
+            }
+
+            final var expectedReads = List.of(
+                    new RelRead(inStore, null),
+                    new RelRead(inStore2, one),
+                    new RelRead(createdInTx, null),
+                    new RelRead(createdInTx2, two));
+
+            try (RelationshipTypeIndexCursor relCursor =
+                            tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                    var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+                relationshipTypeScan(tx, typeOne, relCursor, order);
+
+                final var actualReads = new ArrayList<RelRead>();
+                for (final var ignored : expectedReads) {
+                    assertThat(relCursor.next()).isTrue();
+                    assertThat(relCursor.readFromStore()).isTrue();
+
+                    final var reference = relCursor.reference();
+
+                    Value propValue = null;
+                    relCursor.properties(propCursor);
+                    if (propCursor.next()) {
+                        propValue = propCursor.propertyValue();
+                        assertThat(propCursor.next()).isFalse();
+                    }
+
+                    actualReads.add(new RelRead(reference, propValue));
+                }
+
+                assertThat(relCursor.next()).isFalse();
+
+                switch (assertOrder) {
+                    case ASCENDING -> assertThat(expectedReads).containsExactlyElementsOf(actualReads);
+                    case DESCENDING -> {
+                        Collections.reverse(actualReads);
+                        assertThat(expectedReads).containsExactlyElementsOf(actualReads);
+                    }
+                    case NONE -> assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
+                }
+            }
+        }
+    }
+
+    // @Test
+    @ParameterizedTest
+    @EnumSource(value = IndexOrder.class)
+    void shouldFindRelationshipDetailsByTypeAllInSameTx(IndexOrder order) throws KernelException {
+        final var propValue = Values.intValue(42);
+        try (var tx = beginTransaction()) {
+            final var typeToken = tx.tokenWrite().relationshipTypeCreateForName("REL", false);
+            final var propToken = tx.tokenWrite().propertyKeyCreateForName("prop", false);
+
+            final var write = tx.dataWrite();
+            write.nodeCreate(); // do a nudge passed 0-ID
+            final var source = write.nodeCreate();
+            final var target = write.nodeCreate();
+            final var rel = write.relationshipCreate(source, typeToken, target);
+
+            write.relationshipSetProperty(rel, propToken, propValue);
+
+            try (var relCursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                    var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+                relationshipTypeScan(tx, typeToken, relCursor, order);
+                assertThat(relCursor.next()).isTrue();
+                assertThat(relCursor.readFromStore()).isTrue();
+                assertThat(rel).isEqualTo(relCursor.reference());
+                assertThat(source).isEqualTo(relCursor.sourceNodeReference());
+                assertThat(target).isEqualTo(relCursor.targetNodeReference());
+
+                relCursor.properties(propCursor);
+                assertThat(propCursor.next()).isTrue();
+                assertThat(propCursor.propertyKey()).isEqualTo(propToken);
+                assertThat(propCursor.propertyValue()).isEqualTo(propValue);
+                assertThat(propCursor.next()).isFalse();
+
+                assertThat(relCursor.next()).isFalse();
+            } finally {
+                tx.rollback();
             }
         }
     }
@@ -152,15 +244,15 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         long second;
         long third;
         try (KernelTransaction tx = beginTransaction()) {
-            first = createRelationship(tx.dataWrite(), typeOne);
-            second = createRelationship(tx.dataWrite(), typeTwo);
-            third = createRelationship(tx.dataWrite(), typeTwo);
+            final var write = tx.dataWrite();
+            write.nodeCreate(); // nudge passed 0
+            first = createRelationship(write, typeOne);
+            second = createRelationship(write, typeTwo);
+            third = createRelationship(write, typeTwo);
             tx.commit();
         }
 
         try (KernelTransaction tx = beginTransaction()) {
-            org.neo4j.internal.kernel.api.Read read = tx.dataRead();
-
             try (RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
                 TestKernelReadTracer tracer = new TestKernelReadTracer();
                 cursor.setTracer(tracer);
@@ -181,6 +273,119 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         new TraceEvent(RelationshipTypeScan, typeTwo),
                         new TraceEvent(Relationship, second),
                         new TraceEvent(Relationship, third));
+            }
+        }
+    }
+
+    @Test
+    void shouldBeAbleToReadNodeCursorData() throws Exception {
+        final long sourceNode, targetNode;
+        final int label1, label2;
+        try (var tx = beginTransaction()) {
+            label1 = tx.tokenWrite().labelGetOrCreateForName("L1");
+            label2 = tx.tokenWrite().labelGetOrCreateForName("L2");
+
+            final var write = tx.dataWrite();
+            sourceNode = write.nodeCreate();
+            write.nodeAddLabel(sourceNode, label1);
+
+            targetNode = write.nodeCreate();
+            write.nodeAddLabel(targetNode, label2);
+
+            write.relationshipCreate(sourceNode, typeOne, targetNode);
+            tx.commit();
+        }
+
+        final var actualReads = new ArrayList<NodeRead>();
+        final long txSource, txTarget;
+        try (var tx = beginTransaction()) {
+            try (var relCursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                    var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT)) {
+                final var write = tx.dataWrite();
+
+                txSource = write.nodeCreate();
+                write.nodeAddLabel(txSource, label2);
+
+                txTarget = write.nodeCreate();
+                write.nodeAddLabel(txTarget, label1);
+
+                write.relationshipCreate(txSource, typeOne, txTarget);
+
+                relationshipTypeScan(tx, typeOne, relCursor, IndexOrder.NONE);
+
+                while (relCursor.next() && relCursor.readFromStore()) {
+                    relCursor.source(nodeCursor);
+                    assertThat(nodeCursor.next()).isTrue();
+                    actualReads.add(new NodeRead(
+                            nodeCursor.nodeReference(),
+                            true,
+                            nodeCursor.hasLabel(label1),
+                            nodeCursor.hasLabel(label2)));
+                    assertThat(nodeCursor.next()).isFalse();
+
+                    relCursor.target(nodeCursor);
+                    assertThat(nodeCursor.next()).isTrue();
+                    actualReads.add(new NodeRead(
+                            nodeCursor.nodeReference(),
+                            false,
+                            nodeCursor.hasLabel(label1),
+                            nodeCursor.hasLabel(label2)));
+                    assertThat(nodeCursor.next()).isFalse();
+                }
+            }
+
+            tx.rollback();
+        }
+
+        final var expectedReads = List.of(
+                new NodeRead(sourceNode, true, true, false),
+                new NodeRead(txSource, true, false, true),
+                new NodeRead(targetNode, false, false, true),
+                new NodeRead(txTarget, false, true, false));
+        assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
+    }
+
+    @Test
+    void shouldReadMultipleRelationshipsBetweenSameNodes() throws Exception {
+        long sourceNode, targetNode;
+        long rel1, rel2, rel3;
+        try (var tx = beginTransaction()) {
+            final var prop = tx.tokenWrite().propertyKeyCreateForName("prop", false);
+            final var write = tx.dataWrite();
+            sourceNode = write.nodeCreate();
+            targetNode = write.nodeCreate();
+            rel1 = write.relationshipCreate(sourceNode, typeOne, targetNode);
+            rel2 = write.relationshipCreate(sourceNode, typeOne, targetNode);
+            rel3 = write.relationshipCreate(sourceNode, typeOne, targetNode);
+            write.relationshipSetProperty(rel3, prop, Values.intValue(3));
+            tx.commit();
+        }
+
+        final var expectedReads =
+                List.of(new RelRead(rel1, null), new RelRead(rel2, null), new RelRead(rel3, Values.intValue(3)));
+
+        try (var tx = beginTransaction()) {
+            try (var relCursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                    var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+                relationshipTypeScan(tx, typeOne, relCursor, IndexOrder.NONE);
+
+                final var actualReads = new ArrayList<RelRead>();
+                while (relCursor.next() && relCursor.readFromStore()) {
+                    final var reference = relCursor.reference();
+
+                    Value propValue = null;
+                    relCursor.properties(propCursor);
+                    if (propCursor.next()) {
+                        propValue = propCursor.propertyValue();
+                        assertThat(propCursor.next()).isFalse();
+                    }
+
+                    actualReads.add(new RelRead(reference, propValue));
+                }
+
+                assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
+            } finally {
+                tx.rollback();
             }
         }
     }
@@ -231,9 +436,6 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldNotLoadDeletedRelationshipOnReadFromStore() throws Exception {
-        // Do not run this on node based relationship index
-        assumeFalse(isNodeBased());
-
         // given
         long first;
         long second;
@@ -263,7 +465,10 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             }
 
             // then
-            assertThat(cursor.readFromStore()).isFalse();
+            if (!isNodeBased()) {
+                // do not run this on node based relationship index
+                assertThat(cursor.readFromStore()).isFalse();
+            }
 
             assertThat(cursor.next()).isTrue();
             assertThat(cursor.readFromStore()).isTrue();
@@ -311,6 +516,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         }
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     private static void exhaustCursor(RelationshipTypeIndexCursor cursor) {
         while (cursor.next()) {}
     }
@@ -334,4 +540,8 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         new TokenPredicate(label),
                         tx.cursorContext());
     }
+
+    private record NodeRead(long id, boolean isSource, boolean label1Present, boolean label2Present) {}
+
+    private record RelRead(long id, Value propValue) {}
 }

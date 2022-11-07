@@ -33,7 +33,8 @@ import org.neo4j.internal.schema.IndexOrder;
 class IndexReadAsserts {
     static void assertNodes(NodeIndexCursor node, MutableLongSet uniqueIds, long... expected) {
         uniqueIds.clear();
-        for (long count : expected) {
+        var expectedIdCount = expected.length;
+        while (expectedIdCount-- > 0) {
             assertTrue(node.next(), "at least " + expected.length + " nodes");
             assertTrue(uniqueIds.add(node.nodeReference()));
         }
@@ -53,20 +54,37 @@ class IndexReadAsserts {
         assertFalse(node.next(), "no more than " + expectedCount + " nodes");
     }
 
+    static void assertRelationships(RelationshipIndexCursor edge, MutableLongSet uniqueIds, long... expected) {
+        uniqueIds.clear();
+        var expectedIdCount = expected.length;
+        while (expectedIdCount-- > 0) {
+            assertTrue(edge.next(), "at least " + expected.length + " relationships");
+            final var ref = edge.relationshipReference();
+            assertTrue(uniqueIds.add(ref), "The cursor found a duplicate edge: " + ref);
+        }
+        assertFalse(edge.next(), "no more than " + expected.length + " relationships");
+        assertEquals(expected.length, uniqueIds.size(), "all relationships are unique");
+        for (var expectedRelationship : expected) {
+            assertTrue(uniqueIds.contains(expectedRelationship), "expected relationship " + expectedRelationship);
+        }
+    }
+
     static void assertRelationships(
             RelationshipIndexCursor edge, MutableLongSet uniqueIds, IndexOrder order, long... expected) {
         uniqueIds.clear();
-        long previousId = NO_ID;
-        for (long count : expected) {
+        var previousId = NO_ID;
+        var expectedIdCount = expected.length;
+        while (expectedIdCount-- > 0) {
             assertTrue(edge.next(), "at least " + expected.length + " relationships");
-            long currentId = edge.relationshipReference();
+            final var currentId = edge.relationshipReference();
             assertTrue(uniqueIds.add(currentId));
             checkRelationshipOrder(order, previousId, currentId);
             previousId = currentId;
         }
+
         assertFalse(edge.next(), "no more than " + expected.length + " relationships");
         assertEquals(expected.length, uniqueIds.size(), "all relationships are unique");
-        for (long expectedRelationship : expected) {
+        for (var expectedRelationship : expected) {
             assertTrue(uniqueIds.contains(expectedRelationship), "expected relationship " + expectedRelationship);
         }
     }
@@ -82,15 +100,9 @@ class IndexReadAsserts {
     static void checkRelationshipOrder(IndexOrder expectedOrder, long previousId, long currentId) {
         if (previousId != NO_ID) {
             switch (expectedOrder) {
-                case ASCENDING:
-                    assertThat(previousId).isLessThan(currentId);
-                    break;
-                case DESCENDING:
-                    assertThat(previousId).isGreaterThan(currentId);
-                    break;
-                case NONE:
-                default:
-                    break;
+                case ASCENDING -> assertThat(previousId).isLessThan(currentId);
+                case DESCENDING -> assertThat(previousId).isGreaterThan(currentId);
+                case NONE -> {}
             }
         }
     }

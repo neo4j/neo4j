@@ -279,8 +279,7 @@ public abstract class AllStoreHolder extends Read {
                 var index = findUsableTokenIndex(EntityType.RELATIONSHIP);
                 if (index != IndexDescriptor.NO_INDEX) {
                     long count = 0;
-                    try (DefaultRelationshipTypeIndexCursor relationshipsWithType =
-                                    cursors.allocateRelationshipTypeIndexCursor(cursorContext());
+                    try (var relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor(cursorContext());
                             DefaultNodeCursor sourceNode = cursors.allocateNodeCursor(cursorContext());
                             DefaultNodeCursor targetNode = cursors.allocateNodeCursor(cursorContext())) {
                         var session = tokenReadSession(index);
@@ -468,7 +467,6 @@ public abstract class AllStoreHolder extends Read {
 
     /**
      * Lock the given index if it is valid and exists.
-     *
      * If the given index descriptor does not reference an index that exists, then {@link IndexDescriptor#NO_INDEX} is returned.
      *
      * @param index committed, transaction-added or even null.

@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -82,9 +81,6 @@ class RelationshipTypeIndexIT {
     FileSystemAbstraction fs;
 
     @Inject
-    DatabaseLayout databaseLayout;
-
-    @Inject
     RandomSupport random;
 
     @Test
@@ -102,19 +98,14 @@ class RelationshipTypeIndexIT {
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode(TestLabels.LABEL_ONE);
             nodeId = node.getElementId();
-            Relationship relationship1 = node.createRelationshipTo(tx.createNode(), REL_TYPE);
-            Relationship relationship2 = createRelationship(tx);
-            expectedIds.add(relationship1.getElementId());
-            expectedIds.add(relationship2.getElementId());
+            node.createRelationshipTo(tx.createNode(), REL_TYPE);
+            expectedIds.add(createRelationship(tx).getElementId());
             tx.commit();
         }
 
         try (Transaction tx = db.beginTx()) {
             Node node = tx.getNodeByElementId(nodeId);
-            Iterables.forEach(node.getRelationships(), rel -> {
-                expectedIds.remove(rel.getElementId());
-                rel.delete();
-            });
+            Iterables.forEach(node.getRelationships(), Relationship::delete);
             tx.commit();
         }
 
@@ -333,6 +324,7 @@ class RelationshipTypeIndexIT {
     }
 
     private LogFiles buildLogFiles() throws IOException {
+        final var databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
         return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
                 .build();
     }

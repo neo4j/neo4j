@@ -19,47 +19,27 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.txstate.TransactionState;
 
 public abstract class DefaultRelationshipTypeIndexCursor
         extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor>
         implements RelationshipTypeIndexCursor {
-    DefaultRelationshipTypeIndexCursor(CursorPool<DefaultRelationshipTypeIndexCursor> pool) {
+
+    protected DefaultRelationshipTypeIndexCursor(CursorPool<DefaultRelationshipTypeIndexCursor> pool) {
         super(pool);
     }
 
     @Override
-    LongSet createAddedInTxState(TransactionState txState, int token) {
-        return txState.relationshipsWithTypeChanged(token).getAdded().freeze();
-    }
-
-    @Override
-    LongSet createDeletedInTxState(TransactionState txState, int token) {
-        return txState.addedAndRemovedRelationships().getRemoved().freeze();
-    }
-
-    @Override
-    void traceScan(KernelReadTracer tracer, int token) {
-        tracer.onRelationshipTypeScan(token);
-    }
-
-    @Override
-    void traceNext(KernelReadTracer tracer, long entity) {
-        tracer.onRelationship(entity);
-    }
-
-    @Override
-    boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
-        return accessMode.allowsTraverseRelType(token) && accessMode.allowsTraverseAllLabels();
-    }
-
-    @Override
-    public int type() {
+    public final int type() {
         return tokenId;
+    }
+
+    @Override
+    public final float score() {
+        return Float.NaN;
     }
 
     @Override
@@ -68,18 +48,27 @@ public abstract class DefaultRelationshipTypeIndexCursor
     }
 
     @Override
-    public float score() {
-        return Float.NaN;
+    public void source(NodeCursor cursor) {
+        read.singleNode(sourceNodeReference(), cursor);
     }
 
     @Override
-    public String toString() {
-        if (isClosed()) {
-            return "RelationshipTypeIndexCursor[closed state]";
-        } else {
-            return "RelationshipTypeIndexCursor[relationship=" + entityReference() + "]";
-        }
+    public void target(NodeCursor cursor) {
+        read.singleNode(targetNodeReference(), cursor);
     }
 
-    public abstract void release();
+    @Override
+    protected final boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
+        return accessMode.allowsTraverseRelType(token) && accessMode.allowsTraverseAllLabels();
+    }
+
+    @Override
+    protected void traceNext(KernelReadTracer tracer, long entity) {
+        tracer.onRelationship(entity);
+    }
+
+    @Override
+    protected final void traceScan(KernelReadTracer tracer, int token) {
+        tracer.onRelationshipTypeScan(token);
+    }
 }

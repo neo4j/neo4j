@@ -29,12 +29,12 @@ public class FullAccessRelationshipTypeIndexCursor extends DefaultRelationshipBa
     }
 
     @Override
-    boolean allowed(long reference) {
+    protected final boolean allowed(long reference) {
         return true;
     }
 
     @Override
-    boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+    protected final boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
         return true;
     }
 }

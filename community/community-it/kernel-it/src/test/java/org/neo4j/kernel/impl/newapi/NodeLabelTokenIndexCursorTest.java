@@ -41,15 +41,16 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 
 public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteTestSupport> {
+
+    private static final String labelOneName = "Label1";
+    private static final String labelTwoName = "Label2";
+    private static final String labelThreeName = "Label3";
+    private static final String labelFirstName = "Label4";
+
     @Override
     public WriteTestSupport newTestSupport() {
         return new WriteTestSupport();
     }
-
-    private final String labelOneName = "Label1";
-    private final String labelTwoName = "Label2";
-    private final String labelThreeName = "Label3";
-    private final String labelFirstName = "Label4";
 
     private int labelOne;
     private int labelTwo;
@@ -146,8 +147,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     private static TokenReadSession getTokenReadSession(KernelTransaction tx) throws IndexNotFoundKernelException {
         var descriptor = SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
         var indexes = tx.schemaRead().index(descriptor);
-        var session = tx.dataRead().tokenReadSession(indexes.next());
-        return session;
+        return tx.dataRead().tokenReadSession(indexes.next());
     }
 
     @Test

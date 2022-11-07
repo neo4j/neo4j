@@ -45,7 +45,7 @@ import org.neo4j.storageengine.api.Degrees;
 
 public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G> {
-    private static long bare, start, end;
+    private static long start, end;
     private static RelationshipTestSupport.StartNode sparse, dense;
 
     private static boolean supportsDirectTraversal() {
@@ -58,7 +58,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
 
     private static void bareStartAndEnd(GraphDatabaseService graphDb) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
-            bare = tx.createNode().getId();
+            tx.createNode();
 
             Node x = tx.createNode(), y = tx.createNode();
             start = x.getId();

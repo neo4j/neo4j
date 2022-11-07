@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -212,6 +213,36 @@ class DefaultRelationshipTraversalCursorTest {
         assertRelationships(cursor, 3, 8, 7, 2, 6);
     }
 
+    @Test
+    void readOfRelationshipFromTxState() {
+        // given
+        final var startId = 56;
+        final var relId = 7;
+        final var endId = 42;
+
+        final var storeCursor = emptyStoreCursor();
+        final var cursor =
+                new DefaultRelationshipTraversalCursor(pool::accept, storeCursor, mock(DefaultNodeCursor.class));
+        final var read = txState(
+                rel(3, node, 50, type),
+                rel(2, node, node, type),
+                rel(5, 50, node, type2),
+                rel(6, node, node, type),
+                rel(relId, startId, endId, type2),
+                rel(8, node, 52, type));
+
+        // when
+        cursor.init(relId, read);
+
+        // then
+        assertThat(cursor.next()).isTrue();
+        assertThat(cursor.sourceNodeReference()).isEqualTo(startId);
+        assertThat(cursor.targetNodeReference()).isEqualTo(endId);
+        assertThat(cursor.relationshipReference()).isEqualTo(relId);
+        assertThat(cursor.type()).isEqualTo(type2);
+        assertThat(cursor.next()).isFalse();
+    }
+
     // HELPERS
 
     private static Read emptyTxState() {
@@ -257,19 +288,7 @@ class DefaultRelationshipTraversalCursorTest {
 
     private static final Rel NO_REL = rel(-1L, -1L, -1L, -1);
 
-    private static class Rel {
-        final long relId;
-        final long sourceId;
-        final long targetId;
-        final int type;
-
-        Rel(long relId, long sourceId, long targetId, int type) {
-            this.relId = relId;
-            this.sourceId = sourceId;
-            this.targetId = targetId;
-            this.type = type;
-        }
-
+    private record Rel(long relId, long sourceId, long targetId, int type) {
         RelationshipDirection direction(long nodeReference) {
             if (sourceId == targetId) {
                 return RelationshipDirection.LOOP;
@@ -468,7 +487,7 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
+        public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) {
             return null;
         }
 
@@ -478,7 +497,7 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
+        public UserAggregationReducer builtInAggregationFunction(int id) {
             return null;
         }
 

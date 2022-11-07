@@ -35,7 +35,7 @@ abstract class IndexCursor<T extends IndexProgressor, CURSOR> extends TraceableC
         this.progressor = progressor;
     }
 
-    protected boolean innerNext() {
+    protected final boolean indexNext() {
         return progressor != null && progressor.next();
     }
 

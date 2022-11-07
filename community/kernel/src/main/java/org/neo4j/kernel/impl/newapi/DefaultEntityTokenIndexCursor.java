@@ -24,7 +24,6 @@ import static org.neo4j.collection.PrimitiveLongCollections.reverseIterator;
 import static org.neo4j.internal.schema.IndexOrder.DESCENDING;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-import java.util.function.Consumer;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -40,8 +39,12 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>>
         extends IndexCursor<IndexProgressor, SELF> implements EntityTokenClient {
     protected Read read;
+
     protected long entity;
+    protected long entityFromIndex;
+
     protected int tokenId;
+
     private LongIterator added;
     private LongSet removed;
     private boolean useMergeSort;
@@ -55,51 +58,46 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         this.entity = NO_ID;
     }
 
+    public abstract void release();
+
+    protected abstract boolean innerNext();
+
+    protected abstract LongIterator createAddedInTxState(TransactionState txState, int token, IndexOrder order);
+
     /**
-     * The returned LongSets must be immutable or a private copy.
+     * The returned LongSet must be immutable or a private copy.
      */
-    abstract LongSet createAddedInTxState(TransactionState txState, int token);
+    protected abstract LongSet createDeletedInTxState(TransactionState txState, int token);
 
-    abstract LongSet createDeletedInTxState(TransactionState txState, int token);
+    protected abstract void traceScan(KernelReadTracer tracer, int token);
 
-    abstract void traceScan(KernelReadTracer tracer, int token);
+    protected abstract void traceNext(KernelReadTracer tracer, long entity);
 
-    abstract void traceNext(KernelReadTracer tracer, long entity);
+    protected abstract boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token);
 
-    abstract boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token);
-
-    abstract boolean allowedToSeeEntity(AccessMode accessMode, long entityReference);
+    protected abstract boolean allowedToSeeEntity(AccessMode accessMode, long entityReference);
 
     @Override
     public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
         initialize(progressor);
         if (read.hasTxStateWithChanges()) {
-            LongSet frozenAdded = createAddedInTxState(read.txState(), token);
-            switch (order) {
-                case NONE:
-                    useMergeSort = false;
-                    added = frozenAdded.longIterator();
-                    break;
-                case ASCENDING:
-                case DESCENDING:
-                    useMergeSort = true;
-                    sortedMergeJoin.initialize(order);
-                    long[] addedSortedArray = frozenAdded.toSortedArray();
-                    added = DESCENDING == order ? reverseIterator(addedSortedArray) : iterator(addedSortedArray);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported index order:" + order);
-            }
+            added = createAddedInTxState(read.txState(), token, order);
             removed = createDeletedInTxState(read.txState(), token);
+            useMergeSort = order != IndexOrder.NONE;
+            if (useMergeSort) {
+                sortedMergeJoin.initialize(order);
+            }
         } else {
             useMergeSort = false;
         }
 
+        accessMode = read.getAccessMode();
+        tokenId = token;
+        initSecurity(token);
+
         if (tracer != null) {
             traceScan(tracer, token);
         }
-        accessMode = read.getAccessMode();
-        initSecurity(token);
     }
 
     @Override
@@ -110,7 +108,12 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         this.added = added;
         this.removed = removed;
         this.accessMode = accessMode;
+        this.tokenId = token;
         initSecurity(token);
+
+        if (tracer != null) {
+            traceScan(tracer, token);
+        }
     }
 
     @Override
@@ -118,73 +121,21 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         if (isRemoved(reference) || !allowed(reference)) {
             return false;
         }
-        this.entity = reference;
+        this.entityFromIndex = reference;
         this.tokenId = tokenId;
 
         return true;
     }
 
-    private void initSecurity(int token) {
-        shortcutSecurity = allowedToSeeAllEntitiesWithToken(accessMode, token);
-    }
-
-    boolean allowed(long reference) {
-        return shortcutSecurity || allowedToSeeEntity(accessMode, reference);
-    }
-
     @Override
     public boolean next() {
-        if (useMergeSort) {
-            return nextWithOrdering();
-        } else {
-            return nextWithoutOrder();
+        entity = NO_ID;
+        entityFromIndex = NO_ID;
+        final var hasNext = useMergeSort ? nextWithOrdering() : nextWithoutOrder();
+        if (hasNext && tracer != null) {
+            traceNext(tracer, entity);
         }
-    }
-
-    private boolean nextWithoutOrder() {
-        if (added != null && added.hasNext()) {
-            this.entity = added.next();
-            if (tracer != null) {
-                traceNext(tracer, this.entity);
-            }
-            return true;
-        } else {
-            boolean hasNext = innerNext();
-            if (tracer != null && hasNext) {
-                traceNext(tracer, this.entity);
-            }
-            return hasNext;
-        }
-    }
-
-    private boolean nextWithOrdering() {
-        if (sortedMergeJoin.needsA() && added.hasNext()) {
-            long entity = added.next();
-            sortedMergeJoin.setA(entity);
-        }
-
-        if (sortedMergeJoin.needsB() && innerNext()) {
-            sortedMergeJoin.setB(this.entity);
-        }
-
-        this.entity = sortedMergeJoin.next();
-        boolean next = this.entity != -1;
-        if (tracer != null && next) {
-            traceNext(tracer, this.entity);
-        }
-        return next;
-    }
-
-    public void setRead(Read read) {
-        this.read = read;
-    }
-
-    public long entityReference() {
-        return entity;
-    }
-
-    protected void readEntity(Consumer<Read> entityReader) {
-        entityReader.accept(read);
+        return hasNext;
     }
 
     @Override
@@ -192,6 +143,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         if (!isClosed()) {
             closeProgressor();
             entity = NO_ID;
+            entityFromIndex = NO_ID;
             tokenId = (int) NO_ID;
             read = null;
             added = null;
@@ -206,7 +158,68 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         return isProgressorClosed();
     }
 
+    public void setRead(Read read) {
+        this.read = read;
+    }
+
+    public long entityReference() {
+        return entity;
+    }
+
+    protected boolean allowed(long reference) {
+        return shortcutSecurity || allowedToSeeEntity(accessMode, reference);
+    }
+
+    protected long nextEntity() {
+        return entityFromIndex;
+    }
+
+    private void initSecurity(int token) {
+        shortcutSecurity = allowedToSeeAllEntitiesWithToken(accessMode, token);
+    }
+
+    private boolean nextWithoutOrder() {
+        if (added != null && added.hasNext()) {
+            entity = added.next();
+        } else if (innerNext()) {
+            entity = nextEntity();
+        }
+
+        return entity != NO_ID;
+    }
+
+    private boolean nextWithOrdering() {
+        // items from Tx state
+        if (sortedMergeJoin.needsA() && added.hasNext()) {
+            sortedMergeJoin.setA(added.next());
+        }
+
+        // items from index/store
+        if (sortedMergeJoin.needsB() && innerNext()) {
+            sortedMergeJoin.setB(entityFromIndex);
+        }
+
+        final var nextId = sortedMergeJoin.next();
+        if (nextId == NO_ID) {
+            return false;
+        } else {
+            entity = nextId;
+            return true;
+        }
+    }
+
     private boolean isRemoved(long reference) {
         return removed != null && removed.contains(reference);
+    }
+
+    protected static LongIterator sortTxState(LongSet frozenAdded, IndexOrder order) {
+        return switch (order) {
+            case NONE -> frozenAdded.longIterator();
+            case ASCENDING, DESCENDING -> sorted(frozenAdded.toSortedArray(), order);
+        };
+    }
+
+    private static LongIterator sorted(long[] items, IndexOrder order) {
+        return DESCENDING == order ? reverseIterator(items) : iterator(items);
     }
 }

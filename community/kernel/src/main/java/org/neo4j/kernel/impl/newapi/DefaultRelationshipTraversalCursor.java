@@ -24,13 +24,13 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
-import org.neo4j.storageengine.api.txstate.NodeState;
 
 class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<DefaultRelationshipTraversalCursor>
         implements RelationshipTraversalCursor {
@@ -56,6 +56,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      *
      * @param nodeReference reference to the origin node.
      * @param reference reference to the place to start traversing these relationships.
+     * @param selection the relationship selector
      * @param read reference to {@link Read}.
      */
     void init(long nodeReference, long reference, RelationshipSelection selection, Read read) {
@@ -71,12 +72,13 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
      * Initializes this cursor to traverse over relationships, directly from the {@link NodeCursor}.
      *
      * @param nodeCursor {@link NodeCursor} at the origin node.
+     * @param selection the relationship selector
      * @param read reference to {@link Read}.
      */
     void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, Read read) {
         this.originNodeReference = nodeCursor.nodeReference();
         this.selection = selection;
-        this.neighbourNodeReference = -1;
+        this.neighbourNodeReference = NO_ID;
         if (!nodeCursor.currentNodeIsAddedInTx()) {
             nodeCursor.storeCursor.relationships(storeCursor, selection);
         } else {
@@ -84,6 +86,24 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         }
         init(read);
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    /**
+     * Initializes this cursor to access a details of a relationship from the transaction state using the ID provided.
+     *
+     * @param addedRelationship the relationship to access
+     * @param read reference to {@link Read}.
+     */
+    void init(long addedRelationship, Read read) {
+        assert addedRelationship != NO_ID;
+        this.originNodeReference = NO_ID;
+        this.neighbourNodeReference = NO_ID;
+        this.selection = null;
+        storeCursor.reset();
+        init(read);
+        this.checkHasChanges = false;
+        this.hasChanges = true;
+        this.addedRelationships = PrimitiveLongCollections.single(addedRelationship);
     }
 
     void init(DefaultNodeCursor nodeCursor, RelationshipSelection selection, long neighbourNodeReference, Read read) {
@@ -194,8 +214,9 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
 
     @Override
     protected void collectAddedTxStateSnapshot() {
-        NodeState nodeState = read.txState().getNodeState(originNodeReference);
-        addedRelationships = selection.addedRelationship(nodeState);
+        if (selection != null) {
+            addedRelationships = selection.addedRelationship(read.txState().getNodeState(originNodeReference));
+        }
     }
 
     @Override
