@@ -50,15 +50,19 @@ trait ABCDECardinalityData extends CardinalityModelIntegrationTest {
   val D = N * Dsel // Nodes with label D
   val E = N * Esel // Nodes with label E
 
-  val Aprop = 0.5         // Unique selectivity of index on :A(prop)
-  val Bprop = 0.003       // Unique selectivity of index on :B(prop)
-  val Abar = 0.002        // Unique selectivity of index on :A(bar)
-  val CpropBarUnique = 0.01 // Unique selectivity of index on :C(prop, bar)
-  val CpropBarExists = 0.7 // Exists selectivity of index on :C(prop, bar)
-  val DfooBarBazUnique = 0.0006 // Unique selectivity of index on :D(foo, bar, baz)
-  val DfooBarBazExists = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
-  val EsomeUnique = 0.3   // Unique selectivity of index on :E(some)
-  val EsomeExists = 0.5   // Exists selectivity of index on :E(some)
+  val ApropExists: Double = 1.0   // Exists selectivity of index on :A(prop)
+  val ApropUnique: Double = 0.5   // Unique selectivity of index on :A(prop)
+  val Aprop: Double = ApropExists * ApropUnique // Selectivity of :A(prop) to exist and be unique
+  val Bprop: Double = 0.003       // Unique selectivity of index on :B(prop)
+  val Abar: Double = 0.002        // Unique selectivity of index on :A(bar)
+  val CpropBarUnique: Double = 0.01 // Unique selectivity of index on :C(prop, bar)
+  val CpropBarExists: Double = 0.7 // Exists selectivity of index on :C(prop, bar)
+  val DfooBarBazUnique: Double = 0.0006 // Unique selectivity of index on :D(foo, bar, baz)
+  val DfooBarBazExists: Double = 0.2 // Exists selectivity of index on :D(foo, bar, baz)
+  val EsomeUnique: Double = 0.3   // Unique selectivity of index on :E(some)
+  val EsomeExists: Double = 0.5   // Exists selectivity of index on :E(some)
+  val TpropExists: Double = 0.7   // Exists selectivity of index on :T(prop)
+  val TpropUnique: Double = 0.3   // Unique selectivity of index on :T(prop)
 
   val T1prop = 0.003 // Selectivity of index on :T1(prop)
   val T2propFooExists = 0.2   // Exists selectivity of index on :T2(prop, foo)

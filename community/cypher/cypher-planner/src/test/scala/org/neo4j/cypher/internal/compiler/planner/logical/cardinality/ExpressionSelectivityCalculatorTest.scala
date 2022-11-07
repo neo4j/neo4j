@@ -950,6 +950,25 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     }
   }
 
+  // REGULAR EXPRESSION MATCH
+
+  test("regular expression should be treated similar to CONTAINS without knowledge of the string to compare to") {
+    // n.prop =~ "\\d+"
+    val regexPredicate = nPredicate(regex(nProp, literalString("\\d+")))
+
+    // n.prop CONTAINS $string
+    val containsPredicate = nPredicate(contains(nProp, varFor("string")))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonAndAnimalLabelInfo, stats = mockStats(
+      labelOrRelCardinalities = Map(indexPersonBtree.label -> 1000.0, indexAnimal.label -> 800.0),
+      indexCardinalities = Map(indexPersonBtree -> 200.0, indexPersonText -> 100.0, indexAnimal -> 400.0)))
+
+    val regexPredicateResult = calculator(regexPredicate.expr)
+    val containsPredicateResult = calculator(containsPredicate.expr)
+
+    regexPredicateResult.factor should equal(containsPredicateResult.factor +- 0.00000001)
+  }
+
   // IS NOT NULL
 
   private val nIsNotNull = nPredicate(isNotNull(nProp))
