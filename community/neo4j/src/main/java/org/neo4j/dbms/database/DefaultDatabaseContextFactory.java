@@ -19,8 +19,11 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Map;
+import java.util.Optional;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -38,7 +41,8 @@ import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactory<StandaloneDatabaseContext> {
+public class DefaultDatabaseContextFactory
+        extends AbstractDatabaseContextFactory<StandaloneDatabaseContext, Optional<?>> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
@@ -56,21 +60,21 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
     }
 
     @Override
-    public StandaloneDatabaseContext create(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
-        return new Creator(namedDatabaseId, databaseOptions).context();
+    public StandaloneDatabaseContext create(NamedDatabaseId namedDatabaseId, Optional<?> ignored) {
+        return new Creator(namedDatabaseId).context();
     }
 
     private class Creator {
         private final Database kernelDatabase;
         private final StandaloneDatabaseContext context;
 
-        private Creator(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
-            var databaseConfig = new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig());
+        private Creator(NamedDatabaseId namedDatabaseId) {
+            var databaseConfig = new DatabaseConfig(Map.of(), globalModule.getGlobalConfig());
             var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
             StorageEngineFactory storageEngineFactory = DatabaseCreationContext.selectStorageEngine(
                     globalModule.getFileSystem(), globalModule.getNeo4jLayout(), databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
-                    databaseOptions.mode(),
+                    HostedOnMode.SINGLE,
                     namedDatabaseId,
                     globalModule,
                     globalModule.getGlobalDependencies(),

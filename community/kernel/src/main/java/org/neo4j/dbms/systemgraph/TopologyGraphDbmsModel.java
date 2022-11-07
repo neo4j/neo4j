@@ -233,8 +233,6 @@ public interface TopologyGraphDbmsModel {
     @Deprecated
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_ALLOCATED_FLAG = "default_database_allocated";
 
-    Set<NamedDatabaseId> getAllDatabaseIds();
-
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.
      * <p>

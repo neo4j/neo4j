@@ -39,8 +39,11 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LA
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CONFIG_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_IV_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_CREATION_TIME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_RANDOM_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UPDATE_ID_PROPERTY;
@@ -96,7 +99,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -318,16 +320,15 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        public DatabaseNodeBuilder withStoreId(StoreId storeId) {
+        public DatabaseNodeBuilder withStoreIdParts(long creationTime, long random) {
             node.setProperty(
                     DATABASE_CREATED_AT_PROPERTY,
-                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(storeId.getCreationTime()), ZoneId.systemDefault()));
-            node.setProperty(DATABASE_STORE_CREATION_TIME_PROPERTY, storeId.getCreationTime());
-            node.setProperty(DATABASE_STORE_RANDOM_ID_PROPERTY, storeId.getRandom());
+                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(creationTime), ZoneId.systemDefault()));
+            node.setProperty(DATABASE_STORE_RANDOM_ID_PROPERTY, random);
             return this;
         }
 
-        public DatabaseNodeBuilder withNumbers(int primaries, int secondaries) {
+        public DatabaseNodeBuilder withAllocationNumbers(int primaries, int secondaries) {
             node.setProperty(DATABASE_PRIMARIES_PROPERTY, primaries);
             node.setProperty(DATABASE_SECONDARIES_PROPERTY, secondaries);
             return this;
@@ -336,6 +337,14 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         public DatabaseNodeBuilder withDesignatedSeeder(ServerId designatedSeeder) {
             node.setProperty(
                     DATABASE_DESIGNATED_SEEDER_PROPERTY, designatedSeeder.uuid().toString());
+            return this;
+        }
+
+        public DatabaseNodeBuilder withSeedingParameters(String uri, byte[] password, byte[] iv, String config) {
+            node.setProperty(DATABASE_SEED_URI_PROPERTY, uri);
+            node.setProperty(DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY, password);
+            node.setProperty(DATABASE_SEED_CREDENTIALS_IV_PROPERTY, iv);
+            node.setProperty(DATABASE_SEED_CONFIG_PROPERTY, config);
             return this;
         }
 

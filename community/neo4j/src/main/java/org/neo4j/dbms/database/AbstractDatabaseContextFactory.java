@@ -43,7 +43,8 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
-public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseContextFactory<DB> {
+public abstract class AbstractDatabaseContextFactory<CONTEXT, OPTIONS>
+        implements DatabaseContextFactory<CONTEXT, OPTIONS> {
     protected final GlobalModule globalModule;
     protected final IdContextFactory idContextFactory;
 

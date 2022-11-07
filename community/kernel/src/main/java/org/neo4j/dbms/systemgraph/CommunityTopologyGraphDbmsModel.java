@@ -82,15 +82,6 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return getDatabaseIdBy(DATABASE_UUID_PROPERTY, uuid.toString());
     }
 
-    @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds() {
-        try (ResourceIterator<Node> nodes = tx.findNodes(DATABASE_LABEL)) {
-            return nodes.stream()
-                    .map(CommunityTopologyGraphDbmsModel::getDatabaseId)
-                    .collect(Collectors.toUnmodifiableSet());
-        }
-    }
-
     private Stream<DatabaseReference.Internal> getAllPrimaryStandardDatabaseReferencesInRoot() {
         return tx.findNodes(DATABASE_LABEL).stream()
                 .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))
