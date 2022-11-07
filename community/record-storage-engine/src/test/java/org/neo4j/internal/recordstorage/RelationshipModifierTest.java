@@ -455,7 +455,7 @@ class RelationshipModifierTest {
         modifications
                 .creations()
                 .forEach((id, type, start, end, addedProperties) ->
-                        context.acquireRelationshipCreationLock(txState, NONE, start, end, id));
+                        context.acquireRelationshipCreationLock(txState, NONE, start, end));
         modifications
                 .deletions()
                 .forEach((id, type, start, end, noProperties) ->

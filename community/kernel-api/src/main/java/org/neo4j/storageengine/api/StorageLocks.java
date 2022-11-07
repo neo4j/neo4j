@@ -47,14 +47,9 @@ public interface StorageLocks {
      * @param txState The transaction state
      * @param sourceNode The source node id of the relationship to be created
      * @param targetNode The target node id of the relationship to be created
-     * @param relationship The relationship id
      */
     void acquireRelationshipCreationLock(
-            ReadableTransactionState txState,
-            LockTracer lockTracer,
-            long sourceNode,
-            long targetNode,
-            long relationship);
+            ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode);
 
     /**
      * Acquire the required locks (during transaction creation phase) for deleting a relationship

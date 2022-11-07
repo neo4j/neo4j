@@ -120,8 +120,8 @@ public class PlainOperationsTest extends OperationsTest {
         long rId = operations.relationshipCreate(sourceNode, relationshipType, targetNode);
 
         // then
-        order.verify(storageLocks)
-                .acquireRelationshipCreationLock(txState, LockTracer.NONE, sourceNode, targetNode, rId);
+        order.verify(storageLocks).acquireRelationshipCreationLock(txState, LockTracer.NONE, sourceNode, targetNode);
+        order.verify(storageLocks).acquireExclusiveRelationshipLock(LockTracer.NONE, rId);
         order.verify(txState).relationshipDoCreate(rId, relationshipType, sourceNode, targetNode);
     }
 
@@ -137,10 +137,11 @@ public class PlainOperationsTest extends OperationsTest {
 
         // THEN
         InOrder lockingOrder = inOrder(creationContext, storageLocks);
-        lockingOrder.verify(creationContext).reserveRelationship(lowId, highId, relationshipLabel);
         lockingOrder
                 .verify(storageLocks)
-                .acquireRelationshipCreationLock(eq(txState), eq(LockTracer.NONE), eq(lowId), eq(highId), anyLong());
+                .acquireRelationshipCreationLock(eq(txState), eq(LockTracer.NONE), eq(lowId), eq(highId));
+        lockingOrder.verify(creationContext).reserveRelationship(lowId, highId, relationshipLabel);
+        lockingOrder.verify(storageLocks).acquireExclusiveRelationshipLock(eq(LockTracer.NONE), anyLong());
         lockingOrder.verifyNoMoreInteractions();
         reset(creationContext);
 
@@ -149,11 +150,34 @@ public class PlainOperationsTest extends OperationsTest {
 
         // THEN
         InOrder lowLockingOrder = inOrder(creationContext, storageLocks);
-        lowLockingOrder.verify(creationContext).reserveRelationship(highId, lowId, relationshipLabel);
         lowLockingOrder
                 .verify(storageLocks)
-                .acquireRelationshipCreationLock(eq(txState), eq(LockTracer.NONE), eq(highId), eq(lowId), anyLong());
+                .acquireRelationshipCreationLock(eq(txState), eq(LockTracer.NONE), eq(highId), eq(lowId));
+        lowLockingOrder.verify(creationContext).reserveRelationship(highId, lowId, relationshipLabel);
+        lowLockingOrder.verify(storageLocks).acquireExclusiveRelationshipLock(eq(LockTracer.NONE), anyLong());
         lowLockingOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldCheckNodeExistenceBeforeRelationshipIdAllocation() throws EntityNotFoundException {
+        // Given
+        long sourceNode = 1;
+        long targetNode = 3;
+        int relationshipType = 2;
+
+        // When
+        operations.relationshipCreate(sourceNode, relationshipType, targetNode);
+
+        // Then
+        InOrder inOrder = inOrder(storageReader, storageLocks, creationContext);
+
+        inOrder.verify(storageLocks)
+                .acquireRelationshipCreationLock(eq(txState), eq(LockTracer.NONE), eq(sourceNode), eq(targetNode));
+        inOrder.verify(storageReader).nodeExists(eq(sourceNode), any());
+        inOrder.verify(storageReader).nodeExists(eq(targetNode), any());
+        inOrder.verify(creationContext).reserveRelationship(eq(sourceNode), eq(targetNode), eq(relationshipType));
+        inOrder.verify(storageLocks).acquireExclusiveRelationshipLock(eq(LockTracer.NONE), anyLong());
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
@@ -1017,7 +1041,6 @@ public class PlainOperationsTest extends OperationsTest {
         InOrder inOrder = inOrder(ktx, commandCreationContext);
         inOrder.verify(ktx).txState();
         inOrder.verify(commandCreationContext).reserveRelationship(anyLong(), anyLong(), anyInt());
-        inOrder.verify(ktx).txState();
         inOrder.verify(ktx).lockTracer();
         inOrder.verifyNoMoreInteractions();
     }
