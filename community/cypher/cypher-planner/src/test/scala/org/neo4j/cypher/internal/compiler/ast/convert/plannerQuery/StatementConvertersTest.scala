@@ -1969,7 +1969,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                 Seq.empty,
                 SimplePatternLength
               )),
-            selections = Selections.from(greaterThan(prop("n", "prop"), prop("m", "prop")))
+            selections = Selections.from(andedPropertyInequalities(greaterThan(prop("n", "prop"), prop("m", "prop"))))
           ),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
