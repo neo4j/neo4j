@@ -151,7 +151,7 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
                 config,
                 memoryTracker,
                 tokenNameLookup,
-                BlockBasedIndexPopulator.NO_MONITOR,
+                databaseIndexContext.monitors.newMonitor(BlockBasedIndexPopulator.Monitor.class),
                 openOptions);
     }
 
