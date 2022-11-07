@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
@@ -33,11 +35,18 @@ public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
 
     @Override
     public Object mapNode(VirtualNodeValue value) {
+        if (value instanceof NodeEntityWrappingNodeValue wrapper) {
+            return wrapper.getEntity();
+        }
+
         return new ExecutionContextNode(value.id());
     }
 
     @Override
     public Object mapRelationship(VirtualRelationshipValue value) {
+        if (value instanceof RelationshipEntityWrappingValue wrapper) {
+            return wrapper.getEntity();
+        }
         return new ExecutionContextRelationship(value.id());
     }
 }

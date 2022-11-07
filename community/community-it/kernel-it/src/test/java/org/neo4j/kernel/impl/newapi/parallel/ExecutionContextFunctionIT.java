@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi.parallel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 
 import java.time.LocalDate;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
@@ -133,21 +134,43 @@ class ExecutionContextFunctionIT {
         });
     }
 
-    @Disabled("This is not implemented yet")
     @Test
-    void testUserFunctionProducingNode() throws ProcedureException {
+    void userFunctionShouldNotWrapExecutionContextNodes() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             AnyValue result = invokeUserFunction(executionContext, "passThrough", VirtualValues.node(123));
             assertThat(result).isNotInstanceOf(NodeEntityWrappingNodeValue.class);
         });
     }
 
-    @Disabled("This is not implemented yet")
     @Test
-    void testUserFunctionProducingRelationship() throws ProcedureException {
+    void userFunctionShouldNotWrapExecutionContextRelationships() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             AnyValue result = invokeUserFunction(executionContext, "passThrough", VirtualValues.relationship(123));
             assertThat(result).isNotInstanceOf(RelationshipEntityWrappingValue.class);
+        });
+    }
+
+    @Test
+    void userFunctionShouldNotHandleWrappedNodesAsReferences() throws ProcedureException {
+        doWithExecutionContext(executionContext -> {
+            var originalWrappedNode = mock(Node.class);
+            AnyValue result =
+                    invokeUserFunction(executionContext, "passThrough", ValueUtils.wrapNodeEntity(originalWrappedNode));
+            assertThat(result).isInstanceOf(NodeEntityWrappingNodeValue.class);
+            var unwrappedNode = ((NodeEntityWrappingNodeValue) result).getEntity();
+            assertThat(unwrappedNode).isEqualTo(originalWrappedNode);
+        });
+    }
+
+    @Test
+    void userFunctionShouldNotHandleWrappedRelationshipsAsReferences() throws ProcedureException {
+        doWithExecutionContext(executionContext -> {
+            var originalWrappedRelationship = mock(Relationship.class);
+            AnyValue result = invokeUserFunction(
+                    executionContext, "passThrough", ValueUtils.wrapRelationshipEntity(originalWrappedRelationship));
+            assertThat(result).isInstanceOf(RelationshipEntityWrappingValue.class);
+            var unwrappedRelationship = ((RelationshipEntityWrappingValue) result).getEntity();
+            assertThat(unwrappedRelationship).isEqualTo(originalWrappedRelationship);
         });
     }
 

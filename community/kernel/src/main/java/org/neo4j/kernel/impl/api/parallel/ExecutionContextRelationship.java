@@ -39,7 +39,7 @@ public class ExecutionContextRelationship implements Relationship {
 
     @Override
     public String getElementId() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        return Long.toString(relationshipId);
     }
 
     @Override

@@ -985,7 +985,8 @@ public final class ProcedureCompilation {
             return nullCheck(
                     expression,
                     invoke(
-                            methodReference(ValueUtils.class, VirtualNodeValue.class, "wrapNodeEntity", Node.class),
+                            methodReference(
+                                    ValueUtils.class, VirtualNodeValue.class, "maybeWrapNodeEntity", Node.class),
                             getNode));
         } else if (type.equals(RELATIONSHIP)) {
             Expression internalTransaction = invoke(
@@ -1000,7 +1001,7 @@ public final class ProcedureCompilation {
                             methodReference(
                                     ValueUtils.class,
                                     VirtualRelationshipValue.class,
-                                    "wrapRelationshipEntity",
+                                    "maybeWrapRelationshipEntity",
                                     Relationship.class),
                             getRelationship));
         } else if (type.equals(PATH)) {

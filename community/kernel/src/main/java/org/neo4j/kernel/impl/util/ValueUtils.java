@@ -31,6 +31,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextNode;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextRelationship;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -79,13 +81,13 @@ public final class ValueUtils {
             if (object instanceof Entity) {
                 if (object instanceof Node) {
                     if (wrapEntities) {
-                        return wrapNodeEntity((Node) object);
+                        return maybeWrapNodeEntity((Node) object);
                     } else {
                         return fromNodeEntity((Node) object);
                     }
                 } else if (object instanceof Relationship) {
                     if (wrapEntities) {
-                        return wrapRelationshipEntity((Relationship) object);
+                        return maybeWrapRelationshipEntity((Relationship) object);
                     } else {
                         return fromRelationshipEntity((Relationship) object);
                     }
@@ -273,6 +275,20 @@ public final class ValueUtils {
         return new NodeEntityWrappingNodeValue(node);
     }
 
+    @Deprecated
+    public static VirtualNodeValue maybeWrapNodeEntity(Node node) {
+        // Execution Context Node is a special implementation of Node used in procedures and functions invoked
+        // from parallel runtime. It contains a reference to an Execution Context. Execution Context is always
+        // owned by one thread, therefore references to Execution Contexts must not escape to be possibly
+        // used concurrently by other threads. Execution Context Node must therefore always be turned into
+        // a reference type.
+        if (node instanceof ExecutionContextNode) {
+            return fromNodeEntity(node);
+        } else {
+            return wrapNodeEntity(node);
+        }
+    }
+
     public static VirtualRelationshipValue fromRelationshipEntity(Relationship relationship) {
         // sigh: negative ids are used as a mechanism for transferring "fake" entities from and to procedures.
         // We use it ourselves in some internal procedures, see VirtualNodeHack, and it is also used extensively
@@ -290,6 +306,20 @@ public final class ValueUtils {
     @Deprecated
     public static VirtualRelationshipValue wrapRelationshipEntity(Relationship relationship) {
         return RelationshipEntityWrappingValue.wrapLazy(relationship);
+    }
+
+    @Deprecated
+    public static VirtualRelationshipValue maybeWrapRelationshipEntity(Relationship relationship) {
+        // Execution Context Relationship is a special implementation of Relationship used in procedures and functions
+        // invoked from parallel runtime. It contains a reference to an Execution Context. Execution Context is always
+        // owned by one thread, therefore references to Execution Contexts must not escape to be possibly
+        // used concurrently by other threads. Execution Context Relationship must therefore always be turned into
+        // a reference type.
+        if (relationship instanceof ExecutionContextRelationship) {
+            return fromRelationshipEntity(relationship);
+        } else {
+            return wrapRelationshipEntity(relationship);
+        }
     }
 
     public static VirtualPathValue fromPath(Path path) {
