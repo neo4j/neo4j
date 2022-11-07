@@ -83,7 +83,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
     @Unmetered
     private final Direction direction;
 
-    private final MemoryTracker scopedMemoryTracker;
+    private MemoryTracker scopedMemoryTracker;
 
     public CachingExpandInto(QueryContext context, Direction direction, MemoryTracker memoryTracker) {
         this(context, direction, memoryTracker, DEFAULT_CAPACITY);
@@ -101,12 +101,15 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
     @Override
     public void closeInternal() {
-        scopedMemoryTracker.close();
+        if (scopedMemoryTracker != null) {
+            scopedMemoryTracker.close();
+            scopedMemoryTracker = null;
+        }
     }
 
     @Override
     public boolean isClosed() {
-        return false;
+        return scopedMemoryTracker == null;
     }
 
     /**
@@ -348,7 +351,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         @Override
         public void close() {
-            if (relationships != null) {
+            if (relationships != null && scopedMemoryTracker != null) {
                 relationships = null;
                 scopedMemoryTracker.releaseHeap(FROM_CACHE_SELECTION_CURSOR_SHALLOW_SIZE);
             }
@@ -361,7 +364,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         @Override
         public boolean isClosed() {
-            return false;
+            return relationships == null;
         }
 
         @Override
@@ -571,7 +574,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
 
         @Override
         public boolean isClosed() {
-            return connections == null;
+            return connections == null || scopedMemoryTracker == null;
         }
     }
 

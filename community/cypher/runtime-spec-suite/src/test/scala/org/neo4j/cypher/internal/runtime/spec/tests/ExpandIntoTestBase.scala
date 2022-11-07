@@ -991,6 +991,55 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("a", "b").withSingleRow(a, b)
   }
 
+  test("should handle doubly-connected loop with skip and limit") {
+
+    //         (a3)
+    //        ↙↗  ↖↘
+    //     (a2)    (a4)
+    //    ↙↗          ↖↘
+    //  (a1)          (a5)
+    //      ↖↘      ↙↗
+    //         (a7)
+    given {
+      val nNodes = 7
+      val rType = RelationshipType.withName("R")
+
+      val nodes = for (_ <- 0 until nNodes) yield {
+        runtimeTestSupport.tx.createNode()
+      }
+      for (i <- 0 until nNodes) {
+        val a = nodes(i)
+        val b = nodes((i + 1) % nNodes)
+        a.createRelationshipTo(b, rType)
+        b.createRelationshipTo(a, rType)
+      }
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("ID")
+      .projection("id(a1) AS ID")
+      .skip(2)
+      .limit(3)
+      .filter("r2 <> r7", "r1 <> r7", "r7 <> r6", "r7 <> r5", "r7 <> r4", "r7 <> r3")
+      .expandInto("(a7)-[r7]-(a1)")
+      .filter("r2 <> r6", "r1 <> r6", "r6 <> r5", "r6 <> r4", "r6 <> r3")
+      .expandAll("(a6)-[r6]-(a7)")
+      .filter("r2 <> r5", "r1 <> r5", "r5 <> r4", "r5 <> r3")
+      .expandAll("(a5)-[r5]-(a6)")
+      .filter("r2 <> r4", "r1 <> r4", "r4 <> r3")
+      .expandAll("(a4)-[r4]-(a5)")
+      .filter("r2 <> r3", "r1 <> r2")
+      .expandAll("(a3)-[r3]-(a4)")
+      .filter("r2 <> r1")
+      .expandAll("(a2)-[r2]-(a3)")
+      .allRelationshipsScan("(a1)-[r1]->(a2)")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("ID").withRows(rowCount(1))
+  }
+
   private def makeDense(node: Node): Unit = {
     (1 to GraphDatabaseSettings.dense_node_threshold.defaultValue() + 1).foreach(_ =>
       node.createRelationshipTo(tx.createNode(Label.label("IGNORE")), RelationshipType.withName("IGNORE"))
