@@ -337,6 +337,16 @@ public abstract class PageCursor implements AutoCloseable {
     public abstract int copyTo(int sourceOffset, ByteBuffer targetBuffer);
 
     /**
+     * Copy bytes from the given buffer at specified offset in this page, until either the limit of the buffer
+     * is reached, or the end of the page is reached. The actual number of bytes copied is returned.
+     *
+     * @param sourceBuffer The buffer the data will be copied from.
+     * @param targetOffset The offset into this page to copy to.
+     * @return The number of bytes actually copied.
+     */
+    public abstract int copyFrom(ByteBuffer sourceBuffer, int targetOffset);
+
+    /**
      * Shift the specified number of bytes starting from given offset the specified number of bytes to the left or
      * right. The area
      * left behind after the shift is not padded and thus is left with garbage.

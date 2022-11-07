@@ -54,6 +54,11 @@ public class DelegatingPageCursor extends PageCursor {
     }
 
     @Override
+    public int copyFrom(ByteBuffer sourceBuffer, int targetOffset) {
+        return delegate.copyFrom(sourceBuffer, targetOffset);
+    }
+
+    @Override
     public void shiftBytes(int sourceOffset, int length, int shift) {
         delegate.shiftBytes(sourceOffset, length, shift);
     }

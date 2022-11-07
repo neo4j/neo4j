@@ -893,6 +893,16 @@ public abstract class MuninnPageCursor extends PageCursor {
     }
 
     @Override
+    public int copyFrom(ByteBuffer sourceBuffer, int targetOffset) {
+        int bytesToCopy = Math.min(sourceBuffer.limit() - sourceBuffer.position(), payloadSize - targetOffset);
+        for (int i = 0; i < bytesToCopy; i++) {
+            byte b = sourceBuffer.get();
+            putByte(targetOffset + i, b);
+        }
+        return bytesToCopy;
+    }
+
+    @Override
     public void shiftBytes(int sourceOffset, int length, int shift) {
         int offset = sourceOffset + pageReservedBytes;
         int sourceEnd = offset + length;

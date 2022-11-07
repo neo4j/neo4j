@@ -21,7 +21,9 @@ package org.neo4j.io.pagecache;
 
 import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -4126,7 +4128,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertTrue(cursor.next());
                 cursor.putInt(0xcafebabe);
             }
-            try (PagedFile pf = map(file("a"), filePageSize, immutable.of(StandardOpenOption.TRUNCATE_EXISTING));
+            try (PagedFile pf = map(file("a"), filePageSize, immutable.of(TRUNCATE_EXISTING));
                     PageCursor cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertThat(pf.getLastPageId()).isLessThan(0L);
                 assertFalse(cursor.next());
@@ -4423,8 +4425,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         try (PagedFile first = map(file("a"), filePageSize)) {
             assertThrows(UnsupportedOperationException.class, () -> {
-                try (PagedFile second =
-                        map(file("a"), filePageSize, immutable.of(StandardOpenOption.TRUNCATE_EXISTING))) {
+                try (PagedFile second = map(file("a"), filePageSize, immutable.of(TRUNCATE_EXISTING))) {
                     // empty
                 }
             });
@@ -4925,6 +4926,68 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 buffer.put(zero);
             }
         }
+    }
+
+    @Test
+    void copyFromHeapByteBufferToWritePageCursorMustCheckBounds() throws Exception {
+        configureStandardPageCache();
+        ByteBuffer buffer = ByteBuffers.allocate(filePayloadSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        Path file = file("a");
+        generateFileWithRecords(file, recordsPerFilePage, recordSize, recordsPerFilePage, reservedBytes, filePageSize);
+        try (PagedFile pf = map(file, filePageSize);
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            cursor.copyTo(0, buffer);
+        }
+        Path targetFile = file("target");
+        try (PagedFile pf = map(targetFile, filePageSize, immutable.of(CREATE, TRUNCATE_EXISTING));
+                PageCursor cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            verifyCopyFromBufferBounds(cursor, buffer);
+        }
+    }
+
+    private void verifyCopyFromBufferBounds(PageCursor cursor, ByteBuffer buffer) throws IOException {
+        // Assuming no mistakes, the data must be copied as is
+        cursor.zapPage();
+        buffer.flip();
+        cursor.copyFrom(buffer, 0);
+        verifyRecordsMatchExpected(cursor);
+
+        // underflow
+        cursor.zapPage();
+        buffer.flip();
+        cursor.copyFrom(buffer, -1);
+        assertTrue(cursor.checkAndClearBoundsFlag());
+
+        // Target buffer overflow^W truncation.
+        cursor.zapPage();
+        buffer.flip();
+        var copied = cursor.copyFrom(buffer, 1);
+        assertFalse(cursor.checkAndClearBoundsFlag());
+        assertThat(copied).isEqualTo(filePayloadSize - 1);
+        assertThat(buffer.position()).isEqualTo(filePayloadSize - 1);
+        assertThat(buffer.remaining()).isEqualTo(1);
+
+        // Smaller buffer at offset zero.
+        cursor.zapPage();
+        buffer.flip();
+        buffer.limit(filePayloadSize - recordSize);
+        copied = cursor.copyFrom(buffer, 0);
+        assertThat(copied).isEqualTo(filePayloadSize - recordSize);
+        assertThat(buffer.position()).isEqualTo(filePayloadSize - recordSize);
+        assertThat(buffer.remaining()).isEqualTo(0);
+        verifyRecordsMatchExpected(cursor, recordsPerFilePage - 1, 0);
+
+        // Smaller buffer at non-zero offset.
+        cursor.zapPage();
+        buffer.flip();
+        buffer.limit(filePayloadSize - recordSize);
+        copied = cursor.copyFrom(buffer, recordSize);
+        assertThat(copied).isEqualTo(filePayloadSize - recordSize);
+        assertThat(buffer.position()).isEqualTo(filePayloadSize - recordSize);
+        assertThat(buffer.remaining()).isEqualTo(0);
+        verifyRecordsMatchExpected(cursor, recordsPerFilePage - 1, recordSize);
     }
 
     @Test

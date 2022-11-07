@@ -279,6 +279,11 @@ public class ByteArrayPageCursor extends PageCursor {
     }
 
     @Override
+    public int copyFrom(ByteBuffer sourceBuffer, int targetOffset) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void shiftBytes(int sourceOffset, int length, int shift) {
         int currentOffset = getOffset();
         setOffset(sourceOffset);

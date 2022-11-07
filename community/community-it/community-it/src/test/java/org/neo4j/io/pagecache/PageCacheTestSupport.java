@@ -181,23 +181,33 @@ public abstract class PageCacheTestSupport<T extends PageCache> {
      * This does the do-while-retry loop internally.
      */
     protected void verifyRecordsMatchExpected(PageCursor cursor) throws IOException {
+        verifyRecordsMatchExpected(cursor, recordsPerFilePage, 0);
+    }
+
+    /**
+     * Verifies the records on the current page of the cursor.
+     * <p>
+     * This does the do-while-retry loop internally.
+     */
+    protected void verifyRecordsMatchExpected(PageCursor cursor, int recordToCheck, int startingOffset)
+            throws IOException {
         ByteBuffer expectedPageContents = ByteBuffers.allocate(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         ByteBuffer actualPageContents = ByteBuffers.allocate(filePageSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
         int recordInPart;
         byte[] recordBytesPart = new byte[recordSize - Integer.BYTES];
         long pageId = cursor.getCurrentPageId();
-        for (int i = 0; i < recordsPerFilePage; i++) {
-            long recordId = (pageId * recordsPerFilePage) + i;
-            expectedPageContents.position(recordSize * i);
+        for (int i = 0; i < recordToCheck; i++) {
+            long recordId = (pageId * recordToCheck) + i;
+            expectedPageContents.position(startingOffset + recordSize * i);
             ByteBuffer slice = expectedPageContents.slice().order(ByteOrder.LITTLE_ENDIAN);
             slice.limit(recordSize);
             generateRecordForId(recordId, slice);
             do {
-                cursor.setOffset(recordSize * i);
+                cursor.setOffset(startingOffset + recordSize * i);
                 recordInPart = cursor.getInt();
                 cursor.getBytes(recordBytesPart);
             } while (cursor.shouldRetry());
-            actualPageContents.position(recordSize * i);
+            actualPageContents.position(startingOffset + recordSize * i);
             actualPageContents.putInt(recordInPart);
             actualPageContents.put(recordBytesPart);
         }

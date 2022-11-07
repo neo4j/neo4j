@@ -246,6 +246,11 @@ class ReadableChannelPageCursor extends PageCursor {
     }
 
     @Override
+    public int copyFrom(ByteBuffer sourceBuffer, int targetOffset) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void shiftBytes(int sourceOffset, int length, int shift) {
         throw new UnsupportedOperationException();
     }

@@ -135,6 +135,11 @@ public class StubPageCursor extends PageCursor {
     }
 
     @Override
+    public int copyFrom(ByteBuffer sourceBuffer, int targetOffset) {
+        return 0;
+    }
+
+    @Override
     public void shiftBytes(int sourceOffset, int length, int shift) {
         throw new UnsupportedOperationException("Stub cursor does not support this method... yet");
     }
