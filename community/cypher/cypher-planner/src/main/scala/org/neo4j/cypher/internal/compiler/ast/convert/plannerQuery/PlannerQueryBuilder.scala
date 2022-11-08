@@ -253,14 +253,14 @@ object PlannerQueryBuilder {
         .updateTail(fixStandaloneArgumentPatternNodes)
     }
 
-    Option(q)
-      .map(fixArgumentIds)
-      .map(fixArgumentIdsOnOptionalMatch)
-      .map(fixArgumentIdsOnMerge)
-      .map(fixArgumentIdsOnQPPs)
-      .map(groupInequalities)
-      .map(inlineRelationshipTypePredicates)
-      .map(fixStandaloneArgumentPatternNodes)
-      .get
+    Function.chain[SinglePlannerQuery](List(
+      fixArgumentIds,
+      fixArgumentIdsOnOptionalMatch,
+      fixArgumentIdsOnMerge,
+      fixArgumentIdsOnQPPs,
+      groupInequalities,
+      inlineRelationshipTypePredicates,
+      fixStandaloneArgumentPatternNodes
+    )).apply(q)
   }
 }
