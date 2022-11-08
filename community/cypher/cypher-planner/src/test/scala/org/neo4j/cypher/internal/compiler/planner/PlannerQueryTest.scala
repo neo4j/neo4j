@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -79,5 +80,13 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     result should not equal input
     result.queryGraph should equal(firstQueryGraph)
     result.tail.get.queryGraph should equal(secondQueryGraph)
+  }
+
+  test("should not mutate SinglePlannerQuery.empty state") {
+    val q = SinglePlannerQuery.empty
+    q.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels(SemanticTable()))
+    q.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 1)
+
+    SinglePlannerQuery.empty.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 0)
   }
 }

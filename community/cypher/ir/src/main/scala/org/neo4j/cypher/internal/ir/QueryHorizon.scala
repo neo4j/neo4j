@@ -160,7 +160,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
 }
 
 object QueryProjection {
-  val empty = RegularQueryProjection()
+  def empty: RegularQueryProjection = RegularQueryProjection()
 
   def forIds(coveredIds: Set[String]) =
     coveredIds.toIndexedSeq.map(idName =>
