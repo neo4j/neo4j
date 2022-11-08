@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
-import scala.collection.mutable
+import scala.collection.concurrent.TrieMap
 
 trait CachedFunction {
   def cacheSize: Int
@@ -28,7 +28,7 @@ trait CachedFunction {
 object CachedFunction {
 
   def apply[A, B](f: A => B): (A => B) with CachedFunction = new (A => B) with CachedFunction {
-    private val cache = mutable.HashMap[A, B]()
+    private val cache = TrieMap.empty[A, B]
 
     override def cacheSize: Int = cache.size
 
