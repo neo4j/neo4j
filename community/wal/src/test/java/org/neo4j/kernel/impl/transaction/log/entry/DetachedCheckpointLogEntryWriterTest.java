@@ -34,8 +34,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
@@ -57,7 +57,7 @@ class DetachedCheckpointLogEntryWriterTest {
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter =
-                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionProvider.LATEST_VERSION);
                 long initialPosition = writeChannel.position();
                 writeCheckpoint(checkpointLogEntryWriter, "checkpoint reason");
 
@@ -73,7 +73,7 @@ class DetachedCheckpointLogEntryWriterTest {
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter =
-                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionProvider.LATEST_VERSION);
 
                 for (int i = 0; i < 100; i++) {
                     long initialPosition = writeChannel.position();
@@ -92,7 +92,7 @@ class DetachedCheckpointLogEntryWriterTest {
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter =
-                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionRepository.LATEST);
+                        new DetachedCheckpointLogEntryWriter(writeChannel, KernelVersionProvider.LATEST_VERSION);
 
                 long initialPosition = writeChannel.position();
                 writeCheckpoint(checkpointLogEntryWriter, StringUtils.repeat("b", 1024));

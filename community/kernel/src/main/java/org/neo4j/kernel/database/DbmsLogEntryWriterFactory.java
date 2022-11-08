@@ -20,19 +20,19 @@
 package org.neo4j.kernel.database;
 
 import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 
 public class DbmsLogEntryWriterFactory implements LogEntryWriterFactory {
-    private final KernelVersionRepository repository;
+    private final KernelVersionProvider kernelVersionProvider;
 
-    public DbmsLogEntryWriterFactory(KernelVersionRepository repository) {
-        this.repository = repository;
+    public DbmsLogEntryWriterFactory(KernelVersionProvider kernelVersionProvider) {
+        this.kernelVersionProvider = kernelVersionProvider;
     }
 
     @Override
     public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel) {
         // Create a writer with a parser set matching the transaction log format version to use.
-        return new LogEntryWriter<>(channel, repository.kernelVersion());
+        return new LogEntryWriter<>(channel, kernelVersionProvider.kernelVersion());
     }
 }

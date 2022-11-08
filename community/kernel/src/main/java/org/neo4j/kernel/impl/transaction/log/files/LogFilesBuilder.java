@@ -42,6 +42,7 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -53,7 +54,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -96,7 +96,7 @@ public class LogFilesBuilder {
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private KernelVersionRepository kernelVersionRepository;
+    private KernelVersionProvider kernelVersionProvider;
     private LogTailMetadata externalLogTail;
 
     private LogFilesBuilder() {}
@@ -157,8 +157,8 @@ public class LogFilesBuilder {
         return this;
     }
 
-    public LogFilesBuilder withKernelVersionProvider(KernelVersionRepository kernelVersionRepository) {
-        this.kernelVersionRepository = kernelVersionRepository;
+    public LogFilesBuilder withKernelVersionProvider(KernelVersionProvider kernelVersionProvider) {
+        this.kernelVersionProvider = kernelVersionProvider;
         return this;
     }
 
@@ -280,11 +280,11 @@ public class LogFilesBuilder {
         // If no transaction log version provider has been supplied explicitly, we try to use the version from the
         // system database.
         // Or the latest version if we can't find the system db version.
-        if (kernelVersionRepository == null) {
-            if (dependencies == null || !dependencies.containsDependency(KernelVersionRepository.class)) {
-                kernelVersionRepository = KernelVersionRepository.LATEST;
+        if (kernelVersionProvider == null) {
+            if (dependencies == null || !dependencies.containsDependency(KernelVersionProvider.class)) {
+                kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
             } else {
-                this.kernelVersionRepository = dependencies.resolveDependency(KernelVersionRepository.class);
+                this.kernelVersionProvider = dependencies.resolveDependency(KernelVersionProvider.class);
             }
         }
 
@@ -316,7 +316,7 @@ public class LogFilesBuilder {
                 monitors,
                 config.get(fail_on_corrupted_log_files),
                 health,
-                kernelVersionRepository,
+                kernelVersionProvider,
                 clock,
                 databaseLayout.getDatabaseName(),
                 config,

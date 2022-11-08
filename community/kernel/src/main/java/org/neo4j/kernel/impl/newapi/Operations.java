@@ -113,6 +113,7 @@ import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -141,7 +142,6 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -171,7 +171,7 @@ public class Operations implements Write, SchemaWrite {
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipUniquenessConstraintEnabled;
-    private final KernelVersionRepository kernelVersionRepository;
+    private final KernelVersionProvider kernelVersionProvider;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
@@ -193,7 +193,7 @@ public class Operations implements Write, SchemaWrite {
             IndexingProvidersService indexProviders,
             Config config,
             MemoryTracker memoryTracker,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
@@ -209,7 +209,7 @@ public class Operations implements Write, SchemaWrite {
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
-        this.kernelVersionRepository = kernelVersionRepository;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
@@ -1732,7 +1732,7 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private void assertSupportedInVersion(String message, KernelVersion minimumVersionForSupport) {
-        KernelVersion currentStoreVersion = kernelVersionRepository.kernelVersion();
+        KernelVersion currentStoreVersion = kernelVersionProvider.kernelVersion();
         if (currentStoreVersion.isAtLeast(minimumVersionForSupport)) {
             // New or upgraded store, good to go
             return;

@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -71,7 +72,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -114,7 +114,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionCommitmentFactory commitmentFactory;
     private final TransactionIdGenerator transactionIdGenerator;
     private final LogProvider internalLogProvider;
-    private final KernelVersionRepository kernelVersionRepository;
+    private final KernelVersionProvider kernelVersionProvider;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
@@ -187,7 +187,7 @@ public class KernelTransactions extends LifecycleAdapter
             TransactionIdSequence transactionIdSequence,
             TransactionIdGenerator transactionIdGenerator,
             LogProvider internalLogProvider,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.config = config;
         this.locks = locks;
@@ -229,7 +229,7 @@ public class KernelTransactions extends LifecycleAdapter
                 activeTransactionCounter,
                 config);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
-        this.kernelVersionRepository = kernelVersionRepository;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         doBlockNewTransactions();
     }
@@ -501,7 +501,7 @@ public class KernelTransactions extends LifecycleAdapter
                     transactionIdGenerator,
                     internalLogProvider,
                     multiVersioned,
-                    kernelVersionRepository,
+                    kernelVersionProvider,
                     dbmsRuntimeRepository);
             this.transactions.add(tx);
             return tx;

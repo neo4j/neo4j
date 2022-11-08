@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.util.UUID;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 
 /**
  * Provider for metadata that describes stores properties, ids, store level implementation details
@@ -32,7 +33,7 @@ public interface MetadataProvider
                 TransactionIdStore,
                 LogVersionRepository,
                 StoreIdProvider,
-                KernelVersionRepository,
+                KernelVersionProvider,
                 Closeable {
     void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
 

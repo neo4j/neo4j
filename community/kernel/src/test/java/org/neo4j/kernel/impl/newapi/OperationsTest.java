@@ -68,7 +68,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -204,7 +204,7 @@ abstract class OperationsTest {
                 indexingProvidersService,
                 Config.defaults(GraphDatabaseInternalSettings.rel_unique_constraints, true),
                 INSTANCE,
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
         operations.initialize(NULL_CONTEXT);
 

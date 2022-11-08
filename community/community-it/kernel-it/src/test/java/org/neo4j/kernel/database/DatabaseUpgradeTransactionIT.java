@@ -63,6 +63,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -73,7 +74,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -410,7 +410,7 @@ class DatabaseUpgradeTransactionIT {
 
     private KernelVersion getKernelVersion() {
         return db.getDependencyResolver()
-                .resolveDependency(KernelVersionRepository.class)
+                .resolveDependency(KernelVersionProvider.class)
                 .kernelVersion();
     }
 

@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
@@ -35,7 +36,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
 public class TransactionLogFilesContext {
@@ -55,7 +55,7 @@ public class TransactionLogFilesContext {
     private final boolean failOnCorruptedLogFiles;
     private final Supplier<StoreId> storeId;
     private final DatabaseHealth databaseHealth;
-    private final KernelVersionRepository kernelVersionRepository;
+    private final KernelVersionProvider kernelVersionProvider;
     private final Clock clock;
     private final String databaseName;
     private final Config config;
@@ -79,7 +79,7 @@ public class TransactionLogFilesContext {
             Monitors monitors,
             boolean failOnCorruptedLogFiles,
             DatabaseHealth databaseHealth,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             Clock clock,
             String databaseName,
             Config config,
@@ -101,7 +101,7 @@ public class TransactionLogFilesContext {
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.databaseHealth = databaseHealth;
-        this.kernelVersionRepository = kernelVersionRepository;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.clock = clock;
         this.databaseName = databaseName;
         this.config = config;
@@ -173,8 +173,8 @@ public class TransactionLogFilesContext {
         return databaseHealth;
     }
 
-    public KernelVersionRepository getKernelVersionProvider() {
-        return kernelVersionRepository;
+    public KernelVersionProvider getKernelVersionProvider() {
+        return kernelVersionProvider;
     }
 
     public Clock getClock() {

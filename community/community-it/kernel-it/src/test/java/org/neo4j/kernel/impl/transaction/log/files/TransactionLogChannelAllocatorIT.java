@@ -50,7 +50,7 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -227,7 +227,7 @@ class TransactionLogChannelAllocatorIT {
                 new Monitors(),
                 true,
                 new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance()),
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,
                 config,

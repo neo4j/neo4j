@@ -88,6 +88,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -145,7 +146,6 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -290,7 +290,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionIdGenerator transactionIdGenerator,
             LogProvider logProvider,
             boolean multiVersioned,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
@@ -370,7 +370,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexingService,
                 config,
                 memoryTracker,
-                kernelVersionRepository,
+                kernelVersionProvider,
                 dbmsRuntimeRepository);
         traceProvider = getTraceProvider(config);
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);

@@ -78,6 +78,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.DefaultElementIdMapperV1;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -177,7 +178,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -874,7 +874,7 @@ public class Database extends AbstractDatabase {
             DatabaseSchemaState databaseSchemaState,
             StorageEngine storageEngine,
             TransactionIdStore transactionIdStore,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             AvailabilityGuard databaseAvailabilityGuard,
             SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
@@ -933,7 +933,7 @@ public class Database extends AbstractDatabase {
                 transactionIdSequence,
                 transactionIdGenerator,
                 internalLogProvider,
-                kernelVersionRepository,
+                kernelVersionProvider,
                 globalDependencies.resolveDependency(DbmsRuntimeRepository.class)));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);

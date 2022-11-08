@@ -86,7 +86,7 @@ import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -959,7 +959,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
                 INSTANCE,
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
 
         // when
@@ -1003,7 +1003,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
                 INSTANCE,
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
         operations.initialize(NULL_CONTEXT);
 
@@ -1045,7 +1045,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
                 INSTANCE,
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
 
         // when
@@ -1088,7 +1088,7 @@ public class PlainOperationsTest extends OperationsTest {
                 indexingProvidersService,
                 Config.defaults(),
                 INSTANCE,
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
 
         // when

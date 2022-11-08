@@ -42,7 +42,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
@@ -133,7 +133,7 @@ public final class KernelTransactionFactory {
                 TransactionIdGenerator.EMPTY,
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
-                () -> KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 mock(DbmsRuntimeRepository.class));
 
         transaction.initialize(

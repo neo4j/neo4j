@@ -31,19 +31,19 @@ import java.time.Instant;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedCheckpointLogEntryWriter {
     public static final int RECORD_LENGTH_BYTES = 232;
-    private final KernelVersionRepository kernelVersionProvider;
+    private final KernelVersionProvider kernelVersionProvider;
     protected final WritableChecksumChannel channel;
 
     public DetachedCheckpointLogEntryWriter(
-            WritableChecksumChannel channel, KernelVersionRepository kernelVersionProvider) {
+            WritableChecksumChannel channel, KernelVersionProvider kernelVersionProvider) {
         this.channel = channel;
         this.kernelVersionProvider = kernelVersionProvider;
     }

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -34,14 +35,13 @@ import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 
 class DatabaseUpgradeTransactionHandler {
     private final StorageEngine storageEngine;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
-    private final KernelVersionRepository kernelVersionRepository;
+    private final KernelVersionProvider kernelVersionProvider;
     private final DatabaseTransactionEventListeners transactionEventListeners;
     private final AtomicBoolean unregistered = new AtomicBoolean();
 
@@ -67,13 +67,13 @@ class DatabaseUpgradeTransactionHandler {
     DatabaseUpgradeTransactionHandler(
             StorageEngine storageEngine,
             DbmsRuntimeRepository dbmsRuntimeRepository,
-            KernelVersionRepository kernelVersionRepository,
+            KernelVersionProvider kernelVersionProvider,
             DatabaseTransactionEventListeners transactionEventListeners,
             UpgradeLocker locker,
             InternalLogProvider logProvider) {
         this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
-        this.kernelVersionRepository = kernelVersionRepository;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
         this.log = logProvider.getLog(this.getClass());
@@ -94,7 +94,7 @@ class DatabaseUpgradeTransactionHandler {
      * until it succeeds.
      */
     void registerUpgradeListener(InternalTransactionCommitHandler internalTransactionCommitHandler) {
-        if (!kernelVersionRepository.kernelVersion().isLatest()) {
+        if (!kernelVersionProvider.kernelVersion().isLatest()) {
             transactionEventListeners.registerTransactionEventListener(
                     new DatabaseUpgradeListener(internalTransactionCommitHandler));
         }
@@ -110,13 +110,13 @@ class DatabaseUpgradeTransactionHandler {
         @Override
         public Lock beforeCommit(TransactionData data, KernelTransaction tx, GraphDatabaseService databaseService)
                 throws Exception {
-            KernelVersion checkKernelVersion = kernelVersionRepository.kernelVersion();
+            KernelVersion checkKernelVersion = kernelVersionProvider.kernelVersion();
             if (dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
                 try {
                     try (Lock lock = locker.acquireWriteLock(tx)) {
                         KernelVersion kernelVersionToUpgradeTo =
                                 dbmsRuntimeRepository.getVersion().kernelVersion();
-                        KernelVersion currentKernelVersion = kernelVersionRepository.kernelVersion();
+                        KernelVersion currentKernelVersion = kernelVersionProvider.kernelVersion();
                         if (kernelVersionToUpgradeTo.isGreaterThan(currentKernelVersion)) {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
@@ -161,7 +161,7 @@ class DatabaseUpgradeTransactionHandler {
             }
 
             readLock.close();
-            if (kernelVersionRepository.kernelVersion().isLatest() && unregistered.compareAndSet(false, true)) {
+            if (kernelVersionProvider.kernelVersion().isLatest() && unregistered.compareAndSet(false, true)) {
                 try {
                     transactionEventListeners.unregisterTransactionEventListener(this);
                 } catch (Throwable e) {

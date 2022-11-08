@@ -44,13 +44,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
@@ -218,7 +218,7 @@ class DatabaseUpgradeTransactionHandlerTest {
                 .createUpgradeCommands(any());
         DbmsRuntimeRepository dbmsRuntimeRepository = mock(DbmsRuntimeRepository.class);
         doAnswer(inv -> currentDbmsRuntimeVersion).when(dbmsRuntimeRepository).getVersion();
-        KernelVersionRepository kernelVersionRepository = this::getKernelVersion;
+        KernelVersionProvider kernelVersionProvider = this::getKernelVersion;
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 mock(DatabaseTransactionEventListeners.class);
         doAnswer(inv -> listener = inv.getArgument(0, InternalTransactionEventListener.class))
@@ -231,7 +231,7 @@ class DatabaseUpgradeTransactionHandlerTest {
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
                 storageEngine,
                 dbmsRuntimeRepository,
-                kernelVersionRepository,
+                kernelVersionProvider,
                 databaseTransactionEventListeners,
                 lock,
                 logProvider);
