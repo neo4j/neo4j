@@ -108,6 +108,12 @@ public interface TopologyGraphDbmsModel {
         public String getStringRepr() {
             return stringRepr;
         }
+
+        public static Optional<DatabaseAccess> findByValue(String value) {
+            return Arrays.stream(values())
+                    .filter(v -> v.stringRepr.equals(value))
+                    .findFirst();
+        }
     }
 
     enum InstanceStatus {
