@@ -21,29 +21,66 @@ package org.neo4j.cypher.internal.ir.helpers
 
 import scala.collection.mutable
 
+trait CachedFunction {
+  def cacheSize: Int
+}
+
 object CachedFunction {
 
-  def apply[A, B](f: A => B): A => B = new (A => B) {
+  def apply[A, B](f: A => B): (A => B) with CachedFunction = new (A => B) with CachedFunction {
     private val cache = mutable.HashMap[A, B]()
+
+    override def cacheSize: Int = cache.size
 
     def apply(input: A): B =
       cache.getOrElseUpdate(input, f(input))
   }
 
-  def apply[A, B, C](f: (A, B) => C): (A, B) => C =
-    Function.untupled(apply(f.tupled))
+  def apply[A, B, C](f: (A, B) => C): ((A, B) => C ) with CachedFunction = {
+    val tupledCachedFunction = apply(f.tupled)
+    val untupledCachedFunction = Function.untupled(tupledCachedFunction)
+    new ((A, B) => C) with CachedFunction {
+      override def apply(v1: A, v2: B): C = untupledCachedFunction(v1, v2)
+      override def cacheSize: Int = tupledCachedFunction.cacheSize
+    }
+  }
 
-  def apply[A, B, C, D](f: (A, B, C) => D): (A, B, C) => D =
-    Function.untupled(apply(f.tupled))
+  def apply[A, B, C, D](f: (A, B, C) => D): ((A, B, C) => D ) with CachedFunction = {
+    val tupledCachedFunction = apply(f.tupled)
+    val untupledCachedFunction = Function.untupled(tupledCachedFunction)
+    new ((A, B, C) => D) with CachedFunction {
+      override def apply(a: A, b: B, c: C): D = untupledCachedFunction(a, b, c)
+      override def cacheSize: Int = tupledCachedFunction.cacheSize
+    }
+  }
 
-  def apply[A, B, C, D, E](f: (A, B, C, D) => E): (A, B, C, D) => E =
-    Function.untupled(apply(f.tupled))
+  def apply[A, B, C, D, E](f: (A, B, C, D) => E): ((A, B, C, D) => E ) with CachedFunction = {
+    val tupledCachedFunction = apply(f.tupled)
+    val untupledCachedFunction = Function.untupled(tupledCachedFunction)
+    new ((A, B, C, D) => E) with CachedFunction {
+      override def apply(v1: A, v2: B, v3: C, v4: D): E = untupledCachedFunction(v1, v2, v3, v4)
+      override def cacheSize: Int = tupledCachedFunction.cacheSize
+    }
+  }
 
-  def apply[A, B, C, D, E, F](f: (A, B, C, D, E) => F): (A, B, C, D, E) => F =
-    Function.untupled(apply(f.tupled))
+  def apply[A, B, C, D, E, F](f: (A, B, C, D, E) => F): ((A, B, C, D, E) => F ) with CachedFunction = {
+    val tupledCachedFunction = apply(f.tupled)
+    val untupledCachedFunction = Function.untupled(tupledCachedFunction)
+    new ((A, B, C, D, E) => F) with CachedFunction {
+      override def apply(v1: A, v2: B, v3: C, v4: D, v5: E): F = untupledCachedFunction(v1, v2, v3, v4, v5)
+      override def cacheSize: Int = tupledCachedFunction.cacheSize
+    }
+  }
 
-  def apply[A, B, C, D, E, F, G](f: (A, B, C, D, E, F) => G): (A, B, C, D, E, F) => G = {
-    untupled(apply(f.tupled))
+  def apply[A, B, C, D, E, F, G](f: (A, B, C, D, E, F) => G): ((A, B, C, D, E, F) => G ) with CachedFunction = {
+    {
+      val tupledCachedFunction = apply(f.tupled)
+      val untupledCachedFunction = untupled(tupledCachedFunction)
+      new ((A, B, C, D, E, F) => G) with CachedFunction {
+        override def apply(v1: A, v2: B, v3: C, v4: D, v5: E, v6: F): G = untupledCachedFunction(v1, v2, v3, v4, v5, v6)
+        override def cacheSize: Int = tupledCachedFunction.cacheSize
+      }
+    }
   }
 
   /** Un-tupling for functions of arity 6. This transforms a function taking
