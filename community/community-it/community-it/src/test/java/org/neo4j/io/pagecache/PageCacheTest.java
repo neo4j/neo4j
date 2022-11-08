@@ -102,6 +102,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.CacheLiveLockException;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.randomharness.Record;
@@ -6156,18 +6157,25 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue(nofault.next()); // No_FAULT cursor parked on page id 0.
             verifyNoFaultCursorIsInMemory(nofault, 0);
             PageCursor[] writerArray = new PageCursor[maxPages - 1]; // The `- 1` to leave our `faulter` cursor.
-            for (int i = 0; i < writerArray.length; i++) {
-                writerArray[i] = pf.io(2 + i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
-                assertTrue(writerArray[i].next());
-            }
-            // The page the nofault cursor is bound to should now be evicted.
-            for (PageCursor writer : writerArray) {
-                writer.close();
+            try {
+                for (int i = 0; i < writerArray.length; i++) {
+                    writerArray[i] = pf.io(2 + i, PF_SHARED_WRITE_LOCK, NULL_CONTEXT);
+                    assertTrue(writerArray[i].next());
+                }
+            } finally {
+                // The page the nofault cursor is bound to should now be evicted.
+                IOUtils.closeAll(writerArray);
             }
             // If the page is evicted, then our read must have been inconsistent.
             assertTrue(nofault.shouldRetry());
             // However, we are no longer in memory, because the page we had earlier got evicted.
             verifyNoFaultReadIsNotInMemory(nofault);
+        } catch (CacheLiveLockException ignored) {
+            // when pinning the last of (maxPages - 1) pages write cursor tries cooperatively evict the only available
+            // page
+            // on very rare occasions it can race with evictor thread and pass enough iterations to trigger livelock
+            // exception while evictor thread is flushing and evicting that page
+            // this is fine, just ignore it
         }
     }
 
