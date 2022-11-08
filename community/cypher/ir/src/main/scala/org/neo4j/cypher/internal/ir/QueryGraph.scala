@@ -514,7 +514,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
 }
 
 object QueryGraph {
-  val empty: QueryGraph = QueryGraph()
+  def empty: QueryGraph = QueryGraph()
 
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
