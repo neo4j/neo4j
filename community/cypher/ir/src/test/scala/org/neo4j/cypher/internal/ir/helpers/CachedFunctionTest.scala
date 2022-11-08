@@ -37,6 +37,7 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 
   test("2 arguments") {
@@ -54,6 +55,7 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 5)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 
   test("3 arguments") {
@@ -71,6 +73,7 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 5, 1)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 
   test("4 arguments") {
@@ -88,6 +91,7 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 3, 2, 1)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 
   test("5 arguments") {
@@ -105,6 +109,7 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 3, 2, 1, 0)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 
   test("6 arguments") {
@@ -122,5 +127,6 @@ class CachedFunctionTest extends CypherFunSuite {
     cachedF(4, 5, 1, 1, 1, 1)
 
     i should be(3)
+    cachedF.cacheSize shouldBe i
   }
 }
