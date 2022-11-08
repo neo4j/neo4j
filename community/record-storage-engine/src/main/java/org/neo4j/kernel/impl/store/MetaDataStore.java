@@ -110,16 +110,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
 
-    private final AtomicLong logVersion = new AtomicLong();
-    private final AtomicLong checkpointLogVersion = new AtomicLong();
-    private final AtomicLong lastCommittingTx = new AtomicLong(NOT_INITIALIZED);
+    private final AtomicLong logVersion;
+    private final AtomicLong checkpointLogVersion;
+    private final AtomicLong lastCommittingTx;
     private final Supplier<StoreId> storeIdFactory;
     private volatile KernelVersion kernelVersion;
 
-    private final HighestTransactionId highestCommittedTransaction =
-            new HighestTransactionId(NOT_INITIALIZED, (int) NOT_INITIALIZED, NOT_INITIALIZED);
+    private final HighestTransactionId highestCommittedTransaction;
 
-    private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence(-1, 200, new long[4]);
+    private final OutOfOrderSequence lastClosedTx;
     private volatile boolean closed;
 
     MetaDataStore(
@@ -152,16 +151,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 databaseName,
                 buildOptions(openOptions));
 
-        checkpointLogVersion.set(logTailMetadata.getCheckpointLogVersion());
+        checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
         kernelVersion = logTailMetadata.getKernelVersion();
-        logVersion.set(logTailMetadata.getLogVersion());
+        logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.storeIdFactory = storeIdFactory;
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
-        lastCommittingTx.set(lastCommittedTx.transactionId());
-        highestCommittedTransaction.set(
+        lastCommittingTx = new AtomicLong(lastCommittedTx.transactionId());
+        highestCommittedTransaction = new HighestTransactionId(
                 lastCommittedTx.transactionId(), lastCommittedTx.checksum(), lastCommittedTx.commitTimestamp());
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
-        lastClosedTx.set(lastCommittedTx.transactionId(), new long[] {
+        lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.transactionId(), 200, new long[] {
             logPosition.getLogVersion(),
             logPosition.getByteOffset(),
             lastCommittedTx.checksum(),
