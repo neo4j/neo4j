@@ -186,10 +186,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val expectedDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + 1 + costOfLabelLookup
-      case Parallel                          => sizeHint + costOfLabelLookup
-    }
+    val expectedDbHits = sizeHint + 1 + costOfLabelLookup
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits // label scan
   }
@@ -212,12 +209,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    val labelScanCost = runtimeUsed match {
-      case Parallel => 0
-      case _        => 2
-    }
     queryProfile.operatorProfile(1).dbHits() should (be(
-      6 + labelScanCost /*label scan*/ + 2 * costOfLabelLookup
+      6 + 2 /*label scan*/ + 2 * costOfLabelLookup
     )) // union label scan
   }
 
@@ -363,10 +356,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits: Int = runtimeUsed match {
-      case Slotted | Interpreted | Pipelined => sizeHint
-      case Parallel                          => 2 * sizeHint
-    }
+    val expectedDbHits: Int = sizeHint
 
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
@@ -406,8 +396,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expectedDbHits: Int = runtimeUsed match {
       case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
-      case Pipelined             => sizeHint + 1
-      case Parallel              => 2 * sizeHint
+      case _                     => sizeHint + 1
     }
 
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
@@ -430,8 +419,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val expectedDbHits: Int = runtimeUsed match {
       case Slotted | Interpreted => sizeHint + 1 + 1 /*costOfRelationshipTypeLookup*/
-      case Pipelined             => sizeHint + 1
-      case Parallel              => sizeHint
+      case _                     => sizeHint + 1
     }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
@@ -454,10 +442,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     val result = profile(logicalQuery, runtime)
     consume(result)
-    val expectedDbHits: Int = runtimeUsed match {
-      case Slotted | Interpreted | Pipelined => sizeHint / 10 + 1
-      case Parallel                          => 2 * sizeHint / 10 + 1
-    }
+    val expectedDbHits: Int = sizeHint / 10 + 1
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
@@ -480,10 +465,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     val result = profile(logicalQuery, runtime)
     consume(result)
-    val expectedDbHits: Int = runtimeUsed match {
-      case Slotted | Interpreted | Pipelined => sizeHint / 10 / 2 + 1
-      case Parallel                          => sizeHint / 10 + 1
-    }
+    val expectedDbHits: Int = sizeHint / 10 / 2 + 1
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
@@ -596,10 +578,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val expectedDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint / 10 + 1
-      case Parallel                          => 2 * (sizeHint / 10) + 1
-    }
+    val expectedDbHits = sizeHint / 10 + 1
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
@@ -707,10 +686,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedOptionalExpandAllDbHits = sizeHint * (costOfExpandGetRelCursor + costOfExpandOneRel) + extraNodes
-    val expectedNodeByLabelScanDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => sizeHint + extraNodes + 1 + costOfLabelLookup
-      case Parallel                          => sizeHint + extraNodes + costOfLabelLookup
-    }
+    val expectedNodeByLabelScanDbHits = sizeHint + extraNodes + 1 + costOfLabelLookup
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe expectedOptionalExpandAllDbHits // optional expand all
     queryProfile.operatorProfile(2).dbHits() shouldBe expectedNodeByLabelScanDbHits // node by label scan
@@ -769,14 +745,12 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedLabelScanRHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => be((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup)
+      case Interpreted | Slotted | Pipelined =>
+        be((n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup)
       case Parallel => be >= (n + extraNodes) + costOfLabelLookup and
-          be <= (n + extraNodes) * (n + extraNodes) + costOfLabelLookup
+          be <= (n + extraNodes) * (n + extraNodes + 1) + costOfLabelLookup
     }
-    val expectedLabelScanLHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => n + extraNodes + 1 + costOfLabelLookup
-      case Parallel                          => n + extraNodes + costOfLabelLookup
-    }
+    val expectedLabelScanLHS = n + extraNodes + 1 + costOfLabelLookup
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     val expandConstantCost = if (hasFastRelationshipTo) 1 else 2
     queryProfile.operatorProfile(
