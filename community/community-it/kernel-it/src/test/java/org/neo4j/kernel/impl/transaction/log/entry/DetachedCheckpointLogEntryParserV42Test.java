@@ -127,9 +127,9 @@ class DetachedCheckpointLogEntryParserV42Test {
                 NO_MORE_CHANNELS,
                 INSTANCE)) {
             assertEquals(
-                    KernelVersion.V4_4, readCheckpoint(entryReader, readChannel).getVersion());
+                    KernelVersion.V4_4, readCheckpoint(entryReader, readChannel).kernelVersion());
             assertEquals(
-                    KernelVersion.V5_0, readCheckpoint(entryReader, readChannel).getVersion());
+                    KernelVersion.V5_0, readCheckpoint(entryReader, readChannel).kernelVersion());
         }
     }
 

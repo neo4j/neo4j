@@ -41,7 +41,7 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     }
 
     @Override
-    public KernelVersion getKernelVersion() {
+    public KernelVersion kernelVersion() {
         return KernelVersion.LATEST;
     }
 

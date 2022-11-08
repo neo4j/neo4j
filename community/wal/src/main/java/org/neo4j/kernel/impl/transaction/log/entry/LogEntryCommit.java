@@ -24,26 +24,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_C
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 
-public class LogEntryCommit extends AbstractLogEntry {
+public class LogEntryCommit extends AbstractVersionAwareLogEntry {
     private final long txId;
     private final long timeWritten;
     private final int checksum;
-    private final KernelVersion version;
 
     public LogEntryCommit(long txId, long timeWritten, int checksum) {
         this(KernelVersion.LATEST, txId, timeWritten, checksum);
     }
 
-    public LogEntryCommit(KernelVersion version, long txId, long timeWritten, int checksum) {
-        super(TX_COMMIT);
+    public LogEntryCommit(KernelVersion kernelVersion, long txId, long timeWritten, int checksum) {
+        super(kernelVersion, TX_COMMIT);
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.checksum = checksum;
-        this.version = version;
-    }
-
-    public KernelVersion getVersion() {
-        return version;
     }
 
     public long getTxId() {
@@ -75,11 +69,11 @@ public class LogEntryCommit extends AbstractLogEntry {
         return txId == that.txId
                 && timeWritten == that.timeWritten
                 && checksum == that.checksum
-                && version == that.version;
+                && kernelVersion() == that.kernelVersion();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(txId, timeWritten, checksum, version);
+        return Objects.hash(txId, timeWritten, checksum, kernelVersion());
     }
 }

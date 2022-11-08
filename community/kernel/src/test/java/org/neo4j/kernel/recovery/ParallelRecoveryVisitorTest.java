@@ -260,7 +260,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public KernelVersion version() {
+        public KernelVersion kernelVersion() {
             return KernelVersion.LATEST;
         }
 

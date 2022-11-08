@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.IOException;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  * {@link StorageEngine#apply(CommandBatchToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.
  */
-public interface StorageCommand {
+public interface StorageCommand extends KernelVersionProvider {
     /**
      * Serializes change this command represents into a {@link WritableChannel} for later reading back.
      * First byte of command must be type of command.
@@ -45,8 +45,6 @@ public interface StorageCommand {
      * @throws IOException I/O error from channel.
      */
     void serialize(WritableChannel channel) throws IOException;
-
-    KernelVersion version();
 
     interface TokenCommand extends StorageCommand {
         /**

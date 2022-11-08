@@ -573,7 +573,7 @@ public class MetaDataStoreTest {
 
         var logTail = new EmptyLogTailMetadata() {
             @Override
-            public KernelVersion getKernelVersion() {
+            public KernelVersion kernelVersion() {
                 return KernelVersion.EARLIEST;
             }
         };

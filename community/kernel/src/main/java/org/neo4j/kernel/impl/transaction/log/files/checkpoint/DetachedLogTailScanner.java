@@ -421,10 +421,10 @@ public class DetachedLogTailScanner {
 
         public byte getEntryVersion() {
             if (start != null) {
-                return start.getVersion().version();
+                return start.kernelVersion().version();
             }
             if (commit != null) {
-                return commit.getVersion().version();
+                return commit.kernelVersion().version();
             }
             return 0;
         }

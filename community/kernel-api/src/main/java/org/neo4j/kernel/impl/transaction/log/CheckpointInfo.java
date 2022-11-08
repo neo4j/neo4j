@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
@@ -29,6 +30,7 @@ public record CheckpointInfo(
         LogPosition checkpointEntryPosition,
         LogPosition channelPositionAfterCheckpoint,
         LogPosition checkpointFilePostReadPosition,
-        KernelVersion version,
+        KernelVersion kernelVersion,
         TransactionId transactionId,
-        String reason) {}
+        String reason)
+        implements KernelVersionProvider {}

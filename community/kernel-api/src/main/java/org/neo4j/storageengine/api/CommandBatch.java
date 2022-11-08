@@ -20,12 +20,12 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 
 /**
  * Representation of a transaction that can be written to transaction log and read back later.
  */
-public interface CommandBatch extends CommandStream {
+public interface CommandBatch extends CommandStream, KernelVersionProvider {
     /**
      * @return an additional header of this transaction. Just arbitrary bytes that means nothing
      * to this transaction representation.
@@ -59,8 +59,6 @@ public interface CommandBatch extends CommandStream {
      * Typically an authenticated end user that created the transaction.
      */
     Subject subject();
-
-    KernelVersion version();
 
     /**
      * A to-string method that may include information about all the commands in this transaction.

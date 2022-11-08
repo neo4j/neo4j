@@ -44,13 +44,13 @@ public class CheckpointKernelVersionIT {
 
     @Test
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException {
-        // we can't test any earlier version since those version do not support new format of checkpoint commands so its
-        // impossible to read them back
+        // earlier version do not support new format of checkpoint commands; it's impossible to read them back, so we
+        // cannot test them
         metadataProvider.setKernelVersion(KernelVersion.V5_0);
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced 5.0"));
 
         List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();
         assertThat(checkpointInfos).hasSize(1);
-        assertThat(checkpointInfos.get(0).version()).isEqualTo(KernelVersion.V5_0);
+        assertThat(checkpointInfos.get(0).kernelVersion()).isEqualTo(KernelVersion.V5_0);
     }
 }

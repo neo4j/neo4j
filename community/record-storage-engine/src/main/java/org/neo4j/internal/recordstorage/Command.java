@@ -108,8 +108,8 @@ public abstract class Command implements StorageCommand {
     }
 
     @Override
-    public KernelVersion version() {
-        return serialization.version();
+    public KernelVersion kernelVersion() {
+        return serialization.kernelVersion();
     }
 
     @Override

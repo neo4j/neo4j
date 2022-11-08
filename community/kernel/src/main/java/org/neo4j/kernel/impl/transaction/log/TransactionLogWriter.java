@@ -43,7 +43,7 @@ public class TransactionLogWriter {
      * @return checksum of the transaction
      */
     public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
-        var writer = logEntryWriterFactory.createEntryWriter(channel, batch.version());
+        var writer = logEntryWriterFactory.createEntryWriter(channel, batch.kernelVersion());
         if (batch.isFirst()) {
             writer.writeStartEntry(
                     batch.getTimeStarted(),

@@ -152,7 +152,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 buildOptions(openOptions));
 
         checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
-        kernelVersion = logTailMetadata.getKernelVersion();
+        kernelVersion = logTailMetadata.kernelVersion();
         logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.storeIdFactory = storeIdFactory;
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();

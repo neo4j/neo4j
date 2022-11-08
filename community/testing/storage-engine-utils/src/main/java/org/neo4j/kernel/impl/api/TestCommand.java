@@ -62,7 +62,7 @@ public class TestCommand implements StorageCommand {
     }
 
     @Override
-    public KernelVersion version() {
+    public KernelVersion kernelVersion() {
         return KernelVersion.LATEST;
     }
 

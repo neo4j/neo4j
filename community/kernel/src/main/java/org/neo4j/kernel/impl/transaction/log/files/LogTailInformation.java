@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.kernel.KernelVersion;
@@ -107,7 +108,6 @@ public class LogTailInformation implements LogTailMetadata {
         return Optional.ofNullable(lastCheckPoint);
     }
 
-    @Override
     public String toString() {
         return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint="
                 + firstTxIdAfterLastCheckPoint + ", filesNotFound="
@@ -125,13 +125,9 @@ public class LogTailInformation implements LogTailMetadata {
     }
 
     @Override
-    public KernelVersion getKernelVersion() {
-        if (lastCheckPoint == null) {
-            // there was no checkpoint since it's the first start, or we restart after logs removal, and we should use
-            // version that is defined in the system
-            return dbmsRuntimeRepository.getVersion().kernelVersion();
-        }
-        return lastCheckPoint.version();
+    public KernelVersion kernelVersion() {
+        return Objects.requireNonNullElseGet(lastCheckPoint, dbmsRuntimeRepository::getVersion)
+                .kernelVersion();
     }
 
     @Override

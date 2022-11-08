@@ -24,11 +24,11 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.util.Optional;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public interface LogTailMetadata {
+public interface LogTailMetadata extends KernelVersionProvider {
     TransactionId EMPTY_LAST_TRANSACTION = new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP);
 
     LogTailMetadata EMPTY_LOG_TAIL = new EmptyLogTailMetadata();
@@ -36,8 +36,6 @@ public interface LogTailMetadata {
     boolean isRecoveryRequired();
 
     long getCheckpointLogVersion();
-
-    KernelVersion getKernelVersion();
 
     long getLogVersion();
 

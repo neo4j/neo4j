@@ -20,8 +20,9 @@
 package org.neo4j.dbms.database;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 
-public enum DbmsRuntimeVersion implements ComponentVersion {
+public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvider {
     /**
      * Introduced new transaction log version
      */
@@ -113,6 +114,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion {
         return this.getVersion() > other.getVersion();
     }
 
+    @Override
     public KernelVersion kernelVersion() {
         return kernelVersion;
     }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Optional;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -69,7 +70,7 @@ public class CheckpointInfoFactory {
                     // we need to use kernel version from transaction command since checkpoints were broken in old
                     // version and used incorrect kernel version
                     checkpointFilePostReadPosition,
-                    transactionInfo.version(),
+                    transactionInfo.kernelVersion(),
                     transactionInfo.transactionId(),
                     checkpoint42.getReason());
         } else if (entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50) {
@@ -79,7 +80,7 @@ public class CheckpointInfoFactory {
                     checkpointEntryPosition,
                     channelPositionAfterCheckpoint,
                     checkpointFilePostReadPosition,
-                    checkpoint50.getVersion(),
+                    checkpoint50.kernelVersion(),
                     checkpoint50.getTransactionId(),
                     checkpoint50.getReason());
         } else {
@@ -102,7 +103,7 @@ public class CheckpointInfoFactory {
                 if (logEntry instanceof LogEntryCommit commit && checkedPosition.equals(transactionPosition)) {
                     return new TransactionInfo(
                             new TransactionId(commit.getTxId(), commit.getChecksum(), commit.getTimeWritten()),
-                            commit.getVersion());
+                            commit.kernelVersion());
                 }
             }
 
@@ -184,5 +185,6 @@ public class CheckpointInfoFactory {
         return reverseBytes ? Long.reverseBytes(value) : value;
     }
 
-    private record TransactionInfo(TransactionId transactionId, KernelVersion version) {}
+    private record TransactionInfo(TransactionId transactionId, KernelVersion kernelVersion)
+            implements KernelVersionProvider {}
 }

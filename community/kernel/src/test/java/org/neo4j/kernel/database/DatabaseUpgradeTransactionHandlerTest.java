@@ -235,8 +235,8 @@ class DatabaseUpgradeTransactionHandlerTest {
                 databaseTransactionEventListeners,
                 lock,
                 logProvider);
-        handler.registerUpgradeListener(commands -> setKernelVersion(
-                ((FakeKernelVersionUpgradeCommand) commands.iterator().next()).version));
+        handler.registerUpgradeListener(
+                commands -> setKernelVersion(commands.iterator().next().kernelVersion()));
     }
 
     private synchronized void setKernelVersion(KernelVersion newKernelVersion) {
@@ -289,7 +289,7 @@ class DatabaseUpgradeTransactionHandlerTest {
         }
 
         @Override
-        public KernelVersion version() {
+        public KernelVersion kernelVersion() {
             return version;
         }
 

@@ -40,7 +40,8 @@ public record DbStatistics(
         int btreeIndexes,
         int constraints,
         int btreeConstraints,
-        int schemaEntities) {
+        int schemaEntities)
+        implements KernelVersionProvider {
     public static final int NO_DATA = -1;
 
     public String statisticsAsConstructorString() {

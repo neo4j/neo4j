@@ -82,7 +82,7 @@ class DetachedCheckpointLogEntryParserV50Test {
                     INSTANCE)) {
                 var checkpointV50 = readCheckpoint(entryReader, readChannel);
                 assertEquals(DETACHED_CHECK_POINT_V5_0, checkpointV50.getType());
-                assertEquals(KernelVersion.V5_0, checkpointV50.getVersion());
+                assertEquals(KernelVersion.V5_0, checkpointV50.kernelVersion());
                 assertEquals(new LogPosition(1, 2), checkpointV50.getLogPosition());
                 assertEquals(TEST_STORE_ID, checkpointV50.getStoreId());
                 assertEquals(new TransactionId(100, 101, 102), checkpointV50.getTransactionId());

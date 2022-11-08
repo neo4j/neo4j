@@ -25,13 +25,12 @@ import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public class LogEntryStart extends AbstractLogEntry {
+public class LogEntryStart extends AbstractVersionAwareLogEntry {
     private final long timeWritten;
     private final long lastCommittedTxWhenTransactionStarted;
     private final int previousChecksum;
     private final byte[] additionalHeader;
     private final LogPosition startPosition;
-    private final KernelVersion version;
 
     public LogEntryStart(
             long timeWritten,
@@ -49,23 +48,18 @@ public class LogEntryStart extends AbstractLogEntry {
     }
 
     public LogEntryStart(
-            KernelVersion version,
+            KernelVersion kernelVersion,
             long timeWritten,
             long lastCommittedTxWhenTransactionStarted,
             int previousChecksum,
             byte[] additionalHeader,
             LogPosition startPosition) {
-        super(TX_START);
+        super(kernelVersion, TX_START);
         this.previousChecksum = previousChecksum;
         this.startPosition = startPosition;
         this.timeWritten = timeWritten;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.additionalHeader = additionalHeader;
-        this.version = version;
-    }
-
-    public KernelVersion getVersion() {
-        return version;
     }
 
     public LogPosition getStartPosition() {
@@ -87,7 +81,7 @@ public class LogEntryStart extends AbstractLogEntry {
     @Override
     public String toString() {
         return "Start[" + "kernelVersion="
-                + version + "," + "time="
+                + kernelVersion() + "," + "time="
                 + timestamp(timeWritten) + "," + "lastCommittedTxWhenTransactionStarted="
                 + lastCommittedTxWhenTransactionStarted + "," + "previousChecksum="
                 + previousChecksum + "," + "additionalHeaderLength="
@@ -110,7 +104,7 @@ public class LogEntryStart extends AbstractLogEntry {
 
         return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted
                 && timeWritten == start.timeWritten
-                && version == start.version
+                && kernelVersion() == start.kernelVersion()
                 && previousChecksum == start.previousChecksum
                 && Arrays.equals(additionalHeader, start.additionalHeader)
                 && startPosition.equals(start.startPosition);

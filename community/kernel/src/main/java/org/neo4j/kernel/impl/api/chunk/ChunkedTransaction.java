@@ -120,9 +120,9 @@ public class ChunkedTransaction implements CommandBatchToApply, CommandBatch {
     }
 
     @Override
-    public KernelVersion version() {
+    public KernelVersion kernelVersion() {
         if (version == null) {
-            version = chunk.commands().get(0).version();
+            version = chunk.commands().get(0).kernelVersion();
         }
         return version;
     }

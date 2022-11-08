@@ -25,7 +25,7 @@ class LogCommandSerializationV4_4 extends LogCommandSerializationV4_3_D3 {
     static final LogCommandSerializationV4_4 INSTANCE = new LogCommandSerializationV4_4();
 
     @Override
-    KernelVersion version() {
+    public KernelVersion kernelVersion() {
         return KernelVersion.V4_4;
     }
 }

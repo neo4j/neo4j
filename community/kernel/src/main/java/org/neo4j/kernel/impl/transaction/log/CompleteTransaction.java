@@ -107,8 +107,8 @@ public class CompleteTransaction implements CommandBatch {
     }
 
     @Override
-    public KernelVersion version() {
-        return commands.isEmpty() ? null : commands.get(0).version();
+    public KernelVersion kernelVersion() {
+        return commands.isEmpty() ? null : commands.get(0).kernelVersion();
     }
 
     @Override

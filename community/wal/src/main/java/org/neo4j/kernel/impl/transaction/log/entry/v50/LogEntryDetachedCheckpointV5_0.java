@@ -24,32 +24,30 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETA
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
+public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry {
     private final TransactionId transactionId;
     private final LogPosition logPosition;
     private final long checkpointTime;
     private final StoreId storeId;
     private final String reason;
-    private final KernelVersion version;
 
     public LogEntryDetachedCheckpointV5_0(
-            KernelVersion version,
+            KernelVersion kernelVersion,
             TransactionId transactionId,
             LogPosition logPosition,
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        super(DETACHED_CHECK_POINT_V5_0);
+        super(kernelVersion, DETACHED_CHECK_POINT_V5_0);
         this.transactionId = transactionId;
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
         this.storeId = storeId;
         this.reason = reason;
-        this.version = version;
     }
 
     @Override
@@ -65,17 +63,13 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
                 && Objects.equals(transactionId, that.transactionId)
                 && Objects.equals(logPosition, that.logPosition)
                 && Objects.equals(storeId, that.storeId)
-                && version == that.version
+                && kernelVersion() == that.kernelVersion()
                 && Objects.equals(reason, that.reason);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getVersion(), transactionId, logPosition, checkpointTime, storeId, reason);
-    }
-
-    public KernelVersion getVersion() {
-        return version;
+        return Objects.hash(kernelVersion(), transactionId, logPosition, checkpointTime, storeId, reason);
     }
 
     public StoreId getStoreId() {
@@ -102,6 +96,6 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
                 + checkpointTime + ", storeId="
                 + storeId + ", reason='"
                 + reason + '\'' + ", version="
-                + version + '}';
+                + kernelVersion() + '}';
     }
 }

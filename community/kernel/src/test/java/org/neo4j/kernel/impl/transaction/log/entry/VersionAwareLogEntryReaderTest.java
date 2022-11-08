@@ -158,7 +158,7 @@ class VersionAwareLogEntryReaderTest {
 
     private static void writeStartEntry(InMemoryClosableChannel channel, LogEntryStart start) {
         channel.beginChecksum();
-        channel.put(start.getVersion().version()); // version
+        channel.put(start.kernelVersion().version()); // version
         channel.put(LogEntryTypeCodes.TX_START); // type
         channel.putLong(start.getTimeWritten());
         channel.putLong(start.getLastCommittedTxWhenTransactionStarted());
@@ -168,7 +168,7 @@ class VersionAwareLogEntryReaderTest {
     }
 
     private static void writeCommitEntry(InMemoryClosableChannel channel, LogEntryCommit commit) {
-        channel.put(commit.getVersion().version());
+        channel.put(commit.kernelVersion().version());
         channel.put(LogEntryTypeCodes.TX_COMMIT);
         channel.putLong(commit.getTxId());
         channel.putLong(commit.getTimeWritten());

@@ -439,7 +439,7 @@ class DatabaseUpgradeTransactionIT {
             while (transactionCursor.next()) {
                 CommittedTransactionRepresentation representation = transactionCursor.get();
                 transactions.add(representation);
-                transactionVersions.add(representation.startEntry().getVersion());
+                transactionVersions.add(representation.startEntry().kernelVersion());
             }
         }
         assertThat(transactionVersions)
