@@ -26,6 +26,9 @@ import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,12 +40,16 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
@@ -96,41 +103,95 @@ public class DynamicIndexStoreViewIT {
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() throws Throwable {
+    void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() {
+        shouldHandleConcurrentDeletionOfTokenIndexDuringScan(this::populateNodes, this::nodeStoreScan);
+    }
+
+    @Test
+    void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() {
+        shouldHandleConcurrentDeletionOfTokenIndexDuringScan(this::populateRelationships, this::relationshipStoreScan);
+    }
+
+    private void shouldHandleConcurrentDeletionOfTokenIndexDuringScan(
+            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
         // Given
-        var nodes = populateNodes();
+        var entities = entitiesCreator.getAsLong();
         var consumer = new TestTokenScanConsumer();
-        var storeScan = nodeStoreScan(consumer);
+        var storeScan = storeScanSupplier.apply(consumer);
+        var scanSuccessful = new AtomicBoolean();
 
         // When
-        Race race = new Race();
-        race.addContestant(() -> storeScan.run(new ContainsExternalUpdates()));
+        Race race = new Race().withRandomStartDelays();
+        race.addContestant(() -> dropSafeRun(storeScan, scanSuccessful));
         race.addContestant(() -> dropTokenIndexes(database), 5);
-        race.go();
+        race.goUnchecked();
 
         // Then
-        assertThat(storeScan.getProgress().getTotal()).isEqualTo(nodes);
-        assertThat(consumer.consumedEntities()).isEqualTo(nodes);
+        if (scanSuccessful.get()) {
+            assertThat(storeScan.getProgress().getTotal()).isEqualTo(entities);
+            assertThat(consumer.consumedEntities()).isEqualTo(entities);
+        }
         storeScan.stop();
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() throws Throwable {
+    void nodeLookupIndexDropShouldAwaitStoreScanFinish() throws Exception {
+        lookupIndexDropShouldAwaitStoreScanFinish(this::populateNodes, this::nodeStoreScan);
+    }
+
+    @Test
+    void relationshipLookupIndexDropShouldAwaitStoreScanFinish() throws Exception {
+        lookupIndexDropShouldAwaitStoreScanFinish(this::populateRelationships, this::relationshipStoreScan);
+    }
+
+    private void lookupIndexDropShouldAwaitStoreScanFinish(
+            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) throws Exception {
         // Given
-        var relationships = populateRelationships();
-        var consumer = new TestTokenScanConsumer();
-        var storeScan = relationshipStoreScan(consumer);
+        var entities = entitiesCreator.getAsLong();
+        var barrier = new Barrier.Control();
+        var consumer = new TestTokenScanConsumer(new TestTokenScanConsumer.Monitor() {
+            private final AtomicBoolean first = new AtomicBoolean(true);
+
+            @Override
+            public void recordAdded(long entityId, long[] tokens) {
+                if (first.getAndSet(false)) {
+                    barrier.reached();
+                }
+            }
+        });
+        var storeScan = storeScanSupplier.apply(consumer);
 
         // When
-        Race race = new Race();
-        race.addContestant(() -> storeScan.run(new ContainsExternalUpdates()));
-        race.addContestant(() -> dropTokenIndexes(database), 5);
-        race.go();
+        try (var t2 = new OtherThreadExecutor("T2");
+                var t3 = new OtherThreadExecutor("T3")) {
+            var scan = t2.executeDontWait(() -> {
+                storeScan.run(new ContainsExternalUpdates());
+                return null;
+            });
+            var drop = t3.executeDontWait(() -> {
+                dropTokenIndexes(database);
+                return null;
+            });
+            t3.waitUntilWaiting(waitDetails -> waitDetails.isAt(Operations.class, "indexDrop"));
+            barrier.release();
+            scan.get();
+            drop.get();
+        }
 
         // Then
-        assertThat(storeScan.getProgress().getTotal()).isEqualTo(relationships);
-        assertThat(consumer.consumedEntities()).isEqualTo(relationships);
+        assertThat(storeScan.getProgress().getTotal()).isEqualTo(entities);
+        assertThat(consumer.consumedEntities()).isEqualTo(entities);
         storeScan.stop();
+    }
+
+    private void dropSafeRun(StoreScan storeScan, AtomicBoolean scanSuccessful) {
+        try {
+            storeScan.run(new ContainsExternalUpdates());
+            scanSuccessful.set(true);
+        } catch (IllegalStateException e) {
+            // If this scan starts after the index has been dropped this exception will be thrown
+            scanSuccessful.set(false);
+        }
     }
 
     private class ContainsExternalUpdates implements StoreScan.ExternalUpdatesCheck {
@@ -143,13 +204,13 @@ public class DynamicIndexStoreViewIT {
         public void applyExternalUpdates(long id) {}
     }
 
-    private StoreScan nodeStoreScan(TestTokenScanConsumer consumer) {
+    private StoreScan nodeStoreScan(TokenScanConsumer consumer) {
         CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitNodes(
                 getLabelIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);
     }
 
-    private StoreScan relationshipStoreScan(TestTokenScanConsumer consumer) {
+    private StoreScan relationshipStoreScan(TokenScanConsumer consumer) {
         CursorContextFactory contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         return storeView.visitRelationships(
                 getRelationTypeIds(), ALWAYS_TRUE_INT, null, consumer, false, true, contextFactory, INSTANCE);

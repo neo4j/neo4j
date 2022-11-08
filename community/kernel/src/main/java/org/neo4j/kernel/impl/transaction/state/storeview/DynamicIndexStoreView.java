@@ -100,7 +100,12 @@ public class DynamicIndexStoreView implements IndexStoreView {
                     fullScanStoreView.scheduler,
                     contextFactory,
                     memoryTracker);
-            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, nodeStoreScan);
+            return new IndexedStoreScan(
+                    locks,
+                    tokenIndex.get().descriptor,
+                    config,
+                    () -> findTokenIndex(NODE).isPresent(),
+                    nodeStoreScan);
         }
 
         return fullScanStoreView.visitNodes(
@@ -160,7 +165,12 @@ public class DynamicIndexStoreView implements IndexStoreView {
                         contextFactory,
                         memoryTracker);
             }
-            return new IndexedStoreScan(locks, tokenIndex.get().descriptor, config, storeScan);
+            return new IndexedStoreScan(
+                    locks,
+                    tokenIndex.get().descriptor,
+                    config,
+                    () -> findTokenIndex(RELATIONSHIP).isPresent(),
+                    storeScan);
         }
 
         return fullScanStoreView.visitRelationships(

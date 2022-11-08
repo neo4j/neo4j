@@ -46,7 +46,7 @@ class IndexedStoreScanTest {
                 .withName("index")
                 .materialise(0);
         var delegate = mock(StoreScan.class);
-        var storeScan = new IndexedStoreScan(locks, index, config, delegate);
+        var storeScan = new IndexedStoreScan(locks, index, config, () -> true, delegate);
         var client = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn(client);
 

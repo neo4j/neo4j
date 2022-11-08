@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.function.BooleanSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -30,16 +31,24 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.util.Preconditions;
 
 public class IndexedStoreScan implements StoreScan {
     private final Locks locks;
     private final Config config;
+    private final BooleanSupplier indexExistenceChecker;
     private final StoreScan delegate;
     private final IndexDescriptor index;
 
-    public IndexedStoreScan(Locks locks, IndexDescriptor index, Config config, StoreScan delegate) {
+    public IndexedStoreScan(
+            Locks locks,
+            IndexDescriptor index,
+            Config config,
+            BooleanSupplier indexExistenceChecker,
+            StoreScan delegate) {
         this.locks = locks;
         this.config = config;
+        this.indexExistenceChecker = indexExistenceChecker;
         this.delegate = delegate;
         this.index = index;
     }
@@ -50,6 +59,7 @@ public class IndexedStoreScan implements StoreScan {
             client.initialize(NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
             client.acquireShared(
                     LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys());
+            Preconditions.checkState(indexExistenceChecker.getAsBoolean(), "%s no longer exists", index);
             delegate.run(externalUpdatesCheck);
         }
     }

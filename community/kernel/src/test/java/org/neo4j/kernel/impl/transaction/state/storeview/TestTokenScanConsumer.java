@@ -30,8 +30,19 @@ import java.util.Set;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 
 public class TestTokenScanConsumer implements TokenScanConsumer {
+    private static final Monitor NO_MONITOR = (entityId, tokens) -> {};
+
     public final List<List<Record>> batches = synchronizedList(new ArrayList<>());
     private final Set<Long> entities = new HashSet<>();
+    private final Monitor monitor;
+
+    public TestTokenScanConsumer() {
+        this(NO_MONITOR);
+    }
+
+    public TestTokenScanConsumer(Monitor monitor) {
+        this.monitor = monitor;
+    }
 
     public long consumedEntities() {
         return entities.size();
@@ -46,6 +57,7 @@ public class TestTokenScanConsumer implements TokenScanConsumer {
             public void addRecord(long entityId, long[] tokens) {
                 batchTokenUpdates.add(new Record(entityId, tokens));
                 entities.add(entityId);
+                monitor.recordAdded(entityId, tokens);
             }
 
             @Override
@@ -90,5 +102,9 @@ public class TestTokenScanConsumer implements TokenScanConsumer {
             result = 31 * result + Arrays.hashCode(tokens);
             return result;
         }
+    }
+
+    public interface Monitor {
+        void recordAdded(long entityId, long[] tokens);
     }
 }
