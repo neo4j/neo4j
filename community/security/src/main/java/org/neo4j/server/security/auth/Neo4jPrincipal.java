@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class Neo4jPrincipal {
-    public static final String NO_ID = "NO_ID";
 
     private final String username;
     private final Optional<String> id;

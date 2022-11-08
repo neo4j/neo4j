@@ -36,7 +36,6 @@ import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.server.security.auth.Neo4jPrincipal;
 
 public class SystemGraphRealmHelper {
     private final Supplier<GraphDatabaseService> systemSupplier;
@@ -67,12 +66,7 @@ public class SystemGraphRealmHelper {
             Credential credential =
                     SystemGraphCredential.deserialize((String) userNode.getProperty("credentials"), secureHasher);
 
-            String id;
-            try {
-                id = (String) userNode.getProperty("id");
-            } catch (NotFoundException e) {
-                id = Neo4jPrincipal.NO_ID;
-            }
+            String id = userNode.hasProperty("id") ? (String) userNode.getProperty("id") : null;
 
             boolean requirePasswordChange = (boolean) userNode.getProperty("passwordChangeRequired");
             boolean suspended = (boolean) userNode.getProperty("suspended");
