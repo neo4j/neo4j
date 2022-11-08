@@ -265,7 +265,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 }
 
 object SinglePlannerQuery {
-  val empty: RegularSinglePlannerQuery = RegularSinglePlannerQuery()
+  def empty: RegularSinglePlannerQuery = RegularSinglePlannerQuery()
 
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)

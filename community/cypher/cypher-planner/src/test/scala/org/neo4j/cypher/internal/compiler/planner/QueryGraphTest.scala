@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -73,5 +74,14 @@ class QueryGraphTest extends CypherFunSuite {
     val qg3 = QueryGraph(hints = Set(hint1, hint2, hint3))
 
     qg1 ++ qg2 should equal(qg3)
+  }
+
+  test("should not mutate QueryGraph.empty state") {
+    val qg = QueryGraph.empty
+
+    qg.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels(SemanticTable()))
+    qg.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 1)
+
+    QueryGraph.empty.allQGsWithLeafInfo.foreach(_.allKnownUnstableNodeLabels.cacheSize shouldBe 0)
   }
 }

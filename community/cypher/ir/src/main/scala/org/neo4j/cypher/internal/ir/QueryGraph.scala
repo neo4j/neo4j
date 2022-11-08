@@ -609,7 +609,7 @@ case class QueryGraph(
 }
 
 object QueryGraph {
-  val empty: QueryGraph = QueryGraph()
+  def empty: QueryGraph = QueryGraph()
 
   implicit object byCoveredIds extends Ordering[QueryGraph] {
 
