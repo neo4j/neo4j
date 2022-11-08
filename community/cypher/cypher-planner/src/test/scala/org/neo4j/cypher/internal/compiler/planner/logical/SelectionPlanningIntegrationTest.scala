@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.scalatest.Inside
 
-import scala.collection.immutable.ListSet
-
 class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     with LogicalPlanningIntegrationTestSupport with Inside {
 
