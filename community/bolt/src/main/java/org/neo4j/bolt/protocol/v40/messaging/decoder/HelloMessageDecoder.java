@@ -70,7 +70,12 @@ public class HelloMessageDecoder implements StructReader<Connection, HelloMessag
         var reader = ctx.valueReader(buffer);
 
         var meta = this.readMetaDataMap(reader, buffer.getTarget().readableBytes());
+        this.validateMeta(meta);
 
+        return new HelloMessage(meta);
+    }
+
+    protected void validateMeta(Map<String, Object> meta) throws PackstreamReaderException {
         var userAgent = meta.get("user_agent");
         if (userAgent == null) {
             throw new IllegalStructArgumentException("user_agent", "Expected \"user_agent\" to be non-null");
@@ -78,8 +83,6 @@ public class HelloMessageDecoder implements StructReader<Connection, HelloMessag
         if (!(userAgent instanceof String)) {
             throw new IllegalStructArgumentException("user_agent", "Expected value to be a string");
         }
-
-        return new HelloMessage(meta);
     }
 
     protected Map<String, Object> readMetaDataMap(PackstreamValueReader<Connection> reader, int limit)

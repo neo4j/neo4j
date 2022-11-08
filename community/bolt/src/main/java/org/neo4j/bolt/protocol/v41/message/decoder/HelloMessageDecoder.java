@@ -54,6 +54,8 @@ public final class HelloMessageDecoder extends org.neo4j.bolt.protocol.v40.messa
         Map<String, Object> meta =
                 this.readMetaDataMap(valueReader, buffer.getTarget().readableBytes());
 
+        this.validateMeta(meta);
+
         var routingContext = parseRoutingContext(meta);
         var authToken = extractAuthToken(meta);
 
