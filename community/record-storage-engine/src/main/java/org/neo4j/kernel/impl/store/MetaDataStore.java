@@ -195,15 +195,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void setKernelVersion(KernelVersion kernelVersion) {
-        assertNotClosed();
-        this.kernelVersion = kernelVersion;
-    }
-
-    @Override
     public KernelVersion kernelVersion() {
         assertNotClosed();
         return kernelVersion;
+    }
+
+    @Override
+    public void setKernelVersion(KernelVersion kernelVersion) {
+        assertNotClosed();
+        this.kernelVersion = kernelVersion;
     }
 
     @Override

@@ -144,7 +144,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void setKernelVersion(KernelVersion kernelVersion) {
+    public void kernelVersion(KernelVersion kernelVersion) {
         this.kernelVersion = kernelVersion;
     }
 

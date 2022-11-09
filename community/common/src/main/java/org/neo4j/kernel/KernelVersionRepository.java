@@ -17,22 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel;
 
-import java.io.Closeable;
-import java.util.UUID;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersionRepository;
-
-/**
- * Provider for metadata that describes stores properties, ids, store level implementation details
- */
-public interface MetadataProvider
-        extends DatabaseIdStore,
-                TransactionIdStore,
-                LogVersionRepository,
-                StoreIdProvider,
-                KernelVersionRepository,
-                Closeable {
-    void regenerateMetadata(StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext);
+public interface KernelVersionRepository extends KernelVersionProvider {
+    void setKernelVersion(KernelVersion kernelVersion);
 }
