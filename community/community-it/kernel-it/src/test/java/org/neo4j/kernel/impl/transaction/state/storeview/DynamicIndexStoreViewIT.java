@@ -128,8 +128,7 @@ public class DynamicIndexStoreViewIT {
 
         // Then
         if (scanSuccessful.get()) {
-            assertThat(storeScan.getProgress().getTotal()).isEqualTo(entities);
-            assertThat(consumer.consumedEntities()).isEqualTo(entities);
+            assertScanCompleted(storeScan, consumer, entities);
         }
         storeScan.stop();
     }
@@ -179,9 +178,13 @@ public class DynamicIndexStoreViewIT {
         }
 
         // Then
-        assertThat(storeScan.getProgress().getTotal()).isEqualTo(entities);
-        assertThat(consumer.consumedEntities()).isEqualTo(entities);
+        assertScanCompleted(storeScan, consumer, entities);
         storeScan.stop();
+    }
+
+    private static void assertScanCompleted(StoreScan storeScan, TestTokenScanConsumer consumer, long entities) {
+        assertThat(storeScan.getProgress().getProgress()).isEqualTo(1.0f);
+        assertThat(consumer.consumedEntities()).isEqualTo(entities);
     }
 
     private void dropSafeRun(StoreScan storeScan, AtomicBoolean scanSuccessful) {
