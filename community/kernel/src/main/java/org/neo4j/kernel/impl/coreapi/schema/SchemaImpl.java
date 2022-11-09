@@ -326,22 +326,11 @@ public class SchemaImpl implements Schema {
     public IndexDefinition getIndexByName(String indexName) {
         requireNonNull(indexName);
         transaction.assertOpen();
-        Iterator<IndexDefinition> indexes = getIndexes().iterator();
-        IndexDefinition index = null;
-        while (indexes.hasNext()) {
-            IndexDefinition candidate = indexes.next();
-            if (candidate.getName().equals(indexName)) {
-                if (index != null) {
-                    throw new IllegalStateException("Multiple indexes found by the name '" + indexName + "'. "
-                            + "Try iterating Schema#getIndexes() and filter by name instead.");
-                }
-                index = candidate;
-            }
-        }
-        if (index == null) {
+        var index = transaction.schemaRead().indexGetForName(indexName);
+        if (index == IndexDescriptor.NO_INDEX) {
             throw new IllegalArgumentException("No index found with the name '" + indexName + "'.");
         }
-        return index;
+        return descriptorToDefinition(transaction.tokenRead(), index);
     }
 
     @Override
