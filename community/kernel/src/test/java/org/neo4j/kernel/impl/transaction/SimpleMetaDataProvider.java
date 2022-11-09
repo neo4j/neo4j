@@ -31,12 +31,13 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class SimpleMetaDataProvider implements MetadataProvider {
+    private final SimpleKernelVersionRepository kernelVersionRepository;
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
-    private volatile KernelVersion kernelVersion = KernelVersion.LATEST;
 
     public SimpleMetaDataProvider() {
+        kernelVersionRepository = new SimpleKernelVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
         logVersionRepository = new SimpleLogVersionRepository();
     }
@@ -140,12 +141,12 @@ public class SimpleMetaDataProvider implements MetadataProvider {
 
     @Override
     public KernelVersion kernelVersion() {
-        return kernelVersion;
+        return kernelVersionRepository.kernelVersion();
     }
 
     @Override
-    public void kernelVersion(KernelVersion kernelVersion) {
-        this.kernelVersion = kernelVersion;
+    public void setKernelVersion(KernelVersion kernelVersion) {
+        kernelVersionRepository.setKernelVersion(kernelVersion);
     }
 
     @Override

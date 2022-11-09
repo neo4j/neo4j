@@ -69,7 +69,6 @@ import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
@@ -555,31 +554,6 @@ public class MetaDataStoreTest {
             dataStore.setCheckpointLogVersion(321);
             assertEquals(321, dataStore.getCheckpointLogVersion());
             assertEquals(0, dataStore.getCurrentLogVersion());
-        }
-    }
-
-    @Test
-    void shouldBeAbleToReadAndWriteKernelVersion() {
-        try (MetaDataStore metaDataStore = newMetaDataStore()) {
-            assertThat(metaDataStore.kernelVersion())
-                    .isEqualTo(
-                            KernelVersion
-                                    .LATEST); // new store should have the latest kernel version that is not the same as
-            // earliest
-            assertThat(metaDataStore.kernelVersion()).isNotEqualTo(KernelVersion.EARLIEST);
-            metaDataStore.setKernelVersion(KernelVersion.EARLIEST); // so we set it
-            assertEquals(KernelVersion.EARLIEST, metaDataStore.kernelVersion());
-        }
-
-        var logTail = new EmptyLogTailMetadata() {
-            @Override
-            public KernelVersion kernelVersion() {
-                return KernelVersion.EARLIEST;
-            }
-        };
-        try (MetaDataStore metaDataStore = newMetaDataStore(logTail)) {
-            assertThat(metaDataStore.kernelVersion())
-                    .isEqualTo(KernelVersion.EARLIEST); // and can read it after a restart
         }
     }
 

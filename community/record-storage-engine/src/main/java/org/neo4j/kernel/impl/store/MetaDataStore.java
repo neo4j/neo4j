@@ -57,6 +57,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
@@ -110,11 +111,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
 
+    private final MetadataCache metadataCache;
     private final AtomicLong logVersion;
     private final AtomicLong checkpointLogVersion;
     private final AtomicLong lastCommittingTx;
     private final Supplier<StoreId> storeIdFactory;
-    private volatile KernelVersion kernelVersion;
 
     private final HighestTransactionId highestCommittedTransaction;
 
@@ -151,8 +152,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 databaseName,
                 buildOptions(openOptions));
 
+        metadataCache = new MetadataCache(logTailMetadata);
         checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
-        kernelVersion = logTailMetadata.kernelVersion();
         logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.storeIdFactory = storeIdFactory;
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
@@ -197,13 +198,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     @Override
     public KernelVersion kernelVersion() {
         assertNotClosed();
-        return kernelVersion;
+        return metadataCache.kernelVersion();
     }
 
     @Override
     public void setKernelVersion(KernelVersion kernelVersion) {
         assertNotClosed();
-        this.kernelVersion = kernelVersion;
+        metadataCache.set(kernelVersion);
     }
 
     @Override
