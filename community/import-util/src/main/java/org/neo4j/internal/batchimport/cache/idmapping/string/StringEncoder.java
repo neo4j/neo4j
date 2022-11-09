@@ -34,7 +34,7 @@ public class StringEncoder implements Encoder {
 
     @Override
     public long encode(Object any) {
-        String s = (String) any;
+        String s = convertToString(any);
         // construct bytes from string
         int inputLength = s.length();
         byte[] bytes = new byte[inputLength];
@@ -53,6 +53,13 @@ public class StringEncoder implements Encoder {
         carryOver = temp;
         high = high >>> 8 | carryOver << 24;
         return (long) low << 32 | high & UPPER_INT_MASK;
+    }
+
+    private String convertToString(Object any) {
+        if (any instanceof String string) {
+            return string;
+        }
+        return any.toString();
     }
 
     private static int lengthEncoder(int length) {

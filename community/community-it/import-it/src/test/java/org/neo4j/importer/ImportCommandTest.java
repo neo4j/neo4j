@@ -2018,6 +2018,57 @@ class ImportCommandTest {
                 .hasMessageContaining("'some nonsense' is not a valid size");
     }
 
+    @Test
+    void shouldStoreIDValuesAsSpecifiedValueType() throws Exception {
+        // GIVEN
+        var nodeData1 = createAndWriteFile("persons.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupOne){id-type:long},name,:LABEL");
+            writer.println("123,P1,Person");
+            writer.println("456,P2,Person");
+        });
+        var nodeData2 = createAndWriteFile("games.csv", Charset.defaultCharset(), writer -> {
+            writer.println("id:ID(GroupTwo),name,:LABEL");
+            writer.println("ABC,G1,Game");
+            writer.println("DEF,G2,Game");
+        });
+
+        // WHEN
+        runImport(
+                "--nodes",
+                nodeData1.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData2.toAbsolutePath().toString(),
+                "--id-type",
+                "string");
+
+        // THEN
+        var db = getDatabaseApi();
+        try (var tx = db.beginTx()) {
+            try (var persons = tx.findNodes(label("Person"))) {
+                var expectedPersonIds = Set.of(123L, 456L);
+                var actualPersonIds = new HashSet<Long>();
+                while (persons.hasNext()) {
+                    var node = persons.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(Long.class);
+                    actualPersonIds.add((Long) id);
+                }
+                assertThat(actualPersonIds).isEqualTo(expectedPersonIds);
+            }
+            try (var games = tx.findNodes(label("Game"))) {
+                var expectedGameIds = Set.of("ABC", "DEF");
+                var actualGameIds = new HashSet<String>();
+                while (games.hasNext()) {
+                    var node = games.next();
+                    var id = node.getProperty("id");
+                    assertThat(id).isInstanceOf(String.class);
+                    actualGameIds.add((String) id);
+                }
+                assertThat(actualGameIds).isEqualTo(expectedGameIds);
+            }
+        }
+    }
+
     private static void assertContains(String linesType, List<String> lines, String string) {
         for (String line : lines) {
             if (line.contains(string)) {

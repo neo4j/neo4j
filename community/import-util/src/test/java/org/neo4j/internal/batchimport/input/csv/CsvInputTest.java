@@ -1869,6 +1869,29 @@ class CsvInputTest {
     }
 
     @Test
+    void shouldStoreIdAsPropertyInSpecificValueType() throws IOException {
+        // given nodes w/ IDs as ints
+        var nodeData = datas(CsvInputTest.data("id:ID{id-type:int},prop\n123,val"));
+
+        // when using string id-type in the input
+        try (var input = new CsvInput(
+                        nodeData,
+                        defaultFormatNodeFileHeader(),
+                        datas(),
+                        defaultFormatRelationshipFileHeader(),
+                        STRING,
+                        config(false),
+                        false,
+                        NO_MONITOR,
+                        INSTANCE);
+                var nodes = input.nodes(EMPTY).iterator()) {
+            // then
+            assertNextNode(nodes, 123, properties("id", 123, "prop", "val"), labels());
+            assertFalse(readNext(nodes));
+        }
+    }
+
+    @Test
     void shouldHandleMultipleNodeIdColumns() throws IOException {
         // given
         var file = writeFile("nodes", "id1:ID,id2:ID,name,:LABEL", "ABC,123,First,Person", "ABC,456,Second,Person");

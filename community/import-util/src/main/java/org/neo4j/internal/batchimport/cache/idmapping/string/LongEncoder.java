@@ -33,7 +33,7 @@ public class LongEncoder implements Encoder {
 
     @Override
     public long encode(Object value) {
-        long longValue = ((Number) value).longValue();
+        long longValue = convertToLong(value);
         checkArgument(
                 (longValue & RESERVED_BITS) == 0,
                 "Invalid integer ID %d, it must be %d <= id <= 0",
@@ -43,6 +43,13 @@ public class LongEncoder implements Encoder {
         length = length << 57;
         long returnVal = length | longValue;
         return returnVal;
+    }
+
+    private long convertToLong(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return Long.parseLong(value.toString());
     }
 
     private static int numberOfDigits(long value) {
