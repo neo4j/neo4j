@@ -24,6 +24,8 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -32,14 +34,26 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.StorageLocks;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.values.ElementIdMapper;
 
 public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
+    private final DefaultPooledCursors cursors;
     private final CursorContext context;
     private final OverridableSecurityContext overridableSecurityContext;
     private final ExecutionContextCursorTracer cursorTracer;
@@ -50,36 +64,73 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final IndexMonitor monitor;
     private final MemoryTracker contextTracker;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
+    private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
 
     public ThreadExecutionContext(
+            DefaultPooledCursors cursors,
             CursorContext context,
             OverridableSecurityContext overridableSecurityContext,
             ExecutionContextCursorTracer cursorTracer,
             CursorContext ktxContext,
-            AllStoreHolder.ForThreadExecutionContextScope allStoreHolder,
             TokenRead tokenRead,
             StoreCursors storageCursors,
             IndexMonitor monitor,
             MemoryTracker contextTracker,
             SecurityAuthorizationHandler securityAuthorizationHandler,
+            StorageReader storageReader,
+            SchemaState schemaState,
+            IndexingService indexingService,
+            IndexStatisticsStore indexStatisticsStore,
+            GlobalProcedures globalProcedures,
+            Dependencies databaseDependencies,
+            StorageLocks storageLocks,
+            org.neo4j.kernel.impl.locking.Locks.Client lockClient,
+            LockTracer lockTracer,
+            ElementIdMapper elementIdMapper,
+            AssertOpen assertOpen,
+            Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources) {
+        this.cursors = cursors;
         this.context = context;
         this.overridableSecurityContext = overridableSecurityContext;
         this.cursorTracer = cursorTracer;
         this.ktxContext = ktxContext;
-        this.allStoreHolder = allStoreHolder;
         this.tokenRead = tokenRead;
         this.storageCursors = storageCursors;
         this.monitor = monitor;
         this.contextTracker = contextTracker;
         this.securityAuthorizationHandler = securityAuthorizationHandler;
         this.otherResources = otherResources;
+        this.elementIdMapper = elementIdMapper;
+        this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
+                this,
+                storageReader,
+                schemaState,
+                indexingService,
+                indexStatisticsStore,
+                globalProcedures,
+                databaseDependencies,
+                cursors,
+                storageCursors,
+                context,
+                storageLocks,
+                lockClient,
+                lockTracer,
+                overridableSecurityContext,
+                assertOpen,
+                securityAuthorizationHandler,
+                clockContextSupplier);
     }
 
     @Override
     public CursorContext cursorContext() {
         return context;
+    }
+
+    @Override
+    public DefaultPooledCursors cursors() {
+        return cursors;
     }
 
     @Override
@@ -113,6 +164,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public void report() {
         mergeBlocked(cursorTracer);
+    }
+
+    @Override
+    public ElementIdMapper elementIdMapper() {
+        return elementIdMapper;
     }
 
     @Override

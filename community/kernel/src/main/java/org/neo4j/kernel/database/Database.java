@@ -903,6 +903,7 @@ public class Database extends AbstractDatabase {
                 constraintSemantics,
                 databaseSchemaState,
                 tokenHolders,
+                elementIdMapper,
                 getNamedDatabaseId(),
                 indexingService,
                 indexStatisticsStore,

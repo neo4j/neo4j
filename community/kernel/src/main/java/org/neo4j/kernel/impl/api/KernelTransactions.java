@@ -72,6 +72,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.ElementIdMapper;
 
 /**
  * Central source of transactions in the database.
@@ -102,6 +103,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final TransactionIdSequence transactionIdSequence;
     private final TokenHolders tokenHolders;
+    private final ElementIdMapper elementIdMapper;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController.IdFreeCondition externalIdReuseCondition;
     private final LogProvider internalLogProvider;
@@ -160,6 +162,7 @@ public class KernelTransactions extends LifecycleAdapter
             ConstraintSemantics constraintSemantics,
             SchemaState schemaState,
             TokenHolders tokenHolders,
+            ElementIdMapper elementIdMapper,
             NamedDatabaseId namedDatabaseId,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
@@ -187,6 +190,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.cpuClockRef = cpuClockRef;
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
+        this.elementIdMapper = elementIdMapper;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.externalIdReuseCondition = externalIdReuseCondition;
         this.internalLogProvider = internalLogProvider;
@@ -450,6 +454,7 @@ public class KernelTransactions extends LifecycleAdapter
                     constraintSemantics,
                     schemaState,
                     tokenHolders,
+                    elementIdMapper,
                     indexingService,
                     indexStatisticsStore,
                     databaseDependendies,

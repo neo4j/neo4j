@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -35,10 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
-import static org.neo4j.test.PageCacheTracerAssertions.assertThatTracing;
-import static org.neo4j.test.PageCacheTracerAssertions.pins;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -63,18 +59,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public class NodeEntityTest extends EntityTest {
-    private final String PROPERTY_KEY = "PROPERTY_KEY";
 
     @Override
     protected long createEntity(Transaction tx) {
@@ -84,108 +75,6 @@ public class NodeEntityTest extends EntityTest {
     @Override
     protected Entity lookupEntity(Transaction transaction, long id) {
         return transaction.getNodeById(id);
-    }
-
-    @Test
-    void traceNodePageCacheAccessOnDegreeCount() {
-        long sourceId;
-        try (Transaction tx = db.beginTx()) {
-            var source = tx.createNode();
-            var relationshipType = RelationshipType.withName("connection");
-            createDenseNodeWithShortIncomingChain(tx, source, relationshipType);
-            sourceId = source.getId();
-            tx.commit();
-        }
-
-        try (Transaction tx = db.beginTx()) {
-            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            var source = tx.getNodeById(sourceId);
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
-            cursorTracer.reportEvents();
-            assertZeroTracer(cursorContext);
-
-            source.getDegree(Direction.INCOMING);
-
-            assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
-                    .matches(cursorTracer);
-        }
-    }
-
-    @Test
-    void traceNodePageCacheAccessOnRelationshipTypeAndDegreeCount() {
-        long sourceId;
-        var relationshipType = RelationshipType.withName("connection");
-        try (Transaction tx = db.beginTx()) {
-            var source = tx.createNode();
-            createDenseNodeWithShortIncomingChain(tx, source, relationshipType);
-            sourceId = source.getId();
-            tx.commit();
-        }
-
-        try (Transaction tx = db.beginTx()) {
-            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            var source = tx.getNodeById(sourceId);
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
-            cursorTracer.reportEvents();
-            assertZeroTracer(cursorContext);
-
-            source.getDegree(relationshipType, Direction.INCOMING);
-
-            assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
-                    .matches(cursorTracer);
-        }
-    }
-
-    @Test
-    void traceNodePageCacheAccessOnRelationshipsAccess() {
-        long targetId;
-        var relationshipType = RelationshipType.withName("connection");
-        try (Transaction tx = db.beginTx()) {
-            var target = tx.createNode();
-            for (int i = 0; i < 100; i++) {
-                tx.createNode().createRelationshipTo(target, relationshipType);
-            }
-            targetId = target.getId();
-            tx.commit();
-        }
-
-        try (Transaction tx = db.beginTx()) {
-            var cursorContext = ((InternalTransaction) tx).kernelTransaction().cursorContext();
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            var source = tx.getNodeById(targetId);
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
-            cursorTracer.reportEvents();
-            assertZeroTracer(cursorContext);
-
-            assertThat(count(source.getRelationships(Direction.INCOMING, relationshipType)))
-                    .isGreaterThan(0);
-
-            assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
-                    .matches(cursorTracer);
-        }
-    }
-
-    @Test
-    void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode() {
-        // Given a database with PROPERTY_KEY in it
-        createNodeWith(PROPERTY_KEY);
-
-        // When trying to get property from node without it
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            try (Transaction tx = db.beginTx()) {
-                Node node = tx.createNode();
-                node.getProperty(PROPERTY_KEY);
-            }
-        });
-        assertThat(exception.getMessage()).contains(PROPERTY_KEY);
     }
 
     @Test
@@ -247,21 +136,6 @@ public class NodeEntityTest extends EntityTest {
             Node node = Iterators.single(tx.findNodes(markerLabel));
             assertFalse(node.hasProperty(testPropertyKey));
             tx.commit();
-        }
-    }
-
-    @Test
-    void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist() {
-        // Given a database without PROPERTY_KEY in it
-
-        // When
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.createNode();
-            node.getProperty(PROPERTY_KEY);
-        }
-        // Then
-        catch (NotFoundException exception) {
-            assertThat(exception.getMessage()).contains(PROPERTY_KEY);
         }
     }
 
@@ -414,25 +288,6 @@ public class NodeEntityTest extends EntityTest {
         }
     }
 
-    @Test
-    void shouldOnlyReturnTypeOnce() {
-        // Given
-        Node node;
-        try (Transaction tx = db.beginTx()) {
-            node = tx.createNode();
-            node.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"));
-            node.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"));
-            node.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"));
-            tx.commit();
-        }
-
-        // Then
-        try (Transaction tx = db.beginTx()) {
-            assertThat(Iterables.asList(tx.getNodeById(node.getId()).getRelationshipTypes()))
-                    .isEqualTo(singletonList(RelationshipType.withName("R")));
-        }
-    }
-
     @Disabled(
             "Tracking of iterables from getRelationships have been (temporarily) disabled due to performance regressions")
     @Test
@@ -554,14 +409,6 @@ public class NodeEntityTest extends EntityTest {
         }
     }
 
-    private void createNodeWith(String key) {
-        try (Transaction tx = db.beginTx()) {
-            Node node = tx.createNode();
-            node.setProperty(key, 1);
-            tx.commit();
-        }
-    }
-
     private void verifyGetRelationshipsCalls(Function<NodeEntity, ResourceIterable<Relationship>> provider) {
         TokenRead tokenRead = mock(TokenRead.class);
         when(tokenRead.relationshipType(anyString())).thenReturn(13);
@@ -579,24 +426,5 @@ public class NodeEntityTest extends EntityTest {
         nodes.close();
         verify(internalTransaction, times(1)).registerCloseableResource(eq(nodes));
         verify(internalTransaction, times(1)).unregisterCloseableResource(eq(nodes));
-    }
-
-    private static void assertZeroTracer(CursorContext cursorContext) {
-        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat(cursorTracer.hits()).isZero();
-        assertThat(cursorTracer.unpins()).isZero();
-        assertThat(cursorTracer.pins()).isZero();
-    }
-
-    private static void createDenseNodeWithShortIncomingChain(
-            Transaction tx, Node source, RelationshipType relationshipType) {
-        // This test measures page cache access very specifically when accessing degree for dense node.
-        // For dense nodes chain degrees gets "upgraded" to live in a separate degrees store on a certain chain length
-        // threshold
-        // which is why we create an additional short chain where this still is the case
-        for (int i = 0; i < 300; i++) {
-            source.createRelationshipTo(tx.createNode(), relationshipType);
-        }
-        tx.createNode().createRelationshipTo(source, relationshipType);
     }
 }

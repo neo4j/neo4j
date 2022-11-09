@@ -53,33 +53,7 @@ class TestRelationship extends AbstractNeo4jTestCase {
     private static final String key3 = "key3";
 
     @Test
-    void testSimple() {
-        Node node1 = createNode();
-        Node node2 = createNode();
-        try (Transaction transaction = getGraphDb().beginTx()) {
-            node1 = transaction.getNodeById(node1.getId());
-            node2 = transaction.getNodeById(node2.getId());
-            Relationship rel1 = node1.createRelationshipTo(node2, TEST);
-            node1.createRelationshipTo(node2, TEST);
-            rel1.delete();
-            transaction.commit();
-        }
-        try (Transaction transaction = getGraphDb().beginTx()) {
-            node1 = transaction.getNodeById(node1.getId());
-            node2 = transaction.getNodeById(node2.getId());
-
-            assertTrue(node1.hasRelationship());
-            assertTrue(node2.hasRelationship());
-            assertTrue(node1.hasRelationship(TEST));
-            assertTrue(node2.hasRelationship(TEST));
-            assertTrue(node1.hasRelationship(Direction.OUTGOING, TEST));
-            assertTrue(node2.hasRelationship(Direction.INCOMING, TEST));
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void testSimple2() {
+    void testSimple1() {
         Node node1 = createNode();
         Node node2 = createNode();
         try (Transaction transaction = getGraphDb().beginTx()) {
@@ -125,7 +99,7 @@ class TestRelationship extends AbstractNeo4jTestCase {
     }
 
     @Test
-    void testSimple3() {
+    void testSimple2() {
         Node node1 = createNode();
         Node node2 = createNode();
         try (Transaction transaction = getGraphDb().beginTx()) {
@@ -171,7 +145,7 @@ class TestRelationship extends AbstractNeo4jTestCase {
     }
 
     @Test
-    void testSimple4() {
+    void testSimple3() {
         Node node1 = createNode();
         Node node2 = createNode();
         try (Transaction transaction = getGraphDb().beginTx()) {

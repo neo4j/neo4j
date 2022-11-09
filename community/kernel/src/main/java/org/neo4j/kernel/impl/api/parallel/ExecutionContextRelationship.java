@@ -23,13 +23,16 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.api.ExecutionContext;
 
 public class ExecutionContextRelationship implements Relationship {
 
     private final long relationshipId;
+    private final ExecutionContext executionContext;
 
-    public ExecutionContextRelationship(long relationshipId) {
+    public ExecutionContextRelationship(long relationshipId, ExecutionContext executionContext) {
         this.relationshipId = relationshipId;
+        this.executionContext = executionContext;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class ExecutionContextRelationship implements Relationship {
 
     @Override
     public String getElementId() {
-        return Long.toString(relationshipId);
+        return executionContext.elementIdMapper().relationshipElementId(relationshipId);
     }
 
     @Override

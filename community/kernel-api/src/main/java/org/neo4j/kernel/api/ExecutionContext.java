@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -29,6 +30,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.values.ElementIdMapper;
 
 /**
  * Execution context that should be passed to workers in other threads but that are still belong to the transaction and need to have access to some
@@ -45,6 +47,8 @@ public interface ExecutionContext extends AutoCloseable {
      * @return execution context cursor tracer.
      */
     CursorContext cursorContext();
+
+    CursorFactory cursors();
 
     /**
      * @return execution context security context
@@ -98,6 +102,8 @@ public interface ExecutionContext extends AutoCloseable {
      * Report ongoing partial state to parent transaction. Visibility of reported data is eventual on transaction level on this point.
      */
     void report();
+
+    ElementIdMapper elementIdMapper();
 
     /**
      * Close execution context and merge back any data to the owning transaction if such exists.

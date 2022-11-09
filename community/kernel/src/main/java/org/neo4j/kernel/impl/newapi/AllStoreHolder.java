@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
+import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
@@ -1070,13 +1071,12 @@ public abstract class AllStoreHolder extends Read {
         private final ProcedureCaller procedureCaller;
 
         public ForThreadExecutionContextScope(
+                ThreadExecutionContext executionContext,
                 StorageReader storageReader,
-                TokenRead tokenRead,
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
                 GlobalProcedures globalProcedures,
-                MemoryTracker memoryTracker,
                 Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
@@ -1090,12 +1090,12 @@ public abstract class AllStoreHolder extends Read {
                 Supplier<ClockContext> clockContextSupplier) {
             super(
                     storageReader,
-                    tokenRead,
+                    executionContext.tokenRead(),
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
                     globalProcedures,
-                    memoryTracker,
+                    executionContext.memoryTracker(),
                     cursors,
                     storageCursors,
                     storageLocks,
@@ -1105,6 +1105,7 @@ public abstract class AllStoreHolder extends Read {
             this.lockClient = lockClient;
             this.assertOpen = assertOpen;
             this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
+                    executionContext,
                     globalProcedures,
                     databaseDependencies,
                     overridableSecurityContext,

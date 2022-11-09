@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.procedure.Context;
@@ -301,12 +302,14 @@ public abstract class ProcedureCaller {
 
     public static class ForThreadExecutionContextScope extends ProcedureCaller {
 
+        private final ExecutionContext executionContext;
         private final OverridableSecurityContext overridableSecurityContext;
         private final AssertOpen assertOpen;
         private final SecurityAuthorizationHandler securityAuthorizationHandler;
         private final Supplier<ClockContext> clockContextSupplier;
 
         ForThreadExecutionContextScope(
+                ExecutionContext executionContext,
                 GlobalProcedures globalProcedures,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,
@@ -315,6 +318,7 @@ public abstract class ProcedureCaller {
                 Supplier<ClockContext> clockContextSupplier) {
             super(globalProcedures, databaseDependencies);
 
+            this.executionContext = executionContext;
             this.overridableSecurityContext = overridableSecurityContext;
             this.assertOpen = assertOpen;
             this.securityAuthorizationHandler = securityAuthorizationHandler;
@@ -373,7 +377,7 @@ public abstract class ProcedureCaller {
 
         @Override
         ValueMapper<Object> createValueMapper() {
-            return new ExecutionContextValueMapper();
+            return new ExecutionContextValueMapper(executionContext);
         }
 
         @Override

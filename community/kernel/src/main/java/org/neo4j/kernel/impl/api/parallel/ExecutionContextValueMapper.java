@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.ValueMapper;
@@ -27,6 +28,13 @@ import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
+
+    private final ExecutionContext executionContext;
+
+    public ExecutionContextValueMapper(ExecutionContext executionContext) {
+        this.executionContext = executionContext;
+    }
+
     @Override
     public Object mapPath(VirtualPathValue value) {
         throw new UnsupportedOperationException(
@@ -39,7 +47,7 @@ public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
             return wrapper.getEntity();
         }
 
-        return new ExecutionContextNode(value.id());
+        return new ExecutionContextNode(value.id(), executionContext);
     }
 
     @Override
@@ -47,6 +55,6 @@ public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
         if (value instanceof RelationshipEntityWrappingValue wrapper) {
             return wrapper.getEntity();
         }
-        return new ExecutionContextRelationship(value.id());
+        return new ExecutionContextRelationship(value.id(), executionContext);
     }
 }

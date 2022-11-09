@@ -67,6 +67,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.values.ElementIdMapper;
 
 public final class KernelTransactionFactory {
     public static class Instances {
@@ -108,6 +109,7 @@ public final class KernelTransactionFactory {
                 new StandardConstraintSemantics(),
                 mock(SchemaState.class),
                 mockedTokenHolders(),
+                mock(ElementIdMapper.class),
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
                 dependencies,

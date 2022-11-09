@@ -177,7 +177,7 @@ class ExecutionContextFunctionIT {
     @Test
     void testUserFunctionUsingUnsupportedNodeOperation() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            assertThatThrownBy(() -> invokeUserFunction(executionContext, "nodeProperties", VirtualValues.node(123)))
+            assertThatThrownBy(() -> invokeUserFunction(executionContext, "deleteNode", VirtualValues.node(123)))
                     .hasRootCauseInstanceOf(UnsupportedOperationException.class)
                     .hasMessageContaining("Operation unsupported during parallel query execution");
         });
@@ -459,9 +459,10 @@ class ExecutionContextFunctionIT {
             return value.stream().map(Entity::getId).collect(Collectors.toList());
         }
 
-        @UserFunction("execution.context.test.function.nodeProperties")
-        public Map<String, Object> nodeProperties(@Name("value") Node value) {
-            return value.getAllProperties();
+        @UserFunction("execution.context.test.function.deleteNode")
+        public Object deleteNode(@Name("value") Node value) {
+            value.delete();
+            return null;
         }
 
         @UserFunction("execution.context.test.function.relationshipProperties")

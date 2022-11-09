@@ -142,6 +142,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.ElementIdMapper;
 
 public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics {
     /*
@@ -255,6 +256,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ConstraintSemantics constraintSemantics,
             SchemaState schemaState,
             TokenHolders tokenHolders,
+            ElementIdMapper elementIdMapper,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
             Dependencies dependencies,
@@ -328,7 +330,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 leaseService,
                 globalProcedures,
                 dependencies,
-                securityAuthorizationHandler);
+                securityAuthorizationHandler,
+                elementIdMapper);
         this.operations = new Operations(
                 allStoreHolder,
                 storageReader,
@@ -415,7 +418,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LeaseService leaseService,
             GlobalProcedures globalProcedures,
             Dependencies dependencies,
-            SecurityAuthorizationHandler securityAuthorizationHandler) {
+            SecurityAuthorizationHandler securityAuthorizationHandler,
+            ElementIdMapper elementIdMapper) {
         return (securityContext, transactionId, transactionCursorContext, clockContextSupplier, assertOpen) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
@@ -435,37 +439,30 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             var overridableSecurityContext = new OverridableSecurityContext(securityContext);
             var executionContextTokenRead = new KernelTokenRead.ForThreadExecutionContextScope(
                     executionContextStorageReader, tokenHolders, overridableSecurityContext, assertOpen);
-            var executionContextRead = new AllStoreHolder.ForThreadExecutionContextScope(
-                    executionContextStorageReader,
-                    executionContextTokenRead,
-                    schemaState,
-                    indexingService,
-                    indexStatisticsStore,
-                    globalProcedures,
-                    executionContextMemoryTracker,
-                    dependencies,
-                    executionContextPooledCursors,
-                    executionContextStoreCursors,
-                    executionContextCursorContext,
-                    storageEngine.createStorageLocks(executionContextLockClient),
-                    executionContextLockClient,
-                    tracers.getLockTracer(),
-                    overridableSecurityContext,
-                    assertOpen,
-                    securityAuthorizationHandler,
-                    clockContextSupplier);
 
             return new ThreadExecutionContext(
+                    executionContextPooledCursors,
                     executionContextCursorContext,
                     overridableSecurityContext,
                     executionContextCursorTracer,
                     transactionCursorContext,
-                    executionContextRead,
                     executionContextTokenRead,
                     executionContextStoreCursors,
                     indexingService.getMonitor(),
                     executionContextMemoryTracker,
                     securityAuthorizationHandler,
+                    executionContextStorageReader,
+                    schemaState,
+                    indexingService,
+                    indexStatisticsStore,
+                    globalProcedures,
+                    dependencies,
+                    storageEngine.createStorageLocks(executionContextLockClient),
+                    executionContextLockClient,
+                    tracers.getLockTracer(),
+                    elementIdMapper,
+                    assertOpen,
+                    clockContextSupplier,
                     List.of(executionContextStorageReader, executionContextLockClient));
         };
     }

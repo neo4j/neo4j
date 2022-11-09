@@ -128,6 +128,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.values.ElementIdMapper;
 
 @ExtendWith(OtherThreadExtension.class)
 class KernelTransactionsTest {
@@ -753,6 +754,7 @@ class KernelTransactionsTest {
                 mock(ConstraintSemantics.class),
                 mock(SchemaState.class),
                 mockedTokenHolders(),
+                mock(ElementIdMapper.class),
                 DEFAULT_DATABASE_ID,
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
@@ -857,6 +859,7 @@ class KernelTransactionsTest {
                     new StandardConstraintSemantics(),
                     mock(SchemaState.class),
                     tokenHolders,
+                    mock(ElementIdMapper.class),
                     DEFAULT_DATABASE_ID,
                     mock(IndexingService.class),
                     mock(IndexStatisticsStore.class),

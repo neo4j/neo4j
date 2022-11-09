@@ -78,6 +78,7 @@ import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.values.ElementIdMapper;
 
 class KernelTransactionTerminationTest {
     private static final int TEST_RUN_TIME_SECS = 5;
@@ -269,6 +270,7 @@ class KernelTransactionTerminationTest {
                     new StandardConstraintSemantics(),
                     mock(SchemaState.class),
                     mockedTokenHolders(),
+                    mock(ElementIdMapper.class),
                     mock(IndexingService.class),
                     mock(IndexStatisticsStore.class),
                     dependencies,

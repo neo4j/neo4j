@@ -92,6 +92,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
 class KernelTransactionTestBase {
@@ -212,6 +213,7 @@ class KernelTransactionTestBase {
                 new StandardConstraintSemantics(),
                 mock(SchemaState.class),
                 mockedTokenHolders(),
+                mock(ElementIdMapper.class),
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
                 dependencies,

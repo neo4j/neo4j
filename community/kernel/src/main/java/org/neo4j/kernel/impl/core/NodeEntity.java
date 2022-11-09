@@ -20,25 +20,12 @@
 package org.neo4j.kernel.impl.core;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.indexOf;
-import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
-import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -53,26 +40,19 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
-import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.storageengine.api.Degrees;
-import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.values.storable.Values;
 
-public class NodeEntity implements Node, RelationshipFactory<Relationship> {
+public class NodeEntity extends AbstractNodeEntity implements RelationshipFactory<Relationship> {
     public static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeEntity.class);
 
     private final InternalTransaction internalTransaction;
@@ -115,19 +95,9 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships() {
-        return getRelationships(Direction.BOTH);
-    }
-
-    @Override
     public ResourceIterable<Relationship> getRelationships(final Direction direction) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         return innerGetRelationships(transaction, direction, null);
-    }
-
-    @Override
-    public ResourceIterable<Relationship> getRelationships(RelationshipType... types) {
-        return getRelationships(Direction.BOTH, types);
     }
 
     @Override
@@ -143,19 +113,9 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     }
 
     @Override
-    public boolean hasRelationship() {
-        return hasRelationship(Direction.BOTH);
-    }
-
-    @Override
     public boolean hasRelationship(Direction direction) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         return innerHasRelationships(transaction, direction, null);
-    }
-
-    @Override
-    public boolean hasRelationship(RelationshipType... types) {
-        return hasRelationship(Direction.BOTH, types);
     }
 
     @Override
@@ -179,19 +139,7 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
         int[] typeIds = relTypeIds(transaction.tokenRead(), type);
         try (ResourceIterator<Relationship> relationships =
                 getRelationshipSelectionIterator(transaction, getId(), dir, typeIds, this)) {
-            if (!relationships.hasNext()) {
-                return null;
-            }
-
-            Relationship rel = relationships.next();
-            while (relationships.hasNext()) {
-                Relationship other = relationships.next();
-                if (!other.equals(rel)) {
-                    throw new NotFoundException(
-                            "More than one relationship[" + type + ", " + dir + "] found for " + this);
-                }
-            }
-            return rel;
+            return getSingleRelationship(relationships, type, dir);
         }
     }
 
@@ -254,75 +202,20 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
 
     @Override
     public Object getProperty(String key, Object defaultValue) {
-        if (null == key) {
-            throw new IllegalArgumentException("(null) property key is not allowed");
-        }
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
-        int propertyKey = transaction.tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            return defaultValue;
-        }
-        singleNode(transaction, nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        return properties.next() ? properties.propertyValue().asObjectCopy() : defaultValue;
+        return getProperty(key, defaultValue, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
     @Override
     public Iterable<String> getPropertyKeys() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        List<String> keys = new ArrayList<>();
-        try {
-            NodeCursor nodes = transaction.ambientNodeCursor();
-            PropertyCursor properties = transaction.ambientPropertyCursor();
-            singleNode(transaction, nodes);
-            TokenRead token = transaction.tokenRead();
-            nodes.properties(properties, ALL_PROPERTIES);
-            while (properties.next()) {
-                keys.add(token.propertyKeyName(properties.propertyKey()));
-            }
-        } catch (PropertyKeyIdNotFoundKernelException e) {
-            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
-        }
-        return keys;
+        return getPropertyKeys(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
     @Override
     public Map<String, Object> getProperties(String... keys) {
-        Objects.requireNonNull(keys, "Properties keys should be not null array.");
-
-        if (keys.length == 0) {
-            return Collections.emptyMap();
-        }
-
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-
-        int itemsToReturn = keys.length;
-        Map<String, Object> properties = new HashMap<>(itemsToReturn);
-        TokenRead token = transaction.tokenRead();
-
-        // Find ids, note we are betting on that the number of keys
-        // is small enough not to use a set here.
-        int[] propertyIds = new int[itemsToReturn];
-        for (int i = 0; i < itemsToReturn; i++) {
-            String key = keys[i];
-            if (key == null) {
-                throw new NullPointerException(String.format("Key %d was null", i));
-            }
-            propertyIds[i] = token.propertyKey(key);
-        }
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        PropertyCursor propertyCursor = transaction.ambientPropertyCursor();
-        singleNode(transaction, nodes);
-        nodes.properties(propertyCursor, PropertySelection.selection(propertyIds));
-        while (propertyCursor.next()) {
-            properties.put(
-                    keys[indexOf(propertyIds, propertyCursor.propertyKey())],
-                    propertyCursor.propertyValue().asObjectCopy());
-        }
-        return properties;
+        return getProperties(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor(), keys);
     }
 
     @Override
@@ -331,65 +224,16 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
         return getAllProperties(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
-    public Map<String, Object> getAllProperties(NodeCursor nodes, PropertyCursor propertyCursor) {
-        KernelTransaction transaction = internalTransaction.kernelTransaction();
-        Map<String, Object> properties = new HashMap<>();
-
-        try {
-            TokenRead token = transaction.tokenRead();
-            if (nodes.isClosed() || nodes.nodeReference() != getId()) {
-                singleNode(transaction, nodes);
-            }
-            nodes.properties(propertyCursor, ALL_PROPERTIES);
-            while (propertyCursor.next()) {
-                properties.put(
-                        token.propertyKeyName(propertyCursor.propertyKey()),
-                        propertyCursor.propertyValue().asObjectCopy());
-            }
-        } catch (PropertyKeyIdNotFoundKernelException e) {
-            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
-        }
-        return properties;
-    }
-
     @Override
     public Object getProperty(String key) throws NotFoundException {
-        if (null == key) {
-            throw new IllegalArgumentException("(null) property key is not allowed");
-        }
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            throw new NotFoundException(format("No such property, '%s'.", key));
-        }
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
-        singleNode(transaction, nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        if (!properties.next()) {
-            throw new NotFoundException(format("No such property, '%s'.", key));
-        }
-        return properties.propertyValue().asObjectCopy();
+        return getProperty(key, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
     @Override
     public boolean hasProperty(String key) {
-        if (null == key) {
-            return false;
-        }
-
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int propertyKey = transaction.tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            return false;
-        }
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        PropertyCursor properties = transaction.ambientPropertyCursor();
-        singleNode(transaction, nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        return properties.next();
+        return hasProperty(key, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
     public int compareTo(Object node) {
@@ -487,34 +331,13 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     public boolean hasLabel(Label label) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
-        int labelId = transaction.tokenRead().nodeLabel(label.name());
-        if (labelId == NO_SUCH_LABEL) {
-            return false;
-        }
-        transaction.dataRead().singleNode(nodeId, nodes);
-        return nodes.next() && nodes.hasLabel(labelId);
+        return hasLabel(label, nodes);
     }
 
     @Override
     public Iterable<Label> getLabels() {
         NodeCursor nodes = internalTransaction.kernelTransaction().ambientNodeCursor();
         return getLabels(nodes);
-    }
-
-    public Iterable<Label> getLabels(NodeCursor nodes) {
-        KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try {
-            singleNode(transaction, nodes);
-            TokenSet tokenSet = nodes.labels();
-            TokenRead tokenRead = transaction.tokenRead();
-            List<Label> list = new ArrayList<>(tokenSet.numberOfTokens());
-            for (int i = 0; i < tokenSet.numberOfTokens(); i++) {
-                list.add(label(tokenRead.nodeLabelName(tokenSet.token(i))));
-            }
-            return list;
-        } catch (LabelNotFoundKernelException e) {
-            throw new IllegalStateException("Label retrieved through kernel API should exist.", e);
-        }
     }
 
     public InternalTransaction getTransaction() {
@@ -524,75 +347,42 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
     @Override
     public int getDegree() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode(transaction, nodes);
-
-        return Nodes.countAll(nodes);
+        return getDegree(transaction.ambientNodeCursor());
     }
 
     @Override
     public int getDegree(RelationshipType type) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int typeId = transaction.tokenRead().relationshipType(type.name());
-        if (typeId == NO_TOKEN) { // This type doesn't even exist. Return 0
-            return 0;
-        }
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode(transaction, nodes);
-        return Nodes.countAll(nodes, typeId);
+        return getDegree(type, transaction.ambientNodeCursor());
     }
 
     @Override
     public int getDegree(Direction direction) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode(transaction, nodes);
-        return switch (direction) {
-            case OUTGOING -> Nodes.countOutgoing(nodes);
-            case INCOMING -> Nodes.countIncoming(nodes);
-            case BOTH -> Nodes.countAll(nodes);
-        };
+        return getDegree(direction, transaction.ambientNodeCursor());
     }
 
     @Override
     public int getDegree(RelationshipType type, Direction direction) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int typeId = transaction.tokenRead().relationshipType(type.name());
-        if (typeId == NO_TOKEN) { // This type doesn't even exist. Return 0
-            return 0;
-        }
-
-        NodeCursor nodes = transaction.ambientNodeCursor();
-        singleNode(transaction, nodes);
-        return switch (direction) {
-            case OUTGOING -> Nodes.countOutgoing(nodes, typeId);
-            case INCOMING -> Nodes.countIncoming(nodes, typeId);
-            case BOTH -> Nodes.countAll(nodes, typeId);
-        };
+        return getDegree(type, direction, transaction.ambientNodeCursor());
     }
 
     @Override
     public Iterable<RelationshipType> getRelationshipTypes() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        try {
-            NodeCursor nodes = transaction.ambientNodeCursor();
-            TokenRead tokenRead = transaction.tokenRead();
-            singleNode(transaction, nodes);
-            Degrees degrees = nodes.degrees(ALL_RELATIONSHIPS);
-            List<RelationshipType> types = new ArrayList<>();
-            for (int type : degrees.types()) {
-                // only include this type if there are any relationships with this type
-                if (degrees.totalDegree(type) > 0) {
-                    types.add(RelationshipType.withName(tokenRead.relationshipTypeName(type)));
-                }
-            }
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        return getRelationshipTypes(nodes);
+    }
 
-            return types;
-        } catch (KernelException e) {
-            throw new NotFoundException("Relationship name not found.", e);
-        }
+    @Override
+    protected TokenRead tokenRead() {
+        return internalTransaction.kernelTransaction().tokenRead();
+    }
+
+    @Override
+    protected void singleNode(NodeCursor nodes) {
+        singleNode(internalTransaction.kernelTransaction(), nodes);
     }
 
     private static class RelationshipsIterable extends AbstractResourceIterable<Relationship> {
@@ -640,23 +430,6 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship> {
             case INCOMING -> incomingIterator(cursors, node, typeIds, factory, cursorContext);
             case BOTH -> allIterator(cursors, node, typeIds, factory, cursorContext);
         };
-    }
-
-    private static int[] relTypeIds(TokenRead token, RelationshipType... types) {
-        int[] ids = new int[types.length];
-        int outIndex = 0;
-        for (RelationshipType type : types) {
-            int id = token.relationshipType(type.name());
-            if (id != NO_SUCH_RELATIONSHIP_TYPE) {
-                ids[outIndex++] = id;
-            }
-        }
-
-        if (outIndex != ids.length) {
-            // One or more relationship types do not exist, so we can exclude them right away.
-            ids = Arrays.copyOf(ids, outIndex);
-        }
-        return ids;
     }
 
     private void singleNode(KernelTransaction transaction, NodeCursor nodes) {
