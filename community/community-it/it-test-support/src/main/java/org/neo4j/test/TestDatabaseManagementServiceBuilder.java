@@ -150,7 +150,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 .setDefault(GraphDatabaseInternalSettings.additional_lock_verification, true)
                 .setDefault(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true)
                 .setDefault(GraphDatabaseInternalSettings.vm_pause_monitor_enabled, false)
-                .setDefault(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true)
                 .setDefault(GraphDatabaseSettings.check_point_iops_limit, -1);
         return builder.build();
     }

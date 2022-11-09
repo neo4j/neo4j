@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -41,7 +42,7 @@ class LockWorkerState {
                 NoLeaseClient.INSTANCE,
                 TRANSACTION_ID.getAndIncrement(),
                 EmptyMemoryTracker.INSTANCE,
-                Config.defaults());
+                Config.defaults(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true));
     }
 
     public void doing(String doing) {

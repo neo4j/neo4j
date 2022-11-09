@@ -39,6 +39,7 @@ import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -76,6 +77,7 @@ public class ForsetiClient implements Locks.Client {
     private static final int MAX_SPINS = 1000;
     private static final long MULTIPLY_UNTIL_ITERATION = MAX_SPINS + 2;
     private static final int NO_CLIENT_ID = -1;
+    private static final int NO_DEADLOCK_DEPTH = -1;
 
     /** resourceType -> lock map. These are the global lock maps, shared across all clients. */
     private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
@@ -102,7 +104,7 @@ public class ForsetiClient implements Locks.Client {
     private long lockAcquisitionTimeoutNano;
 
     private final SystemNanoClock clock;
-    private final boolean verboseDeadlocks;
+    private boolean verboseDeadlocks;
 
     /** List of other clients this client is waiting for. */
     private final Set<ForsetiClient> waitList = ConcurrentHashMap.newKeySet();
@@ -166,6 +168,7 @@ public class ForsetiClient implements Locks.Client {
         this.memoryTracker = new DeferredScopedMemoryTracker(requireNonNull(memoryTracker));
         this.lockAcquisitionTimeoutNano =
                 config.get(GraphDatabaseSettings.lock_acquisition_timeout).toNanos();
+        this.verboseDeadlocks = config.get(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks);
         this.myExclusiveLock = new ExclusiveLock(this);
     }
 
@@ -250,7 +253,6 @@ public class ForsetiClient implements Locks.Client {
                         waitEvent = tracer.waitForLock(SHARED, resourceType, transactionId, resourceId);
                     }
                     // And take note of who we are waiting for. This is used for deadlock detection.
-                    noteWaitingForLock(resourceType, resourceId, existingLock, SHARED);
                     waitFor(existingLock, resourceType, resourceId, SHARED, tries++);
                 }
 
@@ -268,11 +270,11 @@ public class ForsetiClient implements Locks.Client {
     }
 
     private void noteWaitingForLock(
-            ResourceType resourceType, long resourceId, ForsetiLockManager.Lock existingLock, LockType lockType) {
+            ForsetiLockManager.Lock lock, ResourceType resourceType, long resourceId, LockType lockType) {
         waitingForResourceType = resourceType;
         waitingForResourceId = resourceId;
         waitingForLockType = lockType;
-        waitingForLock = existingLock;
+        waitingForLock = lock;
     }
 
     private void clearWaitState() {
@@ -344,7 +346,6 @@ public class ForsetiClient implements Locks.Client {
                     if (waitEvent == null) {
                         waitEvent = tracer.waitForLock(EXCLUSIVE, resourceType, transactionId, resourceId);
                     }
-                    noteWaitingForLock(resourceType, resourceId, existingLock, EXCLUSIVE);
                     waitFor(existingLock, resourceType, resourceId, EXCLUSIVE, tries++);
                 }
 
@@ -686,7 +687,7 @@ public class ForsetiClient implements Locks.Client {
 
     @Override
     public String toString() {
-        return String.format("tx:%d", transactionId);
+        return String.format("ForsetiClient[transactionId=%d, clientId=%d]", transactionId, clientId);
     }
 
     /** Release a lock from the global pool. */
@@ -773,13 +774,12 @@ public class ForsetiClient implements Locks.Client {
         if (sharedLock.tryAcquireUpdateLock()) {
             LockWaitEvent waitEvent = null;
             try {
-                // Now we just wait for all clients to release the the share lock
+                // Now we just wait for all clients to release the shared lock
                 while (sharedLock.numberOfHolders() > 1) {
                     assertValid(waitStartNano, resourceType, resourceId);
                     if (waitEvent == null && priorEvent == null) {
                         waitEvent = tracer.waitForLock(EXCLUSIVE, resourceType, transactionId, resourceId);
                     }
-                    noteWaitingForLock(resourceType, resourceId, sharedLock, EXCLUSIVE);
                     waitFor(sharedLock, resourceType, resourceId, EXCLUSIVE, tries++);
                 }
 
@@ -807,6 +807,7 @@ public class ForsetiClient implements Locks.Client {
     private void waitFor(
             ForsetiLockManager.Lock lock, ResourceType type, long resourceId, LockType lockType, int tries) {
         clearAndCopyWaitList(lock);
+        noteWaitingForLock(lock, type, resourceId, lockType);
         incrementalBackoffWait(tries);
 
         ForsetiClient clientId = lock.detectDeadlock(this);
@@ -818,7 +819,7 @@ public class ForsetiClient implements Locks.Client {
             // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
             // reduces the probably of a false positive, but does not eliminate them.
             int depth;
-            if (tries > 100 && ((depth = isDeadlockReal(lock)) != -1)) {
+            if (tries > 100 && ((depth = isDeadlockReal(lock)) != NO_DEADLOCK_DEPTH)) {
                 var deadlockCycleMessage = verboseDeadlocks
                         ? findConsistentDeadlockPath(lock, type, resourceId, depth)
                         : this + " wait list:" + lock.describeWaitList();
@@ -905,11 +906,11 @@ public class ForsetiClient implements Locks.Client {
     }
 
     private int isDeadlockReal(ForsetiLockManager.Lock lock) {
-        if (isDeadlockRealInternal(lock) != -1) {
+        if (isDeadlockRealInternal(lock) != NO_DEADLOCK_DEPTH) {
             parkNanos(MILLISECONDS.toNanos(10));
             return isDeadlockRealInternal(lock);
         }
-        return -1;
+        return NO_DEADLOCK_DEPTH;
     }
 
     private int isDeadlockRealInternal(ForsetiLockManager.Lock lock) {
@@ -933,7 +934,7 @@ public class ForsetiClient implements Locks.Client {
             nextOwners = ownersTmp;
         } while (!nextWaitedUpon.isEmpty());
         // Nope, we didn't find any real wait cycles.
-        return -1;
+        return NO_DEADLOCK_DEPTH;
     }
 
     private String findDeadlockPath(
@@ -944,8 +945,8 @@ public class ForsetiClient implements Locks.Client {
         traverseOneStep(null, lockToWaitFor, parents, 0, owners);
         for (var depth = 1; depth <= maxDepth; depth++) {
             for (var parentPath : parents) {
-                var lock = parentPath.owner.waitingForLock;
-                if (lock != null) {
+                var lock = parentPath.ownerWaitingForLock();
+                if (!lock.isClosed()) {
                     var path = traverseOneStep(parentPath, lock, paths, depth, owners);
                     if (path != null) {
                         return path.stringify(lockToWaitFor, type, resourceId);
@@ -975,7 +976,7 @@ public class ForsetiClient implements Locks.Client {
         return null;
     }
 
-    private String lockString(ResourceType resourceType, long resourceId, LockType lockType) {
+    private static String lockString(ResourceType resourceType, long resourceId, LockType lockType) {
         return format("%s(%d):%s", resourceType, resourceId, lockType);
     }
 
@@ -988,17 +989,26 @@ public class ForsetiClient implements Locks.Client {
         owners.clear();
         lock.collectOwners(owners);
         for (var owner : owners) {
-            var waitingForLock = owner.waitingForLock;
-            var waitResourceType = owner.waitingForResourceType;
-            if (waitingForLock == null || waitResourceType == null || waitingForLock.isClosed()) {
+            var ownerWaitingForLock = owner.waitingForLock;
+            var ownerWaitingForResourceType = owner.waitingForResourceType;
+            var ownerWaitingForResourceId = owner.waitingForResourceId;
+            var ownerWaitingForLockType = owner.waitingForLockType;
+            var ownerTransactionId = owner.transactionId;
+            if (ownerWaitingForLock == null || ownerWaitingForResourceType == null || ownerWaitingForLock.isClosed()) {
                 continue;
             }
 
-            if (parentPath != null && parentPath.containsOwner(owner)) {
+            if (parentPath != null && parentPath.containsOwner(ownerTransactionId)) {
                 continue;
             }
 
-            var path = new LockPath(owner, parentPath);
+            var path = new LockPath(
+                    ownerTransactionId,
+                    ownerWaitingForLock,
+                    ownerWaitingForResourceType,
+                    ownerWaitingForResourceId,
+                    ownerWaitingForLockType,
+                    parentPath);
             if (owner == this && depth > 0) {
                 // We've found a cycle
                 return path;
@@ -1149,66 +1159,6 @@ public class ForsetiClient implements Locks.Client {
 
         void stop() {
             stopped = true;
-        }
-    }
-
-    private static class LockPath {
-        private final ForsetiClient owner;
-        private final LockPath parent;
-
-        private LockPath(ForsetiClient owner, LockPath parent) {
-            this.owner = owner;
-            this.parent = parent;
-        }
-
-        private boolean containsOwner(ForsetiClient owner) {
-            var path = this;
-            while (path != null) {
-                if (path.owner == owner) {
-                    return true;
-                }
-                path = path.parent;
-            }
-            return false;
-        }
-
-        private LockPath reverse() {
-            LockPath reversed = null;
-            var path = this;
-            while (path != null) {
-                reversed = new LockPath(path.owner, reversed);
-                path = path.parent;
-            }
-            return reversed;
-        }
-
-        private String stringify(ForsetiLockManager.Lock lock, ResourceType resourceType, long resourceId) {
-            var builder = new StringBuilder();
-            var path = reverse();
-            var lockType = lock.type();
-
-            builder.append(lockString(resourceType, resourceId));
-            while (path != null) {
-                var awaitedLock = path.owner.waitingForLock;
-                var lockResourceType = path.owner.waitingForResourceType;
-                var lockResourceId = path.owner.waitingForResourceId;
-                if (awaitedLock == null || awaitedLock.isClosed() || lockResourceType == null) {
-                    return null;
-                }
-                builder.append(format(
-                        "-[%s_OWNER]->(%s)-[WAITING_FOR_%s]->(%s)",
-                        lockType,
-                        path.owner,
-                        path.owner.waitingForLockType,
-                        lockString(lockResourceType, lockResourceId)));
-                lockType = awaitedLock.type();
-                path = path.parent;
-            }
-            return builder.toString();
-        }
-
-        private String lockString(ResourceType resourceType, long resourceId) {
-            return format("%s(%d)", resourceType, resourceId);
         }
     }
 }
