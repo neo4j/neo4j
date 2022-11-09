@@ -421,6 +421,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
+        transactionsStarted = 6,
         transactionsCommitted = 6
       )
   }
@@ -452,6 +453,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
+        transactionsStarted = 6,
         transactionsCommitted = 6
       )
   }
@@ -566,6 +568,7 @@ trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
       .withRows(RowCount(testRange.size))
       .withStatistics(
         relationshipsCreated = testRange.size,
+        transactionsStarted = testRange.size / 2 + 1,
         transactionsCommitted = testRange.size / 2 + 1
       )
   }

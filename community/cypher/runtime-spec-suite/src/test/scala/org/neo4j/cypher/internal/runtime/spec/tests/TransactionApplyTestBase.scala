@@ -161,7 +161,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should work with aggregation on top") {
@@ -181,7 +187,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withSingleRow(10)
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should work with aggregation on RHS") {
@@ -201,7 +213,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should work with grouping aggregation on RHS") {
@@ -221,7 +239,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should work with top on RHS") {
@@ -241,7 +265,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("i")
       .withRows(singleColumn(Seq(1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9)))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should handle RHS with R/W dependencies on both branches of union - with aggregation on top") {
@@ -283,6 +313,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(
         nodesCreated = expectedCount,
         labelsAdded = expectedCount,
+        transactionsStarted = expectedCommits,
         transactionsCommitted = expectedCommits
       )
   }
@@ -325,7 +356,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(2 to 11))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 20, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 20,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("should create data in different transactions when using transactionApply") {
@@ -514,7 +551,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 11)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 11,
+        transactionsCommitted = 11
+      )
   }
 
   test("statistics should report data creation from subqueries in batches") {
@@ -533,7 +576,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsStarted = 5,
+        transactionsCommitted = 5
+      )
   }
 
   test("statistics should report data creation from subqueries while profiling") {
@@ -552,7 +601,13 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(1, 2)))
-      .withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2, transactionsCommitted = 2)
+      .withStatistics(
+        nodesCreated = 2,
+        labelsAdded = 2,
+        propertiesSet = 2,
+        transactionsStarted = 2,
+        transactionsCommitted = 2
+      )
   }
 
   test("should handle RHS with R/W dependencies - with Filter (cancels rows) under Apply") {
@@ -588,6 +643,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(
       nodesCreated = expected.length,
+      transactionsStarted = expectedTxCommitted,
       transactionsCommitted = expectedTxCommitted
     )
   }
@@ -625,6 +681,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(
       nodesCreated = expected.length,
+      transactionsStarted = expectedTxCommitted,
       transactionsCommitted = expectedTxCommitted
     )
   }
@@ -738,6 +795,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
           .withStatistics(
             nodesCreated = expectedNodes,
             labelsAdded = expectedNodes,
+            transactionsStarted = expectedCommittedInnerTxs + 1,
             transactionsCommitted = expectedCommittedInnerTxs + 1
           )
 
@@ -816,7 +874,9 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         .withStatistics(
           nodesCreated = expectedNodes,
           labelsAdded = expectedNodes,
-          transactionsCommitted = expectedCommittedInnerTxs + 1
+          transactionsStarted = expectedCommittedInnerTxs + 1 + expectedFailedInnerTxs,
+          transactionsCommitted = expectedCommittedInnerTxs + 1,
+          transactionsRolledBack = expectedFailedInnerTxs
         )
 
       val statsAfter = txStats()
@@ -889,7 +949,9 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         .withStatistics(
           nodesCreated = expectedNodes,
           labelsAdded = expectedNodes,
-          transactionsCommitted = expectedCommittedInnerTxs + 1
+          transactionsStarted = expectedCommittedInnerTxs + 1 + expectedFailedInnerTxs,
+          transactionsCommitted = expectedCommittedInnerTxs + 1,
+          transactionsRolledBack = expectedFailedInnerTxs
         )
 
       val statsAfter = txStats()

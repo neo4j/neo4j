@@ -442,7 +442,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       labelsAdded: Int = 0,
       labelsRemoved: Int = 0,
       propertiesSet: Int = 0,
-      transactionsCommitted: Int = 1
+      transactionsStarted: Int = 1,
+      transactionsCommitted: Int = 1,
+      transactionsRolledBack: Int = 0
     ): RuntimeResultMatcher = {
       maybeStatistics = Some(new QueryStatisticsMatcher(
         nodesCreated,
@@ -452,7 +454,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
         labelsAdded,
         labelsRemoved,
         propertiesSet,
-        transactionsCommitted
+        transactionsStarted,
+        transactionsCommitted,
+        transactionsRolledBack
       ))
       this
     }
@@ -584,11 +588,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     labelsAdded: Int,
     labelsRemoved: Int,
     propertiesSet: Int,
-    transactionsCommitted: Int
+    transactionsStarted: Int,
+    transactionsCommitted: Int,
+    transactionsRolledBack: Int
   ) extends Matcher[QueryStatistics] {
 
     override def apply(left: QueryStatistics): MatchResult = {
-      def transactionsCommittedDoesNotMatch: Option[MatchResult] = {
+      def transactionsStatsDoesNotMatch: Option[MatchResult] = {
         left match {
           case qs: org.neo4j.cypher.internal.runtime.ExtendedQueryStatistics =>
             // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
@@ -596,6 +602,18 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
               Some(MatchResult(
                 matches = false,
                 s"expected transactionsCommitted=$transactionsCommitted but was ${qs.getTransactionsCommitted + 1}",
+                ""
+              ))
+            } else if (transactionsStarted - 1 != qs.getTransactionsStarted) {
+              Some(MatchResult(
+                matches = false,
+                s"expected transactionsStarted=$transactionsStarted but was ${qs.getTransactionsStarted + 1}",
+                ""
+              ))
+            } else if (transactionsRolledBack != qs.getTransactionsRolledBack) {
+              Some(MatchResult(
+                matches = false,
+                s"expected transactionsRolledBack=$transactionsRolledBack but was ${qs.getTransactionsRolledBack}",
                 ""
               ))
             } else {
@@ -636,8 +654,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
         MatchResult(matches = false, s"expected labelsRemoved=$labelsRemoved but was ${left.getLabelsRemoved}", "")
       } else if (propertiesSet != left.getPropertiesSet) {
         MatchResult(matches = false, s"expected propertiesSet=$propertiesSet but was ${left.getPropertiesSet}", "")
-      } else if (transactionsCommittedDoesNotMatch.nonEmpty) {
-        transactionsCommittedDoesNotMatch.get
+      } else if (transactionsStatsDoesNotMatch.nonEmpty) {
+        transactionsStatsDoesNotMatch.get
       } else {
         MatchResult(matches = true, "", "")
       }

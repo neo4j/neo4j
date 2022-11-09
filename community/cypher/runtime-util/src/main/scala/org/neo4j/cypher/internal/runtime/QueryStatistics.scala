@@ -42,7 +42,9 @@ case class QueryStatistics(
   nodekeyConstraintsAdded: Int = 0,
   relkeyConstraintsAdded: Int = 0,
   @BeanProperty constraintsRemoved: Int = 0,
+  @BeanProperty transactionsStarted: Int = 0,
   @BeanProperty transactionsCommitted: Int = 0,
+  @BeanProperty transactionsRolledBack: Int = 0,
   @BeanProperty systemUpdates: Int = 0
 ) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
 
@@ -86,7 +88,9 @@ case class QueryStatistics(
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
       includeIfNonZero(builder, "Relationship key constraints added: ", relkeyConstraintsAdded)
       includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
+      includeIfNonZero(builder, "Transactions started: ", transactionsStarted)
       includeIfNonZero(builder, "Transactions committed: ", transactionsCommitted)
+      includeIfNonZero(builder, "Transactions rolled back: ", transactionsRolledBack)
     }
     val result = builder.toString()
 
@@ -115,6 +119,8 @@ case class QueryStatistics(
       relkeyConstraintsAdded = this.relkeyConstraintsAdded + other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved + other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted + other.transactionsCommitted,
+      transactionsStarted = this.transactionsStarted + other.transactionsStarted,
+      transactionsRolledBack = this.transactionsRolledBack + other.transactionsRolledBack,
       systemUpdates = this.systemUpdates + other.systemUpdates
     )
   }
@@ -137,6 +143,8 @@ case class QueryStatistics(
       relkeyConstraintsAdded = this.relkeyConstraintsAdded - other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved - other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted - other.transactionsCommitted,
+      transactionsStarted = this.transactionsStarted - other.transactionsStarted,
+      transactionsRolledBack = this.transactionsRolledBack - other.transactionsRolledBack,
       systemUpdates = this.systemUpdates - other.systemUpdates
     )
   }
@@ -161,7 +169,9 @@ object QueryStatistics {
         uniqueConstraintsAdded = q.getConstraintsAdded,
         constraintsRemoved = q.getConstraintsRemoved,
         systemUpdates = q.getSystemUpdates,
-        transactionsCommitted = q.getTransactionsCommitted
+        transactionsCommitted = q.getTransactionsCommitted,
+        transactionsStarted = q.getTransactionsStarted,
+        transactionsRolledBack = q.getTransactionsRolledBack
       )
     case _ =>
       QueryStatistics(

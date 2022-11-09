@@ -23,5 +23,9 @@ package org.neo4j.cypher.internal.runtime;
  * Extra query statistics collected by the Cypher runtimes that is not yet part of the public API
  */
 public interface ExtendedQueryStatistics {
-    public int getTransactionsCommitted();
+    int getTransactionsCommitted();
+
+    int getTransactionsStarted();
+
+    int getTransactionsRolledBack();
 }

@@ -195,7 +195,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(
         nodesCreated = expectedRhsCount,
         labelsAdded = expectedRhsCount,
-        transactionsCommitted = expectedCommits
+        transactionsCommitted = expectedCommits,
+        transactionsStarted = expectedCommits
       )
   }
 
@@ -581,7 +582,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, transactionsCommitted = 11)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, transactionsCommitted = 11, transactionsStarted = 11)
   }
 
   test("statistics should report data creation from subqueries in batches") {
@@ -606,7 +607,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(
         nodesCreated = rangeSize,
         labelsAdded = rangeSize,
-        transactionsCommitted = expectedTransactionCount + 1
+        transactionsCommitted = expectedTransactionCount + 1,
+        transactionsStarted = expectedTransactionCount + 1
       )
   }
 
@@ -626,7 +628,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq(1, 2)))
-      .withStatistics(nodesCreated = 2, labelsAdded = 2, transactionsCommitted = 2)
+      .withStatistics(nodesCreated = 2, labelsAdded = 2, transactionsCommitted = 2, transactionsStarted = 2)
   }
 
   test("Should not throw exception when reading before call subquery") {
@@ -1085,7 +1087,13 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to 10))
-      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+      .withStatistics(
+        nodesCreated = 10,
+        labelsAdded = 10,
+        propertiesSet = 10,
+        transactionsCommitted = 5,
+        transactionsStarted = 5
+      )
   }
 
   private def checkExternalAndRuntimeNodes(
@@ -1235,6 +1243,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
           .withStatistics(
             nodesCreated = expectedNodes,
             labelsAdded = expectedNodes,
+            transactionsStarted = expectedCommittedInnerTxs + 1,
             transactionsCommitted = expectedCommittedInnerTxs + 1
           )
 
@@ -1312,7 +1321,9 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
         .withStatistics(
           nodesCreated = expectedNodes,
           labelsAdded = expectedNodes,
-          transactionsCommitted = expectedCommittedInnerTxs + 1
+          transactionsStarted = expectedCommittedInnerTxs + 1 + expectedFailedInnerTxs,
+          transactionsCommitted = expectedCommittedInnerTxs + 1,
+          transactionsRolledBack = expectedFailedInnerTxs
         )
 
       val statsAfter = txStats()
@@ -1382,7 +1393,9 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
         .withStatistics(
           nodesCreated = expectedNodes,
           labelsAdded = expectedNodes,
-          transactionsCommitted = expectedCommittedInnerTxs + 1
+          transactionsStarted = expectedCommittedInnerTxs + 1 + expectedFailedInnerTxs,
+          transactionsCommitted = expectedCommittedInnerTxs + 1,
+          transactionsRolledBack = expectedFailedInnerTxs
         )
 
       val statsAfter = txStats()

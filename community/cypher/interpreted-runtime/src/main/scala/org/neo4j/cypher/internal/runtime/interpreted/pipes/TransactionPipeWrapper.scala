@@ -110,6 +110,7 @@ trait TransactionPipeWrapper {
 
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction()
+    state.query.addStatistics(QueryStatistics(transactionsStarted = 1))
     val innerTxContext = stateWithNewTransaction.query.transactionalContext
     val transactionId = innerTxContext.userTransactionId
     val entityTransformer = new CypherRowEntityTransformer(stateWithNewTransaction.query.entityTransformer)
@@ -139,6 +140,7 @@ trait TransactionPipeWrapper {
           .foreach(e.addSuppressed)
 
         try {
+          state.query.addStatistics(QueryStatistics(transactionsRolledBack = 1))
           innerTxContext.rollback()
         } catch {
           case NonFatal(rollbackException) =>
