@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +51,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -72,7 +75,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.DenseNodeConcurrencyIT.WorkType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -95,6 +97,7 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.Tags;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -108,8 +111,12 @@ class DenseNodeConcurrencyIT {
     private static final int NUM_INITIAL_RELATIONSHIPS_PER_SPARSE_NODE = 10;
     private static final int NUM_DENSE_NODES_IN_MULTI_SETUP = 10;
     private static final int NUM_TASKS = 1_000;
-    private static final RelationshipType INITIAL_DENSE_NODE_TYPE = TEST2;
-    private static final Label INITIAL_LABEL = Label.label("INITIAL");
+    private static final List<Label> LABELS = new Tags.Suppliers.Label(Tags.Suppliers.Suffixes.incrementing(0)).get(4);
+    private static final List<String> PROPERTY_KEYS =
+            new Tags.Suppliers.PropertyKey(Tags.Suppliers.Suffixes.incrementing(0)).get(3);
+    private static final List<RelationshipType> RELATIONSHIP_TYPES =
+            new Tags.Suppliers.RelationshipType(Tags.Suppliers.Suffixes.incrementing(0)).get(3);
+    private static final RelationshipType INITIAL_DENSE_NODE_TYPE = RELATIONSHIP_TYPES.get(0);
 
     @Inject
     DatabaseManagementService dbms;
@@ -276,13 +283,19 @@ class DenseNodeConcurrencyIT {
      */
     @MethodSource("permutations")
     @ParameterizedTest(
-            name = "multipleDenseNodes:{0}, startAsDense:{1}, multipleOpsPerTx:{2}, multipleTypes:{3}, opWeights:{4}")
+            name =
+                    "multipleDenseNodes:{0}, startAsDense:{1}, multipleOpsPerTx:{2}, multipleTypes:{3}, hasIndexes:{4}, opWeights:{5}")
     void shouldCreateAndDeleteRelationshipsConcurrently(
             boolean multipleDenseNodes,
             boolean startAsDense,
             boolean multipleOperationsInOneTx,
             boolean multipleTypes,
+            boolean hasIndexes,
             Map<WorkType, Integer> operationWeights) {
+
+        if (hasIndexes) {
+            createIndexes();
+        }
         // given
         Map<Long, Set<Relationship>> relationships = new ConcurrentHashMap<>();
         Set<Relationship> allRelationships = newKeySet();
@@ -296,13 +309,7 @@ class DenseNodeConcurrencyIT {
         Queue<WorkTask> workQueue = new ConcurrentLinkedDeque<>(createWork(operationWeights));
         Race race = new Race().withFailureAction(t -> workQueue.clear());
         int numWorkers = Runtime.getRuntime().availableProcessors();
-        List<RelationshipType> typesList = new ArrayList<>();
-        typesList.add(INITIAL_DENSE_NODE_TYPE);
-        if (multipleTypes) {
-            typesList.add(withName("a"));
-            typesList.add(withName("b"));
-        }
-        RelationshipType[] types = typesList.toArray(new RelationshipType[0]);
+        List<RelationshipType> types = multipleTypes ? RELATIONSHIP_TYPES : List.of(RELATIONSHIP_TYPES.get(0));
         AtomicInteger numDeadlocks = new AtomicInteger();
 
         // This is needed to make sure that local relationship ids are not reused when
@@ -383,12 +390,41 @@ class DenseNodeConcurrencyIT {
         assertThat(numDeadlocks.get()).isLessThan(NUM_TASKS / 5);
     }
 
+    private void createIndexes() {
+        try (Transaction tx = database.beginTx()) {
+            for (Label label : LABELS) {
+                for (String key1 : PROPERTY_KEYS) {
+                    tx.schema().indexFor(label).on(key1).create();
+                    for (String key2 : PROPERTY_KEYS) {
+                        if (!Objects.equals(key1, key2)) {
+                            tx.schema().indexFor(label).on(key1).on(key2).create();
+                        }
+                    }
+                }
+            }
+            for (RelationshipType type : RELATIONSHIP_TYPES) {
+                for (String key1 : PROPERTY_KEYS) {
+                    tx.schema().indexFor(type).on(key1).create();
+                    for (String key2 : PROPERTY_KEYS) {
+                        if (!Objects.equals(key1, key2)) {
+                            tx.schema().indexFor(type).on(key1).on(key2).create();
+                        }
+                    }
+                }
+            }
+            tx.commit();
+        }
+        try (Transaction tx = database.beginTx()) {
+            tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES);
+        }
+    }
+
     private void assertDeletedNodes(Set<Long> deletedInitialNodes) {
         try (Transaction tx = database.beginTx()) {
             deletedInitialNodes.forEach(id -> {
                 try {
                     Node node = tx.getNodeById(id);
-                    assertThat(node.getLabels()).doesNotContain(INITIAL_LABEL); // in case id was reused
+                    assertThat(node.getLabels()).doesNotContain(LABELS.get(0)); // in case id was reused
                 } catch (NotFoundException e) {
                     // Expected, since we deleted it
                 }
@@ -402,67 +438,75 @@ class DenseNodeConcurrencyIT {
             for (boolean startAsDense : new boolean[] {true, false}) {
                 for (boolean multipleOpsPerTx : new boolean[] {true, false}) {
                     for (boolean multipleTypes : new boolean[] {true, false}) {
-                        // For each of the permutations above add different types of scenarios below which exercises
-                        // different types of contention and locking
+                        for (boolean hasIndexes : new boolean[] {true, false}) {
+                            // For each of the permutations above add different types of scenarios below which exercises
+                            // different types of contention and locking
 
-                        // Only create
-                        permutations.add(arguments(
-                                multipleDenseNodes,
-                                startAsDense,
-                                multipleOpsPerTx,
-                                multipleTypes,
-                                operationWeights(WorkType.CREATE, 1)));
-                        if (startAsDense) {
-                            // Only delete
+                            // Only create
                             permutations.add(arguments(
                                     multipleDenseNodes,
                                     startAsDense,
                                     multipleOpsPerTx,
                                     multipleTypes,
-                                    operationWeights(WorkType.DELETE, 1)));
-                            // Create and delete, mostly deletes
+                                    hasIndexes,
+                                    operationWeights(WorkType.CREATE, 1)));
+                            if (startAsDense) {
+                                // Only delete
+                                permutations.add(arguments(
+                                        multipleDenseNodes,
+                                        startAsDense,
+                                        multipleOpsPerTx,
+                                        multipleTypes,
+                                        hasIndexes,
+                                        operationWeights(WorkType.DELETE, 1)));
+                                // Create and delete, mostly deletes
+                                permutations.add(arguments(
+                                        multipleDenseNodes,
+                                        startAsDense,
+                                        multipleOpsPerTx,
+                                        multipleTypes,
+                                        hasIndexes,
+                                        operationWeights(
+                                                WorkType.CREATE, 3,
+                                                WorkType.DELETE, 4)));
+                            }
+                            // Create and delete, mostly creates
                             permutations.add(arguments(
                                     multipleDenseNodes,
                                     startAsDense,
                                     multipleOpsPerTx,
                                     multipleTypes,
+                                    hasIndexes,
                                     operationWeights(
                                             WorkType.CREATE, 3,
-                                            WorkType.DELETE, 4)));
+                                            WorkType.DELETE, 1)));
+                            // Create, delete, delete all
+                            permutations.add(arguments(
+                                    multipleDenseNodes,
+                                    startAsDense,
+                                    multipleOpsPerTx,
+                                    multipleTypes,
+                                    hasIndexes,
+                                    operationWeights(
+                                            WorkType.CREATE, 10,
+                                            WorkType.DELETE, 6,
+                                            WorkType.DELETE_ALL_TYPE_DIRECTION, 2,
+                                            WorkType.DELETE_ALL_TYPE, 1,
+                                            WorkType.DELETE_ALL, 1)));
+                            permutations.add(arguments(
+                                    multipleDenseNodes,
+                                    startAsDense,
+                                    multipleOpsPerTx,
+                                    multipleTypes,
+                                    hasIndexes,
+                                    operationWeights(
+                                            WorkType.CREATE, 40,
+                                            WorkType.DELETE, 20,
+                                            WorkType.DELETE_ALL_TYPE_DIRECTION, 8,
+                                            WorkType.DELETE_ALL_TYPE, 6,
+                                            WorkType.DELETE_ALL, 4,
+                                            WorkType.CHANGE_OTHER_DATA, 1)));
                         }
-                        // Create and delete, mostly creates
-                        permutations.add(arguments(
-                                multipleDenseNodes,
-                                startAsDense,
-                                multipleOpsPerTx,
-                                multipleTypes,
-                                operationWeights(
-                                        WorkType.CREATE, 3,
-                                        WorkType.DELETE, 1)));
-                        // Create, delete, delete all
-                        permutations.add(arguments(
-                                multipleDenseNodes,
-                                startAsDense,
-                                multipleOpsPerTx,
-                                multipleTypes,
-                                operationWeights(
-                                        WorkType.CREATE, 10,
-                                        WorkType.DELETE, 6,
-                                        WorkType.DELETE_ALL_TYPE_DIRECTION, 2,
-                                        WorkType.DELETE_ALL_TYPE, 1,
-                                        WorkType.DELETE_ALL, 1)));
-                        permutations.add(arguments(
-                                multipleDenseNodes,
-                                startAsDense,
-                                multipleOpsPerTx,
-                                multipleTypes,
-                                operationWeights(
-                                        WorkType.CREATE, 40,
-                                        WorkType.DELETE, 20,
-                                        WorkType.DELETE_ALL_TYPE_DIRECTION, 8,
-                                        WorkType.DELETE_ALL_TYPE, 6,
-                                        WorkType.DELETE_ALL, 4,
-                                        WorkType.CHANGE_OTHER_DATA, 1)));
                     }
                 }
             }
@@ -633,16 +677,14 @@ class DenseNodeConcurrencyIT {
     @ValueSource(booleans = {false, true})
     void txNodeLocksShouldBlockNodeOperations(boolean writeLock) throws Throwable {
         nodeOperationShouldBeBlockedByNodeLock(Node::delete, "delete", writeLock);
-        nodeOperationShouldBeBlockedByNodeLock(node -> node.addLabel(Label.label("foo")), "addLabel", writeLock);
+        nodeOperationShouldBeBlockedByNodeLock(node -> node.addLabel(label("foo")), "addLabel", writeLock);
         nodeOperationShouldBeBlockedByNodeLock(node -> node.setProperty("foo", "bar"), "setProperty", writeLock);
     }
 
     @Test
     void txNodeWriteLockShouldBlockRelationshipOperations() throws Throwable {
         nodeOperationShouldBeBlockedByNodeLock(
-                node -> node.createRelationshipTo(node, RelationshipType.withName("foo")),
-                "createRelationshipTo",
-                true);
+                node -> node.createRelationshipTo(node, withName("foo")), "createRelationshipTo", true);
         relationshipOperationShouldBeBlockedByNodeLock(Relationship::delete, "delete", true);
     }
 
@@ -855,7 +897,7 @@ class DenseNodeConcurrencyIT {
             relationships.put(node, nodeRelationships);
         }
         try (Transaction tx = database.beginTx()) {
-            denseNodeIds.forEach(l -> tx.getNodeById(l).addLabel(INITIAL_LABEL));
+            denseNodeIds.forEach(l -> tx.getNodeById(l).addLabel(LABELS.get(0)));
         }
         return denseNodeIds;
     }
@@ -1026,29 +1068,29 @@ class DenseNodeConcurrencyIT {
                         Node onNode = randomDenseNode(tx, denseNodeIds, random);
                         switch (random.nextInt(5)) {
                             case 0:
-                                onNode.setProperty("KEY_" + random.nextInt(3), random.nextInt());
+                                onNode.setProperty(random.among(PROPERTY_KEYS), random.nextInt());
                                 break;
                             case 1:
-                                onNode.removeProperty("KEY_" + random.nextInt(3));
+                                onNode.removeProperty(random.among(PROPERTY_KEYS));
                                 break;
                             case 2:
-                                onNode.addLabel(Label.label("LABEL_" + random.nextInt(3)));
+                                onNode.addLabel(random.among(LABELS));
                                 break;
                             case 3:
-                                onNode.removeLabel(Label.label("LABEL_" + random.nextInt(3)));
+                                onNode.removeLabel(random.among(LABELS));
                                 break;
                             case 4:
                                 modifyRandomRelationship(
                                         onNode,
                                         type,
-                                        r -> r.setProperty("KEY_" + random.nextInt(3), random.nextInt()),
+                                        r -> r.setProperty(random.among(PROPERTY_KEYS), random.nextInt()),
                                         allRelationships,
                                         random);
                             default:
                                 modifyRandomRelationship(
                                         onNode,
                                         type,
-                                        r -> r.removeProperty("KEY_" + random.nextInt(3)),
+                                        r -> r.removeProperty(random.among(PROPERTY_KEYS)),
                                         allRelationships,
                                         random);
                                 break;
