@@ -27,6 +27,7 @@ import org.neo4j.io.fs.WritableChannel;
 
 public class StringChannelMarshal implements ChannelMarshal<String> {
     public static final int NULL_STRING_LENGTH = -1;
+    public static final StringChannelMarshal INSTANCE = new StringChannelMarshal();
 
     @Override
     public void marshal(String string, WritableChannel channel) throws IOException {
