@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static java.lang.String.format;
+import static org.neo4j.kernel.impl.locking.forseti.ForsetiClient.lockString;
 
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
@@ -79,9 +79,5 @@ record LockPath(
             path = path.parent;
         }
         return builder.toString();
-    }
-
-    private static String lockString(ResourceType resourceType, long resourceId) {
-        return format("%s(%d)", resourceType, resourceId);
     }
 }

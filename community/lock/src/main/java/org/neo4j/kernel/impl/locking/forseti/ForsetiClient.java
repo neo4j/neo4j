@@ -817,21 +817,25 @@ public class ForsetiClient implements Locks.Client {
             // to find a lock that has us among the owners.
             // We only act upon the result of this method if the `tries` count is above some threshold. The reason
             // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
-            // reduces the probably of a false positive, but does not eliminate them.
+            // reduces the probability of a false positive, but does not eliminate them.
             int depth;
             if (tries > 100 && ((depth = isDeadlockReal(lock)) != NO_DEADLOCK_DEPTH)) {
-                var deadlockCycleMessage = verboseDeadlocks
-                        ? findConsistentDeadlockPath(lock, type, resourceId, depth)
-                        : this + " wait list:" + lock.describeWaitList();
-                if (deadlockCycleMessage != null) {
-                    var message = String.format(
-                            "%s can't wait for %s because it would form this deadlock wait cycle:%n%s",
-                            this, lockString(type, resourceId, lockType), deadlockCycleMessage);
-                    // After checking several times, this really does look like a real deadlock.
-                    throw new DeadlockDetectedException(message);
+                // After checking several times, this really does look like a real deadlock.
+                if (verboseDeadlocks) {
+                    var deadlockCycleMessage = findConsistentDeadlockPath(lock, type, resourceId, depth);
+                    if (deadlockCycleMessage != null) {
+                        var message = String.format(
+                                "%s can't acquire %s %s because it would form this deadlock wait cycle:%n%s",
+                                this, lockType, lockString(type, resourceId), deadlockCycleMessage);
+                        throw new DeadlockDetectedException(message);
+                    }
+                    // else we tried to find a precise deadlock cycle, but found none - which means that
+                    // there was no real deadlock
+                } else {
+                    throw new DeadlockDetectedException(format(
+                            "%s can't acquire %s on %s because holders of that lock are waiting for %s.%n Wait list:%s",
+                            this, lock, lockString(type, resourceId), this, lock.describeWaitList()));
                 }
-                // else we tried to find a precise deadlock cycle, but found none - which means that
-                // there was no real deadlock
             }
             Thread.yield();
         } else if ((tries & 8191) == 8191) // Each try sleeps for up to 1ms, so 8k tries will be every ~8s
@@ -976,8 +980,12 @@ public class ForsetiClient implements Locks.Client {
         return null;
     }
 
-    private static String lockString(ResourceType resourceType, long resourceId, LockType lockType) {
-        return format("%s(%d):%s", resourceType, resourceId, lockType);
+    //    private static String lockString(ResourceType resourceType, long resourceId, LockType lockType) {
+    //        return format("%s(%d):%s", resourceType, resourceId, lockType);
+    //    }
+    //
+    static String lockString(ResourceType resourceType, long resourceId) {
+        return format("%s(%d)", resourceType, resourceId);
     }
 
     private LockPath traverseOneStep(
