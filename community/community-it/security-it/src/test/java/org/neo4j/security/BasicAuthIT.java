@@ -65,7 +65,7 @@ class BasicAuthIT {
         var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
         try (Transaction tx = systemDatabase.beginTx()) {
             // WHEN
-            tx.execute("CREATE USER foo SET PASSWORD 'bar'").close();
+            tx.execute("CREATE USER foo SET PASSWORD 'barpassword'").close();
             tx.commit();
         }
         dbmsController.restartDbms(builder -> builder.setConfig(GraphDatabaseSettings.auth_enabled, true));
@@ -73,7 +73,7 @@ class BasicAuthIT {
         // THEN
         LoginContext loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "wrong"), EMBEDDED_CONNECTION);
         assertThat(loginContext.subject().getAuthenticationResult()).isEqualTo(AuthenticationResult.FAILURE);
-        loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "bar"), EMBEDDED_CONNECTION);
+        loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "barpassword"), EMBEDDED_CONNECTION);
         assertThat(loginContext.subject().getAuthenticationResult())
                 .isEqualTo(AuthenticationResult.PASSWORD_CHANGE_REQUIRED);
     }
@@ -83,14 +83,16 @@ class BasicAuthIT {
         // GIVEN
         var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
         try (Transaction tx = systemDatabase.beginTx()) {
-            tx.execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED").close();
-            tx.execute("CREATE USER baz SET PASSWORD 'bar'").close();
+            tx.execute("CREATE USER foo SET PASSWORD 'barpassword' CHANGE NOT REQUIRED")
+                    .close();
+            tx.execute("CREATE USER baz SET PASSWORD 'barpassword'").close();
             tx.commit();
         }
         dbmsController.restartDbms(builder -> builder.setConfig(GraphDatabaseSettings.auth_enabled, true));
 
         // WHEN...THEN
-        LoginContext loginContext = authManager.login(AuthToken.newBasicAuthToken("foo", "bar"), EMBEDDED_CONNECTION);
+        LoginContext loginContext =
+                authManager.login(AuthToken.newBasicAuthToken("foo", "barpassword"), EMBEDDED_CONNECTION);
         assertThat(loginContext.subject().getAuthenticationResult()).isEqualTo(AuthenticationResult.SUCCESS);
         assertThatThrownBy(() -> authManager.impersonate(loginContext, "baz"))
                 .isInstanceOf(InvalidArgumentException.class)
@@ -102,7 +104,7 @@ class BasicAuthIT {
         // GIVEN
         var systemDatabase = managementService.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
         try (Transaction tx = systemDatabase.beginTx()) {
-            tx.execute("CREATE USER foo SET PASSWORD 'bar'").close();
+            tx.execute("CREATE USER foo SET PASSWORD 'barpassword'").close();
             tx.commit();
         }
 

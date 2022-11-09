@@ -93,7 +93,7 @@ class AdminCommandsIT {
 
     @Test
     void shouldExpandCommands() throws Exception {
-        assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "pass");
+        assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "password");
         assertSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
         assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
         assertSuccess(new CheckCommand(context), "--expand-commands", "neo4j");
@@ -115,7 +115,7 @@ class AdminCommandsIT {
 
     @Test
     void shouldNotExpandCommands() {
-        assertExpansionError(new SetInitialPasswordCommand(context), "pass");
+        assertExpansionError(new SetInitialPasswordCommand(context), "password");
         assertExpansionError(new SetDefaultAdminCommand(context), "user");
         assertExpansionError(new StoreInfoCommand(context), "path");
         assertExpansionError(new CheckCommand(context), "neo4j");

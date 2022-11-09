@@ -86,9 +86,9 @@ class MainIntegrationTest {
 
     @Test
     void promptsOnWrongAuthenticationIfInteractive() throws Exception {
-        testWithUser("kate", "bush", false)
+        testWithUser("kate", "bushPassword", false)
                 .args("--format verbose")
-                .userInputLines("kate", "bush", "return 42 as x;", ":exit")
+                .userInputLines("kate", "bushPassword", "return 42 as x;", ":exit")
                 .run()
                 .assertSuccess()
                 .assertThatOutput(startsWith(format("username: kate%npassword: %n")), returned42AndExited());
@@ -111,9 +111,9 @@ class MainIntegrationTest {
     void promptsOnPasswordChangeRequiredSinceVersion4() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 
-        testWithUser("bob", "expired", true)
+        testWithUser("bob", "expiredPassword", true)
                 .args("--format verbose")
-                .userInputLines("bob", "expired", "newpass", "newpass", "return 42 as x;", ":exit")
+                .userInputLines("bob", "expiredPassword", "newpassword", "newpassword", "return 42 as x;", ":exit")
                 .run()
                 .assertSuccess()
                 .assertThatOutput(
@@ -127,9 +127,9 @@ class MainIntegrationTest {
     void promptsOnPasswordChangeRequiredBeforeVersion4() throws Exception {
         assumeTrue(serverVersion.major() < 4);
 
-        testWithUser("bob", "expired", true)
+        testWithUser("bob", "expiredPassword", true)
                 .args("--format verbose")
-                .userInputLines("bob", "expired", "match (n) return count(n);", ":exit")
+                .userInputLines("bob", "expiredPassword", "match (n) return count(n);", ":exit")
                 .run()
                 .assertSuccess(false)
                 .assertThatErrorOutput(containsString("CALL dbms.changePassword"))
@@ -140,9 +140,9 @@ class MainIntegrationTest {
     void allowUserToUpdateExpiredPasswordInteractivelyWithoutBeingPrompted() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 
-        testWithUser("bob", "expired", true)
-                .args("-u bob -p expired -d system --format verbose")
-                .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"shinynew\";")
+        testWithUser("bob", "expiredPassword", true)
+                .args("-u bob -p expiredPassword -d system --format verbose")
+                .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expiredPassword\" TO \"shinynew\";")
                 .run()
                 .assertSuccess()
                 .assertThatOutput(containsString("0 rows"));
@@ -154,9 +154,9 @@ class MainIntegrationTest {
     void shouldFailIfNonInteractivelySettingPasswordOnNonSystemDb() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 
-        testWithUser("kjell", "expired", true)
-                .args("-u kjell -p expired -d neo4j --non-interactive")
-                .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"höglund\";")
+        testWithUser("kjell", "expiredPassword", true)
+                .args("-u kjell -p expiredPassword -d neo4j --non-interactive")
+                .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expiredPassword\" TO \"höglund!\";")
                 .run()
                 .assertFailure()
                 .assertThatErrorOutput(containsString("The credentials you provided were valid, but must be changed"));
@@ -166,22 +166,22 @@ class MainIntegrationTest {
     void shouldBePromptedIfRunningNonInteractiveCypherThatDoesntUpdatePassword() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 
-        testWithUser("bruce", "expired", true)
-                .args("-u bruce -p expired -d neo4j")
+        testWithUser("bruce", "expiredPassword", true)
+                .args("-u bruce -p expiredPassword -d neo4j")
                 .addArgs("match (n) return n;")
-                .userInputLines("newpass", "newpass")
+                .userInputLines("newPassword", "newPassword")
                 .run()
                 .assertSuccess();
 
-        assertUserCanConnectAndRunQuery("bruce", "newpass");
+        assertUserCanConnectAndRunQuery("bruce", "newPassword");
     }
 
     @Test
     void shouldNotBePromptedIfRunningWithExplicitNonInteractiveCypherThatDoesntUpdatePassword() throws Exception {
         assumeTrue(serverVersion.major() >= 4);
 
-        testWithUser("nick", "expired", true)
-                .args("-u nick -p expired -d neo4j --non-interactive")
+        testWithUser("nick", "expiredPassword", true)
+                .args("-u nick -p expiredPassword -d neo4j --non-interactive")
                 .addArgs("match (n) return n;")
                 .run()
                 .assertFailure()
@@ -191,10 +191,10 @@ class MainIntegrationTest {
 
     @Test
     void doesPromptOnNonInteractiveOuput() throws Exception {
-        testWithUser("holy", "ghost", false)
+        testWithUser("holy", "ghostPassword", false)
                 .addArgs("return 42 as x;")
                 .outputInteractive(false)
-                .userInputLines("holy", "ghost")
+                .userInputLines("holy", "ghostPassword")
                 .run()
                 .assertSuccessAndConnected()
                 .assertOutputLines("username: holy", "password: ", "x", "42");
@@ -214,8 +214,8 @@ class MainIntegrationTest {
 
     @Test
     void wrongPortWithBolt() throws Exception {
-        testWithUser("leonard", "coen", false)
-                .args("-u leonard -p coen -a bolt://localhost:1234")
+        testWithUser("leonard", "coenPassword", false)
+                .args("-u leonard -p coenPassword -a bolt://localhost:1234")
                 .run()
                 .assertFailure(
                         "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it.");
@@ -223,17 +223,17 @@ class MainIntegrationTest {
 
     @Test
     void wrongPortWithNeo4j() throws Exception {
-        testWithUser("jackie", "leven", false)
-                .args("-u jackie -p leven -a neo4j://localhost:1234")
+        testWithUser("jackie", "levenPassword", false)
+                .args("-u jackie -p levenPassword -a neo4j://localhost:1234")
                 .run()
                 .assertFailure("Connection refused");
     }
 
     @Test
     void shouldAskForCredentialsWhenConnectingWithAFile() throws Exception {
-        testWithUser("jacob", "collier", false)
+        testWithUser("jacob", "collier!", false)
                 .addArgs("--file", fileFromResource("single.cypher"))
-                .userInputLines("jacob", "collier")
+                .userInputLines("jacob", "collier!")
                 .run()
                 .assertSuccessAndConnected()
                 .assertOutputLines("username: jacob", "password: ", "result", "42");
@@ -244,8 +244,8 @@ class MainIntegrationTest {
         var expectedQueryResult =
                 format("+--------+%n" + "| result |%n" + "+--------+%n" + "| 42     |%n" + "+--------+");
 
-        testWithUser("philip", "glass", false)
-                .args("-u philip -p glass --format verbose")
+        testWithUser("philip", "glassPassword", false)
+                .args("-u philip -p glassPassword --format verbose")
                 .addArgs("--file", fileFromResource("single.cypher"))
                 .run()
                 .assertSuccessAndConnected()
@@ -583,9 +583,9 @@ class MainIntegrationTest {
 
     @Test
     void shouldChangePassword() throws Exception {
-        testWithUser("kate", "bush", false)
+        testWithUser("kate", "bushPassword", false)
                 .args("--change-password")
-                .userInputLines("kate", "bush", "betterpassword", "betterpassword")
+                .userInputLines("kate", "bushPassword", "betterpassword", "betterpassword")
                 .run()
                 .assertSuccess()
                 .assertOutputLines("username: kate", "password: ", "new password: ", "confirm password: ");
@@ -595,9 +595,9 @@ class MainIntegrationTest {
 
     @Test
     void shouldChangePasswordWhenRequired() throws Exception {
-        testWithUser("paul", "simon", true)
+        testWithUser("paul", "simonPassword", true)
                 .args("--change-password")
-                .userInputLines("paul", "simon", "newpassword", "newpassword")
+                .userInputLines("paul", "simonPassword", "newpassword", "newpassword")
                 .run()
                 .assertSuccess()
                 .assertOutputLines("username: paul", "password: ", "new password: ", "confirm password: ");
@@ -889,7 +889,7 @@ class MainIntegrationTest {
 
         // Setup impersonated user and role
         runInSystemDb(shell -> {
-            createOrReplaceUser(shell, "impersonate_me", "123", false);
+            createOrReplaceUser(shell, "impersonate_me", "12345678", false);
             shell.execute(cypher("CREATE OR REPLACE ROLE restricted AS COPY OF reader;"));
             shell.execute(cypher("DENY READ {secretProp} ON GRAPHS * TO restricted;"));
             shell.execute(cypher("GRANT ROLE restricted TO impersonate_me;"));
@@ -935,8 +935,8 @@ class MainIntegrationTest {
 
         // Setup impersonated user and role
         runInSystemDb(shell -> {
-            createOrReplaceUser(shell, "impersonate_me", "123", false);
-            createOrReplaceUser(shell, "alice", "abc", false);
+            createOrReplaceUser(shell, "impersonate_me", "12345678", false);
+            createOrReplaceUser(shell, "alice", "abcdefgh", false);
             shell.execute(cypher("CREATE OR REPLACE ROLE restricted AS COPY OF reader;"));
             shell.execute(cypher("DENY READ {secretProp} ON GRAPHS * TO restricted;"));
             shell.execute(cypher("GRANT ROLE restricted TO impersonate_me;"));
@@ -949,7 +949,7 @@ class MainIntegrationTest {
         });
 
         buildTest()
-                .args("-u alice -p abc --format verbose")
+                .args("-u alice -p abcdefgh --format verbose")
                 .userInputLines(":impersonate impersonate_me", "MATCH (n:ImpersonationTest) RETURN n;", ":exit")
                 .run()
                 .assertSuccess(false)
@@ -967,8 +967,8 @@ class MainIntegrationTest {
     @Test
     void connectWithCredentialsInAddress() throws Exception {
         assumeAtLeastVersion("4.3");
-        testWithUser("the_undertaker", "wwf", false)
-                .args("-a neo4j://the_undertaker:wwf@localhost:7687 --format plain")
+        testWithUser("the_undertaker", "password", false)
+                .args("-a neo4j://the_undertaker:password@localhost:7687 --format plain")
                 .userInputLines("SHOW CURRENT USER YIELD user;", ":exit")
                 .run()
                 .assertSuccess()
@@ -984,9 +984,9 @@ class MainIntegrationTest {
     @Test
     void connectWithEnvironmentalAddress() throws Exception {
         assumeAtLeastVersion("4.3");
-        testWithUser("hulk_hogan", "wwf2", false)
+        testWithUser("hulk_hogan", "password", false)
                 .args("--format plain")
-                .addEnvVariable("NEO4J_ADDRESS", "neo4j://hulk_hogan:wwf2@localhost:7687")
+                .addEnvVariable("NEO4J_ADDRESS", "neo4j://hulk_hogan:password@localhost:7687")
                 .userInputLines("SHOW CURRENT USER YIELD user;", ":exit")
                 .run()
                 .assertSuccess()

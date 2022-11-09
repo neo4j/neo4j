@@ -142,7 +142,7 @@ public class AuthenticationIT {
 
         connection.send(wire.run(
                 "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                singletonMap("password", "secret"),
+                singletonMap("password", "secretPassword"),
                 singletonMap("db", SYSTEM_DATABASE_NAME)));
         connection.send(wire.pull());
 
@@ -155,7 +155,7 @@ public class AuthenticationIT {
         connection.send(wire.hello(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
-                "credentials", "secret")));
+                "credentials", "secretPassword")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
@@ -263,9 +263,19 @@ public class AuthenticationIT {
                 .containsKeys("server", "connection_id"));
 
         connection
+                .send(wire.reset())
                 .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "neo4j"),
+                        singletonMap("password", "password"),
+                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+
+        connection
+                .send(wire.run(
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        singletonMap("password", "password"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
@@ -277,8 +287,8 @@ public class AuthenticationIT {
         connection
                 .send(wire.reset())
                 .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "abc"),
+                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
+                        singletonMap("password", "abcdefgh"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
@@ -312,7 +322,7 @@ public class AuthenticationIT {
                 .send(wire.reset())
                 .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "abc"),
+                        singletonMap("password", "abcdefgh"),
                         singletonMap("db", SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 

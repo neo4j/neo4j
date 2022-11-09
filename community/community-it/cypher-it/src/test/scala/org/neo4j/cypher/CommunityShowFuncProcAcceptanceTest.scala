@@ -53,7 +53,7 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
   private val username = "foo"
-  private val password = "secret"
+  private val password = "secretpassword"
 
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)

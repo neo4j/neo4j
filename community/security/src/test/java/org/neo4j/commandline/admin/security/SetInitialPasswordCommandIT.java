@@ -28,12 +28,15 @@ import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -42,30 +45,53 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.string.UTF8;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 
-@ExtendWith(EphemeralFileSystemExtension.class)
+@TestDirectoryExtension
+@ExtendWith(DefaultFileSystemExtension.class)
 class SetInitialPasswordCommandIT {
     @Inject
     private FileSystemAbstraction fileSystem;
+
+    @Inject
+    private TestDirectory testDirectory;
 
     private Path confDir;
     private Path homeDir;
     private PrintStream out;
     private PrintStream err;
+    private Path authStoreDirectory;
+    private Config config;
+    private Path configPath;
+    private static final String password = "password";
 
     private static final String successMessage = "Changed password for user 'neo4j'. "
             + "IMPORTANT: this change will only take effect if performed before the database is started for the first time.";
 
     @BeforeEach
     void setup() {
-        Path graphDir = Path.of(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
+        Path graphDir = testDirectory.homePath().resolve(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         confDir = graphDir.resolve("conf");
         homeDir = graphDir.resolve("home");
         out = mock(PrintStream.class);
         err = mock(PrintStream.class);
+        authStoreDirectory = homeDir.resolve("data").resolve("dbms");
+
+        config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.auth_store_directory, authStoreDirectory)
+                .build();
+        configPath = confDir.resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+        try {
+            createFile(configPath, config.toString(false));
+
+            createFile(getAuthFile("auth.ini"), "");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @AfterEach
@@ -75,32 +101,32 @@ class SetInitialPasswordCommandIT {
 
     @Test
     void shouldSetPassword() throws Throwable {
-        executeCommand("abc");
-        assertAuthIniFile("abc", false);
+        executeCommand(password);
+        assertAuthIniFile(password, false);
 
         verify(out).println(successMessage);
     }
 
     @Test
     void shouldSetPasswordWithRequirePasswordChange() throws Throwable {
-        executeCommand("abc", "--require-password-change");
-        assertAuthIniFile("abc", true);
+        executeCommand(password, "--require-password-change");
+        assertAuthIniFile(password, true);
 
         verify(out).println(successMessage);
     }
 
     @Test
     void shouldSetPasswordWithRequirePasswordChangeOtherOrder() throws Throwable {
-        executeCommand("--require-password-change", "abc");
-        assertAuthIniFile("abc", true);
+        executeCommand("--require-password-change", password);
+        assertAuthIniFile(password, true);
 
         verify(out).println(successMessage);
     }
 
     @Test
     void shouldOverwriteIfSetPasswordAgain() throws Throwable {
-        executeCommand("abc");
-        assertAuthIniFile("abc", false);
+        executeCommand(password);
+        assertAuthIniFile(password, false);
         executeCommand("muchBetter");
         assertAuthIniFile("muchBetter", false);
 
@@ -109,10 +135,10 @@ class SetInitialPasswordCommandIT {
 
     @Test
     void shouldWorkWithSamePassword() throws Throwable {
-        executeCommand("neo4j");
-        assertAuthIniFile("neo4j", false);
-        executeCommand("neo4j");
-        assertAuthIniFile("neo4j", false);
+        executeCommand(password);
+        assertAuthIniFile(password, false);
+        executeCommand(password);
+        assertAuthIniFile(password, false);
 
         verify(out, times(2)).println(successMessage);
     }
@@ -120,11 +146,15 @@ class SetInitialPasswordCommandIT {
     @Test
     void shouldNotErrorIfOnlyTheUnmodifiedDefaultNeo4jUserAlreadyExists() throws Throwable {
         // Given
+        // Create a config file with auth_minimum_password_length set to 1
+        config.set(GraphDatabaseSettings.auth_minimum_password_length, 1);
+        createFile(configPath, config.toString(false));
+
         // Create an `auth` file with the default neo4j user
         executeCommand(AuthManager.INITIAL_PASSWORD);
         Path authFile = getAuthFile("auth");
-        fileSystem.mkdirs(authFile.getParent());
-        fileSystem.renameFile(getAuthFile("auth.ini"), authFile);
+        Path authIniFile = getAuthFile("auth.ini");
+        fileSystem.copyFile(authIniFile, authFile);
 
         // When
         executeCommand("should-not-be-ignored");
@@ -147,7 +177,7 @@ class SetInitialPasswordCommandIT {
     }
 
     private Path getAuthFile(String name) {
-        return homeDir.resolve("data").resolve("dbms").resolve(name);
+        return authStoreDirectory.resolve(name);
     }
 
     private void executeCommand(String... args) throws IOException {
@@ -155,5 +185,12 @@ class SetInitialPasswordCommandIT {
         final var command = new SetInitialPasswordCommand(ctx);
         CommandLine.populateCommand(command, args);
         command.execute();
+    }
+
+    private void createFile(Path path, String content) throws IOException {
+        Path tmpFilePath = fileSystem.createTempFile(testDirectory.homePath(), "", "");
+        fileSystem.write(tmpFilePath).write(ByteBuffer.wrap(content.getBytes()));
+        fileSystem.copyFile(tmpFilePath, path);
+        fileSystem.delete(tmpFilePath);
     }
 }

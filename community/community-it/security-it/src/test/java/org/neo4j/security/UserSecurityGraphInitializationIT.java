@@ -129,16 +129,16 @@ class UserSecurityGraphInitializationIT {
         // Given
         startSystemGraphRealm();
         try (var tx = dbManager.testSystemDb.beginTx()) {
-            tx.execute("CREATE USER Alice SET PASSWORD 'meh'");
+            tx.execute("CREATE USER Alice SET PASSWORD 'password'");
             tx.commit();
         }
         // When
-        initialPassword.create(createUser(INITIAL_USER_NAME, "neo4j2", false));
+        initialPassword.create(createUser(INITIAL_USER_NAME, "neo4j2password", false));
         systemGraphInitializer.start();
 
         // Then
         assertAuthenticationSucceeds(realmHelper, INITIAL_USER_NAME, INITIAL_PASSWORD, true);
-        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, "neo4j2");
+        assertAuthenticationFails(realmHelper, INITIAL_USER_NAME, "neo4j2password");
     }
 
     @Test

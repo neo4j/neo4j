@@ -50,13 +50,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   private val defaultUsername = "neo4j"
   private val defaultUser = user(defaultUsername)
   private val defaultUserMap = Map("user" -> defaultUsername)
-  private val username = "foo"
+  private val username = "alexandra"
   private val newUsername = "oof"
-  private val userFoo = user(username)
-  private val userFooMap = Map("user" -> username)
-  private val password = "bar"
-  private val newPassword = "new"
-  private val wrongPassword = "wrong"
+  private val userAlexandra = user(username)
+  private val userAlexandraMap = Map("user" -> username)
+  private val password = "barpassword"
+  private val newPassword = "newpassword"
+  private val wrongPassword = "wrongpassword"
   private val alterDefaultUserQuery = s"ALTER USER $defaultUsername SET PASSWORD '$password' CHANGE NOT REQUIRED"
 
   override def databaseConfig(): Map[Setting[_], Object] =
@@ -81,9 +81,9 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // Bar   :
     // Baz   :
     // Zet   :
-    execute("CREATE USER Bar SET PASSWORD 'neo'")
-    execute("CREATE USER Baz SET PASSWORD 'NEO'")
-    execute("CREATE USER Zet SET PASSWORD 'NeX'")
+    execute("CREATE USER Bar SET PASSWORD 'neopassword'")
+    execute("CREATE USER Baz SET PASSWORD 'NEOPASSWORD'")
+    execute("CREATE USER Zet SET PASSWORD 'NeXPassword'")
 
     // WHEN
     val result = execute("SHOW USERS")
@@ -153,7 +153,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val result = execute("SHOW USERS YIELD user ORDER BY user ASC")
 
     // THEN
-    result.toList should be(List(Map("user" -> "bar"), userFooMap, defaultUserMap))
+    result.toList should be(List(userAlexandraMap, Map("user" -> "bar"), defaultUserMap))
   }
 
   test("should show users with yield and order by desc") {
@@ -165,7 +165,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     val result = execute("SHOW USERS YIELD user ORDER BY user DESC")
 
     // THEN
-    result.toList should be(List(defaultUserMap, userFooMap, Map("user" -> "bar")))
+    result.toList should be(List(defaultUserMap, Map("user" -> "bar"), userAlexandraMap))
   }
 
   test("should show users with yield and return") {
@@ -400,17 +400,17 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username SET PASSWORD '$password'")
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
   test("should create user with username as parameter") {
     // WHEN
-    execute(s"CREATE USER $$user SET PASSWORD '$password'", userFooMap)
+    execute(s"CREATE USER $$user SET PASSWORD '$password'", userAlexandraMap)
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
@@ -420,7 +420,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username IF NOT EXISTS SET PASSWORD '$password'")
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
@@ -430,7 +430,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE USER $username SET PASSWORD 'p4s5W*rd'")
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, "p4s5w*rd", AuthenticationResult.FAILURE) // w has wrong case
     testUserLogin(username, "password", AuthenticationResult.FAILURE)
     testUserLogin(username, "p4s5W*rd", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
@@ -454,6 +454,26 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username))
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when creating user with password shorter than limit (default 8)") {
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute(s"CREATE USER $username SET PASSWORD '1234567'")
+      // THEN
+    } should have message "A password must be at least 8 characters."
+
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
+  test("should fail when creating user with password parameter shorter than limit (default 8)") {
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute(s"CREATE USER $username SET PASSWORD $param", Map(paramName -> "1234567"))
+      // THEN
+    } should have message "A password must be at least 8 characters."
+
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
 
   test("should create user with username and password as same parameter") {
@@ -619,7 +639,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE OR REPLACE USER $username SET PASSWORD 'firstPassword'")
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, wrongPassword, AuthenticationResult.FAILURE)
     testUserLogin(username, "firstPassword", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
 
@@ -627,7 +647,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute(s"CREATE OR REPLACE USER $username SET PASSWORD 'secondPassword'")
 
     // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userFoo)
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, userAlexandra)
     testUserLogin(username, "firstPassword", AuthenticationResult.FAILURE)
     testUserLogin(username, "secondPassword", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
@@ -672,7 +692,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // WHEN
     val exception2 = the[SyntaxException] thrownBy {
-      execute("CREATE OR REPLACE USER $user IF NOT EXISTS SET PASSWORD 'pass'", userFooMap)
+      execute("CREATE OR REPLACE USER $user IF NOT EXISTS SET PASSWORD 'pass'", userAlexandraMap)
     }
     // THEN
     exception2.getMessage should include(
@@ -990,7 +1010,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     prepareUser()
 
     // WHEN
-    execute("DROP USER $user", userFooMap)
+    execute("DROP USER $user", userAlexandraMap)
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(defaultUser))
@@ -1022,10 +1042,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should be able to drop the user that created you") {
     // GIVEN
-    execute("CREATE USER alice SET PASSWORD 'abc' CHANGE NOT REQUIRED")
+    execute(s"CREATE USER alice SET PASSWORD '$password' CHANGE NOT REQUIRED")
 
     // WHEN
-    executeOnSystem("alice", "abc", "CREATE USER bob SET PASSWORD 'def' CHANGE NOT REQUIRED")
+    executeOnSystem("alice", password, s"CREATE USER bob SET PASSWORD '$password' CHANGE NOT REQUIRED")
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(
@@ -1035,7 +1055,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     ))
 
     // WHEN
-    executeOnSystem("bob", "def", "DROP USER alice")
+    executeOnSystem("bob", password, "DROP USER alice")
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(defaultUser, user("bob", passwordChangeRequired = false)))
@@ -1074,7 +1094,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // using parameter
     the[InvalidArgumentException] thrownBy {
       // WHEN
-      execute("DROP USER $user", userFooMap)
+      execute("DROP USER $user", userAlexandraMap)
       // THEN
     } should have message s"Failed to delete the specified user '$username': User does not exist."
 
@@ -1264,13 +1284,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   test("should fail when altering a non-existing user") {
     the[InvalidArgumentException] thrownBy {
       // WHEN
-      execute(s"ALTER USER $username SET PASSWORD 'baz'")
+      execute(s"ALTER USER $username SET PASSWORD '$password'")
       // THEN
     } should have message s"Failed to alter the specified user '$username': User does not exist."
 
     the[InvalidArgumentException] thrownBy {
       // WHEN
-      execute("ALTER USER $user SET PASSWORD 'baz'", userFooMap)
+      execute("ALTER USER $user SET PASSWORD 'bazPassword'", userAlexandraMap)
       // THEN
     } should have message s"Failed to alter the specified user '$username': User does not exist."
   }
@@ -1331,6 +1351,34 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     } should have message "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'."
 
     testUserLogin(username, incorrectlyEncryptedPassword, AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when alter user with set password shorter than limit (default 8)") {
+    // GIVEN
+    prepareUser()
+
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute(s"ALTER USER $username SET PASSWORD '1234567'")
+      // THEN
+    } should have message "A password must be at least 8 characters."
+
+    testUserLogin(username, "1234567", AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when alter user with set password parameter shorter than limit (default 8)") {
+    // GIVEN
+    prepareUser()
+
+    the[InvalidArgumentException] thrownBy {
+      // WHEN
+      execute(s"ALTER USER $username SET PASSWORD $param", Map(paramName -> "1234567"))
+      // THEN
+    } should have message "A password must be at least 8 characters."
+
+    testUserLogin(username, "1234567", AuthenticationResult.FAILURE)
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
@@ -1531,18 +1579,23 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should fail when changing own password from integer parameter") {
     // GIVEN
-    execute(s"CREATE USER $username SET PASSWORD '123' CHANGE NOT REQUIRED")
+    execute(s"CREATE USER $username SET PASSWORD '12345678' CHANGE NOT REQUIRED")
     execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username, passwordChangeRequired = false))
-    val parameter = Map[String, Object]("password" -> Integer.valueOf(123)).asJava
+    val parameter = Map[String, Object]("password" -> Integer.valueOf(12345678)).asJava
 
     the[QueryExecutionException] thrownBy {
       // WHEN
-      executeOnSystem(username, "123", s"ALTER CURRENT USER SET PASSWORD FROM $$password TO '$newPassword'", parameter)
+      executeOnSystem(
+        username,
+        "12345678",
+        s"ALTER CURRENT USER SET PASSWORD FROM $$password TO '$newPassword'",
+        parameter
+      )
       // THEN
     } should have message "Expected password parameter $password to have type String but was Integer"
 
     // THEN
-    testUserLogin(username, "123", AuthenticationResult.SUCCESS)
+    testUserLogin(username, "12345678", AuthenticationResult.SUCCESS)
     testUserLogin(username, newPassword, AuthenticationResult.FAILURE)
   }
 
@@ -1621,7 +1674,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   test("should fail when changing own password when AUTH DISABLED") {
     the[IllegalStateException] thrownBy {
       // WHEN
-      execute("ALTER CURRENT USER SET PASSWORD FROM 'old' TO 'new'")
+      execute(s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$newPassword'")
       // THEN
     } should have message "User failed to alter their own password: Command not available with auth disabled."
   }

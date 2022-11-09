@@ -68,6 +68,7 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
     @Override
     public void execute() throws IOException {
         Config config = loadNeo4jConfig();
+        validatePassword(password, config);
         FileSystemAbstraction fileSystem = ctx.fs();
 
         Path file = CommunitySecurityModule.getInitialUserRepositoryFile(config);
@@ -103,5 +104,14 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
                 .build();
         ConfigUtils.disableAllConnectors(cfg);
         return cfg;
+    }
+
+    private static void validatePassword(String password, Config config) {
+        Integer minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length);
+        if (password == null || password.length() == 0) {
+            throw new IllegalArgumentException("A password cannot be empty.");
+        } else if (password.length() < minimumPasswordLength) {
+            throw new IllegalArgumentException("A password must be at least " + minimumPasswordLength + " characters.");
+        }
     }
 }

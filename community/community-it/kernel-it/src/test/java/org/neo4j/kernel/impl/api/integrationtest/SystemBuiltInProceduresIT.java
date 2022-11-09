@@ -336,7 +336,7 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
             assertFalse(tx.execute("CALL db.stats.stop('QUERIES')").hasNext());
         }
 
-        db.executeTransactionally("CREATE USER bar SET PASSWORD 'f00' CHANGE NOT REQUIRED");
+        db.executeTransactionally("CREATE USER bar SET PASSWORD 'password' CHANGE NOT REQUIRED");
 
         try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             // When & Then

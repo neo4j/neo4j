@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.NamespacedName
@@ -91,8 +93,11 @@ object AdministrationCommandRuntime {
 
   private[internal] def internalKey(name: String): String = internalPrefix + name
 
-  private[internal] def validatePassword(password: Array[Byte]): Array[Byte] = {
+  private[internal] def validatePassword(password: Array[Byte])(config: Config): Array[Byte] = {
+    val minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length)
     if (password == null || password.length == 0) throw new InvalidArgumentException("A password cannot be empty.")
+    else if (password.length < minimumPasswordLength)
+      throw new InvalidArgumentException(s"A password must be at least $minimumPasswordLength characters.")
     password
   }
 
@@ -124,7 +129,7 @@ object AdministrationCommandRuntime {
     password: expressions.Expression,
     isEncryptedPassword: Boolean,
     otherParams: Array[String]
-  ): PasswordExpression =
+  )(config: Config): PasswordExpression =
     password match {
       case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
@@ -137,7 +142,7 @@ object AdministrationCommandRuntime {
           val encodedPassword = getValidPasswordParameter(params, parameterPassword.name)
           val hashedPassword =
             if (isEncryptedPassword) validateAndFormatEncryptedPassword(encodedPassword)
-            else hashPassword(validatePassword(encodedPassword))
+            else hashPassword(validatePassword(encodedPassword)(config))
           params.updatedWith(hashedPwKey, hashedPassword).updatedWith(
             passwordByteKey,
             Values.byteArray(encodedPassword)
@@ -198,7 +203,8 @@ object AdministrationCommandRuntime {
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
-    securityAuthorizationHandler: SecurityAuthorizationHandler
+    securityAuthorizationHandler: SecurityAuthorizationHandler,
+    config: Config
   ): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
@@ -215,7 +221,7 @@ object AdministrationCommandRuntime {
       passwordChangeRequiredKey,
       suspendedKey
     ) ++ homeDatabaseFields.map(_.nameKey)
-    val credentials = getPasswordExpression(password, isEncryptedPassword, nonPasswordParameterNames)
+    val credentials = getPasswordExpression(password, isEncryptedPassword, nonPasswordParameterNames)(config)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
       val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
@@ -285,7 +291,8 @@ object AdministrationCommandRuntime {
   )(
     sourcePlan: Option[ExecutionPlan],
     normalExecutionEngine: ExecutionEngine,
-    securityAuthorizationHandler: SecurityAuthorizationHandler
+    securityAuthorizationHandler: SecurityAuthorizationHandler,
+    config: Config
   ): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
     val homeDatabaseFields = homeDatabase.map {
@@ -295,7 +302,9 @@ object AdministrationCommandRuntime {
     }
     val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey)
     val maybePw =
-      password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames))
+      password.map(p =>
+        getPasswordExpression(p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames)(config)
+      )
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeCreateUserExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.ExecutionEngine
@@ -30,7 +31,8 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 
 case class CreateUserExecutionPlanner(
   normalExecutionEngine: ExecutionEngine,
-  securityAuthorizationHandler: SecurityAuthorizationHandler
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
+  config: Config
 ) {
 
   def planCreateUser(createUser: CreateUser, sourcePlan: Option[ExecutionPlan]): ExecutionPlan = {
@@ -60,7 +62,7 @@ case class CreateUserExecutionPlanner(
         createUser.requirePasswordChange,
         suspended = false,
         defaultDatabase = None
-      )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler)
+      )(sourcePlan, normalExecutionEngine, securityAuthorizationHandler, config)
     }
   }
 

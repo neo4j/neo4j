@@ -101,7 +101,7 @@ class CommunityEditionEndToEndTest {
 
     @Test
     void testSystemCommandRouting() {
-        execute(DEFAULT_DATABASE_NAME, session -> session.run("CREATE USER foo SET PASSWORD 'bar'")
+        execute(DEFAULT_DATABASE_NAME, session -> session.run("CREATE USER foo SET PASSWORD 'password'")
                 .consume());
 
         List<String> result = execute(DEFAULT_DATABASE_NAME, session -> session.run("SHOW USERS")

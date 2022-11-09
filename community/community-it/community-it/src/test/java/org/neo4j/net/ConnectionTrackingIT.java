@@ -104,9 +104,9 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConnectionTrackingIT {
-    private static final String NEO4J_USER_PWD = "test";
+    private static final String NEO4J_USER_PWD = "password";
     private static final String OTHER_USER = "otherUser";
-    private static final String OTHER_USER_PWD = "test";
+    private static final String OTHER_USER_PWD = "password";
 
     private static final List<String> LIST_CONNECTIONS_PROCEDURE_COLUMNS = Arrays.asList(
             "connectionId", "connectTime", "connector", "username", "userAgent", "serverAddress", "clientAddress");

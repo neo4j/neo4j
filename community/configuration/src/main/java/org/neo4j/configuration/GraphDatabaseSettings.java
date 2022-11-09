@@ -753,6 +753,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> auth_enabled =
             newBuilder("dbms.security.auth_enabled", BOOL, false).build();
 
+    @Description("The minimum number of characters required in a password.")
+    @DocumentedDefaultValue("8")
+    public static final Setting<Integer> auth_minimum_password_length = newBuilder(
+                    "dbms.security.auth_minimum_password_length", INT, 8)
+            .addConstraint(min(1))
+            .build();
+
     @Description("The maximum number of unsuccessful authentication attempts before imposing a user lock for  "
             + "the configured amount of time, as defined by `dbms.security.auth_lock_time`."
             + "The locked out user will not be able to log in until the lock period expires, even if correct  "

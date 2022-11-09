@@ -48,7 +48,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     with Eventually {
   private val username = "foo"
   private val username2 = "bar"
-  private val password = "secret"
+  private val password = "secretpassword"
 
   implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = scaled(Span(15, Seconds)), interval = scaled(Span(3, Seconds)))

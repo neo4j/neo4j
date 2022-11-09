@@ -26,6 +26,9 @@ import org.neo4j.exceptions.DatabaseAdministrationException
 abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite
     with GraphDatabaseTestSupport {
 
+  val param: String = s"$$param"
+  val paramName: String = "param"
+
   override protected def initTest(): Unit = {
     super.initTest()
     selectDatabase(SYSTEM_DATABASE_NAME)

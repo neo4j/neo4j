@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.administration
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.followerError
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getPasswordExpression
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getValidPasswordParameter
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.validatePassword
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.validateStringParameterType
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -52,14 +52,14 @@ import org.neo4j.values.virtual.VirtualValues
 
 case class SetOwnPasswordExecutionPlanner(
   normalExecutionEngine: ExecutionEngine,
-  securityAuthorizationHandler: SecurityAuthorizationHandler
+  securityAuthorizationHandler: SecurityAuthorizationHandler,
+  config: Config
 ) {
-
   private val secureHasher = new SecureHasher
 
   def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan = {
     val usernameKey = internalKey("username")
-    val newPw = getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey))
+    val newPw = getPasswordExpression(newPassword, isEncryptedPassword = false, Array(usernameKey))(config)
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
     def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
     val query =
@@ -136,7 +136,6 @@ case class SetOwnPasswordExecutionPlanner(
         val renamedParameter = s"__current_${passwordParameter}_bytes"
         def convertPasswordParameters(params: MapValue): MapValue = {
           val encodedPassword = getValidPasswordParameter(params, passwordParameter)
-          validatePassword(encodedPassword)
           params.updatedWith(renamedParameter, Values.byteArray(encodedPassword))
         }
         (renamedParameter, Values.NO_VALUE, convertPasswordParameters)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
@@ -97,6 +98,8 @@ case class CommunityAdministrationCommandRuntime(
     new SecurityAuthorizationHandler(resolver.resolveDependency(classOf[AbstractSecurityLog]))
 
   private lazy val defaultDatabaseResolver = resolver.resolveDependency(classOf[DefaultDatabaseResolver])
+
+  private val config: Config = resolver.resolveDependency(classOf[Config])
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(
@@ -250,7 +253,7 @@ case class CommunityAdministrationCommandRuntime(
     case createUser: CreateUser => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(createUser.source, throwCantCompile).apply(context))
-        CreateUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planCreateUser(
+        CreateUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planCreateUser(
           createUser,
           sourcePlan
         )
@@ -273,7 +276,7 @@ case class CommunityAdministrationCommandRuntime(
     case alterUser: AlterUser => context =>
         val sourcePlan: Option[ExecutionPlan] =
           Some(fullLogicalToExecutable.applyOrElse(alterUser.source, throwCantCompile).apply(context))
-        AlterUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planAlterUser(
+        AlterUserExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planAlterUser(
           alterUser,
           sourcePlan
         )
@@ -289,7 +292,7 @@ case class CommunityAdministrationCommandRuntime(
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'newPassword'
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
     case SetOwnPassword(newPassword, currentPassword) => _ =>
-        SetOwnPasswordExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler).planSetOwnPassword(
+        SetOwnPasswordExecutionPlanner(normalExecutionEngine, securityAuthorizationHandler, config).planSetOwnPassword(
           newPassword,
           currentPassword
         )

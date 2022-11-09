@@ -22,6 +22,7 @@ package org.neo4j.commandline.admin.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -111,11 +112,23 @@ class SetInitialPasswordCommandTest {
         assertFalse(fileSystem.fileExists(authInitFile));
 
         // When
-        CommandLine.populateCommand(command, "123");
+        CommandLine.populateCommand(command, "12345678");
         command.execute();
 
         // Then
-        assertAuthIniFile("123");
+        assertAuthIniFile("12345678");
+    }
+
+    @Test
+    void shouldFailToSetShortInitialPassword() throws Throwable {
+        // Given
+        assertFalse(fileSystem.fileExists(authInitFile));
+
+        // When
+        CommandLine.populateCommand(command, "123");
+
+        // Then
+        assertThrows(IllegalArgumentException.class, () -> command.execute());
     }
 
     @Test
@@ -125,20 +138,19 @@ class SetInitialPasswordCommandTest {
         fileSystem.write(authInitFile);
 
         // When
-        CommandLine.populateCommand(command, "123");
+        CommandLine.populateCommand(command, "12345678");
         command.execute();
 
         // Then
-        assertAuthIniFile("123");
+        assertAuthIniFile("12345678");
     }
 
     @Test
-    void shouldWorkAlsoWithSamePassword() throws Throwable {
+    void shouldNotWorkWithSamePassword() throws Throwable {
         CommandLine.populateCommand(command, "neo4j");
-        command.execute();
 
         // Then
-        assertAuthIniFile("neo4j");
+        assertThrows(IllegalArgumentException.class, () -> command.execute());
     }
 
     private void assertAuthIniFile(String password) throws Throwable {

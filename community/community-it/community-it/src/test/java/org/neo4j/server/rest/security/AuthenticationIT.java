@@ -72,7 +72,8 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         startServerWithConfiguredUser();
 
         // Then
-        HTTP.Response response = HTTP.withBasicAuth("neo4j", "secret").POST(txCommitURL("system"), query("SHOW USERS"));
+        HTTP.Response response =
+                HTTP.withBasicAuth("neo4j", "secretPassword").POST(txCommitURL("system"), query("SHOW USERS"));
 
         assertThat(response.status()).isEqualTo(200);
 
@@ -127,14 +128,14 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         // When
         // Changing the user password
         HTTP.Response response = HTTP.withBasicAuth("neo4j", "neo4j")
-                .POST(txCommitURL("system"), query("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secret'"));
+                .POST(txCommitURL("system"), query("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'"));
         // Then
         assertThat(response.status()).isEqualTo(200);
         assertThat(response.get("errors").size()).as("Should have no errors").isEqualTo(0);
 
         // When
         HTTP.Response responseAfterPasswordChange =
-                HTTP.withBasicAuth("neo4j", "secret").POST(txCommitURL("system"), query("SHOW USERS"));
+                HTTP.withBasicAuth("neo4j", "secretPassword").POST(txCommitURL("system"), query("SHOW USERS"));
 
         // Then
         assertThat(responseAfterPasswordChange.status()).isEqualTo(200);
@@ -182,19 +183,19 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         setupBobAndAliceUsers();
 
         // When Bob creates a transaction
-        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(testWebContainer.getBaseUri().resolve(txEndpoint()).toString(), query("CREATE (n)"));
         assertEquals(201, initiatingUserRequest.status());
 
         // Then alice cannot access that transaction
-        HTTP.Response hijackingUserRequest =
-                HTTP.withBasicAuth("alice", "secret").POST(initiatingUserRequest.location(), query("CREATE (n)"));
+        HTTP.Response hijackingUserRequest = HTTP.withBasicAuth("alice", "secretPassword")
+                .POST(initiatingUserRequest.location(), query("CREATE (n)"));
         assertEquals(404, hijackingUserRequest.status());
         assertThat(hijackingUserRequest.get("errors").get(0).get("code").asText())
                 .isEqualTo(Status.Transaction.TransactionNotFound.code().serialize());
 
         // And bob can still commit it
-        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(initiatingUserRequest.location() + "/commit", query("CREATE (n)"));
         assertEquals(200, initiatingUserCommitRequest.status());
     }
@@ -206,19 +207,19 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         setupBobAndAliceUsers();
 
         // When Bob creates a transaction
-        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(testWebContainer.getBaseUri().resolve(txEndpoint()).toString(), query("CREATE (n)"));
         assertEquals(201, initiatingUserRequest.status());
 
         // Then alice cannot commit that transaction
         HTTP.Response hijackingUserRequest =
-                HTTP.withBasicAuth("alice", "secret").POST(initiatingUserRequest.location() + "/commit");
+                HTTP.withBasicAuth("alice", "secretPassword").POST(initiatingUserRequest.location() + "/commit");
         assertEquals(404, hijackingUserRequest.status());
         assertThat(hijackingUserRequest.get("errors").get(0).get("code").asText())
                 .isEqualTo(Status.Transaction.TransactionNotFound.code().serialize());
 
         // And bob can still commit it
-        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(initiatingUserRequest.location() + "/commit", query("CREATE (n)"));
         assertEquals(200, initiatingUserCommitRequest.status());
     }
@@ -230,19 +231,19 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         setupBobAndAliceUsers();
 
         // When Bob creates a transaction
-        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(testWebContainer.getBaseUri().resolve(txEndpoint()).toString(), query("CREATE (n)"));
         assertEquals(201, initiatingUserRequest.status());
 
         // Then alice cannot rollback that transaction
         HTTP.Response hijackingUserRequest =
-                HTTP.withBasicAuth("alice", "secret").DELETE(initiatingUserRequest.location());
+                HTTP.withBasicAuth("alice", "secretPassword").DELETE(initiatingUserRequest.location());
         assertEquals(404, hijackingUserRequest.status());
         assertThat(hijackingUserRequest.get("errors").get(0).get("code").asText())
                 .isEqualTo(Status.Transaction.TransactionNotFound.code().serialize());
 
         // And bob can still commit it
-        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secret")
+        HTTP.Response initiatingUserCommitRequest = HTTP.withBasicAuth("bob", "secretPassword")
                 .POST(initiatingUserRequest.location() + "/commit", query("CREATE (n)"));
         assertEquals(200, initiatingUserCommitRequest.status());
     }
@@ -344,7 +345,7 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE)).isEqualTo("Basic realm=\"Neo4j\"");
 
         // When authorized
-        response = HTTP.withBasicAuth("neo4j", "secret")
+        response = HTTP.withBasicAuth("neo4j", "secretPassword")
                 .request(method, testWebContainer.getBaseUri().resolve(path).toString(), payload);
         assertThat(response.status()).isEqualTo(expectedAuthorizedStatus);
     }
@@ -353,23 +354,23 @@ public class AuthenticationIT extends CommunityWebContainerTestBase {
         startServer(true);
         // Set the password
         HTTP.Response post = HTTP.withBasicAuth("neo4j", "neo4j")
-                .POST(txCommitURL("system"), query("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secret'"));
+                .POST(txCommitURL("system"), query("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO 'secretPassword'"));
         assertEquals(200, post.status());
     }
 
     private void setupBobAndAliceUsers() {
-        HTTP.Response createBobRequest = HTTP.withBasicAuth("neo4j", "secret")
+        HTTP.Response createBobRequest = HTTP.withBasicAuth("neo4j", "secretPassword")
                 .POST(
                         txCommitURL("system"),
-                        query("CREATE USER bob SET PASSWORD 'secret' " + "SET PASSWORD CHANGE NOT REQUIRED"));
+                        query("CREATE USER bob SET PASSWORD 'secretPassword' " + "SET PASSWORD CHANGE NOT REQUIRED"));
         assertEquals(200, createBobRequest.status());
-        HTTP.Response createBobPermissions =
-                HTTP.withBasicAuth("neo4j", "secret").POST(txCommitURL("system"), query("GRANT ROLE admin to bob"));
+        HTTP.Response createBobPermissions = HTTP.withBasicAuth("neo4j", "secretPassword")
+                .POST(txCommitURL("system"), query("GRANT ROLE admin to bob"));
         assertEquals(200, createBobPermissions.status());
-        HTTP.Response createAliceRequest = HTTP.withBasicAuth("neo4j", "secret")
+        HTTP.Response createAliceRequest = HTTP.withBasicAuth("neo4j", "secretPassword")
                 .POST(
                         txCommitURL("system"),
-                        query("CREATE USER alice SET PASSWORD 'secret' " + "SET PASSWORD CHANGE NOT REQUIRED"));
+                        query("CREATE USER alice SET PASSWORD 'secretPassword' " + "SET PASSWORD CHANGE NOT REQUIRED"));
         assertEquals(200, createAliceRequest.status());
     }
 
