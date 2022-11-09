@@ -49,7 +49,7 @@ trait DebugPrettyPrinter {
       println(s"\n\u001b[35m[LOGICAL PLAN]\n") // Magenta
       prettyPrintLogicalPlan(logicalQuery.logicalPlan)
     }
-    println("\u001b[30m")
+    println("\u001b[0m") // Reset
   }
 
   protected def printRewrittenPlanInfo(logicalPlan: LogicalPlan): Unit = {
@@ -57,7 +57,7 @@ trait DebugPrettyPrinter {
       println(s"\n\u001b[35m[REWRITTEN LOGICAL PLAN]\n") // Magenta
       prettyPrintLogicalPlan(logicalPlan)
     }
-    println("\u001b[30m")
+    println("\u001b[0m") // Reset
   }
 
   protected def printPipe(slotConfigurations: SlotConfigurations, pipe: Pipe = null): Unit = {
@@ -69,7 +69,7 @@ trait DebugPrettyPrinter {
         prettyPrintPipe(pipe)
       }
     }
-    println("\u001b[30m")
+    println("\u001b[0m") // Reset
   }
 
   protected def printFailureStackTrace(e: CypherException): Unit = {
@@ -77,7 +77,7 @@ trait DebugPrettyPrinter {
       println("------------------------------------------------")
       println("<<< Slotted failed because:\u001b[31m") // Red
       e.printStackTrace(System.out)
-      println("\u001b[30m>>>")
+      println("\u001b[0m>>>") // Reset
       println("------------------------------------------------")
     }
   }
