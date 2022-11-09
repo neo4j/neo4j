@@ -151,6 +151,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
+import scala.util.Using
 import scala.util.control.NonFatal
 
 sealed class TransactionBoundQueryContext(
@@ -992,12 +993,9 @@ private[internal] class TransactionBoundReadQueryContext(
 
   // Surprisingly, benchmarks have shown that this is faster for dense nodes!
   private def nodeDegreeMaxOne(positionedNodeCursor: NodeCursor, selection: RelationshipSelection): Int = {
-    val cursor = traversalCursor()
-    try {
+    Using.resource(traversalCursor()) { cursor =>
       positionedNodeCursor.relationships(cursor, selection)
       if (cursor.next()) 1 else 0
-    } finally {
-      cursor.close()
     }
   }
 
