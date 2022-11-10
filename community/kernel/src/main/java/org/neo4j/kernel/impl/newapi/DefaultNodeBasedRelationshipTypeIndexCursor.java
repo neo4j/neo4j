@@ -151,8 +151,10 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
         // this will do either:
         do {
             // all the tx state RELATIONSHIPS first
-            if (relationshipTraversalCursor.next()) {
-                return true;
+            while (relationshipTraversalCursor.next()) {
+                if (relationshipTraversalCursor.currentAddedInTx == NO_ID) {
+                    return true;
+                }
             }
 
             // followed by any RELATIONSHIPS from the index

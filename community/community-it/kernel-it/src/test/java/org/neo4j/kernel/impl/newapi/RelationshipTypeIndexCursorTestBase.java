@@ -435,6 +435,80 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
+    void shouldHandleReadsWhenSourceRelationshipsPresentInStoreAndTxState() throws Exception {
+        // given
+        final var v1 = Values.intValue(1);
+        final var v2 = Values.intValue(2);
+        final var v3 = Values.intValue(3);
+        int prop;
+        long nodeToBeDeleted;
+        long nodeInStore1;
+        long nodeInStore2;
+        long nodeInTx;
+        long relInStore;
+        long relToBeDeleted;
+        long relInTx1;
+        long relInTx2;
+        try (var tx = beginTransaction()) {
+            final var tokenWrite = tx.tokenWrite();
+            prop = tokenWrite.propertyKeyCreateForName("prop", false);
+
+            final var write = tx.dataWrite();
+
+            nodeToBeDeleted = write.nodeCreate();
+            nodeInStore1 = write.nodeCreate();
+            nodeInStore2 = write.nodeCreate();
+
+            relToBeDeleted = write.relationshipCreate(nodeToBeDeleted, typeOne, nodeInStore2);
+            relInStore = write.relationshipCreate(nodeInStore1, typeOne, nodeInStore2);
+
+            write.relationshipSetProperty(relInStore, prop, v1);
+            tx.commit();
+        }
+
+        try (var tx = beginTransaction();
+                var relCursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+                var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
+            final var write = tx.dataWrite();
+
+            nodeInTx = write.nodeCreate();
+            // need to be outgoing relationships for this type for them to be picked up in tx state for an indexed node
+            relInTx1 = write.relationshipCreate(nodeInStore1, typeOne, nodeInTx);
+            relInTx2 = write.relationshipCreate(nodeInStore2, typeOne, nodeInTx);
+
+            write.relationshipSetProperty(relInTx1, prop, v2);
+            write.relationshipSetProperty(relInTx2, prop, v3);
+
+            write.nodeDelete(nodeToBeDeleted);
+            write.relationshipDelete(relToBeDeleted);
+
+            // when
+            final var expectedReads = List.of(
+                    new NodeRelRead(nodeInStore1, relInStore, nodeInStore2, v1),
+                    new NodeRelRead(nodeInStore1, relInTx1, nodeInTx, v2),
+                    new NodeRelRead(nodeInStore2, relInTx2, nodeInTx, v3));
+            final var actualReads = new ArrayList<NodeRelRead>();
+
+            relationshipTypeScan(tx, typeOne, relCursor, IndexOrder.NONE);
+            while (relCursor.next()) {
+                if (relCursor.readFromStore()) {
+                    relCursor.properties(propCursor);
+
+                    assertThat(propCursor.next()).isTrue();
+                    actualReads.add(new NodeRelRead(
+                            relCursor.sourceNodeReference(),
+                            relCursor.reference(),
+                            relCursor.targetNodeReference(),
+                            propCursor.propertyValue()));
+                    assertThat(propCursor.next()).isFalse();
+                }
+            }
+
+            assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
+        }
+    }
+
+    @Test
     void shouldNotLoadDeletedRelationshipOnReadFromStore() throws Exception {
         // given
         long first;
@@ -544,4 +618,6 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     private record NodeRead(long id, boolean isSource, boolean label1Present, boolean label2Present) {}
 
     private record RelRead(long id, Value propValue) {}
+
+    private record NodeRelRead(long source, long rel, long target, Value propValue) {}
 }
