@@ -44,7 +44,7 @@ import picocli.CommandLine.Parameters;
                 + "The target location is a Neo4j Aura Bolt URI. If Neo4j Cloud username and password are not provided "
                 + "either as a command option or as an environment variable, they will be requested interactively ")
 public class UploadCommand extends AbstractAdminCommand {
-    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
+    private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
     private final Copier copier;
     private final PushToCloudConsole cons;
 
