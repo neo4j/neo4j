@@ -65,8 +65,6 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.configuration.SettingImpl;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
@@ -442,15 +440,15 @@ class MemoryRecommendationsCommandTest {
 
     private static void createDatabaseWithIndexes(Path homeDirectory, String databaseName) {
         // Create one index for every provider that we have
-        for (IndexType indexType : Arrays.stream(IndexType.values())
-                .filter(type -> type != IndexType.LOOKUP)
-                .toList()) {
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(homeDirectory)
-                    .setConfig(initial_default_database, databaseName)
-                    .build();
-            GraphDatabaseService db = managementService.database(databaseName);
-            String key = "key-" + indexType.name();
-            try {
+        var dbms = new TestDatabaseManagementServiceBuilder(homeDirectory)
+                .setConfig(initial_default_database, databaseName)
+                .build();
+        try {
+            var db = dbms.database(databaseName);
+            for (IndexType indexType : Arrays.stream(IndexType.values())
+                    .filter(type -> type != IndexType.LOOKUP)
+                    .toList()) {
+                String key = "key-" + indexType.name();
                 Label labelOne = Label.label("one");
                 try (Transaction tx = db.beginTx()) {
                     tx.schema()
@@ -474,9 +472,9 @@ class MemoryRecommendationsCommandTest {
                     }
                     tx.commit();
                 }
-            } finally {
-                managementService.shutdown();
             }
+        } finally {
+            dbms.shutdown();
         }
     }
 }
