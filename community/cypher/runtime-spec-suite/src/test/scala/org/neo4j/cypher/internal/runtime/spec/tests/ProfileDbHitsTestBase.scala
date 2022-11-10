@@ -671,17 +671,16 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
+    val expandConstantCost = if (hasFastRelationshipTo) 0 else 2
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
-
     // then
     val expectedExpandIntoDbHits = runtimeUsed match {
-      // expand into. If no node is in the input twice the rel cache does not help and then you get
-      // 2 (check start and end for `isDense`) + costOfExpand per row.
-      case Interpreted | Slotted | Pipelined => be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)))
-      case Pipelined => be(sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel)) - 1L)
+      case Interpreted | Slotted | Pipelined =>
+        be(sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel)))
+      case Pipelined => be(sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel)) - 1L)
       // caching results vary for parallel execution
-      case Parallel => be <= sizeHint * (2L + (costOfExpandGetRelCursor + costOfExpandOneRel))
+      case Parallel => be <= sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel))
     }
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -779,11 +778,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
       case Parallel                          => n + extraNodes + costOfLabelLookup
     }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // optional expand into (uses legacy pipe). If no node is in the input twice the rel cache does not help and then you get
-    // 2 (check start and end for `isDense`) + costOfExpand for each relationship on top.
+    val expandConstantCost = if (hasFastRelationshipTo) 1 else 2
     queryProfile.operatorProfile(
       1
-    ).dbHits() shouldBe ((n + extraNodes) * 2 + n * costOfExpandOneRel) // optional expand into
+    ).dbHits() shouldBe ((n + extraNodes) * expandConstantCost + n * costOfExpandOneRel) // optional expand into
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // apply
     queryProfile.operatorProfile(
       3
@@ -1225,6 +1223,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be(3)
+  }
+
+  def hasFastRelationshipTo: Boolean = {
+    val ktx = runtimeTestSupport.tx.kernelTransaction
+    val cursor = ktx.ambientNodeCursor
+    ktx.dataRead().allNodesScan(cursor) // Needs to position cursor to actually check fastRelationshipTo
+    cursor.supportsFastRelationshipsTo
   }
 }
 
