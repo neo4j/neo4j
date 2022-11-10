@@ -20,21 +20,30 @@ import org.opencypher.tools.tck.api.Scenario
 
 import scala.util.matching.Regex
 
-case class DenylistEntry(
+trait DenylistEntry {
+  def isDenylisted(scenario: Scenario): Boolean
+  def isFlaky(scenario: Scenario): Boolean = isDenylisted(scenario) && isFlaky
+  def isFlaky: Boolean
+}
+
+case class FeatureDenylistEntry(
+  featureName: String
+) extends DenylistEntry {
+  override def isDenylisted(scenario: Scenario): Boolean = scenario.featureName == featureName
+  override def isFlaky: Boolean = false
+}
+
+case class ScenarioDenylistEntry(
   featureName: Option[String],
   scenarioName: String,
   exampleNumberOrName: Option[String],
-  isFlaky: Boolean
-) {
+  override val isFlaky: Boolean
+) extends DenylistEntry {
 
   def isDenylisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name &&
     (featureName.isEmpty || featureName.get == scenario.featureName) &&
     (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
-  }
-
-  def isFlaky(scenario: Scenario): Boolean = {
-    isFlaky && isDenylisted(scenario)
   }
 
   override def toString: String = {
@@ -49,17 +58,25 @@ case class DenylistEntry(
 
 object DenylistEntry {
   val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "([^"]*)"(: Example "(.*)")?""".r
+  val featurePattern: Regex = """^Feature "([^"]+)"$""".r
 
   def apply(line: String): DenylistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
         case entryPattern(questionMark, featureName, scenarioName, null, null) =>
-          new DenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
+          ScenarioDenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
         case entryPattern(questionMark, featureName, scenarioName, _, exampleNumberOrName) =>
-          new DenylistEntry(Some(featureName), scenarioName, Some(exampleNumberOrName), isFlaky = questionMark.nonEmpty)
+          ScenarioDenylistEntry(
+            Some(featureName),
+            scenarioName,
+            Some(exampleNumberOrName),
+            isFlaky = questionMark.nonEmpty
+          )
+        case featurePattern(featureName) =>
+          FeatureDenylistEntry(featureName)
         case other => throw new UnsupportedOperationException(s"Could not parse denylist entry $other")
       }
 
-    } else new DenylistEntry(None, line, None, isFlaky = false)
+    } else ScenarioDenylistEntry(None, line, None, isFlaky = false)
   }
 }

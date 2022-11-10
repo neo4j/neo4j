@@ -109,6 +109,7 @@ object QueryStateHelper extends MockitoSugar {
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(searchMonitor)
+    val resources = mock[CSVResources]
     emptyWith(
       db = db,
       query = queryContext,
@@ -118,7 +119,11 @@ object QueryStateHelper extends MockitoSugar {
         transactionalContext.cursorContext,
         transactionalContext.memoryTracker
       ),
-      subscriber = subscriber
+      subscriber = subscriber,
+      resources = resources,
+      queryIndexes = Array.empty,
+      nodeTokenIndex = None,
+      relTokenIndex = None
     )
   }
 

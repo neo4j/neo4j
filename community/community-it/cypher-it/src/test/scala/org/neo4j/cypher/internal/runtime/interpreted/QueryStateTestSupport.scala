@@ -23,13 +23,14 @@ import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityCypherRowFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 
 trait QueryStateTestSupport {
   self: GraphDatabaseTestSupport =>
 
-  def withQueryState[T](f: QueryState => T) = {
-    val tx = graph.beginTransaction(Type.EXPLICIT, AUTH_DISABLED)
+  def withQueryState[T](txType: KernelTransaction.Type = Type.EXPLICIT)(f: QueryState => T) = {
+    val tx = graph.beginTransaction(txType, AUTH_DISABLED)
     try {
       QueryStateHelper.withQueryState(
         graph,
@@ -40,6 +41,10 @@ trait QueryStateTestSupport {
           f(queryState)
         }
       )
+    } catch {
+      case e: Throwable =>
+        e.printStackTrace()
+        throw e
     } finally {
       tx.close()
     }

@@ -55,7 +55,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     val m = CypherRow.from("a" -> a, "c" -> c)
 
-    val result = withQueryState { state =>
+    val result = withQueryState() { state =>
       expression(m, state).asInstanceOf[VirtualPathValue]
     }
 

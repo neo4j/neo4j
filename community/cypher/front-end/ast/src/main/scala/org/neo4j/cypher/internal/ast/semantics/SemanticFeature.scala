@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-sealed trait SemanticFeature
+sealed trait SemanticFeature extends Product
 
 sealed trait FeatureToString {
   override def toString: String = name

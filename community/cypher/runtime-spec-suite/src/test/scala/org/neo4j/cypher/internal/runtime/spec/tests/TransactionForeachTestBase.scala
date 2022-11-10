@@ -21,18 +21,23 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
+import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
@@ -43,7 +48,15 @@ import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.logging.InternalLogProvider
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues
+import org.scalacheck.Gen
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -51,8 +64,9 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+    with SideEffectingInputStream[CONTEXT] {
 
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
@@ -1140,4 +1154,340 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       }
     }
   }
+}
+
+/**
+ * Tests transaction apply in queries like.
+ *
+ * .produceResult()
+ * .transactionApply()
+ * .|.create("(n {props})")
+ * .|.unwind("randomProps AS props")
+ * .input("randomProps")
+ *
+ * With random:
+ *
+ * - Number of input rows.
+ * - Size of rhs (the unwind list)
+ * - Failures
+ * - Transaction batch size
+ */
+trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
+    extends ScalaCheckPropertyChecks { self: RuntimeTestSuite[CONTEXT] =>
+
+  def sizeHint: Int
+
+  test("should handle random failures with ON ERROR FAIL") {
+    given {
+      uniqueIndex("N", "p")
+      val node = runtimeTestSupport.tx.createNode(Label.label("N"))
+      node.setProperty("p", 42)
+    }
+
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+      val query = new LogicalQueryBuilder(this)
+        .produceResults("i", "started", "committed", "errorMessage")
+        .projection(
+          "i AS i",
+          "status.started AS started",
+          "status.committed AS committed",
+          "status.errorMessage AS errorMessage"
+        )
+        .transactionForeach(
+          onErrorBehaviour = OnErrorFail,
+          batchSize = setup.txBatchSize,
+          maybeReportAs = Some("status")
+        )
+        .|.emptyResult()
+        .|.create(createNodeWithProperties("n", Seq("N"), "rhs"))
+        .|.unwind("rhsRows AS rhs")
+        .|.argument("rhsRows")
+        .input(variables = Seq("i", "rhsRows"))
+        .build(readOnly = false)
+
+      val failParams = VirtualValues.map(Array("p"), Array(Values.intValue(42)))
+      val successParams = MapValue.EMPTY
+      val input = new IteratorInputStream(setup.generateRows(successParams, failParams))
+
+      val statsBefore = txStats()
+
+      val expectedCommittedInnerTxs = setup.batches()
+        .takeWhile(txBatch => !txBatch.exists(_.shouldFail) || txBatch.isEmpty)
+        .size
+
+      if (setup.shouldFail) {
+        assertThrows[Exception](execute(query, runtime, input).awaitAll())
+        val statsAfter = txStats()
+        val expectedStats = statsBefore.add(TxStats(expectedCommittedInnerTxs + 1, expectedCommittedInnerTxs, 1))
+        statsAfter shouldBe expectedStats
+      } else {
+        val runtimeResult = execute(query, runtime, input)
+        consume(runtimeResult)
+
+        val expected = setup.input.map(row => Array(row.i, true, true, null))
+
+        val expectedNodes = setup.input.iterator
+          .map(row => row.rhsUnwind.size)
+          .sum
+
+        runtimeResult should beColumns("i", "started", "committed", "errorMessage")
+          .withRows(inOrder(expected))
+          .withStatistics(
+            nodesCreated = expectedNodes,
+            labelsAdded = expectedNodes,
+            transactionsCommitted = expectedCommittedInnerTxs + 1
+          )
+
+        val statsAfter = txStats()
+        val expectedStats = statsBefore.add(TxStats(expectedCommittedInnerTxs, expectedCommittedInnerTxs, 0))
+        statsAfter shouldBe expectedStats
+      }
+    }
+  }
+
+  test("should handle random failures with ON ERROR BREAK") {
+    given {
+      uniqueIndex("N", "p")
+      val node = runtimeTestSupport.tx.createNode(Label.label("N"))
+      node.setProperty("p", 42)
+    }
+
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+      val query = new LogicalQueryBuilder(this)
+        .produceResults("i", "started", "committed")
+        .projection(
+          "i AS i",
+          "status.started AS started",
+          "status.committed AS committed",
+          "status.errorMessage AS errorMessage"
+        )
+        .transactionForeach(
+          onErrorBehaviour = OnErrorBreak,
+          batchSize = setup.txBatchSize,
+          maybeReportAs = Some("status")
+        )
+        .|.emptyResult()
+        .|.create(createNodeWithProperties("n", Seq("N"), "rhs"))
+        .|.unwind("rhsRows AS rhs")
+        .|.argument("rhsRows")
+        .input(variables = Seq("i", "rhsRows"))
+        .build(readOnly = false)
+
+      val failParams: AnyValue = VirtualValues.map(Array("p"), Array(Values.intValue(42)))
+      val successParams: AnyValue = MapValue.EMPTY
+      val input = new IteratorInputStream(setup.generateRows(successParams, failParams))
+
+      val statsBefore = txStats()
+
+      val expectedCommittedInnerTxs = setup.batches()
+        .takeWhile(txBatch => !txBatch.exists(_.shouldFail) || txBatch.isEmpty)
+        .size
+
+      val expectedFailedInnerTxs = if (setup.shouldFail) 1 else 0
+
+      val runtimeResult = execute(query, runtime, input)
+      consume(runtimeResult)
+
+      val expected = setup.batches().flatMap {
+        var hasFailed = false
+        batch => {
+          if (hasFailed) {
+            batch.map(row => Array(row.i, false, false))
+          } else if (batch.exists(_.shouldFail)) {
+            hasFailed = true
+            batch.map(row => Array(row.i, true, false))
+          } else {
+            batch.map(row => Array(row.i, true, true))
+          }
+        }
+      }
+
+      val expectedNodes = setup.input.iterator
+        .takeWhile(r => !r.shouldFail)
+        .map(row => row.rhsUnwind.size)
+        .sum
+
+      runtimeResult should beColumns("i", "started", "committed")
+        .withRows(inOrder(expected.toSeq))
+        .withStatistics(
+          nodesCreated = expectedNodes,
+          labelsAdded = expectedNodes,
+          transactionsCommitted = expectedCommittedInnerTxs + 1
+        )
+
+      val statsAfter = txStats()
+      val expectedStats = statsBefore.add(TxStats(
+        expectedCommittedInnerTxs + expectedFailedInnerTxs,
+        expectedCommittedInnerTxs,
+        expectedFailedInnerTxs
+      ))
+      statsAfter shouldBe expectedStats
+    }
+  }
+
+  test("should handle random failures with ON ERROR CONTINUE") {
+    given {
+      uniqueIndex("N", "p")
+      val node = runtimeTestSupport.tx.createNode(Label.label("N"))
+      node.setProperty("p", 42)
+    }
+
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+      val query = new LogicalQueryBuilder(this)
+        .produceResults("i", "started", "committed")
+        .projection(
+          "i AS i",
+          "status.started AS started",
+          "status.committed AS committed",
+          "status.errorMessage AS errorMessage"
+        )
+        .transactionForeach(
+          onErrorBehaviour = OnErrorContinue,
+          batchSize = setup.txBatchSize,
+          maybeReportAs = Some("status")
+        )
+        .|.emptyResult()
+        .|.create(createNodeWithProperties("n", Seq("N"), "rhs"))
+        .|.unwind("rhsRows AS rhs")
+        .|.argument("rhsRows")
+        .input(variables = Seq("i", "rhsRows"))
+        .build(readOnly = false)
+
+      val failParams: AnyValue = VirtualValues.map(Array("p"), Array(Values.intValue(42)))
+      val successParams: AnyValue = MapValue.EMPTY
+      val input = new IteratorInputStream(setup.generateRows(successParams, failParams))
+
+      val statsBefore = txStats()
+
+      val expectedCommittedInnerTxs = setup.batches()
+        .count(txBatch => !txBatch.exists(_.shouldFail) || txBatch.isEmpty)
+
+      val expectedFailedInnerTxs = setup.batches().size - expectedCommittedInnerTxs
+
+      val runtimeResult = execute(query, runtime, input)
+      consume(runtimeResult)
+
+      val expected = setup.batches().flatMap {
+        case batch if batch.exists(_.shouldFail) => batch.map(r => Array[Any](r.i, true, false))
+        case batch                               => batch.map(r => Array[Any](r.i, true, true))
+      }
+
+      val expectedNodes = setup.input.iterator
+        .filterNot(_.shouldFail)
+        .map(row => row.rhsUnwind.size)
+        .sum
+
+      runtimeResult should beColumns("i", "started", "committed")
+        .withRows(inOrder(expected.toSeq))
+        .withStatistics(
+          nodesCreated = expectedNodes,
+          labelsAdded = expectedNodes,
+          transactionsCommitted = expectedCommittedInnerTxs + 1
+        )
+
+      val statsAfter = txStats()
+      val expectedStats = statsBefore.add(TxStats(
+        expectedCommittedInnerTxs + expectedFailedInnerTxs,
+        expectedCommittedInnerTxs,
+        expectedFailedInnerTxs
+      ))
+      statsAfter shouldBe expectedStats
+    }
+  }
+
+  private def txStats(): TxStats = {
+    val stats = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver
+      .resolveDependency(classOf[DatabaseTransactionStats])
+    TxStats(
+      stats.getNumberOfStartedTransactions,
+      stats.getNumberOfCommittedTransactions,
+      stats.getNumberOfRolledBackTransactions
+    )
+  }
+}
+
+object RandomisedTransactionForEachTests {
+  sealed trait RhsRow
+  case object ShouldSucceed extends RhsRow
+  case object ShouldFail extends RhsRow
+
+  case class InputRow(i: Int, rhsUnwind: IndexedSeq[RhsRow]) {
+    lazy val shouldFail: Boolean = rhsUnwind.contains(ShouldFail)
+  }
+
+  case class TestSetup(txBatchSize: Int, input: IndexedSeq[InputRow]) {
+    def batches(): Iterator[Iterable[InputRow]] = input.grouped(txBatchSize)
+
+    def generateRows(successValue: AnyValue, failValue: AnyValue): Iterator[Array[AnyValue]] = {
+      input.iterator
+        .map { row =>
+          val rhs = row.rhsUnwind.map {
+            case ShouldSucceed => successValue
+            case ShouldFail    => failValue
+          }
+          Array(Values.longValue(row.i), VirtualValues.list(rhs: _*))
+        }
+    }
+
+    lazy val shouldFail: Boolean = input.exists(_.shouldFail)
+  }
+
+  /*
+   * Generates test data that is random in the following dimensions:
+   * - input row count
+   * - rhs row count factor
+   * - call in transaction batch size
+   * - if rows will fail transaction
+   */
+  def genRandomTestSetup(sizeHint: Int): Gen[TestSetup] = {
+    for {
+      maxInputRowCount <- Gen.choose(1, sizeHint)
+      txBatchSize <- Gen.chooseNum(1, sizeHint)
+      probabilityOfTxBatchSuccess <- Gen.oneOf(1.0, 0.5) // Probability to have a committed tx batch
+      txBatchSuccess <- Gen.infiniteStream(Gen.prob(probabilityOfTxBatchSuccess))
+      rhsSizeGen = Gen.choose(0, sizeHint / 10)
+      successRows <- Gen.infiniteStream {
+        rhsSizeGen.map(size => IndexedSeq.fill(size)(ShouldSucceed))
+      }
+      failRows <- Gen.infiniteStream {
+        rhsSizeGen
+          .flatMap(size => Gen.buildableOfN[IndexedSeq[RhsRow], RhsRow](size, Gen.oneOf(ShouldSucceed, ShouldFail)))
+          .map { rhsRow =>
+            // Ugly hack to guarantee batch will fail
+            if (rhsRow.contains(ShouldFail)) rhsRow else rhsRow :+ ShouldFail
+          }
+      }
+    } yield {
+      val successRowGenerator = successRows.iterator
+      val failRowGenerator = failRows.iterator
+      val rows = txBatchSuccess
+        .flatMap { isSuccessBatch =>
+          // Generate rows for each batch
+          val rowIterator = if (isSuccessBatch) successRowGenerator else failRowGenerator
+          Range(0, txBatchSize).map(_ => rowIterator.next()).toIndexedSeq
+        }
+        .take(maxInputRowCount)
+        .takeWhile {
+          // Limit rows further to never have more than sizeHint creates
+          var createCount = 0
+          row =>
+            val rowCreates = row.iterator.takeWhile(rhsRow => rhsRow == ShouldSucceed).size
+            createCount += rowCreates
+            createCount <= sizeHint
+        }
+        .zipWithIndex
+        .map { case (row, i) => InputRow(i, row) }
+        .toIndexedSeq
+
+      TestSetup(txBatchSize, rows)
+    }
+  }
+}
+
+case class TxStats(started: Long, committed: Long, rollbacked: Long) {
+
+  def add(stats: TxStats): TxStats =
+    copy(started + stats.started, committed + stats.committed, rollbacked + stats.rollbacked)
+
+  override def toString: String = s"TxStats(started = $started, committed = $committed, rollbacked: $rollbacked)"
 }

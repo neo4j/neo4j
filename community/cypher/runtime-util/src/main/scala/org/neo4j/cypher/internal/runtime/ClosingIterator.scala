@@ -28,6 +28,7 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.Measurable
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
+import org.neo4j.values.AnyValue
 
 import scala.collection.GenTraversableOnce
 import scala.collection.Iterator
@@ -291,6 +292,21 @@ object ClosingIterator {
      */
     def eagerGrouped(size: Long, memoryTracker: MemoryTracker): ClosingIterator[EagerBuffer[T]] = {
       new MemoryTrackingEagerBatchingIterator(iterator, size, memoryTracker)
+    }
+  }
+
+  implicit class CypherRowClosingIterator[T <: CypherRow](val iterator: ClosingIterator[T]) {
+
+    /** Convenience method for adding a variable to all rows */
+    def withVariable(key: String, value: AnyValue): ClosingIterator[T] = iterator.map { row =>
+      row.set(key, value)
+      row
+    }
+
+    /** Convenience method for adding a variable to all rows */
+    def withVariable(slotOffset: Int, value: AnyValue): ClosingIterator[T] = iterator.map { row =>
+      row.setRefAt(slotOffset, value)
+      row
     }
   }
 

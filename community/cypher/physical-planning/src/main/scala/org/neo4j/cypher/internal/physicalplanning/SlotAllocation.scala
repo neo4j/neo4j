@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -1068,10 +1069,29 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: SubqueryForeach =>
         lhs
 
-      case _: TransactionForeach =>
+      case t: TransactionForeach =>
+        t.maybeReportAs.foreach { statusVar =>
+          lhs.newReference(statusVar, nullable, CTMap)
+        }
         lhs
 
-      case _: TransactionApply =>
+      case t: TransactionApply =>
+        // We need to declare the slot for the status variable
+        t.maybeReportAs.foreach { statusVar =>
+          rhs.newReference(statusVar, nullable, CTMap)
+        }
+
+        if (t.onErrorBehaviour != OnErrorFail) {
+          // We need to make slots for variables inside the CALL {...} nullable,
+          // e.g. in CALL { CREATE p: Person(age : ...) RETURN p }, that's p,
+          // because we want to see a NULL if one of the transactions failed
+          t.right.availableSymbols.foreach { symbol =>
+            rhs.get(symbol).foreach { slot =>
+              rhs.replaceExistingSlot(symbol, slot, slot.asNullable)
+            }
+          }
+        }
+
         rhs
 
       case Trail(_, _, _, _, end, _, _, groupNodes, groupRelationships, _, _, _) =>

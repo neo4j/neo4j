@@ -42,9 +42,9 @@ import org.opencypher.tools.tck.api.StringRecords
 import org.opencypher.tools.tck.values.CypherValue
 
 import java.lang.Boolean.TRUE
+import java.util.Collections
 
 import scala.jdk.CollectionConverters.MapHasAsJava
-import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -57,18 +57,19 @@ object Neo4jAdapter {
   val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "QuantifiedPathPatternAcceptance" => Map[Setting[_], Object](
-        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
-          SemanticFeature.QuantifiedPathPatterns.productPrefix
-        ).asJava
-      )
-    case "ExistsExpressionAcceptance" => Map[Setting[_], Object](
-        GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features -> Set(
-          SemanticFeature.FullExistsSupport.productPrefix
-        ).asJava
-      )
+    case "QuantifiedPathPatternAcceptance" =>
+      enableSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+    case "ExistsExpressionAcceptance" =>
+      enableSemanticFeature(SemanticFeature.FullExistsSupport)
+    case "CallInTransactions" | "CallInTransactionsErrorHandling" | "CallInTransactionsErrorHandlingWithReturn" =>
+      enableSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
     case _ => Map.empty
   }
+
+  private def enableSemanticFeature(feature: SemanticFeature): Map[Setting[_], Object] = Map[Setting[_], Object](
+    GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features ->
+      Collections.singleton(feature.productPrefix)
+  )
 
   def apply(
     executionPrefix: String,

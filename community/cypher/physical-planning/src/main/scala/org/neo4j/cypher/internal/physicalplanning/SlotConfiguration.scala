@@ -170,7 +170,7 @@ class SlotConfiguration private (
   }
 
   @scala.annotation.tailrec
-  private def replaceExistingSlot(key: String, existingSlot: Slot, modifiedSlot: Slot): Unit = {
+  final def replaceExistingSlot(key: String, existingSlot: Slot, modifiedSlot: Slot): Unit = {
     require(!finalized)
     if (slotAliases.contains(key)) {
       val existingAliases = slotAliases(key)

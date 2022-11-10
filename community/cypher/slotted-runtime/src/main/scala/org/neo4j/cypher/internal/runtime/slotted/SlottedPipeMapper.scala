@@ -117,6 +117,8 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -258,6 +260,8 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPro
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TrailSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionApplySlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionForeachSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedAllRelationshipsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexContainsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UndirectedRelationshipIndexEndsWithScanSlottedPipe
@@ -1334,6 +1338,25 @@ class SlottedPipeMapper(
         val innerVariableSlot =
           slots.get(variable).getOrElse(throw new InternalException(s"Foreach variable '$variable' has no slot"))
         ForeachSlottedApplyPipe(lhs, rhs, innerVariableSlot, convertExpressions(expression))(id)
+
+      case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
+        TransactionForeachSlottedPipe(
+          lhs,
+          rhs,
+          expressionConverters.toCommandExpression(id, batchSize),
+          onErrorBehaviour,
+          maybeReportAs.map(slots.apply)
+        )(id = id)
+
+      case TransactionApply(lhsPlan, rhsPlan, batchSize, onErrorBehaviour, maybeReportAs) =>
+        TransactionApplySlottedPipe(
+          lhs,
+          rhs,
+          expressionConverters.toCommandExpression(id, batchSize),
+          onErrorBehaviour,
+          (rhsPlan.availableSymbols -- lhsPlan.availableSymbols).map(slots.apply),
+          maybeReportAs.map(slots.apply)
+        )(id = id)
 
       case SelectOrSemiApply(_, _, expression) =>
         SelectOrSemiApplySlottedPipe(

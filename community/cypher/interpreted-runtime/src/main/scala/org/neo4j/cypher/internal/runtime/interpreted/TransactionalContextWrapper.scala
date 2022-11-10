@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TransactionId
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -182,6 +183,10 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
   override val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
   override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
+
+  override def userTransactionId: String = {
+    TransactionId(tc.databaseId().name(), tc.kernelTransaction().getTransactionSequenceNumber).toString
+  }
 }
 
 object TransactionalContextWrapper {

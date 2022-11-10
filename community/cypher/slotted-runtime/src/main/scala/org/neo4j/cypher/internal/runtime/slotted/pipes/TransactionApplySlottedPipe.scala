@@ -17,81 +17,51 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.pipes
+package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
+import org.neo4j.cypher.internal.physicalplanning.LongSlot
+import org.neo4j.cypher.internal.physicalplanning.RefSlot
+import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AbstractTransactionApplyPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe.toStatusMap
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.evaluateBatchSize
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionStatus
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-abstract class AbstractTransactionApplyPipe(
-  source: Pipe,
-  inner: Pipe,
-  batchSize: Expression,
-  onErrorBehaviour: InTransactionsOnErrorBehaviour
-) extends PipeWithSource(source) {
-
-  protected def withStatus(output: ClosingIterator[CypherRow], status: TransactionStatus): ClosingIterator[CypherRow]
-  protected def nullRows(value: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow]
-
-  final override protected def internalCreateResults(
-    input: ClosingIterator[CypherRow],
-    state: QueryState
-  ): ClosingIterator[CypherRow] = {
-    val innerPipeInTx = TransactionPipeWrapper(onErrorBehaviour, inner)
-    val batchSizeLong = evaluateBatchSize(batchSize, state)
-    val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
-
-    input
-      .eagerGrouped(batchSizeLong, memoryTracker)
-      .flatMap { batch =>
-        val innerResult = innerPipeInTx.createResults(state, batch, memoryTracker)
-
-        val output = innerResult.committedResults match {
-          case Some(result) =>
-            batch.close()
-            result.autoClosingIterator().asClosingIterator
-          case _ => nullRows(batch, state)
-        }
-
-        withStatus(output, innerResult.status)
-      }
-  }
-}
-
-case class TransactionApplyPipe(
+case class TransactionApplySlottedPipe(
   source: Pipe,
   inner: Pipe,
   batchSize: Expression,
   onErrorBehaviour: InTransactionsOnErrorBehaviour,
-  nullableVariables: Set[String],
-  statusVariableOpt: Option[String]
+  nullableSlots: Set[Slot],
+  statusSlot: Option[Slot]
 )(val id: Id = Id.INVALID_ID) extends AbstractTransactionApplyPipe(source, inner, batchSize, onErrorBehaviour) {
-
-  private lazy val nullEntries: Seq[(String, AnyValue)] = {
-    nullableVariables.toIndexedSeq.map(name => name -> Values.NO_VALUE)
-  }
+  private[this] val nullableLongOffsets = nullableSlots.toArray.collect { case LongSlot(offset, _, _) => offset }
+  private[this] val nullableRefOffsets = nullableSlots.toArray.collect { case RefSlot(offset, _, _) => offset }
+  private[this] val statusOffsetOpt = statusSlot.map(_.offset)
 
   override protected def withStatus(
     output: ClosingIterator[CypherRow],
     status: TransactionStatus
-  ): ClosingIterator[CypherRow] = statusVariableOpt match {
-    case Some(statusVariable) => output.withVariable(statusVariable, toStatusMap(status))
-    case _                    => output
+  ): ClosingIterator[CypherRow] = statusOffsetOpt match {
+    case Some(statusOffset) => output.withVariable(statusOffset, toStatusMap(status))
+    case _                  => output
   }
 
   override protected def nullRows(lhs: EagerBuffer[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     lhs.autoClosingIterator().asClosingIterator.map { row =>
       val nullRow = state.newRowWithArgument(rowFactory)
       nullRow.mergeWith(row, state.query)
-      nullRow.set(nullEntries)
+      nullableLongOffsets.foreach(offset => nullRow.setLongAt(offset, -1L))
+      nullableRefOffsets.foreach(offset => nullRow.setRefAt(offset, Values.NO_VALUE))
       nullRow
     }
   }

@@ -711,4 +711,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def validateSameDB[E <: Entity](entity: E): Unit = inner.validateSameDB(entity)
 
   override def elementIdMapper(): ElementIdMapper = inner.elementIdMapper()
+
+  override def userTransactionId: String = inner.userTransactionId
 }

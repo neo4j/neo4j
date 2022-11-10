@@ -652,6 +652,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def validateSameDB[E <: Entity](entity: E): Unit
 
   def elementIdMapper(): ElementIdMapper
+
+  def userTransactionId: String
 }
 
 trait KernelPredicate[T] {
