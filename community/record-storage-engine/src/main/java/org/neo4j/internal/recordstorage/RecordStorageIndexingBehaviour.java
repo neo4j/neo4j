@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 
 public class RecordStorageIndexingBehaviour implements StorageEngineIndexingBehaviour {
     @Override

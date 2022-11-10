@@ -845,7 +845,7 @@ class IndexPopulationJobTest {
                 .resolveDependency(IndexProviderMap.class)
                 .getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName("index_21").materialise(21);
-        indexDescriptor = indexProvider.completeConfiguration(indexDescriptor);
+        indexDescriptor = indexProvider.completeConfiguration(indexDescriptor, storageEngine.indexingBehaviour());
         return indexProvider.getPopulator(
                 indexDescriptor,
                 samplingConfig,

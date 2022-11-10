@@ -72,6 +72,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -135,7 +136,9 @@ public class DatabaseCompositeIndexAccessorTest {
             IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, PROP_ID1, PROP_ID2));
     private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR =
             IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(1, PROP_ID1, PROP_ID2));
+    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
     private Iterable<IndexProvider> providers;
 
     @BeforeAll
@@ -158,12 +161,14 @@ public class DatabaseCompositeIndexAccessorTest {
                 accessors.add(indexAccessor(
                         p,
                         p.completeConfiguration(
-                                SCHEMA_INDEX_DESCRIPTOR.withName("index_" + 0).materialise(0))));
+                                SCHEMA_INDEX_DESCRIPTOR.withName("index_" + 0).materialise(0), BEHAVIOUR)));
                 accessors.add(indexAccessor(
                         p,
-                        p.completeConfiguration(UNIQUE_SCHEMA_INDEX_DESCRIPTOR
-                                .withName("constraint_" + 1)
-                                .materialise(1))));
+                        p.completeConfiguration(
+                                UNIQUE_SCHEMA_INDEX_DESCRIPTOR
+                                        .withName("constraint_" + 1)
+                                        .materialise(1),
+                                BEHAVIOUR)));
             }
             return accessors;
         }

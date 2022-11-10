@@ -105,7 +105,8 @@ class IndexIteratorIT {
                     new IndexSamplingConfig(config),
                     SIMPLE_NAME_LOOKUP,
                     contextFactory,
-                    neoStores.getOpenOptions());
+                    neoStores.getOpenOptions(),
+                    storageEngine.indexingBehaviour());
         }
     }
 

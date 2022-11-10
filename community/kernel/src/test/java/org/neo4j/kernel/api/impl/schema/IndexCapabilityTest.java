@@ -64,7 +64,8 @@ class IndexCapabilityTest {
     private static final IndexCapability POINT = PointIndexProvider.CAPABILITY;
     private static final IndexCapability TEXT = TextIndexProvider.CAPABILITY;
     private static final IndexCapability TRIGRAM = TrigramIndexProvider.CAPABILITY;
-    private static final IndexCapability TOKEN = TokenIndexProvider.CAPABILITY;
+    private static final IndexCapability TOKEN = TokenIndexProvider.capability(true);
+    private static final IndexCapability FREKI_REL_TOKEN = TokenIndexProvider.capability(false);
     private static final IndexCapability FULLTEXT = new FulltextIndexCapability(false);
     private static final IndexCapability[] ALL = of(RANGE, POINT, TEXT, TRIGRAM, TOKEN, FULLTEXT);
     private static final IndexCapability[] NONE = of();
@@ -76,6 +77,7 @@ class IndexCapabilityTest {
         assertThat(TEXT.supportsOrdering()).isFalse();
         assertThat(TRIGRAM.supportsOrdering()).isFalse();
         assertThat(TOKEN.supportsOrdering()).isTrue();
+        assertThat(FREKI_REL_TOKEN.supportsOrdering()).isFalse();
         assertThat(FULLTEXT.supportsOrdering()).isFalse();
     }
 

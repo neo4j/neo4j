@@ -61,6 +61,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
@@ -206,7 +207,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 new IndexSamplingConfig(config),
                 tokenHolders,
                 contextFactory,
-                neoStores.getOpenOptions());
+                neoStores.getOpenOptions(),
+                new RecordStorageIndexingBehaviour());
     }
 
     public void check() throws ConsistencyCheckIncompleteException {

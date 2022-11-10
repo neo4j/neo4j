@@ -25,10 +25,10 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 
 /**
  * {@link RelationshipTypeIndexCursor} which is relationship-based, i.e. the IDs driving the cursor are relationship IDs.

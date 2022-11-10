@@ -53,6 +53,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -100,6 +101,7 @@ import org.neo4j.values.storable.Values;
 class FulltextIndexEntryUpdateTest {
     private static final Config CONFIG = Config.defaults();
     private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
+    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
 
     private final LifeSupport life = new LifeSupport();
     private final TokenHolders tokenHolders = new TokenHolders(
@@ -164,11 +166,13 @@ class FulltextIndexEntryUpdateTest {
         life.start();
 
         final var schema = SchemaDescriptors.fulltext(EntityType.NODE, new int[] {123}, new int[] {321});
-        index = provider.completeConfiguration(IndexPrototype.forSchema(schema)
-                .withIndexType(provider.getIndexType())
-                .withIndexProvider(provider.getProviderDescriptor())
-                .withName("FulltextIndex")
-                .materialise(0));
+        index = provider.completeConfiguration(
+                IndexPrototype.forSchema(schema)
+                        .withIndexType(provider.getIndexType())
+                        .withIndexProvider(provider.getProviderDescriptor())
+                        .withName("FulltextIndex")
+                        .materialise(0),
+                BEHAVIOUR);
     }
 
     @AfterEach

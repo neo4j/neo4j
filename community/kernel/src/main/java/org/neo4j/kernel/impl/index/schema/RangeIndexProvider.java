@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -122,7 +123,8 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
     }
 

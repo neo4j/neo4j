@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -125,7 +126,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public static final IndexProvider EMPTY =
             new IndexProvider(new IndexProviderDescriptor("no-index-provider", "1.0"), IndexDirectoryStructure.NONE) {
                 @Override
-                public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+                public IndexDescriptor completeConfiguration(
+                        IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
                     return index;
                 }
 
@@ -367,7 +369,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        public IndexDescriptor completeConfiguration(
+                IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
             return index;
         }
     }
@@ -481,8 +484,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
-            return provider.completeConfiguration(index);
+        public IndexDescriptor completeConfiguration(
+                IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
+            return provider.completeConfiguration(index, indexingBehaviour);
         }
     }
 }

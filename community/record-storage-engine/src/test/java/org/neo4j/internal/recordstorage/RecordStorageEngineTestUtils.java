@@ -78,7 +78,7 @@ public class RecordStorageEngineTestUtils {
                 tokenHolders,
                 mock(SchemaState.class),
                 new StandardConstraintRuleAccessor(),
-                c -> c,
+                (c, indexingBehaviour) -> c,
                 NO_LOCK_SERVICE,
                 mock(Health.class),
                 new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, DEFAULT_DATABASE_NAME),

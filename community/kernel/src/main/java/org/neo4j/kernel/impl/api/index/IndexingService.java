@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
@@ -89,7 +90,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
@@ -133,6 +133,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
     private final IndexStoreView storeView;
+    private final StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
 
     enum State {
         NOT_STARTED,
@@ -163,6 +164,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config) {
         this.storageEngine = storageEngine;
+        this.storageEngineIndexingBehaviour = storageEngine.indexingBehaviour();
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
@@ -332,7 +334,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         Map<IndexPopulationCategory, MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType =
                 new HashMap<>();
         for (var descriptor : rebuildingDescriptors) {
-            var category = new IndexPopulationCategory(descriptor, storageEngine.indexingBehaviour());
+            var category = new IndexPopulationCategory(descriptor, storageEngineIndexingBehaviour);
             rebuildingDescriptorsByType
                     .computeIfAbsent(category, type -> new LongObjectHashMap<>())
                     .put(descriptor.getId(), descriptor);
@@ -454,7 +456,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     @Override
     public IndexDescriptor completeConfiguration(IndexDescriptor index) {
-        return providerMap.completeConfiguration(index);
+        return providerMap.completeConfiguration(index, storageEngineIndexingBehaviour);
     }
 
     @Override
@@ -758,7 +760,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 boolean flipToTentative = descriptor.isUnique();
                 if (state == State.RUNNING) {
                     var populationJob = populationJobs.computeIfAbsent(
-                            new IndexPopulationCategory(descriptor, storageEngine.indexingBehaviour()),
+                            new IndexPopulationCategory(descriptor, storageEngineIndexingBehaviour),
                             category ->
                                     newIndexPopulationJob(descriptor.schema().entityType(), subject));
                     index = indexProxyCreator.createPopulatingIndexProxy(

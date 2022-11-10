@@ -378,7 +378,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             indexService.start();
 
             rules = createIndexRules(provider, indexType, labelNameIdMap, propertyId);
-            schemaCache = new SchemaCache(new StandardConstraintSemantics(), providerMap);
+            schemaCache =
+                    new SchemaCache(new StandardConstraintSemantics(), providerMap, storageEngine.indexingBehaviour());
             schemaCache.load(iterable(rules));
 
             indexService.createIndexes(AUTH_DISABLED, rules);
@@ -450,7 +451,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     .withIndexType(indexType)
                     .withName("index_" + labelId)
                     .materialise(labelId);
-            index = indexProvider.completeConfiguration(index);
+            index = indexProvider.completeConfiguration(index, storageEngine.indexingBehaviour());
             list.add(index);
         }
         return list.toArray(new IndexDescriptor[0]);

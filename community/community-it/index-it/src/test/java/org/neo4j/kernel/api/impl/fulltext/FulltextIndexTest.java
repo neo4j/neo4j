@@ -33,6 +33,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.ANALY
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -48,11 +49,14 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -61,6 +65,16 @@ import org.neo4j.values.storable.Values;
 class FulltextIndexTest extends LuceneFulltextTestSupport {
     private static final String NODE_INDEX_NAME = "nodes";
     private static final String REL_INDEX_NAME = "rels";
+
+    @Inject
+    private StorageEngine storageEngine;
+
+    private StorageEngineIndexingBehaviour indexingBehaviour;
+
+    @BeforeEach
+    void before() {
+        indexingBehaviour = storageEngine.indexingBehaviour();
+    }
 
     @Test
     void tracePageCacheAccessOnIndexQuerying() throws Exception {
@@ -604,11 +618,12 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
         FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext(NODE, new int[] {label}, new int[] {propertyKey});
 
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor descriptor =
-                indexProvider.completeConfiguration(IndexPrototype.forSchema(schema, providerDescriptor)
+        IndexDescriptor descriptor = indexProvider.completeConfiguration(
+                IndexPrototype.forSchema(schema, providerDescriptor)
                         .withName("index_1")
                         .withIndexConfig(indexConfig)
-                        .materialise(1));
+                        .materialise(1),
+                indexingBehaviour);
 
         assertThat((Value) descriptor.getIndexConfig().get(ANALYZER))
                 .isEqualTo(Values.stringValue("standard-no-stop-words"));
@@ -624,9 +639,11 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
         FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext(NODE, new int[] {1}, new int[] {1});
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         IndexDescriptor descriptor = indexProvider
-                .completeConfiguration(IndexPrototype.forSchema(schema, providerDescriptor)
-                        .withName("index_1")
-                        .materialise(1))
+                .completeConfiguration(
+                        IndexPrototype.forSchema(schema, providerDescriptor)
+                                .withName("index_1")
+                                .materialise(1),
+                        indexingBehaviour)
                 .withIndexConfig(indexConfig);
         assertEquals(Values.stringValue("B"), descriptor.getIndexConfig().get("A"));
     }
@@ -635,11 +652,12 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
     void completeConfigurationMustBeIdempotent() {
         FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext(NODE, new int[] {1}, new int[] {1});
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor onceCompleted =
-                indexProvider.completeConfiguration(IndexPrototype.forSchema(schema, providerDescriptor)
+        IndexDescriptor onceCompleted = indexProvider.completeConfiguration(
+                IndexPrototype.forSchema(schema, providerDescriptor)
                         .withName("index_1")
-                        .materialise(1));
-        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration(onceCompleted);
+                        .materialise(1),
+                indexingBehaviour);
+        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration(onceCompleted, indexingBehaviour);
         assertEquals(onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig());
     }
 
@@ -647,13 +665,14 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
     void mustAssignCapabilitiesToDescriptorsThatHaveNone() {
         FulltextSchemaDescriptor schema = SchemaDescriptors.fulltext(NODE, new int[] {1}, new int[] {1});
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor completed =
-                indexProvider.completeConfiguration(IndexPrototype.forSchema(schema, providerDescriptor)
+        IndexDescriptor completed = indexProvider.completeConfiguration(
+                IndexPrototype.forSchema(schema, providerDescriptor)
                         .withName("index_1")
-                        .materialise(1));
+                        .materialise(1),
+                indexingBehaviour);
         assertNotEquals(NO_CAPABILITY, completed.getCapability());
         completed = completed.withIndexCapability(NO_CAPABILITY);
-        completed = indexProvider.completeConfiguration(completed);
+        completed = indexProvider.completeConfiguration(completed, indexingBehaviour);
         assertNotEquals(NO_CAPABILITY, completed.getCapability());
     }
 
@@ -700,7 +719,7 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
                 .withName("index_1")
                 .materialise(1)
                 .withIndexCapability(capability);
-        IndexDescriptor completed = indexProvider.completeConfiguration(index);
+        IndexDescriptor completed = indexProvider.completeConfiguration(index, indexingBehaviour);
         assertSame(capability, completed.getCapability());
     }
 

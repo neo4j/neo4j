@@ -43,25 +43,26 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
     void configurationCompletionMustNotOverwriteExistingConfiguration() {
         IndexDescriptor index = descriptor;
         index = index.withIndexConfig(IndexConfig.with("Bob", Values.stringValue("Howard")));
-        index = indexProvider.completeConfiguration(index);
+        index = indexProvider.completeConfiguration(index, storageEngineIndexingBehaviour);
         assertEquals(index.getIndexConfig().get("Bob"), Values.stringValue("Howard"));
     }
 
     @Test
     void configurationCompletionMustBeIdempotent() {
         IndexDescriptor index = descriptor;
-        IndexDescriptor onceCompleted = indexProvider.completeConfiguration(index);
-        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration(onceCompleted);
+        IndexDescriptor onceCompleted = indexProvider.completeConfiguration(index, storageEngineIndexingBehaviour);
+        IndexDescriptor twiceCompleted =
+                indexProvider.completeConfiguration(onceCompleted, storageEngineIndexingBehaviour);
         assertEquals(onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig());
     }
 
     @Test
     void mustAssignCapabilitiesToDescriptorsThatHaveNone() {
         IndexDescriptor index = descriptor;
-        IndexDescriptor completed = indexProvider.completeConfiguration(index);
+        IndexDescriptor completed = indexProvider.completeConfiguration(index, storageEngineIndexingBehaviour);
         assertNotEquals(completed.getCapability(), IndexCapability.NO_CAPABILITY);
         completed = completed.withIndexCapability(IndexCapability.NO_CAPABILITY);
-        completed = indexProvider.completeConfiguration(completed);
+        completed = indexProvider.completeConfiguration(completed, storageEngineIndexingBehaviour);
         assertNotEquals(completed.getCapability(), IndexCapability.NO_CAPABILITY);
     }
 
@@ -103,7 +104,7 @@ abstract class IndexConfigurationCompletionCompatibility extends IndexProviderCo
             }
         };
         IndexDescriptor index = descriptor.withIndexCapability(capability);
-        IndexDescriptor completed = indexProvider.completeConfiguration(index);
+        IndexDescriptor completed = indexProvider.completeConfiguration(index, storageEngineIndexingBehaviour);
         assertSame(capability, completed.getCapability());
     }
 

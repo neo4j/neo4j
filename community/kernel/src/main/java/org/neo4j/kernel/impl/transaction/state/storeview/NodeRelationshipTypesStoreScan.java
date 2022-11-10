@@ -24,13 +24,13 @@ import static org.neo4j.lock.LockType.SHARED;
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;

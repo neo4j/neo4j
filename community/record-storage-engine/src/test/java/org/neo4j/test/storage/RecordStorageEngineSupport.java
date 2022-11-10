@@ -152,7 +152,7 @@ public class RecordStorageEngineSupport {
                 throw new UnsupportedOperationException("Not needed a.t.m.");
             }
         };
-        private IndexConfigCompleter indexConfigCompleter = index -> index;
+        private IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
 
         public Builder(FileSystemAbstraction fs, PageCache pageCache, RecordDatabaseLayout databaseLayout) {
             this.fs = fs;

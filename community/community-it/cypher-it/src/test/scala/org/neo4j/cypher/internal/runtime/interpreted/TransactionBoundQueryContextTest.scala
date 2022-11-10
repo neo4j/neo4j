@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction
@@ -69,7 +70,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour
 import org.neo4j.storageengine.api.cursor.StoreCursors
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP

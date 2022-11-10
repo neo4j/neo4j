@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -65,7 +66,8 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         return index.getCapability().equals(NO_CAPABILITY) ? index.withIndexCapability(CAPABILITY) : index;
     }
 

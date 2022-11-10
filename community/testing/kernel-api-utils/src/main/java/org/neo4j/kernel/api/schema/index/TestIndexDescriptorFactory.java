@@ -29,11 +29,14 @@ import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 public class TestIndexDescriptorFactory {
     private TestIndexDescriptorFactory() {}
+
+    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
 
     public static IndexDescriptor forSchema(SchemaDescriptor schema) {
         return forSchema(IndexType.RANGE, schema);
@@ -45,7 +48,7 @@ public class TestIndexDescriptorFactory {
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, BEHAVIOUR);
     }
 
     public static IndexDescriptor uniqueForSchema(SchemaDescriptor schema) {
@@ -58,7 +61,7 @@ public class TestIndexDescriptorFactory {
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, BEHAVIOUR);
     }
 
     public static IndexDescriptor forLabel(int labelId, int... propertyIds) {
@@ -127,7 +130,8 @@ public class TestIndexDescriptorFactory {
         private TestIndexConfigCompleter() {}
 
         @Override
-        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        public IndexDescriptor completeConfiguration(
+                IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
             return index.getCapability().equals(IndexCapability.NO_CAPABILITY)
                     ? index.withIndexCapability(CAPABILITY)
                     : index;

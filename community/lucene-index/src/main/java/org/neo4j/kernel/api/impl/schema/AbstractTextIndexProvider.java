@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -162,7 +163,8 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         return index;
     }
 }

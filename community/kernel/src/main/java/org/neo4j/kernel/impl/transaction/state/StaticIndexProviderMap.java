@@ -30,6 +30,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
@@ -160,10 +161,11 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         IndexProviderDescriptor providerDescriptor = index.getIndexProvider();
         IndexProvider provider = lookup(providerDescriptor);
-        return provider.completeConfiguration(index);
+        return provider.completeConfiguration(index, indexingBehaviour);
     }
 
     private void add(IndexProvider provider) {

@@ -34,6 +34,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -57,7 +58,8 @@ public class IndexAccessors implements Closeable {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour behavior) {
         this(
                 providers,
                 indexes,
@@ -65,7 +67,8 @@ public class IndexAccessors implements Closeable {
                 null /*we'll use a default below, if this is null*/,
                 tokenNameLookup,
                 contextFactory,
-                openOptions);
+                openOptions,
+                behavior);
     }
 
     public IndexAccessors(
@@ -75,7 +78,8 @@ public class IndexAccessors implements Closeable {
             IndexAccessorLookup accessorLookup,
             TokenNameLookup tokenNameLookup,
             CursorContextFactory contextFactory,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour behavior) {
         try (var cursorContext = contextFactory.create(CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG)) {
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null
@@ -90,7 +94,7 @@ public class IndexAccessors implements Closeable {
                         // - populating indexes will be rebuilt on next startup
                         // - failed indexes have to be dropped by the user anyways
                         IndexProvider indexProvider = provider(providers, indexDescriptor);
-                        indexDescriptor = indexProvider.completeConfiguration(indexDescriptor);
+                        indexDescriptor = indexProvider.completeConfiguration(indexDescriptor, behavior);
                         if (indexDescriptor.isUnique()
                                 && indexDescriptor.getOwningConstraintId().isEmpty()) {
                             notOnlineIndexRules.add(indexDescriptor);

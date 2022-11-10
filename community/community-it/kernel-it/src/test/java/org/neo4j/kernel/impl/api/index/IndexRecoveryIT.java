@@ -117,7 +117,7 @@ class IndexRecoveryIT {
         when(mockedIndexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
-        when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class)))
+        when(mockedIndexProvider.completeConfiguration(any(IndexDescriptor.class), any()))
                 .then(inv -> inv.getArgument(0));
     }
 

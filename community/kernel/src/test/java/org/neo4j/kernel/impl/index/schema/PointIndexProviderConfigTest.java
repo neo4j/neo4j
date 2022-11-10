@@ -59,7 +59,7 @@ class PointIndexProviderConfigTest {
                 .materialise(1);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor);
+        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
 
         // Then
         IndexConfig sinfulIndexConfig = incompleteDescriptor.getIndexConfig();
@@ -95,7 +95,7 @@ class PointIndexProviderConfigTest {
                 .withIndexConfig(existingIndexConfig);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor);
+        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
 
         // Then
         IndexConfig completedIndexConfig = completedDescriptor.getIndexConfig();

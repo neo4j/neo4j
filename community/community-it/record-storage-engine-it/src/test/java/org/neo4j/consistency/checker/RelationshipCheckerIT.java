@@ -152,7 +152,8 @@ class RelationshipCheckerIT {
                     new IndexSamplingConfig(config),
                     tokenHolders,
                     contextFactory,
-                    storageEngine.getOpenOptions());
+                    storageEngine.getOpenOptions(),
+                    storageEngine.indexingBehaviour());
             context = new CheckerContext(
                     neoStores,
                     indexAccessors,

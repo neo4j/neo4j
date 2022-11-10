@@ -68,6 +68,7 @@ import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -107,7 +108,6 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -212,7 +212,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
         try {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
-            schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter);
+            schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter, indexingBehaviour);
 
             cacheAccess = new BridgingCacheAccess(schemaCache, schemaState, tokenHolders);
 

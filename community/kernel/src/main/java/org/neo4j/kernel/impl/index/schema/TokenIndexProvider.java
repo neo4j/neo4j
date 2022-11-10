@@ -26,6 +26,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -38,6 +39,7 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.ByteBufferFactory;
@@ -60,8 +62,6 @@ import org.neo4j.values.storable.ValueCategory;
 
 public class TokenIndexProvider extends IndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("token-lookup", "1.0");
-    public static final IndexCapability CAPABILITY = new TokenIndexCapability();
-
     private final DatabaseIndexContext databaseIndexContext;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final Monitor monitor;
@@ -162,9 +162,12 @@ public class TokenIndexProvider extends IndexProvider {
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         if (index.getCapability().equals(IndexCapability.NO_CAPABILITY)) {
-            index = index.withIndexCapability(CAPABILITY);
+            boolean hasOrdering = !(index.schema().entityType().equals(EntityType.RELATIONSHIP)
+                    && indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex());
+            index = index.withIndexCapability(capability(hasOrdering));
         }
         return index;
     }
@@ -210,10 +213,20 @@ public class TokenIndexProvider extends IndexProvider {
         return new IndexFiles.Directory(fileSystem, indexDirectoryStructure, schemaRule.getId());
     }
 
+    public static IndexCapability capability(boolean supportsOrder) {
+        return new TokenIndexCapability(supportsOrder);
+    }
+
     private static class TokenIndexCapability implements IndexCapability {
+        private final boolean supportsOrdering;
+
+        private TokenIndexCapability(boolean supportsOrdering) {
+            this.supportsOrdering = supportsOrdering;
+        }
+
         @Override
         public boolean supportsOrdering() {
-            return true;
+            return supportsOrdering;
         }
 
         @Override

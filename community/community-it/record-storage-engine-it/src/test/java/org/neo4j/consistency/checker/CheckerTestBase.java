@@ -77,6 +77,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -251,7 +252,8 @@ class CheckerTestBase {
                 new LookupAccessorsFromRunningDb(indexingService),
                 tokenHolders,
                 contextFactory,
-                neoStores.getOpenOptions());
+                neoStores.getOpenOptions(),
+                new RecordStorageIndexingBehaviour());
         InconsistencyReport report =
                 new InconsistencyReport(new InconsistencyMessageLogger(NullLog.getInstance()), inconsistenciesSummary);
         monitor = mock(ConsistencyReporter.Monitor.class);

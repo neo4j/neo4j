@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
@@ -71,6 +72,7 @@ abstract class IndexProviderCompatabilityTestBase {
     final IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
     Config config;
     Path homePath;
+    StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
 
     @BeforeEach
     void setup(TestInfo info) throws Exception {
@@ -79,6 +81,8 @@ abstract class IndexProviderCompatabilityTestBase {
         String testName = info.getTestMethod().orElseThrow().getName().toLowerCase(Locale.ROOT);
         testDirectory.prepareDirectory(testClass, testSuite.getClass().getSimpleName());
         homePath = testDirectory.homePath(testName);
+        final boolean hasNodeBasedRelIndex = random.nextBoolean();
+        storageEngineIndexingBehaviour = () -> hasNodeBasedRelIndex;
 
         Config.Builder configBuilder = Config.newBuilder();
         configBuilder.set(GraphDatabaseSettings.neo4j_home, homePath);
@@ -88,7 +92,7 @@ abstract class IndexProviderCompatabilityTestBase {
 
         indexProvider = testSuite.createIndexProvider(pageCache, fs, homePath, config);
         descriptor = indexProvider.completeConfiguration(
-                incompleteIndexPrototype.withName("index_17").materialise(17));
+                incompleteIndexPrototype.withName("index_17").materialise(17), storageEngineIndexingBehaviour);
         jobScheduler.start();
     }
 

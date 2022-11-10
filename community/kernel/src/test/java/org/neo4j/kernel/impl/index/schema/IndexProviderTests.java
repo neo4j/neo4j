@@ -154,7 +154,7 @@ abstract class IndexProviderTests {
         IndexDescriptor incompleteDescriptor = validPrototype().materialise(1);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor);
+        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
 
         // Then
         assertThat(completedDescriptor.getCapability()).isNotEqualTo(IndexCapability.NO_CAPABILITY);
@@ -422,7 +422,7 @@ abstract class IndexProviderTests {
     }
 
     IndexDescriptor completeConfiguration(IndexDescriptor indexDescriptor) {
-        return provider.completeConfiguration(indexDescriptor);
+        return provider.completeConfiguration(indexDescriptor, () -> false);
     }
 
     @FunctionalInterface

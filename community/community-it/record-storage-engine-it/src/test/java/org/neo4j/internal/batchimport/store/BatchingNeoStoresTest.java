@@ -520,7 +520,7 @@ class BatchingNeoStoresTest {
                     new DelegatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
                     new DelegatingTokenHolder(labelTokenCreator, TokenHolder.TYPE_LABEL),
                     new DelegatingTokenHolder(relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
-            IndexConfigCompleter indexConfigCompleter = index -> index;
+            IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
             RecordStorageEngine storageEngine = life.add(new RecordStorageEngine(
                     databaseLayout,

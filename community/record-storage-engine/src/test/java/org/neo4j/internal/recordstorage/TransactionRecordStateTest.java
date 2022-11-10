@@ -162,7 +162,10 @@ class TransactionRecordStateTest {
     private final long[] secondLabelId = new long[] {labelIdSecond};
     private final long[] bothLabelIds = new long[] {labelIdOne, labelIdSecond};
     private RecordChangeSet recordChangeSet;
-    private final SchemaCache schemaCache = new SchemaCache(new StandardConstraintRuleAccessor(), index -> index);
+    private final SchemaCache schemaCache = new SchemaCache(
+            new StandardConstraintRuleAccessor(),
+            (index, indexingBehaviour) -> index,
+            new RecordStorageIndexingBehaviour());
     private long nextRuleId = 1;
 
     @Inject

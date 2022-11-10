@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 

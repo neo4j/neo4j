@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -93,9 +94,10 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         IndexProviderDescriptor providerDescriptor = index.getIndexProvider();
         IndexProvider provider = lookup(providerDescriptor);
-        return provider.completeConfiguration(index);
+        return provider.completeConfiguration(index, indexingBehaviour);
     }
 }

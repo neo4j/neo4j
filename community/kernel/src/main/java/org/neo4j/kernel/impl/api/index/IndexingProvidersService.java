@@ -25,10 +25,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.Value;
 
-public interface IndexingProvidersService extends IndexConfigCompleter {
+public interface IndexingProvidersService {
     /**
      * Get the index provider descriptor for the index provider with the given name, or the
      * descriptor of the default index provider, if no name was given.
@@ -66,6 +67,11 @@ public interface IndexingProvidersService extends IndexConfigCompleter {
      * @param prototype The prototype to the validated.
      */
     void validateIndexPrototype(IndexPrototype prototype);
+
+    /**
+     * See {@link IndexConfigCompleter#completeConfiguration(IndexDescriptor, StorageEngineIndexingBehaviour)}
+     */
+    IndexDescriptor completeConfiguration(IndexDescriptor index);
 
     /**
      * There's always a default {@link IndexProvider}, this method returns it.

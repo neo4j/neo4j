@@ -31,8 +31,9 @@ public interface IndexConfigCompleter {
      * Note that this is an additive and idempotent operation. If an index is already configured, then this method must not overwrite the existing
      * configuration.
      *
-     * @param index The descriptor of an index that we are about to create, and we wish to its configuration be completed by its chosen index provider.
+     * @param index             The descriptor of an index that we are about to create, and we wish to its configuration be completed by its chosen index provider.
+     * @param indexingBehaviour The indexing behaviour provided by the current storage engine
      * @return An index descriptor with a completed configuration.
      */
-    IndexDescriptor completeConfiguration(IndexDescriptor index);
+    IndexDescriptor completeConfiguration(IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour);
 }

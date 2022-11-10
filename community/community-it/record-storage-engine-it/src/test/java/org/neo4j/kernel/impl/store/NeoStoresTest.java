@@ -499,7 +499,7 @@ class NeoStoresTest {
                 tokenHolders,
                 new DatabaseSchemaState(NullLogProvider.getInstance()),
                 new StandardConstraintRuleAccessor(),
-                i -> i,
+                (i, indexingBehaviour) -> i,
                 NO_LOCK_SERVICE,
                 mock(Health.class),
                 idGeneratorFactory,

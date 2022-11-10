@@ -26,6 +26,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 /**
@@ -101,7 +102,8 @@ public interface IndexProviderMap extends IndexConfigCompleter {
 
     IndexProviderMap EMPTY = new IndexProviderMap() {
         @Override
-        public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+        public IndexDescriptor completeConfiguration(
+                IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
             return index;
         }
 

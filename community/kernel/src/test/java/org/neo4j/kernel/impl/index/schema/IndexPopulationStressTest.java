@@ -67,6 +67,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -154,14 +155,19 @@ abstract class IndexPopulationStressTest {
         contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         indexProvider = providerCreator.apply(this);
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
-        descriptor = indexProvider.completeConfiguration(forSchema(forLabel(0, 0), PROVIDER)
-                .withIndexType(indexType())
-                .withName("index_0")
-                .materialise(0));
-        descriptor2 = indexProvider.completeConfiguration(forSchema(forLabel(1, 0), PROVIDER)
-                .withIndexType(indexType())
-                .withName("index_1")
-                .materialise(1));
+        StorageEngineIndexingBehaviour behaviour = () -> false;
+        descriptor = indexProvider.completeConfiguration(
+                forSchema(forLabel(0, 0), PROVIDER)
+                        .withIndexType(indexType())
+                        .withName("index_0")
+                        .materialise(0),
+                behaviour);
+        descriptor2 = indexProvider.completeConfiguration(
+                forSchema(forLabel(1, 0), PROVIDER)
+                        .withIndexType(indexType())
+                        .withName("index_1")
+                        .materialise(1),
+                behaviour);
         fs.mkdirs(indexProvider.directoryStructure().rootDirectory());
         populator = indexProvider.getPopulator(
                 descriptor,

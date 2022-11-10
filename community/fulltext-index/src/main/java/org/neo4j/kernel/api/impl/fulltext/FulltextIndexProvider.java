@@ -46,6 +46,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -147,7 +148,8 @@ public class FulltextIndexProvider extends IndexProvider {
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         IndexConfig indexConfig = index.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig(indexConfig);
         index = index.withIndexConfig(indexConfig);

@@ -37,6 +37,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -134,7 +135,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
     }
 
     @Override
-    public IndexDescriptor completeConfiguration(IndexDescriptor index) {
+    public IndexDescriptor completeConfiguration(
+            IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         IndexConfig indexConfig = index.getIndexConfig();
         indexConfig = completeSpatialConfiguration(indexConfig);
         index = index.withIndexConfig(indexConfig);

@@ -55,10 +55,13 @@ public class SchemaCache {
     private final Lock cacheUpdateLock;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache(ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter) {
+    public SchemaCache(
+            ConstraintRuleAccessor constraintSemantics,
+            IndexConfigCompleter indexConfigCompleter,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         this.cacheUpdateLock = new StampedLock().asWriteLock();
-        this.schemaCacheState =
-                new SchemaCacheState(constraintSemantics, indexConfigCompleter, Collections.emptyList());
+        this.schemaCacheState = new SchemaCacheState(
+                constraintSemantics, indexConfigCompleter, Collections.emptyList(), indexingBehaviour);
     }
 
     /**
@@ -113,7 +116,8 @@ public class SchemaCache {
         try {
             ConstraintRuleAccessor constraintSemantics = schemaCacheState.constraintSemantics;
             IndexConfigCompleter indexConfigCompleter = schemaCacheState.indexConfigCompleter;
-            this.schemaCacheState = new SchemaCacheState(constraintSemantics, indexConfigCompleter, rules);
+            StorageEngineIndexingBehaviour behaviour = schemaCacheState.indexingBehaviour;
+            this.schemaCacheState = new SchemaCacheState(constraintSemantics, indexConfigCompleter, rules, behaviour);
         } finally {
             cacheUpdateLock.unlock();
         }
@@ -208,6 +212,7 @@ public class SchemaCache {
         private final MutableLongObjectMap<IndexDescriptor> indexesById;
         private final MutableLongObjectMap<ConstraintDescriptor> constraintsById;
         private final Set<ConstraintDescriptor> constraints;
+        private final StorageEngineIndexingBehaviour indexingBehaviour;
 
         private final Map<SchemaDescriptor, Set<IndexDescriptor>> indexesBySchema;
         private final Map<TypeDescriptorKey, IndexDescriptor> indexesBySchemaAndType;
@@ -227,9 +232,11 @@ public class SchemaCache {
         SchemaCacheState(
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
-                Iterable<SchemaRule> rules) {
+                Iterable<SchemaRule> rules,
+                StorageEngineIndexingBehaviour storageEngineIndexingBehaviour) {
             this.constraintSemantics = constraintSemantics;
             this.indexConfigCompleter = indexConfigCompleter;
+            this.indexingBehaviour = storageEngineIndexingBehaviour;
             this.indexesById = new LongObjectHashMap<>();
             this.constraintsById = new LongObjectHashMap<>();
             this.constraints = new HashSet<>();
@@ -252,6 +259,7 @@ public class SchemaCache {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
             this.indexConfigCompleter = schemaCacheState.indexConfigCompleter;
             this.indexesById = LongObjectHashMap.newMap(schemaCacheState.indexesById);
+            this.indexingBehaviour = schemaCacheState.indexingBehaviour;
             this.constraintsById = LongObjectHashMap.newMap(schemaCacheState.constraintsById);
             this.constraints = new HashSet<>(schemaCacheState.constraints);
 
@@ -482,7 +490,7 @@ public class SchemaCache {
                 constraints.add(constraint);
                 cacheUniquenessConstraint(constraint);
             } else if (rule instanceof IndexDescriptor index) {
-                index = indexConfigCompleter.completeConfiguration((IndexDescriptor) rule);
+                index = indexConfigCompleter.completeConfiguration(index, indexingBehaviour);
                 indexesById.put(index.getId(), index);
                 SchemaDescriptor schema = index.schema();
                 indexesBySchema.merge(schema, Set.of(index), SchemaCacheState::concatImmutableSets);
