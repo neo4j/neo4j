@@ -134,15 +134,16 @@ trait TransactionPipeWrapper {
       Commit(transactionId)
     } catch {
       case NonFatal(e) =>
-        try {
-          Try(Option(innerIterator).foreach(_.close()))
-            .failed
-            .foreach(e.addSuppressed)
+        Try(Option(innerIterator).foreach(_.close()))
+          .failed
+          .foreach(e.addSuppressed)
 
+        try {
           innerTxContext.rollback()
         } catch {
           case NonFatal(rollbackException) =>
             e.addSuppressed(rollbackException)
+            throw e
         }
         Rollback(transactionId, e)
     } finally {
