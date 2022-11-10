@@ -179,19 +179,16 @@ class WriteTransactionCommandOrderingTest {
             nodeVisited = true;
 
             switch (command.getMode()) {
-                case CREATE:
+                case CREATE -> {
                     Assertions.assertFalse(updated);
                     Assertions.assertFalse(deleted);
-                    break;
-                case UPDATE:
+                }
+                case UPDATE -> {
                     updated = true;
                     Assertions.assertFalse(deleted);
-                    break;
-                case DELETE:
-                    deleted = true;
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown command mode: " + command.getMode());
+                }
+                case DELETE -> deleted = true;
+                default -> throw new IllegalStateException("Unhandled command mode: " + command.getMode());
             }
             return false;
         }

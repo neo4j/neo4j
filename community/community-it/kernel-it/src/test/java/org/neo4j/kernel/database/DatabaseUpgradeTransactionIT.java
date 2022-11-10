@@ -178,10 +178,8 @@ class DatabaseUpgradeTransactionIT {
         Race race =
                 new Race().withRandomStartDelays().withEndCondition(() -> KernelVersion.LATEST.equals(kernelVersion()));
         race.addContestant(
-                () -> {
-                    dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
-                            .executeTransactionally("CALL dbms.upgrade()");
-                },
+                () -> dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+                        .executeTransactionally("CALL dbms.upgrade()"),
                 1);
         race.addContestants(max(Runtime.getRuntime().availableProcessors() - 1, 2), Race.throwing(() -> {
             createWriteTransaction();
@@ -207,7 +205,7 @@ class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
         assertThat(dbmsRuntimeVersion()).isEqualTo(DbmsRuntimeVersion.V5_0);
-        long nodeId = createDenseNode();
+        String nodeId = createDenseNode();
 
         // When
         Race race = new Race().withRandomStartDelays().withEndCondition(new BooleanSupplier() {
@@ -240,7 +238,7 @@ class DatabaseUpgradeTransactionIT {
         race.addContestants(max(Runtime.getRuntime().availableProcessors() - 1, 2), throwing(() -> {
             while (true) {
                 try (Transaction tx = db.beginTx()) {
-                    tx.getNodeById(nodeId)
+                    tx.getNodeByElementId(nodeId)
                             .createRelationshipTo(
                                     tx.createNode(),
                                     RelationshipType.withName("TYPE_"
@@ -294,8 +292,8 @@ class DatabaseUpgradeTransactionIT {
         set(KernelVersion.V5_0);
         set(DbmsRuntimeVersion.V5_0);
         restartDbms();
-        long lockNode1 = createWriteTransaction();
-        long lockNode2 = createWriteTransaction();
+        String lockNode1 = createWriteTransaction();
+        String lockNode2 = createWriteTransaction();
         BinaryLatch l1 = new BinaryLatch();
         BinaryLatch l2 = new BinaryLatch();
         long numNodesBefore = getNodeCount();
@@ -306,32 +304,29 @@ class DatabaseUpgradeTransactionIT {
             @Override
             public Object beforeCommit(
                     TransactionData data, Transaction transaction, GraphDatabaseService databaseService) {
-                dbms.unregisterTransactionEventListener(
-                        db.databaseName(), this); // Unregister so only the first transaction gets this
+                // Unregister so only the first transaction gets this
+                dbms.unregisterTransactionEventListener(db.databaseName(), this);
                 l2.release();
                 l1.await(); // Hold here until the upgrade transaction is ongoing
                 // we need to lock several entities here since deadlock termination is based on number of locks client
-                // holds.
-                // and we want other transaction to be canceled
-                transaction.acquireWriteLock(transaction.getNodeById(lockNode2));
-                transaction.acquireWriteLock(
-                        transaction.getNodeById(lockNode1)); // Then wait for the lock held by that "triggering" tx
+                // holds, and we want other transaction to be canceled
+                transaction.acquireWriteLock(transaction.getNodeByElementId(lockNode2));
+                // Then wait for the lock held by that "triggering" tx
+                transaction.acquireWriteLock(transaction.getNodeByElementId(lockNode1));
                 return null;
             }
         });
 
         // When
         try (OtherThreadExecutor executor = new OtherThreadExecutor("Executor")) {
-            Future<Long> f1 = executor.executeDontWait(
-                    this::createWriteTransaction); // This will trigger the "locking" listener but not the upgrade
+            // This will trigger the "locking" listener but not the upgrade
+            Future<String> f1 = executor.executeDontWait(this::createWriteTransaction);
             l2.await(); // wait for it to be committing
-            set(
-                    DbmsRuntimeVersion
-                            .LATEST_DBMS_RUNTIME_COMPONENT_VERSION); // then upgrade dbms runtime to trigger db upgrade
-            // on next write
+            // then upgrade dbms runtime to trigger db upgrade on next write
+            set(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
 
             try (Transaction tx = db.beginTx()) {
-                tx.acquireWriteLock(tx.getNodeById(lockNode1)); // take the lock
+                tx.acquireWriteLock(tx.getNodeByElementId(lockNode1)); // take the lock
                 tx.createNode(); // and make sure it is a write to trigger upgrade
                 l1.release();
                 executor.waitUntilWaiting(details -> details.isAt(ForsetiClient.class, "acquireExclusive"));
@@ -377,9 +372,9 @@ class DatabaseUpgradeTransactionIT {
         }
     }
 
-    private long createWriteTransaction() {
+    private String createWriteTransaction() {
         try (Transaction tx = db.beginTx()) {
-            long nodeId = tx.createNode().getId();
+            String nodeId = tx.createNode().getElementId();
             tx.commit();
             return nodeId;
         }
@@ -461,42 +456,38 @@ class DatabaseUpgradeTransactionIT {
         });
     }
 
-    private long createDenseNode() {
-        MutableLong nodeId = new MutableLong();
+    private String createDenseNode() {
         try (Transaction tx = db.beginTx()) {
             Node node = tx.createNode();
+            String nodeId = node.getElementId();
             for (int i = 0; i < 100; i++) {
                 node.createRelationshipTo(tx.createNode(), RelationshipType.withName("TYPE_" + (i % 3)));
             }
-            nodeId.setValue(node.getId());
             tx.commit();
+            return nodeId;
         }
-        return nodeId.longValue();
     }
 
-    private void assertDegrees(long nodeId) {
+    private void assertDegrees(String nodeId) {
         // Why assert degrees specifically? This particular upgrade: V4_2 -> V4_3_D3 changes how dense node degrees are
-        // stored
-        // so it's a really good indicator that everything there works
+        // stored so it's a really good indicator that everything there works
         try (Transaction tx = db.beginTx()) {
-            Node node = tx.getNodeById(nodeId);
-            Map<String, Map<Direction, MutableLong>> actualDegrees = new HashMap<>();
-            Iterables.forEach(node.getRelationships(), r -> {
-                actualDegrees
-                        .computeIfAbsent(r.getType().name(), t -> new HashMap<>())
-                        .computeIfAbsent(directionOf(node, r), d -> new MutableLong())
-                        .increment();
-            });
+            Node node = tx.getNodeByElementId(nodeId);
+            Map<RelationshipType, Map<Direction, MutableLong>> actualDegrees = new HashMap<>();
+            Iterables.forEach(node.getRelationships(), r -> actualDegrees
+                    .computeIfAbsent(r.getType(), t -> new HashMap<>())
+                    .computeIfAbsent(directionOf(node, r), d -> new MutableLong())
+                    .increment());
             MutableLong actualTotalDegree = new MutableLong();
-            actualDegrees.forEach((typeName, directions) -> {
+            actualDegrees.forEach((type, directions) -> {
                 long actualTotalDirectionDegree = 0;
                 for (Map.Entry<Direction, MutableLong> actualDirectionDegree : directions.entrySet()) {
-                    assertThat(node.getDegree(RelationshipType.withName(typeName), actualDirectionDegree.getKey()))
+                    assertThat(node.getDegree(type, actualDirectionDegree.getKey()))
                             .isEqualTo(actualDirectionDegree.getValue().longValue());
                     actualTotalDirectionDegree +=
                             actualDirectionDegree.getValue().longValue();
                 }
-                assertThat(node.getDegree(RelationshipType.withName(typeName))).isEqualTo(actualTotalDirectionDegree);
+                assertThat(node.getDegree(type)).isEqualTo(actualTotalDirectionDegree);
                 actualTotalDegree.add(actualTotalDirectionDegree);
             });
             assertThat(node.getDegree()).isEqualTo(actualTotalDegree.longValue());
