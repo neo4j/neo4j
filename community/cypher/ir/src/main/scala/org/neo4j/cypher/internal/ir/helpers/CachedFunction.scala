@@ -36,7 +36,7 @@ object CachedFunction {
       cache.getOrElseUpdate(input, f(input))
   }
 
-  def apply[A, B, C](f: (A, B) => C): ((A, B) => C ) with CachedFunction = {
+  def apply[A, B, C](f: (A, B) => C): ((A, B) => C) with CachedFunction = {
     val tupledCachedFunction = apply(f.tupled)
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B) => C) with CachedFunction {
@@ -45,7 +45,7 @@ object CachedFunction {
     }
   }
 
-  def apply[A, B, C, D](f: (A, B, C) => D): ((A, B, C) => D ) with CachedFunction = {
+  def apply[A, B, C, D](f: (A, B, C) => D): ((A, B, C) => D) with CachedFunction = {
     val tupledCachedFunction = apply(f.tupled)
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C) => D) with CachedFunction {
@@ -54,7 +54,7 @@ object CachedFunction {
     }
   }
 
-  def apply[A, B, C, D, E](f: (A, B, C, D) => E): ((A, B, C, D) => E ) with CachedFunction = {
+  def apply[A, B, C, D, E](f: (A, B, C, D) => E): ((A, B, C, D) => E) with CachedFunction = {
     val tupledCachedFunction = apply(f.tupled)
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C, D) => E) with CachedFunction {
@@ -63,7 +63,7 @@ object CachedFunction {
     }
   }
 
-  def apply[A, B, C, D, E, F](f: (A, B, C, D, E) => F): ((A, B, C, D, E) => F ) with CachedFunction = {
+  def apply[A, B, C, D, E, F](f: (A, B, C, D, E) => F): ((A, B, C, D, E) => F) with CachedFunction = {
     val tupledCachedFunction = apply(f.tupled)
     val untupledCachedFunction = Function.untupled(tupledCachedFunction)
     new ((A, B, C, D, E) => F) with CachedFunction {
@@ -72,7 +72,7 @@ object CachedFunction {
     }
   }
 
-  def apply[A, B, C, D, E, F, G](f: (A, B, C, D, E, F) => G): ((A, B, C, D, E, F) => G ) with CachedFunction = {
+  def apply[A, B, C, D, E, F, G](f: (A, B, C, D, E, F) => G): ((A, B, C, D, E, F) => G) with CachedFunction = {
     {
       val tupledCachedFunction = apply(f.tupled)
       val untupledCachedFunction = untupled(tupledCachedFunction)

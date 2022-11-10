@@ -18,11 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.cypher.internal.ir
+
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class QueryProjectionTest extends CypherFunSuite with AstConstructionTestSupport {
+
   test("should not mutate QueryProjection.empty state") {
     val qp = QueryProjection.empty
 
