@@ -40,14 +40,14 @@ interface ConcurrentLongQueue {
     long takeOrDefault(long defaultValue);
 
     /**
-     * @return max capacity of this queue.
-     */
-    int capacity();
-
-    /**
      * @return size of this queue, i.e. how many values are queued right now.
      */
     int size();
+
+    /**
+     * @return number of IDs that can be offered to this cache before it's full.
+     */
+    int availableSpace();
 
     /**
      * Clears the queue.

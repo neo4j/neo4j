@@ -34,6 +34,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * Available IDs are cached in their respective slots, based on the number of consecutive IDs they provide.
  */
 class IdCache {
+    private static final int DYNAMIC_CHUNK_SIZE = IndexedIdGenerator.SMALL_CACHE_CAPACITY;
+
     private final int[] slotSizes;
     private final ConcurrentLongQueue[] queues;
     private final AtomicInteger size = new AtomicInteger();
@@ -49,7 +51,13 @@ class IdCache {
             checkArgument(
                     slotIndex == 0 || slotSize > slotSizes[slotIndex - 1],
                     "Slot sizes should be provided ordered from smaller to bigger");
-            queues[slotIndex] = new SpmcLongQueue(capacity);
+
+            // If the max capacity is larger than the chunk size then use the dynamic cache which
+            // grows and shrinks in increments of chunk size to avoid permanently occupying a large amount of memory.
+            var queue = capacity > DYNAMIC_CHUNK_SIZE
+                    ? new DynamicConcurrentLongQueue(DYNAMIC_CHUNK_SIZE, capacity / DYNAMIC_CHUNK_SIZE)
+                    : new SpmcLongQueue(capacity);
+            queues[slotIndex] = queue;
         }
         singleIdSlotIndex = findSingleSlotIndex(slotSizes);
     }
@@ -112,20 +120,16 @@ class IdCache {
     int availableSpaceById() {
         int space = 0;
         for (int i = 0; i < slotSizes.length; i++) {
-            space += (queues[i].capacity() - queues[i].size()) * slotSizes[i];
+            space += queues[i].availableSpace() * slotSizes[i];
         }
         return space;
-    }
-
-    int[] slotSizes() {
-        return slotSizes;
     }
 
     IdSlotDistribution.Slot[] slotsByAvailableSpace() {
         IdSlotDistribution.Slot[] slots = new IdSlotDistribution.Slot[slotSizes.length];
         for (int slotIndex = 0; slotIndex < slotSizes.length; slotIndex++) {
             ConcurrentLongQueue queue = queues[slotIndex];
-            slots[slotIndex] = new IdSlotDistribution.Slot(queue.capacity() - queue.size(), slotSizes[slotIndex]);
+            slots[slotIndex] = new IdSlotDistribution.Slot(queue.availableSpace(), slotSizes[slotIndex]);
         }
         return slots;
     }
@@ -148,7 +152,7 @@ class IdCache {
 
     boolean isFull() {
         for (ConcurrentLongQueue queue : queues) {
-            if (queue.size() < queue.capacity()) {
+            if (queue.availableSpace() > 0) {
                 return false;
             }
         }
@@ -166,9 +170,12 @@ class IdCache {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("IdCache{size:" + size + ", ");
+        StringBuilder builder = new StringBuilder("IdCache{availableSpace:" + size + ", ");
         for (int i = 0; i < slotSizes.length; i++) {
-            builder.append(slotSizes[i]).append(":").append(queues[i].size()).append(", ");
+            builder.append(slotSizes[i])
+                    .append(":")
+                    .append(queues[i].availableSpace())
+                    .append(", ");
         }
         return builder.append("}").toString();
     }

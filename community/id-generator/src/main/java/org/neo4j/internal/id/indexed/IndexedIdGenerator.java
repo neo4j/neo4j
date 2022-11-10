@@ -187,7 +187,9 @@ public class IndexedIdGenerator implements IdGenerator {
 
     /**
      * Used for id generators that generally has high activity.
-     * 2^13 == 8192 and one ID takes up 8B, which results in a memory usage of 8192 * 8 = ~65k memory
+     * 2^16 == 65536 and one ID takes up 8B, which results in a memory usage of 65536 * 8 = ~524k memory
+     * But that is the maximum the ID cache can occupy - the cache is divided into chunks, each one 1024 IDs
+     * so when there's nothing or very little in the cache it will only occupy ~8k memory
      */
     static final int LARGE_CACHE_CAPACITY = 1 << 13;
 

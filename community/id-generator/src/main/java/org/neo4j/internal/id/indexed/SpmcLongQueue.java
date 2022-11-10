@@ -72,11 +72,6 @@ class SpmcLongQueue implements ConcurrentLongQueue {
     }
 
     @Override
-    public int capacity() {
-        return array.length();
-    }
-
-    @Override
     public int size() {
         // Why do we need max on this value? Well the size being returned is a rough estimate since we're reading two
         // atomic longs un-atomically.
@@ -85,6 +80,11 @@ class SpmcLongQueue implements ConcurrentLongQueue {
         // reading readSeq it will be bigger than writeSeq. This is fine, but would look strange on the receiving end,
         // so let it be 0 instead.
         return toIntExact(max(0, writeSeq.get() - readSeq.get()));
+    }
+
+    @Override
+    public int availableSpace() {
+        return array.length() - size();
     }
 
     /**
