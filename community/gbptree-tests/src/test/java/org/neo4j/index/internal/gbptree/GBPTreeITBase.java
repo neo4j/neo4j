@@ -172,9 +172,9 @@ abstract class GBPTreeITBase<KEY, VALUE> {
     @ParameterizedTest
     void shouldHandleRemoveEntireTree(WriterFactory writerFactory) throws Exception {
         // given
-        int numberOfNodes = 200_000;
+        int numberOfEntries = 50_000;
         try (Writer<KEY, VALUE> writer = createWriter(index, writerFactory)) {
-            for (int i = 0; i < numberOfNodes; i++) {
+            for (int i = 0; i < numberOfEntries; i++) {
                 writer.put(key(i), value(i));
             }
         }
@@ -182,10 +182,10 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         // when
         BitSet removed = new BitSet();
         try (Writer<KEY, VALUE> writer = createWriter(index, writerFactory)) {
-            for (int i = 0; i < numberOfNodes - numberOfNodes / 10; i++) {
+            for (int i = 0; i < numberOfEntries - numberOfEntries / 10; i++) {
                 int candidate;
                 do {
-                    candidate = random.nextInt(max(1, random.nextInt(numberOfNodes)));
+                    candidate = random.nextInt(max(1, random.nextInt(numberOfEntries)));
                 } while (removed.get(candidate));
                 removed.set(candidate);
 
@@ -195,7 +195,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
 
         int next = 0;
         try (Writer<KEY, VALUE> writer = createWriter(index, writerFactory)) {
-            for (int i = 0; i < numberOfNodes / 10; i++) {
+            for (int i = 0; i < numberOfEntries / 10; i++) {
                 next = removed.nextClearBit(next);
                 removed.set(next);
                 writer.remove(key(next));
@@ -203,7 +203,7 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         }
 
         // then
-        try (Seeker<KEY, VALUE> seek = index.seek(key(0), key(numberOfNodes), NULL_CONTEXT)) {
+        try (Seeker<KEY, VALUE> seek = index.seek(key(0), key(numberOfEntries), NULL_CONTEXT)) {
             assertFalse(seek.next());
         }
 
