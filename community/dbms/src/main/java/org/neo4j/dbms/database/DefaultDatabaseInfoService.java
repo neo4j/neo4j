@@ -90,7 +90,7 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
                 .causeOfFailure(namedDatabaseId)
                 .map(Throwable::getMessage)
                 .orElse("");
-        var access = readOnlyDatabases.isReadOnly(namedDatabaseId) ? READ_ONLY : READ_WRITE;
+        var access = readOnlyDatabases.isReadOnly(namedDatabaseId.databaseId()) ? READ_ONLY : READ_WRITE;
         return new DatabaseInfo(
                 namedDatabaseId,
                 serverId,

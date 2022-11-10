@@ -54,7 +54,7 @@ public class ConfigBasedLookupTest {
         var lookupFactory = new ConfigBasedLookupFactory(Config.defaults(), databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         for (var db : databases) {
-            assertFalse(lookup.databaseIsReadOnly(db));
+            assertFalse(lookup.databaseIsReadOnly(db.databaseId()));
         }
     }
 
@@ -64,7 +64,7 @@ public class ConfigBasedLookupTest {
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
         for (var db : databases) {
-            assertTrue(lookup.databaseIsReadOnly(db));
+            assertTrue(lookup.databaseIsReadOnly(db.databaseId()));
         }
     }
 
@@ -73,9 +73,9 @@ public class ConfigBasedLookupTest {
         var config = Config.defaults(GraphDatabaseSettings.read_only_databases, Set.of(foo.name(), bar.name()));
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        assertFalse(lookup.databaseIsReadOnly(baz));
-        assertTrue(lookup.databaseIsReadOnly(foo));
-        assertTrue(lookup.databaseIsReadOnly(bar));
+        assertFalse(lookup.databaseIsReadOnly(baz.databaseId()));
+        assertTrue(lookup.databaseIsReadOnly(foo.databaseId()));
+        assertTrue(lookup.databaseIsReadOnly(bar.databaseId()));
     }
 
     @Test
@@ -87,8 +87,8 @@ public class ConfigBasedLookupTest {
                 Set.of("foo")));
         var lookupFactory = new ConfigBasedLookupFactory(config, databaseIdRepository);
         var lookup = lookupFactory.lookupReadOnlyDatabases();
-        assertFalse(lookup.databaseIsReadOnly(foo));
-        assertTrue(lookup.databaseIsReadOnly(bar));
-        assertTrue(lookup.databaseIsReadOnly(baz));
+        assertFalse(lookup.databaseIsReadOnly(foo.databaseId()));
+        assertTrue(lookup.databaseIsReadOnly(bar.databaseId()));
+        assertTrue(lookup.databaseIsReadOnly(baz.databaseId()));
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database.readonly;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,6 +26,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
@@ -76,13 +76,13 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         return next;
     }
 
-    private Set<NamedDatabaseId> lookupReadOnlyDatabases(GraphDatabaseAPI db) {
+    private Set<DatabaseId> lookupReadOnlyDatabases(GraphDatabaseAPI db) {
         try (var tx = db.beginTx()) {
             var model = new CommunityTopologyGraphDbmsModel(tx);
             var databaseAccess = model.getAllDatabaseAccess();
             return databaseAccess.entrySet().stream()
                     .filter(e -> e.getValue() == TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY)
-                    .map(Map.Entry::getKey)
+                    .map(e -> e.getKey().databaseId())
                     .collect(Collectors.toUnmodifiableSet());
         }
     }
@@ -90,16 +90,16 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
     private static class SystemGraphLookup implements ReadOnlyDatabases.Lookup {
         static final SystemGraphLookup ALWAYS_READONLY = new SystemGraphLookup(Set.of(), true);
 
-        private final Set<NamedDatabaseId> lookup;
+        private final Set<DatabaseId> lookup;
         private final boolean alwaysReadOnly;
 
-        SystemGraphLookup(Set<NamedDatabaseId> lookup, boolean alwaysReadOnly) {
+        SystemGraphLookup(Set<DatabaseId> lookup, boolean alwaysReadOnly) {
             this.lookup = lookup;
             this.alwaysReadOnly = alwaysReadOnly;
         }
 
         @Override
-        public boolean databaseIsReadOnly(NamedDatabaseId databaseId) {
+        public boolean databaseIsReadOnly(DatabaseId databaseId) {
             return alwaysReadOnly || lookup.contains(databaseId);
         }
 

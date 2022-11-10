@@ -43,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -70,7 +71,7 @@ class ReadOnlyDatabasesTest {
         life.add(listener);
 
         // when/then
-        assertTrue(checker.isReadOnly(fooDb));
+        assertTrue(checker.isReadOnly(fooDb.databaseId()));
     }
 
     @Test
@@ -88,8 +89,9 @@ class ReadOnlyDatabasesTest {
         life.add(listener);
 
         // when/then
-        assertTrue(checker.isReadOnly(fooDb));
-        assertFalse(checker.isReadOnly(DatabaseIdFactory.from("test12356", UUID.randomUUID())));
+        assertTrue(checker.isReadOnly(fooDb.databaseId()));
+        assertFalse(checker.isReadOnly(
+                DatabaseIdFactory.from("test12356", UUID.randomUUID()).databaseId()));
     }
 
     @Test
@@ -117,7 +119,7 @@ class ReadOnlyDatabasesTest {
         var checker = new ReadOnlyDatabases(readOnlyLookup);
 
         // when/then
-        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID));
+        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId()));
 
         // when configs are changed
         assertThrows(
@@ -128,7 +130,7 @@ class ReadOnlyDatabasesTest {
                         getClass().getSimpleName()));
 
         // then
-        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID));
+        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId()));
     }
 
     @Test
@@ -157,7 +159,6 @@ class ReadOnlyDatabasesTest {
         // given
         var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
-        var databases = Set.of(foo, bar);
         var configValues = Map.of(read_only_database_default, true, writable_databases, Set.of(foo.name()));
         var config = Config.defaults(configValues);
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
@@ -169,8 +170,8 @@ class ReadOnlyDatabasesTest {
         life.add(listener);
 
         // when/then
-        assertTrue(checker.isReadOnly(bar));
-        assertFalse(checker.isReadOnly(foo));
+        assertTrue(checker.isReadOnly(bar.databaseId()));
+        assertFalse(checker.isReadOnly(foo.databaseId()));
     }
 
     @Test
@@ -179,7 +180,6 @@ class ReadOnlyDatabasesTest {
         var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var baz = DatabaseIdFactory.from("baz", UUID.randomUUID());
-        var databases = Set.of(foo, bar, baz);
         Map<Setting<?>, Object> configValues = Map.of(
                 read_only_databases, Set.of(foo.name(), bar.name()),
                 writable_databases, Set.of(bar.name(), baz.name()));
@@ -195,8 +195,8 @@ class ReadOnlyDatabasesTest {
         life.add(listener);
 
         // when/then
-        assertTrue(checker.isReadOnly(bar));
-        assertFalse(checker.isReadOnly(baz));
+        assertTrue(checker.isReadOnly(bar.databaseId()));
+        assertFalse(checker.isReadOnly(baz.databaseId()));
     }
 
     @Test
@@ -204,27 +204,27 @@ class ReadOnlyDatabasesTest {
         // given
         var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
-        var readOnlyDatabaseNames = new HashSet<NamedDatabaseId>();
-        readOnlyDatabaseNames.add(foo);
+        var readOnlyDatabases = new HashSet<DatabaseId>();
+        readOnlyDatabases.add(foo.databaseId());
         var readOnly = new ReadOnlyDatabases(() -> {
-            var snapshot = Set.copyOf(readOnlyDatabaseNames);
+            var snapshot = Set.copyOf(readOnlyDatabases);
             return snapshot::contains;
         });
 
         // when
         readOnly.refresh();
-        assertTrue(readOnly.isReadOnly(foo));
-        assertFalse(readOnly.isReadOnly(bar));
+        assertTrue(readOnly.isReadOnly(foo.databaseId()));
+        assertFalse(readOnly.isReadOnly(bar.databaseId()));
 
         // given
-        readOnlyDatabaseNames.add(bar);
-        assertFalse(readOnly.isReadOnly(bar));
+        readOnlyDatabases.add(bar.databaseId());
+        assertFalse(readOnly.isReadOnly(bar.databaseId()));
 
         // when
         readOnly.refresh();
 
         // then
-        assertTrue(readOnly.isReadOnly(bar));
+        assertTrue(readOnly.isReadOnly(bar.databaseId()));
     }
 
     @Test

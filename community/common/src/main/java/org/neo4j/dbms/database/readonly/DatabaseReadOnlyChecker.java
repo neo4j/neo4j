@@ -64,7 +64,7 @@ public interface DatabaseReadOnlyChecker {
         public boolean isReadOnly() {
             var globalUpdate = dbmsChecker.updateId();
             if (lastUpdated != globalUpdate) {
-                readOnly = dbmsChecker.isReadOnly(namedDatabaseId);
+                readOnly = dbmsChecker.isReadOnly(namedDatabaseId.databaseId());
                 lastUpdated = globalUpdate;
             }
             return readOnly;

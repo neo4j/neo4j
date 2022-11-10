@@ -36,8 +36,8 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.NamedDatabaseId;
 
 class DatabaseReadOnlyCheckerTest {
     @Test
@@ -55,8 +55,8 @@ class DatabaseReadOnlyCheckerTest {
     void databaseCheckersShouldReflectUpdatesToGlobalChecker() {
         var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
-        var databases = new HashSet<NamedDatabaseId>();
-        databases.add(foo);
+        var databases = new HashSet<DatabaseId>();
+        databases.add(foo.databaseId());
         var globalChecker = new ReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(databases);
             return snapshot::contains;
@@ -67,7 +67,7 @@ class DatabaseReadOnlyCheckerTest {
         assertTrue(fooChecker.isReadOnly());
         assertFalse(barChecker.isReadOnly());
 
-        databases.add(bar);
+        databases.add(bar.databaseId());
         globalChecker.refresh();
         assertTrue(barChecker.isReadOnly());
     }
@@ -76,8 +76,8 @@ class DatabaseReadOnlyCheckerTest {
     void databaseCheckerShouldCacheLookupsFromGlobalChecker() {
         var foo = DatabaseIdFactory.from("foo", UUID.randomUUID());
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
-        var databases = new HashSet<NamedDatabaseId>();
-        databases.add(foo);
+        var databases = new HashSet<DatabaseId>();
+        databases.add(foo.databaseId());
         var globalChecker = spy(new ReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(databases);
             return snapshot::contains;
@@ -90,16 +90,16 @@ class DatabaseReadOnlyCheckerTest {
         assertTrue(fooChecker.isReadOnly());
 
         // then
-        verify(globalChecker, atMostOnce()).isReadOnly(foo);
+        verify(globalChecker, atMostOnce()).isReadOnly(foo.databaseId());
 
         // when
-        databases.add(bar);
+        databases.add(bar.databaseId());
         globalChecker.refresh();
 
         assertTrue(barChecker.isReadOnly());
         assertTrue(fooChecker.isReadOnly());
 
         // then
-        verify(globalChecker, times(2)).isReadOnly(foo);
+        verify(globalChecker, times(2)).isReadOnly(foo.databaseId());
     }
 }

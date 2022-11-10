@@ -26,6 +26,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -68,21 +69,22 @@ public final class ConfigBasedLookupFactory implements ReadOnlyDatabases.LookupF
         }
 
         @Override
-        public boolean databaseIsReadOnly(NamedDatabaseId databaseId) {
+        public boolean databaseIsReadOnly(DatabaseId databaseId) {
             return explicitlyReadOnly(databaseId) || implicitlyReadOnly(databaseId);
         }
 
-        private boolean explicitlyReadOnly(NamedDatabaseId databaseId) {
+        private boolean explicitlyReadOnly(DatabaseId databaseId) {
             return containsDatabaseId(readOnlyDatabaseNames, databaseId);
         }
 
-        private boolean implicitlyReadOnly(NamedDatabaseId databaseId) {
+        private boolean implicitlyReadOnly(DatabaseId databaseId) {
             return readOnlyDefault && !containsDatabaseId(writableDatabaseNames, databaseId);
         }
 
-        private boolean containsDatabaseId(Set<String> names, NamedDatabaseId databaseId) {
+        private boolean containsDatabaseId(Set<String> names, DatabaseId databaseId) {
             return names.stream()
-                    .flatMap(name -> databaseIdRepository.getByName(name).stream())
+                    .flatMap(name ->
+                            databaseIdRepository.getByName(name).stream().map(NamedDatabaseId::databaseId))
                     .anyMatch(databaseId::equals);
         }
     }

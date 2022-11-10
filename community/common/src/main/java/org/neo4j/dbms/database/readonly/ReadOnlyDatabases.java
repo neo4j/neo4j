@@ -22,6 +22,7 @@ package org.neo4j.dbms.database.readonly;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
@@ -41,18 +42,18 @@ public class ReadOnlyDatabases {
     /**
      * Checks whether the database with the given {@code namedDatabaseId} is configured to be read-only.
      *
-     * @param namedDatabaseId the identity of the database to check.
+     * @param databaseId the identity of the database to check.
      * @return {@code true} if the database is read-only, otherwise {@code false}.
      */
-    public boolean isReadOnly(NamedDatabaseId namedDatabaseId) {
-        Objects.requireNonNull(namedDatabaseId);
+    public boolean isReadOnly(DatabaseId databaseId) {
+        Objects.requireNonNull(databaseId);
 
         // System database can't be read only
-        if (namedDatabaseId.isSystemDatabase()) {
+        if (databaseId.isSystemDatabase()) {
             return false;
         }
 
-        return readOnlyDatabases.stream().anyMatch(l -> l.databaseIsReadOnly(namedDatabaseId));
+        return readOnlyDatabases.stream().anyMatch(l -> l.databaseIsReadOnly(databaseId));
     }
 
     /**
@@ -106,6 +107,6 @@ public class ReadOnlyDatabases {
      */
     @FunctionalInterface
     public interface Lookup {
-        boolean databaseIsReadOnly(NamedDatabaseId databaseId);
+        boolean databaseIsReadOnly(DatabaseId databaseId);
     }
 }
