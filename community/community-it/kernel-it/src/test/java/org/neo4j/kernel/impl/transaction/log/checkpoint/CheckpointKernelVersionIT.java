@@ -22,12 +22,11 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -37,7 +36,7 @@ public class CheckpointKernelVersionIT {
     private CheckPointer checkPointer;
 
     @Inject
-    private MetadataProvider metadataProvider;
+    private KernelVersionRepository kernelVersionRepository;
 
     @Inject
     private LogFiles logFiles;
@@ -46,11 +45,13 @@ public class CheckpointKernelVersionIT {
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException {
         // earlier version do not support new format of checkpoint commands; it's impossible to read them back, so we
         // cannot test them
-        metadataProvider.setKernelVersion(KernelVersion.V5_0);
-        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced 5.0"));
+        kernelVersionRepository.setKernelVersion(KernelVersion.V5_0);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + kernelVersionRepository.kernelVersion()));
 
-        List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();
-        assertThat(checkpointInfos).hasSize(1);
-        assertThat(checkpointInfos.get(0).kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        final var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints().stream();
+        final var kernelVersions = checkpoints.map(KernelVersionProvider::kernelVersion);
+        assertThat(kernelVersions)
+                .as("kernel versions from checkpoints")
+                .containsExactly(kernelVersionRepository.kernelVersion());
     }
 }

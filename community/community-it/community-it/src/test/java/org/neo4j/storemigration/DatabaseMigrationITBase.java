@@ -64,6 +64,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.DbStatistics;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -289,9 +290,10 @@ public abstract class DatabaseMigrationITBase {
     }
 
     protected static void verifyKernelVersion(GraphDatabaseService db) {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) db;
-        MetaDataStore metaDataStore = database.getDependencyResolver().resolveDependency(MetaDataStore.class);
-        assertThat(metaDataStore.kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        final var database = (GraphDatabaseAPI) db;
+        final var kernelVersionProvider =
+                database.getDependencyResolver().resolveDependency(KernelVersionProvider.class);
+        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(KernelVersion.V5_0);
     }
 
     protected void verifyRemovedIndexProviders(GraphDatabaseService db) {

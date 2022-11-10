@@ -38,8 +38,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Health;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
@@ -50,7 +50,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private static final String UNLIMITED_IO_CONTROLLER_LIMIT = "unlimited";
 
     private final CheckpointAppender checkpointAppender;
-    private final MetadataProvider metadataProvider;
+    private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
@@ -66,7 +66,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private volatile long lastCheckPointedTx;
 
     public CheckPointerImpl(
-            MetadataProvider metadataProvider,
+            TransactionIdStore transactionIdStore,
             CheckPointThreshold threshold,
             ForceOperation forceOperation,
             LogPruning logPruning,
@@ -79,7 +79,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             Clock clock,
             IOController ioController) {
         this.checkpointAppender = checkpointAppender;
-        this.metadataProvider = metadataProvider;
+        this.transactionIdStore = transactionIdStore;
         this.threshold = threshold;
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
@@ -94,7 +94,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public void start() {
-        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+        var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         threshold.initialize(lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition());
     }
 
@@ -141,7 +141,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public long checkPointIfNeeded(TriggerInfo info) throws IOException {
-        var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+        var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
         if (threshold.isCheckPointingNeeded(
                 lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition(), info)) {
             try (Resource lock = mutex.checkPoint()) {
@@ -160,7 +160,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
                 LogCheckPointEvent checkPointEvent = databaseTracer.beginCheckPoint()) {
-            var lastClosedTxData = metadataProvider.getLastClosedTransaction();
+            var lastClosedTxData = transactionIdStore.getLastClosedTransaction();
             var lastClosedTransaction = new TransactionId(
                     lastClosedTxData.transactionId(), lastClosedTxData.checksum(), lastClosedTxData.commitTimestamp());
             long lastClosedTransactionId = lastClosedTransaction.transactionId();

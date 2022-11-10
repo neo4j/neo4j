@@ -448,7 +448,9 @@ public class Database extends AbstractDatabase {
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
         databaseDependencies.satisfyDependency(metadataProvider);
-        initialiseContextFactory(metadataProvider::getLastClosedTransactionId);
+
+        TransactionIdStore transactionIdStore = metadataProvider;
+        initialiseContextFactory(transactionIdStore::getLastClosedTransactionId);
         elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
         // Recreate the logFiles after storage engine to get access to dependencies
@@ -493,25 +495,26 @@ public class Database extends AbstractDatabase {
                 internalLogProvider,
                 scheduler,
                 forceOperation,
-                metadataProvider,
+                transactionIdStore,
                 databaseMonitors,
                 databaseDependencies,
                 cursorContextFactory,
                 storageEngineFactory.commandReaderFactory());
-        commitmentFactory = new TransactionCommitmentFactory(
-                transactionLogModule.transactionMetadataCache(), storageEngine.metadataProvider());
+        commitmentFactory =
+                new TransactionCommitmentFactory(transactionLogModule.transactionMetadataCache(), transactionIdStore);
 
         databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);
         life.add(databaseTransactionEventListeners);
+        KernelVersionProvider kernelVersionProvider = metadataProvider;
         final DatabaseKernelModule kernelModule = buildKernel(
                 logFiles,
                 transactionLogModule,
                 indexingService,
                 databaseSchemaState,
                 storageEngine,
-                metadataProvider,
-                metadataProvider,
+                transactionIdStore,
+                kernelVersionProvider,
                 databaseAvailabilityGuard,
                 clock,
                 indexStatisticsStore,
@@ -610,10 +613,11 @@ public class Database extends AbstractDatabase {
     }
 
     private void registerUpgradeListener() {
+        KernelVersionProvider kernelVersionProvider = storageEngine.metadataProvider();
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
                 storageEngine,
                 globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
-                storageEngine.metadataProvider(),
+                kernelVersionProvider,
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
                 internalLogProvider);
@@ -622,11 +626,12 @@ public class Database extends AbstractDatabase {
             long time = clock.millis();
             LeaseClient leaseClient = leaseService.newClient();
             leaseClient.ensureValid();
+            TransactionIdStore transactionIdStore = storageEngine.metadataProvider();
             CompleteTransaction transactionRepresentation = new CompleteTransaction(
                     commands,
                     EMPTY_BYTE_ARRAY,
                     time,
-                    storageEngine.metadataProvider().getLastClosedTransactionId(),
+                    transactionIdStore.getLastClosedTransactionId(),
                     time,
                     leaseClient.leaseId(),
                     Subject.AUTH_DISABLED);
@@ -817,7 +822,7 @@ public class Database extends AbstractDatabase {
             InternalLogProvider logProvider,
             JobScheduler scheduler,
             CheckPointerImpl.ForceOperation forceOperation,
-            MetadataProvider metadataProvider,
+            TransactionIdStore transactionIdStore,
             Monitors monitors,
             Dependencies databaseDependencies,
             CursorContextFactory cursorContextFactory,
@@ -829,7 +834,7 @@ public class Database extends AbstractDatabase {
                 new LogPruningImpl(fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock);
 
         var transactionAppender =
-                createTransactionAppender(logFiles, metadataProvider, config, databaseHealth, scheduler, logProvider);
+                createTransactionAppender(logFiles, transactionIdStore, config, databaseHealth, scheduler, logProvider);
         life.add(transactionAppender);
 
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(
@@ -839,7 +844,7 @@ public class Database extends AbstractDatabase {
 
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                metadataProvider,
+                transactionIdStore,
                 threshold,
                 forceOperation,
                 logPruning,
@@ -860,7 +865,7 @@ public class Database extends AbstractDatabase {
         life.add(checkPointScheduler);
 
         TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl(
-                metadataProvider, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard);
+                transactionIdStore, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard);
         databaseDependencies.satisfyDependencies(
                 checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 

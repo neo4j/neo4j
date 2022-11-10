@@ -38,24 +38,24 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
-import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionLogServiceImpl implements TransactionLogService {
     private final LogFiles logFiles;
     private final LogicalTransactionStore transactionStore;
-    private final MetadataProvider metadataProvider;
+    private final TransactionIdStore transactionIdStore;
 
     private final Lock pruneLock;
     private final LogFile logFile;
     private final DatabaseAvailabilityGuard availabilityGuard;
 
     public TransactionLogServiceImpl(
-            MetadataProvider metadataProvider,
+            TransactionIdStore transactionIdStore,
             LogFiles logFiles,
             LogicalTransactionStore transactionStore,
             Lock pruneLock,
             DatabaseAvailabilityGuard availabilityGuard) {
-        this.metadataProvider = metadataProvider;
+        this.transactionIdStore = transactionIdStore;
         this.logFiles = logFiles;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
@@ -73,7 +73,7 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         pruneLock.lock();
         try {
             long minimalVersion = minimalLogPosition.getLogVersion();
-            var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
+            var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             var channels = collectChannels(startingTxId, minimalLogPosition, minimalVersion, lastClosedTransaction);
             return new TransactionLogChannels(channels);
         } finally {

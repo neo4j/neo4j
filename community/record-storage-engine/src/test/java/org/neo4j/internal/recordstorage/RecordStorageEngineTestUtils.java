@@ -41,7 +41,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.lock.LockTracer;
@@ -53,6 +52,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -105,7 +105,7 @@ public class RecordStorageEngineTestUtils {
         when(txState.addedAndRemovedNodes()).thenReturn(LongDiffSets.EMPTY);
         when(txState.addedAndRemovedRelationships()).thenReturn(LongDiffSets.EMPTY);
         NeoStores neoStores = storageEngine.testAccessNeoStores();
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        TransactionIdStore txIdStore = neoStores.getMetaDataStore();
         CursorContext cursorContext = NULL_CONTEXT;
         try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
@@ -126,7 +126,7 @@ public class RecordStorageEngineTestUtils {
                     EmptyMemoryTracker.INSTANCE);
             storageEngine.apply(
                     new GroupOfCommands(
-                            metaDataStore.nextCommittingTransactionId(),
+                            txIdStore.nextCommittingTransactionId(),
                             storeCursors,
                             commands.toArray(new StorageCommand[0])),
                     TransactionApplicationMode.EXTERNAL);

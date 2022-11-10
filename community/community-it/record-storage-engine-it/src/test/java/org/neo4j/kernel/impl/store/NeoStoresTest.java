@@ -97,7 +97,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -305,12 +305,12 @@ class NeoStoresTest {
         DatabaseManagementService managementService = startDatabase(storeDir);
         try {
             var database = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            var metadataProvider = database.getDependencyResolver().resolveDependency(MetadataProvider.class);
-            assertEquals(0, metadataProvider.getCurrentLogVersion());
+            var logVersionRepository = database.getDependencyResolver().resolveDependency(LogVersionRepository.class);
+            assertEquals(0, logVersionRepository.getCurrentLogVersion());
             LogFiles logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
             for (int i = 0; i < 12; i++) {
                 logFiles.getLogFile().rotate();
-                assertEquals(i + 1, metadataProvider.getCurrentLogVersion());
+                assertEquals(i + 1, logVersionRepository.getCurrentLogVersion());
             }
         } finally {
             managementService.shutdown();
@@ -319,8 +319,8 @@ class NeoStoresTest {
         managementService = startDatabase(storeDir);
         try {
             GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-            var metadataProvider = db.getDependencyResolver().resolveDependency(MetadataProvider.class);
-            assertEquals(12, metadataProvider.getCurrentLogVersion());
+            var logVersionRepository = db.getDependencyResolver().resolveDependency(LogVersionRepository.class);
+            assertEquals(12, logVersionRepository.getCurrentLogVersion());
         } finally {
             managementService.shutdown();
         }
