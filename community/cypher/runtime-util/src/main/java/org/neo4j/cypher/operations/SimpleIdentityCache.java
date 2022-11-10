@@ -20,7 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import java.util.function.BiConsumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -44,10 +44,10 @@ public final class SimpleIdentityCache<K, V> {
         this.values = (V[]) new Object[size];
     }
 
-    public V getOrCache(K key, Supplier<V> supplier) {
+    public V getOrCache(K key, Function<V, V> supplier) {
         V value = get(key);
         if (value == null) {
-            value = supplier.get();
+            value = supplier.apply(values[next]);
             keys[next] = key;
             values[next] = value;
             next = (next + 1) % keys.length;

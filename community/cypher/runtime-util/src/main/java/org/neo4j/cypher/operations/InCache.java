@@ -49,7 +49,13 @@ public class InCache implements AutoCloseable {
         if (list.size() < 128 || value == NO_VALUE) {
             return CypherFunctions.in(value, list);
         } else {
-            return seen.getOrCache(list, DelayedInCacheChecker::new).check(value, list, memoryTracker);
+            return seen.getOrCache(list, (oldValue) -> {
+                        if (oldValue != null) {
+                            oldValue.close();
+                        }
+                        return new DelayedInCacheChecker();
+                    })
+                    .check(value, list, memoryTracker);
         }
     }
 

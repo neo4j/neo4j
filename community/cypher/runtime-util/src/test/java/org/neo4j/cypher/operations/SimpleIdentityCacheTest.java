@@ -23,12 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 
 class SimpleIdentityCacheTest {
 
-    static class CountingSupplier<V> implements Supplier<V> {
+    static class CountingSupplier<V> implements Function<V, V> {
         private final V value;
         private int count;
 
@@ -37,7 +37,7 @@ class SimpleIdentityCacheTest {
         }
 
         @Override
-        public V get() {
+        public V apply(V ignore) {
             count++;
             return value;
         }
@@ -91,7 +91,7 @@ class SimpleIdentityCacheTest {
         var cache = new SimpleIdentityCache<List<Integer>, String>(5);
 
         // when
-        cache.getOrCache(key1, () -> "hello");
+        cache.getOrCache(key1, (v) -> "hello");
 
         // then
         assertThat(key1).isEqualTo(copy);
@@ -109,16 +109,45 @@ class SimpleIdentityCacheTest {
         var cache = new SimpleIdentityCache<Object, String>(3);
 
         // when
-        cache.getOrCache(k1, () -> "a");
-        cache.getOrCache(k2, () -> "b");
-        cache.getOrCache(k3, () -> "c");
-        cache.getOrCache(k4, () -> "d");
+        cache.getOrCache(k1, (v) -> "a");
+        cache.getOrCache(k2, (v) -> "b");
+        cache.getOrCache(k3, (v) -> "c");
+        cache.getOrCache(k4, (v) -> "d");
 
         // then
         assertThat(cache.get(k1)).isNull();
         assertThat(cache.get(k2)).isEqualTo("b");
         assertThat(cache.get(k3)).isEqualTo("c");
         assertThat(cache.get(k4)).isEqualTo("d");
+    }
+
+    @Test
+    void shouldSeePreviousValueWhenEvicting() {
+        // given
+        var k1 = new Object();
+        var k2 = new Object();
+        var k3 = new Object();
+        var k4 = new Object();
+        var cache = new SimpleIdentityCache<Object, String>(3);
+
+        // when
+        cache.getOrCache(k1, (v) -> "a");
+        cache.getOrCache(k2, (v) -> "b");
+        cache.getOrCache(k3, (v) -> "c");
+
+        // then
+        cache.getOrCache(k4, (v) -> {
+            assertThat(v).isEqualTo("a");
+            return "d";
+        });
+        cache.getOrCache(k1, (v) -> {
+            assertThat(v).isEqualTo("b");
+            return "e";
+        });
+        cache.getOrCache(k2, (v) -> {
+            assertThat(v).isEqualTo("c");
+            return "f";
+        });
     }
 
     @Test
@@ -130,9 +159,9 @@ class SimpleIdentityCacheTest {
         var cache = new SimpleIdentityCache<Object, String>(7);
 
         // when
-        cache.getOrCache(k1, () -> "a");
-        cache.getOrCache(k2, () -> "b");
-        cache.getOrCache(k3, () -> "c");
+        cache.getOrCache(k1, (v) -> "a");
+        cache.getOrCache(k2, (v) -> "b");
+        cache.getOrCache(k3, (v) -> "c");
 
         // then
         cache.foreach((k, v) -> {
