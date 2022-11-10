@@ -1056,6 +1056,12 @@
         <artifactId>apacheds-server-integ</artifactId>
         <version>2.0.0-M21</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
