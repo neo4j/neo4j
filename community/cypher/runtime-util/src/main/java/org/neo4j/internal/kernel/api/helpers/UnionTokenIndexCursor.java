@@ -26,7 +26,8 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.util.Preconditions;
 
-public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends DefaultCloseListenable implements Cursor {
+public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends DefaultCloseListenable
+        implements CompositeCursor {
     private static final int UNINITIALIZED = -1;
     private final CURSOR[] cursors;
     private int currentCursorIndex = UNINITIALIZED;
@@ -122,6 +123,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         }
     }
 
+    @Override
     public long reference() {
         Preconditions.checkArgument(
                 cursors[currentCursorIndex] != null,
