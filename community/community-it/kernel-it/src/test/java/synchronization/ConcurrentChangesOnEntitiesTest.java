@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,14 +35,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
 @DbmsExtension
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class ConcurrentChangesOnEntitiesTest {
     @Inject
     private DatabaseLayout databaseLayout;
@@ -163,10 +156,7 @@ class ConcurrentChangesOnEntitiesTest {
 
     private void assertDatabaseConsistent() {
         assertDoesNotThrow(() -> {
-            final var result = new ConsistencyCheckService(databaseLayout)
-                    .with(System.err)
-                    .with(new Log4jLogProvider(System.out))
-                    .runFullConsistencyCheck();
+            final var result = new ConsistencyCheckService(databaseLayout).runFullConsistencyCheck();
             Assertions.assertTrue(result.isSuccessful());
         });
     }
