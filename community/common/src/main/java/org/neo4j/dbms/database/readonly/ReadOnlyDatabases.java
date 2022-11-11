@@ -29,14 +29,20 @@ import org.neo4j.kernel.database.NamedDatabaseId;
  * Dbms global component for checking whether a given database is read only.
  */
 public class ReadOnlyDatabases {
+    private final Runnable refreshListener;
     private volatile Set<Lookup> readOnlyDatabases;
     private volatile long updateId;
     private final Set<LookupFactory> readOnlyDatabasesLookupFactories;
 
-    public ReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
+    public ReadOnlyDatabases(Runnable refreshListener, LookupFactory... readOnlyDatabasesLookupFactories) {
+        this.refreshListener = refreshListener;
         this.readOnlyDatabasesLookupFactories = Set.of(readOnlyDatabasesLookupFactories);
         this.readOnlyDatabases = Set.of();
         this.updateId = -1;
+    }
+
+    public ReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
+        this(() -> {}, readOnlyDatabasesLookupFactories);
     }
 
     /**
@@ -91,6 +97,7 @@ public class ReadOnlyDatabases {
         this.readOnlyDatabases = readOnlyDatabasesLookupFactories.stream()
                 .map(LookupFactory::lookupReadOnlyDatabases)
                 .collect(Collectors.toUnmodifiableSet());
+        refreshListener.run();
     }
 
     /**
