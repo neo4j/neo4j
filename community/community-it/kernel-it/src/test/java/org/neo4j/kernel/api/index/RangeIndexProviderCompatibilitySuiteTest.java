@@ -33,7 +33,7 @@ import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,7 +54,8 @@ class RangeIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderComp
                 DEFAULT_DATABASE_NAME, UUID.randomUUID()); // UUID required, but ignored by config lookup
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
-        var readOnlyDatabases = new ReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
+        var readOnlyDatabases =
+                new CommunityReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
         var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         return RangeIndexProviderFactory.create(
                 pageCache,

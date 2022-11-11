@@ -25,15 +25,15 @@ import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 
 import java.util.Set;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
- * Default implementation of {@link ReadOnlyDatabases.LookupFactory} which resolves read only database names from  config.
+ * Default implementation of {@link CommunityReadOnlyDatabases.LookupFactory} which resolves read only database names from  config.
  */
-public final class ConfigBasedLookupFactory implements ReadOnlyDatabases.LookupFactory {
+public final class ConfigBasedLookupFactory implements CommunityReadOnlyDatabases.LookupFactory {
     private final Config config;
     private final DatabaseIdRepository databaseIdRepository;
 
@@ -43,7 +43,7 @@ public final class ConfigBasedLookupFactory implements ReadOnlyDatabases.LookupF
     }
 
     @Override
-    public ReadOnlyDatabases.Lookup lookupReadOnlyDatabases() {
+    public CommunityReadOnlyDatabases.Lookup lookupReadOnlyDatabases() {
         return new ConfigLookup(
                 databaseIdRepository,
                 config.get(read_only_database_default),
@@ -51,7 +51,7 @@ public final class ConfigBasedLookupFactory implements ReadOnlyDatabases.LookupF
                 config.get(writable_databases));
     }
 
-    private static class ConfigLookup implements ReadOnlyDatabases.Lookup {
+    private static class ConfigLookup implements CommunityReadOnlyDatabases.Lookup {
         private final DatabaseIdRepository databaseIdRepository;
         private final boolean readOnlyDefault;
         private final Set<String> readOnlyDatabaseNames;

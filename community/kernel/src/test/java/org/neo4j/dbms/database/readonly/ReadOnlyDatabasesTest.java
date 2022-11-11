@@ -66,7 +66,7 @@ class ReadOnlyDatabasesTest {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName("foo12345")).thenReturn(Optional.of(fooDb));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new ReadOnlyDatabases(readOnlyLookup);
+        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -84,7 +84,7 @@ class ReadOnlyDatabasesTest {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName("foo")).thenReturn(Optional.of(fooDb));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new ReadOnlyDatabases(readOnlyLookup);
+        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -116,7 +116,7 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName(SYSTEM_DATABASE_NAME))
                 .thenReturn(Optional.of(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new ReadOnlyDatabases(readOnlyLookup);
+        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
 
         // when/then
         assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId()));
@@ -165,7 +165,7 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName("foo")).thenReturn(Optional.of(foo));
         Mockito.when(databaseIdRepository.getByName("bar")).thenReturn(Optional.of(bar));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new ReadOnlyDatabases(readOnlyLookup);
+        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -190,7 +190,7 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName("bar")).thenReturn(Optional.of(bar));
         Mockito.when(databaseIdRepository.getByName("baz")).thenReturn(Optional.of(baz));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new ReadOnlyDatabases(readOnlyLookup);
+        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -206,7 +206,7 @@ class ReadOnlyDatabasesTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var readOnlyDatabases = new HashSet<DatabaseId>();
         readOnlyDatabases.add(foo.databaseId());
-        var readOnly = new ReadOnlyDatabases(() -> {
+        var readOnly = new CommunityReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(readOnlyDatabases);
             return snapshot::contains;
         });
@@ -230,7 +230,7 @@ class ReadOnlyDatabasesTest {
     @Test
     void refreshShouldIncrementUpdateId() {
         // given
-        var readOnlyDatabases = new ReadOnlyDatabases();
+        var readOnlyDatabases = new CommunityReadOnlyDatabases();
         var originalUpdateId = readOnlyDatabases.updateId();
 
         // when

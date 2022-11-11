@@ -32,7 +32,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyDatabases.LookupFactory {
+public final class SystemGraphReadOnlyDatabaseLookupFactory implements CommunityReadOnlyDatabases.LookupFactory {
     private final DatabaseContextProvider<?> databaseContextProvider;
     private final InternalLog log;
 
@@ -56,7 +56,7 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
     }
 
     @Override
-    public ReadOnlyDatabases.Lookup lookupReadOnlyDatabases() {
+    public CommunityReadOnlyDatabases.Lookup lookupReadOnlyDatabases() {
         var previous = previousLookup;
         var next = previous;
 
@@ -87,7 +87,7 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         }
     }
 
-    private static class SystemGraphLookup implements ReadOnlyDatabases.Lookup {
+    private static class SystemGraphLookup implements CommunityReadOnlyDatabases.Lookup {
         static final SystemGraphLookup ALWAYS_READONLY = new SystemGraphLookup(Set.of(), true);
 
         private final Set<DatabaseId> lookup;

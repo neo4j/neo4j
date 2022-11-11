@@ -63,7 +63,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
-import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -125,7 +125,7 @@ public class TextIndexAccessorIT {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var globalChecker = new ReadOnlyDatabases(readOnlyLookup);
+        var globalChecker = new CommunityReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(globalChecker, config);
         var readOnlyChecker = globalChecker.forDatabase(defaultDatabaseId);
         indexProvider = new TextIndexProvider(

@@ -19,31 +19,13 @@
  */
 package org.neo4j.dbms.database.readonly;
 
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
  * Dbms global component for checking whether a given database is read only.
  */
-public class ReadOnlyDatabases {
-    private final Runnable refreshListener;
-    private volatile Set<Lookup> readOnlyDatabases;
-    private volatile long updateId;
-    private final Set<LookupFactory> readOnlyDatabasesLookupFactories;
-
-    public ReadOnlyDatabases(Runnable refreshListener, LookupFactory... readOnlyDatabasesLookupFactories) {
-        this.refreshListener = refreshListener;
-        this.readOnlyDatabasesLookupFactories = Set.of(readOnlyDatabasesLookupFactories);
-        this.readOnlyDatabases = Set.of();
-        this.updateId = -1;
-    }
-
-    public ReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
-        this(() -> {}, readOnlyDatabasesLookupFactories);
-    }
+public interface ReadOnlyDatabases {
 
     /**
      * Checks whether the database with the given {@code namedDatabaseId} is configured to be read-only.
@@ -51,23 +33,7 @@ public class ReadOnlyDatabases {
      * @param databaseId the identity of the database to check.
      * @return {@code true} if the database is read-only, otherwise {@code false}.
      */
-    public boolean isReadOnly(DatabaseId databaseId) {
-        Objects.requireNonNull(databaseId);
-
-        // System database can't be read only
-        if (databaseId.isSystemDatabase()) {
-            return false;
-        }
-
-        return readOnlyDatabases.stream().anyMatch(l -> l.databaseIsReadOnly(databaseId));
-    }
-
-    /**
-     * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
-     */
-    long updateId() {
-        return updateId;
-    }
+    boolean isReadOnly(DatabaseId databaseId);
 
     /**
      * Instantiates and returns a {@link DatabaseReadOnlyChecker} which is primed to check read-only state of the database with
@@ -76,35 +42,19 @@ public class ReadOnlyDatabases {
      * @param namedDatabaseId the identity of the database to instantiate a {@link DatabaseReadOnlyChecker} for.
      * @return a new {@link DatabaseReadOnlyChecker} for the given database.
      */
-    public DatabaseReadOnlyChecker forDatabase(NamedDatabaseId namedDatabaseId) {
-        Objects.requireNonNull(namedDatabaseId);
-
-        // System database can't be read only
-        if (namedDatabaseId.isSystemDatabase()) {
-            return DatabaseReadOnlyChecker.writable();
-        }
-
-        refresh();
-        return new DatabaseReadOnlyChecker.Default(this, namedDatabaseId);
-    }
+    DatabaseReadOnlyChecker forDatabase(NamedDatabaseId namedDatabaseId);
 
     /**
      * Refresh the ReadOnlyChecker's internal cache. I.e. in the event that the config or System database is updated, or a
      * new {@link DatabaseReadOnlyChecker} is created.
      */
-    public synchronized void refresh() {
-        this.updateId++;
-        this.readOnlyDatabases = readOnlyDatabasesLookupFactories.stream()
-                .map(LookupFactory::lookupReadOnlyDatabases)
-                .collect(Collectors.toUnmodifiableSet());
-        refreshListener.run();
-    }
+    void refresh();
 
     /**
      * Objects implementing this interface create {@link Lookup}s: immutable snapshots of the logical set of read only databases
      */
     @FunctionalInterface
-    public interface LookupFactory {
+    interface LookupFactory {
         Lookup lookupReadOnlyDatabases();
     }
 
@@ -113,7 +63,7 @@ public class ReadOnlyDatabases {
      * analogous to a {@code Predicate<NamedDatabaseId>} or a {@code Set#contains} method reference over an immutable set.
      */
     @FunctionalInterface
-    public interface Lookup {
+    interface Lookup {
         boolean databaseIsReadOnly(DatabaseId databaseId);
     }
 }
