@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -231,6 +232,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.ExpandIntoSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ForeachSlottedApplyPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ForeachSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.GroupSlot
+import org.neo4j.cypher.internal.runtime.slotted.pipes.IntersectionNodesByLabelsScanSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.LoadCSVSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.LockingMergeSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe
@@ -371,6 +373,14 @@ class SlottedPipeMapper(
       case UnionNodeByLabelsScan(column, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         UnionNodesByLabelsScanSlottedPipe(
+          slots.getLongOffsetFor(column),
+          labels.map(label => LazyLabel(label)),
+          indexOrder
+        )(id)
+
+      case IntersectionNodeByLabelsScan(column, labels, _, indexOrder) =>
+        indexRegistrator.registerLabelScan()
+        IntersectionNodesByLabelsScanSlottedPipe(
           slots.getLongOffsetFor(column),
           labels.map(label => LazyLabel(label)),
           indexOrder
