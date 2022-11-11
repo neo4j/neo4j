@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.RandomSupport;
@@ -54,17 +53,6 @@ class UTF8StringValueRandomTest {
         for (int i = 0; i < 100; i++) {
             String string1 = random.nextBasicMultilingualPlaneString();
             String string2 = random.nextBasicMultilingualPlaneString();
-            UTF8StringValueTest.assertCompareTo(string1, string2);
-        }
-    }
-
-    @Disabled(
-            "Comparing strings with higher than 16 bits code points is known to be inconsistent between StringValue and UTF8StringValue")
-    @Test
-    void shouldCompareToRandomString() {
-        for (int i = 0; i < 100; i++) {
-            String string1 = random.nextString();
-            String string2 = random.nextString();
             UTF8StringValueTest.assertCompareTo(string1, string2);
         }
     }
