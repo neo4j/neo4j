@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
-import static org.neo4j.commandline.dbms.CommandTestUtils.withSuppressedOutput;
+import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 
 import java.io.ByteArrayOutputStream;

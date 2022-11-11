@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.commandline.dbms;
+package org.neo4j.cli;
 
 import static java.lang.String.format;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import org.neo4j.cli.ExecutionContext;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -56,6 +55,11 @@ public class CommandTestUtils {
             throw new RuntimeException(
                     format("%nCaptured System.out:%n%s%nCaptured System.err:%n%s", rawOut, rawErr), e);
         }
+    }
+
+    public static void runAdminToolWithSuppressedOutput(
+            Path homeDir, Path confDir, FileSystemAbstraction fs, String... args) {
+        withSuppressedOutput(homeDir, confDir, fs, ctx -> AdminTool.execute(ctx, args));
     }
 
     public static class CapturingExecutionContext extends ExecutionContext {
