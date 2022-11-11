@@ -28,7 +28,6 @@ import static org.neo4j.values.storable.Values.utf8Value;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.test.RandomSupport;
@@ -41,15 +40,6 @@ class TextValueFuzzTest {
     private RandomSupport random;
 
     private static final int ITERATIONS = 1000;
-
-    @Disabled("we have decided to stick with String::compareTo under the hood which doesn't respect code point order "
-            + "whenever the code point doesn't fit 16bits")
-    @Test
-    void shouldCompareToForAllValidStrings() {
-        for (int i = 0; i < ITERATIONS; i++) {
-            assertConsistent(random.nextString(), random.nextString(), (t1, t2) -> Math.signum(t1.compareTo(t2)));
-        }
-    }
 
     @Test
     void shouldCompareToForAllStringsInBasicMultilingualPlane() {
