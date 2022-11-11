@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.admin.security;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -188,8 +189,9 @@ class SetInitialPasswordCommandIT {
     }
 
     private void createFile(Path path, String content) throws IOException {
+        String updatedContent = IS_OS_WINDOWS ? content.replace("\\", "/") : content;
         Path tmpFilePath = fileSystem.createTempFile(testDirectory.homePath(), "", "");
-        fileSystem.write(tmpFilePath).write(ByteBuffer.wrap(content.getBytes()));
+        fileSystem.write(tmpFilePath).write(ByteBuffer.wrap(updatedContent.getBytes()));
         fileSystem.copyFile(tmpFilePath, path);
         fileSystem.delete(tmpFilePath);
     }
