@@ -80,10 +80,9 @@ final case class ExistsSubqueryPlannerWithCaching() extends ExistsSubqueryPlanne
               
       // @formatter:off
       case LogicalPlanningContext(
-          _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _,
-          useLegacyShortestPath
+          _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _
         ) =>
-        useLegacyShortestPath
+        ()
       // @formatter:on
     }
   }

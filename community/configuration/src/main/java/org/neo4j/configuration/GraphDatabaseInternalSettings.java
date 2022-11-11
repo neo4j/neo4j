@@ -138,7 +138,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("This is used to disable the new shortest path implementation and instead use the old one.")
+    @Description("This is used to disable the new shortest path implementation and instead use the old one."
+            + "Changing the setting will not affect queries that are cached. So, if you want the switch "
+            + "to have immediate effect, you must also call `CALL db.clearQueryCaches()`.")
     public static final Setting<Boolean> use_legacy_shortest_path = newBuilder(
                     "internal.cypher.use_legacy_shortest_path", BOOL, false)
             .dynamic()
