@@ -210,7 +210,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     public void check() throws ConsistencyCheckIncompleteException {
-        if (consistencyFlags.checkPropertyOwners()) {
+        if (consistencyFlags.checkPropertyOwners() && progressFactory != ProgressMonitorFactory.NONE) {
             System.err.println("The consistency checker has been configured to check property ownership. "
                     + "This feature is currently unavailable for this database format. "
                     + "The check will continue as if it were disabled.");
