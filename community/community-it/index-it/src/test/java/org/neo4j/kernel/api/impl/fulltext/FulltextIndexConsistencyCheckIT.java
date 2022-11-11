@@ -20,10 +20,12 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -837,7 +839,49 @@ class FulltextIndexConsistencyCheckIT {
             "Turns out that this is not something that the consistency checker actually looks for, currently. "
                     + "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency.")
     @Test
-    void mustDiscoverRelationshipInIndexMissingFromStore() throws Exception {
+    void mustDiscoverNodeInIndexWithMissingPropertyInStore() throws Exception {
+        GraphDatabaseService db = createDatabase();
+        try (Transaction tx = db.beginTx()) {
+            tx.execute(format(FULLTEXT_CREATE, "nodes", asNodeLabelStr("Label"), asPropertiesStrList("prop")))
+                    .close();
+            tx.commit();
+        }
+        long nodeId;
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
+            Node node = tx.createNode();
+            nodeId = node.getId();
+            node.setProperty("prop", "value");
+            tx.commit();
+        }
+        NeoStores stores = getNeoStores(db);
+        try (var storeCursors = new CachedStoreCursors(stores, NULL_CONTEXT)) {
+            var nodeStore = stores.getNodeStore();
+            var record = nodeStore.newRecord();
+            PropertyStore propertyStore = stores.getPropertyStore();
+            nodeStore.getRecordByCursor(nodeId, record, RecordLoad.NORMAL, storeCursors.readCursor(NODE_CURSOR));
+            long propId = record.getNextProp();
+            record.setNextProp(AbstractBaseRecord.NO_ID);
+            try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+                nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
+            }
+            PropertyRecord propRecord = propertyStore.newRecord();
+            propertyStore.getRecordByCursor(
+                    propId, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+            propRecord.setInUse(false);
+            try (var cursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
+                propertyStore.updateRecord(propRecord, cursor, NULL_CONTEXT, storeCursors);
+            }
+        }
+        managementService.shutdown();
+
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse(result.isSuccessful());
+        assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
+    }
+
+    @Test
+    void mustDiscoverRelationshipInIndexWithMissingPropertyInStore() throws Exception {
         GraphDatabaseService db = createDatabase();
         try (Transaction tx = db.beginTx()) {
             tx.execute(format(FULLTEXT_CREATE, "rels", asRelationshipTypeStr("REL"), asPropertiesStrList("prop")))
@@ -867,7 +911,7 @@ class FulltextIndexConsistencyCheckIT {
             }
             PropertyRecord propRecord = propertyStore.newRecord();
             propertyStore.getRecordByCursor(
-                    propId, propertyStore.newRecord(), RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
+                    propId, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
             propRecord.setInUse(false);
             try (var cursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
                 propertyStore.updateRecord(propRecord, cursor, NULL_CONTEXT, storeCursors);
@@ -877,6 +921,7 @@ class FulltextIndexConsistencyCheckIT {
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse(result.isSuccessful());
+        assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
     }
 
     private GraphDatabaseAPI createDatabase() {
