@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -28,95 +29,91 @@ import org.neo4j.common.HexPrinter;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.Commitment;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * A chain of transactions to apply. Transactions form a linked list, each pointing to the {@link #next()}
  * or {@code null}. This design chosen for less garbage and convenience, i.e. that we pass in a number of transactions
- * while also expecting some results for each and every one of those transactions back. The results are
+ * while also expecting some results for each, and every one of those transactions back. The results are
  * written directly into each instance instead of creating another data structure which is then returned.
  * This is an internal class so even if it mixes arguments with results it's easier to work with,
  * requires less code... and less objects.
- *
- * State and methods are divided up into two parts, one part being the responsibility of the user to manage,
- * the other part up to the commit process to manage.
- *
- * The access pattern looks like:
- * <ol>
- * <li>=== USER ===</li>
- * <li>Construct instances</li>
- * <li>Form the linked list using {@link #next(TransactionToApply)}</li>
- * <li>Pass into {@link TransactionCommitProcess#commit(TransactionToApply, CommitEvent, TransactionApplicationMode)}</li>
- * <li>=== COMMIT PROCESS ===</li>
- * <li>Commit, where {@link #commitment(Commitment, long)} is called to store the {@link Commitment} and transaction id</li>
- * <li>Apply, where {@link #publishAsCommitted()} ()},
- * {@link #transactionRepresentation()} and {@link #next()} are called</li>
- * </ol>
  */
-public class TransactionToApply implements CommandsToApply, AutoCloseable {
+public class TransactionToApply implements CommandBatchToApply {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
 
     // These fields are provided by user
-    private final TransactionRepresentation transactionRepresentation;
+    private final CommandBatch commandBatch;
+    private boolean idGenerated;
     private long transactionId;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
-    private TransactionToApply nextTransactionInBatch;
+    private final TransactionIdGenerator transactionIdGenerator;
+    private CommandBatchToApply next;
 
     // These fields are provided by commit process, storage engine, or recovery process
-    private Commitment commitment;
+    private final Commitment commitment;
     private LongConsumer closedCallback;
 
-    /**
-     * Used when committing a transaction that hasn't already gotten a transaction id assigned.
-     */
     public TransactionToApply(
-            TransactionRepresentation transactionRepresentation,
-            CursorContext cursorContext,
-            StoreCursors storeCursors) {
-        this(transactionRepresentation, TRANSACTION_ID_NOT_SPECIFIED, cursorContext, storeCursors);
+            CommittedTransactionRepresentation transaction, CursorContext cursorContext, StoreCursors storeCursors) {
+        this(transaction, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
     }
 
     public TransactionToApply(
-            TransactionRepresentation transactionRepresentation,
-            long transactionId,
+            CommittedTransactionRepresentation transaction,
             CursorContext cursorContext,
-            StoreCursors storeCursors) {
-        this.transactionRepresentation = transactionRepresentation;
-        this.transactionId = transactionId;
+            StoreCursors storeCursors,
+            Commitment commitment,
+            TransactionIdGenerator transactionIdGenerator) {
+        this(transaction.commandBatch(), cursorContext, storeCursors, commitment, transactionIdGenerator);
+        this.transactionId = transaction.commitEntry().getTxId();
+    }
+
+    public TransactionToApply(
+            CommandBatch commandBatch,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            Commitment commitment,
+            TransactionIdGenerator transactionIdGenerator) {
+        this.commandBatch = commandBatch;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
+        this.commitment = commitment;
+        this.transactionIdGenerator = transactionIdGenerator;
     }
 
     // These methods are called by the user when building a batch
-    public void next(TransactionToApply next) {
-        nextTransactionInBatch = next;
+    @Override
+    public void next(CommandBatchToApply next) {
+        this.next = next;
     }
 
-    public void publishAsCommitted() {
-        commitment.publishAsCommitted();
-    }
-
-    public void publishAsClosed() {
-        if (commitment.markedAsCommitted()) {
-            commitment.publishAsClosed();
-        }
+    @Override
+    public void commit() {
+        commitment.publishAsCommitted(commandBatch.getTimeCommitted());
     }
 
     @Override
     public long transactionId() {
+        if (idGenerated) {
+            return transactionId;
+        }
+        transactionId = transactionIdGenerator.nextId(transactionId);
+        idGenerated = true;
         return transactionId;
     }
 
     @Override
     public Subject subject() {
-        return transactionRepresentation.getSubject();
+        return commandBatch.subject();
     }
 
     @Override
@@ -131,22 +128,23 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
 
     @Override
     public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        return transactionRepresentation.accept(visitor);
+        return commandBatch.accept(visitor);
     }
 
-    public TransactionRepresentation transactionRepresentation() {
-        return transactionRepresentation;
+    @Override
+    public CommandBatch commandBatch() {
+        return commandBatch;
     }
 
-    public void commitment(Commitment commitment, long transactionId) {
-        this.commitment = commitment;
-        this.transactionId = transactionId;
+    @Override
+    public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
+        this.commitment.commit(transactionId, beforeCommit, positionAfter, checksum);
         this.cursorContext.getVersionContext().initWrite(transactionId);
     }
 
     @Override
-    public TransactionToApply next() {
-        return nextTransactionInBatch;
+    public CommandBatchToApply next() {
+        return next;
     }
 
     public void onClose(LongConsumer closedCallback) {
@@ -155,6 +153,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
 
     @Override
     public void close() {
+        commitment.publishAsClosed();
         if (closedCallback != null) {
             closedCallback.accept(transactionId);
         }
@@ -162,7 +161,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
 
     @Override
     public String toString() {
-        TransactionRepresentation tr = this.transactionRepresentation;
+        CommandBatch tr = this.commandBatch;
         return "Transaction #" + transactionId
                 + " {started "
                 + date(tr.getTimeStarted()) + ", committed "
@@ -194,6 +193,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable {
 
     @Override
     public Iterator<StorageCommand> iterator() {
-        return transactionRepresentation.iterator();
+        return commandBatch.iterator();
     }
 }

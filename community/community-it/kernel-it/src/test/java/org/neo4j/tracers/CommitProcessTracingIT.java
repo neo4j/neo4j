@@ -45,8 +45,10 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -68,6 +70,12 @@ public class CommitProcessTracingIT {
 
     @Inject
     private StorageEngine storageEngine;
+
+    @Inject
+    private TransactionCommitmentFactory transactionCommitmentFactory;
+
+    @Inject
+    private TransactionIdGenerator transactionIdGenerator;
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
@@ -116,14 +124,22 @@ public class CommitProcessTracingIT {
 
     @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
-        var transaction = new PhysicalTransactionRepresentation(
+        var transaction = new CompleteTransaction(
                 List.of(new Command.NodeCountsCommand(1, 2)), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnTransactionApply")) {
             assertZeroCursor(cursorContext);
 
-            commitProcess.commit(new TransactionToApply(transaction, cursorContext, StoreCursors.NULL), NULL, EXTERNAL);
+            commitProcess.commit(
+                    new TransactionToApply(
+                            transaction,
+                            cursorContext,
+                            StoreCursors.NULL,
+                            transactionCommitmentFactory.newCommitment(),
+                            transactionIdGenerator),
+                    NULL,
+                    EXTERNAL);
 
             assertCursor(cursorContext, 1);
         }

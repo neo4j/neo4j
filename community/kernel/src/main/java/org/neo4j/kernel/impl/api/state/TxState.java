@@ -49,6 +49,8 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
@@ -112,25 +114,33 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private final ScopedMemoryTracker stateMemoryTracker;
     private final TransactionStateBehaviour behaviour;
+    private final ChunkedTransactionSink chunkWriter;
     private long revision;
     private long dataRevision;
+    private final TransactionEvent transactionEvent;
 
     @VisibleForTesting
     public TxState() {
         this(
                 OnHeapCollectionsFactory.INSTANCE,
                 EmptyMemoryTracker.INSTANCE,
-                TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                ChunkedTransactionSink.EMPTY,
+                TransactionEvent.NULL);
     }
 
     public TxState(
             CollectionsFactory collectionsFactory,
             MemoryTracker transactionTracker,
-            TransactionStateBehaviour behaviour) {
+            TransactionStateBehaviour behaviour,
+            ChunkedTransactionSink chunkWriter,
+            TransactionEvent transactionEvent) {
         transactionTracker.allocateHeap(SHALLOW_SIZE);
+        this.chunkWriter = chunkWriter;
         this.collectionsFactory = collectionsFactory;
         this.stateMemoryTracker = new ScopedMemoryTracker(transactionTracker);
         this.behaviour = behaviour;
+        this.transactionEvent = transactionEvent;
     }
 
     @Override
@@ -333,6 +343,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     private void dataChanged() {
         changed();
         dataRevision = revision;
+        checkChunk();
+    }
+
+    private void checkChunk() {
+        chunkWriter.write(this, transactionEvent);
     }
 
     @Override

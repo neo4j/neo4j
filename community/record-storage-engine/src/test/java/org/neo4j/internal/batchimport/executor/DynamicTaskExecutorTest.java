@@ -79,8 +79,8 @@ class DynamicTaskExecutorTest {
         executor.submit(task2);
         executor.processors(1); // now at 2
         //noinspection StatementWithEmptyBody
-        while (task2.executed
-                == 0) { // With one additional worker, the second task can execute even if task one is still executing
+        while (task2.executed == 0) {
+            // With one additional worker, the second task can execute even if task one is still executing
         }
         task1.latch.finish();
         //noinspection StatementWithEmptyBody

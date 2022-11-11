@@ -103,7 +103,6 @@ class ConsistencyCheckingApplierTest {
                 neoStores,
                 mock(CacheAccessBackDoor.class),
                 LockService.NO_LOCK_SERVICE,
-                0,
                 batchContext,
                 CursorContext.NULL_CONTEXT,
                 storeCursors);

@@ -42,8 +42,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class TransactionWriter {
@@ -58,10 +58,10 @@ public class TransactionWriter {
         this.neoStores = neoStores;
     }
 
-    public TransactionRepresentation representation(
+    public CommandBatch representation(
             byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
-        return new PhysicalTransactionRepresentation(
+        return new CompleteTransaction(
                 allCommands(), additionalHeader, startTime, lastCommittedTx, committedTime, -1, ANONYMOUS);
     }
 

@@ -34,14 +34,14 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class NeoTransactionIndexApplierTest {
     private final IndexUpdateListener indexingService = mock(IndexUpdateListener.class);
     private final List<DynamicRecord> emptyDynamicRecords = Collections.emptyList();
-    private final CommandsToApply transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
+    private final CommandBatchToApply transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
     private final BatchContext batchContext = mock(BatchContext.class, RETURNS_MOCKS);
 
     @Test

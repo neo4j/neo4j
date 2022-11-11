@@ -47,9 +47,8 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -211,7 +211,7 @@ class ReversedSingleFileTransactionCursorTest {
             CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId) {
         long expectedTxId = highTxId;
         for (CommittedTransactionRepresentation tx : readTransactions) {
-            assertEquals(expectedTxId, tx.getCommitEntry().getTxId());
+            assertEquals(expectedTxId, tx.commitEntry().getTxId());
             expectedTxId--;
         }
         assertEquals(expectedTxId, lowTxId);
@@ -249,13 +249,13 @@ class ReversedSingleFileTransactionCursorTest {
         writer.append(tx(random.intBetween(100, 1000)), ++txId, BASE_TX_CHECKSUM);
     }
 
-    private static TransactionRepresentation tx(int size) {
+    private static CommandBatch tx(int size) {
         List<StorageCommand> commands = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             // The type of command doesn't matter here
             commands.add(new TestCommand());
         }
-        return new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
     }
 
     private static class CorruptedLogEntryWriterFactory implements LogEntryWriterFactory {

@@ -79,12 +79,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -107,6 +106,7 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -1094,8 +1094,8 @@ class RecoveryCorruptedTransactionLogIT {
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
-            PhysicalTransactionRepresentation transaction =
-                    new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+            CompleteTransaction transaction =
+                    new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
             writer.append(transaction, 1000, BASE_TX_CHECKSUM);
         }
     }
@@ -1414,7 +1414,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
 
         @Override
-        public void serialize(TransactionRepresentation tx) throws IOException {
+        public void serialize(CommandBatch tx) throws IOException {
             delegate.serialize(tx);
         }
 

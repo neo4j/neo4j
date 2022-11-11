@@ -62,6 +62,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
@@ -281,8 +283,11 @@ class KernelTransactionTerminationTest {
                     TransactionExecutionMonitor.NO_OP,
                     CommunitySecurityLog.NULL_LOG,
                     mockLocks(),
+                    mock(TransactionCommitmentFactory.class),
                     mock(KernelTransactions.class),
-                    NullLogProvider.getInstance());
+                    TransactionIdGenerator.EMPTY,
+                    NullLogProvider.getInstance(),
+                    false);
 
             this.monitor = monitor;
         }

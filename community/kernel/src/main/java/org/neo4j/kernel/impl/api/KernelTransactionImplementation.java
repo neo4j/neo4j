@@ -97,6 +97,11 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
+import org.neo4j.kernel.impl.api.chunk.ChunkSink;
+import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
+import org.neo4j.kernel.impl.api.chunk.CommandChunk;
+import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
@@ -106,6 +111,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -119,7 +125,8 @@ import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -135,6 +142,7 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -181,6 +189,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private CursorContext cursorContext;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
+    private final TransactionIdGenerator transactionIdGenerator;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
@@ -238,6 +247,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private volatile InnerTransactionHandlerImpl innerTransactionHandler;
 
+    private final TransactionCommitter committer;
+    private final ChunkedTransactionSink txStateWriter;
+
     public KernelTransactionImplementation(
             Config externalConfig,
             DatabaseTransactionEventListeners eventListeners,
@@ -267,12 +279,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog,
             Locks locks,
+            TransactionCommitmentFactory commitmentFactory,
             KernelTransactions kernelTransactions,
-            LogProvider logProvider) {
+            TransactionIdGenerator transactionIdGenerator,
+            LogProvider logProvider,
+            boolean multiVersioned) {
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
+        this.transactionIdGenerator = transactionIdGenerator;
         this.transactionMemoryPool = new TransactionMemoryPool(dbTransactionsPool, config, () -> !closed, logProvider);
         this.memoryTracker = transactionMemoryPool.getTransactionTracker();
         this.eventListeners = eventListeners;
@@ -348,9 +364,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 memoryTracker);
         traceProvider = getTraceProvider(config);
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
-        registerConfigChangeListeners(config);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
+        this.committer = createCommitter(commitmentFactory, multiVersioned);
+        this.txStateWriter = createChunkWriter(multiVersioned);
+        registerConfigChangeListeners(config);
     }
 
     /**
@@ -720,7 +738,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             leaseClient.ensureValid();
             readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
-            txState = new TxState(collectionsFactory, memoryTracker, storageEngine.transactionStateBehaviour());
+            txState = new TxState(
+                    collectionsFactory,
+                    memoryTracker,
+                    storageEngine.transactionStateBehaviour(),
+                    txStateWriter,
+                    transactionEvent);
         }
         return txState;
     }
@@ -894,6 +917,102 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    private class DefaultCommitter implements TransactionCommitter {
+        private final TransactionCommitmentFactory commitmentFactory;
+
+        public DefaultCommitter(TransactionCommitmentFactory commitmentFactory) {
+            this.commitmentFactory = commitmentFactory;
+        }
+
+        @Override
+        public long commit(CommitEvent commitEvent, long timeCommitted, MemoryTracker memoryTracker, boolean ignored)
+                throws KernelException {
+            // Gather up commands from the various sources
+            List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
+
+            /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
+             * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
+             * previously made changes in that same transaction, and so at some point a transaction may have
+             * changes and at another point, after more changes seemingly,
+             * the transaction may not have any changes.
+             * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
+             * and get right.... So to really make sure the transaction has changes we re-check by looking if we
+             * have produced any commands to add to the logical log.
+             */
+            if (!extractedCommands.isEmpty()) {
+                // Finish up the whole transaction representation
+                CompleteTransaction transactionRepresentation = new CompleteTransaction(
+                        extractedCommands,
+                        EMPTY_BYTE_ARRAY,
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        timeCommitted,
+                        leaseClient.leaseId(),
+                        overridableSecurityContext
+                                .currentSecurityContext()
+                                .subject()
+                                .userSubject());
+
+                // Commit the transaction
+                TransactionToApply batch = new TransactionToApply(
+                        transactionRepresentation,
+                        cursorContext,
+                        transactionalCursors,
+                        commitmentFactory.newCommitment(),
+                        transactionIdGenerator);
+                kernelTransactionMonitor.beforeApply();
+                return commitProcess.commit(batch, commitEvent, INTERNAL);
+            }
+            return READ_ONLY_ID;
+        }
+    }
+
+    private class ChunkCommitter implements TransactionCommitter {
+        private int batchNumber;
+        private ChunkedTransaction transactionPayload;
+        private final TransactionCommitmentFactory commitmentFactory;
+
+        public ChunkCommitter(TransactionCommitmentFactory commitmentFactory) {
+            this.commitmentFactory = commitmentFactory;
+        }
+
+        @Override
+        public long commit(CommitEvent commitEvent, long timeCommitted, MemoryTracker memoryTracker, boolean commit)
+                throws KernelException {
+            List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
+            if (!extractedCommands.isEmpty() || commit) {
+                batchNumber++;
+                var chunkMetadata = new ChunkMetadata(
+                        batchNumber == 1,
+                        commit,
+                        batchNumber,
+                        EMPTY_BYTE_ARRAY,
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        timeCommitted,
+                        leaseClient.leaseId(),
+                        securityContext().subject().userSubject());
+                if (transactionPayload == null) {
+                    transactionPayload = new ChunkedTransaction(
+                            cursorContext,
+                            transactionalCursors,
+                            commitmentFactory.newCommitment(),
+                            transactionIdGenerator);
+                }
+                CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
+                transactionPayload.init(chunk);
+                commitProcess.commit(transactionPayload, commitEvent, INTERNAL);
+            }
+            return transactionPayload != null ? transactionPayload.transactionId() : READ_ONLY_ID;
+        }
+
+        @Override
+        public void reset() {
+            batchNumber = 0;
+            transactionPayload = null;
+        }
+    }
+
     private long commitTransaction() throws KernelException {
         boolean success = false;
         long txId = READ_ONLY_ID;
@@ -918,49 +1037,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 schemaTransactionVersionReset();
                 lockClient.prepareForCommit();
 
-                // Gather up commands from the various sources
-                var extractedCommands = storageEngine.createCommands(
-                        txState,
-                        storageReader,
-                        commandCreationContext,
-                        lockTracer(),
-                        tx -> enforceConstraints(tx, memoryTracker),
-                        cursorContext,
-                        transactionalCursors,
-                        memoryTracker);
-
-                /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
-                 * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
-                 * previously made changes in that same transaction, and so at some point a transaction may have
-                 * changes and at another point, after more changes seemingly,
-                 * the transaction may not have any changes.
-                 * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
-                 * and get right.... So to really make sure the transaction has changes we re-check by looking if we
-                 * have produced any commands to add to the logical log.
-                 */
-                if (!extractedCommands.isEmpty()) {
-                    // Finish up the whole transaction representation
-                    long timeCommitted = clocks.systemClock().millis();
-                    PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
-                            extractedCommands,
-                            EMPTY_BYTE_ARRAY,
-                            startTimeMillis,
-                            lastTransactionIdWhenStarted,
-                            timeCommitted,
-                            leaseClient.leaseId(),
-                            overridableSecurityContext
-                                    .currentSecurityContext()
-                                    .subject()
-                                    .userSubject());
-
-                    // Commit the transaction
-                    success = true;
-                    TransactionToApply batch =
-                            new TransactionToApply(transactionRepresentation, cursorContext, transactionalCursors);
-                    kernelTransactionMonitor.beforeApply();
-                    txId = commitProcess.commit(batch, commitEvent, INTERNAL);
-                    commitTime = timeCommitted;
-                }
+                long timeCommitted = clocks.systemClock().millis();
+                txId = committer.commit(commitEvent, timeCommitted, memoryTracker, true);
+                commitTime = timeCommitted;
             }
             success = true;
             return txId;
@@ -976,6 +1055,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionMonitor.addHeapTransactionSize(transactionMemoryPool.usedHeap());
             transactionMonitor.addNativeTransactionSize(transactionMemoryPool.usedNative());
         }
+    }
+
+    private List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {
+        return storageEngine.createCommands(
+                txState,
+                storageReader,
+                commandCreationContext,
+                lockTracer(),
+                tx -> enforceConstraints(tx, commandsTracker),
+                cursorContext,
+                transactionalCursors,
+                commandsTracker);
     }
 
     // Because of current constraint creation dance we need to refresh context version to be able
@@ -1144,6 +1235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionalCursors.close();
             cursorContext.close();
             initializationTrace = NONE;
+            committer.reset();
             transactionMemoryPool.reset();
             innerTransactionHandler.close();
             innerTransactionHandler = null;
@@ -1282,6 +1374,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     TransactionCommitFailed,
                     "The transaction cannot be committed when it has open inner transactions.");
         }
+    }
+
+    private ChunkedTransactionSink createChunkWriter(boolean multiVersioned) {
+        return multiVersioned ? new ChunkSink(committer, clocks, config) : ChunkedTransactionSink.EMPTY;
+    }
+
+    private TransactionCommitter createCommitter(
+            TransactionCommitmentFactory commitmentFactory, boolean multiVersioned) {
+        return multiVersioned ? new ChunkCommitter(commitmentFactory) : new DefaultCommitter(commitmentFactory);
     }
 
     public static class Statistics {

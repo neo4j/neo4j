@@ -75,6 +75,8 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
@@ -116,7 +118,12 @@ abstract class TxStateTest {
     void before() {
         memoryTracker = new LocalMemoryTracker();
         collectionsFactory = spy(collectionsFactorySupplier.create());
-        state = new TxState(collectionsFactory, memoryTracker, TransactionStateBehaviour.DEFAULT_BEHAVIOUR);
+        state = new TxState(
+                collectionsFactory,
+                memoryTracker,
+                TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                ChunkedTransactionSink.EMPTY,
+                TransactionEvent.NULL);
     }
 
     @AfterEach
@@ -1069,7 +1076,12 @@ abstract class TxStateTest {
     void shouldKeepMetaDataForDeletedRelationshipsIfToldTo(boolean keepDeletedRelationshipMetaData)
             throws KernelException {
         // given
-        TxState state = new TxState(collectionsFactory, memoryTracker, () -> keepDeletedRelationshipMetaData);
+        TxState state = new TxState(
+                collectionsFactory,
+                memoryTracker,
+                () -> keepDeletedRelationshipMetaData,
+                ChunkedTransactionSink.EMPTY,
+                TransactionEvent.NULL);
         long id = 9;
         int type = 10;
         long startNode = 11;

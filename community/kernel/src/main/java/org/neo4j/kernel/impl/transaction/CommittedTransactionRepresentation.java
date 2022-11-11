@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
-import java.util.Objects;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**
@@ -33,36 +33,15 @@ import org.neo4j.storageengine.api.StorageCommand;
  * itself, a Start and Commit entry. This is the thing that {@link LogicalTransactionStore} returns when
  * asked for a transaction via a cursor.
  */
-public class CommittedTransactionRepresentation {
-    private final LogEntryStart startEntry;
-    private final TransactionRepresentation transactionRepresentation;
-    private final LogEntryCommit commitEntry;
-
-    public CommittedTransactionRepresentation(
-            LogEntryStart startEntry, TransactionRepresentation transactionRepresentation, LogEntryCommit commitEntry) {
-        this.startEntry = startEntry;
-        this.transactionRepresentation = transactionRepresentation;
-        this.commitEntry = commitEntry;
-    }
+public record CommittedTransactionRepresentation(
+        LogEntryStart startEntry, CommandBatch commandBatch, LogEntryCommit commitEntry) {
 
     public void accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        transactionRepresentation.accept(visitor);
-    }
-
-    public LogEntryStart getStartEntry() {
-        return startEntry;
-    }
-
-    public TransactionRepresentation getTransactionRepresentation() {
-        return transactionRepresentation;
-    }
-
-    public LogEntryCommit getCommitEntry() {
-        return commitEntry;
+        commandBatch.accept(visitor);
     }
 
     public int getChecksum() {
-        return getCommitEntry().getChecksum();
+        return commitEntry().getChecksum();
     }
 
     @Override
@@ -73,26 +52,7 @@ public class CommittedTransactionRepresentation {
     public String toString(boolean includeCommands) {
         return "CommittedTransactionRepresentation{" + "startEntry="
                 + startEntry + ", transactionRepresentation="
-                + transactionRepresentation.toString(includeCommands) + ", commitEntry="
+                + commandBatch.toString(includeCommands) + ", commitEntry="
                 + commitEntry + '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        CommittedTransactionRepresentation that = (CommittedTransactionRepresentation) o;
-        return Objects.equals(startEntry, that.startEntry)
-                && Objects.equals(transactionRepresentation, that.transactionRepresentation)
-                && Objects.equals(commitEntry, that.commitEntry);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(startEntry, transactionRepresentation, commitEntry);
     }
 }

@@ -448,7 +448,6 @@ public final class Recovery {
                 databasePageCache,
                 scheduler,
                 DbmsInfo.TOOL,
-                HostedOnMode.SINGLE,
                 monitors,
                 tokenHolders,
                 recoveryCleanupCollector,
@@ -572,8 +571,8 @@ public final class Recovery {
                 failOnCorruptedLogFiles,
                 config);
 
-        var transactionAppender = createTransactionAppender(
-                logFiles, metadataProvider, metadataCache, config, databaseHealth, scheduler, logProvider);
+        var transactionAppender =
+                createTransactionAppender(logFiles, metadataProvider, config, databaseHealth, scheduler, logProvider);
 
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add(storageEngine.schemaAndTokensLifecycle());
@@ -746,7 +745,6 @@ public final class Recovery {
             PageCache pageCache,
             JobScheduler jobScheduler,
             DbmsInfo info,
-            HostedOnMode mode,
             Monitors monitors,
             TokenHolders tokenHolders,
             RecoveryCleanupWorkCollector recoveryCleanupCollector,

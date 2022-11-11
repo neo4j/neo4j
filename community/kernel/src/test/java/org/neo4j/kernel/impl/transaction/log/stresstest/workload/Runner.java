@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -71,11 +70,10 @@ public class Runner implements Callable<Long> {
                 var jobScheduler = new ThreadPoolJobScheduler();
                 Lifespan life = new Lifespan()) {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
             LogFiles logFiles = life.add(createLogFiles(transactionIdStore, fileSystem));
 
-            TransactionAppender transactionAppender = life.add(createBatchingTransactionAppender(
-                    transactionMetadataCache, logFiles, transactionIdStore, Config.defaults(), jobScheduler));
+            TransactionAppender transactionAppender = life.add(
+                    createBatchingTransactionAppender(logFiles, transactionIdStore, Config.defaults(), jobScheduler));
 
             ExecutorService executorService = Executors.newFixedThreadPool(threads);
             try {
@@ -99,21 +97,11 @@ public class Runner implements Callable<Long> {
     }
 
     private static TransactionAppender createBatchingTransactionAppender(
-            TransactionMetadataCache transactionMetadataCache,
-            LogFiles logFiles,
-            TransactionIdStore transactionIdStore,
-            Config config,
-            JobScheduler jobScheduler) {
+            LogFiles logFiles, TransactionIdStore transactionIdStore, Config config, JobScheduler jobScheduler) {
         InternalLog log = NullLog.getInstance();
         DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, log);
         return createTransactionAppender(
-                logFiles,
-                transactionIdStore,
-                transactionMetadataCache,
-                config,
-                databaseHealth,
-                jobScheduler,
-                NullLogProvider.getInstance());
+                logFiles, transactionIdStore, config, databaseHealth, jobScheduler, NullLogProvider.getInstance());
     }
 
     private LogFiles createLogFiles(TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystemAbstraction)

@@ -133,7 +133,7 @@ public class DefaultRecoveryService implements RecoveryService {
             return;
         }
         if (lastRecoveredTransaction != null) {
-            LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
+            LogEntryCommit commitEntry = lastRecoveredTransaction.commitEntry();
             transactionIdStore.setLastCommittedAndClosedTransactionId(
                     commitEntry.getTxId(),
                     lastRecoveredTransaction.getChecksum(),

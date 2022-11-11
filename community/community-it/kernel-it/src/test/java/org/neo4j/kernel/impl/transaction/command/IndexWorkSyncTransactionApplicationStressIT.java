@@ -27,7 +27,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.helpers.TimeUtil.parseTimeMillis;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
-import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
@@ -57,11 +56,18 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -91,10 +97,15 @@ class IndexWorkSyncTransactionApplicationStressIT {
     private PageCache pageCache;
 
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
+    private TransactionCommitmentFactory commitmentFactory;
+    private IdStoreTransactionIdGenerator transactionIdGenerator;
 
     @BeforeEach
     void setUp() throws Throwable {
         storageEngineRule.before();
+        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
+        transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
     }
 
     @AfterEach
@@ -115,14 +126,19 @@ class IndexWorkSyncTransactionApplicationStressIT {
                 .build();
         try (var storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             storageEngine.apply(
-                    tx(singletonList(Commands.createIndexRule(DESCRIPTOR, 1, descriptor)), storageCursors), EXTERNAL);
+                    tx(
+                            singletonList(Commands.createIndexRule(DESCRIPTOR, 1, descriptor)),
+                            storageCursors,
+                            commitmentFactory,
+                            transactionIdGenerator),
+                    EXTERNAL);
         }
 
         // WHEN
         Workers<Worker> workers = new Workers<>(getClass().getSimpleName());
         final AtomicBoolean end = new AtomicBoolean();
         for (int i = 0; i < numThreads; i++) {
-            workers.start(new Worker(i, end, storageEngine, 10, index));
+            workers.start(new Worker(i, end, storageEngine, 10, index, commitmentFactory, transactionIdGenerator));
         }
 
         // let the threads hammer the storage engine for some time
@@ -137,11 +153,20 @@ class IndexWorkSyncTransactionApplicationStressIT {
         return Values.of(id + "_" + progress);
     }
 
-    private static TransactionToApply tx(List<StorageCommand> commands, StoreCursors storeCursors) {
-        PhysicalTransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation(commands, new byte[0], -1, -1, -1, -1, ANONYMOUS);
-        TransactionToApply tx = new TransactionToApply(txRepresentation, NULL_CONTEXT, storeCursors);
-        tx.commitment(NO_COMMITMENT, 0);
+    private static TransactionToApply tx(
+            List<StorageCommand> commands,
+            StoreCursors storeCursors,
+            TransactionCommitmentFactory commitmentFactory,
+            TransactionIdGenerator transactionIdGenerator) {
+        CompleteTransaction txRepresentation =
+                new CompleteTransaction(commands, new byte[0], -1, -1, -1, -1, ANONYMOUS);
+        TransactionToApply tx = new TransactionToApply(
+                txRepresentation,
+                NULL_CONTEXT,
+                storeCursors,
+                commitmentFactory.newCommitment(),
+                transactionIdGenerator);
+        tx.batchAppended(new LogPosition(1, 2), new LogPosition(3, 4), 1);
         return tx;
     }
 
@@ -152,6 +177,8 @@ class IndexWorkSyncTransactionApplicationStressIT {
         private final NodeStore nodeIds;
         private final int batchSize;
         private final CollectingIndexUpdateListener index;
+        private final TransactionCommitmentFactory commitmentFactory;
+        private final TransactionIdGenerator transactionIdGenerator;
         private int i;
         private int base;
 
@@ -160,12 +187,16 @@ class IndexWorkSyncTransactionApplicationStressIT {
                 AtomicBoolean end,
                 RecordStorageEngine storageEngine,
                 int batchSize,
-                CollectingIndexUpdateListener index) {
+                CollectingIndexUpdateListener index,
+                TransactionCommitmentFactory commitmentFactory,
+                TransactionIdGenerator transactionIdGenerator) {
             this.id = id;
             this.end = end;
             this.storageEngine = storageEngine;
             this.batchSize = batchSize;
             this.index = index;
+            this.commitmentFactory = commitmentFactory;
+            this.transactionIdGenerator = transactionIdGenerator;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
         }
@@ -191,7 +222,8 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     base += batchSize;
                 });
                 for (; !end.get(); i++) {
-                    queue.queue(createNodeAndProperty(i, reader, creationContext, storeCursors));
+                    queue.queue(createNodeAndProperty(
+                            i, reader, creationContext, storeCursors, commitmentFactory, transactionIdGenerator));
                 }
                 queue.applyTransactions();
             } catch (Exception e) {
@@ -200,7 +232,12 @@ class IndexWorkSyncTransactionApplicationStressIT {
         }
 
         private TransactionToApply createNodeAndProperty(
-                int progress, StorageReader reader, CommandCreationContext creationContext, StoreCursors storeCursors)
+                int progress,
+                StorageReader reader,
+                CommandCreationContext creationContext,
+                StoreCursors storeCursors,
+                TransactionCommitmentFactory commitmentFactory,
+                TransactionIdGenerator transactionIdGenerator)
                 throws Exception {
             TransactionState txState = new TxState();
             long nodeId = nodeIds.nextId(NULL_CONTEXT);
@@ -216,13 +253,13 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     NULL_CONTEXT,
                     storeCursors,
                     INSTANCE);
-            return tx(commands, storeCursors);
+            return tx(commands, storeCursors, commitmentFactory, transactionIdGenerator);
         }
 
-        private void verifyIndex(TransactionToApply tx) throws Exception {
+        private void verifyIndex(CommandBatchToApply tx) throws Exception {
             NodeVisitor visitor = new NodeVisitor();
             for (int i = 0; tx != null; i++) {
-                tx.transactionRepresentation().accept(visitor.clear());
+                tx.commandBatch().accept(visitor.clear());
 
                 Value propertyValue = propertyValue(id, base + i);
                 index.assertHasIndexEntry(propertyValue, visitor.nodeId);

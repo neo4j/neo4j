@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 
 class TransactionApplierFactoryChainTest {
     private TransactionApplierFactoryChain facade;
@@ -46,17 +46,17 @@ class TransactionApplierFactoryChainTest {
     void setUp() throws Exception {
         txApplier1 = mock(TransactionApplier.class);
         applier1 = mock(TransactionApplierFactory.class);
-        when(applier1.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+        when(applier1.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
                 .thenReturn(txApplier1);
 
         txApplier2 = mock(TransactionApplier.class);
         applier2 = mock(TransactionApplierFactory.class);
-        when(applier2.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+        when(applier2.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
                 .thenReturn(txApplier2);
 
         txApplier3 = mock(TransactionApplier.class);
         applier3 = mock(TransactionApplierFactory.class);
-        when(applier3.startTx(any(CommandsToApply.class), any(BatchContext.class)))
+        when(applier3.startTx(any(CommandBatchToApply.class), any(BatchContext.class)))
                 .thenReturn(txApplier3);
 
         facade = new TransactionApplierFactoryChain(
@@ -66,7 +66,7 @@ class TransactionApplierFactoryChainTest {
     @Test
     void testStartTxCorrectOrder() throws Exception {
         // GIVEN
-        var tx = mock(CommandsToApply.class);
+        var tx = mock(CommandBatchToApply.class);
         var batchContext = mock(BatchContext.class);
 
         // WHEN
@@ -88,7 +88,7 @@ class TransactionApplierFactoryChainTest {
     @Test
     void testStartTxCorrectOrderWithLockGroup() throws Exception {
         // GIVEN
-        CommandsToApply tx = mock(CommandsToApply.class);
+        CommandBatchToApply tx = mock(CommandBatchToApply.class);
         var batchContext = mock(BatchContext.class);
 
         // WHEN

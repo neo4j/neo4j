@@ -35,8 +35,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -135,7 +137,7 @@ class LabelAndIndexUpdateBatchingIT {
         var iterator = transactions.iterator();
         for (int i = 0; iterator.hasNext(); i++) {
             var tx = iterator.next();
-            if (tx.getCommitEntry().getTxId() == txId) {
+            if (tx.commitEntry().getTxId() == txId) {
                 return i;
             }
         }
@@ -145,11 +147,14 @@ class LabelAndIndexUpdateBatchingIT {
     private static TransactionToApply toApply(
             Collection<CommittedTransactionRepresentation> transactions, GraphDatabaseAPI db) {
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency(StorageEngine.class);
+        var commitmentFactory = db.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
+        var transactionIdGenerator = db.getDependencyResolver().resolveDependency(TransactionIdGenerator.class);
         TransactionToApply first = null;
         TransactionToApply last = null;
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             for (var tx : transactions) {
-                var transaction = new TransactionToApply(tx.getTransactionRepresentation(), NULL_CONTEXT, storeCursors);
+                var transaction = new TransactionToApply(
+                        tx, NULL_CONTEXT, storeCursors, commitmentFactory.newCommitment(), transactionIdGenerator);
                 if (first == null) {
                     first = last = transaction;
                 } else {

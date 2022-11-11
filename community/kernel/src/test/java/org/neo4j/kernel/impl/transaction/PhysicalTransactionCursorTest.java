@@ -35,9 +35,9 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
@@ -105,7 +105,7 @@ class PhysicalTransactionCursorTest {
         cursor.next();
 
         // then
-        PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation(
+        CompleteTransaction txRepresentation = new CompleteTransaction(
                 singletonList(A_COMMAND_ENTRY.getCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, AUTH_DISABLED);
         assertEquals(
                 new CommittedTransactionRepresentation(A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY), cursor.get());

@@ -93,11 +93,11 @@ import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
@@ -852,7 +852,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
 
-    private TransactionRepresentation getObservedFirstTransaction() {
+    private CommandBatch getObservedFirstTransaction() {
         return commitProcess.transactions.get(0);
     }
 

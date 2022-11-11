@@ -28,10 +28,10 @@ import java.util.List;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class PhysicalTransactionRepresentation implements TransactionRepresentation {
+public class CompleteTransaction implements CommandBatch {
     private final List<StorageCommand> commands;
     private final long timeStarted;
     private final long latestCommittedTxWhenStarted;
@@ -45,7 +45,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
 
     private byte[] additionalHeader;
 
-    public PhysicalTransactionRepresentation(
+    public CompleteTransaction(
             List<StorageCommand> commands,
             byte[] additionalHeader,
             long timeStarted,
@@ -102,7 +102,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public Subject getSubject() {
+    public Subject subject() {
         return subject;
     }
 
@@ -120,7 +120,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             return false;
         }
 
-        PhysicalTransactionRepresentation that = (PhysicalTransactionRepresentation) o;
+        CompleteTransaction that = (CompleteTransaction) o;
         return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
                 && timeStarted == that.timeStarted
                 && Arrays.equals(additionalHeader, that.additionalHeader)
@@ -161,6 +161,16 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
             builder.append(format("%n%s", command.toString()));
         }
         return builder.toString();
+    }
+
+    @Override
+    public boolean isLast() {
+        return true;
+    }
+
+    @Override
+    public boolean isFirst() {
+        return true;
     }
 
     @Override

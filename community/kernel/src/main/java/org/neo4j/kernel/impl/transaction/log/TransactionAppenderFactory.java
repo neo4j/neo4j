@@ -32,17 +32,15 @@ public class TransactionAppenderFactory {
     public static TransactionAppender createTransactionAppender(
             LogFiles logFiles,
             TransactionIdStore transactionIdStore,
-            TransactionMetadataCache transactionMetadataCache,
             Config config,
             Health databaseHealth,
             JobScheduler scheduler,
             InternalLogProvider logProvider) {
         if (config.get(dedicated_transaction_appender)) {
-            var queue = new TransactionLogQueue(
-                    logFiles, transactionIdStore, databaseHealth, transactionMetadataCache, scheduler, logProvider);
+            var queue = new TransactionLogQueue(logFiles, transactionIdStore, databaseHealth, scheduler, logProvider);
             return new QueueTransactionAppender(queue);
         }
 
-        return new BatchingTransactionAppender(logFiles, transactionMetadataCache, transactionIdStore, databaseHealth);
+        return new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth);
     }
 }

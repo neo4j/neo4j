@@ -66,8 +66,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
@@ -439,7 +439,7 @@ class DatabaseUpgradeTransactionIT {
             while (transactionCursor.next()) {
                 CommittedTransactionRepresentation representation = transactionCursor.get();
                 transactions.add(representation);
-                transactionVersions.add(representation.getStartEntry().getVersion());
+                transactionVersions.add(representation.startEntry().getVersion());
             }
         }
         assertThat(transactionVersions)
@@ -451,9 +451,8 @@ class DatabaseUpgradeTransactionIT {
         assertThat(transactionVersions.get(transactionVersions.size() - 1)).isEqualTo(to); // And last the "to" version
 
         CommittedTransactionRepresentation upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
-        PhysicalTransactionRepresentation physicalRep =
-                (PhysicalTransactionRepresentation) upgradeTransaction.getTransactionRepresentation();
-        physicalRep.accept(element -> {
+        CompleteTransaction commandBatch = (CompleteTransaction) upgradeTransaction.commandBatch();
+        commandBatch.accept(element -> {
             assertThat(element).isInstanceOf(Command.MetaDataCommand.class);
             return true;
         });

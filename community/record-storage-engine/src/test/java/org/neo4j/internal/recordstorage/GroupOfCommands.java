@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -27,16 +28,18 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
-public class GroupOfCommands implements CommandsToApply {
+public class GroupOfCommands implements CommandBatchToApply {
     private final long transactionId;
     private final StoreCursors storeCursors;
     private final StorageCommand[] commands;
-    GroupOfCommands next;
+    CommandBatchToApply next;
 
     public GroupOfCommands(StoreCursors storeCursors, StorageCommand... commands) {
         this(TransactionIdStore.BASE_TX_ID, storeCursors, commands);
@@ -69,9 +72,26 @@ public class GroupOfCommands implements CommandsToApply {
     }
 
     @Override
-    public CommandsToApply next() {
+    public CommandBatchToApply next() {
         return next;
     }
+
+    @Override
+    public void next(CommandBatchToApply next) {}
+
+    @Override
+    public void commit() {}
+
+    @Override
+    public CommandBatch commandBatch() {
+        return mock(CommandBatch.class);
+    }
+
+    @Override
+    public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {}
+
+    @Override
+    public void close() {}
 
     @Override
     public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {

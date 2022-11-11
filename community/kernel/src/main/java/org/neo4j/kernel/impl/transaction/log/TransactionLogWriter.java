@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogWriter {
@@ -40,20 +42,22 @@ public class TransactionLogWriter {
      * Append a transaction to the transaction log file
      * @return checksum of the transaction
      */
-    public int append(TransactionRepresentation transaction, long transactionId, int previousChecksum)
-            throws IOException {
-        var writer = logEntryWriterFactory.createEntryWriter(channel, transaction.version());
-        writer.writeStartEntry(
-                transaction.getTimeStarted(),
-                transaction.getLatestCommittedTxWhenStarted(),
-                previousChecksum,
-                transaction.additionalHeader());
+    public int append(CommandBatch batch, long transactionId, int previousChecksum) throws IOException {
+        var writer = logEntryWriterFactory.createEntryWriter(channel, batch.version());
+        if (batch.isFirst()) {
+            writer.writeStartEntry(
+                    batch.getTimeStarted(),
+                    batch.getLatestCommittedTxWhenStarted(),
+                    previousChecksum,
+                    batch.additionalHeader());
+        }
 
         // Write all the commands to the log channel
-        writer.serialize(transaction);
+        writer.serialize(batch);
 
+        // TODO: tx envelops will allow this not to return -1 for non commit entries
         // Write commit record
-        return writer.writeCommitEntry(transactionId, transaction.getTimeCommitted());
+        return batch.isLast() ? writer.writeCommitEntry(transactionId, batch.getTimeCommitted()) : BASE_TX_CHECKSUM;
     }
 
     public LogPosition getCurrentPosition() throws IOException {

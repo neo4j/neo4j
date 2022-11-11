@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,11 +56,13 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -106,11 +109,13 @@ public class KernelTransactions extends LifecycleAdapter
     private final ElementIdMapper elementIdMapper;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController.IdFreeCondition externalIdReuseCondition;
+    private final TransactionCommitmentFactory commitmentFactory;
+    private final TransactionIdGenerator transactionIdGenerator;
     private final LogProvider internalLogProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final Dependencies databaseDependendies;
+    private final Dependencies databaseDependencies;
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
@@ -134,6 +139,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
     private final AbstractSecurityLog securityLog;
+    private final boolean multiVersioned;
     private ScopedMemoryPool transactionMemoryPool;
 
     /**
@@ -173,7 +179,9 @@ public class KernelTransactions extends LifecycleAdapter
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             IdController.IdFreeCondition externalIdReuseCondition,
+            TransactionCommitmentFactory commitmentFactory,
             TransactionIdSequence transactionIdSequence,
+            TransactionIdGenerator transactionIdGenerator,
             LogProvider internalLogProvider) {
         this.config = config;
         this.locks = locks;
@@ -193,12 +201,14 @@ public class KernelTransactions extends LifecycleAdapter
         this.elementIdMapper = elementIdMapper;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.externalIdReuseCondition = externalIdReuseCondition;
+        this.commitmentFactory = commitmentFactory;
+        this.transactionIdGenerator = transactionIdGenerator;
         this.internalLogProvider = internalLogProvider;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup(tokenHolders, globalProcedures);
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
-        this.databaseDependendies = databaseDependencies;
+        this.databaseDependencies = databaseDependencies;
         this.contextFactory = contextFactory;
         this.clock = clock;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
@@ -206,12 +216,13 @@ public class KernelTransactions extends LifecycleAdapter
         this.schemaState = schemaState;
         this.leaseService = leaseService;
         this.transactionIdSequence = transactionIdSequence;
+        this.multiVersioned = storageEngine.getOpenOptions().contains(MULTI_VERSIONED);
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(
                         allTransactions, new KernelTransactionImplementationFactory(allTransactions, tracers)),
                 activeTransactionCounter,
                 config);
-        this.securityLog = databaseDependendies.resolveDependency(AbstractSecurityLog.class);
+        this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
         doBlockNewTransactions();
     }
 
@@ -457,7 +468,7 @@ public class KernelTransactions extends LifecycleAdapter
                     elementIdMapper,
                     indexingService,
                     indexStatisticsStore,
-                    databaseDependendies,
+                    databaseDependencies,
                     namedDatabaseId,
                     leaseService,
                     transactionMemoryPool,
@@ -465,8 +476,11 @@ public class KernelTransactions extends LifecycleAdapter
                     transactionExecutionMonitor,
                     securityLog,
                     locks,
+                    commitmentFactory,
                     KernelTransactions.this,
-                    internalLogProvider);
+                    transactionIdGenerator,
+                    internalLogProvider,
+                    multiVersioned);
             this.transactions.add(tx);
             return tx;
         }

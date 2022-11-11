@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -40,7 +41,7 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     }
 
     @Override
-    public long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
         long lastTxId = appendToLog(batch, commitEvent);
         try {
@@ -51,16 +52,16 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
         }
     }
 
-    private long appendToLog(TransactionToApply batch, CommitEvent commitEvent) throws TransactionFailureException {
+    private long appendToLog(CommandBatchToApply batch, CommitEvent commitEvent) throws TransactionFailureException {
         try (LogAppendEvent logAppendEvent = commitEvent.beginLogAppend()) {
             return appender.append(batch, logAppendEvent);
         } catch (Throwable cause) {
             throw new TransactionFailureException(
-                    TransactionLogError, cause, "Could not append transaction representation to log");
+                    TransactionLogError, cause, "Could not append transaction: " + batch + " to log.");
         }
     }
 
-    protected void applyToStore(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    protected void applyToStore(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
         try (StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply()) {
             storageEngine.apply(batch, mode);
@@ -68,13 +69,12 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
             throw new TransactionFailureException(
                     TransactionCommitFailed,
                     cause,
-                    "Could not apply the transaction to the store after written to log");
+                    "Could not apply the transaction: " + batch + " to the store after written to log.");
         }
     }
 
-    private static void close(TransactionToApply batch) {
+    private static void close(CommandBatchToApply batch) {
         while (batch != null) {
-            batch.publishAsClosed();
             batch.close();
             batch = batch.next();
         }

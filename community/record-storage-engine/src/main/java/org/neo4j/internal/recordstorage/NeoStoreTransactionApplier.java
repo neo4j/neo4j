@@ -55,7 +55,6 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     private final CommandVersion version;
     private final LockGroup lockGroup;
-    private final long transactionId;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
@@ -68,13 +67,11 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
             NeoStores neoStores,
             CacheAccessBackDoor cacheAccess,
             LockService lockService,
-            long transactionId,
             BatchContext batchContext,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
         this.version = version;
         this.lockGroup = batchContext.getLockGroup();
-        this.transactionId = transactionId;
         this.lockService = lockService;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;

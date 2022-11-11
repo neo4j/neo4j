@@ -30,7 +30,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class LogEntryWriter<T extends WritableChecksumChannel> {
@@ -78,14 +78,14 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
         return channel.putChecksum();
     }
 
-    public void serialize(TransactionRepresentation tx) throws IOException {
+    public void serialize(CommandBatch tx) throws IOException {
         tx.accept(serializer);
     }
 
     public void serialize(CommittedTransactionRepresentation tx) throws IOException {
-        writeStartEntry(tx.getStartEntry());
-        serialize(tx.getTransactionRepresentation());
-        writeCommitEntry(tx.getCommitEntry());
+        writeStartEntry(tx.startEntry());
+        serialize(tx.commandBatch());
+        writeCommitEntry(tx.commitEntry());
     }
 
     public void serialize(Collection<StorageCommand> commands) throws IOException {

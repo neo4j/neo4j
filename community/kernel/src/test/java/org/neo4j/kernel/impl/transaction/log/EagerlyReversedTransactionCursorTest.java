@@ -19,24 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor;
 
 class EagerlyReversedTransactionCursorTest {
     @Test
     void shouldReverseTransactionsFromSource() throws Exception {
         // GIVEN
-        CommittedTransactionRepresentation tx1 = mock(CommittedTransactionRepresentation.class);
-        CommittedTransactionRepresentation tx2 = mock(CommittedTransactionRepresentation.class);
-        CommittedTransactionRepresentation tx3 = mock(CommittedTransactionRepresentation.class);
+        CommittedTransactionRepresentation tx1 = createTransaction(1);
+        CommittedTransactionRepresentation tx2 = createTransaction(2);
+        CommittedTransactionRepresentation tx3 = createTransaction(3);
         TransactionCursor source = given(tx1, tx2, tx3);
         EagerlyReversedTransactionCursor cursor = new EagerlyReversedTransactionCursor(source);
 
@@ -58,5 +61,12 @@ class EagerlyReversedTransactionCursorTest {
 
         // THEN
         assertEquals(0, reversed.length);
+    }
+
+    private static CommittedTransactionRepresentation createTransaction(long txId) {
+        return new CommittedTransactionRepresentation(
+                new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                null,
+                new LogEntryCommit(txId, 1L, BASE_TX_CHECKSUM));
     }
 }

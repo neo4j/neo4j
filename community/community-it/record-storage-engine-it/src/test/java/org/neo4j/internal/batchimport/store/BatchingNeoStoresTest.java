@@ -35,6 +35,7 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
@@ -71,6 +72,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -85,7 +88,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
@@ -99,8 +102,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -541,6 +544,7 @@ class BatchingNeoStoresTest {
                     PageCacheTracer.NULL));
             // Create the relationship type token
             TxState txState = new TxState();
+            var transactionIdGenerator = new IdStoreTransactionIdGenerator(storageEngine.metadataProvider());
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
@@ -555,7 +559,7 @@ class BatchingNeoStoresTest {
                 labelTokenCreator.initialize(neoStores.getLabelTokenStore(), txState);
                 relationshipTypeTokenCreator.initialize(neoStores.getRelationshipTypeTokenStore(), txState);
                 int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId(RELTYPE.name());
-                apply(txState, commandCreationContext, storageEngine, storeCursors);
+                apply(txState, commandCreationContext, storageEngine, storeCursors, transactionIdGenerator);
 
                 // Finally, we're initialized and ready to create two nodes and a relationship
                 txState = new TxState();
@@ -565,7 +569,7 @@ class BatchingNeoStoresTest {
                 txState.nodeDoCreate(node2);
                 txState.relationshipDoCreate(
                         commandCreationContext.reserveRelationship(node1, node2, relTypeId), relTypeId, node1, node2);
-                apply(txState, commandCreationContext, storageEngine, storeCursors);
+                apply(txState, commandCreationContext, storageEngine, storeCursors, transactionIdGenerator);
                 neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
             }
 
@@ -578,7 +582,8 @@ class BatchingNeoStoresTest {
             TxState txState,
             CommandCreationContext commandCreationContext,
             RecordStorageEngine storageEngine,
-            StoreCursors storeCursors)
+            StoreCursors storeCursors,
+            TransactionIdGenerator transactionIdGenerator)
             throws Exception {
         try (RecordStorageReader storageReader = storageEngine.newReader()) {
             List<StorageCommand> commands = storageEngine.createCommands(
@@ -590,10 +595,12 @@ class BatchingNeoStoresTest {
                     NULL_CONTEXT,
                     storeCursors,
                     INSTANCE);
-            CommandsToApply apply = new TransactionToApply(
-                    new PhysicalTransactionRepresentation(commands, new byte[0], 0, 0, 0, 0, ANONYMOUS),
+            CommandBatchToApply apply = new TransactionToApply(
+                    new CompleteTransaction(commands, new byte[0], 0, 0, 0, 0, ANONYMOUS),
                     NULL_CONTEXT,
-                    storeCursors);
+                    storeCursors,
+                    NO_COMMITMENT,
+                    transactionIdGenerator);
             storageEngine.apply(apply, TransactionApplicationMode.INTERNAL);
         }
     }

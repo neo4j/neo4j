@@ -38,8 +38,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -78,7 +80,7 @@ class KernelRecoveryTest {
         long node1 = createNode(db, "k", "v1");
 
         // And given the power goes out
-        List<TransactionRepresentation> transactions = new ArrayList<>();
+        List<CommittedTransactionRepresentation> transactions = new ArrayList<>();
         long node2;
         try (EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot()) {
             managementService.shutdown();
@@ -98,15 +100,23 @@ class KernelRecoveryTest {
         }
     }
 
-    private static void applyTransactions(List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt)
+    private static void applyTransactions(
+            List<CommittedTransactionRepresentation> transactions, GraphDatabaseAPI rebuilt)
             throws TransactionFailureException {
         DependencyResolver dependencyResolver = rebuilt.getDependencyResolver();
         StorageEngine storageEngine = dependencyResolver.resolveDependency(StorageEngine.class);
         TransactionCommitProcess commitProcess = dependencyResolver.resolveDependency(TransactionCommitProcess.class);
+        var commitmentFactory = dependencyResolver.resolveDependency(TransactionCommitmentFactory.class);
+        var transactionIdGenerator = dependencyResolver.resolveDependency(TransactionIdGenerator.class);
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            for (TransactionRepresentation transaction : transactions) {
+            for (CommittedTransactionRepresentation transaction : transactions) {
                 commitProcess.commit(
-                        new TransactionToApply(transaction, NULL_CONTEXT, storeCursors),
+                        new TransactionToApply(
+                                transaction,
+                                NULL_CONTEXT,
+                                storeCursors,
+                                commitmentFactory.newCommitment(),
+                                transactionIdGenerator),
                         CommitEvent.NULL,
                         TransactionApplicationMode.EXTERNAL);
             }
@@ -114,11 +124,11 @@ class KernelRecoveryTest {
     }
 
     private static void extractTransactions(
-            GraphDatabaseAPI db, List<TransactionRepresentation> transactions, long txIdToStartFrom)
+            GraphDatabaseAPI db, List<CommittedTransactionRepresentation> transactions, long txIdToStartFrom)
             throws java.io.IOException {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
         try (TransactionCursor cursor = txStore.getTransactions(txIdToStartFrom)) {
-            cursor.forAll(tx -> transactions.add(tx.getTransactionRepresentation()));
+            cursor.forAll(transactions::add);
         }
     }
 

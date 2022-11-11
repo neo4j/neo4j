@@ -21,13 +21,14 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
  * The linked list will form a batch.
  */
-public interface CommandsToApply extends CommandStream {
+public interface CommandBatchToApply extends CommandStream, AutoCloseable {
     /**
      * @return transaction id representing this group of commands.
      */
@@ -54,11 +55,28 @@ public interface CommandsToApply extends CommandStream {
     /**
      * @return next group of commands in this batch.
      */
-    CommandsToApply next();
+    CommandBatchToApply next();
 
     /**
-     * @return A string describing the contents of this batch of commands.
+     * @param next set next group of commands in this batch.
      */
+    void next(CommandBatchToApply next);
+
+    void commit();
+
+    /**
+     * Commands that should be applied as part of this particular batch
+     */
+    CommandBatch commandBatch();
+
+    /**
+     * Invoked by commit process after this batch of commands was applied to transaction log
+     * @param beforeCommit log position before append
+     * @param positionAfter log position after append
+     * @param checksum checksum ot appended batch entries
+     */
+    void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum);
+
     @Override
-    String toString();
+    void close();
 }

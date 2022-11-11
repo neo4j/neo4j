@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 class RecoveryProgressIndicatorTest {
@@ -50,11 +52,14 @@ class RecoveryProgressIndicatorTest {
         RecoveryMonitor recoveryMonitor = mock(RecoveryMonitor.class);
         TransactionCursor reverseTransactionCursor = mock(TransactionCursor.class);
         TransactionCursor transactionCursor = mock(TransactionCursor.class);
-        CommittedTransactionRepresentation transactionRepresentation = mock(CommittedTransactionRepresentation.class);
 
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
+        CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
+                new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                null,
+                new LogEntryCommit(lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
         LogPosition checkpointLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
         int firstTxIdAfterLastCheckPoint = 10;
@@ -65,8 +70,6 @@ class RecoveryProgressIndicatorTest {
         when(transactionCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
         when(reverseTransactionCursor.get()).thenReturn(transactionRepresentation);
         when(transactionCursor.get()).thenReturn(transactionRepresentation);
-        when(transactionRepresentation.getCommitEntry())
-                .thenReturn(new LogEntryCommit(lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
 
         when(recoveryService.getRecoveryStartInformation()).thenReturn(startInformation);
         when(recoveryService.getTransactionsInReverseOrder(transactionLogPosition))

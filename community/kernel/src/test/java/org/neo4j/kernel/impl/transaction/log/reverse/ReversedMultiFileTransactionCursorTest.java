@@ -47,10 +47,9 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -58,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -211,7 +211,7 @@ class ReversedMultiFileTransactionCursorTest {
         }
         long expectedTxId = highTxId;
         for (CommittedTransactionRepresentation tx : readTransactions) {
-            assertEquals(expectedTxId, tx.getCommitEntry().getTxId());
+            assertEquals(expectedTxId, tx.commitEntry().getTxId());
             expectedTxId--;
         }
         assertEquals(expectedTxId, lowTxId);
@@ -240,11 +240,11 @@ class ReversedMultiFileTransactionCursorTest {
         return writer.getCurrentPosition();
     }
 
-    private static TransactionRepresentation tx(int size) {
+    private static CommandBatch tx(int size) {
         List<StorageCommand> commands = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             commands.add(new TestCommand());
         }
-        return new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
     }
 }

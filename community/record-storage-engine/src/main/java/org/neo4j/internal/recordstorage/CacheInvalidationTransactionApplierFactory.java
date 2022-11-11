@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 
 public class CacheInvalidationTransactionApplierFactory implements TransactionApplierFactory {
     private final NeoStores neoStores;
@@ -32,7 +32,7 @@ public class CacheInvalidationTransactionApplierFactory implements TransactionAp
     }
 
     @Override
-    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
         return new CacheInvalidationTransactionApplier(neoStores, cacheAccess, transaction.storeCursors());
     }
 }

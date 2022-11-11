@@ -40,10 +40,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -74,11 +74,11 @@ class ProduceNoopCommandsIT {
         try (TransactionCursor transactions = txStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
             while (transactions.next()) {
                 CommittedTransactionRepresentation tx = transactions.get();
-                TransactionRepresentation transactionRepresentation = tx.getTransactionRepresentation();
-                if (hasNoOpCommand(transactionRepresentation)) {
-                    StringBuilder error = new StringBuilder("Tx contains no-op commands, " + tx.getStartEntry());
-                    printNoOpCommands(transactionRepresentation, error);
-                    error.append(format("%n%s", tx.getCommitEntry()));
+                CommandBatch commandBatch = tx.commandBatch();
+                if (hasNoOpCommand(commandBatch)) {
+                    StringBuilder error = new StringBuilder("Tx contains no-op commands, " + tx.startEntry());
+                    printNoOpCommands(commandBatch, error);
+                    error.append(format("%n%s", tx.commitEntry()));
                     fail(error.toString());
                 }
             }
@@ -233,9 +233,8 @@ class ProduceNoopCommandsIT {
         }
     }
 
-    private static void printNoOpCommands(TransactionRepresentation transactionRepresentation, StringBuilder error)
-            throws IOException {
-        transactionRepresentation.accept(command -> {
+    private static void printNoOpCommands(CommandBatch commandBatch, StringBuilder error) throws IOException {
+        commandBatch.accept(command -> {
             if (command instanceof Command.BaseCommand baseCommand) {
                 String toString = baseCommand.toString();
                 if (baseCommand.getBefore().equals(baseCommand.getAfter())) {
@@ -247,9 +246,9 @@ class ProduceNoopCommandsIT {
         });
     }
 
-    private static boolean hasNoOpCommand(TransactionRepresentation transactionRepresentation) throws IOException {
+    private static boolean hasNoOpCommand(CommandBatch commandBatch) throws IOException {
         MutableBoolean has = new MutableBoolean();
-        transactionRepresentation.accept(command -> {
+        commandBatch.accept(command -> {
             if (command instanceof Command.BaseCommand baseCommand) {
                 if (baseCommand instanceof Command.PropertyCommand propertyCommand) {
                     fixPropertyRecord(propertyCommand.getBefore());

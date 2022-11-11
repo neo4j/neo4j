@@ -110,6 +110,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -126,12 +127,12 @@ import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.UnableToMigrateException;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
@@ -243,6 +244,7 @@ public class Database extends AbstractDatabase {
     private IOController ioController;
     private ElementIdMapper elementIdMapper;
     private boolean storageExists;
+    private TransactionCommitmentFactory commitmentFactory;
 
     public Database(DatabaseCreationContext context) {
         super(
@@ -494,13 +496,15 @@ public class Database extends AbstractDatabase {
                 databaseDependencies,
                 cursorContextFactory,
                 storageEngineFactory.commandReaderFactory());
+        commitmentFactory = new TransactionCommitmentFactory(
+                transactionLogModule.transactionMetadataCache(), storageEngine.metadataProvider());
 
         databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);
         life.add(databaseTransactionEventListeners);
         final DatabaseKernelModule kernelModule = buildKernel(
                 logFiles,
-                transactionLogModule.transactionAppender(),
+                transactionLogModule,
                 indexingService,
                 databaseSchemaState,
                 storageEngine,
@@ -516,6 +520,7 @@ public class Database extends AbstractDatabase {
         // Do these assignments last so that we can ensure no cyclical dependencies exist
         this.kernelModule = kernelModule;
 
+        databaseDependencies.satisfyDependency(commitmentFactory);
         databaseDependencies.satisfyDependency(databaseSchemaState);
         databaseDependencies.satisfyDependency(storageEngine);
         databaseDependencies.satisfyDependency(indexingService);
@@ -614,7 +619,7 @@ public class Database extends AbstractDatabase {
             long time = clock.millis();
             LeaseClient leaseClient = leaseService.newClient();
             leaseClient.ensureValid();
-            PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
+            CompleteTransaction transactionRepresentation = new CompleteTransaction(
                     commands,
                     EMPTY_BYTE_ARRAY,
                     time,
@@ -623,9 +628,12 @@ public class Database extends AbstractDatabase {
                     leaseClient.leaseId(),
                     Subject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
-                TransactionToApply toApply =
-                        new TransactionToApply(transactionRepresentation, CursorContext.NULL_CONTEXT, storeCursors);
-
+                TransactionToApply toApply = new TransactionToApply(
+                        transactionRepresentation,
+                        CursorContext.NULL_CONTEXT,
+                        storeCursors,
+                        commitmentFactory.newCommitment(),
+                        kernelModule.getTransactionIdGenerator());
                 TransactionCommitProcess commitProcess =
                         databaseDependencies.resolveDependency(TransactionCommitProcess.class);
                 commitProcess.commit(toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL);
@@ -817,8 +825,8 @@ public class Database extends AbstractDatabase {
         final LogPruning logPruning =
                 new LogPruningImpl(fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config, pruneLock);
 
-        var transactionAppender = createTransactionAppender(
-                logFiles, metadataProvider, transactionMetadataCache, config, databaseHealth, scheduler, logProvider);
+        var transactionAppender =
+                createTransactionAppender(logFiles, metadataProvider, config, databaseHealth, scheduler, logProvider);
         life.add(transactionAppender);
 
         final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore(
@@ -853,12 +861,12 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependencies(
                 checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 
-        return new DatabaseTransactionLogModule(checkPointer, transactionAppender);
+        return new DatabaseTransactionLogModule(checkPointer, transactionAppender, transactionMetadataCache);
     }
 
     private DatabaseKernelModule buildKernel(
             LogFiles logFiles,
-            TransactionAppender appender,
+            DatabaseTransactionLogModule logsModule,
             IndexingService indexingService,
             DatabaseSchemaState databaseSchemaState,
             StorageEngine storageEngine,
@@ -870,8 +878,8 @@ public class Database extends AbstractDatabase {
             CursorContextFactory cursorContextFactory) {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess =
-                commitProcessFactory.create(appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker);
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create(
+                logsModule.transactionAppender(), storageEngine, namedDatabaseId, readOnlyDatabaseChecker);
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -884,6 +892,9 @@ public class Database extends AbstractDatabase {
 
         TransactionExecutionMonitor transactionExecutionMonitor =
                 getMonitors().newMonitor(TransactionExecutionMonitor.class);
+        var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
+        databaseDependencies.satisfyDependency(transactionIdGenerator);
+
         KernelTransactions kernelTransactions = life.add(new KernelTransactions(
                 databaseConfig,
                 locks,
@@ -914,7 +925,9 @@ public class Database extends AbstractDatabase {
                 readOnlyDatabaseChecker,
                 transactionExecutionMonitor,
                 externalIdReuseConditionProvider.get(transactionIdStore, clock),
+                commitmentFactory,
                 transactionIdSequence,
+                transactionIdGenerator,
                 internalLogProvider));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);
@@ -934,7 +947,8 @@ public class Database extends AbstractDatabase {
                 new StoreFileListing(databaseLayout, logFiles, indexingService, storageEngine, idGeneratorFactory);
         databaseDependencies.satisfyDependency(fileListing);
 
-        return new DatabaseKernelModule(transactionCommitProcess, kernel, kernelTransactions, fileListing);
+        return new DatabaseKernelModule(
+                transactionCommitProcess, kernel, kernelTransactions, fileListing, transactionIdGenerator);
     }
 
     private AtomicReference<CpuClock> setupCpuClockAtomicReference() {

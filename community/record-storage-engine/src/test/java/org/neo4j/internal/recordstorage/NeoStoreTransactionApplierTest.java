@@ -85,7 +85,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -120,7 +120,7 @@ class NeoStoreTransactionApplierTest {
     private final DynamicRecord two = new DynamicRecord(2).initialize(true, true, Record.NO_NEXT_BLOCK.intValue(), -1);
     private final DynamicRecord three =
             new DynamicRecord(3).initialize(true, true, Record.NO_NEXT_BLOCK.intValue(), -1);
-    private final CommandsToApply transactionToApply = mock(CommandsToApply.class);
+    private final CommandBatchToApply transactionToApply = mock(CommandBatchToApply.class);
     private final IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync(indexUpdateListener, false);
     private final IndexActivator indexActivator = new IndexActivator(indexingService);
 
@@ -964,7 +964,8 @@ class NeoStoreTransactionApplierTest {
         return new IndexTransactionApplierFactory(indexingService);
     }
 
-    private boolean apply(TransactionApplierFactory applier, ApplyFunction function, CommandsToApply transactionToApply)
+    private boolean apply(
+            TransactionApplierFactory applier, ApplyFunction function, CommandBatchToApply transactionToApply)
             throws Exception {
         try {
             return CommandHandlerContract.apply(applier, function, transactionToApply);
@@ -977,7 +978,7 @@ class NeoStoreTransactionApplierTest {
             TransactionApplierFactory applier,
             ApplyFunction function,
             BatchContext context,
-            CommandsToApply transactionToApply)
+            CommandBatchToApply transactionToApply)
             throws Exception {
         try (context) {
             return CommandHandlerContract.apply(applier, function, context, transactionToApply);

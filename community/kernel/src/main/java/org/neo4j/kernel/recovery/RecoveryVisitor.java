@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
-import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -49,10 +48,7 @@ final class RecoveryVisitor implements RecoveryApplier {
 
     @Override
     public boolean visit(CommittedTransactionRepresentation transaction) throws Exception {
-        var txRepresentation = transaction.getTransactionRepresentation();
-        var txId = transaction.getCommitEntry().getTxId();
-        var tx = new TransactionToApply(txRepresentation, txId, cursorContext, storeCursors);
-        tx.commitment(NO_COMMITMENT, txId);
+        var tx = new TransactionToApply(transaction, cursorContext, storeCursors);
         storageEngine.apply(tx, mode);
         return false;
     }

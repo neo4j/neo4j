@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 import java.util.ArrayList;
@@ -61,13 +63,14 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
@@ -79,6 +82,8 @@ import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -96,7 +101,7 @@ import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
 class KernelTransactionTestBase {
-    protected final StorageEngine storageEngine = mock(StorageEngine.class);
+    protected final StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
     protected final StorageReader storageReader = mock(StorageReader.class);
     protected final MetadataProvider metadataProvider = mock(MetadataProvider.class);
     protected final CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
@@ -224,8 +229,11 @@ class KernelTransactionTestBase {
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
                 locks,
+                mock(TransactionCommitmentFactory.class),
                 mock(KernelTransactions.class),
-                NullLogProvider.getInstance());
+                TransactionIdGenerator.EMPTY,
+                NullLogProvider.getInstance(),
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
 
     KernelTransactionImplementation newNotInitializedTransaction(LeaseService leaseService) {
@@ -234,11 +242,11 @@ class KernelTransactionTestBase {
 
     public static class CapturingCommitProcess implements TransactionCommitProcess {
         private long txId = TransactionIdStore.BASE_TX_ID;
-        public List<TransactionRepresentation> transactions = new ArrayList<>();
+        public List<CommandBatch> transactions = new ArrayList<>();
 
         @Override
-        public long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode) {
-            transactions.add(batch.transactionRepresentation());
+        public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode) {
+            transactions.add(batch.commandBatch());
             return ++txId;
         }
     }

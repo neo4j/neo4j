@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class FakeCommitment implements Commitment {
@@ -28,10 +29,6 @@ public class FakeCommitment implements Commitment {
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
 
-    public FakeCommitment(long id, TransactionIdStore transactionIdStore) {
-        this(id, transactionIdStore, false);
-    }
-
     public FakeCommitment(long id, TransactionIdStore transactionIdStore, boolean markedAsCommitted) {
         this.id = id;
         this.transactionIdStore = transactionIdStore;
@@ -39,18 +36,19 @@ public class FakeCommitment implements Commitment {
     }
 
     @Override
-    public void publishAsCommitted() {
+    public void commit(
+            long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {}
+
+    @Override
+    public void publishAsCommitted(long transactionCommitTimestamp) {
         committed = true;
         transactionIdStore.transactionCommitted(id, CHECKSUM, TIMESTAMP);
     }
 
     @Override
     public void publishAsClosed() {
-        transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP);
-    }
-
-    @Override
-    public boolean markedAsCommitted() {
-        return committed;
+        if (committed) {
+            transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP);
+        }
     }
 }

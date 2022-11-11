@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Values;
 
@@ -162,7 +162,7 @@ public class Commands {
         return new PropertyCommand(new PropertyRecord(id), record);
     }
 
-    public static CommandsToApply transaction(Command... commands) {
+    public static CommandBatchToApply transaction(Command... commands) {
         return new GroupOfCommands(StoreCursors.NULL, commands);
     }
 }

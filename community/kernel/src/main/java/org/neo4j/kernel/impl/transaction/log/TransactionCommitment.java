@@ -19,51 +19,48 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-class TransactionCommitment implements Commitment {
-    private final long transactionId;
-    private final int transactionChecksum;
-    private final long transactionCommitTimestamp;
-    private final LogPosition logPosition;
-    private final TransactionIdStore transactionIdStore;
-    private boolean markedAsCommitted;
+public class TransactionCommitment implements Commitment {
 
-    TransactionCommitment(
-            long transactionId,
-            int transactionChecksum,
-            long transactionCommitTimestamp,
-            LogPosition logPosition,
-            TransactionIdStore transactionIdStore) {
-        this.transactionId = transactionId;
-        this.transactionChecksum = transactionChecksum;
-        this.transactionCommitTimestamp = transactionCommitTimestamp;
-        this.logPosition = logPosition;
+    private final TransactionMetadataCache transactionMetadataCache;
+    private final TransactionIdStore transactionIdStore;
+    private boolean committed;
+    private long transactionId;
+    private int checksum;
+    private LogPosition logPosition;
+    private long transactionCommitTimestamp;
+
+    TransactionCommitment(TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore) {
+        this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
     }
 
     @Override
-    public void publishAsCommitted() {
-        markedAsCommitted = true;
-        transactionIdStore.transactionCommitted(transactionId, transactionChecksum, transactionCommitTimestamp);
+    public void commit(long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {
+        this.transactionId = transactionId;
+        this.logPosition = logPositionAfterCommit;
+        this.checksum = checksum;
+        this.transactionMetadataCache.cacheTransactionMetadata(transactionId, beforeCommit);
+    }
+
+    @Override
+    public void publishAsCommitted(long transactionCommitTimestamp) {
+        this.committed = true;
+        this.transactionCommitTimestamp = transactionCommitTimestamp;
+        transactionIdStore.transactionCommitted(transactionId, checksum, transactionCommitTimestamp);
     }
 
     @Override
     public void publishAsClosed() {
-        transactionIdStore.transactionClosed(
-                transactionId,
-                logPosition.getLogVersion(),
-                logPosition.getByteOffset(),
-                transactionChecksum,
-                transactionCommitTimestamp);
-    }
-
-    @Override
-    public boolean markedAsCommitted() {
-        return markedAsCommitted;
-    }
-
-    public int getTransactionChecksum() {
-        return transactionChecksum;
+        if (committed) {
+            transactionIdStore.transactionClosed(
+                    transactionId,
+                    logPosition.getLogVersion(),
+                    logPosition.getByteOffset(),
+                    checksum,
+                    transactionCommitTimestamp);
+        }
     }
 }

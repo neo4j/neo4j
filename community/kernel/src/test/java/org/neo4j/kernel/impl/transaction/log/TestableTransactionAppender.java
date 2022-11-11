@@ -19,25 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TestableTransactionAppender extends LifecycleAdapter implements TransactionAppender {
-    private final TransactionIdStore transactionIdStore;
-
-    public TestableTransactionAppender(TransactionIdStore transactionIdStore) {
-        this.transactionIdStore = transactionIdStore;
-    }
 
     @Override
-    public long append(TransactionToApply batch, LogAppendEvent logAppendEvent) {
+    public long append(CommandBatchToApply batch, LogAppendEvent logAppendEvent) {
         long txId = TransactionIdStore.BASE_TX_ID;
         while (batch != null) {
-            txId = transactionIdStore.nextCommittingTransactionId();
-            batch.commitment(new FakeCommitment(txId, transactionIdStore), txId);
-            batch.publishAsCommitted();
+            txId = batch.transactionId();
+            batch.batchAppended(new LogPosition(txId, 128), new LogPosition(txId, 256), 1);
+            batch.commit();
             batch = batch.next();
         }
         return txId;

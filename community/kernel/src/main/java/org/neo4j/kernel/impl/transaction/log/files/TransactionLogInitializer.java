@@ -31,8 +31,8 @@ import java.util.Collections;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -128,7 +128,7 @@ public class TransactionLogInitializer {
         long upgradeTransactionId = store.nextCommittingTransactionId();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        PhysicalTransactionRepresentation emptyTx = emptyTransaction(timestamp, upgradeTransactionId);
+        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId);
         int checksum = transactionLogWriter.append(emptyTx, upgradeTransactionId, BASE_TX_CHECKSUM);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
@@ -137,8 +137,8 @@ public class TransactionLogInitializer {
         return upgradeTransactionId;
     }
 
-    private static PhysicalTransactionRepresentation emptyTransaction(long timestamp, long txId) {
-        return new PhysicalTransactionRepresentation(
+    private static CompleteTransaction emptyTransaction(long timestamp, long txId) {
+        return new CompleteTransaction(
                 Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, txId, timestamp, NO_LEASE, ANONYMOUS);
     }
 

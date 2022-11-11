@@ -45,8 +45,7 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -58,9 +57,10 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
-import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -86,7 +86,7 @@ class ParallelRecoveryVisitorTest {
         Barrier.Control barrier = new Barrier.Control();
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
                 long txId = idOf(batch);
                 if (txId == 2) {
                     barrier.reached();
@@ -117,7 +117,7 @@ class ParallelRecoveryVisitorTest {
         // given
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
                 if (idOf(batch) == 2) {
                     // Just make it very likely that, if the locking wouldn't work as expected, then the test will fail,
                     // but the test will not be flaky if the visitor works as expected.
@@ -157,7 +157,7 @@ class ParallelRecoveryVisitorTest {
             }
 
             @Override
-            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
                 long txId = idOf(batch);
                 if (txId > 2) {
                     barrier.awaitUninterruptibly();
@@ -191,7 +191,7 @@ class ParallelRecoveryVisitorTest {
         String failure = "Deliberate failure applying transaction";
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
                 super.apply(batch, mode);
                 throw new Exception(failure);
             }
@@ -219,7 +219,7 @@ class ParallelRecoveryVisitorTest {
         String failure = "Deliberate failure applying transaction";
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine() {
             @Override
-            public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+            public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
                 super.apply(batch, mode);
                 throw new Exception(failure);
             }
@@ -235,8 +235,7 @@ class ParallelRecoveryVisitorTest {
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
         LogEntryStart startEntry = new LogEntryStart(0, 0, 0, new byte[0], UNSPECIFIED);
-        TransactionRepresentation txRepresentation =
-                new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, AUTH_DISABLED);
+        CommandBatch txRepresentation = new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, AUTH_DISABLED);
         LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }
@@ -295,7 +294,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+        public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
             applyOrder[applyOrderCursor.getAndIncrement()] = idOf(batch);
         }
 

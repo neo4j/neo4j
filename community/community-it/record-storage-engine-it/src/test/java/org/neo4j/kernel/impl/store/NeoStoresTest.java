@@ -39,6 +39,7 @@ import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -84,9 +85,10 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -143,6 +145,7 @@ class NeoStoresTest {
     private TokenHolder propertyKeyTokenHolder;
     private RecordStorageEngine storageEngine;
     private LifeSupport life;
+    private IdStoreTransactionIdGenerator transactionIdGenerator;
 
     @BeforeEach
     void setUpNeoStores() {
@@ -512,6 +515,7 @@ class NeoStoresTest {
         life.start();
 
         NeoStores neoStores = storageEngine.testAccessNeoStores();
+        transactionIdGenerator = new IdStoreTransactionIdGenerator(storageEngine.metadataProvider());
         storageReader = storageEngine.newReader();
     }
 
@@ -539,9 +543,10 @@ class NeoStoresTest {
                     cursorContext,
                     storeCursors,
                     INSTANCE);
-            PhysicalTransactionRepresentation tx =
-                    new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED);
-            storageEngine.apply(new TransactionToApply(tx, cursorContext, storeCursors), INTERNAL);
+            CompleteTransaction tx = new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED);
+            storageEngine.apply(
+                    new TransactionToApply(tx, cursorContext, storeCursors, NO_COMMITMENT, transactionIdGenerator),
+                    INTERNAL);
         }
     }
 

@@ -53,9 +53,9 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -74,6 +74,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -158,14 +159,12 @@ class PhysicalLogicalTransactionStoreTest {
     void shouldOpenCleanStore() throws Exception {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        TransactionMetadataCache positionCache = new TransactionMetadataCache();
 
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = buildLogFiles(transactionIdStore);
         life.add(logFiles);
 
-        life.add(createTransactionAppender(
-                transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler));
+        life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
 
         try {
             // WHEN
@@ -215,8 +214,7 @@ class PhysicalLogicalTransactionStoreTest {
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
                 logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
 
-        life.add(createTransactionAppender(
-                transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler));
+        life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
         CorruptedLogsTruncator logPruner =
                 new CorruptedLogsTruncator(databaseDirectory, logFiles, fileSystem, INSTANCE);
         life.add(new TransactionLogsRecovery(
@@ -337,9 +335,9 @@ class PhysicalLogicalTransactionStoreTest {
             long timeCommitted,
             JobScheduler jobScheduler)
             throws Exception {
-        TransactionAppender appender = life.add(createTransactionAppender(
-                transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler));
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
+        TransactionAppender appender =
+                life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
+        CompleteTransaction transaction = new CompleteTransaction(
                 singleTestCommand(),
                 additionalHeader,
                 timeStarted,
@@ -347,7 +345,15 @@ class PhysicalLogicalTransactionStoreTest {
                 timeCommitted,
                 -1,
                 ANONYMOUS);
-        appender.append(new TransactionToApply(transaction, NULL_CONTEXT, StoreCursors.NULL), LogAppendEvent.NULL);
+        var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
+        appender.append(
+                new TransactionToApply(
+                        transaction,
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        transactionCommitment,
+                        new IdStoreTransactionIdGenerator(transactionIdStore)),
+                LogAppendEvent.NULL);
     }
 
     private static List<StorageCommand> singleTestCommand() {
@@ -366,7 +372,7 @@ class PhysicalLogicalTransactionStoreTest {
             boolean hasNext = cursor.next();
             assertTrue(hasNext);
             CommittedTransactionRepresentation tx = cursor.get();
-            TransactionRepresentation transaction = tx.getTransactionRepresentation();
+            CommandBatch transaction = tx.commandBatch();
             assertArrayEquals(additionalHeader, transaction.additionalHeader());
             assertEquals(timeStarted, transaction.getTimeStarted());
             assertEquals(timeCommitted, transaction.getTimeCommitted());
@@ -377,19 +383,9 @@ class PhysicalLogicalTransactionStoreTest {
     }
 
     private static TransactionAppender createTransactionAppender(
-            TransactionIdStore transactionIdStore,
-            TransactionMetadataCache positionCache,
-            LogFiles logFiles,
-            Config config,
-            JobScheduler jobScheduler) {
+            TransactionIdStore transactionIdStore, LogFiles logFiles, Config config, JobScheduler jobScheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles,
-                transactionIdStore,
-                positionCache,
-                config,
-                DATABASE_HEALTH,
-                jobScheduler,
-                NullLogProvider.getInstance());
+                logFiles, transactionIdStore, config, DATABASE_HEALTH, jobScheduler, NullLogProvider.getInstance());
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier {
@@ -409,7 +405,7 @@ class PhysicalLogicalTransactionStoreTest {
 
         @Override
         public boolean visit(CommittedTransactionRepresentation tx) {
-            TransactionRepresentation transaction = tx.getTransactionRepresentation();
+            CommandBatch transaction = tx.commandBatch();
             assertArrayEquals(additionalHeader, transaction.additionalHeader());
             assertEquals(timeStarted, transaction.getTimeStarted());
             assertEquals(timeCommitted, transaction.getTimeCommitted());

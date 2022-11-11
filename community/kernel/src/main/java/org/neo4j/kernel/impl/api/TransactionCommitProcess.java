@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * This interface represents the contract for committing a batch of transactions. While the concept of a transaction is
- * captured in {@link TransactionRepresentation}, commit requires some more information to proceed, since a transaction
+ * captured in {@link CommandBatch}, commit requires some more information to proceed, since a transaction
  * can come from various sources (normal commit, recovery etc) each of which can be committed but requires
  * different/additional handling.
  *
@@ -44,6 +45,6 @@ public interface TransactionCommitProcess {
      * @return transaction id of the last committed transaction in this batch.
      * @throws TransactionFailureException If the commit process fails.
      */
-    long commit(TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
             throws TransactionFailureException;
 }

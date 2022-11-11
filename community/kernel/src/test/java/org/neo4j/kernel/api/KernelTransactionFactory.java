@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
@@ -49,13 +50,17 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
@@ -81,7 +86,7 @@ public final class KernelTransactionFactory {
     private KernelTransactionFactory() {}
 
     private static Instances kernelTransactionWithInternals(LoginContext loginContext) {
-        StorageEngine storageEngine = mock(StorageEngine.class);
+        StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
         StorageReader storageReader = mock(StorageReader.class);
         when(storageEngine.newReader()).thenReturn(storageReader);
         when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
@@ -91,6 +96,7 @@ public final class KernelTransactionFactory {
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var locks = mock(Locks.class);
         when(locks.newClient()).thenReturn(new NoOpClient());
+        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 Config.defaults(),
                 mock(DatabaseTransactionEventListeners.class),
@@ -120,8 +126,11 @@ public final class KernelTransactionFactory {
                 TransactionExecutionMonitor.NO_OP,
                 CommunitySecurityLog.NULL_LOG,
                 locks,
+                new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore),
                 mock(KernelTransactions.class),
-                NullLogProvider.getInstance());
+                TransactionIdGenerator.EMPTY,
+                NullLogProvider.getInstance(),
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
 
         transaction.initialize(
                 0,

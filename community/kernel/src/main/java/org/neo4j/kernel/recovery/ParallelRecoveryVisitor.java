@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import static java.lang.Integer.max;
-import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -34,7 +33,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -91,19 +89,18 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
 
         // We need to know the starting point for the "is it my turn yet?" check below that each thread needs to do
         // before acquiring the locks
-        prevLockedTxId.compareAndSet(-1, transaction.getCommitEntry().getTxId() - stride);
+        prevLockedTxId.compareAndSet(-1, transaction.commitEntry().getTxId() - stride);
 
         // TODO Also consider the memory usage of all active transaction instances and apply back-pressure if surpassing
         // it
         appliers.submit(() -> {
-            long txId = transaction.getCommitEntry().getTxId();
+            long txId = transaction.commitEntry().getTxId();
             while (prevLockedTxId.get() != txId - stride) {
                 Thread.onSpinWait();
                 checkFailure();
             }
             try (LockGroup locks = new LockGroup()) {
-                storageEngine.lockRecoveryCommands(
-                        transaction.getTransactionRepresentation(), lockService, locks, mode);
+                storageEngine.lockRecoveryCommands(transaction.commandBatch(), lockService, locks, mode);
                 boolean myTurn = prevLockedTxId.compareAndSet(txId - stride, txId);
                 checkState(
                         myTurn,
@@ -129,10 +126,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
     private void apply(CommittedTransactionRepresentation transaction) throws Exception {
         try (CursorContext cursorContext = contextFactory.create(tracerTag);
                 var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
-            TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
-            long txId = transaction.getCommitEntry().getTxId();
-            TransactionToApply tx = new TransactionToApply(txRepresentation, txId, cursorContext, storeCursors);
-            tx.commitment(NO_COMMITMENT, txId);
+            var tx = new TransactionToApply(transaction, cursorContext, storeCursors);
             storageEngine.apply(tx, mode);
         }
     }

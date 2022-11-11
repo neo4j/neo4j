@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 
 public class HighIdTransactionApplierFactory implements TransactionApplierFactory {
     private final NeoStores neoStores;
@@ -30,7 +30,7 @@ public class HighIdTransactionApplierFactory implements TransactionApplierFactor
     }
 
     @Override
-    public TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) {
+    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
         return new HighIdTransactionApplier(neoStores);
     }
 }

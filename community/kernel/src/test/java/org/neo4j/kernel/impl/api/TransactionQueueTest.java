@@ -29,7 +29,9 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class TransactionQueueTest {
@@ -73,7 +75,11 @@ class TransactionQueueTest {
         for (int i = 0; i < batchSize; i++) {
             queue.queue(
                     txs[i] = new TransactionToApply(
-                            mock(TransactionRepresentation.class), NULL_CONTEXT, StoreCursors.NULL));
+                            mock(CommandBatch.class),
+                            NULL_CONTEXT,
+                            StoreCursors.NULL,
+                            Commitment.NO_COMMITMENT,
+                            TransactionIdGenerator.EMPTY));
         }
 
         // THEN

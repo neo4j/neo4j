@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.storageengine.api;
 
 import org.neo4j.common.Subject;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.storageengine.api.CommandStream;
 
 /**
- * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.
+ * Representation of a transaction that can be written to transaction log and read back later.
  */
-public interface TransactionRepresentation extends CommandStream {
+public interface CommandBatch extends CommandStream {
     /**
      * @return an additional header of this transaction. Just arbitrary bytes that means nothing
      * to this transaction representation.
@@ -52,7 +49,7 @@ public interface TransactionRepresentation extends CommandStream {
     long getTimeCommitted();
 
     /**
-     * @return the identifier for the lease associated with this transaction, or {@value LeaseService#NO_LEASE}.
+     * @return the identifier for the lease associated with this transaction.
      * This is only used for coordinating transaction validity in a cluster.
      */
     int getLeaseId();
@@ -61,7 +58,7 @@ public interface TransactionRepresentation extends CommandStream {
      * @return the subject associated with the transaction.
      * Typically an authenticated end user that created the transaction.
      */
-    Subject getSubject();
+    Subject subject();
 
     KernelVersion version();
 
@@ -71,4 +68,14 @@ public interface TransactionRepresentation extends CommandStream {
      * @return information about this transaction representation w/ or w/o command information included.
      */
     String toString(boolean includeCommands);
+
+    /**
+     * True if command batch is the last batch in the sequence of transactional command batches.
+     */
+    boolean isLast();
+
+    /**
+     * True if command batch is the first batch in the sequence of transactional command batches.
+     */
+    boolean isFirst();
 }

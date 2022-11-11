@@ -44,7 +44,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -56,7 +56,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 /**
- * This is a test for triggering a race which was found in and around {@link RecordStorageEngine#apply(CommandsToApply, TransactionApplicationMode)}
+ * This is a test for triggering a race which was found in and around {@link RecordStorageEngine#apply(CommandBatchToApply, TransactionApplicationMode)}
  * where e.g. a transaction A which did CREATE NODE N and transaction B which did DELETE NODE N would have a chance to be applied to the
  * label index in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
  */
@@ -178,7 +178,7 @@ class LabelScanStoreTxApplyRaceIT {
 
     private Runnable deleter(AtomicReferenceArray<Node> nodeHeads) {
         return new Runnable() {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
+            final ThreadLocalRandom random = ThreadLocalRandom.current();
 
             @Override
             public void run() {

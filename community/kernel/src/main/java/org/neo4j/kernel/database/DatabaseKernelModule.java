@@ -23,6 +23,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 
 class DatabaseKernelModule {
@@ -30,16 +31,23 @@ class DatabaseKernelModule {
     private final KernelImpl kernel;
     private final KernelTransactions kernelTransactions;
     private final StoreFileListing fileListing;
+    private final TransactionIdGenerator transactionIdGenerator;
 
     DatabaseKernelModule(
             TransactionCommitProcess transactionCommitProcess,
             KernelImpl kernel,
             KernelTransactions kernelTransactions,
-            StoreFileListing fileListing) {
+            StoreFileListing fileListing,
+            TransactionIdGenerator transactionIdGenerator) {
         this.transactionCommitProcess = transactionCommitProcess;
         this.kernel = kernel;
         this.kernelTransactions = kernelTransactions;
         this.fileListing = fileListing;
+        this.transactionIdGenerator = transactionIdGenerator;
+    }
+
+    public TransactionIdGenerator getTransactionIdGenerator() {
+        return transactionIdGenerator;
     }
 
     public KernelImpl kernelAPI() {

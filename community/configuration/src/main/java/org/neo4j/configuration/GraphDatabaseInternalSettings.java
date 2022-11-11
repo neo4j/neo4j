@@ -1013,4 +1013,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.dbms.allow_single_automatic_upgrade", BOOL, true)
             .dynamic()
             .build();
+
+    @Internal
+    @Description("Multi versioned store transaction chunk size.")
+    public static final Setting<Long> multi_version_transaction_chunk_size = newBuilder(
+                    "internal.db.multiversion.transaction.chunk.size", BYTES, mebiBytes(10))
+            .build();
 }

@@ -17,44 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 /**
- * Represents a commitment that invoking {@link TransactionAppender#append(TransactionToApply, LogAppendEvent)}
- * means. As a transaction is carried through the {@link TransactionCommitProcess} this commitment is updated
- * when {@link #publishAsCommitted()}  committed} (which happens when appending to log), but also
- * when {@link #publishAsClosed()} closing}.
+ * Represents a commitment that is result of applying batch of commands to transaction logs
+ * means. As a transaction is carried through the commit process this commitment is updated
+ * when {@link #publishAsCommitted(long)} committed (which happens when appending to log), but also
+ * when {@link #publishAsClosed()} closing.
  */
 public interface Commitment {
     Commitment NO_COMMITMENT = new Commitment() {
+
         @Override
-        public void publishAsCommitted() {}
+        public void commit(
+                long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {}
+
+        @Override
+        public void publishAsCommitted(long transactionCommitTimestamp) {}
 
         @Override
         public void publishAsClosed() {}
-
-        @Override
-        public boolean markedAsCommitted() {
-            return false;
-        }
     };
+
+    void commit(long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum);
 
     /**
      * Marks the transaction as committed and makes this fact public.
      */
-    void publishAsCommitted();
+    void publishAsCommitted(long transactionCommitTimestamp);
 
     /**
      * Marks the transaction as closed and makes this fact public.
      */
     void publishAsClosed();
-
-    /**
-     * @return whether or not {@link #publishAsCommitted()} have been called.
-     */
-    boolean markedAsCommitted();
 }

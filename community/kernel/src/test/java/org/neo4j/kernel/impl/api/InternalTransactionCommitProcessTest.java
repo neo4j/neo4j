@@ -40,13 +40,16 @@ import java.io.IOException;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -69,8 +72,8 @@ class InternalTransactionCommitProcessTest {
         // WHEN
         TransactionFailureException exception = assertThrows(
                 TransactionFailureException.class,
-                () -> commitProcess.commit(mockedTransaction(), commitEvent, INTERNAL));
-        assertThat(exception.getMessage()).contains("Could not append transaction representation to log");
+                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+        assertThat(exception.getMessage()).contains("Could not append transaction: ");
         assertTrue(contains(exception, rootCause.getMessage(), rootCause.getClass()));
     }
 
@@ -78,7 +81,7 @@ class InternalTransactionCommitProcessTest {
     void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception {
         // GIVEN
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-        TransactionAppender appender = new TestableTransactionAppender(transactionIdStore);
+        TransactionAppender appender = new TestableTransactionAppender();
         long txId = 11;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         IOException rootCause = new IOException("Mock exception");
@@ -87,12 +90,12 @@ class InternalTransactionCommitProcessTest {
                 .when(storageEngine)
                 .apply(any(TransactionToApply.class), any(TransactionApplicationMode.class));
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
-        TransactionToApply transaction = mockedTransaction();
+        TransactionToApply transaction = mockedTransaction(transactionIdStore);
 
         // WHEN
         TransactionFailureException exception = assertThrows(
                 TransactionFailureException.class, () -> commitProcess.commit(transaction, commitEvent, INTERNAL));
-        assertThat(exception.getMessage()).contains("Could not apply the transaction to the store");
+        assertThat(exception.getMessage()).contains("Could not apply the transaction:");
         assertTrue(contains(exception, rootCause.getMessage(), rootCause.getClass()));
 
         // THEN
@@ -105,26 +108,40 @@ class InternalTransactionCommitProcessTest {
         // GIVEN
         long txId = 11;
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-        TransactionAppender appender = new TestableTransactionAppender(transactionIdStore);
+        TransactionAppender appender = new TestableTransactionAppender();
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
 
         StorageEngine storageEngine = mock(StorageEngine.class);
 
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
-        PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation(
-                Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, ANONYMOUS);
+        CompleteTransaction noCommandTx =
+                new CompleteTransaction(Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, ANONYMOUS);
 
         // WHEN
 
         commitProcess.commit(
-                new TransactionToApply(noCommandTx, NULL_CONTEXT, StoreCursors.NULL), commitEvent, INTERNAL);
+                new TransactionToApply(
+                        noCommandTx,
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        new FakeCommitment(txId, transactionIdStore, true),
+                        new IdStoreTransactionIdGenerator(transactionIdStore)),
+                commitEvent,
+                INTERNAL);
 
         verify(transactionIdStore).transactionCommitted(txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP);
     }
 
-    private static TransactionToApply mockedTransaction() {
-        TransactionRepresentation transaction = mock(TransactionRepresentation.class);
+    private TransactionToApply mockedTransaction(TransactionIdStore transactionIdStore) {
+        CommandBatch transaction = mock(CommandBatch.class);
         when(transaction.additionalHeader()).thenReturn(new byte[0]);
-        return new TransactionToApply(transaction, NULL_CONTEXT, StoreCursors.NULL);
+        var commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
+        var transactionCommitment = commitmentFactory.newCommitment();
+        return new TransactionToApply(
+                transaction,
+                NULL_CONTEXT,
+                StoreCursors.NULL,
+                transactionCommitment,
+                new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 }

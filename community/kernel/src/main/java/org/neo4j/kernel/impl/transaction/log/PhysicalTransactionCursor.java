@@ -83,7 +83,7 @@ public class PhysicalTransactionCursor implements TransactionCursor {
                 entries.add(command.getCommand());
             }
 
-            PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
+            CompleteTransaction transaction = new CompleteTransaction(
                     entries,
                     startEntry.getAdditionalHeader(),
                     startEntry.getTimeWritten(),

@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -232,15 +233,20 @@ class QueueTransactionAppenderTestIT {
     }
 
     private QueueTransactionAppender createAppender(LogFiles logFiles) {
-        var logQueue = new TransactionLogQueue(
-                logFiles, transactionIdStore, databaseHealth, metadataCache, jobScheduler, logProvider);
+        var logQueue = new TransactionLogQueue(logFiles, transactionIdStore, databaseHealth, jobScheduler, logProvider);
         return new QueueTransactionAppender(logQueue);
     }
 
-    private static TransactionToApply createTransaction() {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
-                List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
-        return new TransactionToApply(tx, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
+    private TransactionToApply createTransaction() {
+        CompleteTransaction tx =
+                new CompleteTransaction(List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
+        var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
+        return new TransactionToApply(
+                tx,
+                CursorContext.NULL_CONTEXT,
+                StoreCursors.NULL,
+                transactionCommitment,
+                new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 
     private LogFiles buildLogFiles(

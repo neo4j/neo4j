@@ -41,6 +41,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -84,6 +85,7 @@ class TransactionAppenderRotationIT {
 
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+    private final TransactionMetadataCache metadataCache = new TransactionMetadataCache();
     private ThreadPoolJobScheduler jobScheduler;
 
     @BeforeEach
@@ -104,10 +106,8 @@ class TransactionAppenderRotationIT {
         life.add(logFiles);
         Health databaseHealth = getDatabaseHealth();
 
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-
-        TransactionAppender transactionAppender = createTransactionAppender(
-                logFiles, databaseHealth, transactionMetadataCache, transactionIdStore, jobScheduler);
+        TransactionAppender transactionAppender =
+                createTransactionAppender(logFiles, databaseHealth, transactionIdStore, jobScheduler);
 
         life.add(transactionAppender);
 
@@ -124,26 +124,27 @@ class TransactionAppenderRotationIT {
     }
 
     private static TransactionAppender createTransactionAppender(
-            LogFiles logFiles,
-            Health databaseHealth,
-            TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore,
-            JobScheduler scheduler) {
+            LogFiles logFiles, Health databaseHealth, TransactionIdStore transactionIdStore, JobScheduler scheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
-                transactionMetadataCache,
                 Config.defaults(),
                 databaseHealth,
                 scheduler,
                 NullLogProvider.getInstance());
     }
 
-    private static TransactionToApply prepareTransaction() {
+    private TransactionToApply prepareTransaction() {
         List<StorageCommand> commands = createCommands();
-        PhysicalTransactionRepresentation transactionRepresentation =
-                new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
-        return new TransactionToApply(transactionRepresentation, NULL_CONTEXT, StoreCursors.NULL);
+        CompleteTransaction transactionRepresentation =
+                new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
+        return new TransactionToApply(
+                transactionRepresentation,
+                NULL_CONTEXT,
+                StoreCursors.NULL,
+                transactionCommitment,
+                new IdStoreTransactionIdGenerator(transactionIdStore));
     }
 
     private static List<StorageCommand> createCommands() {
@@ -167,12 +168,7 @@ class TransactionAppenderRotationIT {
         return new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
     }
 
-    private static class RotationLogAppendEvent implements LogAppendEvent {
-        private final LogRotation logRotation;
-
-        RotationLogAppendEvent(LogRotation logRotation) {
-            this.logRotation = logRotation;
-        }
+    private record RotationLogAppendEvent(LogRotation logRotation) implements LogAppendEvent {
 
         @Override
         public LogForceWaitEvent beginLogForceWait() {

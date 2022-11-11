@@ -99,9 +99,9 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Health;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
-import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -502,9 +502,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void apply(CommandsToApply batch, TransactionApplicationMode mode) throws Exception {
+    public void apply(CommandBatchToApply batch, TransactionApplicationMode mode) throws Exception {
         TransactionApplierFactoryChain batchApplier = applierChain(mode);
-        CommandsToApply initialBatch = batch;
+        CommandBatchToApply initialBatch = batch;
         try (BatchContext context = createBatchContext(batchApplier, batch)) {
             while (batch != null) {
                 try (TransactionApplier txApplier = batchApplier.startTx(batch, context)) {
@@ -544,7 +544,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         }
     }
 
-    private BatchContext createBatchContext(TransactionApplierFactoryChain batchApplier, CommandsToApply initialBatch) {
+    private BatchContext createBatchContext(
+            TransactionApplierFactoryChain batchApplier, CommandBatchToApply initialBatch) {
         return new BatchContextImpl(
                 indexUpdateListener,
                 indexUpdatesSync,

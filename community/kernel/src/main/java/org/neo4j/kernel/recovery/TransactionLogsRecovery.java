@@ -111,7 +111,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             initProgressReporter(recoveryStartInformation, lastReversedTransaction);
                         }
                         recoveryVisitor.visit(transaction);
-                        lowestRecoveredTxId = transaction.getCommitEntry().getTxId();
+                        lowestRecoveredTxId = transaction.commitEntry().getTxId();
                         reportProgress();
                     }
                 }
@@ -159,8 +159,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                                     "Partial recovery criteria can't be satisfied. "
                                                             + "Transaction after and before checkpoint does not satisfy provided recovery criteria. "
                                                             + "Observed transaction id: %d, recovery criteria: %s.",
-                                                    candidate.getCommitEntry().getTxId(),
-                                                    recoveryPredicate.describe()));
+                                                    candidate.commitEntry().getTxId(), recoveryPredicate.describe()));
                                         }
                                         lastTransaction = candidate;
                                         lastTransactionPosition = beforeCheckpointCursor.position();
@@ -183,7 +182,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             }
                         } else {
                             recoveryStartupChecker.checkIfCanceled();
-                            long txId = nextTransaction.getCommitEntry().getTxId();
+                            long txId = nextTransaction.commitEntry().getTxId();
                             recoveryVisitor.visit(nextTransaction);
 
                             lastTransaction = nextTransaction;
@@ -209,7 +208,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     throwUnableToCleanRecover(t);
                 }
                 if (lastTransaction != null) {
-                    LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
+                    LogEntryCommit commitEntry = lastTransaction.commitEntry();
                     monitor.failToRecoverTransactionsAfterCommit(t, commitEntry, recoveryToPosition);
                 } else {
                     monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
@@ -249,7 +248,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private static long getNumberOfTransactionToRecover(
             RecoveryStartInformation recoveryStartInformation,
             CommittedTransactionRepresentation lastReversedTransaction) {
-        return lastReversedTransaction.getCommitEntry().getTxId()
+        return lastReversedTransaction.commitEntry().getTxId()
                 - recoveryStartInformation.getFirstTxIdAfterLastCheckPoint()
                 + 1;
     }

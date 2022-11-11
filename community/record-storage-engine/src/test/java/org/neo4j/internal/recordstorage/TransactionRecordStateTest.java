@@ -133,8 +133,8 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
@@ -351,7 +351,7 @@ class TransactionRecordStateTest {
         recordState.relAddProperty(relId, propertyKeyId, Values.of("Oen"));
 
         // WHEN
-        CommandsToApply transaction = transaction(storeCursors, recordState);
+        CommandBatchToApply transaction = transaction(storeCursors, recordState);
         IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
         transaction.accept(extractor);
 
@@ -401,7 +401,7 @@ class TransactionRecordStateTest {
         recordState.nodeAddProperty(nodeId, index2, string(40)); // will require a block of size 4
 
         // THEN
-        CommandsToApply representation = transaction(storeCursors, recordState);
+        CommandBatchToApply representation = transaction(storeCursors, recordState);
         representation.accept(command -> ((Command) command).handle(new CommandVisitor.Adapter() {
             @Override
             public boolean visitPropertyCommand(PropertyCommand command) {
@@ -627,11 +627,11 @@ class TransactionRecordStateTest {
         assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), true, storeCursors);
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
-        CommandsToApply transaction = transaction(storeCursors, deleteNode(nodeId.get()));
+        CommandBatchToApply transaction = transaction(storeCursors, deleteNode(nodeId.get()));
         InMemoryVersionableReadableClosablePositionAwareChannel channel =
                 new InMemoryVersionableReadableClosablePositionAwareChannel();
         writeToChannel(transaction, channel);
-        CommandsToApply recoveredTransaction = readFromChannel(storeCursors, channel);
+        CommandBatchToApply recoveredTransaction = readFromChannel(storeCursors, channel);
         // and applying that recovered transaction
         apply(applier, recoveredTransaction);
 
@@ -953,7 +953,7 @@ class TransactionRecordStateTest {
 
         tx.relModify(new FlatRelationshipModifications(relationships(), relationshipsOfTypeB));
 
-        CommandsToApply ptx = transaction(storeCursors, tx);
+        CommandBatchToApply ptx = transaction(storeCursors, tx);
         apply(applier, ptx);
 
         // THEN
@@ -1739,7 +1739,7 @@ class TransactionRecordStateTest {
     }
 
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf(
-            NeoStores neoStores, CommandsToApply transaction) throws IOException {
+            NeoStores neoStores, CommandBatchToApply transaction) throws IOException {
         IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
         transaction.accept(extractor);
 
@@ -1759,7 +1759,7 @@ class TransactionRecordStateTest {
         return updates;
     }
 
-    private static CommandsToApply transaction(StoreCursors storeCursors, List<StorageCommand> commands) {
+    private static CommandBatchToApply transaction(StoreCursors storeCursors, List<StorageCommand> commands) {
         return new GroupOfCommands(storeCursors, commands.toArray(new StorageCommand[0]));
     }
 
@@ -1768,7 +1768,7 @@ class TransactionRecordStateTest {
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
-    private static CommandsToApply readFromChannel(StoreCursors storeCursors, ReadableLogChannel channel)
+    private static CommandBatchToApply readFromChannel(StoreCursors storeCursors, ReadableLogChannel channel)
             throws IOException {
         CommandReader reader = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
         List<StorageCommand> commands = new ArrayList<>();
@@ -1782,7 +1782,7 @@ class TransactionRecordStateTest {
         return new GroupOfCommands(storeCursors, commands.toArray(new StorageCommand[0]));
     }
 
-    private static void writeToChannel(CommandsToApply transaction, FlushableChannel channel) throws IOException {
+    private static void writeToChannel(CommandBatchToApply transaction, FlushableChannel channel) throws IOException {
         transaction.accept(command -> {
             command.serialize(channel);
             return false;
@@ -1818,11 +1818,11 @@ class TransactionRecordStateTest {
         return recordState;
     }
 
-    private static void apply(TransactionApplierFactory applier, CommandsToApply transaction) throws Exception {
+    private static void apply(TransactionApplierFactory applier, CommandBatchToApply transaction) throws Exception {
         CommandHandlerContract.apply(applier, transaction);
     }
 
-    private void apply(CommandsToApply transaction) throws Exception {
+    private void apply(CommandBatchToApply transaction) throws Exception {
         TransactionApplierFactory applier = buildApplier(LockService.NO_LOCK_SERVICE);
         apply(applier, transaction);
     }
@@ -1873,7 +1873,7 @@ class TransactionRecordStateTest {
                 RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION);
     }
 
-    private static CommandsToApply transaction(StoreCursors storeCursors, TransactionRecordState recordState)
+    private static CommandBatchToApply transaction(StoreCursors storeCursors, TransactionRecordState recordState)
             throws TransactionFailureException {
         List<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands(commands, INSTANCE);

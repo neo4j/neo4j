@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
@@ -98,6 +100,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.DefaultTracers;
@@ -141,7 +144,7 @@ class KernelTransactionsTest {
     private OtherThread t2;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         databaseAvailabilityGuard = new DatabaseAvailabilityGuard(
                 DEFAULT_DATABASE_ID, clock, NullLog.getInstance(), 0, mock(CompositeDatabaseAvailabilityGuard.class));
         databaseAvailabilityGuard.init();
@@ -584,7 +587,7 @@ class KernelTransactionsTest {
         // given
         GlobalMemoryGroupTracker memoryPools = new MemoryPools().pool(MemoryGroup.TRANSACTION, 0, null);
         KernelTransactions transactions = createTransactions(
-                mock(StorageEngine.class),
+                mock(StorageEngine.class, RETURNS_MOCKS),
                 mock(TransactionCommitProcess.class),
                 mock(TransactionIdStore.class),
                 DatabaseTracers.EMPTY,
@@ -613,16 +616,6 @@ class KernelTransactionsTest {
             kernelTransactions.stop();
         } catch (Throwable t) {
             throw new RuntimeException(t);
-        }
-    }
-
-    private static void startAndCloseTransaction(KernelTransactions kernelTransactions) {
-        try {
-            kernelTransactions
-                    .newInstance(EXPLICIT, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L)
-                    .close();
-        } catch (TransactionFailureException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -665,7 +658,7 @@ class KernelTransactionsTest {
         Locks.Client client = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn(client);
 
-        StorageEngine storageEngine = mock(StorageEngine.class);
+        StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
         when(storageEngine.newReader()).thenReturn(firstReader, otherReaders);
         when(storageEngine.newCommandCreationContext()).thenReturn(mock(CommandCreationContext.class));
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
@@ -765,7 +758,9 @@ class KernelTransactionsTest {
                 writable(),
                 TransactionExecutionMonitor.NO_OP,
                 snapshot -> true,
+                mock(TransactionCommitmentFactory.class),
                 new TransactionIdSequence(),
+                TransactionIdGenerator.EMPTY,
                 NullLogProvider.getInstance());
     }
 
@@ -870,7 +865,9 @@ class KernelTransactionsTest {
                     writable(),
                     TransactionExecutionMonitor.NO_OP,
                     snapshot -> true,
+                    mock(TransactionCommitmentFactory.class),
                     new TransactionIdSequence(),
+                    TransactionIdGenerator.EMPTY,
                     NullLogProvider.getInstance());
         }
 

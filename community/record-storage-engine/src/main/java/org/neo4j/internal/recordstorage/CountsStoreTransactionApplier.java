@@ -24,12 +24,12 @@ import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 
 class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
-    private final CommandsToApply transaction;
+    private final CommandBatchToApply commandsBatch;
     private CountsAccessor.Updater countsUpdater;
     private Updater degreesUpdater;
     private boolean haveUpdates;
@@ -39,10 +39,10 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
     CountsStoreTransactionApplier(
             GBPTreeCountsStore countsStore,
             RelationshipGroupDegreesStore groupDegreesStore,
-            CommandsToApply transaction) {
+            CommandBatchToApply commandsBatch) {
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
-        this.transaction = transaction;
+        this.commandsBatch = commandsBatch;
     }
 
     @Override
@@ -78,14 +78,20 @@ class CountsStoreTransactionApplier extends TransactionApplier.Adapter {
      */
     private CountsAccessor.Updater countsUpdater() {
         if (countsUpdater == null) {
-            countsUpdater = countsStore.apply(transaction.transactionId(), true, transaction.cursorContext());
+            countsUpdater = countsStore.apply(
+                    commandsBatch.transactionId(),
+                    commandsBatch.commandBatch().isLast(),
+                    commandsBatch.cursorContext());
         }
         return countsUpdater;
     }
 
     private Updater degreesUpdater() {
         if (degreesUpdater == null) {
-            degreesUpdater = groupDegreesStore.apply(transaction.transactionId(), true, transaction.cursorContext());
+            degreesUpdater = groupDegreesStore.apply(
+                    commandsBatch.transactionId(),
+                    commandsBatch.commandBatch().isLast(),
+                    commandsBatch.cursorContext());
         }
         return degreesUpdater;
     }

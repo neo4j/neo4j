@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -140,7 +140,7 @@ class ApplyRecoveredTransactionsTest {
 
         NeoStoreTransactionApplierFactory applier = new NeoStoreTransactionApplierFactory(
                 INTERNAL, neoStores, mock(CacheAccessBackDoor.class), lockService);
-        CommandsToApply tx = new GroupOfCommands(transactionId, storeCursors, commands);
+        CommandBatchToApply tx = new GroupOfCommands(transactionId, storeCursors, commands);
         CommandHandlerContract.apply(
                 applier,
                 txApplier -> {

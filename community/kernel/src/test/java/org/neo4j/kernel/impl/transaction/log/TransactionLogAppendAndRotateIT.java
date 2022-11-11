@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -72,6 +72,8 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandBatch;
+import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -128,10 +130,9 @@ class TransactionLogAppendAndRotateIT {
         monitors.addMonitorListener(monitoring);
 
         TransactionIdStore txIdStore = new SimpleTransactionIdStore();
-        TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         Health health = new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
-        final TransactionAppender appender = life.add(
-                createBatchAppender(logFiles, txIdStore, metadataCache, health, jobScheduler, Config.defaults()));
+        final TransactionAppender appender =
+                life.add(createBatchAppender(logFiles, txIdStore, health, jobScheduler, Config.defaults()));
 
         // WHEN
         Race race = new Race();
@@ -140,7 +141,12 @@ class TransactionLogAppendAndRotateIT {
                 while (!end.get()) {
                     try {
                         appender.append(
-                                new TransactionToApply(sillyTransaction(1_000), NULL_CONTEXT, StoreCursors.NULL),
+                                new TransactionToApply(
+                                        sillyTransaction(1_000),
+                                        NULL_CONTEXT,
+                                        StoreCursors.NULL,
+                                        Commitment.NO_COMMITMENT,
+                                        EMPTY),
                                 LogAppendEvent.NULL);
                     } catch (Exception e) {
                         end.set(true);
@@ -157,14 +163,9 @@ class TransactionLogAppendAndRotateIT {
     }
 
     private TransactionAppender createBatchAppender(
-            LogFiles logFiles,
-            TransactionIdStore txIdStore,
-            TransactionMetadataCache metadataCache,
-            Health health,
-            JobScheduler jobScheduler,
-            Config config) {
+            LogFiles logFiles, TransactionIdStore txIdStore, Health health, JobScheduler jobScheduler, Config config) {
         return createTransactionAppender(
-                logFiles, txIdStore, metadataCache, config, health, jobScheduler, NullLogProvider.getInstance());
+                logFiles, txIdStore, config, health, jobScheduler, NullLogProvider.getInstance());
     }
 
     private static Runnable endAfterMax(
@@ -207,14 +208,14 @@ class TransactionLogAppendAndRotateIT {
         }
     }
 
-    private static TransactionRepresentation sillyTransaction(int size) {
+    private static CommandBatch sillyTransaction(int size) {
         List<StorageCommand> commands = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             // The actual data isn't super important
             commands.add(new TestCommand(30));
             commands.add(new TestCommand(60));
         }
-        return new PhysicalTransactionRepresentation(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
     }
 
     private static class TestLogFileMonitor extends LogRotationMonitorAdapter {

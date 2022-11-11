@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.CommandBatchToApply;
 
 /**
  * Responsible for dealing with batches of transactions. See also {@link TransactionApplier}
@@ -68,9 +68,9 @@ public interface TransactionApplierFactory {
      *
      * @param transaction The transaction which this applier is going to apply. Once we don't have to validate index
      * updates anymore, we can change this to simply be the transactionId
-     * @param batchContext TODO:
+     * @param batchContext context of batch apply
      * @return a {@link TransactionApplier} which can apply this transaction and other commands to the store.
      * @throws IOException on error.
      */
-    TransactionApplier startTx(CommandsToApply transaction, BatchContext batchContext) throws IOException;
+    TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) throws IOException;
 }

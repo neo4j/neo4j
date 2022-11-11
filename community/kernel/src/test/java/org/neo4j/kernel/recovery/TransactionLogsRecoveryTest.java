@@ -260,12 +260,12 @@ class TransactionLogsRecoveryTest {
                                     actual.visit(tx);
                                     switch (nr++) {
                                         case 0 -> {
-                                            assertEquals(lastCommittedTxStartEntry, tx.getStartEntry());
-                                            assertEquals(lastCommittedTxCommitEntry, tx.getCommitEntry());
+                                            assertEquals(lastCommittedTxStartEntry, tx.startEntry());
+                                            assertEquals(lastCommittedTxCommitEntry, tx.commitEntry());
                                         }
                                         case 1 -> {
-                                            assertEquals(expectedStartEntry, tx.getStartEntry());
-                                            assertEquals(expectedCommitEntry, tx.getCommitEntry());
+                                            assertEquals(expectedStartEntry, tx.startEntry());
+                                            assertEquals(expectedCommitEntry, tx.commitEntry());
                                         }
                                         default -> fail("Too many recovered transactions");
                                     }

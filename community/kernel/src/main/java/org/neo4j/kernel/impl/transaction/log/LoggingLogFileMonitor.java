@@ -149,7 +149,7 @@ public class LoggingLogFileMonitor
         if (lastTransaction == null) {
             return "Not found.";
         }
-        LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
+        LogEntryCommit commitEntry = lastTransaction.commitEntry();
         return "transaction id: " + commitEntry.getTxId() + ", time "
                 + date(Instant.ofEpochMilli(commitEntry.getTimeWritten()));
     }

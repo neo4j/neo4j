@@ -60,7 +60,7 @@ public interface RecoveryPredicate extends Predicate<CommittedTransactionReprese
 
         @Override
         public boolean test(CommittedTransactionRepresentation transaction) {
-            return transaction.getCommitEntry().getTxId() < txId;
+            return transaction.commitEntry().getTxId() < txId;
         }
 
         @Override
@@ -78,7 +78,7 @@ public interface RecoveryPredicate extends Predicate<CommittedTransactionReprese
 
         @Override
         public boolean test(CommittedTransactionRepresentation transaction) {
-            return transaction.getStartEntry().getTimeWritten() < instant.toEpochMilli();
+            return transaction.startEntry().getTimeWritten() < instant.toEpochMilli();
         }
 
         @Override

@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -70,10 +71,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -105,6 +107,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     private IndexingService indexingService;
     private RecordStorageEngine storageEngine;
     private StoreCursors storeCursors;
+    private TransactionCommitmentFactory commitmentFactory;
 
     protected GraphStoreFixture(TestDirectory testDirectory) {
         this.testDirectory = testDirectory;
@@ -130,6 +133,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 dependencyResolver.resolveDependency(TransactionAppender.class),
                 dependencyResolver.resolveDependency(StorageEngine.class));
         transactionIdStore = database.getDependencyResolver().resolveDependency(TransactionIdStore.class);
+        commitmentFactory = database.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
 
         storageEngine = dependencyResolver.resolveDependency(RecordStorageEngine.class);
         neoStores = storageEngine.testAccessNeoStores();
@@ -148,11 +152,17 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     }
 
     public void apply(Transaction transaction) throws KernelException {
-        TransactionRepresentation representation = transaction.representation(
+        CommandBatch representation = transaction.representation(
                 idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService);
+        var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commitProcess.commit(
-                    new TransactionToApply(representation, NULL_CONTEXT, storeCursors),
+                    new TransactionToApply(
+                            representation,
+                            NULL_CONTEXT,
+                            storeCursors,
+                            commitmentFactory.newCommitment(),
+                            transactionIdGenerator),
                     CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL);
         }
@@ -307,7 +317,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
         protected abstract void transactionData(TransactionDataBuilder tx, IdGenerator next) throws KernelException;
 
-        public TransactionRepresentation representation(
+        public CommandBatch representation(
                 IdGenerator idGenerator, long lastCommittedTx, NeoStores neoStores, IndexingService indexingService)
                 throws KernelException {
             TransactionWriter writer = new TransactionWriter(neoStores);

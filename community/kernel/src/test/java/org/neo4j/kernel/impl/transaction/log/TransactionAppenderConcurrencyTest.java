@@ -29,7 +29,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 
 import java.io.IOException;
 import java.lang.StackWalker.StackFrame;
@@ -103,7 +105,6 @@ public class TransactionAppenderConcurrencyTest {
 
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
-    private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
 
@@ -241,7 +242,6 @@ public class TransactionAppenderConcurrencyTest {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
-                transactionMetadataCache,
                 Config.defaults(),
                 databaseHealth,
                 scheduler,
@@ -268,9 +268,9 @@ public class TransactionAppenderConcurrencyTest {
     }
 
     protected static TransactionToApply tx() {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation(
-                singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
-        return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL);
+        CompleteTransaction tx =
+                new CompleteTransaction(singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, EMPTY);
     }
 
     private static Predicate<StackFrame> failMethod(final Class<?> klass, final String methodName) {
