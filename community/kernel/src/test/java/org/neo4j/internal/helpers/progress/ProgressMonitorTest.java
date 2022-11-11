@@ -40,16 +40,10 @@ import java.nio.charset.Charset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.test.Race;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class ProgressMonitorTest {
     private static final String EXPECTED_TEXTUAL_OUTPUT = buildExpectedOutput();
     private Indicator indicator;

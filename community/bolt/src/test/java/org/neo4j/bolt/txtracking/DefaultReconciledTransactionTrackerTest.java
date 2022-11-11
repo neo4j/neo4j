@@ -24,21 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.logging.log4j.Log4jLogProvider;
-import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.logging.internal.NullLogService;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class DefaultReconciledTransactionTrackerTest {
     private DefaultReconciledTransactionTracker tracker;
 
     @BeforeEach
     void beforeEach() {
-        tracker = new DefaultReconciledTransactionTracker(new SimpleLogService(new Log4jLogProvider(System.out)));
+        tracker = new DefaultReconciledTransactionTracker(NullLogService.getInstance());
     }
 
     @Test

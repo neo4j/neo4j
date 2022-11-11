@@ -26,14 +26,8 @@ import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_T
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class LonelyProcessingStepTest {
     @Test
     void issuePanicBeforeCompletionOnError() throws Exception {
