@@ -24,12 +24,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.commandline.dbms.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -39,23 +38,16 @@ import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.cli.CommandFailedException;
-import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 
 @TestDirectoryExtension
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class DiagnosticsReportCommandIT {
     @Inject
     private TestDirectory testDirectory;
@@ -66,7 +58,6 @@ class DiagnosticsReportCommandIT {
     private Path homeDir;
     private Path configDir;
     private String originalUserDir;
-    private ExecutionContext ctx;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -79,8 +70,6 @@ class DiagnosticsReportCommandIT {
         // To make sure files are resolved from the working directory
         originalUserDir =
                 System.setProperty("user.dir", testDirectory.absolutePath().toString());
-
-        ctx = new ExecutionContext(homeDir, configDir, System.out, System.err, fs);
     }
 
     @AfterEach
@@ -102,19 +91,21 @@ class DiagnosticsReportCommandIT {
         Files.write(run.resolve("neo4j.pid"), String.valueOf(pid).getBytes());
 
         // Run command, should detect running instance
-        try {
-            String[] args = {"threads", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-            Path homeDir = testDirectory.homePath();
-            var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
-            diagnosticsReportCommand.execute();
-        } catch (CommandFailedException e) {
-            if (e.getMessage().equals("Unknown classifier: threads")) {
-                return; // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+        String[] args = {"threads", "--to-path=" + testDirectory.absolutePath() + "/reports"};
+        Path homeDir = testDirectory.homePath();
+        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+            try {
+                DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+                CommandLine.populateCommand(diagnosticsReportCommand, args);
+                diagnosticsReportCommand.execute();
+            } catch (CommandFailedException e) {
+                if (e.getMessage().equals("Unknown classifier: threads")) {
+                    return; // If we get attach API is not available for example in some IBM jdk installs, ignore this
+                    // test
+                }
+                throw e;
             }
-            throw e;
-        }
+        });
 
         // Verify that we took a thread dump
         Path reports = testDirectory.directory("reports");
@@ -144,19 +135,21 @@ class DiagnosticsReportCommandIT {
         Files.write(run.resolve("neo4j.pid"), String.valueOf(pid).getBytes());
 
         // Run command, should detect running instance
-        try {
-            String[] args = {"heap", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-            Path homeDir = testDirectory.homePath();
-            var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
-            diagnosticsReportCommand.execute();
-        } catch (CommandFailedException e) {
-            if (e.getMessage().equals("Unknown classifier: heap")) {
-                return; // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+        String[] args = {"heap", "--to-path=" + testDirectory.absolutePath() + "/reports"};
+        Path homeDir = testDirectory.homePath();
+        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+            try {
+                DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+                CommandLine.populateCommand(diagnosticsReportCommand, args);
+                diagnosticsReportCommand.execute();
+            } catch (CommandFailedException e) {
+                if (e.getMessage().equals("Unknown classifier: heap")) {
+                    return; // If we get attach API is not available for example in some IBM jdk installs, ignore this
+                    // test
+                }
+                throw e;
             }
-            throw e;
-        }
+        });
 
         // Verify that we took a heap dump
         Path reports = testDirectory.directory("reports");
@@ -184,10 +177,11 @@ class DiagnosticsReportCommandIT {
 
         String[] args = {"logs", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
-        var ctx = new ExecutionContext(homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem());
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-        diagnosticsReportCommand.execute();
+        withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            diagnosticsReportCommand.execute();
+        });
 
         Path reports = testDirectory.directory("reports");
         Path[] files = FileUtils.listPaths(reports);
@@ -209,9 +203,11 @@ class DiagnosticsReportCommandIT {
         Files.createFile(configDir.resolve("neo4j-admin-database-check.conf"));
 
         String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-        diagnosticsReportCommand.execute();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            diagnosticsReportCommand.execute();
+        });
 
         Path[] files = FileUtils.listPaths(testDirectory.homePath().resolve("reports"));
         assertThat(files.length).isEqualTo(1);
@@ -236,9 +232,11 @@ class DiagnosticsReportCommandIT {
         Files.write(homeDir.resolve("conf/user-logs.xml"), singletonList("Config2"));
 
         String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-        diagnosticsReportCommand.execute();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            diagnosticsReportCommand.execute();
+        });
 
         Path[] files = FileUtils.listPaths(testDirectory.homePath().resolve("reports"));
         assertThat(files.length).isEqualTo(1);
@@ -262,26 +260,29 @@ class DiagnosticsReportCommandIT {
 
     @Test
     void allHasToBeOnlyClassifier() {
-        String[] args = {"all", "logs", "tx"};
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            String[] args = {"all", "logs", "tx"};
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
 
-        CommandFailedException incorrectUsage =
-                assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
-        assertEquals(
-                "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.",
-                incorrectUsage.getMessage());
+            CommandFailedException incorrectUsage =
+                    assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
+            assertEquals(
+                    "If you specify 'all' this has to be the only classifier. Found ['logs','tx'] as well.",
+                    incorrectUsage.getMessage());
+        });
     }
 
     @Test
     void printUnrecognizedClassifiers() {
         String[] args = {"logs", "tx", "invalid"};
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-
-        CommandFailedException incorrectUsage =
-                assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
-        assertEquals("Unknown classifier: invalid", incorrectUsage.getMessage());
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            CommandFailedException incorrectUsage =
+                    assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
+            assertEquals("Unknown classifier: invalid", incorrectUsage.getMessage());
+        });
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -298,17 +299,15 @@ class DiagnosticsReportCommandIT {
     }
 
     @Test
-    void listShouldDisplayAllClassifiers() throws Exception {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            PrintStream ps = new PrintStream(baos);
-            String[] args = {"--list"};
+    void listShouldDisplayAllClassifiers() {
+        String[] args = {"--list"};
 
-            ctx = new ExecutionContext(homeDir, configDir, ps, System.err, fs);
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
             CommandLine.populateCommand(diagnosticsReportCommand, args);
             diagnosticsReportCommand.execute();
 
-            assertThat(baos.toString())
+            assertThat(ctx.outAsString())
                     .isEqualTo(String.format("Finding running instance of neo4j%n"
                             + "No running instance of neo4j was found. Online reports will be omitted.%n"
                             + "All available classifiers:%n"
@@ -319,7 +318,7 @@ class DiagnosticsReportCommandIT {
                             + "  tree       include a view of the tree structure of the data directory%n"
                             + "  tx         include transaction logs%n"
                             + "  version    include version of neo4j%n"));
-        }
+        });
     }
 
     @Test
@@ -327,17 +326,19 @@ class DiagnosticsReportCommandIT {
         String toArgument = "--to-path=" + System.getProperty("user.dir") + "/other/";
         String[] args = {toArgument, "all"};
 
-        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-        CommandLine.populateCommand(diagnosticsReportCommand, args);
-        diagnosticsReportCommand.execute();
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            diagnosticsReportCommand.execute();
+        });
 
         Path other = testDirectory.directory("other");
-        assertThat(ctx.fs().fileExists(other)).isEqualTo(true);
-        assertThat(ctx.fs().listFiles(other).length).isEqualTo(1);
+        assertThat(fs.fileExists(other)).isEqualTo(true);
+        assertThat(fs.listFiles(other).length).isEqualTo(1);
 
         // Default should be empty
         Path reports = testDirectory.homePath().resolve("reports");
-        assertThat(ctx.fs().fileExists(reports)).isEqualTo(false);
+        assertThat(fs.fileExists(reports)).isEqualTo(false);
     }
 
     private static long getPID() {

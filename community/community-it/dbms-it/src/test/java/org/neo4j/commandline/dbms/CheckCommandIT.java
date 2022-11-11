@@ -19,13 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.AbstractAdminCommand.COMMAND_CONFIG_FILE_NAME_PATTERN;
+import static org.neo4j.commandline.dbms.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 
 import java.io.ByteArrayOutputStream;
@@ -54,7 +54,6 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.archive.CheckDatabase;
 import org.neo4j.dbms.archive.CheckDump;
 import org.neo4j.dbms.archive.Dumper;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -512,25 +511,6 @@ class CheckCommandIT {
             assertTrue(testDirectory.getFileSystem().fileExists(tempDir.get()));
             assertThat(tempDir.get().getParent().toAbsolutePath()).isEqualTo(expectedTempRoot.toAbsolutePath());
         });
-    }
-
-    private static void withSuppressedOutput(
-            Path homeDir,
-            Path confDir,
-            FileSystemAbstraction fs,
-            ThrowingConsumer<ExecutionContext, Throwable> command) {
-        var rawOut = new ByteArrayOutputStream();
-        var rawErr = new ByteArrayOutputStream();
-        var out = new PrintStream(rawOut);
-        var err = new PrintStream(rawErr);
-        var executionContext = new ExecutionContext(homeDir, confDir, out, err, fs);
-        try (out;
-                err) {
-            command.accept(executionContext);
-        } catch (Throwable e) {
-            throw new RuntimeException(
-                    format("%nCaptured System.out:%n%s%nCaptured System.err:%n%s", rawOut, rawErr), e);
-        }
     }
 
     private void createDump(Path dump) {
