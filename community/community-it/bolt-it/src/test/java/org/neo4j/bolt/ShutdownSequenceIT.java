@@ -39,8 +39,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
@@ -66,7 +64,6 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 /**
@@ -75,8 +72,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
-@ExtendWith({SuppressOutputExtension.class, OtherThreadExtension.class})
-@ResourceLock(Resources.SYSTEM_OUT)
+@ExtendWith(OtherThreadExtension.class)
 public class ShutdownSequenceIT {
     private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds(10);
 
@@ -114,9 +110,6 @@ public class ShutdownSequenceIT {
 
     @AfterEach
     void cleanup() {
-        this.userLogProvider.print(System.out);
-        this.internalLogProvider.print(System.out);
-
         this.userLogProvider.clear();
         this.internalLogProvider.clear();
     }

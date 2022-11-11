@@ -26,23 +26,12 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutput;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class JettyThreadLimitIT {
-    @Inject
-    private SuppressOutput suppressOutput;
-
     @Test
     void shouldHaveConfigurableJettyThreadPoolSize() throws Exception {
         Jetty9WebServer server = new Jetty9WebServer(

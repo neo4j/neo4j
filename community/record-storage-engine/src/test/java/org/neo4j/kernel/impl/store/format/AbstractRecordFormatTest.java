@@ -30,8 +30,6 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
@@ -46,11 +44,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
 @SuppressWarnings("AbstractClassWithoutAbstractMethods")
-@ExtendWith({RandomExtension.class, SuppressOutputExtension.class})
-@ResourceLock(Resources.SYSTEM_OUT)
+@ExtendWith(RandomExtension.class)
 public abstract class AbstractRecordFormatTest {
     // Whoever is hit first
     protected static final long TEST_ITERATIONS = 100_000;

@@ -29,9 +29,6 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.NullLogProvider;
@@ -40,16 +37,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutput;
-import org.neo4j.test.extension.SuppressOutputExtension;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 public class DBMSModuleTest {
-    @Inject
-    private SuppressOutput suppressOutput;
-
     @Test
     public void shouldRegisterAtRootByDefault() throws Exception {
         WebServer webServer = mock(WebServer.class);
