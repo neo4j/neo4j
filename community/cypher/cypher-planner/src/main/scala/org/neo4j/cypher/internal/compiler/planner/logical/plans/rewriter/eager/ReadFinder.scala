@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -105,7 +107,7 @@ object ReadFinder {
   /**
    * Collect the reads of a single plan, not traversing into child plans.
    */
-  private[eager] def collectReads(plan: LogicalPlan): PlanReads = {
+  private[eager] def collectReads(plan: LogicalPlan, semanticTable: SemanticTable): PlanReads = {
     // Match on plans
     val planReads = plan match {
       case p: LogicalLeafPlan =>
@@ -259,6 +261,11 @@ object ReadFinder {
 
       case HasLabels(_, labels) =>
         acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
+
+      case ContainerIndex(expr, index) if (!semanticTable.isInteger(index) && !semanticTable.isMapNoFail(expr)) =>
+        // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
+        // are not accessing a property
+        acc => SkipChildren(acc.withUnknownPropertiesRead())
     }
   }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.PlanReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.collectReads
@@ -493,9 +494,12 @@ object ReadsAndWritesFinder {
   /**
    * Traverse plan in execution order and remember all reads and writes.
    */
-  private[eager] def collectReadsAndWrites(wholePlan: LogicalPlan): ReadsAndWrites = {
+  private[eager] def collectReadsAndWrites(
+    wholePlan: LogicalPlan,
+    semanticTable: SemanticTable
+  ): ReadsAndWrites = {
     def processPlan(acc: ReadsAndWrites, plan: LogicalPlan): ReadsAndWrites = {
-      val planReads = collectReads(plan)
+      val planReads = collectReads(plan, semanticTable)
       val planWrites = collectWrites(plan)
 
       Option(acc)

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.BestPositionFinder.pickPlansToEagerize
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.findConflictingPlans
@@ -35,9 +36,9 @@ import org.neo4j.cypher.internal.util.bottomUp
 case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan])
     extends EagerRewriter(attributes) {
 
-  override def eagerize(plan: LogicalPlan): LogicalPlan = {
+  override def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan = {
     // Step 1: Find reads and writes
-    val readsAndWrites = collectReadsAndWrites(plan)
+    val readsAndWrites = collectReadsAndWrites(plan, semanticTable)
 
     // Step 2: Find conflicting plans
     val conflicts = findConflictingPlans(readsAndWrites, plan)

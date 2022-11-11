@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -73,7 +74,7 @@ case class EagerEverywhereRewriter(attributes: Attributes[LogicalPlan]) extends 
     }
   }
 
-  override def eagerize(plan: LogicalPlan): LogicalPlan = {
+  override def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan = {
     plan.endoRewrite(bottomUp(Rewriter.lift {
       case up: UpdatingPlan =>
         eager(up.withLhs(eager(up.source))(SameId(up.id)))

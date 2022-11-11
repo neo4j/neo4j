@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
@@ -58,8 +59,9 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val cardinalities = from.planningAttributes.cardinalities
 
     val newPlan = context.updateStrategy match {
-      case `eagerUpdateStrategy`   => EagerEverywhereRewriter(attributes).eagerize(from.logicalPlan)
-      case `defaultUpdateStrategy` => EagerWhereNeededRewriter(cardinalities, attributes).eagerize(from.logicalPlan)
+      case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(from.logicalPlan, from.semanticTable())
+      case `defaultUpdateStrategy` =>
+        EagerWhereNeededRewriter(cardinalities, attributes).eagerize(from.logicalPlan, from.semanticTable())
     }
 
     from.withMaybeLogicalPlan(Some(newPlan))
@@ -103,5 +105,5 @@ abstract class EagerRewriter(attributes: Attributes[LogicalPlan]) {
    * @param plan the whole logical plan
    * @return the rewritten logical plan
    */
-  def eagerize(plan: LogicalPlan): LogicalPlan
+  def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan
 }
