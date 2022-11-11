@@ -29,9 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -43,24 +40,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutput;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 @TestDirectoryExtension
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class ConcurrentUpdateIT {
     @Inject
     TestDirectory dir;
-
-    @Inject
-    private SuppressOutput suppressOutput;
 
     @Test
     void populateDbWithConcurrentUpdates() throws Exception {
@@ -112,10 +101,7 @@ class ConcurrentUpdateIT {
             DatabaseLayout databaseLayout = database.databaseLayout();
             managementService.shutdown();
             Config config = Config.defaults(GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes(8));
-            new ConsistencyCheckService(databaseLayout)
-                    .with(config)
-                    .with(new Log4jLogProvider(System.out))
-                    .runFullConsistencyCheck();
+            new ConsistencyCheckService(databaseLayout).with(config).runFullConsistencyCheck();
         }
     }
 
