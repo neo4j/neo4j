@@ -59,7 +59,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
             if (versionNumber == null) {
                 return Status.UNINITIALIZED;
             } else {
-                T version = convertToVersion.apply(getVersion(tx, componentName));
+                T version = convertToVersion.apply(versionNumber);
                 if (latestVersion.isGreaterThan(version)) {
                     return Status.REQUIRES_UPGRADE;
                 } else if (latestVersion.equals(version)) {
