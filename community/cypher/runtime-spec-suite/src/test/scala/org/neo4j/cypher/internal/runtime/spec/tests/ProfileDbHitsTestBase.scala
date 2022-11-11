@@ -214,6 +214,28 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     )) // union label scan
   }
 
+  test("should profile dbHits of intersection label scan") {
+    given {
+      nodeGraph(3, "Dud", "Decoy")
+      nodeGraph(sizeHint, "It")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .intersectionNodeByLabelsScan("x", Seq("Dud", "Decoy"), IndexOrderNone)
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() should (be(
+      6 + 2 /*label scan*/ + 2 * costOfLabelLookup
+    )) // union label scan
+  }
+
   test("should profile dbHits of node index seek with range predicate") {
     given {
       nodeIndex("Language", "difficulty")

@@ -2007,6 +2007,28 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(0).rows() shouldBe 2 * sizeHint // produce results
     queryProfile.operatorProfile(1).rows() shouldBe 2 * sizeHint // unionLabelScan
   }
+
+  test("should profile rows with intersection label scan") {
+    // given
+    given {
+      nodeGraph(sizeHint, "A", "B")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .intersectionNodeByLabelsScan("x", Seq("A", "B"), IndexOrderNone)
+      .build()
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // unionLabelScan
+  }
 }
 
 trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
