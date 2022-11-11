@@ -47,7 +47,8 @@ object extractPredicates {
     availablePredicates: collection.Seq[Expression],
     originalRelationshipName: String,
     originalNodeName: String,
-    targetNodeName: String
+    targetNodeName: String,
+    targetNodeIsBound: Boolean
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
@@ -62,18 +63,18 @@ object extractPredicates {
 
     /**
      * Checks if an inner predicate depends on the path (i.e. the relationship or end node). In that case
-     * we cannot solve the predicates during the traversal.
+     * we cannot solve the predicates during the traversal. Unless the target node is bound.
      */
     def pathDependent(innerPredicate: Expression) = {
       val names = innerPredicate.dependencies.map(_.name)
-      names.contains(originalRelationshipName) || names.contains(targetNodeName)
+      names.contains(originalRelationshipName) || (names.contains(targetNodeName) && !targetNodeIsBound)
     }
 
     availablePredicates.foldLeft(seed) {
 
       // MATCH ()-[r* {prop:1337}]->()
       case ((n, e, s), p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
-        if !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
+        if targetNodeIsBound || !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 

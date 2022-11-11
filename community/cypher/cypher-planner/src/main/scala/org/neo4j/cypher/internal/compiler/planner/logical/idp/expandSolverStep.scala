@@ -297,7 +297,8 @@ object expandSolverStep {
             availablePredicates,
             originalRelationshipName = patternRel.name,
             originalNodeName = nodeId,
-            targetNodeName = otherSide
+            targetNodeName = otherSide,
+            targetNodeIsBound = mode.equals(ExpandInto)
           )
 
         context.logicalPlanProducer.planVarExpand(
