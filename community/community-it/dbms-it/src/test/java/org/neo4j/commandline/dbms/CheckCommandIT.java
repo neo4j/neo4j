@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,9 +43,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -56,6 +54,7 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.archive.CheckDatabase;
 import org.neo4j.dbms.archive.CheckDump;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -68,12 +67,9 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 @Neo4jLayoutExtension
 class CheckCommandIT {
     @Inject
@@ -382,9 +378,11 @@ class CheckCommandIT {
 
     @Test
     void checkThisNativeDatabase() {
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
-        CommandLine.populateCommand(checkCommand, dbName);
-        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx);
+            CommandLine.populateCommand(checkCommand, dbName);
+            assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        });
     }
 
     @Test
@@ -395,9 +393,12 @@ class CheckCommandIT {
         final var txnPath = layout.getNeo4jLayout().transactionLogsRootDirectory();
         removeAndReprepareDatabase(layout);
 
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
-        CommandLine.populateCommand(checkCommand, "--from-path-data=" + dataPath, "--from-path-txn=" + txnPath, dbName);
-        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx);
+            CommandLine.populateCommand(
+                    checkCommand, "--from-path-data=" + dataPath, "--from-path-txn=" + txnPath, dbName);
+            assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        });
     }
 
     @Test
@@ -405,9 +406,11 @@ class CheckCommandIT {
         final var dump = testDirectory.directory("dump");
         createDump(dump);
 
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath));
-        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
-        assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx);
+            CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+            assertThatCode(checkCommand::execute).doesNotThrowAnyException();
+        });
     }
 
     @Test
@@ -421,9 +424,11 @@ class CheckCommandIT {
         AtomicReference<Path> tempDir = new AtomicReference<>();
         final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
                 dump, tempDir, ConsistencyCheckService.Result.success(null, null));
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
-        checkCommand.execute();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx, consistencyCheckService);
+            CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+            checkCommand.execute();
+        });
 
         // After the command has finished the staging area should have been cleared away
         assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
@@ -440,9 +445,11 @@ class CheckCommandIT {
         AtomicReference<Path> tempDir = new AtomicReference<>();
         final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
                 dump, tempDir, ConsistencyCheckService.Result.failure(null, null));
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
-        assertThatThrownBy(checkCommand::execute).isInstanceOf(CommandFailedException.class);
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx, consistencyCheckService);
+            CommandLine.populateCommand(checkCommand, "--from-path=" + dump, dbName);
+            assertThatThrownBy(checkCommand::execute).isInstanceOf(CommandFailedException.class);
+        });
 
         // After the command has finished the staging area should have been cleared away
         assertFalse(testDirectory.getFileSystem().fileExists(tempDir.get()));
@@ -459,9 +466,11 @@ class CheckCommandIT {
         AtomicReference<Path> tempDir = new AtomicReference<>();
         final var consistencyCheckService = getConsistencyCheckServiceWithTempDirChecking(
                 reqTempDir, tempDir, ConsistencyCheckService.Result.success(null, null));
-        final var checkCommand = new CheckCommand(new ExecutionContext(homeDir, confPath), consistencyCheckService);
-        CommandLine.populateCommand(checkCommand, "--from-path=" + dump, "--temp-path=" + reqTempDir, dbName);
-        checkCommand.execute();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var checkCommand = new CheckCommand(ctx, consistencyCheckService);
+            CommandLine.populateCommand(checkCommand, "--from-path=" + dump, "--temp-path=" + reqTempDir, dbName);
+            checkCommand.execute();
+        });
 
         // After the command has finished the staging area should have been cleared away and the temp-path should still
         // exist
@@ -505,11 +514,31 @@ class CheckCommandIT {
         });
     }
 
+    private static void withSuppressedOutput(
+            Path homeDir,
+            Path confDir,
+            FileSystemAbstraction fs,
+            ThrowingConsumer<ExecutionContext, Throwable> command) {
+        var rawOut = new ByteArrayOutputStream();
+        var rawErr = new ByteArrayOutputStream();
+        var out = new PrintStream(rawOut);
+        var err = new PrintStream(rawErr);
+        var executionContext = new ExecutionContext(homeDir, confDir, out, err, fs);
+        try (out;
+                err) {
+            command.accept(executionContext);
+        } catch (Throwable e) {
+            throw new RuntimeException(
+                    format("%nCaptured System.out:%n%s%nCaptured System.err:%n%s", rawOut, rawErr), e);
+        }
+    }
+
     private void createDump(Path dump) {
-        final var ctx = new ExecutionContext(homeDir, confPath);
-        final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
-        CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
-        assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
+        withSuppressedOutput(homeDir, confPath, filesytem, ctx -> {
+            final var dumpCommand = new DumpCommand(ctx, new Dumper(ctx.out()));
+            CommandLine.populateCommand(dumpCommand, "--to-path=" + dump, dbName);
+            assertThatCode(dumpCommand::execute).doesNotThrowAnyException();
+        });
     }
 
     private static class TrackingConsistencyCheckService extends ConsistencyCheckService {
