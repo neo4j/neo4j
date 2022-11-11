@@ -25,14 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
@@ -42,28 +34,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public class NodeEntityTest extends EntityTest {
 
@@ -288,27 +272,6 @@ public class NodeEntityTest extends EntityTest {
         }
     }
 
-    @Disabled(
-            "Tracking of iterables from getRelationships have been (temporarily) disabled due to performance regressions")
-    @Test
-    void getRelationshipsCallsShouldRegisterAndUnregisterAsResource() {
-        verifyGetRelationshipsCalls(NodeEntity::getRelationships);
-    }
-
-    @Disabled(
-            "Tracking of iterables from getRelationships have been (temporarily) disabled due to performance regressions")
-    @Test
-    void getRelationshipsWithDirectionCallsShouldRegisterAndUnregisterAsResource() {
-        verifyGetRelationshipsCalls(node -> node.getRelationships(Direction.INCOMING));
-    }
-
-    @Disabled(
-            "Tracking of iterables from getRelationships have been (temporarily) disabled due to performance regressions")
-    @Test
-    void getRelationshipsWithTypeCallsShouldRegisterAndUnregisterAsResource() {
-        verifyGetRelationshipsCalls(node -> node.getRelationships(RelationshipType.withName("R")));
-    }
-
     @Test
     void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException {
         // given
@@ -407,24 +370,5 @@ public class NodeEntityTest extends EntityTest {
             assertThat(relationship2.getProperty("name")).isEqualTo("Relationship 2");
             tx.commit();
         }
-    }
-
-    private void verifyGetRelationshipsCalls(Function<NodeEntity, ResourceIterable<Relationship>> provider) {
-        TokenRead tokenRead = mock(TokenRead.class);
-        when(tokenRead.relationshipType(anyString())).thenReturn(13);
-
-        var kernelTransaction = mock(KernelTransaction.class);
-        when(kernelTransaction.tokenRead()).thenReturn(tokenRead);
-
-        var internalTransaction = mock(InternalTransaction.class);
-        when(internalTransaction.kernelTransaction()).thenReturn(kernelTransaction);
-
-        ResourceIterable<Relationship> nodes = provider.apply(new NodeEntity(internalTransaction, 42));
-        verify(internalTransaction, times(1)).registerCloseableResource(eq(nodes));
-        verify(internalTransaction, never()).unregisterCloseableResource(any());
-
-        nodes.close();
-        verify(internalTransaction, times(1)).registerCloseableResource(eq(nodes));
-        verify(internalTransaction, times(1)).unregisterCloseableResource(eq(nodes));
     }
 }
