@@ -28,6 +28,7 @@ import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,9 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -56,14 +54,10 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutput;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
-@ResourceLock(Resources.SYSTEM_OUT)
-@ExtendWith(SuppressOutputExtension.class)
 public class UniquenessRecoveryTest {
     /** This test can be configured (via system property) to use cypher or the core API to exercise the db. */
     private static final boolean USE_CYPHER = getBoolean(param("use_cypher"));
@@ -103,9 +97,6 @@ public class UniquenessRecoveryTest {
     }
 
     @Inject
-    public SuppressOutput muted;
-
-    @Inject
     public TestDirectory dir;
 
     private static final Field PID;
@@ -129,7 +120,6 @@ public class UniquenessRecoveryTest {
 
         // given
         Path path = dir.absolutePath();
-        System.out.println("in path: " + path);
         ArrayList<String> args = new ArrayList<>();
         args.addAll(List.of("java", "-ea", "-Xmx1G"));
         args.addAll(getModuleOptions());
@@ -145,7 +135,6 @@ public class UniquenessRecoveryTest {
 
         // when
         {
-            System.out.println("== first subprocess ==");
             Process process = prototype.start();
             if (awaitMessage(process, "kill me") != null) {
                 throw new IllegalStateException("first process failed to execute properly");
@@ -154,14 +143,12 @@ public class UniquenessRecoveryTest {
             awaitMessage(process, null);
         }
         {
-            System.out.println("== second subprocess ==");
             Process process = prototype.start();
             Integer exitCode = awaitMessage(process, "kill me");
             if (exitCode == null) {
                 kill(config.kill_signal, process);
                 awaitMessage(process, null);
             } else if (exitCode != 0) {
-                System.out.println("! second process did not exit in an expected manner");
             }
         }
 
@@ -177,46 +164,30 @@ public class UniquenessRecoveryTest {
 
     /** This is the code that the test actually executes to attempt to violate the constraint. */
     public static void main(String... args) throws Exception {
-        System.out.println("hello world");
         Path path = Path.of(args[0]).toAbsolutePath();
         boolean createConstraint =
                 getBoolean("force_create_constraint") || !Files.isRegularFile(path.resolve("neostore"));
         GraphDatabaseService db = graphdb(path);
-        System.out.println("database started");
-        System.out.println("createConstraint = " + createConstraint);
         if (createConstraint) {
             try {
-                System.out.println("> creating constraint");
                 createConstraint(db);
-                System.out.println("< created constraint");
             } catch (Exception e) {
-                System.out.println("!! failed to create constraint");
-                e.printStackTrace(System.out);
                 if (e instanceof ConstraintViolationException) {
-                    System.out.println("... that is ok, since it means that constraint already exists ...");
                 } else {
                     System.exit(1);
                 }
             }
         }
         try {
-            System.out.println("> adding node");
             addNode(db);
-            System.out.println("< added node");
         } catch (ConstraintViolationException e) {
-            System.out.println("!! failed to add node");
-            e.printStackTrace(System.out);
-            System.out.println("... this is probably what we want :) -- [but let's let the parent process verify]");
             managementService.shutdown();
             System.exit(0);
         } catch (Exception e) {
-            System.out.println("!! failed to add node");
-            e.printStackTrace(System.out);
             System.exit(2);
         }
 
         flushPageCache(db);
-        System.out.println("kill me");
         await();
     }
 
@@ -290,8 +261,7 @@ public class UniquenessRecoveryTest {
                     .resolveDependency(PageCache.class)
                     .flushAndForce(DatabaseFlushEvent.NULL);
         } catch (IOException e) {
-            System.out.println("!! failed to force the page cache");
-            e.printStackTrace(System.out);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -357,20 +327,14 @@ public class UniquenessRecoveryTest {
     private static Integer awaitMessage(Process process, String message) throws IOException, InterruptedException {
         BufferedReader out = new BufferedReader(new InputStreamReader(process.getInputStream()));
         for (String line; (line = out.readLine()) != null; ) {
-            System.out.println(line);
             if (message != null && line.contains(message)) {
                 return null;
             }
         }
         int exitCode = process.waitFor();
         BufferedReader err = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        for (String line; (line = out.readLine()) != null; ) {
-            System.out.println(line);
-        }
-        for (String line; (line = err.readLine()) != null; ) {
-            System.err.println(line);
-        }
-        System.out.println("process exited with exit code: " + exitCode);
+        for (String line; (line = out.readLine()) != null; ) {}
+        for (String line; (line = err.readLine()) != null; ) {}
         return exitCode;
     }
 }
