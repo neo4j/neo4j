@@ -82,6 +82,7 @@ import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
@@ -229,6 +230,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.IntersectionNodeByLabelsScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
@@ -369,6 +371,10 @@ case class InterpretedPipeMapper(
       case UnionNodeByLabelsScan(ident, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         UnionNodeByLabelsScanPipe(ident, labels.map(l => LazyLabel(l)), indexOrder)(id = id)
+
+      case IntersectionNodeByLabelsScan(ident, labels, _, indexOrder) =>
+        indexRegistrator.registerLabelScan()
+        IntersectionNodeByLabelsScanPipe(ident, labels.map(l => LazyLabel(l)), indexOrder)(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)

@@ -68,6 +68,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportMemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.FullSupportProfileMemoryTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.IntersectionLabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LenientCreateRelationshipTestBase
@@ -247,6 +248,9 @@ class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedUnionLabelScanTest extends UnionLabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedIntersectionLabelScanTest
+    extends IntersectionLabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedNodeIndexContainsScanTest
     extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
