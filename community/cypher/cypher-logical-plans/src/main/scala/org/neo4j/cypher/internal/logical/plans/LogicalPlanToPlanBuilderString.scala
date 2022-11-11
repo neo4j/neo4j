@@ -379,6 +379,13 @@ object LogicalPlanToPlanBuilderString {
         )
         args.mkString(", ")
 
+      case IntersectionNodeByLabelsScan(idName, labels, argumentIds, indexOrder) =>
+        val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++ argumentIds.map(
+          wrapInQuotations
+        )
+        args.mkString(", ")
+
       case DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>
         val typeNames = types.map(l => l.name).mkString("|")
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)

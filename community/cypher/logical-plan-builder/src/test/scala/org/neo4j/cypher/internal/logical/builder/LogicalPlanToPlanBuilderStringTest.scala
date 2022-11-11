@@ -161,6 +161,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "intersectionNodeByLabelsScan",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .intersectionNodeByLabelsScan("x", Seq("X", "Y", "Z"), IndexOrderNone)
+      .build()
+  )
+
+  testPlan(
     "unionRelationshipTypesScan",
     new TestPlanBuilder()
       .produceResults("r")

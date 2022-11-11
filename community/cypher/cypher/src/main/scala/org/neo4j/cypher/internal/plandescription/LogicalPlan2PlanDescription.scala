@@ -141,6 +141,7 @@ import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
@@ -342,6 +343,18 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "UnionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case IntersectionNodeByLabelsScan(idName, labels, _, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${labels.map(l => asPrettyString(l.name)).mkPrettyString("&")}"
+        PlanDescriptionImpl(
+          id,
+          "IntersectionNodeByLabelsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

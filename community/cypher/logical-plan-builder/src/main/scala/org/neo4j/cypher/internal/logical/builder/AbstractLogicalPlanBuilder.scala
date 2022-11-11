@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
@@ -872,6 +873,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(UnionNodeByLabelsScan(
+      n,
+      labels.map(labelName),
+      args.map(VariableParser.unescaped).toSet,
+      indexOrder
+    )(_)))
+  }
+
+  def intersectionNodeByLabelsScan(node: String, labels: Seq[String], indexOrder: IndexOrder, args: String*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(IntersectionNodeByLabelsScan(
       n,
       labels.map(labelName),
       args.map(VariableParser.unescaped).toSet,

@@ -238,6 +238,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
@@ -618,6 +619,35 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NoChildren,
         Seq(details("(x)-[r:A|B|C]-(y)")),
         Set("r", "x", "y")
+      )
+    )
+  }
+
+  test("IntersectionNodeByLabelScan") {
+    assertGood(
+      attach(
+        IntersectionNodeByLabelsScan("node", Seq(label("X"), label("Y"), label("Z")), Set.empty, IndexOrderNone),
+        33.0
+      ),
+      planDescription(id, "IntersectionNodeByLabelsScan", NoChildren, Seq(details("node:X&Y&Z")), Set("node"))
+    )
+
+    assertGood(
+      attach(
+        IntersectionNodeByLabelsScan(
+          "  UNNAMED123",
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty,
+          IndexOrderNone
+        ),
+        33.0
+      ),
+      planDescription(
+        id,
+        "IntersectionNodeByLabelsScan",
+        NoChildren,
+        Seq(details(s"${anonVar("123")}:X&Y&Z")),
+        Set(anonVar("123"))
       )
     )
   }
