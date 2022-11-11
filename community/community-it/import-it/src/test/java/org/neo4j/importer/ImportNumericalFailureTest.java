@@ -20,6 +20,7 @@
 package org.neo4j.importer;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
 import static org.neo4j.importer.ImportCommandTest.assertExceptionContains;
 
 import java.io.PrintStream;
@@ -28,22 +29,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.batchimport.input.InputException;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import picocli.CommandLine;
 
 @Neo4jLayoutExtension
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class ImportNumericalFailureTest {
     @Inject
     private DatabaseLayout databaseLayout;
@@ -107,13 +102,10 @@ class ImportNumericalFailureTest {
     }
 
     private static void runImport(Path homeDir, String... arguments) {
-        final var ctx = new ExecutionContext(homeDir, homeDir.resolve("conf"));
-        final var cmd = new ImportCommand.Full(ctx);
-        CommandLine.populateCommand(cmd, arguments);
-        try {
+        withSuppressedOutput(homeDir, homeDir.resolve("conf"), new DefaultFileSystemAbstraction(), ctx -> {
+            final var cmd = new ImportCommand.Full(ctx);
+            CommandLine.populateCommand(cmd, arguments);
             cmd.execute();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 }

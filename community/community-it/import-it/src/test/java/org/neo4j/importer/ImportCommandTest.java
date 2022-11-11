@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.cli.CommandTestUtils.capturingExecutionContext;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
@@ -88,9 +89,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.neo4j.cli.ExecutionContext;
+import org.neo4j.cli.CommandTestUtils;
 import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -123,16 +122,13 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.SuppressOutput;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
 import picocli.CommandLine;
 import picocli.CommandLine.MissingParameterException;
 import picocli.CommandLine.ParameterException;
 
 @Neo4jLayoutExtension
-@ExtendWith({RandomExtension.class, SuppressOutputExtension.class})
-@ResourceLock(Resources.SYSTEM_OUT)
+@ExtendWith(RandomExtension.class)
 class ImportCommandTest {
     private static final int MAX_LABEL_ID = 4;
     private static final int RELATIONSHIP_COUNT = 10_000;
@@ -147,9 +143,6 @@ class ImportCommandTest {
 
     @Inject
     private RandomSupport random;
-
-    @Inject
-    private SuppressOutput suppressOutput;
 
     private DatabaseManagementService managementService;
     private int dataIndex;
@@ -168,18 +161,22 @@ class ImportCommandTest {
         Path dbConfig = defaultConfig();
 
         // WHEN
+        var ctx = capturingCtx();
         runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
+                ctx,
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
                 "--nodes",
-                        nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
-                "--high-parallel-io", "off",
+                nodeData(true, COMMAS, nodeIds, TRUE).toAbsolutePath().toString(),
+                "--high-parallel-io",
+                "off",
                 "--relationships",
-                        relationshipData(true, COMMAS, nodeIds, TRUE, true)
-                                .toAbsolutePath()
-                                .toString());
+                relationshipData(true, COMMAS, nodeIds, TRUE, true)
+                        .toAbsolutePath()
+                        .toString());
 
         // THEN
-        assertTrue(suppressOutput.getOutputVoice().containsMessage("IMPORT DONE"));
+        assertTrue(ctx.outAsString().contains("IMPORT DONE"));
         assertTokenIndexesCreated();
         verifyData();
     }
@@ -625,9 +622,11 @@ class ImportCommandTest {
 
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
+        var ctx = capturingCtx();
         var e = assertThrows(
                 InputException.class,
                 () -> runImport(
+                        ctx,
                         "--delimiter",
                         "TAB",
                         "--array-delimiter",
@@ -640,8 +639,8 @@ class ImportCommandTest {
                         relationshipHeader(config).toAbsolutePath() + ","
                                 + relationshipData(false, config, nodeIds, TRUE, true)
                                         .toAbsolutePath()));
-        assertTrue(suppressOutput.getOutputVoice().containsMessage("IMPORT FAILED"));
-        assertFalse(suppressOutput.getErrorVoice().containsMessage(e.getClass().getName()));
+        assertTrue(ctx.outAsString().contains("IMPORT FAILED"));
+        assertFalse(ctx.errAsString().contains(e.getClass().getName()));
         assertTrue(e.getMessage().contains("Extra column not present in header on line"));
     }
 
@@ -1402,12 +1401,13 @@ class ImportCommandTest {
         // GIVEN
         Path data = data(":ID,name", "1,\"one\ntwo\nthree\"", "2,four");
 
+        var ctx = capturingCtx();
         assertThrows(
                 InputException.class,
-                () -> runImport("--nodes", data.toAbsolutePath().toString(), "--multiline-fields=false"));
+                () -> runImport(ctx, "--nodes", data.toAbsolutePath().toString(), "--multiline-fields=false"));
         // THEN
-        assertTrue(suppressOutput.getErrorVoice().containsMessage("Detected field which spanned multiple lines"));
-        assertTrue(suppressOutput.getErrorVoice().containsMessage("multiline-fields"));
+        assertTrue(ctx.errAsString().contains("Detected field which spanned multiple lines"));
+        assertTrue(ctx.errAsString().contains("multiline-fields"));
     }
 
     @Test
@@ -1815,9 +1815,11 @@ class ImportCommandTest {
         final var configFile = prepareDefaultConfigFile();
         // WHEN data file contains more columns than header file
         int extraColumns = 3;
+        var ctx = capturingCtx();
         assertThrows(
                 InputException.class,
                 () -> runImport(
+                        ctx,
                         "--additional-config=" + configFile.toAbsolutePath(),
                         "--nodes",
                         nodeHeader(config).toAbsolutePath() + ","
@@ -1828,10 +1830,8 @@ class ImportCommandTest {
             assertTrue(testDirectory.getFileSystem().fileExists(storePath));
         }
 
-        assertContains(
-                "error",
-                suppressOutput.getErrorVoice().lines(),
-                "Starting a database on these store files will likely fail or observe inconsistent records");
+        assertTrue(ctx.errAsString()
+                .contains("Starting a database on these store files will likely fail or observe inconsistent records"));
     }
 
     @Test
@@ -1889,21 +1889,26 @@ class ImportCommandTest {
             writer.println("1,2,DC,123,12");
             writer.println("2,1,DC,9999999999,123456789");
         });
+        var ctx = capturingCtx();
         runImport(
-                "--additional-config", dbConfig.toAbsolutePath().toString(),
-                "--nodes", nodeData.toAbsolutePath().toString(),
-                "--relationships", relationshipData.toAbsolutePath().toString());
+                ctx,
+                "--additional-config",
+                dbConfig.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData.toAbsolutePath().toString(),
+                "--relationships",
+                relationshipData.toAbsolutePath().toString());
 
         // THEN
-        SuppressOutput.Voice out = suppressOutput.getOutputVoice();
-        assertTrue(out.containsMessage("IMPORT DONE"));
-        assertTrue(out.containsMessage(format(
+        var out = ctx.outAsString();
+        assertTrue(out.contains("IMPORT DONE"));
+        assertTrue(out.contains(format(
                 "Property type of 'prop1' normalized from 'short' --> 'long' in %s", nodeData.toAbsolutePath())));
-        assertTrue(out.containsMessage(format(
+        assertTrue(out.contains(format(
                 "Property type of 'prop2' normalized from 'float' --> 'double' in %s", nodeData.toAbsolutePath())));
-        assertTrue(out.containsMessage(format(
+        assertTrue(out.contains(format(
                 "Property type of 'prop1' normalized from 'int' --> 'long' in %s", relationshipData.toAbsolutePath())));
-        assertTrue(out.containsMessage(format(
+        assertTrue(out.contains(format(
                 "Property type of 'prop2' normalized from 'byte' --> 'long' in %s",
                 relationshipData.toAbsolutePath())));
         // The properties should have been normalized, let's verify that
@@ -2522,13 +2527,16 @@ class ImportCommandTest {
         return dbConfig;
     }
 
-    private void runImport(String... arguments) throws Exception {
-        runImport(testDirectory.absolutePath(), arguments);
+    private CommandTestUtils.CapturingExecutionContext capturingCtx() {
+        var homeDir = testDirectory.absolutePath();
+        return capturingExecutionContext(homeDir, homeDir.resolve("conf"), testDirectory.getFileSystem());
     }
 
-    private void runImport(Path homeDir, String... arguments) throws Exception {
-        final var ctx = new ExecutionContext(
-                homeDir, homeDir.resolve("conf"), System.out, System.err, testDirectory.getFileSystem());
+    private void runImport(String... arguments) throws Exception {
+        runImport(capturingCtx(), arguments);
+    }
+
+    private void runImport(CommandTestUtils.CapturingExecutionContext ctx, String... arguments) throws Exception {
         final var cmd = new ImportCommand.Full(ctx);
 
         var list = new ArrayList<>(Arrays.asList(arguments));

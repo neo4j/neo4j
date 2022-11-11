@@ -43,23 +43,30 @@ public class CommandTestUtils {
             Path confDir,
             FileSystemAbstraction fs,
             ThrowingConsumer<CapturingExecutionContext, Throwable> command) {
-        var rawOut = new ByteArrayOutputStream();
-        var rawErr = new ByteArrayOutputStream();
-        var out = new PrintStream(rawOut);
-        var err = new PrintStream(rawErr);
-        var executionContext = new CapturingExecutionContext(homeDir, confDir, rawOut, rawErr, out, err, fs);
-        try (out;
-                err) {
+        var executionContext = capturingExecutionContext(homeDir, confDir, fs);
+        try {
             command.accept(executionContext);
         } catch (Throwable e) {
             throw new RuntimeException(
-                    format("%nCaptured System.out:%n%s%nCaptured System.err:%n%s", rawOut, rawErr), e);
+                    format(
+                            "%nCaptured System.out:%n%s%nCaptured System.err:%n%s",
+                            executionContext.outAsString(), executionContext.errAsString()),
+                    e);
         }
     }
 
     public static void runAdminToolWithSuppressedOutput(
             Path homeDir, Path confDir, FileSystemAbstraction fs, String... args) {
         withSuppressedOutput(homeDir, confDir, fs, ctx -> AdminTool.execute(ctx, args));
+    }
+
+    public static CapturingExecutionContext capturingExecutionContext(
+            Path homeDir, Path confDir, FileSystemAbstraction fs) {
+        var rawOut = new ByteArrayOutputStream();
+        var rawErr = new ByteArrayOutputStream();
+        var out = new PrintStream(rawOut);
+        var err = new PrintStream(rawErr);
+        return new CapturingExecutionContext(homeDir, confDir, rawOut, rawErr, out, err, fs);
     }
 
     public static class CapturingExecutionContext extends ExecutionContext {
