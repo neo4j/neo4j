@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
@@ -614,9 +615,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
 
     plan._1 should equal(
-      Selection(
-        ands(hasLabels("n", "Foo"), hasLabels("n", "Baz")),
-        NodeByLabelScan("n", labelName("Bar"), Set.empty, IndexOrderNone)
+      IntersectionNodeByLabelsScan(
+        "n",
+        Seq(labelName("Foo"), labelName("Bar"), labelName("Baz")),
+        Set.empty,
+        IndexOrderNone
       )
     )
   }
@@ -1627,4 +1630,88 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan shouldEqual expectedPlan
   }
+
+  test("should work with label scans of label conjunctions only") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .setLabelCardinality("P", 50)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L AND n:P)
+        |RETURN n""".stripMargin
+    )
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("P", "L"))
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("L", "P"))
+        .build()
+    ))
+  }
+
+  test("should work with label scans of label conjunctions only and solve single scan hint") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .setLabelCardinality("P", 50)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |USING SCAN n:L
+        |WHERE n:L AND n:P
+        |RETURN n""".stripMargin
+    )
+
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("P", "L"))
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("L", "P"))
+        .build()
+    ))
+  }
+
+  test("should work with label scans of label conjunctions only and solve two scan hints") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .setLabelCardinality("P", 50)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |USING SCAN n:L
+        |USING SCAN n:P
+        |WHERE n:L AND n:P
+        |RETURN n""".stripMargin
+    )
+
+    // It is impossible to make up statistics where an AllNodeScan would be better, so we will get the same plan even without the hint
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("P", "L"))
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .intersectionNodeByLabelsScan("n", Seq("L", "P"))
+        .build()
+    ))
+  }
+
 }

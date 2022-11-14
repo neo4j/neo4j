@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -173,6 +174,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
+      s"$cypherToken-$orderCapability: Order by variable from intersection label scan should plan with provided order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 10)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:A&B) RETURN n ORDER BY n $cypherToken"
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("n")
+          .intersectionNodeByLabelsScan("n", Seq("A", "B"), plannedOrder)
+          .build()
+      )
+    }
+
+    test(
       s"$cypherToken-$orderCapability: Order by variable from relationship type scan should plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
@@ -256,9 +279,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )
         cost = {
           // Selection is usually cheap. Let's avoid it by making it expensive to plan, so that our options are index seeks and label scans.
-          case (Selection(_, _: NodeIndexSeek), _, _, _)   => 50000.0
-          case (Selection(_, _: NodeIndexScan), _, _, _)   => 50000.0
-          case (Selection(_, _: NodeByLabelScan), _, _, _) => 50000.0
+          case (Selection(_, _: NodeIndexSeek), _, _, _)                => 50000.0
+          case (Selection(_, _: NodeIndexScan), _, _, _)                => 50000.0
+          case (Selection(_, _: NodeByLabelScan), _, _, _)              => 50000.0
+          case (Selection(_, _: IntersectionNodeByLabelsScan), _, _, _) => 50000.0
         }
       }.getLogicalPlanFor(
         s"MATCH (n:Foo:Bar) WHERE n.prop > 0 RETURN n ORDER BY n $cypherToken",

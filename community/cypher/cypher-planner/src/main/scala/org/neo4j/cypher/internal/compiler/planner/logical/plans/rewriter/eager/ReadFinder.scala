@@ -36,10 +36,9 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -124,6 +123,14 @@ object ReadFinder {
               .withAddedFilterExpression(variable, hasLabels)
 
           case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
+            labelNames.foldLeft(PlanReads()) { (acc, labelName) =>
+              val variable = Variable(varName)(InputPosition.NONE)
+              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+              acc.withLabelRead(labelName)
+                .withAddedFilterExpression(variable, hasLabels)
+            }
+
+          case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
             labelNames.foldLeft(PlanReads()) { (acc, labelName) =>
               val variable = Variable(varName)(InputPosition.NONE)
               val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)

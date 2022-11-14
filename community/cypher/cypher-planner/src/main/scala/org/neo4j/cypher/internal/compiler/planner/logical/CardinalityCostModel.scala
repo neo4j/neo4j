@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Limit
@@ -369,6 +370,7 @@ object CardinalityCostModel {
 
       case _: NodeByLabelScan |
         _: UnionNodeByLabelsScan |
+        _: IntersectionNodeByLabelsScan |
         _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
 
       case _: ProjectEndpoints => STORE_LOOKUP_COST_PER_ROW

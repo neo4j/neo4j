@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.Relationsh
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexStringSearchScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.intersectionLabelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
@@ -79,6 +80,9 @@ object QueryPlannerConfiguration {
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+    // MATCH (n:Person&Artist) RETURN n
+    intersectionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH (n:Person|Bird) RETURN n
     unionLabelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),

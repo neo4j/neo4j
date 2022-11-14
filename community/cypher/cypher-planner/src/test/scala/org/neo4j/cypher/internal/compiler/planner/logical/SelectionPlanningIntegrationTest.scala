@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -59,6 +60,11 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     )
 
     val plan = new given {
+      // we have to force the planner not to do intersect scan
+      cost = {
+        case (Selection(_, _: IntersectionNodeByLabelsScan), _, _, _) => 50000.0
+      }
+
       cardinality = mapCardinality {
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
           queryGraph.selections.predicates.foldLeft(1000.0) { case (rows, predicate) =>

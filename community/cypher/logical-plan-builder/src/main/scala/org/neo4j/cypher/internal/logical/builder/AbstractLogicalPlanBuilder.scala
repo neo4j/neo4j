@@ -880,6 +880,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )(_)))
   }
 
+  def intersectionNodeByLabelsScan(node: String, labels: Seq[String], args: String*): IMPL = {
+    intersectionNodeByLabelsScan(node, labels, IndexOrderNone, args: _*)
+  }
+
   def intersectionNodeByLabelsScan(node: String, labels: Seq[String], indexOrder: IndexOrder, args: String*): IMPL = {
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))

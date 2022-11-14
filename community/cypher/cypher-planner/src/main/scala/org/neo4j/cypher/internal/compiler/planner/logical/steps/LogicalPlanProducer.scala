@@ -161,6 +161,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
@@ -1159,6 +1160,30 @@ case class LogicalPlanProducer(
     )
     annotate(
       UnionNodeByLabelsScan(variable.name, labels, argumentIds, toIndexOrder(providedOrder)),
+      solved,
+      providedOrder,
+      context
+    )
+  }
+
+  def planIntersectNodeByLabelsScan(
+    variable: Variable,
+    labels: Seq[LabelName],
+    solvedPredicates: Seq[Expression],
+    solvedHints: Seq[UsingScanHint] = Seq.empty,
+    argumentIds: Set[String],
+    providedOrder: ProvidedOrder,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val solved = RegularSinglePlannerQuery(queryGraph =
+      QueryGraph.empty
+        .addPatternNodes(variable.name)
+        .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHints)
+        .addArgumentIds(argumentIds.toIndexedSeq)
+    )
+    annotate(
+      IntersectionNodeByLabelsScan(variable.name, labels, argumentIds, toIndexOrder(providedOrder)),
       solved,
       providedOrder,
       context

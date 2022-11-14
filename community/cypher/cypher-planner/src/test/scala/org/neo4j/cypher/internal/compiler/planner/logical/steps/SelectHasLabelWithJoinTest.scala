@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -55,9 +56,10 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     val plan =
       new given {
         cost = {
-          case (_: Selection, _, _, _)       => 1000.0
-          case (_: NodeHashJoin, _, _, _)    => 20.0
-          case (_: NodeByLabelScan, _, _, _) => 20.0
+          case (_: IntersectionNodeByLabelsScan, _, _, _) => 1000.0
+          case (_: Selection, _, _, _)                    => 1000.0
+          case (_: NodeHashJoin, _, _, _)                 => 20.0
+          case (_: NodeByLabelScan, _, _, _)              => 20.0
         }
       } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
