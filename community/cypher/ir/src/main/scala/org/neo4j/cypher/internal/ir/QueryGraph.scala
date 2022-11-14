@@ -123,7 +123,8 @@ case class QueryGraph(
     )
     QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
       (iRExpressions ++
-        optionalMatches.flatMap(_.allQGsWithLeafInfo))
+        optionalMatches.flatMap(_.allQGsWithLeafInfo) ++
+        quantifiedPathPatterns.flatMap(_.pattern.allQGsWithLeafInfo))
   }
 
   /**

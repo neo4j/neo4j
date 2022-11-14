@@ -23,10 +23,17 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.ListSet
 
 class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -1022,6 +1029,123 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.filter("p:P")
       .|.argument("p")
       .nodeByLabelScan("x", "X")
+      .build()
+  }
+
+  test("should insert eager between quantified relationship and the creation of an overlapping relationship") {
+    val query = "MATCH (a)(()-[r]->()){1,5}(b) CREATE (a)-[r2:T]->(b) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(a)(()-[r]->()){1}(b)` =
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Limited(5),
+        start = "a",
+        end = "b",
+        innerStart = "anon_0",
+        innerEnd = "anon_1",
+        groupNodes = Set.empty,
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .create(Nil, List(createRelationship("r2", "a", "T", "b", SemanticDirection.OUTGOING)))
+      .eager(ListSet(EagernessReason.Unknown))
+      .trail(`(a)(()-[r]->()){1}(b)`)
+      .|.expandAll("(anon_0)-[r]->(anon_1)")
+      .|.argument("anon_0")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("should insert eager between quantified relationship and the creation of an overlapping node") {
+    val query = "MATCH (a:N)(()-[r]->())*(b {prop: 42}) MERGE (c:N {prop: 123})"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(a)(()-[r]->())*(b)` =
+      TrailParameters(
+        min = 0,
+        max = UpperBound.Unlimited,
+        start = "a",
+        end = "b",
+        innerStart = "anon_0",
+        innerEnd = "anon_1",
+        groupNodes = Set.empty,
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(List(createNodeWithProperties("c", List("N"), "{prop: 123}")), Nil, Nil, Nil, Set.empty)
+      .|.filter("c.prop = 123")
+      .|.nodeByLabelScan("c", "N")
+      .eager(ListSet(EagernessReason.Unknown))
+      .filter("b.prop = 42")
+      .trail(`(a)(()-[r]->())*(b)`)
+      .|.expandAll("(anon_0)-[r]->(anon_1)")
+      .|.argument("anon_0")
+      .nodeByLabelScan("a", "N")
+      .build()
+  }
+
+  test(
+    "shouldn't but does insert an unnecessary eager based solely on the predicates contained within the quantified path pattern"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("A", 5)
+      .setLabelCardinality("B", 5)
+      .setRelationshipCardinality("()-[]->(:B)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+      .setRelationshipCardinality("(:B)-[]->(:B)", 10)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    // This first MATCH expands to: (:A) | (:A)-->(:B) | (:A)-->(:B)-->(:B) | etc – all nodes have at least one label
+    val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) OPTIONAL MATCH (x:!%) DELETE x"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(start)((a)-[r]->(b))*(end)` =
+      TrailParameters(
+        min = 0,
+        max = UpperBound.Unlimited,
+        start = "start",
+        end = "end",
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set(("a", "a"), ("b", "b")),
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .deleteNode("x")
+      // At the time of writing, predicates do not percolate properly to quantified path patterns.
+      // Here we find an overlap between () and (!%) even though we will not match on ().
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("x", None),
+        EagernessReason.ReadDeleteConflict("a", None)
+      ))
+      .apply()
+      .|.optional("r", "start", "b", "a", "end")
+      .|.filter("not x:%")
+      .|.allNodeScan("x")
+      .trail(`(start)((a)-[r]->(b))*(end)`)
+      .|.filter("b:B")
+      .|.expandAll("(a)-[r]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("start", "A")
       .build()
   }
 }

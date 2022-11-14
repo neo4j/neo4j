@@ -42,21 +42,27 @@ import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.MergeNodePattern
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.ListSet
@@ -394,6 +400,43 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
 
     horizon.allQueryGraphs.map(_.queryGraph) should (contain(innerQg1) and contain(innerQg2))
+  }
+
+  test("allQGsWithLeafInfo should include quantified path patterns") {
+    val innerQueryGraph =
+      QueryGraph
+        .empty
+        .addPatternNodes("a_n", "b_n")
+        .addPatternRelationship(PatternRelationship(
+          name = "r_n",
+          nodes = ("a_n", "b_n"),
+          dir = SemanticDirection.OUTGOING,
+          types = Nil,
+          length = SimplePatternLength
+        ))
+
+    val quantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("a_n", "start"),
+        rightBinding = NodeBinding("b_n", "end"),
+        pattern = innerQueryGraph,
+        repetition = Repetition(min = 0, max = UpperBound.Unlimited),
+        nodeVariableGroupings = Set.empty,
+        relationshipVariableGroupings = Set(VariableGrouping(singletonName = "r_n", groupName = "r"))
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addPatternNodes("start", "end")
+        .addPredicates(hasLabels("start", "Alpha"), hasLabels("end", "Omega"))
+        .addQuantifiedPathPattern(quantifiedPathPattern)
+
+    val allQGsWithLeafInfo =
+      List(queryGraph, innerQueryGraph)
+        .map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
+
+    queryGraph.allQGsWithLeafInfo shouldEqual allQGsWithLeafInfo
   }
 
   private def createNode(name: String, labels: String*) =
