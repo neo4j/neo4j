@@ -29,9 +29,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -43,7 +40,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.Race;
@@ -52,7 +48,6 @@ import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 /**
@@ -61,8 +56,6 @@ import org.neo4j.test.utils.TestDirectory;
  * label index in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
  */
 @DbmsExtension(configurationCallback = "configure")
-@ExtendWith(SuppressOutputExtension.class)
-@ResourceLock(Resources.SYSTEM_OUT)
 class LabelScanStoreTxApplyRaceIT {
     // === CONTROL PANEL ===
     private static final int NUMBER_OF_DELETORS = 2;
@@ -112,7 +105,6 @@ class LabelScanStoreTxApplyRaceIT {
 
         assertTrue(new ConsistencyCheckService(dbLayout)
                 .with(defaults(GraphDatabaseSettings.neo4j_home, testDirectory.homePath()))
-                .with(new Log4jLogProvider(System.out))
                 .with(ConsistencyFlags.ALL)
                 .runFullConsistencyCheck()
                 .isSuccessful());
