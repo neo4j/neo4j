@@ -84,12 +84,17 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
 
     @Override
     public int size() {
-        int size = first.get().size();
-        var numChunks = this.numChunks.get();
-        if (numChunks > 1) {
-            size += (numChunks - 2) * chunkSize;
-            size += last.get().size();
-        }
+        Chunk firstChunk;
+        int size;
+        do {
+            firstChunk = first.get();
+            size = firstChunk.size();
+            var numChunks = this.numChunks.get();
+            if (numChunks > 1) {
+                size += (numChunks - 2) * chunkSize;
+                size += last.get().size();
+            }
+        } while (firstChunk != first.get());
         return size;
     }
 
