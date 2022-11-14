@@ -263,4 +263,8 @@ class CheckerContext {
         }
         return progress.progressForPart(name, totalCount);
     }
+
+    boolean isVerbose() {
+        return verbose;
+    }
 }
