@@ -122,10 +122,12 @@ public class CsvInputParser implements Closeable {
             }
 
             // Feed the aggregated :ID columns data after all columns have been processed
-            doContinue = visitor.id(idValueBuilder.value(), idValueBuilder.group());
-            if (doContinue) {
-                for (var idPropertyValue : idValueBuilder.idPropertyValues()) {
-                    doContinue = visitor.property(idPropertyValue.name(), idPropertyValue.value());
+            if (!idValueBuilder.isEmpty()) {
+                doContinue = visitor.id(idValueBuilder.value(), idValueBuilder.group());
+                if (doContinue) {
+                    for (var idPropertyValue : idValueBuilder.idPropertyValues()) {
+                        doContinue = visitor.property(idPropertyValue.name(), idPropertyValue.value());
+                    }
                 }
             }
 

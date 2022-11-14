@@ -67,5 +67,9 @@ class IdValueBuilder {
         return parts.stream().filter(p -> p.name != null).toList();
     }
 
+    boolean isEmpty() {
+        return parts.isEmpty();
+    }
+
     record Part(String name, Object value) {}
 }
