@@ -21,13 +21,14 @@ package org.neo4j.bolt.tx;
 
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
+import static org.neo4j.util.concurrent.Futures.getAllResults;
 
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -38,6 +39,8 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.internal.batchimport.HighestId;
+import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
 /**
@@ -50,55 +53,48 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @Neo4jWithSocketExtension
 @BoltTestExtension
 public class ConcurrentAccessIT {
-
-    private static final int NUM_WORKERS = 5;
-    private static final int NUM_REQUESTS = 1_000;
+    private static final int NUM_WORKERS = 4;
+    private static final int NUM_REQUESTS = 100;
 
     private void runWorkload(
             ConnectionProvider connectionProvider,
             int nWorkers,
             int nTimes,
             ThrowingConsumer<TransportConnection, IOException> workload)
-            throws InterruptedException, BrokenBarrierException, TimeoutException {
+            throws InterruptedException, ExecutionException {
+        var barrier = new DoubleLatch(nWorkers);
+        var tasks = new ArrayList<Callable<Void>>();
+        var numActiveWorkers = new AtomicInteger();
+        var highestNumConcurrentWorkers = new HighestId();
+        for (var i = 0; i < nWorkers; ++i) {
+            tasks.add(() -> {
+                // acquire an authenticated connection
+                var connection = connectionProvider.create();
+
+                // wait for all parties to reach the barrier point in order to synchronize startup
+                barrier.startAndWaitForAllToStart();
+                highestNumConcurrentWorkers.offer(numActiveWorkers.incrementAndGet());
+
+                // execute the actual workload n times
+                for (var j = 0; j < nTimes; ++j) {
+                    workload.accept(connection);
+                }
+
+                // wait till all parties manage to execute the entire workload
+                barrier.finishAndWaitForAllToFinish();
+                return null;
+            });
+        }
+
         var pool = Executors.newFixedThreadPool(nWorkers);
-
         try {
-            var barrier = new CyclicBarrier(nWorkers + 1);
-            var errorCounter = new AtomicInteger();
+            var futures = pool.invokeAll(tasks);
 
-            for (int i = 0; i < nWorkers; ++i) {
-                pool.submit(() -> {
-                    try {
-                        // acquire an authenticated connection
-                        var connection = connectionProvider.create();
+            // when
+            getAllResults(futures);
 
-                        // wait for all parties to reach the barrier point in order to synchronize startup
-                        barrier.await();
-
-                        // execute the actual workload n times
-                        for (var j = 0; j < nTimes; ++j) {
-                            workload.accept(connection);
-                        }
-
-                        // wait till all parties manage to execute the entire workload
-                        barrier.await();
-                    } catch (Throwable ex) {
-                        ex.printStackTrace();
-
-                        errorCounter.incrementAndGet();
-                    }
-                });
-            }
-
-            // wait until all workers managed to acquire a connection and start processing
-            barrier.await(1, TimeUnit.MINUTES);
-
-            // wait until all workers complete their assignment
-            barrier.await(5, TimeUnit.MINUTES);
-
-            // ensure that no errors were reported, otherwise forcefully fail the test (errors will be reported to
-            // stderr)
-            Assertions.assertThat(errorCounter).hasValue(0);
+            // then no exception is thrown, and
+            Assertions.assertThat(highestNumConcurrentWorkers.get()).isEqualTo(nWorkers);
         } finally {
             pool.shutdownNow();
             pool.awaitTermination(30, TimeUnit.SECONDS);
