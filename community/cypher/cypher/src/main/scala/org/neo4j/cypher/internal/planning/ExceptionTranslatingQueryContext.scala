@@ -620,7 +620,18 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
       inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider)
     )
 
-  override def createUniqueConstraint(
+  override def createRelationshipKeyConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit =
+    translateException(
+      tokenNameLookup,
+      inner.createRelationshipKeyConstraint(relTypeId, propertyKeyIds, name, provider)
+    )
+
+  override def createNodeUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
@@ -628,7 +639,18 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
   ): Unit =
     translateException(
       tokenNameLookup,
-      inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider)
+      inner.createNodeUniqueConstraint(labelId, propertyKeyIds, name, provider)
+    )
+
+  override def createRelationshipUniqueConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit =
+    translateException(
+      tokenNameLookup,
+      inner.createRelationshipUniqueConstraint(relTypeId, propertyKeyIds, name, provider)
     )
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =

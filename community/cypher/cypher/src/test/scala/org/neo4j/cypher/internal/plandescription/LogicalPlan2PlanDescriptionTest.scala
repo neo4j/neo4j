@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.PointIndexes
@@ -63,6 +65,8 @@ import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -170,13 +174,15 @@ import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
-import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DeallocateServer
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -255,6 +261,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -276,7 +283,9 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
 import org.neo4j.cypher.internal.logical.plans.RenameServer
@@ -336,7 +345,6 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -2273,10 +2281,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
-  test("CreateUniquePropertyConstraint") {
+  test("CreateNodeUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateNodeUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -2290,7 +2298,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(
+        CreateNodeUniquePropertyConstraint(
           None,
           "x",
           label("Label"),
@@ -2311,7 +2319,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(
+        CreateNodeUniquePropertyConstraint(
           None,
           "x",
           label("Label"),
@@ -2332,7 +2340,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(
+        CreateNodeUniquePropertyConstraint(
           None,
           "x",
           label("Label"),
@@ -2355,12 +2363,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(
+        CreateNodeUniquePropertyConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
             scala.util.Left(label("Label")),
             Seq(prop(" x", "prop")),
-            Uniqueness,
+            NodeUniqueness,
             None,
             NoOptions
           )),
@@ -2391,7 +2399,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateUniquePropertyConstraint(
+        CreateNodeUniquePropertyConstraint(
           None,
           " x",
           label("Label"),
@@ -2406,6 +2414,151 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details("CONSTRAINT FOR (` x`:Label) REQUIRE (` x`.prop) IS UNIQUE OPTIONS $options")),
+        Set.empty
+      )
+    )
+  }
+
+  test("CreateRelationshipUniquePropertyConstraint") {
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          None,
+          " x",
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS UNIQUE")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          None,
+          "x",
+          relType("REL_TYPE"),
+          Seq(prop("x", "prop")),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS UNIQUE")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          None,
+          "x",
+          relType("REL_TYPE"),
+          Seq(prop("x", "prop1"), prop("x", "prop2")),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop1, x.prop2) IS UNIQUE")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          None,
+          "x",
+          relType("REL_TYPE"),
+          List(prop("x", "prop")),
+          Some("$constraintName"),
+          OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details(
+          """CONSTRAINT `$constraintName` FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}"""
+        )),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          Some(DoNothingIfExistsForConstraint(
+            " x",
+            scala.util.Right(relType("REL_TYPE")),
+            Seq(prop(" x", "prop")),
+            RelationshipUniqueness,
+            None,
+            NoOptions
+          )),
+          " x",
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(CONSTRAINT)",
+            NoChildren,
+            Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS UNIQUE")),
+            Set.empty
+          )
+        ),
+        Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS UNIQUE")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipUniquePropertyConstraint(
+          None,
+          " x",
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          None,
+          OptionsParam(parameter("options", CTMap))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS UNIQUE OPTIONS $options")),
         Set.empty
       )
     )
@@ -2520,6 +2673,123 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details("CONSTRAINT FOR (` x`:Label) REQUIRE (` x`.prop) IS NODE KEY OPTIONS $options")),
+        Set.empty
+      )
+    )
+  }
+
+  test("CreateRelationshipKeyConstraint") {
+    assertGood(
+      attach(
+        CreateRelationshipKeyConstraint(None, " x", relType("REL_TYPE"), Seq(prop(" x", "prop")), None, NoOptions),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS RELATIONSHIP KEY")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipKeyConstraint(
+          None,
+          "x",
+          relType("REL_TYPE"),
+          Seq(prop("x", "prop1"), prop("x", "prop2")),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop1, x.prop2) IS RELATIONSHIP KEY")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipKeyConstraint(
+          None,
+          "x",
+          relType("REL_TYPE"),
+          List(prop("x", "prop")),
+          Some("$constraintName"),
+          OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details(
+          """CONSTRAINT `$constraintName` FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS RELATIONSHIP KEY OPTIONS {indexProvider: "range-1.0"}"""
+        )),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipKeyConstraint(
+          Some(DoNothingIfExistsForConstraint(
+            " x",
+            scala.util.Right(relType("REL_TYPE")),
+            Seq(prop(" x", "prop")),
+            RelationshipKey,
+            Some("constraintName"),
+            NoOptions
+          )),
+          " x",
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(CONSTRAINT)",
+            NoChildren,
+            Seq(details("CONSTRAINT constraintName FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS RELATIONSHIP KEY")),
+            Set.empty
+          )
+        ),
+        Seq(details("CONSTRAINT constraintName FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS RELATIONSHIP KEY")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipKeyConstraint(
+          None,
+          " x",
+          relType("REL_TYPE"),
+          Seq(prop(" x", "prop")),
+          None,
+          OptionsParam(parameter("options", CTMap))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR ()-[` x`:REL_TYPE]-() REQUIRE (` x`.prop) IS RELATIONSHIP KEY OPTIONS $options")),
         Set.empty
       )
     )
@@ -2688,8 +2958,46 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
+      attach(ShowConstraints(constraintType = NodeUniqueConstraints, verbose = true, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("nodeUniquenessConstraints, allColumns")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = RelUniqueConstraints, verbose = true, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("relationshipUniquenessConstraints, allColumns")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = KeyConstraints, verbose = false, List.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("keyConstraints, defaultColumns")), Set.empty)
+    )
+
+    assertGood(
       attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty)
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = RelKeyConstraints, verbose = false, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("relationshipKeyConstraints, defaultColumns")),
+        Set.empty
+      )
     )
 
     assertGood(

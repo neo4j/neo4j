@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -426,7 +430,17 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     ("RELATIONSHIP EXISTS", RelExistsConstraints(RemovedSyntax))
   )
 
-  private val newExistenceConstraintType = Seq(
+  private val newConstraintType = Seq(
+    ("NODE UNIQUE", NodeUniqueConstraints),
+    ("RELATIONSHIP UNIQUE", RelUniqueConstraints),
+    ("REL UNIQUE", RelUniqueConstraints),
+    ("UNIQUENESS", UniqueConstraints),
+    ("NODE UNIQUENESS", NodeUniqueConstraints),
+    ("RELATIONSHIP UNIQUENESS", RelUniqueConstraints),
+    ("REL UNIQUENESS", RelUniqueConstraints),
+    ("KEY", KeyConstraints),
+    ("RELATIONSHIP KEY", RelKeyConstraints),
+    ("REL KEY", RelKeyConstraints),
     ("PROPERTY EXISTENCE", ExistsConstraints(ValidSyntax)),
     ("PROPERTY EXIST", ExistsConstraints(ValidSyntax)),
     ("EXISTENCE", ExistsConstraints(ValidSyntax)),
@@ -444,7 +458,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   Seq("CONSTRAINT", "CONSTRAINTS").foreach {
     constraintKeyword =>
-      (oldConstraintTypes ++ newExistenceConstraintType).foreach {
+      (oldConstraintTypes ++ newConstraintType).foreach {
         case (constraintTypeKeyword, constraintType) =>
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
             assertAst(query(ShowConstraintsClause(
@@ -468,7 +482,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
       }
 
-      // Brief/verbose output (deprecated)
+      // Brief/verbose output (removed, but throw semantic checking error)
 
       oldConstraintTypes.foreach {
         case (constraintTypeKeyword, constraintType) =>
@@ -627,54 +641,6 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     failsToParse
   }
 
-  test("SHOW UNIQUENESS CONSTRAINTS") {
-    assertFailsWithMessage(
-      testName,
-      """Invalid input 'UNIQUENESS': expected
-        |  "ALIAS"
-        |  "ALIASES"
-        |  "ALL"
-        |  "BTREE"
-        |  "BUILT"
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "EXIST"
-        |  "EXISTENCE"
-        |  "EXISTS"
-        |  "FULLTEXT"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "LOOKUP"
-        |  "NODE"
-        |  "POINT"
-        |  "POPULATED"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "PROCEDURE"
-        |  "PROCEDURES"
-        |  "PROPERTY"
-        |  "RANGE"
-        |  "REL"
-        |  "RELATIONSHIP"
-        |  "ROLE"
-        |  "ROLES"
-        |  "SERVERS"
-        |  "TEXT"
-        |  "TRANSACTION"
-        |  "TRANSACTIONS"
-        |  "UNIQUE"
-        |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
-    )
-  }
-
   test("SHOW NODE CONSTRAINTS") {
     failsToParse
   }
@@ -707,6 +673,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "KEY"
         |  "LOOKUP"
         |  "NODE"
         |  "POINT"
@@ -726,6 +693,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "TRANSACTION"
         |  "TRANSACTIONS"
         |  "UNIQUE"
+        |  "UNIQUENESS"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
     )
@@ -763,6 +731,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "KEY"
         |  "LOOKUP"
         |  "NODE"
         |  "POINT"
@@ -782,6 +751,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "TRANSACTION"
         |  "TRANSACTIONS"
         |  "UNIQUE"
+        |  "UNIQUENESS"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
     )
@@ -790,12 +760,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW REL EXISTS CONSTRAINTS") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'EXISTS': expected "EXIST", "EXISTENCE" or "PROPERTY" (line 1, column 10 (offset: 9))"""
+      """Invalid input 'EXISTS': expected
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "KEY"
+        |  "PROPERTY"
+        |  "UNIQUE"
+        |  "UNIQUENESS" (line 1, column 10 (offset: 9))""".stripMargin
     )
-  }
-
-  test("SHOW KEY CONSTRAINTS") {
-    failsToParse
   }
 
   test("SHOW CONSTRAINTS OUTPUT") {
@@ -806,7 +778,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     failsToParse
   }
 
-  newExistenceConstraintType.foreach {
+  newConstraintType.foreach {
     case (constraintTypeKeyword, _) =>
       test(s"SHOW $constraintTypeKeyword CONSTRAINTS BRIEF") {
         failsToParse

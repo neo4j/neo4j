@@ -29,11 +29,13 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
-import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
@@ -43,8 +45,10 @@ import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
+import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
-import org.neo4j.cypher.internal.logical.plans.Uniqueness
+import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.SchemaExecutionPlan
@@ -105,9 +109,26 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS RELATIONSHIP KEY [OPTIONS {...}]
+    case CreateRelationshipKeyConstraint(source, _, relType, props, name, options) => context =>
+        SchemaExecutionPlan(
+          "CreateRelationshipKeyConstraint",
+          (ctx, params) => {
+            val indexProvider =
+              IndexBackedConstraintsOptionsConverter("relationship key constraint", ctx)
+                .convert(options, params)
+                .flatMap(_.provider)
+            val relId = ctx.getOrCreateRelTypeId(relType.name)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+            ctx.createRelationshipKeyConstraint(relId, propertyKeyIds, name, indexProvider)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
+
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
+    case CreateNodeUniquePropertyConstraint(source, _, label, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateUniqueConstraint",
           (ctx, params) => {
@@ -117,7 +138,25 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                 .flatMap(_.provider)
             val labelId = ctx.getOrCreateLabelId(label.name)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-            ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider)
+            ctx.createNodeUniqueConstraint(labelId, propertyKeyIds, name, indexProvider)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
+
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
+    case CreateRelationshipUniquePropertyConstraint(source, _, relType, props, name, options) => context =>
+        SchemaExecutionPlan(
+          "CreateUniqueConstraint",
+          (ctx, params) => {
+            val indexProvider =
+              IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
+                .convert(options, params)
+                .flatMap(_.provider)
+            val relTypeId = ctx.getOrCreateRelTypeId(relType.name)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+            ctx.createRelationshipUniqueConstraint(relTypeId, propertyKeyIds, name, indexProvider)
             SuccessResult
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
@@ -334,8 +373,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             assertion match {
               case NodeKey =>
                 IndexBackedConstraintsOptionsConverter("node key constraint", ctx).convert(options, params)
-              case Uniqueness =>
+              case RelationshipKey =>
+                IndexBackedConstraintsOptionsConverter("relationship key constraint", ctx).convert(options, params)
+              case NodeUniqueness =>
                 IndexBackedConstraintsOptionsConverter("uniqueness constraint", ctx).convert(options, params)
+              case RelationshipUniqueness =>
+                IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
+                  .convert(options, params)
               case NodePropertyExistence =>
                 PropertyExistenceConstraintOptionsConverter("node", ctx).convert(options, params)
               case RelationshipPropertyExistence =>
@@ -378,8 +422,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     assertion match {
       case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
       case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
-      case Uniqueness                    => c => c.isNodeUniquenessConstraint
+      case NodeUniqueness                => c => c.isNodeUniquenessConstraint
+      case RelationshipUniqueness        => c => c.isRelationshipUniquenessConstraint
       case NodeKey                       => c => c.isNodeKeyConstraint
+      case RelationshipKey               => c => c.isRelationshipKeyConstraint
     }
 
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =

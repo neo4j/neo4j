@@ -606,9 +606,9 @@ class PrettifierIT extends CypherFunSuite {
   def constraintCommandTests(): Seq[(String, String)] = Seq(
     "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
-    "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+    "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS KEY" ->
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
-    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE n.p IS NODE KEY" ->
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
     "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY",
@@ -634,11 +634,41 @@ class PrettifierIT extends CypherFunSuite {
       """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
     "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {}" ->
       """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {}""",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE r.p IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create CONSTRAINT `foo` FOR ()<-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE (r.p) IS REL KEY" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create OR replace CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY" ->
+      "CREATE OR REPLACE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create CONSTRAINT foo IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS KEY" ->
+      "CREATE CONSTRAINT foo IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY",
+    "create CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY",
+    "create CONSTRAINT `foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY",
+    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP KEY",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPTIONS {indexProvider: "range-1.0"}""",
+    "create CONSTRAINT myConstraint FOR ()-[r:R]-() require (r.p) IS RELATIONSHIP KEY OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
+      """CREATE CONSTRAINT myConstraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
+    "create CONSTRAINT FOR ()-[r:R]-() require (r.p) IS RELATIONSHIP KEY OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified' }}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPtiONS {}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP KEY OPTIONS {}""",
     "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
       "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE",
     "create CONSTRAINT foo FOR (n:A) REQUIRE n.p IS UNIQUE" ->
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
-    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p) IS NODE UNIQUE" ->
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
     "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
       "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE",
@@ -664,6 +694,36 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
     "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE" ->
       "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE r.p IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create CONSTRAINT `foo` FOR ()<-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE (r.p) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create CONSTRAINT IF NoT ExistS FOR ()-[r:R]-() REQUIRE (r.p) IS REL UNIQUE" ->
+      "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create or REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS UNIQUE" ->
+      "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP UNIQUE OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}""",
+    "create CONSTRAINT myConstraint FOR ()-[r:R]-() require (r.p) IS RELATIONSHIP UNIQUE OPTIONS {`indexProvider`: 'range-1.0', indexConfig: { }}" ->
+      """CREATE CONSTRAINT myConstraint FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
+    "create CONSTRAINT FOR ()-[r:R]-() require (r.p) IS RELATIONSHIP UNIQUE OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified'}}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP UNIQUE OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE constraint FOR ()-[r:R]-() REQUIRE (r.p) IS RELATIONSHIP UNIQUE OPtiONS {}" ->
+      """CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE OPTIONS {}""",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS UNIQUE",
+    "create CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS UNIQUE",
+    "create CONSTRAINT `foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS UNIQUE",
+    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p1, r.p2) IS UNIQUE",
     "create CONSTRAINT FOR (a:A) REQUIRE (a.p) is not null" ->
       "CREATE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS NOT NULL",
     "create CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS NoT NulL" ->
@@ -684,7 +744,7 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
     "create CONSTRAINT `foo` FOR ()<-[r:R]-() REQUIRE r.p is NOT null" ->
       "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
-    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL OPTIONS {}" ->
+    "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE r.p IS NOT NULL OPTIONS {}" ->
       "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {}",
     "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
       """CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
@@ -772,9 +832,29 @@ class PrettifierIT extends CypherFunSuite {
     "show rel property EXISTence cOnStRaInTs" ->
       "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
     "show unique constraint" ->
-      "SHOW UNIQUE CONSTRAINTS",
+      "SHOW UNIQUENESS CONSTRAINTS",
+    "show node unique constraint" ->
+      "SHOW NODE UNIQUENESS CONSTRAINTS",
+    "show REL unique constraint" ->
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+    "show Relationship unique constraint" ->
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+    "show uniqueness constraint" ->
+      "SHOW UNIQUENESS CONSTRAINTS",
+    "show node uniqueness constraint" ->
+      "SHOW NODE UNIQUENESS CONSTRAINTS",
+    "show REL uniqueness constraint" ->
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+    "show Relationship uniqueness constraint" ->
+      "SHOW RELATIONSHIP UNIQUENESS CONSTRAINTS",
+    "show key CONSTRAINTS" ->
+      "SHOW KEY CONSTRAINTS",
     "show node key CONSTRAINTS" ->
       "SHOW NODE KEY CONSTRAINTS",
+    "show rel key CONSTRAINTS" ->
+      "SHOW RELATIONSHIP KEY CONSTRAINTS",
+    "show relationship key CONSTRAINTS" ->
+      "SHOW RELATIONSHIP KEY CONSTRAINTS",
     "show constraints WHERE entityType = 'NODE'" ->
       """SHOW ALL CONSTRAINTS
         |  WHERE entityType = "NODE"""".stripMargin,
@@ -785,7 +865,7 @@ class PrettifierIT extends CypherFunSuite {
       """SHOW ALL CONSTRAINTS
         |YIELD *""".stripMargin,
     "show UNIQUE constraint  YIELD * Return DISTINCT type" ->
-      """SHOW UNIQUE CONSTRAINTS
+      """SHOW UNIQUENESS CONSTRAINTS
         |YIELD *
         |RETURN DISTINCT type""".stripMargin,
     "show existence constraint YIELD * where name = 'neo4j' Return *" ->

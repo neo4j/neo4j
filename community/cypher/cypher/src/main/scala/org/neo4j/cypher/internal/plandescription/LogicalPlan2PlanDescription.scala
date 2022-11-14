@@ -97,11 +97,13 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
-import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -162,6 +164,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -186,6 +189,8 @@ import org.neo4j.cypher.internal.logical.plans.RangeGreaterThan
 import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RelationshipKey
+import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -234,7 +239,6 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -907,9 +911,11 @@ case class LogicalPlan2PlanDescription(
 
       case DoNothingIfExistsForConstraint(entity, entityName, props, assertion, name, _) =>
         val a = assertion match {
-          case NodeKey    => scala.util.Right("IS NODE KEY")
-          case Uniqueness => scala.util.Right("IS UNIQUE")
-          case _          => scala.util.Right("IS NOT NULL")
+          case NodeKey                => "IS NODE KEY"
+          case RelationshipKey        => "IS RELATIONSHIP KEY"
+          case NodeUniqueness         => "IS UNIQUE"
+          case RelationshipUniqueness => "IS UNIQUE"
+          case _                      => "IS NOT NULL"
         }
         PlanDescriptionImpl(
           id,
@@ -920,7 +926,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateUniquePropertyConstraint(
+      case CreateNodeUniquePropertyConstraint(
           _,
           node,
           label,
@@ -933,7 +939,25 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           properties,
-          scala.util.Right("IS UNIQUE"),
+          "IS UNIQUE",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipUniquePropertyConstraint(
+          _,
+          rel,
+          relType,
+          properties: Seq[Property],
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(
+          nameOption,
+          rel,
+          scala.util.Right(relType),
+          properties,
+          "IS UNIQUE",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -951,7 +975,25 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           properties,
-          scala.util.Right("IS NODE KEY"),
+          "IS NODE KEY",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipKeyConstraint(
+          _,
+          rel,
+          relType,
+          properties: Seq[Property],
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(
+          nameOption,
+          rel,
+          scala.util.Right(relType),
+          properties,
+          "IS RELATIONSHIP KEY",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -969,7 +1011,7 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           Seq(prop),
-          scala.util.Right("IS NOT NULL"),
+          "IS NOT NULL",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -987,7 +1029,7 @@ case class LogicalPlan2PlanDescription(
           relationship,
           scala.util.Right(relTypeName),
           Seq(prop),
-          scala.util.Right("IS NOT NULL"),
+          "IS NOT NULL",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -1754,7 +1796,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateUniquePropertyConstraint(
+      case CreateNodeUniquePropertyConstraint(
           _,
           node,
           label,
@@ -1767,7 +1809,25 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           properties,
-          scala.util.Right("IS UNIQUE"),
+          "IS UNIQUE",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipUniquePropertyConstraint(
+          _,
+          rel,
+          relType,
+          properties: Seq[Property],
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(
+          nameOption,
+          rel,
+          scala.util.Right(relType),
+          properties,
+          "IS UNIQUE",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
@@ -1785,7 +1845,25 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           properties,
-          scala.util.Right("IS NODE KEY"),
+          "IS NODE KEY",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipKeyConstraint(
+          _,
+          rel,
+          relType,
+          properties: Seq[Property],
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val details = Details(constraintInfo(
+          nameOption,
+          rel,
+          scala.util.Right(relType),
+          properties,
+          "IS RELATIONSHIP KEY",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
@@ -1803,7 +1881,7 @@ case class LogicalPlan2PlanDescription(
           node,
           scala.util.Left(label),
           Seq(prop),
-          scala.util.Right("IS NOT NULL"),
+          "IS NOT NULL",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
@@ -1821,7 +1899,7 @@ case class LogicalPlan2PlanDescription(
           relationship,
           scala.util.Right(relTypeName),
           Seq(prop),
-          scala.util.Right("IS NOT NULL"),
+          "IS NOT NULL",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
@@ -2578,15 +2656,13 @@ case class LogicalPlan2PlanDescription(
     entity: String,
     entityName: Either[LabelName, RelTypeName],
     properties: Seq[Property],
-    assertion: Either[String, String],
+    assertion: String,
     options: Options = NoOptions,
     useForAndRequire: Boolean = true
   ): PrettyString = {
     val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
-    val (leftAssertion, rightAssertion) = assertion match {
-      case scala.util.Left(a)  => (asPrettyString.raw(a), pretty"")
-      case scala.util.Right(a) => (pretty"", asPrettyString.raw(s" $a"))
-    }
+    val prettyAssertion = asPrettyString.raw(assertion)
+
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val prettyEntity = asPrettyString(entity)
 
@@ -2597,7 +2673,7 @@ case class LogicalPlan2PlanDescription(
     val onOrFor = if (useForAndRequire) pretty"FOR" else pretty"ON"
     val assertOrRequire = if (useForAndRequire) pretty"REQUIRE" else pretty"ASSERT"
 
-    pretty"CONSTRAINT$name $onOrFor $entityInfo $assertOrRequire $leftAssertion$propertyString$rightAssertion${prettyOptions(options)}"
+    pretty"CONSTRAINT$name $onOrFor $entityInfo $assertOrRequire $propertyString $prettyAssertion${prettyOptions(options)}"
   }
 
   private def prettyOptions(options: Options): PrettyString = options match {

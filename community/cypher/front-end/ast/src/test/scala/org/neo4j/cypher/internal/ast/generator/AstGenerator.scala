@@ -75,19 +75,21 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.CurrentUser
@@ -145,6 +147,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
@@ -163,6 +166,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.Options
@@ -186,6 +190,8 @@ import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
@@ -1362,10 +1368,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     types <- oneOf(
       AllConstraints,
       UniqueConstraints,
+      NodeUniqueConstraints,
+      RelUniqueConstraints,
       ExistsConstraints(ValidSyntax),
       NodeExistsConstraints(ValidSyntax),
       RelExistsConstraints(ValidSyntax),
-      NodeKeyConstraints
+      KeyConstraints,
+      NodeKeyConstraints,
+      RelKeyConstraints
     )
   } yield (types, unfilteredYields)
 
@@ -1688,7 +1698,18 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    uniqueness = CreateUniquePropertyConstraint(
+    relKey = CreateRelationshipKeyConstraint(
+      variable,
+      relTypeName,
+      props,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    nodeUniqueness = CreateNodeUniquePropertyConstraint(
       variable,
       labelName,
       Seq(prop),
@@ -1699,9 +1720,20 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    compositeUniqueness = CreateUniquePropertyConstraint(
+    compositeUniqueness = CreateNodeUniquePropertyConstraint(
       variable,
       labelName,
+      props,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    relUniqueness = CreateRelationshipUniquePropertyConstraint(
+      variable,
+      relTypeName,
       props,
       name,
       ifExistsDo,
@@ -1732,7 +1764,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    command <- oneOf(nodeKey, uniqueness, compositeUniqueness, nodeExistence, relExistence)
+    command <- oneOf(nodeKey, relKey, nodeUniqueness, compositeUniqueness, relUniqueness, nodeExistence, relExistence)
   } yield command
 
   def _dropConstraint: Gen[DropConstraintOnName] = for {

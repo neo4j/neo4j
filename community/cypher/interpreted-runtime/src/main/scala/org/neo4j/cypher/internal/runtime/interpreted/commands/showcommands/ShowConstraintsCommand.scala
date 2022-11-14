@@ -22,9 +22,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.UniqueConstraints
@@ -66,8 +70,16 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
       .map { case (descriptor, _) => descriptor.getId -> descriptor.getName }
 
     val predicate: ConstraintDescriptor => Boolean = constraintType match {
-      case UniqueConstraints    => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
-      case NodeKeyConstraints   => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
+      case UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
+      case NodeUniqueConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.UNIQUE) && c.schema.entityType.equals(EntityType.NODE)
+      case RelUniqueConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.UNIQUE) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
+      case KeyConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
+      case NodeKeyConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.NODE)
+      case RelKeyConstraints => c =>
+          c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case _: ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
       case _: NodeExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
@@ -103,7 +115,7 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           "id" -> Values.longValue(constraintDescriptor.getId),
           // Name of the constraint, for example "myConstraint"
           "name" -> Values.stringValue(name),
-          // The ConstraintType of this constraint, one of "UNIQUENESS", "NODE_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
+          // The ConstraintType of this constraint, one of "UNIQUENESS", "RELATIONSHIP_UNIQUENESS", "NODE_KEY", "RELATIONSHIP_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
           "type" -> Values.stringValue(constraintType.output),
           // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
@@ -162,14 +174,22 @@ object ShowConstraintsCommand {
     val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
     val escapedName = escapeBackticks(name)
     constraintType match {
-      case UniqueConstraints =>
+      case NodeUniqueConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
-        val options = extractOptionsString(providerName, indexConfig, UniqueConstraints.prettyPrint)
+        val options = extractOptionsString(providerName, indexConfig, NodeUniqueConstraints.prettyPrint)
         s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS UNIQUE OPTIONS $options"
+      case RelUniqueConstraints =>
+        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
+        val options = extractOptionsString(providerName, indexConfig, RelUniqueConstraints.prettyPrint)
+        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS UNIQUE OPTIONS $options"
       case NodeKeyConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
         s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NODE KEY OPTIONS $options"
+      case RelKeyConstraints =>
+        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
+        val options = extractOptionsString(providerName, indexConfig, RelKeyConstraints.prettyPrint)
+        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS RELATIONSHIP KEY OPTIONS $options"
       case _: NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS NOT NULL"
@@ -202,10 +222,12 @@ object ShowConstraintsCommand {
     entityType: EntityType
   ): ShowConstraintType = {
     (internalConstraintType, entityType) match {
-      case (schema.ConstraintType.UNIQUE, EntityType.NODE)         => UniqueConstraints
-      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE)  => NodeKeyConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.NODE)         => NodeExistsConstraints()
-      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) => RelExistsConstraints()
+      case (schema.ConstraintType.UNIQUE, EntityType.NODE)                => NodeUniqueConstraints
+      case (schema.ConstraintType.UNIQUE, EntityType.RELATIONSHIP)        => RelUniqueConstraints
+      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE)         => NodeKeyConstraints
+      case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.RELATIONSHIP) => RelKeyConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.NODE)                => NodeExistsConstraints()
+      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints()
       case _ => throw new IllegalStateException(
           s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType."
         )

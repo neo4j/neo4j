@@ -141,8 +141,22 @@ object ParallelTransactionBoundQueryContext {
       provider: Option[IndexProviderDescriptor]
     ): Unit = unsupported()
 
-    override def createUniqueConstraint(
+    override def createRelationshipKeyConstraint(
+      relTypeId: Int,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor]
+    ): Unit = unsupported()
+
+    override def createNodeUniqueConstraint(
       labelId: Int,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor]
+    ): Unit = unsupported()
+
+    override def createRelationshipUniqueConstraint(
+      relTypeId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
       provider: Option[IndexProviderDescriptor]

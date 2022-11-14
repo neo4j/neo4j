@@ -532,6 +532,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "HOME"
          |  "INDEX"
          |  "INDEXES"
+         |  "KEY"
          |  "LOOKUP"
          |  "NODE"
          |  "POINT"
@@ -551,6 +552,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "TRANSACTION"
          |  "TRANSACTIONS"
          |  "UNIQUE"
+         |  "UNIQUENESS"
          |  "USER"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 

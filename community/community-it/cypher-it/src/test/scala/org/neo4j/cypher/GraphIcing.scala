@@ -59,9 +59,9 @@ trait GraphIcing {
 
   implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
 
-    // Create uniqueness constraint
+    // Create node uniqueness constraint
 
-    def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
+    def createNodeUniquenessConstraint(label: String, property: String): ConstraintDefinition = {
       var constraint = withTx(tx => {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       })
@@ -72,7 +72,7 @@ trait GraphIcing {
       constraint
     }
 
-    def createUniqueConstraint(label: String, properties: String*): ConstraintDefinition = {
+    def createNodeUniquenessConstraint(label: String, properties: String*): ConstraintDefinition = {
       withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
@@ -80,7 +80,7 @@ trait GraphIcing {
       getNodeConstraint(label, properties)
     }
 
-    def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
+    def createNodeUniquenessConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
       val constraint = withTx(tx => {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
       })
@@ -88,12 +88,40 @@ trait GraphIcing {
       constraint
     }
 
-    def createUniqueConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
+    def createNodeUniquenessConstraintWithName(
+      name: String,
+      label: String,
+      properties: String*
+    ): ConstraintDefinition = {
       withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
       awaitIndexesOnline()
       getNodeConstraint(label, properties)
+    }
+
+    // Create relationship uniqueness constraint
+
+    def createRelationshipUniquenessConstraint(relType: String, properties: String*): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS UNIQUE")
+      })
+      awaitIndexesOnline()
+      getRelationshipConstraint(relType, properties)
+    }
+
+    def createRelationshipUniquenessConstraintWithName(
+      name: String,
+      relType: String,
+      properties: String*
+    ): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(
+          s"CREATE CONSTRAINT `$name` FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS UNIQUE"
+        )
+      })
+      awaitIndexesOnline()
+      getRelationshipConstraint(relType, properties)
     }
 
     // Create node existence constraint
@@ -163,6 +191,30 @@ trait GraphIcing {
       })
       awaitIndexesOnline()
       getNodeConstraint(label, properties)
+    }
+
+    // Create relationship key constraint
+
+    def createRelationshipKeyConstraint(relType: String, properties: String*): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS REL KEY")
+      })
+      awaitIndexesOnline()
+      getRelationshipConstraint(relType, properties)
+    }
+
+    def createRelationshipKeyConstraintWithName(
+      name: String,
+      relType: String,
+      properties: String*
+    ): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(
+          s"CREATE CONSTRAINT `$name` FOR ()-[r:$relType]-() REQUIRE (r.${properties.mkString(", r.")}) IS REL KEY"
+        )
+      })
+      awaitIndexesOnline()
+      getRelationshipConstraint(relType, properties)
     }
 
     // Create index with given type
@@ -498,13 +550,8 @@ trait GraphIcing {
 
     // Find constraint
 
-    def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
-      withTx(tx => {
-        tx.schema().getConstraints(Label.label(label)).asScala.find(constraint =>
-          constraint.getPropertyKeys.asScala.toList == properties.toList
-        ).get
-      })
-    }
+    def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition =
+      getMaybeNodeConstraint(label, properties).get
 
     def getMaybeNodeConstraint(label: String, properties: Seq[String]): Option[ConstraintDefinition] = {
       withTx(tx => {
@@ -514,18 +561,19 @@ trait GraphIcing {
       })
     }
 
-    def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition = {
-      withTx(tx => {
-        tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint =>
-          constraint.getPropertyKeys.asScala.toList == List(property)
-        ).get
-      })
-    }
+    def getRelationshipConstraint(relType: String, property: String): ConstraintDefinition =
+      getRelationshipConstraint(relType, Seq(property))
 
-    def getMaybeRelationshipConstraint(relType: String, property: String): Option[ConstraintDefinition] = {
+    def getRelationshipConstraint(relType: String, properties: Seq[String]): ConstraintDefinition =
+      getMaybeRelationshipConstraint(relType, properties).get
+
+    def getMaybeRelationshipConstraint(relType: String, property: String): Option[ConstraintDefinition] =
+      getMaybeRelationshipConstraint(relType, Seq(property))
+
+    def getMaybeRelationshipConstraint(relType: String, properties: Seq[String]): Option[ConstraintDefinition] = {
       withTx(tx => {
         tx.schema().getConstraints(RelationshipType.withName(relType)).asScala.find(constraint =>
-          constraint.getPropertyKeys.asScala.toList == List(property)
+          constraint.getPropertyKeys.asScala.toList == properties
         )
       })
     }
@@ -534,11 +582,16 @@ trait GraphIcing {
       val constraint = tx.schema().getConstraintByName(name)
       val properties = constraint.getPropertyKeys.asScala.toList
       val labelOrRelType = constraint.getConstraintType match {
-        case ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE => constraint.getRelationshipType.name()
-        case _                                              => constraint.getLabel.name()
+        case ConstraintType.NODE_PROPERTY_EXISTENCE | ConstraintType.NODE_KEY | ConstraintType.UNIQUENESS =>
+          constraint.getLabel.name()
+        case ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE | ConstraintType.RELATIONSHIP_KEY | ConstraintType.RELATIONSHIP_UNIQUENESS =>
+          constraint.getRelationshipType.name()
       }
       (labelOrRelType, properties)
     })
+
+    def getConstraintTypeByName(name: String): ConstraintType =
+      withTx(tx => tx.schema().getConstraintByName(name).getConstraintType)
 
     // Transaction methods
 

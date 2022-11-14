@@ -196,12 +196,12 @@ object ShowIndexesCommand {
     val escapedName = s"`${escapeBackticks(name)}`"
 
     def constraintCommand(
-      labelsOrTypesWithColons: String,
-      escapedNodeProperties: String,
+      nodeOrRelPattern: String,
+      escapedProperties: String,
       predicate: String,
       options: String
     ): String =
-      s"CREATE CONSTRAINT $escapedName FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedNodeProperties) $predicate OPTIONS $options"
+      s"CREATE CONSTRAINT $escapedName FOR $nodeOrRelPattern REQUIRE ($escapedProperties) $predicate OPTIONS $options"
 
     indexType match {
       case IndexType.RANGE =>
@@ -211,11 +211,24 @@ object ShowIndexesCommand {
           case Some(constraint) if constraint.isNodeUniquenessConstraint =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
             val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS UNIQUE", optionsString)
+            constraintCommand(s"(n$labelsOrTypesWithColons)", escapedNodeProperties, "IS UNIQUE", optionsString)
+          case Some(constraint) if constraint.isRelationshipUniquenessConstraint =>
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
+            constraintCommand(s"()-[r$labelsOrTypesWithColons]-()", escapedRelProperties, "IS UNIQUE", optionsString)
           case Some(constraint) if constraint.isNodeKeyConstraint =>
             val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
             val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
-            constraintCommand(labelsOrTypesWithColons, escapedNodeProperties, "IS NODE KEY", optionsString)
+            constraintCommand(s"(n$labelsOrTypesWithColons)", escapedNodeProperties, "IS NODE KEY", optionsString)
+          case Some(constraint) if constraint.isRelationshipKeyConstraint =>
+            val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+            val optionsString = s"{indexConfig: {}, indexProvider: '$providerName'}"
+            constraintCommand(
+              s"()-[r$labelsOrTypesWithColons]-()",
+              escapedRelProperties,
+              "IS RELATIONSHIP KEY",
+              optionsString
+            )
           case Some(_) =>
             throw new IllegalArgumentException(
               "Expected an index or index backed constraint, found another constraint."

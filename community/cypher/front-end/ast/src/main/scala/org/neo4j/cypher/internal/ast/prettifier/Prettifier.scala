@@ -47,16 +47,18 @@ import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -388,7 +390,23 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
 
-      case CreateUniquePropertyConstraint(
+      case CreateRelationshipKeyConstraint(
+          Variable(variable),
+          RelTypeName(relType),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val forOrOn = if (containsOn) "ON" else "FOR"
+        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
+        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire ${propertiesToString(properties)} IS RELATIONSHIP KEY${asString(options)}"
+
+      case CreateNodeUniquePropertyConstraint(
           Variable(variable),
           LabelName(label),
           properties,
@@ -403,6 +421,22 @@ case class Prettifier(
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
+
+      case CreateRelationshipUniquePropertyConstraint(
+          Variable(variable),
+          RelTypeName(relType),
+          properties,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val forOrOn = if (containsOn) "ON" else "FOR"
+        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
+        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
       case CreateNodePropertyExistenceConstraint(
           Variable(variable),

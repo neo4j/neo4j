@@ -215,6 +215,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "KEY"
         |  "LOOKUP"
         |  "NODE"
         |  "POINT"
@@ -234,6 +235,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         |  "TRANSACTION"
         |  "TRANSACTIONS"
         |  "UNIQUE"
+        |  "UNIQUENESS"
         |  "USER"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
     )

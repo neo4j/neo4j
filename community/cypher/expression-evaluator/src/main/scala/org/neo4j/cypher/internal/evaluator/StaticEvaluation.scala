@@ -375,8 +375,22 @@ object StaticEvaluation {
       provider: Option[IndexProviderDescriptor]
     ): Unit = notAvailable()
 
-    override def createUniqueConstraint(
+    override def createRelationshipKeyConstraint(
+      relTypeId: Int,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor]
+    ): Unit = notAvailable()
+
+    override def createNodeUniqueConstraint(
       labelId: Int,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor]
+    ): Unit = notAvailable()
+
+    override def createRelationshipUniqueConstraint(
+      relTypeId: Int,
       propertyKeyIds: Seq[Int],
       name: Option[String],
       provider: Option[IndexProviderDescriptor]

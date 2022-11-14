@@ -52,8 +52,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val indexesAdded = new Counter
   private val indexesRemoved = new Counter
   private val uniqueConstraintsAdded = new Counter
+  private val relUniqueConstraintsAdded = new Counter
   private val propertyExistenceConstraintsAdded = new Counter
   private val nodekeyConstraintsAdded = new Counter
+  private val relkeyConstraintsAdded = new Counter
   private val constraintsRemoved = new Counter
 
   def getTrackedStatistics: QueryStatistics = QueryStatistics(
@@ -67,8 +69,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesAdded = indexesAdded.count,
     indexesRemoved = indexesRemoved.count,
     uniqueConstraintsAdded = uniqueConstraintsAdded.count,
+    relUniqueConstraintsAdded = relUniqueConstraintsAdded.count,
     existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
     nodekeyConstraintsAdded = nodekeyConstraintsAdded.count,
+    relkeyConstraintsAdded = relkeyConstraintsAdded.count,
     constraintsRemoved = constraintsRemoved.count
   )
 
@@ -83,8 +87,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesAdded.increase(statistics.indexesAdded)
     indexesRemoved.increase(statistics.indexesRemoved)
     uniqueConstraintsAdded.increase(statistics.uniqueConstraintsAdded)
+    relUniqueConstraintsAdded.increase(statistics.relUniqueConstraintsAdded)
     propertyExistenceConstraintsAdded.increase(statistics.existenceConstraintsAdded)
     nodekeyConstraintsAdded.increase(statistics.nodekeyConstraintsAdded)
+    relkeyConstraintsAdded.increase(statistics.relkeyConstraintsAdded)
     constraintsRemoved.increase(statistics.constraintsRemoved)
     inner.addStatistics(statistics)
   }
@@ -210,14 +216,34 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsAdded.increase()
   }
 
-  override def createUniqueConstraint(
+  override def createRelationshipKeyConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit = {
+    inner.createRelationshipKeyConstraint(relTypeId, propertyKeyIds, name, provider)
+    relkeyConstraintsAdded.increase()
+  }
+
+  override def createNodeUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
     provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider)
+    inner.createNodeUniqueConstraint(labelId, propertyKeyIds, name, provider)
     uniqueConstraintsAdded.increase()
+  }
+
+  override def createRelationshipUniqueConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit = {
+    inner.createRelationshipUniqueConstraint(relTypeId, propertyKeyIds, name, provider)
+    relUniqueConstraintsAdded.increase()
   }
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit = {

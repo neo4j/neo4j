@@ -580,6 +580,7 @@ TOKEN [IGNORE_CASE] :
     | < TYPES: "TYPES">
     | < UNION: "UNION" >
     | < UNIQUE: "UNIQUE" >
+    | < UNIQUENESS: "UNIQUENESS" >
     | < UNWIND: "UNWIND" >
     | < USE: "USE" >
     | < USER: "USER">
@@ -3405,6 +3406,8 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | showCommandType=<POINT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.POINT )
         | showCommandType=<LOOKUP> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.LOOKUP )
         | showCommandType=<UNIQUE> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
+        | showCommandType=<UNIQUENESS> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
+        | showCommandType=<KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.KEY )
         | showCommandType=<NODE> statement=ShowNodeCommand( start, useClause )
         | showCommandType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.EXIST )
         | showCommandType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.EXIST )
@@ -3495,17 +3498,17 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 
 STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
-    Token constraintType = null;
     STATEMENT statement = null;
 }
 {
     // Needs to add <NODE> to the type
     (
-        constraintType=<KEY> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_KEY )
-        | constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
-        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
-        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXISTS )
-        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_UNIQUE )
+        | <KEY> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_KEY )
+        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
+        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
+        | <EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXISTS )
+        | <EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXIST )
     )
     {
         return statement;
@@ -3514,15 +3517,16 @@ STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 
 STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
-    Token constraintType = null;
     STATEMENT statement = null;
 }
 {
     (
-        constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
-        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
+        | <KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_KEY )
+        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
+        | <EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
     )
     {
         return statement;
@@ -3535,7 +3539,9 @@ STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 }
 {
     (
-        <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
+        | <KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_KEY )
+        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
         | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
         | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
     )
@@ -4031,19 +4037,18 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
             errorStart=<IS>
             (
                 <UNIQUE> {
-                        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS UNIQUE
                         // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS UNIQUE
-                        constraintType = ConstraintType.UNIQUE ;
-                        if ( !isNode )
-                        {
-                            throw exceptionFactory.syntaxException(
-                                new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
-                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
-                        }
+                        // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS UNIQUE
+                        constraintType = isNode ? ConstraintType.NODE_UNIQUE : ConstraintType.REL_UNIQUE;
                      }
-                | <NODE> <KEY>
+                | <KEY> {
+                        // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS KEY
+                        // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS KEY
+                        constraintType = isNode ? ConstraintType.NODE_KEY : ConstraintType.REL_KEY;
+                     }
+                | <NODE>
+                    (<KEY>
                     {
-                        // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NODE KEY
                         // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NODE KEY
                         constraintType = ConstraintType.NODE_KEY;
                         if ( !isNode )
@@ -4053,9 +4058,43 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                                 errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
                         }
                     }
+                    | <UNIQUE>
+                    {
+                        // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NODE UNIQUE
+                        constraintType = ConstraintType.NODE_UNIQUE;
+                        if ( !isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.relationshipPatternNotAllowed( constraintType ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                    })
+                | (<RELATIONSHIP> | <REL>)
+                    (<KEY>
+                    {
+                        // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS RELATIONSHIP KEY
+                        constraintType = ConstraintType.REL_KEY;
+                        if ( isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.nodePatternNotAllowed( constraintType ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                    }
+                    | <UNIQUE>
+                    {
+                        // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS RELATIONSHIP UNIQUE
+                        constraintType = ConstraintType.REL_UNIQUE;
+                        if ( isNode )
+                        {
+                            throw exceptionFactory.syntaxException(
+                                new ParseException( ASTExceptionFactory.nodePatternNotAllowed( constraintType ) ),
+                                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+                        }
+                    })
                 | <NOT> <NULL> {
-                    // CREATE CONSTRAINT ON (variable:LABEL) ASSERT variable.prop IS NOT NULL
                     // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS NOT NULL
+                    // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS NOT NULL
                     constraintType = isNode ? ConstraintType.NODE_IS_NOT_NULL : ConstraintType.REL_IS_NOT_NULL;
                     if (constraintVersion == ConstraintVersion.CONSTRAINT_VERSION_0)
                     {
@@ -4104,7 +4143,7 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
               (
                   //DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE
                   <UNIQUE> {
-                          constraintType = ConstraintType.UNIQUE;
+                          constraintType = ConstraintType.NODE_UNIQUE;
                           if ( !isNode )
                           {
                               throw exceptionFactory.syntaxException(
@@ -6178,6 +6217,7 @@ Token UnescapedSymbolicNameString() :
         | t=<TYPES>
         | t=<UNION>
         | t=<UNIQUE>
+        | t=<UNIQUENESS>
         | t=<UNWIND>
         | t=<USE>
         | t=<USER>

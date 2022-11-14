@@ -381,13 +381,29 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): Unit =
     singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider))
 
-  override def createUniqueConstraint(
+  override def createRelationshipKeyConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit =
+    singleDbHit(inner.createRelationshipKeyConstraint(relTypeId, propertyKeyIds, name, provider))
+
+  override def createNodeUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
     provider: Option[IndexProviderDescriptor]
   ): Unit =
-    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider))
+    singleDbHit(inner.createNodeUniqueConstraint(labelId, propertyKeyIds, name, provider))
+
+  override def createRelationshipUniqueConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit =
+    singleDbHit(inner.createRelationshipUniqueConstraint(relTypeId, propertyKeyIds, name, provider))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))

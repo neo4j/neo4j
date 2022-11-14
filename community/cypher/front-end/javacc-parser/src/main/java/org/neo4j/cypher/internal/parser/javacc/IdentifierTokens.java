@@ -207,6 +207,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUENESS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNWIND;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USER;
@@ -416,6 +417,7 @@ public class IdentifierTokens {
             TYPES,
             UNION,
             UNIQUE,
+            UNIQUENESS,
             UNWIND,
             USE,
             USER,

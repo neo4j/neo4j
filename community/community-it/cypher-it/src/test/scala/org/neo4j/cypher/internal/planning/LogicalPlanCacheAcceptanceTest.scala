@@ -334,7 +334,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
 
   test("should monitor cache flushes") {
     runQuery("return 42")
-    graph.createUniqueConstraint("Person", "id")
+    graph.createNodeUniquenessConstraint("Person", "id")
     runQuery("return 42")
 
     counter.counts should equal(CacheCounts(misses = 2, flushes = 2, compilations = 2))

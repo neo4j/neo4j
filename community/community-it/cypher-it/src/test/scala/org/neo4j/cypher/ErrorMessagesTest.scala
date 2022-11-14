@@ -144,7 +144,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("trying to drop constraint index should return sensible error") {
-    graph.createUniqueConstraintWithName("my_index", "LabelName", "Prop")
+    graph.createNodeUniquenessConstraintWithName("my_index", "LabelName", "Prop")
 
     expectError(
       "DROP INDEX my_index",
@@ -180,7 +180,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("report wrong usage of index hint") {
-    graph.createUniqueConstraint("Person", "id")
+    graph.createNodeUniquenessConstraint("Person", "id")
     expectError(
       "MATCH (n:Person) USING INDEX n:Person(id) WHERE n.name = 'Andres' RETURN n",
       "Cannot use index hint `USING INDEX n:Person(id)` in this context: Must use the property `id`, that the hint is referring to, on the node `n` either in the pattern or in supported predicates in `WHERE` (either directly or as part of a top-level `AND` or `OR`), but only `name` was found. Supported predicates are: equality comparison, inequality (range) comparison, `STARTS WITH`, `IN` condition or checking property existence. The comparison cannot be performed between two property values. Note that the property `id` must be specified on a non-optional node. (line 1, column 18 (offset: 17))"

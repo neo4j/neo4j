@@ -37,15 +37,18 @@ case class QueryStatistics(
   @BeanProperty indexesAdded: Int = 0,
   @BeanProperty indexesRemoved: Int = 0,
   uniqueConstraintsAdded: Int = 0,
+  relUniqueConstraintsAdded: Int = 0,
   existenceConstraintsAdded: Int = 0,
   nodekeyConstraintsAdded: Int = 0,
+  relkeyConstraintsAdded: Int = 0,
   @BeanProperty constraintsRemoved: Int = 0,
   @BeanProperty transactionsCommitted: Int = 0,
   @BeanProperty systemUpdates: Int = 0
 ) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
 
   @BeanProperty
-  val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
+  val constraintsAdded: Int = uniqueConstraintsAdded + relUniqueConstraintsAdded +
+    existenceConstraintsAdded + nodekeyConstraintsAdded + relkeyConstraintsAdded
 
   override def containsUpdates: Boolean =
     nodesCreated > 0 ||
@@ -78,8 +81,10 @@ case class QueryStatistics(
       includeIfNonZero(builder, "Indexes added: ", indexesAdded)
       includeIfNonZero(builder, "Indexes removed: ", indexesRemoved)
       includeIfNonZero(builder, "Unique constraints added: ", uniqueConstraintsAdded)
+      includeIfNonZero(builder, "Relationship uniqueness constraints added: ", relUniqueConstraintsAdded)
       includeIfNonZero(builder, "Property existence constraints added: ", existenceConstraintsAdded)
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
+      includeIfNonZero(builder, "Relationship key constraints added: ", relkeyConstraintsAdded)
       includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
       includeIfNonZero(builder, "Transactions committed: ", transactionsCommitted)
     }
@@ -104,8 +109,10 @@ case class QueryStatistics(
       indexesAdded = this.indexesAdded + other.indexesAdded,
       indexesRemoved = this.indexesRemoved + other.indexesRemoved,
       uniqueConstraintsAdded = this.uniqueConstraintsAdded + other.uniqueConstraintsAdded,
+      relUniqueConstraintsAdded = this.relUniqueConstraintsAdded + other.relUniqueConstraintsAdded,
       existenceConstraintsAdded = this.existenceConstraintsAdded + other.existenceConstraintsAdded,
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded + other.nodekeyConstraintsAdded,
+      relkeyConstraintsAdded = this.relkeyConstraintsAdded + other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved + other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted + other.transactionsCommitted,
       systemUpdates = this.systemUpdates + other.systemUpdates
@@ -124,8 +131,10 @@ case class QueryStatistics(
       indexesAdded = this.indexesAdded - other.indexesAdded,
       indexesRemoved = this.indexesRemoved - other.indexesRemoved,
       uniqueConstraintsAdded = this.uniqueConstraintsAdded - other.uniqueConstraintsAdded,
+      relUniqueConstraintsAdded = this.relUniqueConstraintsAdded - other.relUniqueConstraintsAdded,
       existenceConstraintsAdded = this.existenceConstraintsAdded - other.existenceConstraintsAdded,
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded - other.nodekeyConstraintsAdded,
+      relkeyConstraintsAdded = this.relkeyConstraintsAdded - other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved - other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted - other.transactionsCommitted,
       systemUpdates = this.systemUpdates - other.systemUpdates

@@ -160,6 +160,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
@@ -178,6 +179,7 @@ import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OptionsMap
@@ -200,6 +202,8 @@ import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
@@ -1306,7 +1310,11 @@ class Neo4jASTFactory(query: String)
     val constraintType: ShowConstraintType = initialConstraintType match {
       case ShowCommandFilterTypes.ALL                     => AllConstraints
       case ShowCommandFilterTypes.UNIQUE                  => UniqueConstraints
+      case ShowCommandFilterTypes.NODE_UNIQUE             => NodeUniqueConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_UNIQUE     => RelUniqueConstraints
+      case ShowCommandFilterTypes.KEY                     => KeyConstraints
       case ShowCommandFilterTypes.NODE_KEY                => NodeKeyConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_KEY        => RelKeyConstraints
       case ShowCommandFilterTypes.EXIST                   => ExistsConstraints(ValidSyntax)
       case ShowCommandFilterTypes.OLD_EXISTS              => ExistsConstraints(RemovedSyntax)
       case ShowCommandFilterTypes.OLD_EXIST               => ExistsConstraints(ValidSyntax)
@@ -1429,9 +1437,19 @@ class Neo4jASTFactory(query: String)
 
     val properties = javaProperties.asScala.toSeq
     constraintType match {
-      case ConstraintType.UNIQUE => ast.CreateUniquePropertyConstraint(
+      case ConstraintType.NODE_UNIQUE => ast.CreateNodeUniquePropertyConstraint(
           variable,
           LabelName(label.string)(label.pos),
+          properties,
+          Option(name),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options),
+          containsOn,
+          constraintVersionScala
+        )(p)
+      case ConstraintType.REL_UNIQUE => ast.CreateRelationshipUniquePropertyConstraint(
+          variable,
+          RelTypeName(label.string)(label.pos),
           properties,
           Option(name),
           ifExistsDo(replace, ifNotExists),
@@ -1442,6 +1460,16 @@ class Neo4jASTFactory(query: String)
       case ConstraintType.NODE_KEY => ast.CreateNodeKeyConstraint(
           variable,
           LabelName(label.string)(label.pos),
+          properties,
+          Option(name),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options),
+          containsOn,
+          constraintVersionScala
+        )(p)
+      case ConstraintType.REL_KEY => ast.CreateRelationshipKeyConstraint(
+          variable,
+          RelTypeName(label.string)(label.pos),
           properties,
           Option(name),
           ifExistsDo(replace, ifNotExists),
@@ -1488,18 +1516,17 @@ class Neo4jASTFactory(query: String)
   ): SchemaCommand = {
     val properties = javaProperties.asScala.toSeq
     constraintType match {
-      case ConstraintType.UNIQUE =>
+      case ConstraintType.NODE_UNIQUE =>
         DropUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
       case ConstraintType.NODE_KEY => DropNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
       case ConstraintType.NODE_EXISTS =>
         validateSingleProperty(properties, constraintType)
         DropNodePropertyExistenceConstraint(variable, LabelName(label.string)(label.pos), properties.head)(p)
-      case ConstraintType.NODE_IS_NOT_NULL =>
-        throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
       case ConstraintType.REL_EXISTS =>
         validateSingleProperty(properties, constraintType)
         DropRelationshipPropertyExistenceConstraint(variable, RelTypeName(label.string)(label.pos), properties.head)(p)
-      case ConstraintType.REL_IS_NOT_NULL =>
+      case _ =>
+        // ConstraintType.NODE_IS_NOT_NULL, ConstraintType.REL_IS_NOT_NULL, ConstraintType.REL_UNIQUE, ConstraintType.REL_KEY
         throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidDropCommand)
     }
   }

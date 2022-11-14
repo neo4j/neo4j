@@ -36,6 +36,10 @@ public interface ASTExceptionFactory {
         return String.format("'%s' does not allow relationship patterns", type.description());
     }
 
+    static String nodePatternNotAllowed(ConstraintType type) {
+        return String.format("'%s' does not allow node patterns", type.description());
+    }
+
     static String onlySinglePropertyAllowed(ConstraintType type) {
         return String.format("Constraint type '%s' does not allow multiple properties", type.description());
     }

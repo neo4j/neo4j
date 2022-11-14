@@ -47,10 +47,32 @@ case class CreateNodeKeyConstraint(
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateUniquePropertyConstraint(
+case class CreateRelationshipKeyConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  rel: String,
+  typeName: RelTypeName,
+  props: Seq[Property],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
+case class CreateNodeUniquePropertyConstraint(
   source: Option[DoNothingIfExistsForConstraint],
   node: String,
   label: LabelName,
+  props: Seq[Property],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
+case class CreateRelationshipUniquePropertyConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  rel: String,
+  typeName: RelTypeName,
   props: Seq[Property],
   name: Option[String],
   options: Options
@@ -163,6 +185,8 @@ case class DoNothingIfExistsForConstraint(
 
 sealed trait ConstraintType
 case object NodeKey extends ConstraintType
-case object Uniqueness extends ConstraintType
+case object RelationshipKey extends ConstraintType
+case object NodeUniqueness extends ConstraintType
+case object RelationshipUniqueness extends ConstraintType
 case object NodePropertyExistence extends ConstraintType
 case object RelationshipPropertyExistence extends ConstraintType

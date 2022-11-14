@@ -30,8 +30,20 @@ case object AllConstraints extends ShowConstraintType {
 
 case object UniqueConstraints extends ShowConstraintType {
   override val output: String = "UNIQUENESS"
-  override val prettyPrint: String = "UNIQUE"
+  override val prettyPrint: String = "UNIQUENESS"
   override val description: String = "uniquenessConstraints"
+}
+
+case object NodeUniqueConstraints extends ShowConstraintType {
+  override val output: String = "UNIQUENESS" // cannot change constraint type until 6.0: update to `NODE_UNIQUENESS`
+  override val prettyPrint: String = "NODE UNIQUENESS"
+  override val description: String = "nodeUniquenessConstraints"
+}
+
+case object RelUniqueConstraints extends ShowConstraintType {
+  override val output: String = "RELATIONSHIP_UNIQUENESS"
+  override val prettyPrint: String = "RELATIONSHIP UNIQUENESS"
+  override val description: String = "relationshipUniquenessConstraints"
 }
 
 case class ExistsConstraints(syntax: ExistenceConstraintSyntax) extends ShowConstraintType {
@@ -52,10 +64,22 @@ case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = ValidSyntax)
   override val description: String = "relationshipExistenceConstraints"
 }
 
+case object KeyConstraints extends ShowConstraintType {
+  override val output: String = "KEY"
+  override val prettyPrint: String = "KEY"
+  override val description: String = "keyConstraints"
+}
+
 case object NodeKeyConstraints extends ShowConstraintType {
   override val output: String = "NODE_KEY"
   override val prettyPrint: String = "NODE KEY"
   override val description: String = "nodeKeyConstraints"
+}
+
+case object RelKeyConstraints extends ShowConstraintType {
+  override val output: String = "RELATIONSHIP_KEY"
+  override val prettyPrint: String = "RELATIONSHIP KEY"
+  override val description: String = "relationshipKeyConstraints"
 }
 
 sealed trait ExistenceConstraintSyntax

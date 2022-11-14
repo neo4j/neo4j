@@ -487,8 +487,24 @@ trait WriteQueryContext {
   ): Unit
 
   /* throws if failed or pre-existing */
-  def createUniqueConstraint(
+  def createRelationshipKeyConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit
+
+  /* throws if failed or pre-existing */
+  def createNodeUniqueConstraint(
     labelId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit
+
+  /* throws if failed or pre-existing */
+  def createRelationshipUniqueConstraint(
+    relTypeId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
     provider: Option[IndexProviderDescriptor]

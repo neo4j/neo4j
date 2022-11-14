@@ -360,34 +360,63 @@ sealed class TransactionBoundQueryContext(
     name: Option[String],
     provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
+    val indexPrototype = getNodeUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
     transactionalContext.schemaWrite.keyConstraintCreate(indexPrototype)
   }
 
-  override def createUniqueConstraint(
+  override def createRelationshipKeyConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit = {
+    val indexPrototype = getRelationshipUniqueIndexPrototype(relTypeId, propertyKeyIds, name, provider)
+    transactionalContext.schemaWrite.keyConstraintCreate(indexPrototype)
+  }
+
+  override def createNodeUniqueConstraint(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
     provider: Option[IndexProviderDescriptor]
   ): Unit = {
-    val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
+    val indexPrototype = getNodeUniqueIndexPrototype(labelId, propertyKeyIds, name, provider)
     transactionalContext.schemaWrite.uniquePropertyConstraintCreate(indexPrototype)
   }
 
-  private def getUniqueIndexPrototype(
+  override def createRelationshipUniqueConstraint(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ): Unit = {
+    val indexPrototype = getRelationshipUniqueIndexPrototype(relTypeId, propertyKeyIds, name, provider)
+    transactionalContext.schemaWrite.uniquePropertyConstraintCreate(indexPrototype)
+  }
+
+  private def getNodeUniqueIndexPrototype(
     labelId: Int,
     propertyKeyIds: Seq[Int],
     name: Option[String],
     provider: Option[IndexProviderDescriptor]
-  ) = {
-    val descriptor = SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*)
+  ) =
+    getUniqueIndexPrototype(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), name, provider)
 
-    val indexPrototype =
-      provider.map(provider => IndexPrototype.uniqueForSchema(descriptor, provider))
-        .getOrElse(IndexPrototype.uniqueForSchema(descriptor))
+  private def getRelationshipUniqueIndexPrototype(
+    relTypeId: Int,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ) =
+    getUniqueIndexPrototype(SchemaDescriptors.forRelType(relTypeId, propertyKeyIds: _*), name, provider)
 
-    indexPrototype.withName(name.orNull)
-  }
+  private def getUniqueIndexPrototype(
+    descriptor: SchemaDescriptor,
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor]
+  ) =
+    provider.map(provider => IndexPrototype.uniqueForSchema(descriptor, provider))
+      .getOrElse(IndexPrototype.uniqueForSchema(descriptor)).withName(name.orNull)
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     transactionalContext.schemaWrite.nodePropertyExistenceConstraintCreate(

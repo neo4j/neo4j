@@ -53,7 +53,7 @@ trait SampleGraphs {
     for (source <- users.take(150))
       relate(source, rooms.head, "STAYS_IN")
 
-    graph.createUniqueConstraint("User", "email")
+    graph.createNodeUniquenessConstraint("User", "email")
     graph.createNodeIndex("User", "lastName")
     graph.createNodeIndex("User", "firstName", "lastName")
     graph.createNodeIndex("Room", "hotel", "number")

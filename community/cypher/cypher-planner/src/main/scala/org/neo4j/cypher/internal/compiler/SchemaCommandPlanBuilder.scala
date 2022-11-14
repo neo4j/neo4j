@@ -25,14 +25,16 @@ import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodeUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -148,21 +150,52 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         }
         Some(plans.CreateNodeKeyConstraint(source, node.name, label, props, name, options))
 
-      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
-      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-      case CreateUniquePropertyConstraint(node, label, props, name, ifExistsDo, options, _, _, _) =>
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS RELATIONSHIP KEY [OPTIONS {...}]
+      case CreateRelationshipKeyConstraint(rel, relType, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
-              node.name,
-              scala.util.Left(label),
+              rel.name,
+              scala.util.Right(relType),
               props,
-              plans.Uniqueness,
+              plans.RelationshipKey,
               name,
               options
             ))
           case _ => None
         }
-        Some(plans.CreateUniquePropertyConstraint(source, node.name, label, props, name, options))
+        Some(plans.CreateRelationshipKeyConstraint(source, rel.name, relType, props, name, options))
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
+      case CreateNodeUniquePropertyConstraint(node, label, props, name, ifExistsDo, options, _, _, _) =>
+        val source = ifExistsDo match {
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
+              node.name,
+              scala.util.Left(label),
+              props,
+              plans.NodeUniqueness,
+              name,
+              options
+            ))
+          case _ => None
+        }
+        Some(plans.CreateNodeUniquePropertyConstraint(source, node.name, label, props, name, options))
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
+      case CreateRelationshipUniquePropertyConstraint(rel, relType, props, name, ifExistsDo, options, _, _, _) =>
+        val source = ifExistsDo match {
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
+              rel.name,
+              scala.util.Right(relType),
+              props,
+              plans.RelationshipUniqueness,
+              name,
+              options
+            ))
+          case _ => None
+        }
+        Some(plans.CreateRelationshipUniquePropertyConstraint(source, rel.name, relType, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
       case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, options, _, _, _) =>

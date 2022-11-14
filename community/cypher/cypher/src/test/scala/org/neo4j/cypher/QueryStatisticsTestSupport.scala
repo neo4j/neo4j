@@ -39,8 +39,10 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
     indexesAdded: Int = 0,
     indexesRemoved: Int = 0,
     uniqueConstraintsAdded: Int = 0,
+    relUniqueConstraintsAdded: Int = 0,
     existenceConstraintsAdded: Int = 0,
     nodekeyConstraintsAdded: Int = 0,
+    relkeyConstraintsAdded: Int = 0,
     constraintsRemoved: Int = 0,
     transactionsCommitted: Int = 0
   ): Unit = {
@@ -56,8 +58,10 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
         indexesAdded,
         indexesRemoved,
         uniqueConstraintsAdded,
+        relUniqueConstraintsAdded,
         existenceConstraintsAdded,
         nodekeyConstraintsAdded,
+        relkeyConstraintsAdded,
         constraintsRemoved,
         transactionsCommitted
       )

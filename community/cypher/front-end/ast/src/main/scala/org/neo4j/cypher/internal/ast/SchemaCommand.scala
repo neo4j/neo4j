@@ -345,7 +345,7 @@ case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[Gra
   def semanticCheck = Seq()
 }
 
-trait PropertyConstraintCommand extends SchemaCommand {
+protected trait PropertyConstraintCommand extends SchemaCommand {
   def variable: Variable
 
   def property: Property
@@ -360,7 +360,7 @@ trait PropertyConstraintCommand extends SchemaCommand {
       }
 }
 
-trait CompositePropertyConstraintCommand extends SchemaCommand {
+protected trait CompositePropertyConstraintCommand extends SchemaCommand {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -378,28 +378,28 @@ trait CompositePropertyConstraintCommand extends SchemaCommand {
       }
 }
 
-trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
+protected trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
   val entityType: NodeType = CTNode
 
   def label: LabelName
 }
 
-trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand {
+protected trait NodeCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
   val entityType: NodeType = CTNode
 
   def label: LabelName
 }
 
-trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
+protected trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 
-  val entityType: NodeType = CTNode
+  val entityType: RelationshipType = CTRelationship
 
-  def label: LabelName
+  def relType: RelTypeName
 }
 
-trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
+protected trait RelationshipCompositePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
   val entityType: RelationshipType = CTRelationship
 
@@ -410,6 +410,52 @@ trait CreateConstraint extends SchemaCommand {
   // To anonymize the name
   val name: Option[String]
   def withName(name: Option[String]): CreateConstraint
+
+  protected def checkSemantics(
+    constraintTypeString: String,
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    containsOn: Boolean,
+    constraintVersion: ConstraintVersion
+  ): SemanticCheck = ifExistsDo match {
+    case IfExistsInvalidSyntax | IfExistsReplace =>
+      error(
+        s"Failed to create $constraintTypeString constraint: `OR REPLACE` cannot be used together with this command.",
+        position
+      )
+    case _ =>
+      constraintVersion match {
+        case ConstraintVersion2 if containsOn  => error(errorMessageOnRequire, position) // ON ... REQUIRE
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT
+        case ConstraintVersion0 if containsOn  => error(errorMessageOnAssert, position) // ON ... ASSERT
+        case _                                 => checkOptionsMap(s"$constraintTypeString constraint", options)
+      }
+  }
+
+  protected def checkSemanticsExistenceConstraints(
+    entityTypeString: String,
+    ifExistsDo: IfExistsDo,
+    options: Options,
+    containsOn: Boolean,
+    constraintVersion: ConstraintVersion
+  ): SemanticCheck = ifExistsDo match {
+    case IfExistsInvalidSyntax | IfExistsReplace => error(
+        s"Failed to create $entityTypeString property existence constraint: `OR REPLACE` cannot be used together with this command.",
+        position
+      )
+    case _ =>
+      constraintVersion match {
+        case ConstraintVersion2 if containsOn =>
+          error(errorMessageOnRequire, position) // ON ... REQUIRE ... IS NOT NULL
+        case ConstraintVersion1 if !containsOn =>
+          error(errorMessageForAssert, position) // FOR ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if !containsOn =>
+          error(errorMessageForAssertExists, position) // FOR ... ASSERT EXISTS ...
+        case ConstraintVersion1 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if containsOn => error(errorMessageOnAssertExists, position) // ON ... ASSERT EXISTS ...
+        case _ => checkOptionsMap(s"$entityTypeString property existence constraint", options)
+      }
+  }
 }
 
 case class CreateNodeKeyConstraint(
@@ -422,21 +468,32 @@ case class CreateNodeKeyConstraint(
   containsOn: Boolean,
   constraintVersion: ConstraintVersion,
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodeKeyConstraintCommand with CreateConstraint {
+)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def withName(name: Option[String]): CreateNodeKeyConstraint = copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace =>
-      error(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
-    case _ =>
-      constraintVersion match {
-        case ConstraintVersion2 if containsOn  => error(errorMessageOnRequire, position) // ON ... REQUIRE
-        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT
-        case ConstraintVersion0 if containsOn  => error(errorMessageOnAssert, position) // ON ... ASSERT
-        case _ => checkOptionsMap("node key constraint", options) chain super.semanticCheck
-      }
-  }
+  override def semanticCheck: SemanticCheck =
+    checkSemantics("node key", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
+}
+
+case class CreateRelationshipKeyConstraint(
+  variable: Variable,
+  relType: RelTypeName,
+  properties: Seq[Property],
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  containsOn: Boolean,
+  constraintVersion: ConstraintVersion,
+  useGraph: Option[GraphSelection] = None
+)(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  override def withName(name: Option[String]): CreateRelationshipKeyConstraint =
+    copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck =
+    checkSemantics("relationship key", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
 }
 
 case class DropNodeKeyConstraint(
@@ -444,7 +501,7 @@ case class DropNodeKeyConstraint(
   label: LabelName,
   properties: Seq[Property],
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends NodeKeyConstraintCommand {
+)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = error(
@@ -453,7 +510,7 @@ case class DropNodeKeyConstraint(
   )
 }
 
-case class CreateUniquePropertyConstraint(
+case class CreateNodeUniquePropertyConstraint(
   variable: Variable,
   label: LabelName,
   properties: Seq[Property],
@@ -463,23 +520,38 @@ case class CreateUniquePropertyConstraint(
   containsOn: Boolean,
   constraintVersion: ConstraintVersion,
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends UniquePropertyConstraintCommand with CreateConstraint {
+)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateUniquePropertyConstraint = copy(name = name)(position)
+  override def withName(name: Option[String]): CreateNodeUniquePropertyConstraint = copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => error(
-        s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.",
-        position
-      )
-    case _ =>
-      constraintVersion match {
-        case ConstraintVersion2 if containsOn  => error(errorMessageOnRequire, position) // ON ... REQUIRE
-        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT
-        case ConstraintVersion0 if containsOn  => error(errorMessageOnAssert, position) // ON ... ASSERT
-        case _ => checkOptionsMap("uniqueness constraint", options) chain super.semanticCheck
-      }
-  }
+  override def semanticCheck: SemanticCheck =
+    checkSemantics("uniqueness", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
+}
+
+case class CreateRelationshipUniquePropertyConstraint(
+  variable: Variable,
+  relType: RelTypeName,
+  properties: Seq[Property],
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  containsOn: Boolean,
+  constraintVersion: ConstraintVersion,
+  useGraph: Option[GraphSelection] = None
+)(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  override def withName(name: Option[String]): CreateRelationshipUniquePropertyConstraint =
+    copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck =
+    checkSemantics(
+      "relationship uniqueness",
+      ifExistsDo,
+      options,
+      containsOn,
+      constraintVersion
+    ) chain super.semanticCheck
 }
 
 case class DropUniquePropertyConstraint(
@@ -487,7 +559,7 @@ case class DropUniquePropertyConstraint(
   label: LabelName,
   properties: Seq[Property],
   useGraph: Option[GraphSelection] = None
-)(val position: InputPosition) extends UniquePropertyConstraintCommand {
+)(val position: InputPosition) extends NodeCompositePropertyConstraintCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
   override def semanticCheck: SemanticCheck = error(
@@ -510,24 +582,14 @@ case class CreateNodePropertyExistenceConstraint(
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def withName(name: Option[String]): CreateNodePropertyExistenceConstraint = copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => error(
-        s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.",
-        position
-      )
-    case _ =>
-      constraintVersion match {
-        case ConstraintVersion2 if containsOn =>
-          error(errorMessageOnRequire, position) // ON ... REQUIRE ... IS NOT NULL
-        case ConstraintVersion1 if !containsOn =>
-          error(errorMessageForAssert, position) // FOR ... ASSERT ... IS NOT NULL
-        case ConstraintVersion0 if !containsOn =>
-          error(errorMessageForAssertExists, position) // FOR ... ASSERT EXISTS ...
-        case ConstraintVersion1 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT ... IS NOT NULL
-        case ConstraintVersion0 if containsOn => error(errorMessageOnAssertExists, position) // ON ... ASSERT EXISTS ...
-        case _ => checkOptionsMap("node property existence constraint", options) chain super.semanticCheck
-      }
-  }
+  override def semanticCheck: SemanticCheck =
+    checkSemanticsExistenceConstraints(
+      "node",
+      ifExistsDo,
+      options,
+      containsOn,
+      constraintVersion
+    ) chain super.semanticCheck
 }
 
 case class DropNodePropertyExistenceConstraint(
@@ -560,24 +622,14 @@ case class CreateRelationshipPropertyExistenceConstraint(
   override def withName(name: Option[String]): CreateRelationshipPropertyExistenceConstraint =
     copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = ifExistsDo match {
-    case IfExistsInvalidSyntax | IfExistsReplace => error(
-        s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.",
-        position
-      )
-    case _ =>
-      constraintVersion match {
-        case ConstraintVersion2 if containsOn =>
-          error(errorMessageOnRequire, position) // ON ... REQUIRE ... IS NOT NULL
-        case ConstraintVersion1 if !containsOn =>
-          error(errorMessageForAssert, position) // FOR ... ASSERT ... IS NOT NULL
-        case ConstraintVersion0 if !containsOn =>
-          error(errorMessageForAssertExists, position) // FOR ... ASSERT EXISTS ...
-        case ConstraintVersion1 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT ... IS NOT NULL
-        case ConstraintVersion0 if containsOn => error(errorMessageOnAssertExists, position) // ON ... ASSERT EXISTS ...
-        case _ => checkOptionsMap("relationship property existence constraint", options) chain super.semanticCheck
-      }
-  }
+  override def semanticCheck: SemanticCheck =
+    checkSemanticsExistenceConstraints(
+      "relationship",
+      ifExistsDo,
+      options,
+      containsOn,
+      constraintVersion
+    ) chain super.semanticCheck
 }
 
 case class DropRelationshipPropertyExistenceConstraint(

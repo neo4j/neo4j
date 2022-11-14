@@ -29,7 +29,11 @@ public enum ShowCommandFilterTypes {
     LOOKUP("LOOKUP"),
     // constraint specific
     UNIQUE("UNIQUE"),
+    NODE_UNIQUE("NODE UNIQUE"),
+    RELATIONSHIP_UNIQUE("REL[ATIONSHIP] UNIQUE"),
+    KEY("KEY"),
     NODE_KEY("NODE KEY"),
+    RELATIONSHIP_KEY("REL[ATIONSHIP] KEY"),
     OLD_EXISTS("EXISTS"),
     OLD_EXIST("EXIST"),
     EXIST("[PROPERTY] EXIST[ENCE]"),

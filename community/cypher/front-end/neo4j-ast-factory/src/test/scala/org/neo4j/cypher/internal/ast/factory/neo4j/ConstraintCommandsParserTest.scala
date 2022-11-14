@@ -41,323 +41,571 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
           // Create constraint: Without name
 
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY") {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+          Seq("NODE", "").foreach(nodeKeyword => {
+            // Node key
 
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NODE KEY") {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              None,
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'range-1.0'}"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
-          ) {
-            // will fail in options converter
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map(
-                "indexProvider" -> literalString("native-btree-1.0"),
-                "indexConfig" -> mapOf(
-                  "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-                  "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-                )
-              )),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'range-1.0'}"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
+            ) {
+              // will fail in options converter
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map(
+                  "indexProvider" -> literalString("native-btree-1.0"),
+                  "indexConfig" -> mapOf(
+                    "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+                    "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+                  )
+                )),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {nonValidOption : 42}"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {}"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map.empty),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {nonValidOption : 42}"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS $$param"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsParam(parameter("param", CTMap)),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {}"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map.empty),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
-            assertFailsWithMessageStart(
-              testName,
-              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY)
-            )
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS $$param"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsParam(parameter("param", CTMap)),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            // Node uniqueness
 
-          test(s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE") {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE") {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              None,
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              None,
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
-          ) {
-            // will fail in options converter
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map(
-                "indexProvider" -> literalString("native-btree-1.0"),
-                "indexConfig" -> mapOf(
-                  "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-                  "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-                )
-              )),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS $$options"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              None,
-              ast.IfExistsThrowError,
-              ast.OptionsParam(parameter("options", CTMap)),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
+            ) {
+              // will fail in options converter
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map(
+                  "indexProvider" -> literalString("native-btree-1.0"),
+                  "indexConfig" -> mapOf(
+                    "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                    "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+                  )
+                )),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS UNIQUE") {
-            assertFailsWithMessageStart(
-              testName,
-              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.UNIQUE)
-            )
-          }
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS $$options"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsParam(parameter("options", CTMap)),
+                containsOn,
+                constraintVersion
+              ))
+            }
+          })
+
+          Seq("RELATIONSHIP", "REL", "").foreach(relKeyWord => {
+            // Relationship key
+
+            test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY") {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("key" -> literalString("value"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            // Relationship uniqueness
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("key" -> literalString("value"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
+          })
+
+          // Node property existence
 
           test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NOT NULL") {
             yields(ast.CreateNodePropertyExistenceConstraint(
@@ -430,6 +678,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             ))
           }
 
+          // Relationship property existence
+
           test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
             yields(ast.CreateRelationshipPropertyExistenceConstraint(
               varFor("r"),
@@ -457,6 +707,19 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           }
 
           test(s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString (r.prop) IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(
+              varFor("r"),
+              relTypeName("R"),
+              prop("r", "prop"),
+              None,
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersionOneOrTwo
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]->() $requireOrAssertString (r.prop) IS NOT NULL") {
             yields(ast.CreateRelationshipPropertyExistenceConstraint(
               varFor("r"),
               relTypeName("R"),
@@ -527,276 +790,529 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
 
           // Create constraint: With name
 
-          test(
-            s"USE neo4j CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion,
-              Some(use(varFor("neo4j")))
-            ))
-          }
+          Seq("NODE", "").foreach(nodeKeyword => {
+            // Node key
+            test(
+              s"USE neo4j CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion,
+                Some(use(varFor("neo4j")))
+              ))
+            }
 
-          test(
-            s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion,
-              Some(use(varFor("neo4j")))
-            ))
-          }
+            test(
+              s"USE neo4j CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion,
+                Some(use(varFor("neo4j")))
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS NODE KEY"
-          ) {
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword KEY"
+            ) {
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}"
-          ) {
-            // will fail in options converter
-            yields(ast.CreateNodeKeyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map(
-                "indexProvider" -> literalString("native-btree-1.0"),
-                "indexConfig" -> mapOf(
-                  "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-                  "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-                )
-              )),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}}"
+            ) {
+              // will fail in options converter
+              yields(ast.CreateNodeKeyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map(
+                  "indexProvider" -> literalString("native-btree-1.0"),
+                  "indexConfig" -> mapOf(
+                    "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+                    "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+                  )
+                )),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            // Node uniqueness
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsInvalidSyntax,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsReplace,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsDoNothing,
-              ast.NoOptions,
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
-          ) {
-            // will fail in options converter
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map(
-                "indexProvider" -> literalString("native-btree-1.0"),
-                "indexConfig" -> mapOf(
-                  "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-                  "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-                )
-              )),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("indexProvider" -> literalString("range-1.0"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
+            ) {
+              // will fail in options converter
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map(
+                  "indexProvider" -> literalString("native-btree-1.0"),
+                  "indexConfig" -> mapOf(
+                    "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+                    "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+                  )
+                )),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {nonValidOption : 42}"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("indexConfig" -> mapOf("someConfig" -> literalString("toShowItCanBeParsed")))),
+                containsOn,
+                constraintVersion
+              ))
+            }
 
-          test(
-            s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS UNIQUE OPTIONS {}"
-          ) {
-            yields(ast.CreateUniquePropertyConstraint(
-              varFor("node"),
-              labelName("Label"),
-              Seq(prop("node", "prop1"), prop("node", "prop2")),
-              Some("my_constraint"),
-              ast.IfExistsThrowError,
-              ast.OptionsMap(Map.empty),
-              containsOn,
-              constraintVersion
-            ))
-          }
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {nonValidOption : 42}"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("nonValidOption" -> literalInt(42))),
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE OPTIONS {}"
+            ) {
+              yields(ast.CreateNodeUniquePropertyConstraint(
+                varFor("node"),
+                labelName("Label"),
+                Seq(prop("node", "prop1"), prop("node", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map.empty),
+                containsOn,
+                constraintVersion
+              ))
+            }
+          })
+
+          Seq("RELATIONSHIP", "REL", "").foreach(relKeyWord => {
+            // Relationship key
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord KEY OPTIONS {key: 'value'}"
+            ) {
+              yields(ast.CreateRelationshipKeyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("key" -> literalString("value"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            // Relationship uniqueness
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop1"), prop("r3", "prop2")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
+            ) {
+              yields(ast.CreateRelationshipUniquePropertyConstraint(
+                varFor("r1"),
+                relTypeName("R"),
+                Seq(prop("r2", "prop")),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map("key" -> literalString("value"))),
+                containsOn,
+                constraintVersion
+              ))
+            }
+          })
+
+          // Node property existence
 
           test(
             s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NOT NULL"
@@ -883,6 +1399,8 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
               )
             )
           }
+
+          // Relationship property existence
 
           test(
             s"CREATE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL"
@@ -1014,6 +1532,80 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop1, r.prop2) IS NOT NULL"
           ) {
             assertFailsWithMessage(testName, "Constraint type 'IS NOT NULL' does not allow multiple properties")
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE KEY") {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_KEY)
+            )
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop) IS NODE UNIQUE") {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE)
+            )
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP KEY") {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY)
+            )
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL KEY") {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_KEY)
+            )
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS RELATIONSHIP UNIQUE"
+          ) {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE)
+            )
+          }
+
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (r.prop) IS REL UNIQUE") {
+            assertFailsWithMessageStart(
+              testName,
+              ASTExceptionFactory.nodePatternNotAllowed(ConstraintType.REL_UNIQUE)
+            )
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS UNIQUENESS"
+          ) {
+            failsToParse
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS NODE UNIQUENESS"
+          ) {
+            failsToParse
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUENESS"
+          ) {
+            failsToParse
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP UNIQUENESS"
+          ) {
+            failsToParse
+          }
+
+          test(
+            s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS REL UNIQUENESS"
+          ) {
+            failsToParse
           }
         }
     }
@@ -1383,7 +1975,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
-    assertAst(ast.CreateUniquePropertyConstraint(
+    assertAst(ast.CreateNodeUniquePropertyConstraint(
       varFor("node", (1, 28, 27)),
       labelName("Label", (1, 33, 32)),
       Seq(prop("node", "prop", (1, 49, 48))),
@@ -1456,28 +2048,52 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   test(s"CREATE CONSTRAINT my_constraint ON ()-[r:R]-() ASSERT r.prop IS NULL") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'NULL': expected \"NODE\", \"NOT\" or \"UNIQUE\" (line 1, column 65 (offset: 64))"
+      """Invalid input 'NULL': expected
+        |  "KEY"
+        |  "NODE"
+        |  "NOT"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
     )
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE r.prop IS NULL") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'NULL': expected \"NODE\", \"NOT\" or \"UNIQUE\" (line 1, column 67 (offset: 66))"
+      """Invalid input 'NULL': expected
+        |  "KEY"
+        |  "NODE"
+        |  "NOT"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
     )
   }
 
   test(s"CREATE CONSTRAINT my_constraint ON (node:Label) ASSERT node.prop IS NULL") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'NULL': expected \"NODE\", \"NOT\" or \"UNIQUE\" (line 1, column 69 (offset: 68))"
+      """Invalid input 'NULL': expected
+        |  "KEY"
+        |  "NODE"
+        |  "NOT"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
     )
   }
 
   test(s"CREATE CONSTRAINT my_constraint FOR (node:Label) REQUIRE node.prop IS NULL") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'NULL': expected \"NODE\", \"NOT\" or \"UNIQUE\" (line 1, column 71 (offset: 70))"
+      """Invalid input 'NULL': expected
+        |  "KEY"
+        |  "NODE"
+        |  "NOT"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin
     )
   }
 
@@ -1527,7 +2143,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON ()-[r1:R]-() ASSERT r2.prop IS UNIQUE") {
-    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.UNIQUE))
+    assertFailsWithMessageStart(testName, ASTExceptionFactory.relationshipPatternNotAllowed(ConstraintType.NODE_UNIQUE))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)") {
