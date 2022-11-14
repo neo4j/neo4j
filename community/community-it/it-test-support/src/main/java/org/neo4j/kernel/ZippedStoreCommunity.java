@@ -120,7 +120,58 @@ public enum ZippedStoreCommunity implements ZippedStore {
                     12,
                     8,
                     4,
-                    36));
+                    36)),
+    // 5.0 stores
+    REC_AF11_V50_ALL(
+            "record-aligned-1.1_V5.0_all_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1",
+                    KernelVersion.V5_0,
+                    19,
+                    COMMUNITY,
+                    2521,
+                    2509,
+                    12,
+                    2520,
+                    371,
+                    3573,
+                    3572,
+                    11250,
+                    22,
+                    2,
+                    0,
+                    4,
+                    0,
+                    22)),
+    REC_AF11_V50_EMPTY(
+            "record-aligned-1.1_V5.0_empty_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1", KernelVersion.V5_0, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+    REC_SF11_V50_ALL(
+            "record-standard-1.1_V5.0_all_community.zip",
+            new DbStatistics(
+                    "record-standard-1.1",
+                    KernelVersion.V5_0,
+                    19,
+                    COMMUNITY,
+                    2417,
+                    2404,
+                    13,
+                    2416,
+                    348,
+                    3432,
+                    3431,
+                    11019,
+                    22,
+                    2,
+                    0,
+                    4,
+                    0,
+                    22)),
+    REC_SF11_V50_EMPTY(
+            "record-standard-1.1_V5.0_empty_community.zip",
+            new DbStatistics(
+                    "record-standard-1.1", KernelVersion.V5_0, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
     private final String zipFileName;
     private final DbStatistics statistics;

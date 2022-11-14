@@ -61,6 +61,10 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
         permutations.add(Arguments.arguments(ZippedStoreCommunity.SF430_V44_ALL, "standard"));
         permutations.add(Arguments.arguments(ZippedStoreCommunity.SF430_V44_ALL, "aligned"));
         permutations.add(Arguments.arguments(ZippedStoreCommunity.AF430_V44_ALL, "aligned"));
+        // 5.0 stores
+        permutations.add(Arguments.arguments(ZippedStoreCommunity.REC_SF11_V50_ALL, "standard"));
+        permutations.add(Arguments.arguments(ZippedStoreCommunity.REC_SF11_V50_ALL, "aligned"));
+        permutations.add(Arguments.arguments(ZippedStoreCommunity.REC_AF11_V50_ALL, "aligned"));
 
         return permutations.stream();
     }
