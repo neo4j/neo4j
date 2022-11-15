@@ -58,7 +58,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 public class PushToCloudCommand extends AbstractCommand
 {
-    private static final String DEV_MODE_VAR_NAME = "NEO4J_P2C_DEV_MODE";
+    private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
     private final Copier copier;
     private final DumpCreator dumpCreator;
     private final PushToCloudConsole cons;
