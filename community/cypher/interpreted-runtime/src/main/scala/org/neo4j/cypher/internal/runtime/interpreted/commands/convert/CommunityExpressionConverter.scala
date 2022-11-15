@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
@@ -423,7 +424,15 @@ case class CommunityExpressionConverter(
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case AssertIsNode(expr)     => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
       case MakeTraversable(e)     => commands.expressions.MakeTraversable(self.toCommandExpression(id, e))
-      case _                      => null
+      case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Single, rhs) =>
+        commands.expressions.ElementIdToNodeIdFunction(self.toCommandExpression(id, rhs))
+      case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Many, rhs) =>
+        commands.expressions.ElementIdListToNodeIdListFunction(self.toCommandExpression(id, rhs))
+      case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Single, rhs) =>
+        commands.expressions.ElementIdToRelationshipIdFunction(self.toCommandExpression(id, rhs))
+      case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, rhs) =>
+        commands.expressions.ElementIdListToRelationshipIdListFunction(self.toCommandExpression(id, rhs))
+      case _ => null
     }
 
     Option(result)

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.ElementIdToLongId
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -161,6 +163,33 @@ class ExpressionConverters(converters: ExpressionConverter*) {
         case _ =>
           ManySeekArgs(toCommandExpression(id, expr))
       }
+  }
+
+  def toCommandElementIdSeekArgs(id: Id, seek: SeekableArgs, entityType: EntityType): SeekArgs = {
+    def single(expr: Expression): SeekArgs = {
+      val newExpr = ElementIdToLongId(entityType, ElementIdToLongId.Mode.Single, expr)(expr.position)
+      SingleSeekArg(toCommandExpression(id, newExpr))
+    }
+
+    def many(expr: Expression): SeekArgs = {
+      val newExpr = ElementIdToLongId(entityType, ElementIdToLongId.Mode.Many, expr)(expr.position)
+      ManySeekArgs(toCommandExpression(id, newExpr))
+    }
+
+    seek match {
+      case SingleSeekableArg(expr) => single(expr)
+      case ManySeekableArgs(expr) => expr match {
+          case coll: internal.expressions.ListLiteral =>
+            ZeroOneOrMany(coll.expressions) match {
+              case Zero       => SeekArgs.empty
+              case One(value) => single(value)
+              case Many(_)    => many(coll)
+            }
+
+          case _ =>
+            many(expr)
+        }
+    }
   }
 
   def toCommandProjectedPath(e: internal.expressions.PathExpression): ProjectedPath = {

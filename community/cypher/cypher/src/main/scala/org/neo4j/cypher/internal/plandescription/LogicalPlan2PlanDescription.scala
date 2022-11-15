@@ -113,6 +113,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -154,6 +155,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -230,6 +232,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -383,6 +386,18 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "NodeByIdSeek",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case NodeByElementIdSeek(idName, nodeIds: SeekableArgs, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)} WHERE elementId(${asPrettyString(idName)}) ${seekableArgsInfo(nodeIds)}"
+        PlanDescriptionImpl(
+          id,
+          "NodeByElementIdSeek",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,
@@ -620,7 +635,7 @@ case class LogicalPlan2PlanDescription(
         ArgumentPlanDescription(id, Seq.empty, variables)
 
       case DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, _) =>
-        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, true))
+        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, true, "id"))
         PlanDescriptionImpl(
           id,
           "DirectedRelationshipByIdSeek",
@@ -630,11 +645,33 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
+      case DirectedRelationshipByElementIdSeek(idName, relIds, startNode, endNode, _) =>
+        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, true, "elementId"))
+        PlanDescriptionImpl(
+          id,
+          "DirectedRelationshipByElementIdSeek",
+          NoChildren,
+          Seq(details),
+          variables,
+          withRawCardinalities
+        )
+
       case UndirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, _) =>
-        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false))
+        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false, "id"))
         PlanDescriptionImpl(
           id,
           "UndirectedRelationshipByIdSeek",
+          NoChildren,
+          Seq(details),
+          variables,
+          withRawCardinalities
+        )
+
+      case UndirectedRelationshipByElementIdSeek(idName, relIds, startNode, endNode, _) =>
+        val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false, "elementId"))
+        PlanDescriptionImpl(
+          id,
+          "UndirectedRelationshipByElementIdSeek",
           NoChildren,
           Seq(details),
           variables,
@@ -2385,14 +2422,15 @@ case class LogicalPlan2PlanDescription(
     relIds: SeekableArgs,
     startNode: String,
     endNode: String,
-    isDirectional: Boolean
+    isDirectional: Boolean,
+    functionName: String
   ): PrettyString = {
     val predicate = seekableArgsInfo(relIds)
     val directionString = if (isDirectional) pretty">" else pretty""
     val prettyStartNode = asPrettyString(startNode)
     val prettyIdName = asPrettyString(idName)
     val prettyEndNode = asPrettyString(endNode)
-    pretty"(${prettyStartNode})-[$prettyIdName]-$directionString($prettyEndNode) WHERE id($prettyIdName) $predicate"
+    pretty"(${prettyStartNode})-[$prettyIdName]-$directionString($prettyEndNode) WHERE ${asPrettyString(functionName)}($prettyIdName) $predicate"
   }
 
   private def seekableArgsInfo(seekableArgs: SeekableArgs): PrettyString = seekableArgs match {

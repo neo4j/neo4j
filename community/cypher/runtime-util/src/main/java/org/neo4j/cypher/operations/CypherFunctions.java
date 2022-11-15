@@ -802,6 +802,56 @@ public final class CypherFunctions {
                 entity, entity.getTypeName()));
     }
 
+    public static AnyValue elementIdToNodeId(AnyValue elementId, ElementIdMapper idMapper) {
+        assert elementId != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (elementId instanceof TextValue str) {
+            try {
+                return longValue(idMapper.nodeId(str.stringValue()));
+            } catch (IllegalArgumentException e) {
+                return NO_VALUE;
+            }
+        }
+        return NO_VALUE;
+    }
+
+    public static AnyValue elementIdToRelationshipId(AnyValue elementId, ElementIdMapper idMapper) {
+        assert elementId != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (elementId instanceof TextValue str) {
+            try {
+                return longValue(idMapper.relationshipId(str.stringValue()));
+            } catch (IllegalArgumentException e) {
+                return NO_VALUE;
+            }
+        }
+        return NO_VALUE;
+    }
+
+    public static AnyValue elementIdListToNodeIdList(AnyValue collection, ElementIdMapper idMapper) {
+        assert collection != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (collection instanceof SequenceValue elementIds) {
+            var builder = ListValueBuilder.newListBuilder(elementIds.length());
+            for (var elementId : elementIds) {
+                AnyValue value = (elementId == NO_VALUE) ? NO_VALUE : elementIdToNodeId(elementId, idMapper);
+                builder.add(value);
+            }
+            return builder.build();
+        }
+        return NO_VALUE;
+    }
+
+    public static AnyValue elementIdListToRelationshipIdList(AnyValue collection, ElementIdMapper idMapper) {
+        assert collection != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (collection instanceof SequenceValue elementIds) {
+            var builder = ListValueBuilder.newListBuilder(elementIds.length());
+            for (var elementId : elementIds) {
+                AnyValue value = (elementId == NO_VALUE) ? NO_VALUE : elementIdToRelationshipId(elementId, idMapper);
+                builder.add(value);
+            }
+            return builder.build();
+        }
+        return NO_VALUE;
+    }
+
     public static TextValue nodeElementId(long id, ElementIdMapper idMapper) {
         assert id > NO_ID;
         return Values.stringValue(idMapper.nodeElementId(id));
