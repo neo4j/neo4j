@@ -23,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.test.extension.DbmsExtension;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 public class CreateConstraintFromToStringCommunityIT extends CreateConstraintFromToStringITBase {
     @ParameterizedTest
     @EnumSource(value = CommunityConstraint.class)
@@ -34,7 +34,10 @@ public class CreateConstraintFromToStringCommunityIT extends CreateConstraintFro
     private enum CommunityConstraint implements ConstraintFunction {
         UNIQUE_SINGLE_PROP(schema -> schema.constraintFor(LABEL).assertPropertyIsUnique(PROP_ONE)),
         UNIQUE_MULTI_PROP(schema ->
-                schema.constraintFor(LABEL).assertPropertyIsUnique(PROP_ONE).assertPropertyIsUnique(PROP_TWO));
+                schema.constraintFor(LABEL).assertPropertyIsUnique(PROP_ONE).assertPropertyIsUnique(PROP_TWO)),
+        REL_UNIQUE_SINGLE_PROP(schema -> schema.constraintFor(REL_TYPE).assertPropertyIsUnique(PROP_ONE)),
+        REL_UNIQUE_MULTI_PROP(schema ->
+                schema.constraintFor(REL_TYPE).assertPropertyIsUnique(PROP_ONE).assertPropertyIsUnique(PROP_TWO));
 
         private final ConstraintFunction constraintFunction;
 
