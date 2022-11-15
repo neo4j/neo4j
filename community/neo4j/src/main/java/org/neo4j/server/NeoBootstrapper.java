@@ -63,6 +63,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     private static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     private static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     public static final int INVALID_CONFIGURATION_ERROR_CODE = 3;
+    public static final int LICENSE_NOT_ACCEPTED_ERROR_CODE = 4;
 
     private volatile DatabaseManagementService databaseManagementService;
     private volatile Closeable userLogFileStream;
@@ -125,7 +126,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
         log = userLogProvider.getLog(getClass());
 
-        checkLicenseAgreement(homeDir);
+        boolean licenseAccepted = checkLicenseAgreement(homeDir);
 
         // Log any messages written before logging was configured.
         startupLog.replayInto(log);
@@ -135,6 +136,11 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         if (SystemLogger.errorsEncounteredDuringSetup()) {
             // Refuse to start if there was a problem setting up the logging.
             return INVALID_CONFIGURATION_ERROR_CODE;
+        }
+
+        if (!licenseAccepted) {
+            // Message should be printed by the checkLicenseAgreement call above
+            return LICENSE_NOT_ACCEPTED_ERROR_CODE;
         }
 
         // Signal parent process we are ready to detach
@@ -256,7 +262,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
     protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
 
-    protected abstract void checkLicenseAgreement(Path homeDir);
+    protected abstract boolean checkLicenseAgreement(Path homeDir);
 
     private static Log4jLogProvider setupLogging(Config config, boolean consoleMode) {
         Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);

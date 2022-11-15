@@ -6,9 +6,8 @@
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
     <version>5.4.0-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
-
 
   <properties>
     <moduleName>org.neo4j.zstd_proxy</moduleName>

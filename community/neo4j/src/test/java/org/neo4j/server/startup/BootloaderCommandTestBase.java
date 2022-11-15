@@ -87,12 +87,12 @@ abstract class BootloaderCommandTestBase {
     private TestDirectory testDirectory;
 
     @Inject
-    FileSystemAbstraction fs;
+    protected FileSystemAbstraction fs;
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ByteArrayOutputStream err = new ByteArrayOutputStream();
     Path confFile;
-    Path home;
+    protected Path home;
     Config config;
 
     @BeforeEach

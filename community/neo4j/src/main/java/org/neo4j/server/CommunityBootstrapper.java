@@ -37,5 +37,7 @@ public class CommunityBootstrapper extends NeoBootstrapper {
     }
 
     @Override
-    protected void checkLicenseAgreement(Path homeDir) {}
+    protected boolean checkLicenseAgreement(Path homeDir) {
+        return true;
+    }
 }

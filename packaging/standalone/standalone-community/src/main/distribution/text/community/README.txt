@@ -28,10 +28,10 @@ For full instructions, see https://neo4j.com/docs/operations-manual/current/inst
 To get started with Neo4j, let's start the server and take a
 look at the web interface ...
 
-1. Open a console and navigate to the install directory.
+1. Open a console and navigate to the installation directory.
 2. Start the server:
-   * Windows, use: bin\neo4j console
-   * Linux/Mac, use: ./bin/neo4j console
+   * Windows, use: bin\neo4j-admin server console
+   * Linux/Mac, use: ./bin/neo4j-admin server console
 3. In a browser, open http://localhost:7474/
 4. Shutdown the server by typing Ctrl-C in the console.
 
