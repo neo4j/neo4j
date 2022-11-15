@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
@@ -83,6 +84,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.EntityType
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.PropertyKeyId
@@ -180,6 +182,18 @@ case class ExpressionSelectivityCalculator(
     // WHERE x.prop ENDS WITH expression
     case EndsWith(Property(Variable(name), propertyKey), substring) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
+
+    // WHERE x.prop =~ expression
+    case RegexMatch(Property(Variable(name), propertyKey), _) =>
+      // as we cannot reason about the regular expression that we compare with, then we should probably treat it just like
+      // a string comparison where we know nothing about the substring to compare with
+      calculateSelectivityForSubstringSargable(
+        name,
+        labelInfo,
+        relTypeInfo,
+        propertyKey,
+        Variable("")(InputPosition.NONE)
+      )
 
     // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
     case AsDistanceSeekable(seekable) =>

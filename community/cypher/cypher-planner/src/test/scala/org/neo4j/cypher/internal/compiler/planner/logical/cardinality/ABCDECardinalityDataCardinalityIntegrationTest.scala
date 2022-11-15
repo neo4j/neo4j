@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -105,6 +106,10 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     expectCardinality(E * EsomeExists * or(EsomeUnique, EsomeUnique))
   }
 
+  test("MATCH (e:E) WHERE e.some =~ '\\d+'") {
+    expectCardinality(E * EsomeExists * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH)
+  }
+
   test("MATCH (n:R1) WHERE n.prop = 42") {
     expectCardinality(R1 * R1propExists * R1propUnique)
   }
@@ -122,7 +127,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
   }
 
   test("MATCH (a:A) WHERE a.prop STARTS WITH 'p'") {
-    expectCardinality(A * DEFAULT_RANGE_SEEK_FACTOR)
+    expectCardinality(A * ApropExists * DEFAULT_RANGE_SEEK_FACTOR)
   }
 
   test("MATCH (a:B) WHERE a.bar = 42") {
