@@ -24,7 +24,6 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.server.WebContainerTestUtils.withCSVFile;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
@@ -48,7 +47,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.bolt.transaction.StatementProcessorTxManager;
@@ -66,7 +64,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.web.XForwardUtil;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
@@ -251,94 +248,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction);
     }
 
-    @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @Test
-    public void begin_and_execute_periodic_commit_and_commit() throws Exception {
-
-        int nodes = 11;
-        int batch = 2;
-        withCSVFile(nodes, url -> {
-            Response response;
-            long nodesInDatabaseBeforeTransaction;
-            long txIdBefore;
-            int times = 0;
-            do {
-                nodesInDatabaseBeforeTransaction = countNodes();
-                txIdBefore = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
-
-                // begin and execute and commit
-
-                response = POST(
-                        transactionCommitUri(),
-                        quotedJson("{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch
-                                + " LOAD CSV FROM " + "\\\"" + url + "\\\" AS line CREATE ()' } ] }"));
-                times++;
-            } while (response.get("errors").iterator().hasNext() && (times < 5));
-
-            long txIdAfter = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
-
-            assertThat(response).as("Last response is: " + response).satisfies(containsNoErrors());
-            assertThat(response.status()).isEqualTo(200);
-            assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + nodes);
-            assertThat(txIdAfter).isEqualTo(txIdBefore + ((nodes / batch) + 1));
-        });
-    }
-
-    @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @Test
-    public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception {
-
-        int nodes = 11;
-        int batchSize = 2;
-
-        // warm up the periodic commit
-        withCSVFile(nodes, url -> {
-            Response response = POST(
-                    transactionCommitUri(),
-                    quotedJson("{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batchSize
-                            + " LOAD CSV FROM " + "\\\"" + url + "\\\" AS line CREATE (n {id1: 23}) RETURN n' } ] }"));
-        });
-
-        withCSVFile(nodes, url -> {
-            long nodesInDatabaseBeforeTransaction = countNodes();
-            long txIdBefore = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
-
-            // begin and execute and commit
-            Response response = POST(
-                    transactionCommitUri(),
-                    quotedJson("{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batchSize
-                            + " LOAD CSV FROM " + "\\\"" + url + "\\\" AS line CREATE (n {id1: 23}) RETURN n' } ] }"));
-            long txIdAfter = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
-
-            assertThat(response.status()).isEqualTo(200);
-
-            assertThat(response).satisfies(containsNoErrors());
-
-            JsonNode columns = response.get("results").get(0).get("columns");
-            assertThat(columns.toString()).isEqualTo("[\"n\"]");
-            assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + nodes);
-            long expectedTxCount = (nodes / batchSize) + 1;
-
-            assertThat(txIdAfter - txIdBefore).isEqualTo(expectedTxCount);
-        });
-    }
-
-    @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @Test
-    public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception {
-
-        withCSVFile(1, url -> {
-            // begin and execute and commit
-            Response response = POST(
-                    transactionCommitUri(),
-                    quotedJson("{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url
-                            + "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }"));
-
-            assertThat(response.status()).isEqualTo(200);
-            assertThat(response).satisfies(hasErrors(Status.Statement.SemanticError));
-        });
-    }
-
     @Test
     public void begin_and_execute_invalid_query_and_commit() {
 
@@ -348,22 +257,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
 
         assertThat(response.status()).isEqualTo(200);
         assertThat(response).satisfies(hasErrors(Status.Statement.SyntaxError));
-    }
-
-    @Disabled("USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS")
-    @Test
-    public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception {
-
-        withCSVFile(1, url -> {
-            // begin and execute and commit
-            Response response = POST(
-                    transactionCommitUri(),
-                    quotedJson("{ 'statements': [ { 'statement': 'CREATE ()' }, "
-                            + "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\""
-                            + url + "\\\" AS line " + "CREATE ()' } ] }"));
-
-            assertThat(response).satisfies(hasErrors(Status.Statement.SemanticError));
-        });
     }
 
     @Test
