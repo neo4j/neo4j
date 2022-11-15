@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.functions.Labels
+import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -337,10 +338,14 @@ trait UpdateGraph {
     val hasDynamicProperties = qgWithInfo.folder.treeExists {
       case _: ContainerIndex => true
     }
+    val hasPropertyFunctionRead = this != qgWithInfo.queryGraph && qgWithInfo.queryGraph.folder.treeExists {
+      case Properties(expr) if !semanticTable.isMapNoFail(expr) =>
+        true
+    }
 
     val readPropKeys = getReadPropKeys(qgWithInfo)
 
-    setNodePropertyOverlap(readPropKeys.nodePropertyKeys, hasDynamicProperties) ||
+    setNodePropertyOverlap(readPropKeys.nodePropertyKeys, hasDynamicProperties, hasPropertyFunctionRead) ||
       setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties)
   }
 
@@ -392,7 +397,11 @@ trait UpdateGraph {
   * Checks for overlap between what node props are read in query graph
   * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
   */
-  private def setNodePropertyOverlap(propertiesToRead: Set[PropertyKeyName], hasDynamicProperties: Boolean): Boolean = {
+  private def setNodePropertyOverlap(
+    propertiesToRead: Set[PropertyKeyName],
+    hasDynamicProperties: Boolean,
+    hasPropertyFunctionRead: Boolean
+  ): Boolean = {
 
     @tailrec
     def toNodePropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
@@ -419,7 +428,8 @@ trait UpdateGraph {
     val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
     (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
-      propertiesToRead.exists(propertiesToSet.overlaps)
+      (hasPropertyFunctionRead && propertiesToSet.overlapsWithFunctionPropertyRead) ||
+    propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
   /*
