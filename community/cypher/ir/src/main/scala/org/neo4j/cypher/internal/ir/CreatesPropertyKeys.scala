@@ -31,6 +31,8 @@ sealed trait CreatesPropertyKeys {
 
   def overlapsWithDynamicPropertyRead: Boolean = true
 
+  def overlapsWithFunctionPropertyRead: Boolean = true
+
   def +(createsPropertyKeys: CreatesPropertyKeys): CreatesPropertyKeys
 }
 
@@ -57,6 +59,8 @@ case object CreatesNoPropertyKeys extends CreatesPropertyKeys {
   override def overlaps(propertyKeyName: PropertyKeyName) = false
 
   override def overlapsWithDynamicPropertyRead: Boolean = false
+
+  override def overlapsWithFunctionPropertyRead: Boolean = false
 
   override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys
 }
