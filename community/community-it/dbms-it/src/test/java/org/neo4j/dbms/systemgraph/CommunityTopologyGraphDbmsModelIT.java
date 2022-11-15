@@ -19,27 +19,22 @@
  */
 package org.neo4j.dbms.systemgraph;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
-import static org.neo4j.values.storable.DurationValue.duration;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.logging.Level;
 
 public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsModelIT {
 
@@ -287,36 +282,5 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // then
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(properties);
-    }
-
-    static Stream<Arguments> aliasProperties() {
-        return Stream.of(Arguments.of(Map.of()), Arguments.of(Map.of("key1", "string", "key2", 123L)));
-    }
-
-    static Stream<Arguments> driverSettings() {
-        var completeSettings = DriverSettings.builder()
-                .withSslEnforced(true)
-                .withConnectionTimeout(duration(ofSeconds(10)))
-                .withConnectionPoolAcquisitionTimeout(duration(ofSeconds(1)))
-                .withConnectionMaxLifeTime(duration(ofSeconds(300)))
-                .withConnectionPoolIdleTest(duration(ofSeconds(1)))
-                .withConnectionPoolMaxSize(0)
-                .withLoggingLevel(Level.INFO)
-                .build();
-
-        var missingSettings = DriverSettings.builder()
-                .withSslEnforced(false)
-                .withLoggingLevel(Level.DEBUG)
-                .build();
-
-        var missingOtherSettings = DriverSettings.builder()
-                .withConnectionTimeout(duration(ofSeconds(10)))
-                .withConnectionPoolAcquisitionTimeout(duration(ofSeconds(1)))
-                .withConnectionMaxLifeTime(duration(ofSeconds(300)))
-                .withConnectionPoolIdleTest(duration(ofSeconds(1)))
-                .build();
-
-        return Stream.of(
-                Arguments.of(completeSettings), Arguments.of(missingSettings), Arguments.of(missingOtherSettings));
     }
 }

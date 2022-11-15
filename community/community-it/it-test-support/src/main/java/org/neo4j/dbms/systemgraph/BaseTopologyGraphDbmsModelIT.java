@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.systemgraph;
 
+import static java.time.Duration.ofSeconds;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDLE_TEST;
@@ -33,7 +34,6 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH_RE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY;
-import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_INITIAL_SERVERS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
@@ -73,6 +73,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROP
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.VERSION_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RELATIONSHIP;
+import static org.neo4j.values.storable.DurationValue.duration;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -89,6 +90,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.identity.ServerId;
@@ -99,6 +101,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.Level;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -311,15 +314,6 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        public DatabaseNodeBuilder withInitialMembers(Set<ServerId> initialMembers) {
-            node.setProperty(
-                    DATABASE_INITIAL_SERVERS_PROPERTY,
-                    initialMembers.stream()
-                            .map(server -> server.uuid().toString())
-                            .toArray(String[]::new));
-            return this;
-        }
-
         public DatabaseNodeBuilder withStoreIdParts(long creationTime, long random) {
             node.setProperty(
                     DATABASE_CREATED_AT_PROPERTY,
@@ -404,19 +398,17 @@ public abstract class BaseTopologyGraphDbmsModelIT {
 
     protected Node createInternalReferenceForDatabase(
             Transaction tx, String name, boolean primary, NamedDatabaseId databaseId) {
-        var databaseNode = findDatabase(databaseId, tx);
-        var referenceNode = tx.createNode(DATABASE_NAME_LABEL);
-        referenceNode.setProperty(PRIMARY_PROPERTY, primary);
-        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
-        referenceNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
-        referenceNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
-        return referenceNode;
+        return createInternalReferenceForDatabase(tx, DEFAULT_NAMESPACE, name, primary, databaseId);
     }
 
     protected Node createInternalReferenceForDatabase(
             Transaction tx, String namespace, String name, boolean primary, NamedDatabaseId databaseId) {
-        var referenceNode = createInternalReferenceForDatabase(tx, name, primary, databaseId);
+        var databaseNode = findDatabase(databaseId, tx);
+        var referenceNode = tx.createNode(DATABASE_NAME_LABEL);
+        referenceNode.setProperty(PRIMARY_PROPERTY, primary);
+        referenceNode.setProperty(DATABASE_NAME_PROPERTY, name);
         referenceNode.setProperty(NAMESPACE_PROPERTY, namespace);
+        referenceNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
         return referenceNode;
     }
 
@@ -473,5 +465,36 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         properties.forEach(propertiesNode::setProperty);
         aliasNode.createRelationshipTo(propertiesNode, PROPERTIES_RELATIONSHIP);
         return propertiesNode;
+    }
+
+    protected static Stream<Arguments> aliasProperties() {
+        return Stream.of(Arguments.of(Map.of()), Arguments.of(Map.of("key1", "string", "key2", 123L)));
+    }
+
+    protected static Stream<Arguments> driverSettings() {
+        var completeSettings = DriverSettings.builder()
+                .withSslEnforced(true)
+                .withConnectionTimeout(duration(ofSeconds(10)))
+                .withConnectionPoolAcquisitionTimeout(duration(ofSeconds(1)))
+                .withConnectionMaxLifeTime(duration(ofSeconds(300)))
+                .withConnectionPoolIdleTest(duration(ofSeconds(1)))
+                .withConnectionPoolMaxSize(0)
+                .withLoggingLevel(Level.INFO)
+                .build();
+
+        var missingSettings = DriverSettings.builder()
+                .withSslEnforced(false)
+                .withLoggingLevel(Level.DEBUG)
+                .build();
+
+        var missingOtherSettings = DriverSettings.builder()
+                .withConnectionTimeout(duration(ofSeconds(10)))
+                .withConnectionPoolAcquisitionTimeout(duration(ofSeconds(1)))
+                .withConnectionMaxLifeTime(duration(ofSeconds(300)))
+                .withConnectionPoolIdleTest(duration(ofSeconds(1)))
+                .build();
+
+        return Stream.of(
+                Arguments.of(completeSettings), Arguments.of(missingSettings), Arguments.of(missingOtherSettings));
     }
 }
