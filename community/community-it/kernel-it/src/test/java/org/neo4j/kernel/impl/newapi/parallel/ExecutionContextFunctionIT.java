@@ -27,7 +27,6 @@ import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -186,8 +185,8 @@ class ExecutionContextFunctionIT {
     @Test
     void testUserFunctionUsingUnsupportedRelationshipOperation() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
-            assertThatThrownBy(() -> invokeUserFunction(
-                            executionContext, "relationshipProperties", VirtualValues.relationship(123)))
+            assertThatThrownBy(() ->
+                            invokeUserFunction(executionContext, "deleteRelationship", VirtualValues.relationship(123)))
                     .hasRootCauseInstanceOf(UnsupportedOperationException.class)
                     .hasMessageContaining("Operation unsupported during parallel query execution");
         });
@@ -465,9 +464,10 @@ class ExecutionContextFunctionIT {
             return null;
         }
 
-        @UserFunction("execution.context.test.function.relationshipProperties")
-        public Map<String, Object> relationshipProperties(@Name("value") Relationship value) {
-            return value.getAllProperties();
+        @UserFunction("execution.context.test.function.deleteRelationship")
+        public Object deleteRelationship(@Name("value") Relationship value) {
+            value.delete();
+            return null;
         }
 
         @UserFunction("execution.context.test.function.passThrough")

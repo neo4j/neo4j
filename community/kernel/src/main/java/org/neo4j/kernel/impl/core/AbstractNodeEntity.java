@@ -19,22 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
-import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
@@ -45,16 +38,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.storageengine.api.Degrees;
-import org.neo4j.storageengine.api.PropertySelection;
 
-public abstract class AbstractNodeEntity implements Node {
+public abstract class AbstractNodeEntity extends AbstractEntity implements Node {
 
     @Override
     public ResourceIterable<Relationship> getRelationships() {
@@ -124,102 +114,6 @@ public abstract class AbstractNodeEntity implements Node {
         return ids;
     }
 
-    protected boolean hasProperty(String key, NodeCursor nodes, PropertyCursor properties) {
-        if (null == key) {
-            return false;
-        }
-
-        int propertyKey = tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            return false;
-        }
-
-        singleNode(nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        return properties.next();
-    }
-
-    protected Object getProperty(String key, NodeCursor nodes, PropertyCursor properties) {
-        if (null == key) {
-            throw new IllegalArgumentException("(null) property key is not allowed");
-        }
-        int propertyKey = tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            throw new NotFoundException(format("No such property, '%s'.", key));
-        }
-
-        singleNode(nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        if (!properties.next()) {
-            throw new NotFoundException(format("No such property, '%s'.", key));
-        }
-        return properties.propertyValue().asObjectCopy();
-    }
-
-    protected Object getProperty(String key, Object defaultValue, NodeCursor nodes, PropertyCursor properties) {
-        if (null == key) {
-            throw new IllegalArgumentException("(null) property key is not allowed");
-        }
-        int propertyKey = tokenRead().propertyKey(key);
-        if (propertyKey == TokenRead.NO_TOKEN) {
-            return defaultValue;
-        }
-        singleNode(nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyKey));
-        return properties.next() ? properties.propertyValue().asObjectCopy() : defaultValue;
-    }
-
-    protected Iterable<String> getPropertyKeys(NodeCursor nodes, PropertyCursor properties) {
-        List<String> keys = new ArrayList<>();
-        try {
-            singleNode(nodes);
-            TokenRead token = tokenRead();
-            nodes.properties(properties, ALL_PROPERTIES);
-            while (properties.next()) {
-                keys.add(token.propertyKeyName(properties.propertyKey()));
-            }
-        } catch (PropertyKeyIdNotFoundKernelException e) {
-            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
-        }
-        return keys;
-    }
-
-    protected Map<String, Object> getProperties(NodeCursor nodes, PropertyCursor properties, String... keys) {
-        Objects.requireNonNull(keys, "Properties keys should be not null array.");
-
-        if (keys.length == 0) {
-            return Collections.emptyMap();
-        }
-
-        int[] propertyIds = propertyIds(tokenRead(), keys);
-        Map<String, Object> result = new HashMap<>(propertyIds.length);
-        singleNode(nodes);
-        nodes.properties(properties, PropertySelection.selection(propertyIds));
-        while (properties.next()) {
-            result.put(
-                    keys[indexOf(propertyIds, properties.propertyKey())],
-                    properties.propertyValue().asObjectCopy());
-        }
-        return result;
-    }
-
-    public Map<String, Object> getAllProperties(NodeCursor nodes, PropertyCursor properties) {
-        Map<String, Object> result = new HashMap<>();
-        try {
-            TokenRead token = tokenRead();
-            singleNode(nodes);
-            nodes.properties(properties, ALL_PROPERTIES);
-            while (properties.next()) {
-                result.put(
-                        token.propertyKeyName(properties.propertyKey()),
-                        properties.propertyValue().asObjectCopy());
-            }
-        } catch (PropertyKeyIdNotFoundKernelException e) {
-            throw new IllegalStateException("Property key retrieved through kernel API should exist.", e);
-        }
-        return result;
-    }
-
     protected int getDegree(NodeCursor nodes) {
         singleNode(nodes);
         return Nodes.countAll(nodes);
@@ -281,21 +175,6 @@ public abstract class AbstractNodeEntity implements Node {
         } catch (LabelNotFoundKernelException e) {
             throw new IllegalStateException("Label retrieved through kernel API should exist.", e);
         }
-    }
-
-    private int[] propertyIds(TokenRead tokenRead, String... keys) {
-        // Find ids, note we are betting on that the number of keys
-        // is small enough not to use a set here.
-        int[] propertyIds = new int[keys.length];
-        for (int i = 0; i < propertyIds.length; i++) {
-            String key = keys[i];
-            if (key == null) {
-                throw new NullPointerException(String.format("Key %d was null", i));
-            }
-            propertyIds[i] = tokenRead.propertyKey(key);
-        }
-
-        return propertyIds;
     }
 
     protected abstract TokenRead tokenRead();

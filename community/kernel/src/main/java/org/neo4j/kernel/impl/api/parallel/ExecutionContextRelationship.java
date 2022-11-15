@@ -19,45 +19,77 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
+
 import java.util.Map;
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.impl.core.AbstractEntity;
 
-public class ExecutionContextRelationship implements Relationship {
+public class ExecutionContextRelationship extends AbstractEntity implements Relationship {
 
-    private final long relationshipId;
     private final ExecutionContext executionContext;
+    private final long id;
 
     public ExecutionContextRelationship(long relationshipId, ExecutionContext executionContext) {
-        this.relationshipId = relationshipId;
+        this.id = relationshipId;
         this.executionContext = executionContext;
     }
 
     @Override
     public long getId() {
-        return relationshipId;
+        return id;
     }
 
     @Override
     public String getElementId() {
-        return executionContext.elementIdMapper().relationshipElementId(relationshipId);
+        return executionContext.elementIdMapper().relationshipElementId(id);
     }
 
     @Override
     public boolean hasProperty(String key) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+            return hasProperty(key, relationships, properties);
+        }
     }
 
     @Override
     public Object getProperty(String key) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+            return getProperty(key, relationships, properties);
+        }
     }
 
     @Override
     public Object getProperty(String key, Object defaultValue) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+
+            return getProperty(key, defaultValue, relationships, properties);
+        }
     }
 
     @Override
@@ -72,17 +104,38 @@ public class ExecutionContextRelationship implements Relationship {
 
     @Override
     public Iterable<String> getPropertyKeys() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+            return getPropertyKeys(relationships, properties);
+        }
     }
 
     @Override
     public Map<String, Object> getProperties(String... keys) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+            return getProperties(relationships, properties, keys);
+        }
     }
 
     @Override
     public Map<String, Object> getAllProperties() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        var cursors = executionContext.cursors();
+        try (RelationshipScanCursor relationships =
+                        cursors.allocateRelationshipScanCursor(executionContext.cursorContext());
+                PropertyCursor properties = cursors.allocatePropertyCursor(
+                        executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleRelationship(relationships);
+            return getAllProperties(relationships, properties);
+        }
     }
 
     @Override
@@ -92,31 +145,65 @@ public class ExecutionContextRelationship implements Relationship {
 
     @Override
     public Node getStartNode() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        try (RelationshipScanCursor relationships =
+                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+            singleRelationship(relationships);
+            return new ExecutionContextNode(relationships.sourceNodeReference(), executionContext);
+        }
     }
 
     @Override
     public Node getEndNode() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        try (RelationshipScanCursor relationships =
+                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+            singleRelationship(relationships);
+            return new ExecutionContextNode(relationships.targetNodeReference(), executionContext);
+        }
     }
 
     @Override
     public Node getOtherNode(Node node) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        return new ExecutionContextNode(getOtherNodeId(node.getId()), executionContext);
     }
 
     @Override
     public Node[] getNodes() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        return new Node[] {getStartNode(), getEndNode()};
     }
 
     @Override
     public RelationshipType getType() {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        try (RelationshipScanCursor relationships =
+                executionContext.cursors().allocateRelationshipScanCursor(executionContext.cursorContext())) {
+            singleRelationship(relationships);
+            int type = relationships.type();
+            if (type == NO_ID) {
+                throw new NotFoundException(new EntityNotFoundException(EntityType.RELATIONSHIP, getElementId()));
+            }
+
+            try {
+                String name = executionContext.tokenRead().relationshipTypeName(type);
+                return RelationshipType.withName(name);
+            } catch (KernelException e) {
+                throw new IllegalStateException("Kernel API returned non-existent relationship type: " + type, e);
+            }
+        }
     }
 
     @Override
     public boolean isType(RelationshipType type) {
-        throw new UnsupportedOperationException("Operation unsupported during parallel query execution");
+        return getType().equals(type);
+    }
+
+    private void singleRelationship(RelationshipScanCursor relationships) {
+        executionContext.dataRead().singleRelationship(id, relationships);
+        if (!relationships.next()) {
+            throw new NotFoundException(new EntityNotFoundException(EntityType.RELATIONSHIP, getElementId()));
+        }
+    }
+
+    @Override
+    protected TokenRead tokenRead() {
+        return executionContext.tokenRead();
     }
 }

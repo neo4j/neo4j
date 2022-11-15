@@ -70,6 +70,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return hasProperty(key, nodes, properties);
         }
     }
@@ -80,6 +81,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return getProperty(key, nodes, properties);
         }
     }
@@ -90,6 +92,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return getProperty(key, defaultValue, nodes, properties);
         }
     }
@@ -100,6 +103,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return getPropertyKeys(nodes, properties);
         }
     }
@@ -110,6 +114,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return getProperties(nodes, properties, keys);
         }
     }
@@ -120,6 +125,7 @@ public class ExecutionContextNode extends AbstractNodeEntity {
         try (NodeCursor nodes = cursors.allocateNodeCursor(executionContext.cursorContext());
                 PropertyCursor properties = cursors.allocatePropertyCursor(
                         executionContext.cursorContext(), executionContext.memoryTracker())) {
+            singleNode(nodes);
             return getAllProperties(nodes, properties);
         }
     }

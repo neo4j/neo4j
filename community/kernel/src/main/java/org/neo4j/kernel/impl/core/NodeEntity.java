@@ -203,37 +203,49 @@ public class NodeEntity extends AbstractNodeEntity implements RelationshipFactor
     @Override
     public Object getProperty(String key, Object defaultValue) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        return getProperty(key, defaultValue, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
+        return getProperty(key, defaultValue, nodes, transaction.ambientPropertyCursor());
     }
 
     @Override
     public Iterable<String> getPropertyKeys() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        return getPropertyKeys(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
+        return getPropertyKeys(nodes, transaction.ambientPropertyCursor());
     }
 
     @Override
     public Map<String, Object> getProperties(String... keys) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
         return getProperties(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor(), keys);
     }
 
     @Override
     public Map<String, Object> getAllProperties() {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
         return getAllProperties(transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
     }
 
     @Override
     public Object getProperty(String key) throws NotFoundException {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        return getProperty(key, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
+        return getProperty(key, nodes, transaction.ambientPropertyCursor());
     }
 
     @Override
     public boolean hasProperty(String key) {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        return hasProperty(key, transaction.ambientNodeCursor(), transaction.ambientPropertyCursor());
+        NodeCursor nodes = transaction.ambientNodeCursor();
+        singleNode(nodes);
+        return hasProperty(key, nodes, transaction.ambientPropertyCursor());
     }
 
     public int compareTo(Object node) {
