@@ -77,10 +77,31 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
     void canCollectAllHitsWithTopZebraInTheMiddle(EntityUtil entityUtil) {
         setUp(entityUtil, true, true);
 
+        // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
                 var list = iterator.stream().collect(toList());
                 assertSearchResults(list, ZEBRAS * 2);
+            }
+            tx.commit();
+        }
+
+        // top hit
+        try (Transaction tx = db.beginTx()) {
+            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
+                var list = iterator.stream().collect(toList());
+                assertSearchResults(list, 0);
+            }
+            tx.commit();
+        }
+
+        // top hits
+        try (Transaction tx = db.beginTx()) {
+            var limit = random.nextInt(1, ZEBRAS);
+            try (ResourceIterator<Entity> iterator =
+                    entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
+                var list = iterator.stream().collect(toList());
+                assertSearchResults(list, limit - 1);
             }
             tx.commit();
         }
@@ -91,10 +112,31 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
     void canCollectAllHitsWithTopZebraInTheBeginning(EntityUtil entityUtil) {
         setUp(entityUtil, false, true);
 
+        // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
                 var list = iterator.stream().collect(toList());
                 assertSearchResults(list, ZEBRAS);
+            }
+            tx.commit();
+        }
+
+        // top hit
+        try (Transaction tx = db.beginTx()) {
+            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
+                var list = iterator.stream().collect(toList());
+                assertSearchResults(list, 0);
+            }
+            tx.commit();
+        }
+
+        // top hits
+        try (Transaction tx = db.beginTx()) {
+            var limit = random.nextInt(1, ZEBRAS);
+            try (ResourceIterator<Entity> iterator =
+                    entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
+                var list = iterator.stream().collect(toList());
+                assertSearchResults(list, limit - 1);
             }
             tx.commit();
         }
@@ -105,6 +147,7 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
     void canCollectAllHitsWithTopZebraAtTheEnd(EntityUtil entityUtil) {
         setUp(entityUtil, true, false);
 
+        // all hits
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{}")) {
                 var list = iterator.stream().collect(toList());
@@ -112,13 +155,8 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
             }
             tx.commit();
         }
-    }
 
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitWithTopZebraInTheMiddle(EntityUtil entityUtil) {
-        setUp(entityUtil, true, true);
-
+        // top hit
         try (Transaction tx = db.beginTx()) {
             try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
                 var list = iterator.stream().collect(toList());
@@ -126,73 +164,8 @@ public class FulltextIndexMoreDataTest extends FulltextProceduresTestSupport {
             }
             tx.commit();
         }
-    }
 
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitWithTopZebraInTheBeginning(EntityUtil entityUtil) {
-        setUp(entityUtil, false, true);
-
-        try (Transaction tx = db.beginTx()) {
-            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().collect(toList());
-                assertSearchResults(list, 0);
-            }
-            tx.commit();
-        }
-    }
-
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitWithTopZebraAtTheEnd(EntityUtil entityUtil) {
-        setUp(entityUtil, true, false);
-
-        try (Transaction tx = db.beginTx()) {
-            try (ResourceIterator<Entity> iterator = entityUtil.queryIndexWithOptions(tx, "zebra", "{limit:1}")) {
-                var list = iterator.stream().collect(toList());
-                assertSearchResults(list, 0);
-            }
-            tx.commit();
-        }
-    }
-
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitsWithTopZebraInTheMiddle(EntityUtil entityUtil) {
-        setUp(entityUtil, true, true);
-
-        try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, ZEBRAS);
-            try (ResourceIterator<Entity> iterator =
-                    entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().collect(toList());
-                assertSearchResults(list, limit - 1);
-            }
-            tx.commit();
-        }
-    }
-
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitsWithTopZebraInTheBeginning(EntityUtil entityUtil) {
-        setUp(entityUtil, false, true);
-
-        try (Transaction tx = db.beginTx()) {
-            var limit = random.nextInt(1, ZEBRAS);
-            try (ResourceIterator<Entity> iterator =
-                    entityUtil.queryIndexWithOptions(tx, "zebra", "{limit: " + limit + "}")) {
-                var list = iterator.stream().collect(toList());
-                assertSearchResults(list, limit - 1);
-            }
-            tx.commit();
-        }
-    }
-
-    @MethodSource("entityTypeProvider")
-    @ParameterizedTest
-    void canCollectTopHitsWithTopZebraAtTheEnd(EntityUtil entityUtil) {
-        setUp(entityUtil, true, false);
-
+        // top hits
         try (Transaction tx = db.beginTx()) {
             var limit = random.nextInt(1, ZEBRAS);
             try (ResourceIterator<Entity> iterator =
