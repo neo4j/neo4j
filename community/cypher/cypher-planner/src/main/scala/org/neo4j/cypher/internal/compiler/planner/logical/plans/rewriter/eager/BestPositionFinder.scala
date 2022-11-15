@@ -59,7 +59,7 @@ object BestPositionFinder {
       CandidateSetWithMinimum(
         cl.candidates.toSet,
         cl.candidates.minBy(plan => cardinalities.get(plan.value.id)),
-        cl.reasons
+        cl.conflict.reasons
       )
     )
 

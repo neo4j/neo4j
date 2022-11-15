@@ -3129,6 +3129,76 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test(
+    "Conflicts in when traversing the right hand side of a plan should be found and eagerized."
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("p", "o")
+      .setLabels("p", "B")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("p", "C")
+      .|.nodeByLabelScan("o", "B")
+      .create(createNode("m", "C"))
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("p", "o")
+        .setLabels("p", "B")
+        .eager(ListSet(LabelReadSetConflict(labelName("B"), Some(EagernessReason.Conflict(Id(1), Id(5))))))
+        .apply()
+        .|.cartesianProduct()
+        .|.|.nodeByLabelScan("p", "C")
+        .|.nodeByLabelScan("o", "B")
+        .eager(ListSet(LabelReadSetConflict(labelName("C"), Some(EagernessReason.Conflict(Id(6), Id(4))))))
+        .create(createNode("m", "C"))
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test(
+    "should be eager between conflicts found inside cartesian product"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("m", "Label")
+      .|.nodeByLabelScan("n", "Label")
+      .create(createNode("l", "Label"))
+      .unwind("[1, 2] AS y")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .apply()
+        .|.cartesianProduct()
+        .|.|.nodeByLabelScan("m", "Label")
+        .|.nodeByLabelScan("n", "Label")
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("Label"), Some(EagernessReason.Conflict(Id(5), Id(3)))),
+          LabelReadSetConflict(labelName("Label"), Some(EagernessReason.Conflict(Id(5), Id(4))))
+        ))
+        .create(createNode("l", "Label"))
+        .unwind("[1, 2] AS y")
+        .argument()
+        .build()
+    )
+  }
+
   // Ignored tests
 
   // Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels

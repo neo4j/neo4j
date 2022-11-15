@@ -46,7 +46,7 @@ object CandidateListFinder {
    *                   The candidates are in an order such that `candidates(n+1).children.contains(candidates(n))`.
    * @param reasons    the reasons of the original conflict(s)
    */
-  private[eager] case class CandidateList(candidates: Seq[Ref[LogicalPlan]], reasons: Set[EagernessReason.Reason])
+  private[eager] case class CandidateList(candidates: Seq[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
 
   /**
    * Represents a growing (therefore open) list of candidate plans on which an eager could be planned to solve the given conflict.
@@ -61,8 +61,8 @@ object CandidateListFinder {
     /**
      * @return a [[CandidateList]] with the current candidates and the reason of the conflict.
      */
-    def candidateListWithReason: CandidateList =
-      CandidateList(candidates = candidates, reasons = conflict.reasons)
+    def candidateListWithConflict: CandidateList =
+      CandidateList(candidates = candidates, conflict = conflict)
 
     def withAddedCandidate(candidate: LogicalPlan): OpenSequence =
       copy(candidates = candidates :+ Ref(candidate))
@@ -137,8 +137,20 @@ object CandidateListFinder {
       /**
        * Whether the two plans in the conflict have been found in LHS and RHS respectively
        */
-      def isSolved(os: OpenSequence) = {
+      def isSolvedLHSvsRHS(os: OpenSequence) = {
         solvedConflicts.contains(os.conflict)
+      }
+
+      def isSolved(os: OpenSequence) = {
+        isSolvedLHSvsRHS(os) ||
+        lhs.candidateLists.exists(_.conflict == os.conflict) ||
+        rhs.candidateLists.exists(_.conflict == os.conflict)
+      }
+
+      def isSolvedConflictingPlanPair(cpp: ConflictingPlanPair) = {
+        solvedConflicts.contains(cpp) ||
+        lhs.candidateLists.exists(_.conflict == cpp) ||
+        rhs.candidateLists.exists(_.conflict == cpp)
       }
 
       /**
@@ -190,24 +202,26 @@ object CandidateListFinder {
           rhs.openSequences.view.mapValues(_.map(_.copy(candidates = Seq.empty))).toMap
         else rhs.openSequences
 
-      // We keep only those open sequences where one of the conflicting plans has not been traversed yet.
+      // We keep only those open sequences where one of the conflicting plans has not been traversed yet and remove the ones that have already been solved.
       val newOpenSequences = lhs.openSequences.fuse(filteredRhsOpenSequences)(_ ++ _).map {
         case (endPlan, openSequences) =>
           (endPlan, openSequences.filter(!isSolved(_)))
-      }.filter(_._2.nonEmpty)
+      }
+        .filter(_._2.nonEmpty)
 
       val lhsVsRhsConflictCandidateLists =
         if (eagerizationStrategy.eagerizeLHSvsRHSConflicts) {
           // Take the candidate list from the LHS for a conflict between LHS and RHS
-          lhs.openSequences.values.flatten.filter(isSolved).map(_.candidateListWithReason)
+          lhs.openSequences.values.flatten.filter(isSolvedLHSvsRHS).map(_.candidateListWithConflict)
         } else {
           Seq.empty
         }
 
       // If one of the plans of a conflict has been found and an open sequence was created, we can disregard the original conflict coming from the other side
       val remainingOpenConflicts =
-        lhs.openConflicts.filterNot(conflict => rhs.openSequences.values.flatten.exists(_.conflict == conflict)) ++
-          rhs.openConflicts.filterNot(conflict => lhs.openSequences.values.flatten.exists(_.conflict == conflict))
+        (lhs.openConflicts.filterNot(conflict => rhs.openSequences.values.flatten.exists(_.conflict == conflict)) ++
+          rhs.openConflicts.filterNot(conflict => lhs.openSequences.values.flatten.exists(_.conflict == conflict)))
+          .filterNot(isSolvedConflictingPlanPair)
 
       copy(
         openConflicts = remainingOpenConflicts,
@@ -270,7 +284,7 @@ object CandidateListFinder {
         }
 
       // Find open sequences that are closed by this plan
-      val newCandidateLists = acc.openSequences.getOrElse(Ref(p), Seq.empty).map(_.candidateListWithReason)
+      val newCandidateLists = acc.openSequences.getOrElse(Ref(p), Seq.empty).map(_.candidateListWithConflict)
 
       val remainingOpenSequences = {
         // All sequences that do not end in p
@@ -305,7 +319,10 @@ object CandidateListFinder {
             processPlan(rhsAcc.popLayer(), p)
           case b: LogicalBinaryPlan =>
             // as a non-apply binary plan, we need to combine the information from both legs
-            processPlan(lhsAcc.combineWithRhs(rhsAcc, b), b)
+            processPlan(
+              lhsAcc.combineWithRhs(rhsAcc, b),
+              b
+            )
         }
     )
 
