@@ -41,7 +41,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
@@ -72,7 +72,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure {
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> apply(
-            Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+            Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         String query = ((TextValue) input[0]).stringValue();
         try {
             // Find all beans that match the query name pattern

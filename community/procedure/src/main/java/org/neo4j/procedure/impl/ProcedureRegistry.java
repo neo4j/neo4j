@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.PermissionState;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
@@ -192,7 +192,7 @@ public class ProcedureRegistry {
     }
 
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
-            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+            Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         CallableProcedure proc;
         try {
             proc = procedures.get(id);
@@ -214,7 +214,7 @@ public class ProcedureRegistry {
         } catch (IndexOutOfBoundsException e) {
             throw noSuchProcedure(id);
         }
-        return proc.apply(ctx, input, resourceTracker);
+        return proc.apply(ctx, input, resourceMonitor);
     }
 
     public AnyValue callFunction(Context ctx, int functionId, AnyValue[] input) throws ProcedureException {

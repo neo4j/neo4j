@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntAny
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -55,7 +56,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
         RawIterator.empty[Array[AnyValue], ProcedureException]()
@@ -68,7 +69,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
         RawIterator.empty[Array[AnyValue], ProcedureException]()
@@ -82,7 +83,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         ctx.graphDatabaseAPI().executeTransactionally("CREATE (n:INPROC)")
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(42)), Array(Values.of(42)))
@@ -96,7 +97,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         testVar += 1
         RawIterator.of[Array[AnyValue], ProcedureException](Array(Values.of(testVar)), Array(Values.of(testVar)))
@@ -110,7 +111,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         def twice(v: AnyValue): AnyValue = v.asInstanceOf[NumberValue].times(2L)
         RawIterator.of[Array[AnyValue], ProcedureException](input.map(twice), input.map(twice))
@@ -123,7 +124,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
 
         val nElemants = input.head.asInstanceOf[NumberValue].longValue().intValue()
@@ -141,7 +142,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         RawIterator.of[Array[AnyValue], ProcedureException](input)
       }

@@ -28,7 +28,7 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
@@ -98,7 +98,7 @@ public final class ServerUtil {
                         .build()) {
                     @Override
                     public RawIterator<AnyValue[], ProcedureException> apply(
-                            Context context, AnyValue[] objects, ResourceTracker resourceTracker)
+                            Context context, AnyValue[] objects, ResourceMonitor resourceMonitor)
                             throws ProcedureException {
                         try {
                             Thread.sleep(((IntegralValue) objects[0]).longValue());

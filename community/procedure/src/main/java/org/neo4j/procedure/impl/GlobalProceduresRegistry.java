@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -318,8 +318,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
-            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
-        return registry.callProcedure(ctx, id, input, resourceTracker);
+            Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
+        return registry.callProcedure(ctx, id, input, resourceMonitor);
     }
 
     @Override

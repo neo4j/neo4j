@@ -81,7 +81,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
@@ -171,7 +171,7 @@ public final class ProcedureCompilation {
                     "apply",
                     param(Context.class, "ctx"),
                     param(AnyValue[].class, "input"),
-                    param(ResourceTracker.class, "tracker"))
+                    param(ResourceMonitor.class, "monitor"))
             .throwsException(typeReference(ProcedureException.class));
     private static final MethodDeclaration.Builder AGGREGATION_CREATE = method(
                     UserAggregator.class, "create", param(Context.class, "ctx"))
@@ -301,7 +301,7 @@ public final class ProcedureCompilation {
      *         public static ProcedureSignature SIGNATURE;
      *         public static FieldSetter SETTER_0;
      *
-     *          RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] in, ResourceTracker tracker ) throws ProcedureException {
+     *          RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] in, ResourceMonitor monitor ) throws ProcedureException {
      *              try {
      *                  MyClass userClass = new MyClass();
      *                  userClass.log = (Log) SETTER_0.get(ctx);
@@ -580,13 +580,13 @@ public final class ProcedureCompilation {
             FieldReference context = generator.field(Context.class, "ctx");
             try (CodeBlock constructor = generator.generateConstructor(
                     param(Stream.class, "stream"),
-                    param(ResourceTracker.class, "tracker"),
+                    param(ResourceMonitor.class, "monitor"),
                     param(ProcedureSignature.class, "signature"),
                     param(Context.class, "ctx"))) {
                 constructor.expression(invokeSuper(
                         typeReference(BaseStreamIterator.class),
                         constructor.load("stream"),
-                        constructor.load("tracker"),
+                        constructor.load("monitor"),
                         constructor.load("signature")));
                 constructor.put(constructor.self(), context, constructor.load("ctx"));
             }
@@ -754,9 +754,9 @@ public final class ProcedureCompilation {
             block.returns(invoke(
                     newInstance(iterator),
                     constructorReference(
-                            iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class, Context.class),
+                            iterator, Stream.class, ResourceMonitor.class, ProcedureSignature.class, Context.class),
                     block.load("fromProcedure"),
-                    block.load("tracker"),
+                    block.load("monitor"),
                     getStatic(signature),
                     block.load("ctx")));
         }

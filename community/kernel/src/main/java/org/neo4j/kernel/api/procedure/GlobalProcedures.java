@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
@@ -92,7 +92,7 @@ public interface GlobalProcedures {
     Stream<UserFunctionSignature> getAllAggregatingFunctions();
 
     RawIterator<AnyValue[], ProcedureException> callProcedure(
-            Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException;
+            Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException;
 
     AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException;
 

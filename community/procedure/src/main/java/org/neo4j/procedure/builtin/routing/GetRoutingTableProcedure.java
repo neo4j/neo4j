@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -129,7 +129,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> apply(
-            Context ctx, AnyValue[] input, ResourceTracker resourceTracker) throws ProcedureException {
+            Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
         var user = ctx.securityContext().subject().executingUser();
         var databaseReference = extractDatabaseReference(input, user);
         var routingContext = extractRoutingContext(input);

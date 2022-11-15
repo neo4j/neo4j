@@ -32,6 +32,7 @@ import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
+import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
@@ -544,7 +545,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
       override def apply(
         ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] = {
         RawIterator.empty[Array[AnyValue], ProcedureException]()
       }

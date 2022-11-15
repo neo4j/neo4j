@@ -41,7 +41,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -169,7 +169,7 @@ class ProceduresTest {
         procs.register(new CallableProcedure.BasicProcedure(signature) {
             @Override
             public RawIterator<AnyValue[], ProcedureException> apply(
-                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                    Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
                 return RawIterator.<AnyValue[], ProcedureException>of(
                         new AnyValue[] {stringValue(ctx.thread().getName())});
             }
@@ -195,7 +195,7 @@ class ProceduresTest {
         return new CallableProcedure.BasicProcedure(signature) {
             @Override
             public RawIterator<AnyValue[], ProcedureException> apply(
-                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                    Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
                 return null;
             }
         };
@@ -205,7 +205,7 @@ class ProceduresTest {
         return new CallableProcedure.BasicProcedure(signature) {
             @Override
             public RawIterator<AnyValue[], ProcedureException> apply(
-                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker) {
+                    Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) {
                 return RawIterator.<AnyValue[], ProcedureException>of(input);
             }
         };

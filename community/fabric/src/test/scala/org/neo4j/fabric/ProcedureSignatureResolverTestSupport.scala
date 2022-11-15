@@ -30,8 +30,9 @@ import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.FieldSignature.inputField
 import org.neo4j.internal.kernel.api.procs.FieldSignature.outputField
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
-import org.neo4j.kernel.api.ResourceTracker
+import org.neo4j.kernel.api.ResourceMonitor
 import org.neo4j.kernel.api.procedure
+import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -142,9 +143,9 @@ trait ProcedureSignatureResolverTestSupport {
       false
     )) {
       override def apply(
-        ctx: procedure.Context,
+        ctx: Context,
         input: Array[AnyValue],
-        resourceTracker: ResourceTracker
+        resourceMonitor: ResourceMonitor
       ): RawIterator[Array[AnyValue], ProcedureException] =
         RawIterator.of(values: _*)
     }

@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -40,15 +40,15 @@ import org.neo4j.values.AnyValue;
 public abstract class BaseStreamIterator implements RawIterator<AnyValue[], ProcedureException>, Resource {
     private final Iterator<?> out;
     private Stream<?> stream;
-    private final ResourceTracker resourceTracker;
+    private final ResourceMonitor resourceMonitor;
     private final ProcedureSignature signature;
 
-    public BaseStreamIterator(Stream<?> stream, ResourceTracker resourceTracker, ProcedureSignature signature) {
+    public BaseStreamIterator(Stream<?> stream, ResourceMonitor resourceMonitor, ProcedureSignature signature) {
         this.out = stream.iterator();
         this.stream = stream;
-        this.resourceTracker = resourceTracker;
+        this.resourceMonitor = resourceMonitor;
         this.signature = signature;
-        resourceTracker.registerCloseableResource(stream);
+        resourceMonitor.registerCloseableResource(stream);
     }
 
     public abstract AnyValue[] map(Object in);
@@ -85,7 +85,7 @@ public abstract class BaseStreamIterator implements RawIterator<AnyValue[], Proc
             stream = null;
             IOUtils.close(
                     ResourceCloseFailureException::new,
-                    () -> resourceTracker.unregisterCloseableResource(resourceToClose),
+                    () -> resourceMonitor.unregisterCloseableResource(resourceToClose),
                     resourceToClose);
         }
     }
