@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api;
 
 import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -30,8 +32,8 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
  * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
-public interface CommandCreationContext extends AutoCloseable {
-    public static final Supplier<Long> NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
+public interface CommandCreationContext extends KernelVersionProvider, AutoCloseable {
+    Supplier<Long> NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -92,6 +94,7 @@ public interface CommandCreationContext extends AutoCloseable {
 
     /**
      * Initialise command creation context for specific transactional cursor context
+     * @param kernelVersion kernel version for which the commands should be created
      * @param cursorContext transaction cursor context
      * @param storeCursors store cursors
      * @param startTimeOfOldestActiveTransaction supplier to retrieve timestamp of oldest currently active transaction
@@ -99,6 +102,7 @@ public interface CommandCreationContext extends AutoCloseable {
      * @param lockTracer Lock tracer to use if locks are taken
      */
     void initialize(
+            KernelVersion kernelVersion,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Supplier<Long> startTimeOfOldestActiveTransaction,

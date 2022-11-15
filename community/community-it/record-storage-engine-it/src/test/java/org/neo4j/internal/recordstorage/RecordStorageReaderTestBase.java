@@ -46,6 +46,7 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -111,6 +112,7 @@ public abstract class RecordStorageReaderTestBase {
         this.commitContext = storageEngine.newCommandCreationContext();
         storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
         commitContext.initialize(
+                KernelVersion.LATEST,
                 NULL_CONTEXT,
                 storageCursors,
                 CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

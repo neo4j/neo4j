@@ -108,6 +108,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -177,6 +179,7 @@ class TransactionRecordStateTest {
     @Inject
     private DatabaseLayout databaseLayout;
 
+    private KernelVersionProvider kernelVersionProvider;
     private NeoStores neoStores;
     private StoreCursors storeCursors;
     private IdGeneratorFactory idGeneratorFactory;
@@ -195,6 +198,8 @@ class TransactionRecordStateTest {
     }
 
     private void createStores(Config config, RecordFormats formats) {
+        var logTailMetadata = EMPTY_LOG_TAIL;
+        kernelVersionProvider = new MetadataCache(logTailMetadata);
         var pageCacheTracer = PageCacheTracer.NULL;
         idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), pageCacheTracer, databaseLayout.getDatabaseName());
@@ -209,7 +214,7 @@ class TransactionRecordStateTest {
                 NullLogProvider.getInstance(),
                 new CursorContextFactory(pageCacheTracer, EMPTY),
                 false,
-                EMPTY_LOG_TAIL,
+                logTailMetadata,
                 immutable.empty());
         neoStores = storeFactory.openAllNeoStores();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
@@ -1857,8 +1862,9 @@ class TransactionRecordStateTest {
                 NULL_CONTEXT,
                 storeCursors);
         return new TransactionRecordState(
-                neoStores,
+                kernelVersionProvider.kernelVersion(),
                 recordChangeSet,
+                neoStores,
                 ResourceLocker.IGNORE,
                 LockTracer.NONE,
                 new RelationshipModifier(

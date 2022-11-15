@@ -68,6 +68,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -549,6 +550,7 @@ class BatchingNeoStoresTest {
             try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 commandCreationContext.initialize(
+                        KernelVersion.LATEST,
                         NULL_CONTEXT,
                         storeCursors,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

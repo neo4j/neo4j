@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.lock.LockTracer;
@@ -106,10 +107,12 @@ public class RecordStorageEngineTestUtils {
         when(txState.addedAndRemovedRelationships()).thenReturn(LongDiffSets.EMPTY);
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         TransactionIdStore txIdStore = neoStores.getMetaDataStore();
+        KernelVersionProvider kernelVersionProvider = neoStores.getMetaDataStore();
         CursorContext cursorContext = NULL_CONTEXT;
         try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             commandCreationContext.initialize(
+                    kernelVersionProvider.kernelVersion(),
                     cursorContext,
                     storeCursors,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

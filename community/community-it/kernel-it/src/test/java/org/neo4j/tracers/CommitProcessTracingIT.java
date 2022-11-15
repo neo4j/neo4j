@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -64,6 +64,9 @@ import org.neo4j.test.extension.Inject;
 public class CommitProcessTracingIT {
     @Inject
     private GraphDatabaseAPI database;
+
+    @Inject
+    private KernelVersionProvider kernelVersionProvider;
 
     @Inject
     private TransactionCommitProcess commitProcess;
@@ -100,6 +103,7 @@ public class CommitProcessTracingIT {
             try (CommandCreationContext context = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 context.initialize(
+                        kernelVersionProvider.kernelVersion(),
                         cursorContext,
                         storeCursors,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
@@ -107,7 +111,7 @@ public class CommitProcessTracingIT {
                         () -> LockTracer.NONE);
                 var txState = new TxState();
                 txState.nodeDoAddLabel(1, sourceId);
-                List<StorageCommand> commands = storageEngine.createCommands(
+                storageEngine.createCommands(
                         txState,
                         reader,
                         context,

@@ -27,6 +27,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
@@ -55,6 +56,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     // and so it will need to be queried per tx commit.
     private final BooleanSupplier relaxedLockingForDenseNodes;
 
+    private KernelVersion kernelVersion;
     private PropertyCreator propertyCreator;
     private PropertyDeleter propertyDeleter;
     private RelationshipGroupGetter relationshipGroupGetter;
@@ -81,11 +83,13 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
 
     @Override
     public void initialize(
+            KernelVersion kernelVersion,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Supplier<Long> startTimeOfOldestActiveTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer) {
+        this.kernelVersion = kernelVersion;
         this.cursorContext = cursorContext;
         this.loaders = new Loaders(neoStores, storeCursors);
         this.storeCursors = storeCursors;
@@ -168,8 +172,9 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 cursorContext,
                 memoryTracker);
         return new TransactionRecordState(
-                neoStores,
+                kernelVersion,
                 recordChangeSet,
+                neoStores,
                 locks,
                 lockTracer,
                 relationshipModifier,
@@ -179,5 +184,10 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 storeCursors,
                 memoryTracker,
                 commandSerialization);
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return kernelVersion;
     }
 }

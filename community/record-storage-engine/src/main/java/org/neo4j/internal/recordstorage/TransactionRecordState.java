@@ -44,6 +44,7 @@ import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -88,6 +89,7 @@ public class TransactionRecordState implements RecordState {
     private static final Command[] EMPTY_COMMANDS = new Command[0];
     private static final Function<Mode, List<Command>> MODE_TO_ARRAY_LIST = mode -> new ArrayList<>();
 
+    private final KernelVersion kernelVersion;
     private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
@@ -109,8 +111,9 @@ public class TransactionRecordState implements RecordState {
     private final RelationshipGroupGetter.DirectGroupLookup directGroupLookup;
 
     TransactionRecordState(
-            NeoStores neoStores,
+            KernelVersion kernelVersion,
             RecordChangeSet recordChangeSet,
+            NeoStores neoStores,
             ResourceLocker locks,
             LockTracer lockTracer,
             RelationshipModifier relationshipModifier,
@@ -120,6 +123,7 @@ public class TransactionRecordState implements RecordState {
             StoreCursors storeCursors,
             MemoryTracker memoryTracker,
             LogCommandSerialization commandSerialization) {
+        this.kernelVersion = kernelVersion;
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -261,8 +265,7 @@ public class TransactionRecordState implements RecordState {
             SchemaRecord schemaRecord = change.forReadingLinkage();
             SchemaRule rule = change.getAdditionalData();
             if (schemaRecord.inUse()) {
-                IntegrityValidator.validateSchemaRule(
-                        rule, neoStores.getMetaDataStore().kernelVersion());
+                IntegrityValidator.validateSchemaRule(rule, kernelVersion);
             }
             Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand(
                     commandSerialization, change.getBefore(), change.forChangingData(), rule);

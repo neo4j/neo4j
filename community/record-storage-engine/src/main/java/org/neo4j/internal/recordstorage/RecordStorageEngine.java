@@ -424,14 +424,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             return emptyList();
         }
         var commands = HeapTrackingCollections.<StorageCommand>newArrayList(memoryTracker);
-        KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
 
         // We can make this cast here because we expected that the storageReader passed in here comes from
         // this storage engine itself, anything else is considered a bug. And we do know the inner workings
         // of the storage statements that we create.
         RecordStorageCommandCreationContext creationContext =
                 (RecordStorageCommandCreationContext) commandCreationContext;
-        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(version);
+        LogCommandSerialization serialization =
+                RecordStorageCommandReaderFactory.INSTANCE.get(commandCreationContext.kernelVersion());
         var locks = creationContext.getLocks();
         TransactionRecordState recordState = creationContext.createTransactionRecordState(
                 locks,

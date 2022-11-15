@@ -420,6 +420,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clientInfo = clientInfo;
         this.statistics.init(currentThread().getId(), cursorContext);
         this.commandCreationContext.initialize(
+                kernelVersion,
                 cursorContext,
                 transactionalCursors,
                 kernelTransactions::startTimeOfOldestActiveTransaction,

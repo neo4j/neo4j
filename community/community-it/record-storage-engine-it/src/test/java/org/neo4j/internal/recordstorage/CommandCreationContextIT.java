@@ -39,6 +39,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
@@ -58,6 +59,9 @@ import org.neo4j.values.storable.Values;
 public class CommandCreationContextIT {
     @Inject
     private GraphDatabaseAPI databaseAPI;
+
+    @Inject
+    private KernelVersionProvider kernelVersionProvider;
 
     @Inject
     private RecordStorageEngine storageEngine;
@@ -96,6 +100,7 @@ public class CommandCreationContextIT {
             prepareIdGenerator(storeProvider.apply(neoStores).getIdGenerator());
             try (var creationContext = storageEngine.newCommandCreationContext()) {
                 creationContext.initialize(
+                        kernelVersionProvider.kernelVersion(),
                         cursorContext,
                         StoreCursors.NULL,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
@@ -114,6 +119,7 @@ public class CommandCreationContextIT {
         try (var commandCreationContext = storageEngine.newCommandCreationContext();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
+                    kernelVersionProvider.kernelVersion(),
                     NULL_CONTEXT,
                     storeCursors,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
