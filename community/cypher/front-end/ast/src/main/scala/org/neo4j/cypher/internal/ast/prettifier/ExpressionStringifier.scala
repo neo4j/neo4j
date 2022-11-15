@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -70,6 +71,7 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
@@ -83,6 +85,7 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
@@ -354,6 +357,19 @@ private class DefaultExpressionStringifier(
 
       case AssertIsNode(argument) =>
         s"assertIsNode(${apply(argument)})"
+
+      case e @ ElementIdToLongId(_, _, elementIdExpr) =>
+        val prefix = e match {
+          case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Single, _) =>
+            "elementIdToNodeId"
+          case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Many, _) =>
+            "elementIdListToNodeIdList"
+          case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Single, _) =>
+            "elementIdToRelationshipId"
+          case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, _) =>
+            "elementIdListToRelationshipIdList"
+        }
+        s"$prefix(${apply(elementIdExpr)})"
 
       case _ =>
         extension(this)(ast)
