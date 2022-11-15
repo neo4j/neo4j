@@ -38,14 +38,19 @@ public final class TokenIdPrettyPrinter {
         return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
     }
 
-    public static String niceProperties(TokenNameLookup tokenNameLookup, int[] propertyIds) {
-        return niceProperties(tokenNameLookup, propertyIds, '(', ')');
+    public static String niceQuotedProperties(TokenNameLookup tokenNameLookup, int[] propertyIds) {
+        return niceProperties(tokenNameLookup, propertyIds, '(', ')', true);
     }
 
     public static String niceProperties(TokenNameLookup tokenNameLookup, int[] propertyIds, char prefix, char suffix) {
+        return niceProperties(tokenNameLookup, propertyIds, prefix, suffix, false);
+    }
+
+    private static String niceProperties(
+            TokenNameLookup tokenNameLookup, int[] propertyIds, char prefix, char suffix, boolean alwaysQuote) {
         StringBuilder out = new StringBuilder();
         out.append(prefix);
-        format(out, "", ", ", tokenNameLookup::propertyKeyGetName, propertyIds);
+        format(out, "", ", ", alwaysQuote, tokenNameLookup::propertyKeyGetName, propertyIds);
         out.append(suffix);
         return out.toString();
     }
@@ -64,11 +69,16 @@ public final class TokenIdPrettyPrinter {
     }
 
     public static void format(
-            StringBuilder out, String prefix, String separator, IntFunction<String> lookup, int[] ids) {
+            StringBuilder out,
+            String prefix,
+            String separator,
+            boolean alwaysQuote,
+            IntFunction<String> lookup,
+            int[] ids) {
         for (int id : ids) {
             String name = lookup.apply(id);
             out.append(prefix);
-            if (name.contains(":")) {
+            if (alwaysQuote || name.contains(":")) {
                 out.append('`').append(name).append('`');
             } else {
                 out.append(name);

@@ -49,7 +49,7 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
         String propertyNoun = pluralProps ? "properties" : "property";
         String sep = pluralProps ? "" : "`";
         String props = pluralProps
-                ? TokenIdPrettyPrinter.niceProperties(tokenNameLookup, schema.getPropertyIds())
+                ? TokenIdPrettyPrinter.niceQuotedProperties(tokenNameLookup, schema.getPropertyIds())
                 : tokenNameLookup.propertyKeyGetName(schema.getPropertyId());
         return format(
                 "Node(%d) with label `%s` must have the %s %s%s%s",
