@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
@@ -360,6 +361,18 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def elementId(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(ElementId.name)(pos))
+
+  def elementIdToNodeId(expression: Expression): ElementIdToLongId =
+    ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Single, expression)(pos)
+
+  def elementIdListToNodeIdList(expression: Expression): ElementIdToLongId =
+    ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Many, expression)(pos)
+
+  def elementIdToRelationshipId(expression: Expression): ElementIdToLongId =
+    ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Single, expression)(pos)
+
+  def elementIdListToRelationshipIdList(expression: Expression): ElementIdToLongId =
+    ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, expression)(pos)
 
   def not(expression: Expression): Not = Not(expression)(pos)
 
