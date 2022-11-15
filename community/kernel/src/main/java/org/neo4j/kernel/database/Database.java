@@ -914,7 +914,9 @@ public class Database extends AbstractDatabase {
                 databaseAvailabilityGuard,
                 storageEngine,
                 globalProcedures,
+                globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
                 transactionIdStore,
+                kernelVersionProvider,
                 clock,
                 cpuClockRef,
                 accessCapabilityFactory,
@@ -937,9 +939,7 @@ public class Database extends AbstractDatabase {
                 commitmentFactory,
                 transactionIdSequence,
                 transactionIdGenerator,
-                internalLogProvider,
-                kernelVersionProvider,
-                globalDependencies.resolveDependency(DbmsRuntimeRepository.class)));
+                internalLogProvider));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);
 

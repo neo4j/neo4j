@@ -70,6 +70,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
@@ -98,7 +99,8 @@ public final class KernelTransactionFactory {
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var locks = mock(Locks.class);
         when(locks.newClient()).thenReturn(new NoOpClient());
-        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        KernelVersionProvider kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 Config.defaults(),
                 mock(DatabaseTransactionEventListeners.class),
@@ -131,13 +133,14 @@ public final class KernelTransactionFactory {
                 new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore),
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
+                mock(DbmsRuntimeRepository.class),
+                kernelVersionProvider,
                 NullLogProvider.getInstance(),
-                storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
 
         transaction.initialize(
                 0,
+                kernelVersionProvider.kernelVersion(),
                 KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize(
                         LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG),

@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -166,6 +167,7 @@ class KernelTransactionTestBase {
                 LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG);
         tx.initialize(
                 lastTransactionIdWhenStarted,
+                KernelVersion.LATEST,
                 KernelTransaction.Type.EXPLICIT,
                 securityContext,
                 transactionTimeout,
@@ -234,10 +236,10 @@ class KernelTransactionTestBase {
                 mock(TransactionCommitmentFactory.class),
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
-                NullLogProvider.getInstance(),
-                storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
+                mock(DbmsRuntimeRepository.class),
                 KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                NullLogProvider.getInstance(),
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
 
     KernelTransactionImplementation newNotInitializedTransaction(LeaseService leaseService) {

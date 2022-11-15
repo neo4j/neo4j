@@ -950,6 +950,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
+                mock(DbmsRuntimeRepository.class),
+                KernelVersionProvider.LATEST_VERSION,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -958,9 +960,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.nodeCreate();
@@ -994,6 +994,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
+                mock(DbmsRuntimeRepository.class),
+                KernelVersionProvider.LATEST_VERSION,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -1002,9 +1004,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
         operations.initialize(NULL_CONTEXT);
 
         // when
@@ -1036,6 +1036,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
+                mock(DbmsRuntimeRepository.class),
+                KernelVersionProvider.LATEST_VERSION,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -1044,9 +1046,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.relationshipCreate(0, 1, 2);
@@ -1079,6 +1079,8 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(StorageReader.class),
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
+                mock(DbmsRuntimeRepository.class),
+                KernelVersionProvider.LATEST_VERSION,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -1087,9 +1089,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE,
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
 
         // when
         operations.indexCreate(IndexPrototype.forSchema(schema).withName("name"));

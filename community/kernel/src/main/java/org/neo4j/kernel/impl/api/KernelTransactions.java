@@ -100,7 +100,9 @@ public class KernelTransactions extends LifecycleAdapter
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageEngine storageEngine;
     private final GlobalProcedures globalProcedures;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final TransactionIdStore transactionIdStore;
+    private final KernelVersionProvider kernelVersionProvider;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final SystemNanoClock clock;
@@ -114,8 +116,6 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionCommitmentFactory commitmentFactory;
     private final TransactionIdGenerator transactionIdGenerator;
     private final LogProvider internalLogProvider;
-    private final KernelVersionProvider kernelVersionProvider;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -163,7 +163,9 @@ public class KernelTransactions extends LifecycleAdapter
             AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine,
             GlobalProcedures globalProcedures,
+            DbmsRuntimeRepository dbmsRuntimeRepository,
             TransactionIdStore transactionIdStore,
+            KernelVersionProvider kernelVersionProvider,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef,
             AccessCapabilityFactory accessCapabilityFactory,
@@ -186,9 +188,7 @@ public class KernelTransactions extends LifecycleAdapter
             TransactionCommitmentFactory commitmentFactory,
             TransactionIdSequence transactionIdSequence,
             TransactionIdGenerator transactionIdGenerator,
-            LogProvider internalLogProvider,
-            KernelVersionProvider kernelVersionProvider,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            LogProvider internalLogProvider) {
         this.config = config;
         this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -200,7 +200,9 @@ public class KernelTransactions extends LifecycleAdapter
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.storageEngine = storageEngine;
         this.globalProcedures = globalProcedures;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.transactionIdStore = transactionIdStore;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.cpuClockRef = cpuClockRef;
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
@@ -229,8 +231,6 @@ public class KernelTransactions extends LifecycleAdapter
                 activeTransactionCounter,
                 config);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
-        this.kernelVersionProvider = kernelVersionProvider;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         doBlockNewTransactions();
     }
 
@@ -249,6 +249,7 @@ public class KernelTransactions extends LifecycleAdapter
                 KernelTransactionImplementation tx = txPool.acquire();
                 tx.initialize(
                         lastCommittedTransaction.transactionId(),
+                        kernelVersionProvider.kernelVersion(),
                         type,
                         securityContext,
                         timeout,
@@ -499,10 +500,10 @@ public class KernelTransactions extends LifecycleAdapter
                     commitmentFactory,
                     KernelTransactions.this,
                     transactionIdGenerator,
-                    internalLogProvider,
-                    multiVersioned,
+                    dbmsRuntimeRepository,
                     kernelVersionProvider,
-                    dbmsRuntimeRepository);
+                    internalLogProvider,
+                    multiVersioned);
             this.transactions.add(tx);
             return tx;
         }

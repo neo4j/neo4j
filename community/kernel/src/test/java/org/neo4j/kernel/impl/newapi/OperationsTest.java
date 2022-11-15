@@ -195,6 +195,8 @@ abstract class OperationsTest {
                 storageReader,
                 mock(IndexTxStateUpdater.class),
                 creationContext,
+                mock(DbmsRuntimeRepository.class),
+                KernelVersionProvider.LATEST_VERSION,
                 storageLocks,
                 transaction,
                 kernelToken,
@@ -203,9 +205,7 @@ abstract class OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(GraphDatabaseInternalSettings.rel_unique_constraints, true),
-                INSTANCE,
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                INSTANCE);
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);

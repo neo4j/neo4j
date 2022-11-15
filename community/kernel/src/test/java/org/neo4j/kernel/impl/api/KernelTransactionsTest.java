@@ -621,6 +621,7 @@ class KernelTransactionsTest {
                 mock(StorageEngine.class, RETURNS_MOCKS),
                 mock(TransactionCommitProcess.class),
                 mock(TransactionIdStore.class),
+                mock(KernelVersionProvider.class),
                 DatabaseTracers.EMPTY,
                 mock(Locks.class),
                 Clocks.nanoClock(),
@@ -718,6 +719,8 @@ class KernelTransactionsTest {
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         when(transactionIdStore.getLastCommittedTransaction()).thenReturn(new TransactionId(0, 0, 0));
 
+        KernelVersionProvider kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
+
         DefaultTracers tracers = new DefaultTracers(
                 "null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);
         final DatabaseTracers databaseTracers = new DatabaseTracers(tracers);
@@ -728,6 +731,7 @@ class KernelTransactionsTest {
                     storageEngine,
                     commitProcess,
                     transactionIdStore,
+                    kernelVersionProvider,
                     databaseTracers,
                     locks,
                     clock,
@@ -737,6 +741,7 @@ class KernelTransactionsTest {
                     storageEngine,
                     commitProcess,
                     transactionIdStore,
+                    kernelVersionProvider,
                     databaseTracers,
                     locks,
                     clock,
@@ -752,6 +757,7 @@ class KernelTransactionsTest {
             StorageEngine storageEngine,
             TransactionCommitProcess commitProcess,
             TransactionIdStore transactionIdStore,
+            KernelVersionProvider kernelVersionProvider,
             DatabaseTracers tracers,
             Locks locks,
             SystemNanoClock clock,
@@ -768,7 +774,9 @@ class KernelTransactionsTest {
                 databaseAvailabilityGuard,
                 storageEngine,
                 mock(GlobalProcedures.class),
+                mock(DbmsRuntimeRepository.class),
                 transactionIdStore,
+                kernelVersionProvider,
                 clock,
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                 any -> CanWrite.INSTANCE,
@@ -791,15 +799,14 @@ class KernelTransactionsTest {
                 mock(TransactionCommitmentFactory.class),
                 new TransactionIdSequence(),
                 TransactionIdGenerator.EMPTY,
-                NullLogProvider.getInstance(),
-                KernelVersionProvider.LATEST_VERSION,
-                mock(DbmsRuntimeRepository.class));
+                NullLogProvider.getInstance());
     }
 
     private static TestKernelTransactions createTestTransactions(
             StorageEngine storageEngine,
             TransactionCommitProcess commitProcess,
             TransactionIdStore transactionIdStore,
+            KernelVersionProvider kernelVersionProvider,
             DatabaseTracers tracers,
             Locks locks,
             SystemNanoClock clock,
@@ -816,6 +823,7 @@ class KernelTransactionsTest {
                 storageEngine,
                 mock(GlobalProcedures.class),
                 transactionIdStore,
+                kernelVersionProvider,
                 clock,
                 any -> CanWrite.INSTANCE,
                 new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
@@ -862,6 +870,7 @@ class KernelTransactionsTest {
                 StorageEngine storageEngine,
                 GlobalProcedures globalProcedures,
                 TransactionIdStore transactionIdStore,
+                KernelVersionProvider kernelVersionProvider,
                 SystemNanoClock clock,
                 AccessCapabilityFactory accessCapabilityFactory,
                 CursorContextFactory contextFactory,
@@ -877,7 +886,9 @@ class KernelTransactionsTest {
                     databaseAvailabilityGuard,
                     storageEngine,
                     globalProcedures,
+                    mock(DbmsRuntimeRepository.class),
                     transactionIdStore,
+                    kernelVersionProvider,
                     clock,
                     new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                     accessCapabilityFactory,
@@ -900,9 +911,7 @@ class KernelTransactionsTest {
                     mock(TransactionCommitmentFactory.class),
                     new TransactionIdSequence(),
                     TransactionIdGenerator.EMPTY,
-                    NullLogProvider.getInstance(),
-                    KernelVersionProvider.LATEST_VERSION,
-                    mock(DbmsRuntimeRepository.class));
+                    NullLogProvider.getInstance());
         }
 
         @Override

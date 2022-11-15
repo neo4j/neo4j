@@ -161,6 +161,8 @@ public class Operations implements Write, SchemaWrite {
     private final AllStoreHolder allStoreHolder;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final KernelVersionProvider kernelVersionProvider;
     private final StorageLocks storageLocks;
     private final KernelToken token;
     private final IndexTxStateUpdater updater;
@@ -171,8 +173,6 @@ public class Operations implements Write, SchemaWrite {
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipUniquenessConstraintEnabled;
-    private final KernelVersionProvider kernelVersionProvider;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -184,6 +184,8 @@ public class Operations implements Write, SchemaWrite {
             StorageReader storageReader,
             IndexTxStateUpdater updater,
             CommandCreationContext commandCreationContext,
+            DbmsRuntimeRepository dbmsRuntimeRepository,
+            KernelVersionProvider kernelVersionProvider,
             StorageLocks storageLocks,
             KernelTransactionImplementation ktx,
             KernelToken token,
@@ -192,11 +194,11 @@ public class Operations implements Write, SchemaWrite {
             ConstraintSemantics constraintSemantics,
             IndexingProvidersService indexProviders,
             Config config,
-            MemoryTracker memoryTracker,
-            KernelVersionProvider kernelVersionProvider,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            MemoryTracker memoryTracker) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.storageLocks = storageLocks;
         this.token = token;
         this.allStoreHolder = allStoreHolder;
@@ -209,8 +211,6 @@ public class Operations implements Write, SchemaWrite {
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
-        this.kernelVersionProvider = kernelVersionProvider;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
     public void initialize(CursorContext cursorContext) {

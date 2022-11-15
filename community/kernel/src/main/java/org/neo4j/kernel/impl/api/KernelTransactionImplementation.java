@@ -288,10 +288,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionCommitmentFactory commitmentFactory,
             KernelTransactions kernelTransactions,
             TransactionIdGenerator transactionIdGenerator,
-            LogProvider logProvider,
-            boolean multiVersioned,
+            DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionProvider kernelVersionProvider,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            LogProvider logProvider,
+            boolean multiVersioned) {
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
@@ -361,6 +361,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageReader,
                 new IndexTxStateUpdater(storageReader, allStoreHolder, indexingService),
                 commandCreationContext,
+                dbmsRuntimeRepository,
+                kernelVersionProvider,
                 storageLocks,
                 this,
                 kernelToken,
@@ -369,9 +371,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 constraintSemantics,
                 indexingService,
                 config,
-                memoryTracker,
-                kernelVersionProvider,
-                dbmsRuntimeRepository);
+                memoryTracker);
         traceProvider = getTraceProvider(config);
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
@@ -386,6 +386,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize(
             long lastCommittedTx,
+            KernelVersion kernelVersion,
             Type type,
             SecurityContext frozenSecurityContext,
             long transactionTimeout,
