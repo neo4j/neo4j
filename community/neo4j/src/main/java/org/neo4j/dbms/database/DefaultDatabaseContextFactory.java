@@ -38,12 +38,14 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
+import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class DefaultDatabaseContextFactory
         extends AbstractDatabaseContextFactory<StandaloneDatabaseContext, Optional<?>> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
+    private final IOControllerService controllerService;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
 
@@ -51,10 +53,12 @@ public class DefaultDatabaseContextFactory
             GlobalModule globalModule,
             DatabaseTransactionStats.Factory transactionStatsFactory,
             IdContextFactory idContextFactory,
+            IOControllerService controllerService,
             CommitProcessFactory commitProcessFactory,
             DefaultDatabaseContextFactoryComponents components) {
         super(globalModule, idContextFactory);
         this.transactionStatsFactory = transactionStatsFactory;
+        this.controllerService = controllerService;
         this.commitProcessFactory = commitProcessFactory;
         this.components = components;
     }
@@ -95,7 +99,8 @@ public class DefaultDatabaseContextFactory
                     commitProcessFactory,
                     createTokenHolderProvider(this::kernel),
                     new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),
-                    components.readOnlyDatabases());
+                    components.readOnlyDatabases(),
+                    controllerService);
             kernelDatabase = new Database(creationContext);
             context = new StandaloneDatabaseContext(kernelDatabase);
         }

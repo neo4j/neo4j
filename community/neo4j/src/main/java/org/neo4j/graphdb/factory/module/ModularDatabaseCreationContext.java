@@ -143,7 +143,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             CommitProcessFactory commitProcessFactory,
             TokenHolders tokenHolders,
             DatabaseStartupController databaseStartupController,
-            ReadOnlyDatabases readOnlyDatabases) {
+            ReadOnlyDatabases readOnlyDatabases,
+            IOControllerService ioControllerService) {
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
@@ -172,7 +173,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.constraintSemantics = constraintSemantics;
         this.tracers = globalModule.getTracers();
         this.globalProcedures = globalDependencies.resolveDependency(GlobalProcedures.class);
-        this.ioControllerService = globalModule.getIoControllerService();
+        this.ioControllerService = ioControllerService;
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();

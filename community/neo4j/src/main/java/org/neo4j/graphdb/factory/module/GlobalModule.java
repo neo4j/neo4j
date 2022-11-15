@@ -70,7 +70,6 @@ import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
@@ -107,7 +106,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.MonitoredJobExecutor;
-import org.neo4j.service.Services;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -144,7 +142,6 @@ public class GlobalModule {
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
     private final TransactionManager transactionManager;
-    private final IOControllerService ioControllerService;
     private final CapabilitiesService capabilitiesService;
 
     /**
@@ -227,7 +224,6 @@ public class GlobalModule {
 
         collectionsFactorySupplier = createCollectionsFactorySupplier(globalConfig, globalLife, logService);
 
-        ioControllerService = loadIOControllerService();
         pageCache = tryResolveOrCreate(
                 PageCache.class,
                 () -> createPageCache(
@@ -429,12 +425,6 @@ public class GlobalModule {
         return () -> new OffHeapCollectionsFactory(sharedBlockAllocator);
     }
 
-    private static IOControllerService loadIOControllerService() {
-        return Services.loadByPriority(IOControllerService.class)
-                .orElseThrow(
-                        () -> new IllegalStateException(IOControllerService.class.getSimpleName() + " not found."));
-    }
-
     private CapabilitiesService loadCapabilities() {
         var service = CapabilitiesService.newCapabilities(globalConfig, globalDependencies);
         service.set(DBMSCapabilities.dbms_instance_version, Version.getNeo4jVersion());
@@ -549,10 +539,6 @@ public class GlobalModule {
 
     public TransactionManager getTransactionManager() {
         return transactionManager;
-    }
-
-    public IOControllerService getIoControllerService() {
-        return ioControllerService;
     }
 
     public CapabilitiesService getCapabilitiesService() {

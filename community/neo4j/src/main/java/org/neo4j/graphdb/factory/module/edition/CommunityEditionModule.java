@@ -73,6 +73,7 @@ import org.neo4j.kernel.database.SystemGraphDatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.pagecache.CommunityIOControllerService;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -137,6 +138,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 globalModule,
                 getTransactionMonitorFactory(),
                 createIdContextFactory(globalModule),
+                new CommunityIOControllerService(),
                 createCommitProcessFactory(),
                 this);
 
