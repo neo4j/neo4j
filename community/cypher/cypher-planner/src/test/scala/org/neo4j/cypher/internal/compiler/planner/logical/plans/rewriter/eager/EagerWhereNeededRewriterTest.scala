@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
