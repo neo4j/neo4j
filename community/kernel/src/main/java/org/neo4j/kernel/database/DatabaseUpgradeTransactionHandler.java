@@ -121,17 +121,16 @@ class DatabaseUpgradeTransactionHandler {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
-                            internalTransactionCommitHandler.commit(
-                                    storageEngine.createUpgradeCommands(kernelVersionToUpgradeTo));
+                            internalTransactionCommitHandler.commit(storageEngine.createUpgradeCommands(
+                                    currentKernelVersion, kernelVersionToUpgradeTo));
                             log.info(
                                     "Upgrade transaction from %s to %s completed",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
                         }
                     }
                 } catch (LockAcquisitionTimeoutException | DeadlockDetectedException ignore) {
-                    // This can happen if there is an ongoing committing transaction waiting for locks that the "trigger
-                    // tx" has
-                    // Let the "trigger tx" continue and try the upgrade again on the next write
+                    // This can happen if there is an ongoing committing transaction waiting for locks held by the
+                    // "trigger tx". Let the "trigger tx" continue and try the upgrade again on the next write.
                     log.info(
                             "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
                             checkKernelVersion,
@@ -153,9 +152,8 @@ class DatabaseUpgradeTransactionHandler {
 
         private void checkUnlockAndUnregister(Lock readLock) {
             // For some reason the transaction event listeners handling is such that even if beforeCommit fails for this
-            // listener
-            // then an afterRollback will be called. Therefore we distinguish between success and failure using the
-            // state (which is the lock)
+            // listener then an afterRollback will be called. Therefore, we distinguish between success and failure
+            // using the state (which is the lock)
             if (readLock == null) {
                 return;
             }

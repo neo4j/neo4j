@@ -210,12 +210,13 @@ class DatabaseUpgradeTransactionHandlerTest {
 
         StorageEngine storageEngine = mock(StorageEngine.class);
         doAnswer(inv -> {
-                    KernelVersion toKernelVersion = inv.getArgument(0, KernelVersion.class);
+                    KernelVersion fromKernelVersion = inv.getArgument(0, KernelVersion.class);
+                    KernelVersion toKernelVersion = inv.getArgument(1, KernelVersion.class);
                     registeredTransactions.add(new RegisteredTransaction(toKernelVersion, true));
-                    return List.of(new FakeKernelVersionUpgradeCommand(toKernelVersion));
+                    return List.of(new FakeKernelVersionUpgradeCommand(fromKernelVersion, toKernelVersion));
                 })
                 .when(storageEngine)
-                .createUpgradeCommands(any());
+                .createUpgradeCommands(any(), any());
         DbmsRuntimeRepository dbmsRuntimeRepository = mock(DbmsRuntimeRepository.class);
         doAnswer(inv -> currentDbmsRuntimeVersion).when(dbmsRuntimeRepository).getVersion();
         KernelVersionProvider kernelVersionProvider = this::getKernelVersion;
@@ -282,15 +283,17 @@ class DatabaseUpgradeTransactionHandlerTest {
     }
 
     private static class FakeKernelVersionUpgradeCommand implements StorageCommand {
-        KernelVersion version;
+        KernelVersion versionToUpgradeFrom;
+        KernelVersion versionToUpgradeTo;
 
-        FakeKernelVersionUpgradeCommand(KernelVersion version) {
-            this.version = version;
+        FakeKernelVersionUpgradeCommand(KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
+            this.versionToUpgradeFrom = versionToUpgradeFrom;
+            this.versionToUpgradeTo = versionToUpgradeTo;
         }
 
         @Override
         public KernelVersion kernelVersion() {
-            return version;
+            return versionToUpgradeTo;
         }
 
         @Override

@@ -462,23 +462,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeTo) {
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-        KernelVersion currentVersion = metaDataStore.kernelVersion();
+    public List<StorageCommand> createUpgradeCommands(
+            KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
         checkState(
-                versionToUpgradeTo.isGreaterThan(currentVersion),
+                versionToUpgradeTo.isGreaterThan(versionToUpgradeFrom),
                 "Can not downgrade from %s to %s",
-                currentVersion,
+                versionToUpgradeFrom,
                 versionToUpgradeTo);
 
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+
         MetaDataRecord before = metaDataStore.newRecord();
-        before.initialize(true, currentVersion.version());
+        before.initialize(true, versionToUpgradeFrom.version());
 
         MetaDataRecord after = metaDataStore.newRecord();
         after.initialize(true, versionToUpgradeTo.version());
 
         // This command will be the first one in the "new" version, indicating the switch and writing it to the
-        // MetaDataStore
+        // KernelVersionRepository
         LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(versionToUpgradeTo);
 
         return List.of(new Command.MetaDataCommand(serialization, before, after));

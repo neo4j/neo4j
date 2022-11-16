@@ -348,7 +348,8 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeTo) {
+        public List<StorageCommand> createUpgradeCommands(
+                KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
             throw new UnsupportedOperationException();
         }
 
