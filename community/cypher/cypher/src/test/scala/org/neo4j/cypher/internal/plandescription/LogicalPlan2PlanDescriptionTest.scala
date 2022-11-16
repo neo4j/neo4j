@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -197,6 +198,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
@@ -252,6 +254,7 @@ import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -340,6 +343,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
@@ -412,7 +416,8 @@ object LogicalPlan2PlanDescriptionTest {
   ): PlanDescriptionImpl = PlanDescriptionImpl(id, name, children, arguments, variables.map(asPrettyString.raw))
 }
 
-class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
+class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks
+    with AstConstructionTestSupport {
 
   private val RUNTIME_VERSION = RuntimeVersion.currentVersion
   private val PLANNER_VERSION = PlannerVersion.currentVersion
@@ -446,8 +451,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   private val rhsPD =
     PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2, Some(10))), Set(pretty"b"))
-
-  private val pos: InputPosition = DummyPosition(0)
 
   test("Validate all arguments") {
     assertGood(
@@ -668,6 +671,50 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NoChildren,
         Seq(details(s"${anonVar("11")} WHERE id(${anonVar("11")}) IN [1,32]")),
         Set(anonVar("11"))
+      )
+    )
+  }
+
+  test("NodeByElementIdSeek") {
+    assertGood(
+      attach(
+        NodeByElementIdSeek("node", ManySeekableArgs(listOfString("some-id", "other-id")), Set.empty),
+        333.0
+      ),
+      planDescription(
+        id,
+        "NodeByElementIdSeek",
+        NoChildren,
+        Seq(details("node WHERE elementId(node) IN [\"some-id\",\"other-id\"]")),
+        Set("node")
+      )
+    )
+
+    assertGood(
+      attach(
+        NodeByElementIdSeek("node", ManySeekableArgs(autoParameter("autolist_0", CTList(CTAny))), Set.empty),
+        333.0
+      ),
+      planDescription(
+        id,
+        "NodeByElementIdSeek",
+        NoChildren,
+        Seq(details("node WHERE elementId(node) IN $autolist_0")),
+        Set("node")
+      )
+    )
+
+    assertGood(
+      attach(
+        NodeByElementIdSeek("node", SingleSeekableArg(stringLiteral("some-id")), Set.empty),
+        333.0
+      ),
+      planDescription(
+        id,
+        "NodeByElementIdSeek",
+        NoChildren,
+        Seq(details("node WHERE elementId(node) = \"some-id\"")),
+        Set("node")
       )
     )
   }
@@ -1280,6 +1327,104 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "UndirectedRelationshipByIdSeek",
         NoChildren,
         Seq(details(s"(a)-[${anonVar("2")}]-(${anonVar("32")}) WHERE id(${anonVar("2")}) = 1")),
+        Set(anonVar("2"), "a", anonVar("32"), "x")
+      )
+    )
+  }
+
+  test("RelationshipByElementIdSeek") {
+    assertGood(
+      attach(
+        DirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set.empty),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) = \"some-id\"")),
+        Set("r", "a", "b")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set("x")),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) = \"some-id\"")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipByElementIdSeek("r", ManySeekableArgs(listOfString("some-id")), "a", "b", Set("x")),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) = \"some-id\"")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        DirectedRelationshipByElementIdSeek(
+          "r",
+          ManySeekableArgs(listOfString("some-id", "other-id")),
+          "a",
+          "b",
+          Set("x")
+        ),
+        70.0
+      ),
+      planDescription(
+        id,
+        "DirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) IN [\"some-id\",\"other-id\"]")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        UndirectedRelationshipByElementIdSeek("r", ManySeekableArgs(stringLiteral("some-id")), "a", "b", Set("x")),
+        70.0
+      ),
+      planDescription(
+        id,
+        "UndirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details("(a)-[r]-(b) WHERE elementId(r) = \"some-id\"")),
+        Set("r", "a", "b", "x")
+      )
+    )
+
+    assertGood(
+      attach(
+        UndirectedRelationshipByElementIdSeek(
+          "  UNNAMED2",
+          ManySeekableArgs(stringLiteral("some-id")),
+          "a",
+          "  UNNAMED32",
+          Set("x")
+        ),
+        70.0
+      ),
+      planDescription(
+        id,
+        "UndirectedRelationshipByElementIdSeek",
+        NoChildren,
+        Seq(details(s"(a)-[${anonVar("2")}]-(${anonVar("32")}) WHERE elementId(${anonVar("2")}) = \"some-id\"")),
         Set(anonVar("2"), "a", anonVar("32"), "x")
       )
     )
@@ -5751,11 +5896,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     }
   }
 
-  private def varFor(name: String): Variable = Variable(name)(pos)
-
-  private def prop(varName: String, propName: String): Property =
-    Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
-
   private def cachedProp(varName: String, propName: String): CachedProperty =
     CachedProperty(varName, varFor(varName), PropertyKeyName(propName)(pos), NODE_TYPE)(pos)
 
@@ -5766,8 +5906,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private def key(name: String): PropertyKeyName = PropertyKeyName(name)(pos)
 
   private def number(i: String): SignedDecimalIntegerLiteral = SignedDecimalIntegerLiteral(i)(pos)
-
-  private def parameter(p: String, t: CypherType): Parameter = Parameter(p, t)(pos)
 
   private def stringLiteral(s: String): StringLiteral = StringLiteral(s)(pos)
 }
