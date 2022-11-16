@@ -813,6 +813,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.memory.pagecache.warmup.legacy_profile_loader", BOOL, false ).build();
 
     @Internal
+    @Description( "Enables blocking Page Cache warmup. Database start will be blocked until warmer is completed." )
+    public static final Setting<Boolean> pagecache_warmup_blocking =
+            newBuilder( "unsupported.dbms.memory.pagecache.warmup.blocking", BOOL, false ).build();
+
+    @Internal
     @Description( "Enables sketching of next transaction log file in the background during reverse recovery." )
     public static final Setting<Boolean> pre_sketch_transaction_logs = newBuilder( "unsupported.dbms.tx_log.presketch", BOOL, false ).build();
 
