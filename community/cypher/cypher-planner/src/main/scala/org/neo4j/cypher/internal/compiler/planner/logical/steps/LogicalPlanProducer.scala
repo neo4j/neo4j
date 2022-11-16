@@ -139,6 +139,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -173,6 +174,7 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -181,6 +183,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -229,6 +232,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -695,6 +699,56 @@ case class LogicalPlanProducer(
     solvedPredicates: Seq[Expression] = Seq.empty,
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    doPlanRelationshipByIdSeek(
+      UndirectedRelationshipByIdSeek.apply,
+      DirectedRelationshipByIdSeek.apply,
+      idName,
+      relIds,
+      patternForLeafPlan,
+      originalPattern,
+      hiddenSelections,
+      argumentIds,
+      solvedPredicates,
+      context
+    )
+  }
+
+  def planRelationshipByElementIdSeek(
+    idName: String,
+    relIds: SeekableArgs,
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    argumentIds: Set[String],
+    solvedPredicates: Seq[Expression] = Seq.empty,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    doPlanRelationshipByIdSeek(
+      UndirectedRelationshipByElementIdSeek.apply,
+      DirectedRelationshipByElementIdSeek.apply,
+      idName,
+      relIds,
+      patternForLeafPlan,
+      originalPattern,
+      hiddenSelections,
+      argumentIds,
+      solvedPredicates,
+      context
+    )
+  }
+
+  private def doPlanRelationshipByIdSeek(
+    makeUndirected: (String, SeekableArgs, String, String, Set[String]) => RelationshipLogicalLeafPlan,
+    makeDirected: (String, SeekableArgs, String, String, Set[String]) => RelationshipLogicalLeafPlan,
+    idName: String,
+    relIds: SeekableArgs,
+    patternForLeafPlan: PatternRelationship,
+    originalPattern: PatternRelationship,
+    hiddenSelections: Seq[Expression],
+    argumentIds: Set[String],
+    solvedPredicates: Seq[Expression] = Seq.empty,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     def planLeaf: LogicalPlan = {
       val (firstNode, secondNode) = patternForLeafPlan.inOrder
       val solver = SubqueryExpressionSolver.solverForLeafPlan(argumentIds, context)
@@ -703,9 +757,9 @@ case class LogicalPlanProducer(
 
       val leafPlan =
         if (patternForLeafPlan.dir == BOTH) {
-          UndirectedRelationshipByIdSeek(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
+          makeUndirected(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
         } else {
-          DirectedRelationshipByIdSeek(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
+          makeDirected(idName, rewrittenRelIds, firstNode, secondNode, argumentIds ++ newArguments)
         }
 
       solver.rewriteLeafPlan {
@@ -1028,6 +1082,27 @@ case class LogicalPlanProducer(
     argumentIds: Set[String],
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    doPlanNodeByIdSeek(NodeByIdSeek.apply, variable, nodeIds, solvedPredicates, argumentIds, context)
+  }
+
+  def planNodeByElementIdSeek(
+    variable: Variable,
+    nodeIds: SeekableArgs,
+    solvedPredicates: Seq[Expression] = Seq.empty,
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    doPlanNodeByIdSeek(NodeByElementIdSeek.apply, variable, nodeIds, solvedPredicates, argumentIds, context)
+  }
+
+  private def doPlanNodeByIdSeek(
+    makePlan: (String, SeekableArgs, Set[String]) => NodeLogicalLeafPlan,
+    variable: Variable,
+    nodeIds: SeekableArgs,
+    solvedPredicates: Seq[Expression] = Seq.empty,
+    argumentIds: Set[String],
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph =
       QueryGraph.empty
         .addPatternNodes(variable.name)
@@ -1038,7 +1113,7 @@ case class LogicalPlanProducer(
     val rewrittenNodeIds = nodeIds.mapValues(solver.solve(_))
     val newArguments = solver.newArguments
     val leafPlan = annotate(
-      NodeByIdSeek(variable.name, rewrittenNodeIds, argumentIds ++ newArguments),
+      makePlan(variable.name, rewrittenNodeIds, argumentIds ++ newArguments),
       solved,
       ProvidedOrder.empty,
       context

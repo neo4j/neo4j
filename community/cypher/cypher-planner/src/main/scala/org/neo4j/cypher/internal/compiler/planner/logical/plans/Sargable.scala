@@ -90,6 +90,17 @@ object AsIdSeekable {
   }
 }
 
+object AsElementIdSeekable {
+
+  def unapply(v: Any): Option[IdSeekable] = v match {
+    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: LogicalVariable)), rhs)
+      if func.function == functions.ElementId && !rhs.dependencies(ident) =>
+      Some(IdSeekable(func, ident, rhs))
+    case _ =>
+      None
+  }
+}
+
 object AsPropertySeekable {
 
   def unapply(v: Any): Option[PropertySeekable] = v match {

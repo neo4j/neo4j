@@ -103,6 +103,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
@@ -141,6 +142,7 @@ import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -204,6 +206,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicBuild
 import org.neo4j.cypher.internal.logical.plans.TriadicFilter
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
@@ -922,20 +925,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
 
-    val input = ids.toSeq match {
-      case Seq(expression: Expression) =>
-        ManySeekableArgs(expression)
-      case _ =>
-        val idExpressions = ids.map {
-          case x: Expression              => x
-          case x: String                  => Parser.parseExpression(x)
-          case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
-          case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
-          case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
-        }
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-    }
-
+    val input = idSeekInput(ids)
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
 
@@ -1022,6 +1012,60 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     expr: Expression*
   ): IMPL = {
     undirectedRelationshipByIdSeekSolver(relationship, from, to, args, expr)
+  }
+
+  def nodeByElementIdSeek(node: String, args: Set[String], ids: Any*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+
+    val input = idSeekInput(ids)
+    appendAtCurrentIndent(LeafOperator(NodeByElementIdSeek(n, input, args)(_)))
+  }
+
+  def directedRelationshipByElementIdSeek(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    ids: Any*
+  ): IMPL = {
+    newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
+
+    val input = idSeekInput(ids)
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByElementIdSeek(relationship, input, from, to, args)(_)))
+  }
+
+  def undirectedRelationshipByElementIdSeek(
+    relationship: String,
+    from: String,
+    to: String,
+    args: Set[String],
+    ids: Any*
+  ): IMPL = {
+    newRelationship(varFor(relationship))
+    newNode(varFor(from))
+    newNode(varFor(to))
+
+    val input = idSeekInput(ids)
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByElementIdSeek(relationship, input, from, to, args)(_)))
+  }
+
+  private def idSeekInput(ids: Seq[Any]): ManySeekableArgs = {
+    ids match {
+      case Seq(expression: Expression) =>
+        ManySeekableArgs(expression)
+      case _ =>
+        val idExpressions = ids.map {
+          case x: Expression              => x
+          case x: String                  => Parser.parseExpression(x)
+          case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
+          case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
+          case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
+        }
+        ManySeekableArgs(ListLiteral(idExpressions)(pos))
+    }
   }
 
   def allRelationshipsScan(pattern: String, args: String*): IMPL = {

@@ -549,12 +549,25 @@ object LogicalPlanToPlanBuilderString {
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
+      case NodeByElementIdSeek(idName, ids, argumentIds) =>
+        val idsString: String = idsStr(ids)
+        s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim
       case UndirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
           argumentIds
         )}), $idsString """.trim
+      case UndirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
+        val idsString: String = idsStr(ids)
+        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+          argumentIds
+        )}), $idsString """.trim
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
+        val idsString: String = idsStr(ids)
+        s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
+          argumentIds
+        )}), $idsString """.trim
+      case DirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
           argumentIds

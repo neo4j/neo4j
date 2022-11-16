@@ -1082,12 +1082,36 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "nodeByElementIdSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.nodeByElementIdSeek("m", Set.empty, "variable")
+      .apply()
+      .|.nodeByElementIdSeek("m", Set.empty, "var1", "var2")
+      .apply()
+      .|.nodeByElementIdSeek("y", Set("x"), 25)
+      .nodeByElementIdSeek("x", Set(), 23, 22.0, -1)
+      .build()
+  )
+
+  testPlan(
     "undirectedRelationshipByIdSeek",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .apply()
       .|.undirectedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
       .undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .build()
+  )
+
+  testPlan(
+    "undirectedRelationshipByElementIdSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.undirectedRelationshipByElementIdSeek("r2", "x", "y", Set("x"), 25)
+      .undirectedRelationshipByElementIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .build()
   )
 
@@ -1210,6 +1234,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .apply()
       .|.directedRelationshipByIdSeek("r2", "x", "y", Set("x"), 25)
       .directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .build()
+  )
+
+  testPlan(
+    "directedRelationshipByElementIdSeek",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .apply()
+      .|.directedRelationshipByElementIdSeek("r2", "x", "y", Set("x"), 25)
+      .directedRelationshipByElementIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .build()
   )
 

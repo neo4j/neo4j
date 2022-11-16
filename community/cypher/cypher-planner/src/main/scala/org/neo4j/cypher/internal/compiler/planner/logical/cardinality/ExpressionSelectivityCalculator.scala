@@ -43,11 +43,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Expression
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsElementIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertySeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.IdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
@@ -231,12 +233,11 @@ case class ExpressionSelectivityCalculator(
 
     // WHERE id(x) =/IN [...]
     case AsIdSeekable(seekable) =>
-      val lookups = seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS)
-      if (semanticTable.isNode(seekable.ident)) {
-        (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
-      } else {
-        (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE
-      }
+      calculateSelectivityForIdSeekable(seekable)
+
+    // WHERE elementId(x) =/IN [...]
+    case AsElementIdSeekable(seekable) =>
+      calculateSelectivityForIdSeekable(seekable)
 
     // WHERE <expr> = <expr>
     case _: Equals =>
@@ -545,6 +546,16 @@ case class ExpressionSelectivityCalculator(
       exists * indexSelectivityForSubstringSargable(stringLength, indexType)
     }
     combiner.orTogetherSelectivities(indexSubstringSelectivities).getOrElse(default)
+  }
+
+  private def calculateSelectivityForIdSeekable(seekable: IdSeekable)(implicit
+  semanticTable: SemanticTable): Selectivity = {
+    val lookups = seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS)
+    if (semanticTable.isNode(seekable.ident)) {
+      (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
+    } else {
+      (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE
+    }
   }
 }
 

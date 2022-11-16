@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsElementIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsIdSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.DisjunctionForOneVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner.InlinedRelationshipTypePredicateKind
@@ -167,7 +168,11 @@ object OrLeafPlanner {
     ): Seq[DistributablePredicate] = {
       qg.selections.flatPredicates
         // IdSeekable predicates are never related
-        .filter { case _ @AsIdSeekable(_) => false; case _ => true }
+        .filter {
+          case AsIdSeekable(_)        => false
+          case AsElementIdSeekable(_) => false
+          case _                      => true
+        }
         .collect {
           // Those predicates which only use the variable that is used in the OR
           // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.

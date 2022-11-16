@@ -109,6 +109,36 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
+  test("AsElementIdSeekable works") {
+    val leftExpr = elementId(nodeA)
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+
+    assertMatches(equals(leftExpr, expr2)) {
+      case AsElementIdSeekable(seekable) =>
+        seekable.ident should equal(nodeA)
+        seekable.expr should equal(leftExpr)
+        seekable.name should equal(nodeA.name)
+        seekable.args.expr should equal(expr2)
+        seekable.args.sizeHint should equal(Some(1))
+    }
+  }
+
+  test("AsElementIdSeekable does not match if rhs depends on lhs variable") {
+    when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
+
+    assertDoesNotMatch(equals(elementId(nodeA), expr2)) {
+      case AsElementIdSeekable(_) => (/* oh noes */ )
+    }
+  }
+
+  test("AsElementIdSeekable does not match if function is not the id function") {
+    when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
+
+    assertDoesNotMatch(equals(function("rand", nodeA), expr2)) {
+      case AsElementIdSeekable(_) => (/* oh noes */ )
+    }
+  }
+
   test("PropertySeekable works with plain expressions") {
     val leftExpr = prop("a", "id")
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])

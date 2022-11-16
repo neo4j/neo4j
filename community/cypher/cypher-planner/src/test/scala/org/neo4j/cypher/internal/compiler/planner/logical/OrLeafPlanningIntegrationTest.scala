@@ -1282,6 +1282,49 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
+  test("should solve element id seekable predicates in OR expression") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .addNodeIndex("L", Seq("prop"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:L) WHERE elementId(n) = 'some-id' OR n.prop > 123
+        |RETURN n""".stripMargin
+    )
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.filter("n:L")
+        .|.nodeByElementIdSeek("n", Set(), "'some-id'")
+        .nodeIndexOperator(
+          "n:L(prop > 123)",
+          argumentIds = Set(),
+          getValue = Map("prop" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
+        .build()
+    ) or equal(
+      cfg.planBuilder()
+        .produceResults("n")
+        .distinct("n AS n")
+        .union()
+        .|.nodeIndexOperator(
+          "n:L(prop > 123)",
+          argumentIds = Set(),
+          getValue = Map("prop" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
+        .filter("n:L")
+        .nodeByElementIdSeek("n", Set(), "'some-id'")
+        .build()
+    ))
+  }
+
   test("should be able to cope with disjunction of overlapping predicates") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(0)

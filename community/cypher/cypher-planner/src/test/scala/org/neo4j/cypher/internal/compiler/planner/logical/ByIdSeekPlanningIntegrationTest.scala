@@ -99,4 +99,142 @@ class ByIdSeekPlanningIntegrationTest extends CypherFunSuite
         .build()
     )
   }
+
+  test("should plan node by element id seek with a single id") {
+    val query =
+      """MATCH (n)
+        |WHERE elementId(n) = 'some-id'
+        |RETURN n""".stripMargin
+
+    val planner = plannerBuilder().build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .nodeByElementIdSeek("n", Set.empty, "'some-id'")
+      .build()
+  }
+
+  test("should plan node by element id seek with a list") {
+    val query =
+      """MATCH (n)
+        |WHERE elementId(n) IN ['some-id', 'other-id']
+        |RETURN n""".stripMargin
+
+    val planner = plannerBuilder().build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .nodeByElementIdSeek("n", Set.empty, "'some-id'", "'other-id'")
+      .build()
+  }
+
+  test("should plan node by element id seek with parameter") {
+    val query =
+      """MATCH (n)
+        |WHERE elementId(n) IN $ids
+        |RETURN n""".stripMargin
+
+    val planner = plannerBuilder().build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .nodeByElementIdSeek("n", Set.empty, parameter("ids", CTAny))
+      .build()
+  }
+
+  test("should plan directed relationship by element id seek with a single id") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE elementId(r) = 'some-id'
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .directedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "'some-id'")
+      .build()
+  }
+
+  test("should plan directed relationship by element id seek with a list") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE elementId(r) IN ['some-id', 'other-id']
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .directedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "'some-id'", "'other-id'")
+      .build()
+  }
+
+  test("should plan directed relationship by element id seek with parameter") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE elementId(r) IN $ids
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .directedRelationshipByElementIdSeek("r", "a", "b", Set.empty, parameter("ids", CTAny))
+      .build()
+  }
+
+  test("should plan undirected relationship by element id seek with a single id") {
+    val query =
+      """MATCH (a)-[r]-(b)
+        |WHERE elementId(r) = 'some-id'
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .undirectedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "'some-id'")
+      .build()
+  }
+
+  test("should plan undirected relationship by element id seek with a list") {
+    val query =
+      """MATCH (a)-[r]-(b)
+        |WHERE elementId(r) IN ['some-id', 'other-id']
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .undirectedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "'some-id'", "'other-id'")
+      .build()
+  }
+
+  test("should plan undirected relationship by element id seek with parameter") {
+    val query =
+      """MATCH (a)-[r]-(b)
+        |WHERE elementId(r) IN $ids
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .undirectedRelationshipByElementIdSeek("r", "a", "b", Set.empty, parameter("ids", CTAny))
+      .build()
+  }
 }

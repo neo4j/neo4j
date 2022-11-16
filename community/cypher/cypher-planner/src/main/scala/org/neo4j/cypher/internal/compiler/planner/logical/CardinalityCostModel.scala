@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -76,6 +77,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -97,6 +99,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
@@ -390,9 +393,11 @@ object CardinalityCostModel {
         _: NodeIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW
 
       case _: NodeByIdSeek |
-        _: DirectedRelationshipByIdSeek => STORE_LOOKUP_COST_PER_ROW
+        _: NodeByElementIdSeek |
+        _: DirectedRelationshipByIdSeek |
+        _: DirectedRelationshipByElementIdSeek => STORE_LOOKUP_COST_PER_ROW
 
-      case _: UndirectedRelationshipByIdSeek
+      case _: UndirectedRelationshipByIdSeek | _: UndirectedRelationshipByElementIdSeek
         // Only every second row needs to access the store
         => STORE_LOOKUP_COST_PER_ROW / 2
 
