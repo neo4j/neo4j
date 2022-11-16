@@ -60,7 +60,6 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -75,7 +74,6 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -917,30 +915,6 @@ class NeoStoreTransactionApplierTest {
         verify(schemaStore).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).removeSchemaRuleFromCache(command.getKey());
-    }
-
-    @Test
-    void shouldApplyKernelVersionMetaDataCommandToStore() throws Exception {
-        // Given
-        TransactionApplierFactory applier = newApplier(false);
-        Command.MetaDataCommand command = createMetaDataCommand(KernelVersion.LATEST.version());
-
-        // when
-        boolean result = apply(applier, command::handle, transactionToApply);
-
-        // then
-        assertFalse(result);
-        verify(metaDataStore).setKernelVersion(KernelVersion.LATEST);
-    }
-
-    private static Command.MetaDataCommand createMetaDataCommand(long toValue) {
-        MetaDataRecord before = new MetaDataRecord();
-        before.initialize(true, 0);
-
-        MetaDataRecord after = new MetaDataRecord();
-        after.initialize(true, toValue);
-
-        return new Command.MetaDataCommand(before, after);
     }
 
     private TransactionApplierFactory newApplier(boolean recovery) {

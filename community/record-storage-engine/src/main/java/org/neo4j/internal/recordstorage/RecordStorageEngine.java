@@ -264,6 +264,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (consistencyCheckApply && mode.needsAuxiliaryStores()) {
             appliers.add(new ConsistencyCheckingApplierFactory(neoStores));
         }
+        appliers.add(new KernelVersionTransactionApplier.Factory(neoStores.getMetaDataStore()));
         appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess, lockService(mode)));
         if (mode.needsHighIdTracking()) {
             appliers.add(new HighIdTransactionApplierFactory(neoStores));

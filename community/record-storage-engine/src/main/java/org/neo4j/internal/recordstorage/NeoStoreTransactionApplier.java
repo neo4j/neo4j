@@ -28,11 +28,9 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.REL_TYPE_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 
-import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -152,14 +150,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
         updateStore(neoStores.getSchemaStore(), command, SCHEMA_CURSOR);
         SchemaRule schemaRule = command.getSchemaRule();
         onSchemaRuleChange(command.getMode(), command.getKey(), schemaRule);
-        return false;
-    }
-
-    @Override
-    public boolean visitMetaDataCommand(Command.MetaDataCommand command) {
-        KernelVersion kernelVersion = KernelVersion.getForVersion(
-                Numbers.safeCastLongToByte(command.getAfter().getValue()));
-        neoStores.getMetaDataStore().setKernelVersion(kernelVersion);
         return false;
     }
 
