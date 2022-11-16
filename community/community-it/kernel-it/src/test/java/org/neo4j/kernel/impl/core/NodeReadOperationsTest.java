@@ -250,7 +250,7 @@ abstract class NodeReadOperationsTest {
 
             assertThatTracing(db)
                     .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
+                    .freki(pins(3).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }
     }
@@ -274,7 +274,7 @@ abstract class NodeReadOperationsTest {
 
             assertThatTracing(db)
                     .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
+                    .freki(pins(3).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }
     }
@@ -301,7 +301,7 @@ abstract class NodeReadOperationsTest {
 
             assertThatTracing(db)
                     .record(pins(3).noFaults().skipUnpins())
-                    .freki(pins(1).noFaults().skipUnpins())
+                    .freki(pins(3).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }
     }

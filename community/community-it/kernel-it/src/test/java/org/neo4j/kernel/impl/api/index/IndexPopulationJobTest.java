@@ -282,7 +282,7 @@ class IndexPopulationJobTest {
 
         assertThatTracing(db)
                 .record(pins(13).faults(2))
-                .freki(pins(12).faults(2))
+                .freki(pins(13).faults(2))
                 .matches(pageCacheTracer);
     }
 
