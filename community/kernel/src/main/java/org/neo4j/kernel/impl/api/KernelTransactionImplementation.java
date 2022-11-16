@@ -90,6 +90,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -820,7 +821,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         // we assume that inner transaction have been closed before closing the outer transaction
         assertNoInnerTransactions();
         closing = true;
-        Exception exception = null;
+        Throwable exception = null;
         long txId = -1;
         try {
             if (canCommit()) {
@@ -830,19 +831,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 failOnNonExplicitRollbackIfNeeded();
                 txId = ROLLBACK_ID;
             }
-        } catch (TransactionFailureException | RuntimeException e) {
+        } catch (TransactionFailureException | RuntimeException | Error e) {
             exception = e;
         } catch (KernelException e) {
             exception = new TransactionFailureException(e.status(), e, "Unexpected kernel exception");
         } finally {
             try {
                 closed();
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | Error e) {
                 exception = Exceptions.chain(exception, e);
             } finally {
                 try {
                     reset();
-                } catch (RuntimeException e) {
+                } catch (RuntimeException | Error e) {
                     exception = Exceptions.chain(exception, e);
                 }
             }
@@ -854,15 +855,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if (leaseClient.leaseId() != NO_LEASE) {
             try {
                 leaseClient.ensureValid();
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | Error e) {
                 exception = Exceptions.chain(exception, e);
             }
         }
 
-        if (exception instanceof TransactionFailureException e) {
-            throw e;
-        }
-        throw (RuntimeException) exception;
+        Exceptions.throwIfInstanceOf(exception, TransactionFailureException.class);
+        Exceptions.throwIfUnchecked(exception);
+        throw new TransactionFailureException(Status.General.UnknownError, exception);
     }
 
     private void closed() {
@@ -1215,32 +1215,81 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void reset() {
         terminationReleaseLock.lock();
+        Throwable error = null;
         try {
-            lockClient.close();
+            try {
+                lockClient.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
             terminationReason = null;
             type = null;
             overridableSecurityContext = null;
             transactionEvent = null;
             txState = null;
-            collectionsFactory.release();
+            try {
+                collectionsFactory.release();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
             userMetaData = emptyMap();
             statusDetails = EMPTY;
             clientInfo = null;
             internalTransaction = null;
             transactionSequenceNumber = 0;
-            statistics.reset();
-            releaseStatementResources();
-            operations.release();
-            commandCreationContext.close();
-            transactionalCursors.close();
-            cursorContext.close();
+            try {
+                statistics.reset();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                releaseStatementResources();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                operations.release();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                commandCreationContext.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                transactionalCursors.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                cursorContext.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
             initializationTrace = NONE;
-            committer.reset();
-            transactionMemoryPool.reset();
-            innerTransactionHandler.close();
+            try {
+                committer.reset();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                transactionMemoryPool.reset();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                innerTransactionHandler.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
             innerTransactionHandler = null;
         } finally {
             terminationReleaseLock.unlock();
+        }
+        if (error != null) {
+            Exceptions.throwIfUnchecked(error);
+            throw new ResourceCloseFailureException("Failed to close resources", error);
         }
     }
 

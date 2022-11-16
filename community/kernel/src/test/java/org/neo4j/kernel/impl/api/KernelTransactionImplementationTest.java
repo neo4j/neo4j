@@ -848,6 +848,18 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(leases.expired());
     }
 
+    @Test
+    void shouldResetEverythingOnException() {
+        KernelTransactionImplementation transaction = newTransaction(AUTH_DISABLED);
+        transaction.txState().nodeDoCreate(5);
+        RuntimeException foo = new RuntimeException("foo");
+
+        assertThat(transaction.getInnerTransactionHandler()).isNotNull();
+        doThrow(foo).when(locksClient).close();
+        assertThatThrownBy(transaction::close).isSameAs(foo);
+        assertThatThrownBy(transaction::getInnerTransactionHandler).isInstanceOf(IllegalStateException.class);
+    }
+
     private static LoginContext loginContext(boolean isWriteTx) {
         return isWriteTx ? AnonymousContext.write() : AnonymousContext.read();
     }
