@@ -50,7 +50,7 @@ abstract class NodeReadOperationsTest {
     private final String PROPERTY_KEY = "PROPERTY_KEY";
 
     @Inject
-    static GraphDatabaseAPI db;
+    private GraphDatabaseAPI db;
 
     @Test
     void testNodeRelationshipsLookup() {
