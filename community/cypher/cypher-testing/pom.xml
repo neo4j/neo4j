@@ -78,6 +78,15 @@
             <artifactId>json4s-native_${scala.binary.version}</artifactId>
             <scope>compile</scope>
         </dependency>
+
+        <!-- test  -->
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-test-util</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

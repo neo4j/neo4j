@@ -20,6 +20,7 @@
 package org.neo4j.cypher.testing.api
 
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
@@ -27,7 +28,7 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
  * Exception abstraction for CypherExecutor:s
  * All exceptions thrown when executing cypher in a CypherExecutor should be converted into CypherExecutorException:s
  */
-case class CypherExecutorException(status: Status, message: String) extends RuntimeException(message)
+case class CypherExecutorException(status: Status, message: String) extends RuntimeException(message) with HasStatus
 
 object CypherExecutorException {
 
