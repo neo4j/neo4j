@@ -58,9 +58,6 @@
         <include>**/*.psm1</include>
         <include>**/*.ps1</include>
       </includes>
-      <excludes>
-        <exclude>**/*.m4</exclude>
-      </excludes>
       <filtered>true</filtered>
     </fileSet>
     <!-- cypher-shell -->
