@@ -167,14 +167,9 @@ abstract case class FunctionInfo(f: FunctionWithName) {
  * a single call.
  */
 object DeterministicFunction {
+  def unapply(f: Function): Option[Function] = if (isFunctionDeterministic(f)) Some(f) else None
 
-  def unapply(f: Function): Option[Function] = {
-    if (f == Rand || f == RandomUUID || f == UnresolvedFunction) {
-      None
-    } else {
-      Some(f)
-    }
-  }
+  def isFunctionDeterministic(f: Function): Boolean = f != Rand && f != RandomUUID && f != UnresolvedFunction
 }
 
 abstract class Function extends FunctionWithName with TypeSignatures {

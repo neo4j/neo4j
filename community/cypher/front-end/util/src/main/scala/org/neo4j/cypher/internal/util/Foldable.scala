@@ -167,6 +167,14 @@ object Foldable {
     def treeExists(f: PartialFunction[Any, Boolean]): Boolean =
       existsAcc(mutable.Stack(foldedOver), f.lift, cancellation)
 
+    /**
+     * Tests if a predicate is true for all parts of this tree.
+     */
+    def treeForall(predicate: Any => Boolean): Boolean = {
+      val someTrue = Some(true)
+      !existsAcc(mutable.Stack(foldedOver), x => if (!predicate(x)) someTrue else None, cancellation)
+    }
+
     /*
     Allows searching through object tree and object collections
      */

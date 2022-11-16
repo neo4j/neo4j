@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.expressions.Expression.TreeAcc
-import org.neo4j.cypher.internal.expressions.functions.Rand
-import org.neo4j.cypher.internal.expressions.functions.RandomUUID
+import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -160,9 +159,10 @@ abstract class Expression extends ASTNode {
     case IsAggregate(_) => true
   }
 
-  def isDeterministic: Boolean = !this.folder.treeExists {
-    case f: FunctionInvocation if f.function == Rand || f.function == RandomUUID => true
-    case _                                                                       => false
+  // Note! Will not consider ResolvedFunctionInvocation which can be non deterministic.
+  def isDeterministic: Boolean = this.folder.treeForall {
+    case f: FunctionInvocation => isFunctionDeterministic(f.function)
+    case _                     => true
   }
 
   /**

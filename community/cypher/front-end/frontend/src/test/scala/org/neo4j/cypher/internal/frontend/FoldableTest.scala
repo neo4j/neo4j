@@ -136,6 +136,20 @@ class FoldableTest extends CypherFunSuite {
     } should equal(false)
   }
 
+  test("should allow using forall to find patterns deeply nested") {
+    val ast = Add(Val(1), Add(Val(2), Val(3)))
+
+    ast.folder.treeForall {
+      case Val(x) => x > 0
+      case _      => true
+    } should equal(true)
+
+    ast.folder.treeForall {
+      case Val(x) => x < 3
+      case _      => true
+    } should equal(false)
+  }
+
   test("should get children") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
@@ -334,6 +348,33 @@ class FoldableTest extends CypherFunSuite {
     )
 
     ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeForall should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCancellationChecker
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeForall {
+        case Val(3) =>
+          cancellation.cancelNext = true
+          true
+        case _ => true
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeForall should stop early") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    ast.folder.treeForall {
+      case Val(1) => true
+      case Val(2) => false
+      case x: Val => throw new IllegalStateException(s"Not expected to come here: $x")
+      case _      => true
+    } shouldEqual false
   }
 
   test("treeFind should support cancelling") {
