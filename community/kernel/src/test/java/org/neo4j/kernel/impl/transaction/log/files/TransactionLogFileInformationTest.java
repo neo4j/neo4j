@@ -59,8 +59,7 @@ class TransactionLogFileInformationTest {
         long version = 10L;
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
-        LogHeader expectedHeader = new LogHeader(
-                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader((byte) 1, 2, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logFiles.getLogFile().extractHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -74,8 +73,7 @@ class TransactionLogFileInformationTest {
         long expected = 5;
 
         long version = 10L;
-        LogHeader expectedHeader = new LogHeader(
-                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader((byte) 1, 2, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
 
         long firstCommittedTxId = info.getFirstEntryId(version);
@@ -91,8 +89,7 @@ class TransactionLogFileInformationTest {
         when(logFile.getHighestLogVersion()).thenReturn(version);
         when(logHeaderCache.getLogHeader(version)).thenReturn(null);
         when(logFile.versionExists(version)).thenReturn(true);
-        LogHeader expectedHeader = new LogHeader(
-                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader((byte) 1, 2, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logFile.extractHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 
@@ -110,8 +107,7 @@ class TransactionLogFileInformationTest {
         when(logFile.getHighestLogVersion()).thenReturn(version);
         when(logFile.versionExists(version)).thenReturn(true);
 
-        LogHeader expectedHeader = new LogHeader(
-                (byte) -1 /*ignored*/, -1L /*ignored*/, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
+        LogHeader expectedHeader = new LogHeader((byte) 1, 2, expected - 1L, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
         when(logHeaderCache.getLogHeader(version)).thenReturn(expectedHeader);
         when(logFile.hasAnyEntries(version)).thenReturn(true);
 

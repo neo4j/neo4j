@@ -57,13 +57,8 @@ class TransactionMetadataCacheTest {
 
     @Test
     void shouldThrowWhenCachingATxWithNegativeOffsetPosition() {
-        // given
-        final TransactionMetadataCache cache = new TransactionMetadataCache();
-        final LogPosition position = new LogPosition(3, -1);
-        final int txId = 42;
-
-        var e = assertThrows(RuntimeException.class, () -> cache.cacheTransactionMetadata(txId, position));
-        assertEquals("StartEntry.position is " + position, e.getMessage());
+        var cache = new TransactionMetadataCache();
+        assertThrows(IllegalArgumentException.class, () -> cache.cacheTransactionMetadata(42, LogPosition.UNSPECIFIED));
     }
 
     @Test

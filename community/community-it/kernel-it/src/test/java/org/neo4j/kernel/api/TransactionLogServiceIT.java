@@ -547,14 +547,17 @@ class TransactionLogServiceIT {
     }
 
     @Test
-    void failToRestoreWithLogPositionInCommittedFile() {
+    void failToRestoreWithLogPositionInCommittedFile() throws IOException {
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+
+        LogFile logFile = logFiles.getLogFile();
+        logFile.rotate();
 
         assertThatThrownBy(() -> logService.restore(new LogPosition(metadataProvider.getCurrentLogVersion() - 1, 100)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(
                         "Log position requested to be used for restore belongs to the log file that was already appended by transaction and cannot be restored.")
-                .hasMessageContaining("requested restore: LogPosition{logVersion=-1, byteOffset=100}");
+                .hasMessageContaining("requested restore: LogPosition{logVersion=0, byteOffset=100}");
     }
 
     @Test

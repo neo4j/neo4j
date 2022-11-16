@@ -161,8 +161,14 @@ public class DetachedLogTailScanner {
     private StartCommitEntries getFirstTransactionId(LogFile logFile, long lowestLogVersion) throws IOException {
         var logPosition = logFile.versionExists(lowestLogVersion)
                 ? logFile.extractHeader(lowestLogVersion).getStartPosition()
-                : new LogPosition(lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE);
+                : getLowetLogPosition(lowestLogVersion);
         return getFirstTransactionIdAfterCheckpoint(logFile, logPosition);
+    }
+
+    private static LogPosition getLowetLogPosition(long lowestLogVersion) {
+        return lowestLogVersion >= 0
+                ? new LogPosition(lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE)
+                : LogPosition.UNSPECIFIED;
     }
 
     /**
@@ -192,41 +198,43 @@ public class DetachedLogTailScanner {
         LogEntryStart start = null;
         LogEntryCommit commit = null;
         LogPosition lookupPosition = null;
-        long logVersion = logPosition.getLogVersion();
-        try {
-            while (logFile.versionExists(logVersion)) {
-                lookupPosition = lookupPosition == null
-                        ? logPosition
-                        : logFile.extractHeader(logVersion).getStartPosition();
+        if (logPosition != LogPosition.UNSPECIFIED) {
+            long logVersion = logPosition.getLogVersion();
+            try {
+                while (logFile.versionExists(logVersion)) {
+                    lookupPosition = lookupPosition == null
+                            ? logPosition
+                            : logFile.extractHeader(logVersion).getStartPosition();
 
-                var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory);
-                try (var reader = logFile.getReader(lookupPosition, NO_MORE_CHANNELS);
-                        var cursor = new LogEntryCursor(logEntryReader, reader)) {
-                    LogEntry entry;
-                    while ((start == null || commit == null) && cursor.next()) {
-                        entry = cursor.get();
-                        if (commit == null && entry instanceof LogEntryCommit) {
-                            commit = (LogEntryCommit) entry;
-                        } else if (start == null && entry instanceof LogEntryStart) {
-                            start = (LogEntryStart) entry;
+                    var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory);
+                    try (var reader = logFile.getReader(lookupPosition, NO_MORE_CHANNELS);
+                            var cursor = new LogEntryCursor(logEntryReader, reader)) {
+                        LogEntry entry;
+                        while ((start == null || commit == null) && cursor.next()) {
+                            entry = cursor.get();
+                            if (commit == null && entry instanceof LogEntryCommit) {
+                                commit = (LogEntryCommit) entry;
+                            } else if (start == null && entry instanceof LogEntryStart) {
+                                start = (LogEntryStart) entry;
+                            }
                         }
                     }
+                    if ((start != null) && (commit != null)) {
+                        return new StartCommitEntries(start, commit);
+                    }
+                    verifyReaderPosition(logVersion, logEntryReader.lastPosition());
+                    logVersion++;
                 }
-                if ((start != null) && (commit != null)) {
-                    return new StartCommitEntries(start, commit);
+            } catch (Error | ClosedByInterruptException e) {
+                // These should not be parsing errors
+                throw e;
+            } catch (Throwable t) {
+                monitor.corruptedLogFile(logVersion, t);
+                if (failOnCorruptedLogFiles) {
+                    throwUnableToCleanRecover(t);
                 }
-                verifyReaderPosition(logVersion, logEntryReader.lastPosition());
-                logVersion++;
+                corruptedTransactionLogs = true;
             }
-        } catch (Error | ClosedByInterruptException e) {
-            // These should not be parsing errors
-            throw e;
-        } catch (Throwable t) {
-            monitor.corruptedLogFile(logVersion, t);
-            if (failOnCorruptedLogFiles) {
-                throwUnableToCleanRecover(t);
-            }
-            corruptedTransactionLogs = true;
         }
         return new StartCommitEntries(start, commit, corruptedTransactionLogs);
     }

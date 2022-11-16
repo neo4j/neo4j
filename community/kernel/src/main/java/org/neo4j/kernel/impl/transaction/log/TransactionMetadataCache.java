@@ -39,24 +39,14 @@ public class TransactionMetadataCache {
     }
 
     public void cacheTransactionMetadata(long txId, LogPosition position) {
-        if (position.getByteOffset() == -1) {
-            throw new RuntimeException("StartEntry.position is " + position);
+        if (LogPosition.UNSPECIFIED == position) {
+            throw new IllegalArgumentException("Metadata cache only supports specified log positions.");
         }
-
         TransactionMetadata result = new TransactionMetadata(position);
         txIdMetadataCache.put(txId, result);
     }
 
-    public static class TransactionMetadata {
-        private final LogPosition startPosition;
-
-        public TransactionMetadata(LogPosition startPosition) {
-            this.startPosition = startPosition;
-        }
-
-        public LogPosition getStartPosition() {
-            return startPosition;
-        }
+    public record TransactionMetadata(LogPosition startPosition) {
 
         @Override
         public String toString() {
@@ -73,11 +63,6 @@ public class TransactionMetadataCache {
             }
             TransactionMetadata that = (TransactionMetadata) o;
             return Objects.equals(startPosition, that.startPosition);
-        }
-
-        @Override
-        public int hashCode() {
-            return startPosition.hashCode();
         }
     }
 }

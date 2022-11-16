@@ -89,7 +89,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
                     transactionMetadataCache.getTransactionMetadata(transactionIdToStartFrom);
             if (transactionMetadata != null) {
                 // we're good
-                var channel = logFile.getReader(transactionMetadata.getStartPosition());
+                var channel = logFile.getReader(transactionMetadata.startPosition());
                 return new PhysicalTransactionCursor(channel, logEntryReader);
             }
 

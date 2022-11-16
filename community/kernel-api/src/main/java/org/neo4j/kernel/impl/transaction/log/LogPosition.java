@@ -19,30 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.util.Preconditions.requireNonNegative;
+
 public class LogPosition implements Comparable<LogPosition> {
-    public static final LogPosition UNSPECIFIED = new LogPosition(-1, -1) {
-        @Override
-        public long getLogVersion() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long getByteOffset() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString() {
-            return "UNSPECIFIED";
-        }
-    };
+    public static final LogPosition UNSPECIFIED = new UnspecifiedLogPosition();
 
     private final long logVersion;
     private final long byteOffset;
 
+    // Only used to construct restricted UNSPECIFIED instance
+    private LogPosition() {
+        logVersion = -1L;
+        byteOffset = -1L;
+    }
+
     public LogPosition(long logVersion, long byteOffset) {
-        this.logVersion = logVersion;
-        this.byteOffset = byteOffset;
+        this.logVersion = requireNonNegative(logVersion);
+        this.byteOffset = requireNonNegative(byteOffset);
     }
 
     public long getLogVersion() {
@@ -84,5 +77,22 @@ public class LogPosition implements Comparable<LogPosition> {
             return Long.compare(logVersion, o.logVersion);
         }
         return Long.compare(byteOffset, o.byteOffset);
+    }
+
+    private static final class UnspecifiedLogPosition extends LogPosition {
+        @Override
+        public long getLogVersion() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getByteOffset() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString() {
+            return "UNSPECIFIED";
+        }
     }
 }

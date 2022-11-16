@@ -104,7 +104,7 @@ class DetachedCheckpointLogEntryParserV50Test {
                     StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
-                            fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                            fs.read(path), 1, (byte) 2, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
                     NO_MORE_CHANNELS,
                     INSTANCE)) {
                 assertThrows(IOException.class, () -> readCheckpoint(entryReader, readChannel));
