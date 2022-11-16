@@ -261,6 +261,21 @@ public class FabricTransactionImpl
         throwIfNonEmpty(allFailures, this::rollbackFailedError);
     }
 
+    private void terminateChildren(Status reason) {
+        var allFailures = new ArrayList<ErrorRecord>();
+        try {
+            doOnChildren(
+                            readingTransactions,
+                            writingTransaction,
+                            singleDbTransaction -> singleDbTransaction.terminate(reason))
+                    .forEach(error ->
+                            allFailures.add(new ErrorRecord("Failed to terminate a child transaction", error)));
+        } catch (Exception e) {
+            allFailures.add(new ErrorRecord("Failed to terminate composite transaction", terminationFailedError()));
+        }
+        throwIfNonEmpty(allFailures, this::terminationFailedError);
+    }
+
     private static List<Throwable> doOnChildren(
             Iterable<ReadingTransaction> readingTransactions,
             SingleDbTransaction writingTransaction,
@@ -348,7 +363,7 @@ public class FabricTransactionImpl
             terminationStatus = reason;
             state = State.TERMINATED;
 
-            doRollback(singleDbTransaction -> singleDbTransaction.terminate(reason));
+            terminateChildren(reason);
         } finally {
             exclusiveLock.unlock();
         }
@@ -484,6 +499,11 @@ public class FabricTransactionImpl
     private FabricException rollbackFailedError() {
         return new FabricException(
                 Status.Transaction.TransactionRollbackFailed, "Failed to rollback composite transaction %d", id);
+    }
+
+    private FabricException terminationFailedError() {
+        return new FabricException(
+                Status.Transaction.TransactionTerminationFailed, "Failed to terminate composite transaction %d", id);
     }
 
     public long getId() {

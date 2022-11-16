@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
@@ -183,12 +184,15 @@ public class FabricLocalExecutor {
                             kernelTransactionType,
                             transactionInfo.getLoginContext(),
                             transactionInfo.getClientConnectionInfo(),
+                            transactionInfo.getTxTimeout().toMillis(),
                             compositeTransaction::childTransactionTerminated,
                             this::transformTerminalOperationError)
                     : databaseAPI.beginTransaction(
                             kernelTransactionType,
                             transactionInfo.getLoginContext(),
-                            transactionInfo.getClientConnectionInfo());
+                            transactionInfo.getClientConnectionInfo(),
+                            transactionInfo.getTxTimeout().toMillis(),
+                            TimeUnit.MILLISECONDS);
 
             if (transactionInfo.getTxMetadata() != null) {
                 internalTransaction.setMetaData(transactionInfo.getTxMetadata());
