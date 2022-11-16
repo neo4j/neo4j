@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.MiscTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MultiNodeIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NestedPlanDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NestedPlanExpressionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.NodeByElementIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeCountFromCountStoreTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeHashJoinTestBase
@@ -197,6 +198,9 @@ class InterpretedCartesianProductTest extends CartesianProductTestBase(COMMUNITY
 class InterpretedApplyTest extends ApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedWritingSubqueryApplyTest extends WritingSubqueryApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedNodeByIdSeekTest extends NodeByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedNodeByElementIdSeekTest
+    extends NodeByElementIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedDirectedRelationshipByIdSeekTest
     extends DirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
