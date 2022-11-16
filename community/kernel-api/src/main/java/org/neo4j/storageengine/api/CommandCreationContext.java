@@ -31,8 +31,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
 public interface CommandCreationContext extends AutoCloseable {
-    long NO_SEQUENCE_NUMBER = 0L;
-    Supplier<Long> NO_OLD_SEQUENCE_NUMBER_SUPPLIER = () -> 0L;
+    public static final Supplier<Long> NO_STARTTIME_OF_OLDEST_TRANSACTION = () -> 0L;
 
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
@@ -95,16 +94,14 @@ public interface CommandCreationContext extends AutoCloseable {
      * Initialise command creation context for specific transactional cursor context
      * @param cursorContext transaction cursor context
      * @param storeCursors store cursors
-     * @param oldestActiveTransactionSequenceNumber supplier to retrieve sequence number of oldest currently active transaction
-     * @param currentTransactionSequenceNumber sequence number of current transaction
+     * @param startTimeOfOldestActiveTransaction supplier to retrieve timestamp of oldest currently active transaction
      * @param locks access to locks that might be needed in implementation
      * @param lockTracer Lock tracer to use if locks are taken
      */
     void initialize(
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            Supplier<Long> oldestActiveTransactionSequenceNumber,
-            long currentTransactionSequenceNumber,
+            Supplier<Long> startTimeOfOldestActiveTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer);
 }

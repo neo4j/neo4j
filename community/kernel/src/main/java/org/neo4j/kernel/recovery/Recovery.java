@@ -485,6 +485,7 @@ public final class Recovery {
                 () -> loadLogTail(fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, memoryTracker));
         StorageEngine storageEngine = storageEngineFactory.instantiate(
                 fs,
+                clock,
                 databaseLayout,
                 config,
                 databasePageCache,

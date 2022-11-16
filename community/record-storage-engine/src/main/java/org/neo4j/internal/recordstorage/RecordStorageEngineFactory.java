@@ -39,6 +39,7 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -228,6 +229,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     @Override
     public StorageEngine instantiate(
             FileSystemAbstraction fs,
+            Clock clock,
             DatabaseLayout databaseLayout,
             Config config,
             PageCache pageCache,

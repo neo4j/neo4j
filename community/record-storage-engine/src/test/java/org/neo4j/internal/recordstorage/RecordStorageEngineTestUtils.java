@@ -112,8 +112,7 @@ public class RecordStorageEngineTestUtils {
             commandCreationContext.initialize(
                     cursorContext,
                     storeCursors,
-                    CommandCreationContext.NO_OLD_SEQUENCE_NUMBER_SUPPLIER,
-                    CommandCreationContext.NO_SEQUENCE_NUMBER,
+                    CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
                     ResourceLocker.IGNORE,
                     () -> LockTracer.NONE);
             var commands = storageEngine.createCommands(

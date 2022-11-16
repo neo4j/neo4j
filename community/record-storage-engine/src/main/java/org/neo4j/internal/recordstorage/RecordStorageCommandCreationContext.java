@@ -83,8 +83,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     public void initialize(
             CursorContext cursorContext,
             StoreCursors storeCursors,
-            Supplier<Long> oldestSequenceNumber,
-            long currentSequenceNumber,
+            Supplier<Long> startTimeOfOldestActiveTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer) {
         this.cursorContext = cursorContext;

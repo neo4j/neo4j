@@ -427,6 +427,7 @@ public class Database extends AbstractDatabase {
 
         storageEngine = storageEngineFactory.instantiate(
                 fs,
+                clock,
                 databaseLayout,
                 databaseConfig,
                 databasePageCache,
