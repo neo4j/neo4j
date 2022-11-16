@@ -166,6 +166,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachMemoryMana
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TriadicSelectionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByElementIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UndirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionLabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.UnionRelationshipTypeTestBase
@@ -211,6 +212,9 @@ class InterpretedDirectedRelationshipByElementIdSeekTest
 
 class InterpretedUndirectedRelationshipByIdSeekTest
     extends UndirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedUndirectedRelationshipByElementIdSeekTest
+    extends UndirectedRelationshipByElementIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedNodeCountFromCountStoreTest
     extends NodeCountFromCountStoreTestBase(COMMUNITY.EDITION, InterpretedRuntime)
