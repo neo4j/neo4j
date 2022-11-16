@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.DeleteExpressionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeleteNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeletePathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeleteRelationshipTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByElementIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
@@ -204,6 +205,9 @@ class InterpretedNodeByElementIdSeekTest
 
 class InterpretedDirectedRelationshipByIdSeekTest
     extends DirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedDirectedRelationshipByElementIdSeekTest
+    extends DirectedRelationshipByElementIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedUndirectedRelationshipByIdSeekTest
     extends UndirectedRelationshipByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
