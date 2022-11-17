@@ -27,8 +27,11 @@ import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 import java.util.function.LongConsumer;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnspecifiedKernelException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -183,7 +186,22 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
 
     @Override
     public void close() throws KernelException {
-        super.close();
-        closeAllUnchecked(nodeCursor, relationshipCursor);
+        Throwable exception = null;
+        try {
+            super.close();
+        } catch (KernelException | RuntimeException | Error e) {
+            exception = e;
+        } finally {
+            try {
+                closeAllUnchecked(nodeCursor, relationshipCursor);
+            } catch (RuntimeException | Error e) {
+                exception = Exceptions.chain(exception, e);
+            }
+        }
+        if (exception != null) {
+            Exceptions.throwIfInstanceOf(exception, KernelException.class);
+            Exceptions.throwIfUnchecked(exception);
+            throw new UnspecifiedKernelException(Status.General.UnknownError, exception);
+        }
     }
 }
