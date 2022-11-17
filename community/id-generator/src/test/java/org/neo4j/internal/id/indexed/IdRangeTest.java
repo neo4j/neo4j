@@ -241,6 +241,27 @@ class IdRangeTest {
     }
 
     @Test
+    void shouldFindFreedReservedIdForDifferentGeneration() {
+        // given
+        var idRange = new IdRange(2);
+        long generation = 2;
+        idRange.setGeneration(generation + 1);
+        int numBits = random.nextInt(1, 5);
+        int bit = random.nextInt(128 - (numBits - 1));
+        long baseId = random.nextLong(1_000);
+        idRange.setBits(BITSET_COMMIT, bit, numBits);
+        idRange.setBits(BITSET_REUSE, bit, numBits);
+        idRange.setBits(BITSET_RESERVED, bit, numBits);
+
+        // when
+        var visitor = new Visitor();
+        idRange.visitFreeIds(baseId, generation, visitor);
+
+        // then
+        assertThat(visitor.hasId(baseId + bit, numBits)).isTrue();
+    }
+
+    @Test
     void shouldFindIdForDifferentGeneration() {
         // given
         var idRange = new IdRange(2);
