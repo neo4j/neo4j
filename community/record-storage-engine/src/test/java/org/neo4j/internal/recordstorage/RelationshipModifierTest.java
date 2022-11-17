@@ -134,7 +134,6 @@ class RelationshipModifierTest {
                 relationshipGroupGetter,
                 propertyDeleter,
                 DENSE_THRESHOLD - 1 /*because the trigger happens on > */,
-                true,
                 CursorContext.NULL_CONTEXT,
                 EmptyMemoryTracker.INSTANCE);
         monitors = new Monitors(null, (t, m) -> {

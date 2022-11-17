@@ -375,12 +375,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext() {
         return new RecordStorageCommandCreationContext(
-                neoStores,
-                tokenHolders,
-                internalLogProvider,
-                denseNodeThreshold,
-                this::relaxedLockingForDenseNodes,
-                config);
+                neoStores, tokenHolders, internalLogProvider, denseNodeThreshold, config);
     }
 
     @Override
@@ -639,10 +634,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     new StoreFileMetadata(recordStore.getStorageFile(), recordStore.getRecordSize());
             replayable.add(metadata);
         }
-    }
-
-    private boolean relaxedLockingForDenseNodes() {
-        return neoStores.getMetaDataStore().kernelVersion().isAtLeast(KernelVersion.V4_3_D4);
     }
 
     /**

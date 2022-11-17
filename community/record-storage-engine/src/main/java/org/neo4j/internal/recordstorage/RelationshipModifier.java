@@ -69,15 +69,14 @@ public class RelationshipModifier {
             RelationshipGroupGetter relGroupGetter,
             PropertyDeleter propertyChainDeleter,
             int denseNodeThreshold,
-            boolean relaxedLockingForDenseNodes,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
-        long externalDegreesThreshold =
-                relaxedLockingForDenseNodes ? DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH : Long.MAX_VALUE;
+
+        final var externalDegreesThreshold = DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
         this.creator = new RelationshipCreator(denseNodeThreshold, externalDegreesThreshold, cursorContext);
         this.deleter = new RelationshipDeleter(relGroupGetter, propertyChainDeleter, externalDegreesThreshold);
     }

@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.toIntExact;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -49,12 +48,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
     private final int denseNodeThreshold;
-    // The setting for relaxed dense node locking is a supplier since the command creation context instances are created
-    // once per
-    // kernel transaction object and so will be reused between transactions. The relaxed locking feature may change from
-    // tx to tx
-    // and so it will need to be queried per tx commit.
-    private final BooleanSupplier relaxedLockingForDenseNodes;
 
     private KernelVersion kernelVersion;
     private PropertyCreator propertyCreator;
@@ -70,12 +63,10 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
             int denseNodeThreshold,
-            BooleanSupplier relaxedLockingForDenseNodes,
             Config config) {
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.denseNodeThreshold = denseNodeThreshold;
-        this.relaxedLockingForDenseNodes = relaxedLockingForDenseNodes;
         this.neoStores = neoStores;
         this.config = config;
         this.propertyStore = neoStores.getPropertyStore();
@@ -165,12 +156,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             LoadMonitor monitor) {
         RecordChangeSet recordChangeSet = new RecordChangeSet(loaders, memoryTracker, monitor, storeCursors);
         RelationshipModifier relationshipModifier = new RelationshipModifier(
-                relationshipGroupGetter,
-                propertyDeleter,
-                denseNodeThreshold,
-                relaxedLockingForDenseNodes.getAsBoolean(),
-                cursorContext,
-                memoryTracker);
+                relationshipGroupGetter, propertyDeleter, denseNodeThreshold, cursorContext, memoryTracker);
         return new TransactionRecordState(
                 kernelVersion,
                 recordChangeSet,
