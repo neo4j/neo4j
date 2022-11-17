@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -36,21 +37,29 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
-  def rewriter(semanticState: SemanticState): Rewriter = inSequence(
-    LabelExpressionPredicateNormalizer.instance,
-    normalizePredicates.getRewriter(
-      semanticState,
-      Map.empty,
-      OpenCypherExceptionFactory(None),
-      new AnonymousVariableNameGenerator
-    ),
-    normalizeHasLabelsAndHasType(semanticState)
-  )
+  def rewriter(semanticState: SemanticState): Rewriter = {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    inSequence(
+      LabelExpressionPredicateNormalizer.instance,
+      nameAllPatternElements(anonVarNameGen),
+      normalizePredicates.getRewriter(
+        semanticState,
+        Map.empty,
+        OpenCypherExceptionFactory(None),
+        new AnonymousVariableNameGenerator
+      ),
+      normalizeHasLabelsAndHasType(semanticState)
+    )
+  }
 
-  def rewriterWithoutNormalizeMatchPredicates(semanticState: SemanticState): Rewriter = inSequence(
-    LabelExpressionPredicateNormalizer.instance,
-    normalizeHasLabelsAndHasType(semanticState)
-  )
+  def rewriterWithoutNormalizeMatchPredicates(semanticState: SemanticState): Rewriter = {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    inSequence(
+      LabelExpressionPredicateNormalizer.instance,
+      nameAllPatternElements(anonVarNameGen),
+      normalizeHasLabelsAndHasType(semanticState)
+    )
+  }
 
   def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(
     queryText.replace("\r\n", "\n"),
@@ -68,7 +77,7 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     val expectedResult = rewrite(expectedQuery, rewriterWithoutNormalizeMatchPredicates)
     assert(
       result === expectedResult,
-      s"\n$testName\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result)}"
+      s"\n$testName\nshould be rewritten to:\n${prettifier.asString(expectedResult)}\nbut was rewritten to:${prettifier.asString(result)}"
     )
   }
 
@@ -115,11 +124,21 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH ({foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN r") {
-    assertRewrite("MATCH ({foo: 'bar', bar: 4})-[r:Foo]->() WHERE r.foo = 1 AND r.bar = 'baz' RETURN r")
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(
+      s"MATCH ($node1)-[r:Foo]->($node2) WHERE $node1.foo = 'bar' AND $node1.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN r"
+    )
   }
 
   test("MATCH (n {foo: 'bar', bar: 4})-[:Foo {foo: 1, bar: 'baz'}]->() RETURN n") {
-    assertRewrite("MATCH (n)-[:Foo {foo: 1, bar: 'baz'}]->() WHERE n.foo = 'bar' AND n.bar = 4 RETURN n")
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(
+      s"MATCH (n)-[$rel:Foo]->($node) WHERE n.foo = 'bar' AND n.bar = 4 AND $rel.foo = 1 AND $rel.bar = 'baz' RETURN n"
+    )
   }
 
   test("MATCH (n:LABEL) RETURN n") {
