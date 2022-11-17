@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotific
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractShortestPathPredicates
-import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -36,12 +35,16 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 
 case object planShortestPaths {
@@ -184,24 +187,51 @@ case object planShortestPaths {
     val pattern = shortestPath.rel
     val from = pattern.left
     val lpp = context.logicalPlanProducer
-
     // We assume there is always a path name (either explicit or auto-generated)
     val pathName = shortestPath.name.get
 
     // TODO: When the path is named, we need to redo the projectNamedPaths stuff so that
     // we can extract the per step predicates again
 
-    // Plan a fallback branch using VarExpand(Into) (right-hand-side)
-    val rhsVarExpand =
-      expandSolverStep.produceLogicalPlan(queryGraph, pattern, rhsArgument, from, rhsArgument.availableSymbols, context)
-
     // Projection with path
     val map = Map(pathName -> createPathExpression(shortestPath.expr.element))
+
+    // Rewriter for path name to path expression
+    val rewriter = topDown(Rewriter.lift {
+      case Variable(name) if name == pathName => createPathExpression(shortestPath.expr.element)
+    })
+
+    // Rewrite query graph to match during inlining of predicates in var expand
+    val rewrittenQg = queryGraph.withSelections {
+      val rewrittenExpressions = queryGraph.selections.predicates.map { predicate =>
+        predicate.expr.endoRewrite(rewriter)
+      }
+      Selections.from(rewrittenExpressions)
+    }
+
+    // Plan a fallback branch using VarExpand(Into) (right-hand-side)
+    val rhsVarExpand =
+      expandSolverStep.produceLogicalPlan(
+        rewrittenQg,
+        pattern,
+        rhsArgument,
+        from,
+        rhsArgument.availableSymbols,
+        context
+      )
+
+    // Expressions solved in var expand
+    val varExpandSolvedExpr =
+      context.planningAttributes.solveds.get(rhsVarExpand.id).asSinglePlannerQuery.lastQueryGraph.selections.predicates
+
     val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, Some(map), context)
 
-    // TODO: Don't filter with the per step predicates we already extracted.
-    // Filter using predicates
-    val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, context)
+    // Filter out predicates solved in var expand
+    val filteredPredicates =
+      predicates.filterNot(predicate => varExpandSolvedExpr.map(_.expr).contains(predicate.endoRewrite(rewriter)))
+
+    // Filter using filtered predicates
+    val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, filteredPredicates, context)
 
     // Plan Top
     val pos = shortestPath.expr.position

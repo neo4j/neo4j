@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
 
   test("finds shortest paths") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
@@ -92,6 +93,51 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
+  test("Inline predicates in fallback plan of var expand during shortest path") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]->()", 99999)
+      .build()
+    val query =
+      """
+        |MATCH p=shortestPath((a)-[*]-(b))
+        |WHERE all(r IN relationships(p) WHERE r.prop = 10)
+        |AND length(p) > 4
+        |RETURN p
+        |""".stripMargin
+    val plan = cfg.plan(query).stripProduceResults
+    val expected = cfg.subPlanBuilder()
+      .antiConditionalApply("p")
+      .|.top(Seq(Ascending("anon_1")), 1)
+      .|.projection("length(p) AS anon_1")
+      .|.filter("length(p) > 4")
+      .|.projection(Map("p" -> PathExpression(NodePathStep(
+        varFor("a"),
+        MultiRelationshipPathStep(varFor("anon_0"), BOTH, Some(varFor("b")), NilPathStep()(pos))(pos)
+      )(pos))(pos)))
+      .|.expand(
+        "(a)-[anon_0*1..]-(b)",
+        expandMode = ExpandInto,
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] = 10"))
+      )
+      .|.argument("a", "b")
+      .apply()
+      .|.optional("a", "b")
+      .|.shortestPath(
+        "(a)-[anon_0*1..]-(b)",
+        pathName = Some("p"),
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] = 10")),
+        pathPredicates = Seq("length(p) > 4"),
+        withFallback = true
+      )
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+    plan shouldEqual expected
+  }
+
   test("finds shortest path do fallback") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -133,8 +179,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan =
       cfg.plan(
         """
-          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
-          |WHERE length(p) > 1 
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b))
+          |WHERE length(p) > 1
           |AND all(r IN rs WHERE r.prop > 1)
           |RETURN b"""
           .stripMargin
@@ -143,7 +189,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .antiConditionalApply("p")
       .|.top(Seq(Ascending("anon_0")), 1)
       .|.projection("length(p) AS anon_0")
-      .|.filter("length(p) > 1", "all(r IN rs WHERE cacheRFromStore[r.prop] > 1)")
+      .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
       .|.expand(
         "(a)-[rs*]->(b)",
@@ -176,8 +222,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan =
       cfg.plan(
         """
-          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
-          |WHERE length(p) > 1 
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b))
+          |WHERE length(p) > 1
           |AND all(r IN relationships(p) WHERE r.prop > 1)
           |RETURN b"""
           .stripMargin
@@ -186,9 +232,15 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .antiConditionalApply("p")
       .|.top(Seq(Ascending("anon_0")), 1)
       .|.projection("length(p) AS anon_0")
-      .|.filter("length(p) > 1", "all(r IN relationships(p) WHERE cacheRFromStore[r.prop] > 1)")
+      .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
-      .|.expand("(a)-[rs*]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .|.expand(
+        "(a)-[rs*]->(b)",
+        expandMode = ExpandInto,
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(Predicate("r", "cacheRFromStore[r.prop] > 1")),
+        projectedDir = OUTGOING
+      )
       .|.argument("a", "b")
       .apply()
       .|.optional("a", "b")
@@ -214,8 +266,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan =
       cfg.plan(
         """
-          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b)) 
-          |WHERE length(p) > 1 
+          |MATCH (a), (b), p=shortestPath((a)-[rs*]->(b))
+          |WHERE length(p) > 1
           |AND all(n IN nodes(p) WHERE n.prop > 1)
           |RETURN b"""
           .stripMargin
@@ -224,9 +276,14 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .antiConditionalApply("p")
       .|.top(Seq(Ascending("anon_0")), 1)
       .|.projection("length(p) AS anon_0")
-      .|.filter("length(p) > 1", "all(n IN nodes(p) WHERE cacheNFromStore[n.prop] > 1)")
+      .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
-      .|.expand("(a)-[rs*]->(b)", expandMode = ExpandInto, projectedDir = OUTGOING)
+      .|.expand(
+        "(a)-[rs*]->(b)",
+        expandMode = ExpandInto,
+        nodePredicates = Seq(Predicate("n", "cacheNFromStore[n.prop] > 1")),
+        projectedDir = OUTGOING
+      )
       .|.argument("a", "b")
       .apply()
       .|.optional("a", "b")
@@ -244,7 +301,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
-  private def pos: InputPosition = DummyPosition(0)
   private def varFor(name: String): Variable = Variable(name)(pos)
 
   private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {
