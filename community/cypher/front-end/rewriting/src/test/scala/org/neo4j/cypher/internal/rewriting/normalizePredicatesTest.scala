@@ -294,4 +294,24 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
   test("MATCH (a:A) ((n {foo: 'bar'})--())+ () RETURN n") {
     assertRewrite("MATCH (a) ((n)--() WHERE n.foo = 'bar')+ () WHERE a:A RETURN n")
   }
+
+  test("MATCH (a WHERE EXISTS {(:A)}) RETURN *") {
+    assertRewrite("MATCH (a) WHERE EXISTS {(:A)} RETURN *")
+  }
+
+  test("MATCH (a WHERE COUNT {(:A)} > 1) RETURN *") {
+    assertRewrite("MATCH (a) WHERE COUNT {(:A)} > 1 RETURN *")
+  }
+
+  test("MATCH (a)-[r WHERE EXISTS {(:A)}]-(b) RETURN *") {
+    assertRewrite("MATCH (a)-[r]-(b) WHERE EXISTS {(:A)} RETURN *")
+  }
+
+  test("MATCH (a)-[r WHERE COUNT {(:A)--()} > 1]->(b) RETURN *") {
+    assertRewrite("MATCH (a)-[r]->(b) WHERE COUNT {(:A)--()} > 1 RETURN *")
+  }
+
+  test("MATCH (a WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {
+    assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1 RETURN *")
+  }
 }

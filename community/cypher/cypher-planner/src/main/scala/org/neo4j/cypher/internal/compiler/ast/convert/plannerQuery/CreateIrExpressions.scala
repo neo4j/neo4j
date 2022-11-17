@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.ASTNode
@@ -66,14 +67,15 @@ case class CreateIrExpressions(
 ) extends Rewriter {
   private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
-  private val patternNormalizer = PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)
+  private val inlinedWhereClausesNormalizer = PredicateNormalizer.normalizeInlinedWhereClauses
+  private val LabelAndPropertyNormalizer = PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)
   private val addUniquenessPredicates = AddUniquenessPredicates
 
   /**
    * MatchPredicateNormalizer invalidates some conditions that are usually fixed by later rewriters.
    * The only one that is crucial to fix is that And => Ands and Or => Ors because that is assumed in IR creation.
    */
-  private val fixExtractedPredicatesRewriter = flattenBooleanOperators
+  private val fixExtractedPredicatesRewriter = flattenBooleanOperators //andThen LabelExpressionPredicateNormalizer.instance
 
   private def createPathExpression(pattern: PatternExpression): PathExpression = {
     val pos = pattern.position
@@ -83,7 +85,7 @@ case class CreateIrExpressions(
   }
 
   /**
-   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[PatternComprehension]] or [[ExistsExpression]].
+   * Get the [[PlannerQuery]] for a pattern from a [[PatternExpression]] or [[PatternComprehension]] or [[ExistsExpression]] or [[CountExpression]].
    *
    * @param pattern        the pattern
    * @param dependencies   the dependencies or the expression
@@ -111,8 +113,10 @@ case class CreateIrExpressions(
     val uniqueRels = addUniquenessPredicates.collectRelationships(pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, pattern.position)
     // Extract inlined predicates
-    val extractedPredicates: Seq[Expression] =
-      patternNormalizer.extractAllFrom(pattern).endoRewrite(fixExtractedPredicatesRewriter)
+    val extractedPredicates: Seq[Expression] = {
+      (inlinedWhereClausesNormalizer.extractAllFrom(pattern) ++
+      LabelAndPropertyNormalizer.extractAllFrom(pattern)).endoRewrite(fixExtractedPredicatesRewriter)
+    }
 
     val qg = QueryGraph(
       argumentIds = dependencies,

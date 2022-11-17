@@ -54,8 +54,8 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
     parameterTypeMapping: Map[String, CypherType],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter =
-    normalizePredicates(PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator))
+  ): Rewriter = normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses) andThen
+      normalizePredicates(PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator))
 }
 
 case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter {
