@@ -114,6 +114,13 @@ public interface TopologyGraphDbmsModel {
                     .filter(v -> v.stringRepr.equals(value))
                     .findFirst();
         }
+
+        public static DatabaseAccess toDatabaseAccess(boolean readOnly) {
+            if (values().length != 2) {
+                throw new IllegalStateException("Can't identify database access");
+            }
+            return readOnly ? DatabaseAccess.READ_ONLY : DatabaseAccess.READ_WRITE;
+        }
     }
 
     enum InstanceStatus {
@@ -290,7 +297,7 @@ public interface TopologyGraphDbmsModel {
      * if the name exists and is associated with a {@link DatabaseReference.External}
      *
      * @param databaseName - the remote database alias to resolve driver settings for
-     * @param namespace - the namespace of the remote database alias to resolve driver settings for
+     * @param namespace    - the namespace of the remote database alias to resolve driver settings for
      * @return the corresponding {@link DriverSettings}
      */
     Optional<DriverSettings> getDriverSettings(String databaseName, String namespace);
@@ -302,7 +309,7 @@ public interface TopologyGraphDbmsModel {
      * if the name exists and is associated with a {@link DatabaseReference.External}
      *
      * @param databaseName - the remote database alias to resolve driver settings for
-     * @param namespace - the namespace of the remote database alias to resolve driver settings for
+     * @param namespace    - the namespace of the remote database alias to resolve driver settings for
      * @return the corresponding {@link ExternalDatabaseCredentials}
      */
     Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName, String namespace);
