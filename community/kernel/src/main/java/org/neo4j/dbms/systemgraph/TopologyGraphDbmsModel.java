@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -96,17 +97,30 @@ public interface TopologyGraphDbmsModel {
     }
 
     enum DatabaseAccess {
-        READ_ONLY("read-only"),
-        READ_WRITE("read-write");
+        READ_ONLY(0, "read-only"),
+        READ_WRITE(1, "read-write");
 
         private final String stringRepr;
+        private final byte code;
 
-        DatabaseAccess(String stringRepr) {
+        DatabaseAccess(int code, String stringRepr) {
+            this.code = (byte) code;
             this.stringRepr = stringRepr;
+        }
+
+        public static DatabaseAccess forCode(byte code) {
+            return Stream.of(values())
+                    .filter(v -> v.getCode() == code)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Can't find database access with code " + code));
         }
 
         public String getStringRepr() {
             return stringRepr;
+        }
+
+        public byte getCode() {
+            return code;
         }
 
         public static Optional<DatabaseAccess> findByValue(String value) {
