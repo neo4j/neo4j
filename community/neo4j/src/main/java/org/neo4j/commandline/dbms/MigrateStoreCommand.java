@@ -68,6 +68,7 @@ import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.UnableToMigrateException;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
@@ -139,15 +140,18 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     @Override
     protected void execute() {
         Config config = buildConfig();
-        try (Log4jLogProvider logProvider = new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.INFO);
-                Log4jLogProvider systemDbStartupLogProvider =
-                        new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.ERROR)) {
+        try (Log4jLogProvider logProvider = new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.INFO)) {
             migrateStore(config, logProvider);
-            if (SYSTEM_DATABASE_NAME.equals(database.getDatabaseName())) {
-                upgradeSystemDb(config, logProvider, systemDbStartupLogProvider);
-            }
         }
     }
+
+    protected void checkAllowedToMigrateSystemDb(
+            StorageEngineFactory storageEngineFactory,
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            PageCache pageCache,
+            CursorContextFactory contextFactory)
+            throws UnableToMigrateException {}
 
     private void migrateStore(Config config, Log4jLogProvider logProvider) {
         var databaseTracers = DatabaseTracers.EMPTY;
@@ -174,15 +178,19 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
                     DatabaseLayout databaseLayout = Neo4jLayout.of(config).databaseLayout(dbName);
                     checkDatabaseExistence(databaseLayout);
 
-                    if (SYSTEM_DATABASE_NAME.equals(dbName)) {
-                        formatForDb = "aligned";
-                    }
-
                     try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
                         SimpleLogService logService = new SimpleLogService(logProvider);
 
                         StorageEngineFactory currentStorageEngineFactory =
                                 getCurrentStorageEngineFactory(fs, databaseLayout);
+
+                        if (SYSTEM_DATABASE_NAME.equals(dbName)) {
+                            formatForDb = "aligned";
+
+                            checkAllowedToMigrateSystemDb(
+                                    currentStorageEngineFactory, fs, databaseLayout, pageCache, contextFactory);
+                        }
+
                         var indexProviderMap = getIndexProviderMap(
                                 fs,
                                 databaseLayout,
@@ -234,6 +242,18 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
         } catch (IOException e) {
             throw new CommandFailedException(
                     format("Failed to migrate database(s): %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
+        }
+
+        if (database.matches(SYSTEM_DATABASE_NAME)
+                && failedMigrations.stream()
+                        .noneMatch(failedMigration -> SYSTEM_DATABASE_NAME.equals(failedMigration.dbName))) {
+            try (Log4jLogProvider systemDbStartupLogProvider =
+                    new Log4jLogProvider(ctx.out(), verbose ? Level.DEBUG : Level.ERROR)) {
+                upgradeSystemDb(config, logProvider, systemDbStartupLogProvider);
+            } catch (Exception e) {
+                resultLog.error("Failed to migrate database '" + SYSTEM_DATABASE_NAME + "': " + e.getMessage());
+                failedMigrations.add(new FailedMigration(SYSTEM_DATABASE_NAME, e));
+            }
         }
 
         if (failedMigrations.isEmpty()) {

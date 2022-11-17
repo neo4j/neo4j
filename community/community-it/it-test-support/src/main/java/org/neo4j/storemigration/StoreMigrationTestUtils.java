@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,6 +44,11 @@ import picocli.CommandLine;
 
 public class StoreMigrationTestUtils {
     public static Result runStoreMigrationCommandFromSameJvm(Neo4jLayout neo4jLayout, String... args) {
+        return runStoreMigrationCommandFromSameJvm(neo4jLayout, MigrateStoreCommand::new, args);
+    }
+
+    public static Result runStoreMigrationCommandFromSameJvm(
+            Neo4jLayout neo4jLayout, Function<ExecutionContext, MigrateStoreCommand> commandFactory, String... args) {
         var homeDir = neo4jLayout.homeDirectory().toAbsolutePath();
         var configDir = homeDir.resolve("conf");
         var out = new Output();
@@ -51,7 +57,7 @@ public class StoreMigrationTestUtils {
         var ctx = new ExecutionContext(
                 homeDir, configDir, out.printStream, err.printStream, new DefaultFileSystemAbstraction());
 
-        var command = CommandLine.populateCommand(new MigrateStoreCommand(ctx), args);
+        var command = CommandLine.populateCommand(commandFactory.apply(ctx), args);
 
         try {
             int exitCode = command.call();

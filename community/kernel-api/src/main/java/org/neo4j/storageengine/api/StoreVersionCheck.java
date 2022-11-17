@@ -47,7 +47,7 @@ public interface StoreVersionCheck {
 
     /**
      * Determine the latest version identifier for the provided storage engine format
-     * @param format the format to check and fins the latest version for
+     * @param format the format to check and find the latest version for
      * @return the identifier for the latest version
      */
     StoreVersionIdentifier findLatestVersion(String format);

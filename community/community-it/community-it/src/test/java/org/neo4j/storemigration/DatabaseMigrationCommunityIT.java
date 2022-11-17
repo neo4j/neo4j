@@ -32,9 +32,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.cli.AdminTool;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -44,6 +48,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import picocli.CommandLine;
 
 public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
 
@@ -81,6 +86,16 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
         return permutations.stream();
     }
 
+    @Test
+    public void shouldSelectCommunityVersionOfMigrateCommand() {
+        ExecutionContext executionContext = new ExecutionContext(Path.of("hej"), Path.of("something"));
+        CommandLine commandLine = AdminTool.getCommandLine(executionContext);
+        CommandLine.ParseResult result = commandLine.parseArgs("database", "migrate", "neo4j");
+        List<CommandLine> commandLines = result.asCommandLineList();
+        Object command = commandLines.get(commandLines.size() - 1).getCommand();
+        assertThat(command).isExactlyInstanceOf(MigrateStoreCommand.class);
+    }
+
     @ParameterizedTest
     @MethodSource("migrations")
     void shouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
@@ -93,6 +108,13 @@ public class DatabaseMigrationCommunityIT extends DatabaseMigrationITBase {
     void shouldMigrateSystemDatabase(SystemDbMigration systemDbMigration)
             throws IOException, ConsistencyCheckIncompleteException {
         doShouldMigrateSystemDatabase(systemDbMigration);
+    }
+
+    @ParameterizedTest
+    @MethodSource("systemDbMigrations")
+    void shouldMigrateSystemDatabaseAndOthers(SystemDbMigration systemDbMigration)
+            throws IOException, ConsistencyCheckIncompleteException {
+        doShouldMigrateSystemDatabaseAndOthers(systemDbMigration);
     }
 
     @Override

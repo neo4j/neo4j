@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.common.EntityType;
@@ -89,7 +90,7 @@ public abstract class DatabaseMigrationITBase {
 
     protected abstract void verifySystemDbSchema(GraphDatabaseService system, SystemDbMigration systemDbMigration);
 
-    protected void migrateSystemDatabase(ZippedStore zippedStore, Neo4jLayout layout) throws IOException {
+    protected void migrateOrRemoveSystemDatabase(ZippedStore zippedStore, Neo4jLayout layout) throws IOException {
         var result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(layout, SYSTEM_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
     }
@@ -105,7 +106,7 @@ public abstract class DatabaseMigrationITBase {
                 layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
-        migrateSystemDatabase(zippedStore, layout);
+        migrateOrRemoveSystemDatabase(zippedStore, layout);
 
         // then
         DatabaseManagementService dbms = newDbmsBuilder(homeDir).build();
@@ -129,7 +130,28 @@ public abstract class DatabaseMigrationITBase {
         return RecordFormatSelector.findLatestFormatInFamily(toRecordFormat, config);
     }
 
+    protected void doShouldMigrateSystemDatabaseAndOthers(SystemDbMigration systemDbMigration)
+            throws IOException, ConsistencyCheckIncompleteException {
+        doShouldMigrateSystemDatabase(systemDbMigration, (neo4jLayout) -> {
+            StoreMigrationTestUtils.Result result =
+                    StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(neo4jLayout, "--verbose", "*");
+            assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+        });
+    }
+
     protected void doShouldMigrateSystemDatabase(SystemDbMigration systemDbMigration)
+            throws IOException, ConsistencyCheckIncompleteException {
+        doShouldMigrateSystemDatabase(systemDbMigration, (neo4jLayout) -> {
+            StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
+                    neo4jLayout, "--verbose", DEFAULT_DATABASE_NAME);
+            assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+            result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
+                    neo4jLayout, "--verbose", SYSTEM_DATABASE_NAME);
+            assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+        });
+    }
+
+    protected void doShouldMigrateSystemDatabase(SystemDbMigration systemDbMigration, Consumer<Neo4jLayout> migrate)
             throws IOException, ConsistencyCheckIncompleteException {
         // given
         Path targetDirectory = directory.homePath();
@@ -137,12 +159,7 @@ public abstract class DatabaseMigrationITBase {
         systemDbMigration.zippedStore.unzip(targetDirectory);
 
         // when
-        StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                neo4jLayout, "--verbose", DEFAULT_DATABASE_NAME);
-        assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
-        result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                neo4jLayout, "--verbose", SYSTEM_DATABASE_NAME);
-        assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
+        migrate.accept(neo4jLayout);
 
         var initialIndexStateMonitor = new InitialIndexStateMonitor(SYSTEM_DATABASE_NAME);
         DatabaseManagementService dbms = newDbmsBuilder(targetDirectory)
@@ -165,6 +182,13 @@ public abstract class DatabaseMigrationITBase {
             verifyRemovedIndexProviders(system);
             verifyFulltextIndexes(
                     system, systemDbMigration.zippedStore.statistics().kernelVersion());
+
+            // Try to do something against neo4j to see that system db still correctly references it
+            var neo4j = dbms.database(DEFAULT_DATABASE_NAME);
+            try (Transaction tx = neo4j.beginTx()) {
+                tx.createNode();
+                tx.commit();
+            }
         } finally {
             dbms.shutdown();
         }
