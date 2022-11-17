@@ -42,8 +42,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       """.stripMargin,
       """
         |MATCH (owner)
-        |WITH owner AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
-        |WITH `  UNNAMED0` AS owner, `  UNNAMED1` > 0 AS collected
+        |WITH count(*) AS `  UNNAMED0`, owner AS owner
+        |WITH owner AS owner, `  UNNAMED0` > 0 AS collected
         |  WHERE (owner)-->()
         |RETURN owner AS owner
       """.stripMargin
@@ -60,8 +60,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       """.stripMargin,
       """
         |MATCH (owner)
-        |WITH owner AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
-        |WITH `  UNNAMED0` AS owner, `  UNNAMED1` > 0 AS collected
+        |WITH count(*) AS `  UNNAMED0`, owner AS owner
+        |WITH owner AS owner, `  UNNAMED0` > 0 AS collected
         |  ORDER BY owner.foo
         |RETURN owner AS owner
       """.stripMargin
@@ -82,11 +82,35 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       """.stripMargin,
       """
         |MATCH (owner)
-        |  WHERE EXISTS { WITH owner AS `  UNNAMED0`, count(*) AS `  UNNAMED1`
-        |WITH `  UNNAMED0` AS owner, `  UNNAMED1` > 0 AS collected
+        |  WHERE EXISTS { WITH count(*) AS `  UNNAMED0`, owner AS owner
+        |WITH owner AS owner, `  UNNAMED0` > 0 AS collected
         |MATCH (dog)
         |  WHERE dog.ownerCount = collected
         |RETURN owner AS owner }
+        |RETURN owner AS owner
+      """.stripMargin
+    )
+  }
+
+  test("rewrites query inside Full Count Expression") {
+    assertRewrite(
+      """
+        |MATCH (owner)
+        |WHERE COUNT {
+        | WITH owner, count(*) > 0 AS collected
+        | MATCH (dog)
+        | WHERE dog.ownerCount = collected
+        | RETURN owner
+        |} > 2
+        |RETURN owner
+      """.stripMargin,
+      """
+        |MATCH (owner)
+        |  WHERE COUNT { WITH count(*) AS `  UNNAMED0`, owner AS owner
+        |WITH owner AS owner, `  UNNAMED0` > 0 AS collected
+        |MATCH (dog)
+        |  WHERE dog.ownerCount = collected
+        |RETURN owner AS owner } > 2
         |RETURN owner AS owner
       """.stripMargin
     )
@@ -155,14 +179,14 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("MATCH (n) RETURN n.prop AS prop, n.foo + count(*) AS count") {
     assertRewrite(
       "MATCH (n) RETURN n.prop AS prop, n.foo + count(*) AS count",
-      "MATCH (n) WITH n.prop AS `  UNNAMED0`, n.foo AS `  UNNAMED1`, count(*) AS `  UNNAMED2` RETURN `  UNNAMED0` AS prop, `  UNNAMED1` + `  UNNAMED2` AS count"
+      "MATCH (n) WITH n.foo AS `  UNNAMED0`, count(*) AS `  UNNAMED1`, n.prop AS prop RETURN prop AS prop, `  UNNAMED0` + `  UNNAMED1` AS count"
     )
   }
 
   test("MATCH (n) RETURN n AS n, count(n) + 3 AS count") {
     assertRewrite(
       "MATCH (n) RETURN n AS n, count(n) + 3 AS count",
-      "MATCH (n) WITH n AS `  UNNAMED0`, count(n) as `  UNNAMED1`  RETURN `  UNNAMED0` AS n, `  UNNAMED1` + 3 AS count"
+      "MATCH (n) WITH count(n) as `  UNNAMED0`, n AS n RETURN n AS n, `  UNNAMED0` + 3 AS count"
     )
   }
 
@@ -251,12 +275,12 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       """MATCH (a), (b)
         |RETURN coalesce(a.prop, b.prop), b.prop, { x: count(b) }""".stripMargin,
       """MATCH (a), (b)
-        |WITH coalesce(a.prop, b.prop) AS `  UNNAMED0`,
-        |     b.prop AS `  UNNAMED1`,
-        |     count(b) AS `  UNNAMED2`
-        |RETURN `  UNNAMED0` AS `coalesce(a.prop, b.prop)`,
-        |       `  UNNAMED1` AS `b.prop`,
-        |       { x: `  UNNAMED2` } AS `{ x: count(b) }`""".stripMargin
+        |WITH count(b) AS `  UNNAMED0`,
+        |     coalesce(a.prop, b.prop) AS `coalesce(a.prop, b.prop)`,
+        |     b.prop AS `b.prop`
+        |RETURN `coalesce(a.prop, b.prop)` AS `coalesce(a.prop, b.prop)`,
+        |       `b.prop` AS `b.prop`,
+        |       { x: `  UNNAMED0` } AS `{ x: count(b) }`""".stripMargin
     )
   }
 
@@ -266,8 +290,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
         |WITH user AS user, collect(friendship)[toInteger(rand() * count(friendship))] AS selectedFriendship
         |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin,
       """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
-        |WITH user AS `  UNNAMED0`, collect(friendship) AS `  UNNAMED1`, count(friendship) AS `  UNNAMED2`
-        |WITH `  UNNAMED0` AS user, `  UNNAMED1`[toInteger(rand() * `  UNNAMED2`)] AS selectedFriendship
+        |WITH collect(friendship) AS `  UNNAMED0`, count(friendship) AS `  UNNAMED1`, user AS user
+        |WITH user AS user, `  UNNAMED0`[toInteger(rand() * `  UNNAMED1`)] AS selectedFriendship
         |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     )
   }

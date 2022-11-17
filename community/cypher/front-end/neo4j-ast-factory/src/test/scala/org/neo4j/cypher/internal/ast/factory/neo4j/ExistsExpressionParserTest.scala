@@ -20,16 +20,12 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.FilterScope
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -48,19 +44,22 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { (m)-[r]->(p) }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = SimpleExistsExpression(
-      Pattern(Seq(
-        EveryPath(
-          RelationshipChain(
-            nodePat(Some("m")),
-            RelationshipPattern(Some(Variable("r")(InputPosition(30, 2, 21))), None, None, None, None, OUTGOING)(
-              InputPosition(28, 2, 19)
-            ),
-            nodePat(Some("p"))
-          )(pos)
-        )
-      ))(InputPosition(25, 2, 16)),
-      None
+    val existsExpression: ExistsExpression = ExistsExpression(
+      query(
+        SingleQuery(
+          Seq(
+            match_(
+              RelationshipChain(
+                nodePat(Some("m")),
+                RelationshipPattern(Some(Variable("r")(InputPosition(30, 2, 21))), None, None, None, None, OUTGOING)(
+                  InputPosition(28, 2, 19)
+                ),
+                nodePat(Some("p"))
+              )(pos)
+            )
+          )
+        )(pos)
+      )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
@@ -76,19 +75,23 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { MATCH (m)-[r]->(p) WHERE p.a > 5 }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = SimpleExistsExpression(
-      Pattern(Seq(
-        EveryPath(
-          RelationshipChain(
-            nodePat(Some("m")),
-            RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
-              InputPosition(34, 2, 25)
-            ),
-            nodePat(Some("p"))
-          )(pos)
-        )
-      ))(InputPosition(31, 2, 22)),
-      Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
+    val existsExpression: ExistsExpression = ExistsExpression(
+      query(
+        SingleQuery(
+          Seq(
+            match_(
+              RelationshipChain(
+                nodePat(Some("m")),
+                RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
+                  InputPosition(34, 2, 25)
+                ),
+                nodePat(Some("p"))
+              )(pos),
+              Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
+            )
+          )
+        )(pos)
+      )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
@@ -104,19 +107,22 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { MATCH (m)-[r]->(p) }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = SimpleExistsExpression(
-      Pattern(Seq(
-        EveryPath(
-          RelationshipChain(
-            nodePat(Some("m")),
-            RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
-              InputPosition(34, 2, 25)
-            ),
-            nodePat(Some("p"))
-          )(pos)
-        )
-      ))(InputPosition(31, 2, 22)),
-      None
+    val existsExpression: ExistsExpression = ExistsExpression(
+      query(
+        SingleQuery(
+          Seq(
+            match_(
+              RelationshipChain(
+                nodePat(Some("m")),
+                RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
+                  InputPosition(34, 2, 25)
+                ),
+                nodePat(Some("p"))
+              )(pos)
+            )
+          )
+        )(pos)
+      )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
@@ -132,7 +138,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { MATCH (m)-[r]->(p) RETURN p }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = FullExistsExpression(
+    val existsExpression: ExistsExpression = ExistsExpression(
       query(
         SingleQuery(
           Seq(
@@ -164,7 +170,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { MATCH (m) RETURN m UNION MATCH (p) RETURN p }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = FullExistsExpression(
+    val existsExpression: ExistsExpression = ExistsExpression(
       query(
         UnionDistinct(
           SingleQuery(
@@ -196,7 +202,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { CREATE (n) }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = FullExistsExpression(
+    val existsExpression: ExistsExpression = ExistsExpression(
       query(
         create(nodePat(name = Some("n"))),
         InputPosition(25, 2, 16)
@@ -216,7 +222,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |WHERE EXISTS { MATCH (n) WHERE all(i in n.prop WHERE i = 4) RETURN n }
       |RETURN m""".stripMargin
   ) {
-    val existsExpression: ExistsExpression = FullExistsExpression(
+    val existsExpression: ExistsExpression = ExistsExpression(
       query(
         SingleQuery(
           Seq(

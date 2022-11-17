@@ -3115,14 +3115,18 @@ EXPRESSION ExistsExpression() throws Exception:
 EXPRESSION CountExpression() throws Exception:
 {
     Token t;
-    List<PATTERN> patterns;
-    EXPRESSION where = null;
+    List<PATTERN> patterns = null;
+    QUERY q = null;
+    WHERE where = null;
 }
 {
-    t=<COUNT> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
+    t=<COUNT>
+    <LCURLY>
+        (q=RegularQuery() | (patterns=PatternList() ( where=WhereClause() )?))
+    <RCURLY>
     {
-    return astFactory.countExpression( pos( t ), patterns, where );
-}
+        return astFactory.countExpression( pos( t ), patterns, q, where );
+    }
 }
 
 EXPRESSION StringLiteral() :

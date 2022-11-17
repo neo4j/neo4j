@@ -59,8 +59,6 @@ object Neo4jAdapter {
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
     case "QuantifiedPathPatternAcceptance" =>
       enableSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
-    case "ExistsExpressionAcceptance" =>
-      enableSemanticFeature(SemanticFeature.FullExistsSupport)
     case "CallInTransactions" | "CallInTransactionsErrorHandling" | "CallInTransactionsErrorHandlingWithReturn" =>
       enableSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
     case _ => Map.empty

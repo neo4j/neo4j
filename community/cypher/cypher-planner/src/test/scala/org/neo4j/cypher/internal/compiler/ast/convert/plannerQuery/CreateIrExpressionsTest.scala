@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -46,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -54,19 +54,25 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   private val n = varFor("n")
   private val m = varFor("m")
@@ -143,19 +149,24 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val anonymousVariableNameGenerator = makeAnonymousVariableNameGenerator()
     val rewriter = inSequence(
       AddUniquenessPredicates.rewriter,
-      flattenBooleanOperators,
       inlineNamedPathsInPatternComprehensions.instance,
+      normalizePredicates(PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)),
+      flattenBooleanOperators,
       CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)
     )
     e.endoRewrite(rewriter)
   }
 
-  private def queryWith(qg: QueryGraph, horizon: Option[QueryHorizon]): PlannerQuery = {
+  private def queryWith(
+    qg: QueryGraph,
+    horizon: Option[QueryHorizon],
+    tail: Option[SinglePlannerQuery] = None
+  ): PlannerQuery = {
     PlannerQuery(
       RegularSinglePlannerQuery(
         queryGraph = qg,
         horizon = horizon.getOrElse(RegularQueryProjection()),
-        tail = None
+        tail = tail
       )
     )
   }
@@ -184,7 +195,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"(${n.name})-[${r.name}]-(${m.name})"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -213,7 +224,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"(${n.name})-[${r.name}*2..5]-(${m.name})"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -257,7 +268,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"(${n.name})-[${r.name}:R|P {prop: 5} WHERE ${r.name}.foo > 5]->(${m.name})<-[${r2.name}]-(${o.name}:!% {prop: 5} WHERE ${o.name}.foo > 5)"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -268,23 +279,23 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val existsVariableName = nameGenerator.nextName
 
     val rewritten = rewrite(Exists(pe)(pos))
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-            selections = Selections.from(ors(hasLabels(m, "M"), hasLabels(m, "MM")))
-          ),
-          None
+    existsIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+          selections = Selections.from(ors(hasLabels(m, "M"), hasLabels(m, "MM")))
         ),
-        existsVariableName,
-        s"exists((${n.name})-[${r.name}]-(${m.name}:M|MM))"
-      )(pos, Set.empty, Set.empty)
+        None
+      )
     )
+
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString shouldBe s"exists((${n.name})-[${r.name}]-(${m.name}:M|MM))"
   }
 
   test("Rewrites PatternComprehension") {
@@ -315,7 +326,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"[(${n.name})-[${r.name}]-(${m.name}) | 5]"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -349,7 +360,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"[(${n.name})-[${r.name}]-(${m.name}) | (${n.name})-[${r.name}]-(${m.name})]"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -384,7 +395,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         variableToCollectName,
         collectionName,
         s"[(${n.name})-[${r.name}]-(${m.name}) WHERE ${r.name}.foo > 5 | ${m.name}.foo]"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(m, r), Set(n))
     )
   }
 
@@ -434,76 +445,76 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollectName,
         collectionName,
-        s"[(${n.name})-[${r.name}:R|P {prop: 5} WHERE ${r.name}.foo > 5]->(${m.name})<-[${r2.name}]-(${o.name}:!% {prop: 5} WHERE ${o.name}.foo > 5) | 5]"
-      )(pos, Set.empty, Set.empty)
+        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND r.foo > 5 AND o.prop = 5 AND not o:% AND o.foo > 5 | 5]"
+      )(pos, Set(m, r), Set(n))
     )
   }
 
-  test("Rewrites SimpleExistsExpression") {
-    val esc = SimpleExistsExpression(n_r_m_r2_o_r3_q, None)(pos, Set(n, m, o, q, r, r2, r3), Set.empty)
+  test("Rewrites Simple ExistsExpression") {
+    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, None, Set(n, m, o, q, r, r2, r3), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
 
     val rewritten = rewrite(esc)
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name, q.name),
-            patternRelationships =
-              Set(
-                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-              ),
-            selections = Selections.from(Seq(
-              not(equals(r, r3)),
-              not(equals(r, r2)),
-              not(equals(r3, r2))
-            ))
-          ),
-          None
+    existsIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          selections = Selections.from(Seq(
+            not(equals(r, r3)),
+            not(equals(r, r2)),
+            not(equals(r3, r2))
+          ))
         ),
-        existsVariableName,
-        "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q) }"
-      )(pos, Set.empty, Set.empty)
+        None
+      )
     )
+
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString shouldBe "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
   }
 
-  test("Rewrites SimpleExistsExpression with where clause") {
-    val esc = SimpleExistsExpression(n_r_m_r2_o_r3_q, Some(where(rPred)))(pos, Set(n, r, m, r2, o, r3, q), Set.empty)
+  test("Rewrites Simple Exists Expression with where clause") {
+    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, Some(where(rPred)), Set(n, r, m, r2, o, r3, q), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
 
     val rewritten = rewrite(esc)
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name, q.name),
-            patternRelationships =
-              Set(
-                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-              ),
-            selections = Selections.from(Seq(
-              not(equals(r, r3)),
-              not(equals(r, r2)),
-              not(equals(r3, r2)),
-              andedPropertyInequalities(rPred)
-            ))
-          ),
-          None
+    existsIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          selections = Selections.from(Seq(
+            not(equals(r, r3)),
+            not(equals(r, r2)),
+            not(equals(r3, r2)),
+            andedPropertyInequalities(rPred)
+          ))
         ),
-        existsVariableName,
-        "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q) WHERE r.foo > 5 }"
-      )(pos, Set.empty, Set.empty)
+        None
+      )
     )
+
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString shouldBe "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2 }"
   }
 
   test("Rewrites FullExistsExpression with where clause") {
@@ -516,7 +527,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       )
     )
 
-    val esc = FullExistsExpression(simpleMatchQuery)(pos, Set(r, r2, r3, m, o, q), Set(n))
+    val esc = ExistsExpression(simpleMatchQuery)(pos, Set(r, r2, r3, m, o, q), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -524,30 +535,32 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val semanticTable = new SemanticTable().addNode(varFor("n"))
 
     val rewritten = rewrite(esc, semanticTable)
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name, q.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(
-                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-              ),
-            selections = Selections.from(Seq(
-              not(equals(r, r3)),
-              not(equals(r, r2)),
-              not(equals(r3, r2))
-            ))
-          ),
-          horizon = Some(RegularQueryProjection(Map("n" -> n)))
+    existsIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          selections = Selections.from(Seq(
+            not(equals(r, r3)),
+            not(equals(r, r2)),
+            not(equals(r3, r2))
+          ))
         ),
-        existsVariableName,
-        "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
-      )(pos, Set.empty, Set.empty)
+        horizon = Some(RegularQueryProjection(Map("n" -> n)))
+      )
+    )
+
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString should equal(
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
     )
   }
 
@@ -561,7 +574,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       )
     )
 
-    val esc = FullExistsExpression(simpleMatchQuery)(pos, Set.empty, Set.empty)
+    val esc = ExistsExpression(simpleMatchQuery)(pos, Set(r, m, n), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -569,23 +582,23 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val semanticTable = new SemanticTable().addNode(varFor("n"))
 
     val rewritten = rewrite(esc, semanticTable)
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            patternRelationships =
-              Set(
-                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-              )
-          ),
-          horizon = Some(RegularQueryProjection(Map("n" -> n)))
+    existsIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+            )
         ),
-        existsVariableName,
-        "EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n }"
-      )(pos, Set.empty, Set.empty)
+        horizon = Some(RegularQueryProjection(Map("n" -> n)))
+      )
     )
+
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString should equal("EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n }")
   }
 
   test("Rewrites FullExistsExpression with Union") {
@@ -608,7 +621,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     val rewrittenQuery: Query = unionQuery.endoRewrite(Namespacer.projectUnions)
 
-    val esc = FullExistsExpression(rewrittenQuery)(pos, Set.empty, Set.empty)
+    val esc = ExistsExpression(rewrittenQuery)(pos, Set(r, m, n), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -616,207 +629,409 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val semanticTable = new SemanticTable().addNode(Variable("n")(InputPosition(16, 1, 17)))
 
     val rewritten = rewrite(esc, semanticTable)
+    val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
-    rewritten should equal(
-      ExistsIRExpression(
-        PlannerQuery(
-          UnionQuery(
-            RegularSinglePlannerQuery(
-              QueryGraph(
-                patternNodes = Set(n.name, m.name),
-                patternRelationships =
-                  Set(
-                    PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                  )
-              ),
-              horizon = RegularQueryProjection(Map("n" -> n))
+    existsIRExpression.query should equal(
+      PlannerQuery(
+        UnionQuery(
+          RegularSinglePlannerQuery(
+            QueryGraph(
+              patternNodes = Set(n.name, m.name),
+              patternRelationships =
+                Set(
+                  PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                )
             ),
-            RegularSinglePlannerQuery(
-              QueryGraph(
-                patternNodes = Set(n.name, m.name),
-                patternRelationships =
-                  Set(
-                    PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                  )
-              ),
-              horizon = RegularQueryProjection(Map("n" -> n))
+            horizon = RegularQueryProjection(Map("n" -> n))
+          ),
+          RegularSinglePlannerQuery(
+            QueryGraph(
+              patternNodes = Set(n.name, m.name),
+              patternRelationships =
+                Set(
+                  PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                )
             ),
-            distinct = true,
-            List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+            horizon = RegularQueryProjection(Map("n" -> n))
+          ),
+          distinct = true,
+          List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+        )
+      )
+    )
+    existsIRExpression.existsVariableName shouldBe existsVariableName
+    existsIRExpression.solvedExpressionAsString should equal(
+      "EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n\nUNION\nMATCH (n)-[r]-(m)\nRETURN n AS n }"
+    )
+  }
+
+  test("Rewrites FullCountExpression with where clause") {
+    val simpleMatchQuery = query(
+      singleQuery(
+        match_(Seq(n_r_m_chain, o_r2_m_r3_q_chain), None),
+        return_(
+          aliasedReturnItem(n)
+        )
+      )
+    )
+
+    val esc = CountExpression(simpleMatchQuery)(pos, Set(r, r2, r3, m, o, q), Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableName = nameGenerator.nextName
+
+    val semanticTable = new SemanticTable().addNode(varFor("n"))
+
+    val rewritten = rewrite(esc, semanticTable)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          selections = Selections.from(Seq(
+            not(equals(r, r3)),
+            not(equals(r, r2)),
+            not(equals(r3, r2))
+          ))
+        ),
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal(
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
+    )
+  }
+
+  test("Rewrites FullCountExpression") {
+    val simpleMatchQuery = query(
+      singleQuery(
+        match_(n_r_m_chain, None),
+        return_(
+          aliasedReturnItem(n)
+        )
+      )
+    )
+
+    val esc = CountExpression(simpleMatchQuery)(pos, Set(r, m), Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableName = nameGenerator.nextName
+
+    val semanticTable = new SemanticTable().addNode(varFor("n"))
+
+    val rewritten = rewrite(esc, semanticTable)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+            )
+        ),
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\nRETURN n AS n }")
+  }
+
+  test("Rewrites FullCountExpression with Union") {
+    val unionQuery = query(
+      union(
+        singleQuery(
+          match_(n_r_m_chain, None),
+          return_(
+            aliasedReturnItem(n)
           )
         ),
-        existsVariableName,
-        "EXISTS { MATCH (n)-[r]-(m)\nRETURN n AS n\nUNION\nMATCH (n)-[r]-(m)\nRETURN n AS n }"
-      )(pos, Set.empty, Set.empty)
+        singleQuery(
+          match_(n_r_m_chain, None),
+          return_(
+            aliasedReturnItem(n)
+          )
+        )
+      )
+    )
+
+    val rewrittenQuery: Query = unionQuery.endoRewrite(Namespacer.projectUnions)
+
+    val ce = CountExpression(rewrittenQuery)(pos, Set(r, m), Set(n))
+
+    val nameGenerator = makeAnonymousVariableNameGenerator()
+    val countVariableName = nameGenerator.nextName
+
+    val semanticTable = new SemanticTable().addNode(Variable("n")(InputPosition(16, 1, 17)))
+
+    val rewritten = rewrite(ce, semanticTable)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          argumentIds = Set(n.name)
+        ),
+        horizon = Some(CallSubqueryHorizon(
+          callSubquery = PlannerQuery(
+            UnionQuery(
+              RegularSinglePlannerQuery(
+                QueryGraph(
+                  patternNodes = Set(n.name, m.name),
+                  argumentIds = Set(n.name),
+                  patternRelationships =
+                    Set(
+                      PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                    )
+                ),
+                horizon = RegularQueryProjection(Map("n" -> n))
+              ),
+              RegularSinglePlannerQuery(
+                QueryGraph(
+                  patternNodes = Set(n.name, m.name),
+                  argumentIds = Set(n.name),
+                  patternRelationships =
+                    Set(
+                      PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                    )
+                ),
+                horizon = RegularQueryProjection(Map("n" -> n))
+              ),
+              distinct = true,
+              List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+            )
+          ).query,
+          correlated = true,
+          yielding = true,
+          inTransactionsParameters = None
+        )),
+        tail = Some(
+          RegularSinglePlannerQuery(
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))
+          )
+        )
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal(
+      "COUNT { MATCH (n)-[r]-(m)\nRETURN n AS n\nUNION\nMATCH (n)-[r]-(m)\nRETURN n AS n }"
     )
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) }") {
     val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
-    val countExpr = CountExpression(p, None)(pos, Set(r, m), Set(n))
+    val countExpr = simpleCountExpression(p, None, Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          qg = QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
-          ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength))
         ),
-        countVariableName,
-        s"COUNT { (n)-[r]-(m) }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString shouldBe s"COUNT { MATCH (n)-[r]-(m) }"
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5}") {
     val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
-    val countExpr = CountExpression(p, Some(rPred))(pos, Set(r, m), Set(n))
+    val countExpr = simpleCountExpression(p, Some(where(rPred)), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          qg = QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-            selections = Selections.from(andedPropertyInequalities(rPred))
-          ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+          selections = Selections.from(andedPropertyInequalities(rPred))
         ),
-        countVariableName,
-        s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (n)-[r]-(m)\n  WHERE r.foo > 5 }")
   }
 
   test("should rewrite count expression with longer pattern and inlined predicates") {
     val p = Pattern(Seq(EveryPath(n_r_m_withPreds.element)))(pos)
-    val countExpr = CountExpression(p, None)(pos, Set(r, m), Set(n))
+    val countExpr = simpleCountExpression(p, None, Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name),
-            argumentIds = Set(n.name),
-            patternRelationships = Set(
-              PatternRelationship(
-                r.name,
-                (n.name, m.name),
-                OUTGOING,
-                Seq(relTypeName("R"), relTypeName("P")),
-                SimplePatternLength
-              ),
-              PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name),
+          argumentIds = Set(n.name),
+          patternRelationships = Set(
+            PatternRelationship(
+              r.name,
+              (n.name, m.name),
+              OUTGOING,
+              Seq(relTypeName("R"), relTypeName("P")),
+              SimplePatternLength
             ),
-            selections = Selections.from(Seq(
-              not(equals(r2, r)),
-              andedPropertyInequalities(rPred),
-              andedPropertyInequalities(oPred),
-              equals(prop(r.name, "prop"), literalInt(5)),
-              equals(prop(o.name, "prop"), literalInt(5)),
-              not(hasALabel(o.name))
-            ))
+            PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
           ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+          selections = Selections.from(Seq(
+            not(equals(r2, r)),
+            andedPropertyInequalities(rPred),
+            andedPropertyInequalities(oPred),
+            equals(prop(r.name, "prop"), literalInt(5)),
+            equals(prop(o.name, "prop"), literalInt(5)),
+            not(hasALabel(o.name))
+          ))
         ),
-        countVariableName,
-        s"COUNT { (n)-[r:R|P {prop: 5} WHERE r.foo > 5]->(m)<-[r2]-(o:!% {prop: 5} WHERE o.foo > 5) }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal(
+      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND r.foo > 5 AND o.prop = 5 AND not o:% AND o.foo > 5 AND not r2 = r }"
+    )
   }
 
   test("should rewrite COUNT { (m) } and add a type check") {
     val p = Pattern(Seq(EveryPath(n_r_m.element.rightNode)))(pos)
-    val countExpr = CountExpression(p, None)(pos, Set(r, n), Set(m))
+    val countExpr = simpleCountExpression(p, None, Set(n, r), Set(m))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          qg = QueryGraph(
-            patternNodes = Set(m.name),
-            argumentIds = Set(m.name),
-            selections = Selections.from(AssertIsNode(m)(pos))
-          ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(m.name),
+          argumentIds = Set(m.name),
+          selections = Selections.from(AssertIsNode(m)(pos))
         ),
-        countVariableName,
-        s"COUNT { (m) }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal("COUNT { MATCH (m) }")
   }
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
     val p = Pattern(Seq(EveryPath(n_r_m.element)))(pos)
-    val countExpr = CountExpression(p, Some(and(rPred, rLessPred)))(pos, Set(r, m), Set(n))
+    val countExpr = simpleCountExpression(p, Some(where(and(rPred, rLessPred))), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          qg = QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
-            patternRelationships =
-              Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
-            selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
-          ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)),
+          selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
         ),
-        countVariableName,
-        s"COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal(
+      "COUNT { MATCH (n)-[r]-(m)\n  WHERE r.foo > 5 AND r.foo < 10 }"
+    )
   }
 
   test("Should rewrite COUNT { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }") {
-    val countExpr = CountExpression(n_r_m_r2_o_r3_q, None)(pos, Set(r, m, r2, r3, q), Set(n, o))
+    val countExpr = simpleCountExpression(n_r_m_r2_o_r3_q, None, Set(r, m, r2, r3, q), Set(n, o))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
 
-    rewrite(countExpr) shouldBe
-      CountIRExpression(
-        queryWith(
-          qg = QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name, q.name),
-            argumentIds = Set(n.name, o.name),
-            patternRelationships = Set(
-              PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(r2.name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(r3.name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-            ),
-            selections = Selections.from(Seq(
-              not(equals(r, r2)),
-              not(equals(r, r3)),
-              not(equals(r3, r2))
-            ))
+    val rewritten = rewrite(countExpr)
+    val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
+
+    countIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          argumentIds = Set(n.name, o.name),
+          patternRelationships = Set(
+            PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+            PatternRelationship(r2.name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+            PatternRelationship(r3.name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
           ),
-          horizon =
-            Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos))))
+          selections = Selections.from(Seq(
+            not(equals(r, r2)),
+            not(equals(r, r3)),
+            not(equals(r3, r2))
+          ))
         ),
-        countVariableName,
-        s"COUNT { (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q) }"
-      )(pos, Set.empty, Set.empty)
+        horizon =
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(pos)))),
+        None
+      )
+    )
+
+    countIRExpression.countVariableName shouldBe countVariableName
+    countIRExpression.solvedExpressionAsString should equal(
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+    )
   }
 
 }

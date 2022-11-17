@@ -202,7 +202,7 @@ object CNFNormalizerTest {
     private val transformer =
       SemanticAnalysis.getTransformer(
         pushdownPropertyReads = false,
-        Seq(SemanticFeature.QuantifiedPathPatterns, SemanticFeature.FullExistsSupport)
+        Seq(SemanticFeature.QuantifiedPathPatterns)
       )
 
     override def preConditions: Set[Condition] = SemanticAnalysis.preConditions

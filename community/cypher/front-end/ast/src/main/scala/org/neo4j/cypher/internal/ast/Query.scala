@@ -78,6 +78,13 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
    * True iff this query part ends with a return clause.
    */
   def isReturning: Boolean
+
+  /**
+   * Exists and Count can omit the Return Statement
+   * Count still requires it for Distinct Unions as in this case the count
+   * changes based on which rows are distinct vs not
+   */
+  def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart
@@ -143,16 +150,27 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     clausesExceptLeadingImportWith.filterNot(leadingGraphSelection.contains)
   }
 
-  private def semanticCheckAbstract(clauses: Seq[Clause], clauseCheck: Seq[Clause] => SemanticCheck): SemanticCheck =
+  private def semanticCheckAbstract(
+    clauses: Seq[Clause],
+    clauseCheck: Seq[Clause] => SemanticCheck,
+    canOmitReturnClause: Boolean = false
+  ): SemanticCheck =
     checkStandaloneCall(clauses) chain
       withScopedState(clauseCheck(clauses)) chain
-      checkOrder(clauses) chain
+      checkOrder(clauses, canOmitReturnClause) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
       recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
     semanticCheckAbstract(clauses, checkClauses(_, None))
+
+  /**
+   * No outer scope is needed for checkClauses as we don't need to check the naming of any returned variables
+   * as no variables from EXISTS / COUNT can be returned, unlike in CALL subqueries.
+   */
+  override def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck =
+    semanticCheckAbstract(clauses, checkClauses(_, None), canOmitReturnClause = canOmitReturn)
 
   override def checkImportingWith: SemanticCheck = importWith.foldSemanticCheck(_.semanticCheck)
 
@@ -231,91 +249,94 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkOrder(clauses: Seq[Clause]): SemanticCheck = (s: SemanticState) => {
-    val sequenceErrors = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
-      case (semanticErrors, pair) =>
-        val optError = pair match {
-          case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
-            Some(SemanticError(
-              s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)",
-              match2.position
-            ))
-          case Seq(clause: Return, _) =>
-            Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
-          case Seq(_: UpdateClause, _: UpdateClause) =>
-            None
-          case Seq(_: UpdateClause, _: With) =>
-            None
-          case Seq(_: UpdateClause, _: Return) =>
-            None
-          case Seq(update: UpdateClause, clause) =>
-            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position))
-          case _ =>
-            None
-        }
-        optError.fold(semanticErrors)(semanticErrors :+ _)
+  private def checkOrder(clauses: Seq[Clause], canOmitReturnClause: Boolean): SemanticCheck =
+    (s: SemanticState) => {
+      val sequenceErrors = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
+        case (semanticErrors, pair) =>
+          val optError = pair match {
+            case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
+              Some(SemanticError(
+                s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)",
+                match2.position
+              ))
+            case Seq(clause: Return, _) =>
+              Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
+            case Seq(_: UpdateClause, _: UpdateClause) =>
+              None
+            case Seq(_: UpdateClause, _: With) =>
+              None
+            case Seq(_: UpdateClause, _: Return) =>
+              None
+            case Seq(update: UpdateClause, clause) =>
+              Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position))
+            case _ =>
+              None
+          }
+          optError.fold(semanticErrors)(semanticErrors :+ _)
+      }
+
+      val commandErrors =
+        if (clauses.count(_.isInstanceOf[CommandClause]) > 1) {
+          val missingYield = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
+            case (semanticErrors, pair) =>
+              val optError = pair match {
+                case Seq(command: TransactionsCommandClause, clause: With) if command.yieldAll =>
+                  Some(SemanticError(
+                    s"When combining `${command.name}` with other show and/or terminate commands, `YIELD *` isn't permitted.",
+                    clause.position
+                  ))
+                case Seq(_: CommandClause, clause: With) if clause.withType != AddedInRewrite => None
+                case Seq(command: CommandClause, _) =>
+                  Some(SemanticError(
+                    s"When combining `${command.name}` with other show and/or terminate commands, `YIELD` is mandatory.",
+                    command.position
+                  ))
+                case _ => None
+              }
+              optError.fold(semanticErrors)(semanticErrors :+ _)
+          }
+
+          val missingReturn = clauses.last match {
+            case clause: Return if !clause.addedInRewrite => None
+            case clause =>
+              Some(SemanticError(
+                "When combining show and/or terminate commands, `RETURN` isn't optional.",
+                clause.position
+              ))
+          }
+
+          missingYield ++ missingReturn
+        } else Vector.empty[SemanticError]
+
+      val validLastClauses =
+        "a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
+
+      val concludeError = clauses match {
+        // standalone procedure call
+        case Seq(_: CallClause)                    => None
+        case Seq(_: GraphSelection, _: CallClause) => None
+
+        case Seq() =>
+          Some(SemanticError(s"Query must conclude with $validLastClauses", this.position))
+
+        // otherwise
+        case seq => seq.last match {
+            case _: UpdateClause | _: Return | _: CommandClause                                        => None
+            case subquery: SubqueryCall if !subquery.part.isReturning && subquery.reportParams.isEmpty => None
+            case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll                      => None
+            case call: CallClause =>
+              Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
+            case _ if canOmitReturnClause => None
+            case clause =>
+              Some(SemanticError(
+                s"Query cannot conclude with ${clause.name} (must be $validLastClauses)",
+                clause.position
+              ))
+          }
+      }
+
+      semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError ++ commandErrors)
     }
-
-    val commandErrors =
-      if (clauses.count(_.isInstanceOf[CommandClause]) > 1) {
-        val missingYield = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
-          case (semanticErrors, pair) =>
-            val optError = pair match {
-              case Seq(command: TransactionsCommandClause, clause: With) if command.yieldAll =>
-                Some(SemanticError(
-                  s"When combining `${command.name}` with other show and/or terminate commands, `YIELD *` isn't permitted.",
-                  clause.position
-                ))
-              case Seq(_: CommandClause, clause: With) if clause.withType != AddedInRewrite => None
-              case Seq(command: CommandClause, _) =>
-                Some(SemanticError(
-                  s"When combining `${command.name}` with other show and/or terminate commands, `YIELD` is mandatory.",
-                  command.position
-                ))
-              case _ => None
-            }
-            optError.fold(semanticErrors)(semanticErrors :+ _)
-        }
-
-        val missingReturn = clauses.last match {
-          case clause: Return if !clause.addedInRewrite => None
-          case clause =>
-            Some(SemanticError(
-              "When combining show and/or terminate commands, `RETURN` isn't optional.",
-              clause.position
-            ))
-        }
-
-        missingYield ++ missingReturn
-      } else Vector.empty[SemanticError]
-
-    val validLastClauses = "a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD"
-
-    val concludeError = clauses match {
-      // standalone procedure call
-      case Seq(_: CallClause)                    => None
-      case Seq(_: GraphSelection, _: CallClause) => None
-
-      case Seq() =>
-        Some(SemanticError(s"Query must conclude with $validLastClauses", this.position))
-
-      // otherwise
-      case seq => seq.last match {
-          case _: UpdateClause | _: Return | _: CommandClause                                        => None
-          case subquery: SubqueryCall if !subquery.part.isReturning && subquery.reportParams.isEmpty => None
-          case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll                      => None
-          case call: CallClause =>
-            Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
-          case clause =>
-            Some(SemanticError(
-              s"Query cannot conclude with ${clause.name} (must be $validLastClauses)",
-              clause.position
-            ))
-        }
-    }
-
-    semantics.SemanticCheckResult(s, sequenceErrors ++ concludeError ++ commandErrors)
-  }
 
   private def checkNoCallInTransactionsAfterWriteClause(clauses: Seq[Clause]): SemanticCheck = {
     case class Acc(precedingWrite: Boolean, errors: Seq[SemanticError])
@@ -466,8 +487,14 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       query => query.semanticCheck
     )
 
+  override def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck =
+    semanticCheckAbstract(
+      part => SemanticCheck.nestedCheck(part.semanticCheckInSubqueryExpressionContext(canOmitReturn)),
+      query => query.semanticCheckInSubqueryExpressionContext(canOmitReturn)
+    )
+
   override def checkImportingWith: SemanticCheck =
-    part.checkImportingWith chain
+    SemanticCheck.nestedCheck(part.checkImportingWith) chain
       query.checkImportingWith
 
   override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
@@ -476,7 +503,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     semanticCheckAbstract(
-      part => part.semanticCheckInSubqueryContext(outer),
+      part => SemanticCheck.nestedCheck(part.semanticCheckInSubqueryContext(outer)),
       query => query.semanticCheckInSubqueryContext(outer)
     )
 

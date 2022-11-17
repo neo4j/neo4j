@@ -48,6 +48,23 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: Exists with RETURN that is null
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WHERE EXISTS {
+       MATCH (person)-[:HAS_DOG]->(:Dog)
+       RETURN person.nonExistingProp
+      }
+      RETURN person.name AS name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
   Scenario: Exists with shadowing of an outer variable should result in error
     Given any graph
     When executing query:
@@ -64,6 +81,65 @@ Feature: ExistsExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Exists subquery with updating procedure should fail
+    Given any graph
+    When executing query:
+      """
+      MATCH (n) WHERE EXISTS {
+        CALL db.createLabel("CAT")
+      }
+      RETURN n
+      """
+    Then a SyntaxError should be raised at compile time: *
+
+  Scenario: Full existential subquery with aggregation
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A {prop: 1})-[:R]->(b:B {prop: 1}),
+             (a)-[:R]->(:C {prop: 2}),
+             (a)-[:R]->(d:D {prop: 3}),
+             (b)-[:R]->(d)
+      """
+    When executing query:
+      """
+      MATCH (n) WHERE EXISTS {
+        MATCH (n)-->(m)
+        WITH n, count(*) AS numConnections
+        WHERE numConnections = 3
+        RETURN true
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n             |
+      | (:A {prop:1}) |
+    And no side effects
+
+  Scenario: Full existential subquery with aggregation comparison
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A {prop: 1})-[:R]->(b:B {prop: 1}),
+             (a)-[:R]->(:C {prop: 2}),
+             (a)-[:R]->(d:D {prop: 3}),
+             (b)-[:R]->(d)
+      """
+    When executing query:
+      """
+      MATCH (n) WHERE EXISTS {
+        MATCH (n)-->(m)
+        WITH n, count(*) >= 3 AS numConnections
+        WHERE numConnections
+        RETURN true
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n             |
+      | (:A {prop:1}) |
+    And no side effects
+
   Scenario: Exists should allow the shadowing of introduced variables
     Given any graph
     When executing query:
@@ -79,6 +155,30 @@ Feature: ExistsExpressionAcceptance
         MATCH (dog1)-[:HAS_FRIEND]-(dog2:Dog)
         WHERE dog2.name = x
         RETURN person AS person
+       }
+       RETURN person AS person
+      }
+      RETURN person.name AS name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists should allow omission of RETURN in more complex queries
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WHERE EXISTS {
+       MATCH (person)-[:HAS_DOG]->(d:Dog)
+       WHERE EXISTS {
+        WITH "Ozzy" as x
+        MATCH (person)-[:HAS_DOG]->(dog1:Dog)
+        WHERE dog1.name = x
+        WITH "Fido" as x
+        MATCH (dog1)-[:HAS_FRIEND]-(dog2:Dog)
+        WHERE dog2.name = x
        }
        RETURN person AS person
       }
@@ -1220,7 +1320,7 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
-  Scenario: Inner query with MATCH -> WHERE -> WITH -> WHERE should fail with syntax error at parsing
+  Scenario: Inner query with MATCH -> WHERE -> WITH -> WHERE should parse and return results
     Given any graph
     When executing query:
       """
@@ -1233,9 +1333,12 @@ Feature: ExistsExpressionAcceptance
       }
       RETURN person.name AS name
       """
-    Then a SyntaxError should be raised at compile time: *
+    Then the result should be, in any order:
+      | name    |
+      | 'Chris' |
+    And no side effects
 
-  Scenario: Full Exists without RETURN should fail with syntax error at parsing
+  Scenario: Full Exists without RETURN should parse and return results
     Given any graph
     When executing query:
       """
@@ -1245,9 +1348,13 @@ Feature: ExistsExpressionAcceptance
        WITH dog
        MATCH (dog {name: 'Ozzy'})
       }
-      RETURN person.name
+      RETURN person.name AS name
       """
-    Then a SyntaxError should be raised at compile time: *
+    Then the result should be, in any order:
+      | name    |
+      | 'Chris' |
+    And no side effects
+
 
   Scenario: Exists with create should fail with syntax error
     Given any graph
@@ -1372,7 +1479,47 @@ Feature: ExistsExpressionAcceptance
       | true  |
     And no side effects
 
+  Scenario: Exists with a Union and no Returns should work
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WITH EXISTS {
+       MATCH (person)-[:HAS_DOG]->(dog:Dog)
+       UNION
+       MATCH (person)-[:HAS_CAT]->(cat:Cat)
+      } as foo
+      RETURN foo
+      """
+    Then the result should be, in any order:
+      | foo   |
+      | false |
+      | true  |
+      | true  |
+    And no side effects
+
   Scenario: Exists with a Union ALL should work
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WITH EXISTS {
+       MATCH (person)-[:HAS_DOG]->(dog:Dog)
+       RETURN dog AS pet
+       UNION ALL
+       MATCH (person)-[:HAS_CAT]->(cat:Cat)
+       RETURN cat AS pet
+      } as foo
+      RETURN foo
+      """
+    Then the result should be, in any order:
+      | foo   |
+      | false |
+      | true  |
+      | true  |
+    And no side effects
+
+  Scenario: Exists with a Union ALL and no returns should work
     Given any graph
     When executing query:
       """

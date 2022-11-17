@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.DecimalIntegerLiteral
@@ -700,21 +700,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         x.semanticCheck(ctx)
 
       // EXISTS
-      case x: SimpleExistsExpression =>
+      case x: ExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
-          withScopedState { // saves us from leaking to the outside
-            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              x.maybeWhere.foldSemanticCheck(_.semanticCheck) chain
-              SemanticState.recordCurrentScope(x.pattern)
-          }
-
-      case x: FullExistsExpression =>
-        whenState(!_.features.contains(SemanticFeature.FullExistsSupport)) {
-          error("Exists Expressions containing a regular query are not yet supported", x.position)
-        } chain
-          SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.query.semanticCheck chain
+            x.query.part.semanticCheckInSubqueryExpressionContext(true) chain
               when(x.query.containsUpdates) {
                 SemanticError("An Exists Expression cannot contain any updates", x.position)
               } chain
@@ -726,10 +715,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: CountExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            // saves us from leaking to the outside and import the variables from the previously recorded scope
-            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
-              x.optionalWhereExpression.foldSemanticCheck(Where.checkExpression) chain
-              SemanticState.recordCurrentScope(x.pattern)
+            x.query.part.semanticCheckInSubqueryExpressionContext(!x.query.part.isInstanceOf[UnionDistinct]) chain
+              when(x.query.containsUpdates) {
+                SemanticError("A Count Expression cannot contain any updates", x.position)
+              } chain
+              checkForShadowedVariables chain
+              SemanticState.recordCurrentScope(x.query)
           } chain specifyType(CTInteger, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)

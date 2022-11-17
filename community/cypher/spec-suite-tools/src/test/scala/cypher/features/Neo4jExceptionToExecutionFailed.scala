@@ -350,6 +350,8 @@ object Neo4jExceptionToExecutionFailed {
       UNEXPECTED_SYNTAX
     else if (msg.startsWith("Query cannot conclude with"))
       INVALID_CLAUSE_COMPOSITION
+    else if (msg.startsWith("An Exists Expression cannot contain any updates"))
+      INVALID_CLAUSE_COMPOSITION
     else
       msg.replaceAll(DOTALL + POSITION_PATTERN, "")
   }

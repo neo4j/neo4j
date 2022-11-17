@@ -421,10 +421,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     Parse andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns, SemanticFeature.FullExistsSupport) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
-      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns, SemanticFeature.FullExistsSupport) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
       Namespacer andThen
       ProjectNamedPathsRewriter andThen
       rewriteEqualityToInPredicate andThen

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriterTest.relPattern
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -207,11 +207,10 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
     introducedVariables: Set[LogicalVariable] = Set.empty,
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): Expression = {
-    CountExpression(
-      pattern = Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
-      optionalWhereExpression = predicate
-    )(
-      position = pos,
+    val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
+    simpleCountExpression(
+      Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
+      maybeWhere = maybeWhere,
       introducedVariables = introducedVariables,
       scopeDependencies = scopeDependencies
     )

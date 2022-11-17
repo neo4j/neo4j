@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
+import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
@@ -142,8 +143,8 @@ import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Foreach
-import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -273,7 +274,6 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -346,7 +346,6 @@ import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
@@ -1175,34 +1174,44 @@ class Neo4jASTFactory(query: String)
         )
     }
 
+  /** Exists and Count allow for PatternList and Optional Where, convert here to give a unified Exists / Count
+   * containing a semantically valid Query. */
+  private def convertExistsAndCountToUnifiedExpression(
+    patterns: util.List[PatternPart],
+    query: Query,
+    where: Where
+  ): Query = {
+    if (query != null) {
+      query
+    } else {
+      val patternParts = patterns.asScala.toList
+      val patternPos = patternParts.head.position
+      Query(
+        SingleQuery(
+          Seq(
+            Match(optional = false, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(patternPos)
+          )
+        )(patternPos)
+      )(patternPos)
+    }
+  }
+
   override def existsExpression(
     p: InputPosition,
     patterns: util.List[PatternPart],
     query: Query,
     where: Where
   ): Expression = {
-    if (query != null) {
-      query.part match {
-        case SingleQuery(Seq(m @ Match(false, _, Seq(), _))) =>
-          SimpleExistsExpression(m.pattern, m.where)(p, Set.empty, Set.empty)
-        case _ =>
-          FullExistsExpression(query)(p, Set.empty, Set.empty)
-      }
-    } else {
-      val patternParts = patterns.asScala.toList
-      val patternPos = patternParts.head.position
-      SimpleExistsExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty, Set.empty)
-    }
+    ExistsExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, Set.empty, Set.empty)
   }
 
   override def countExpression(
     p: InputPosition,
     patterns: util.List[PatternPart],
-    where: Expression
+    query: Query,
+    where: Where
   ): Expression = {
-    val patternParts = patterns.asScala.toList
-    val patternPos = patternParts.head.position
-    CountExpression(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty, Set.empty)
+    CountExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, Set.empty, Set.empty)
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

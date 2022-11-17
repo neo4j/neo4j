@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
+import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateCompositeDatabase
@@ -131,7 +132,6 @@ import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Foreach
-import org.neo4j.cypher.internal.ast.FullExistsExpression
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -261,7 +261,6 @@ import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -332,7 +331,6 @@ import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
@@ -856,25 +854,17 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     pattern <- _shortestPaths
   } yield ShortestPathExpression(pattern)
 
-  def _simpleExistsExpression: Gen[ExistsExpression] = for {
-    pattern <- _pattern
-    where <- option(_where)
+  def _existsExpression: Gen[ExistsExpression] = for {
+    query <- _query
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield SimpleExistsExpression(pattern, where)(pos, introducedVariables.toSet, scopeDependencies.toSet)
-
-  def _fullExistsExpression: Gen[ExistsExpression] = for {
-    query <- _existsQuery
-    introducedVariables <- zeroOrMore(_variable)
-    scopeDependencies <- zeroOrMore(_variable)
-  } yield FullExistsExpression(query)(pos, introducedVariables.toSet, scopeDependencies.toSet)
+  } yield ExistsExpression(query)(pos, introducedVariables.toSet, scopeDependencies.toSet)
 
   def _countExpression: Gen[CountExpression] = for {
-    pattern <- _pattern
-    where <- option(_expression)
+    query <- _query
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield CountExpression(pattern, where)(pos, introducedVariables.toSet, scopeDependencies.toSet)
+  } yield CountExpression(query)(pos, introducedVariables.toSet, scopeDependencies.toSet)
 
   def _patternComprehension: Gen[PatternComprehension] = for {
     namedPath <- option(_variable)
@@ -925,8 +915,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_listSlice),
         lzy(_listComprehension),
         lzy(_containerIndex),
-        lzy(_simpleExistsExpression),
-        lzy(_fullExistsExpression),
+        lzy(_existsExpression),
         lzy(_countExpression),
         lzy(_patternComprehension)
       )
@@ -1337,16 +1326,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _query: Gen[Query] = for {
     part <- _queryPart
   } yield Query(part)(pos)
-
-  def _existsQuery: Gen[Query] = for {
-    // Avoid generating an Exists query that could be parsed as a Simple Exists
-    clauses <- twoOrMore(_clause)
-    queryPart <- frequency(
-      5 -> lzy(SingleQuery(clauses)(pos)),
-      1 -> lzy(_union)
-    )
-
-  } yield Query(queryPart)(pos)
 
   // Show commands
   // ----------------------------------

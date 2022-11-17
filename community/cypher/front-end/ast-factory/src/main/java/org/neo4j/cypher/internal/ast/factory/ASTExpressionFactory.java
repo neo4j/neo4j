@@ -191,7 +191,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION existsExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
 
-    EXPRESSION countExpression(POS p, List<PATTERN> patterns, EXPRESSION where);
+    EXPRESSION countExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
 
     EXPRESSION mapProjection(POS p, VARIABLE v, List<MAP_PROJECTION_ITEM> items);
 

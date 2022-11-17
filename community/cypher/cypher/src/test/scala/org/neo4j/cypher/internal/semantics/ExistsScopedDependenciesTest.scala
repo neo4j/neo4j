@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.semantics
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.frontend.phases
@@ -46,8 +44,7 @@ import org.neo4j.monitoring.Monitors
 
 class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val parsing = CompilationPhases.parsingBase(ParsingConfig(semanticFeatures =
-    Seq(SemanticFeature.FullExistsSupport))) andThen Namespacer
+  private val parsing = CompilationPhases.parsingBase(ParsingConfig()) andThen Namespacer
 
   class DummyException() extends Exception
 
@@ -91,7 +88,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val parsed = parsing.transform(state, context).statement()
 
-    val existsExpressions = parsed.folder.findAllByClass[SimpleExistsExpression]
+    val existsExpressions = parsed.folder.findAllByClass[ExistsExpression]
 
     val outerExists = existsExpressions(0)
     val nestedExists = existsExpressions(1)
@@ -125,7 +122,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val parsed = parsing.transform(state, context).statement()
 
-    val existsExpressions = parsed.folder.findAllByClass[FullExistsExpression]
+    val existsExpressions = parsed.folder.findAllByClass[ExistsExpression]
     val outerExists = existsExpressions(0)
     val nestedExists = existsExpressions(1)
 
@@ -157,7 +154,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val parsed = parsing.transform(state, context).statement()
 
-    val existsExpressions = parsed.folder.findAllByClass[FullExistsExpression]
+    val existsExpressions = parsed.folder.findAllByClass[ExistsExpression]
     val outerExists = existsExpressions(0)
     val nestedExists = existsExpressions(1)
 
@@ -190,7 +187,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val parsed = parsing.transform(state, context).statement()
 
-    val existsExpressions = parsed.folder.findAllByClass[FullExistsExpression]
+    val existsExpressions = parsed.folder.findAllByClass[ExistsExpression]
     val outerExists = existsExpressions(0)
     val nestedExists = existsExpressions(1)
 
@@ -223,7 +220,7 @@ class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTe
 
     val parsed = parsing.transform(state, context).statement()
 
-    val existsExpressions = parsed.folder.findAllByClass[FullExistsExpression]
+    val existsExpressions = parsed.folder.findAllByClass[ExistsExpression]
     val outerExists = existsExpressions(0)
     val nestedExists = existsExpressions(1)
 

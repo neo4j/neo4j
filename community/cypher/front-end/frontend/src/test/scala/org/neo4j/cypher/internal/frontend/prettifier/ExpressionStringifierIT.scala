@@ -19,8 +19,12 @@ package org.neo4j.cypher.internal.frontend.prettifier
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
 class ExpressionStringifierIT extends CypherFunSuite {
+
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
+
   val stringifier: ExpressionStringifier = ExpressionStringifier()
 
   val tests: Seq[(String, String)] =
@@ -70,12 +74,13 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "(:Label {prop:1})--()" -> "(:Label {prop: 1})--()",
       "()-[:Type {prop:1}]-()" -> "()-[:Type {prop: 1}]-()",
       "EXISTS { MATCH (n)}" -> "EXISTS { MATCH (n) }",
-      "EXISTS { MATCH (n) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n) WHERE n.prop = \"f\" }",
-      "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",
+      "EXISTS { MATCH (n) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n)\n  WHERE n.prop = \"f\" }",
+      "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\" }",
       "EXISTS { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f' RETURN n }" -> "EXISTS { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\"\nRETURN n }",
-      "COUNT {(n)}" -> "COUNT { (n) }",
-      "COUNT {(n)<-[]->(m)}" -> "COUNT { (n)--(m) }",
-      "COUNT {(n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "COUNT { (n:Label)-[:HAS_REL]->(m) WHERE n.prop = \"f\" }",
+      "COUNT {(n)}" -> "COUNT { MATCH (n) }",
+      "COUNT {(n)<-[]->(m)}" -> "COUNT { MATCH (n)--(m) }",
+      "COUNT {(n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f'}" -> "COUNT { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\" }",
+      "COUNT { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f' RETURN n }" -> "COUNT { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\"\nRETURN n }",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age) + 4 * 5" -> "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age) + 4 * 5",
       "1 < 2 > 3 = 4 >= 5 <= 6" -> "1 < 2 > 3 = 4 >= 5 <= 6",
       "1 < 2 > 3 = 4 >= 5 <= 6 AND a OR b" -> "(1 < 2 > 3 = 4 >= 5 <= 6) AND a OR b"

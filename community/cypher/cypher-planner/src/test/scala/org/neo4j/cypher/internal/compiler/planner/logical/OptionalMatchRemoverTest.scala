@@ -842,7 +842,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       flattenBooleanOperators,
       insertWithBetweenOptionalMatchAndMatch.instance
     ))
-    // recordScopes needs a new run of SemanticChecker, after normalizeExistsPatternExpressions has introduced new ExpressionWithOuterScope
+    // computeDependenciesForExpressions needs a new run of SemanticChecker after normalizeExistsPatternExpressions
     val ast = ast_0.endoRewrite(computeDependenciesForExpressions(SemanticChecker.check(ast_0).state))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)

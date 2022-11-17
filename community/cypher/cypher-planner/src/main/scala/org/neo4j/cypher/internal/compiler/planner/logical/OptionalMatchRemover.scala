@@ -328,8 +328,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     val whereString = innerPreds match {
       case SetExtractor()           => ""
-      case SetExtractor(singlePred) => " WHERE " + stringifier(singlePred)
-      case _                        => " WHERE " + stringifier(Ands(innerPreds)(InputPosition.NONE))
+      case SetExtractor(singlePred) => "\n  WHERE " + stringifier(singlePred)
+      case _                        => "\n  WHERE " + stringifier(Ands(innerPreds)(InputPosition.NONE))
     }
 
     ExistsIRExpression(

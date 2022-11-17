@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -128,7 +127,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .addNodeIndex("FewProps", Seq("prop"), 1.0, 0.01)
     .addNodeIndex("SomeProps", Seq("prop"), 1.0, 0.1)
     .addNodeIndex("ManyProps", Seq("prop"), 1.0, 1.0)
-    .addSemanticFeature(SemanticFeature.FullExistsSupport)
     .build()
 
   private def reduceExpr(anonOffset: Int): ReduceExpression = reduce(
@@ -154,7 +152,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       varFor("f"),
       varFor("friends"),
       Some(
-        NestedPlanExistsExpression(nestedPlan, "EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`:ComedyClub) }")(pos)
+        NestedPlanExistsExpression(
+          nestedPlan,
+          "EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`)\n  WHERE `anon_2`:ComedyClub }"
+        )(pos)
       ),
       None
     )
@@ -1790,7 +1791,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           Head(listOf(
             NestedPlanExistsExpression(
               expectedNestedPlan,
-              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`) }"
+              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)\n  WHERE not `anon_2` = `anon_0` }"
             )(pos)
           ))(pos)))
         .allNodeScan("n")
@@ -1817,7 +1818,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B) }")(pos)
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`:B }"
+            )(pos)
           ))(pos)))
         .allNodeScan("n")
         .build()
@@ -1845,7 +1849,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:B|C) }")(pos)
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`:B OR `anon_1`:C }"
+            )(pos)
           ))(pos)))
         .allNodeScan("n")
         .build()
@@ -1870,7 +1877,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       planner.subPlanBuilder()
         .projection(Map("foo" ->
           Head(listOf(
-            NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`:D {prop: 5}) }")(
+            NestedPlanExistsExpression(
+              expectedNestedPlan,
+              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
+            )(
               pos
             )
           ))(pos)))
@@ -2275,14 +2285,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           .relationshipCountFromCountStore("anon_0", None, Seq("REL"), None)
           .build(),
         "anon_0",
-        "COUNT { (a)-[r:REL]->(b) }"
+        "COUNT { MATCH (a)-[r:REL]->(b) }"
       )(pos),
       NestedPlanGetByNameExpression(
         planner.subPlanBuilder()
           .relationshipCountFromCountStore("anon_1", Some("Person"), Seq("KNOWS"), None)
           .build(),
         "anon_1",
-        "COUNT { (c:Person)-[k:KNOWS]->(d) }"
+        "COUNT { MATCH (c)-[k:KNOWS]->(d)\n  WHERE c:Person }"
       )(pos)
     )
   }
@@ -2294,6 +2304,22 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     plan shouldBe planner.subPlanBuilder()
       .apply()
       .|.aggregation(Seq.empty, Seq("count(*) AS bidirectionalConnections"))
+      .|.filter("not r = r2")
+      .|.expandInto("(a)-[r]->(b)")
+      .|.expandAll("(a)<-[r2]-(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Foo")
+      .build()
+  }
+
+  test("should plan COUNT expression as equality check") {
+    val plan = planner.plan(
+      "MATCH (a:Foo) RETURN COUNT { MATCH (a)-[r]->(b), (a)<-[r2]-(b) } = 2 AS foo"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .projection("anon_0 = 2 AS foo")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
       .|.filter("not r = r2")
       .|.expandInto("(a)-[r]->(b)")
       .|.expandAll("(a)<-[r2]-(b)")
@@ -2319,6 +2345,73 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
+  test("should plan COUNT expression with UNION") {
+    val plan = planner.plan(
+      "MATCH (a:Person), (b:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a AS foo UNION MATCH (b)-[r2:KNOWS]->(d) RETURN b AS foo } AS sameNameFriends"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS sameNameFriends"))
+      .|.apply(fromSubquery = true)
+      .|.|.distinct("b AS b", "a AS a", "foo AS foo")
+      .|.|.union()
+      .|.|.|.projection("foo AS foo")
+      .|.|.|.projection("b AS foo")
+      .|.|.|.expandAll("(b)-[r2:KNOWS]->(d)")
+      .|.|.|.argument("a", "b")
+      .|.|.projection("foo AS foo")
+      .|.|.projection("a AS foo")
+      .|.|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.|.argument("a", "b")
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "Person", IndexOrderNone)
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build()
+  }
+
+  test("should plan FULL COUNT expression") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a } AS foo"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .projection(
+        Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos))
+      )
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COUNT expression with a CALL Subquery") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) CALL { WITH a MATCH (a)-[:HAS_DOG]-(b) RETURN b} RETURN a } AS foo"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS foo"))
+      .|.expandAll("(a)-[anon_0:HAS_DOG]-(b)")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build()
+  }
+
+  test("should plan nested COUNT in RETURN") {
+    val logicalPlan = planner.plan("MATCH (a) RETURN [COUNT { (a)-[:X]->(:Foo) }] AS counts")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("counts")
+        .projection("[anon_2] AS counts")
+        .apply()
+        .|.aggregation(Seq(), Seq("count(*) AS anon_2"))
+        .|.filter("anon_1:Foo")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
   test("should use GetDegree to plan EXISTS in RETURN") {
     val logicalPlan = planner.plan("MATCH (a) RETURN EXISTS { (a)-[:X]->() } AS exists")
     logicalPlan should equal(
@@ -2333,6 +2426,41 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .allNodeScan("a")
         .build()
     )
+  }
+
+  test("should plan EXISTS expression with UNION") {
+    val plan = planner.plan(
+      "MATCH (a:Person), (b:Person) RETURN EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN a AS foo UNION MATCH (b)-[r2:KNOWS]->(d) RETURN b AS foo } AS sameNameFriends"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .letSemiApply("sameNameFriends")
+      .|.distinct("b AS b", "a AS a", "foo AS foo")
+      .|.union()
+      .|.|.projection("foo AS foo")
+      .|.|.projection("b AS foo")
+      .|.|.expandAll("(b)-[r2:KNOWS]->(d)")
+      .|.|.argument("a", "b")
+      .|.projection("foo AS foo")
+      .|.projection("a AS foo")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "Person", IndexOrderNone)
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build()
+  }
+
+  test("should plan FULL EXISTS expression with a CALL Subquery") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN EXISTS { MATCH (a)-[r:KNOWS]->(c) CALL { WITH a MATCH (a)-[:HAS_DOG]-(b) RETURN b} RETURN a } AS foo"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .letSemiApply("foo")
+      .|.expandAll("(a)-[anon_0:HAS_DOG]-(b)")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build()
   }
 
   test("should use LetSemiApply to plan EXISTS in RETURN") {
@@ -2713,7 +2841,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       .argument("a")
       .build()
 
-    val npeExpression = NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (a)-[r:X]->(b:Foo) }")(pos)
+    val npeExpression =
+      NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (a)-[r:X]->(b)\n  WHERE b:Foo }")(pos)
     val caseExp = caseExpression(Some(prop("a", "prop")), Some(falseLiteral), literalInt(1) -> npeExpression)
 
     logicalPlan should equal(

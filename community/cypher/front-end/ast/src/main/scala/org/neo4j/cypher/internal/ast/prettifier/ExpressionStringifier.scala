@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.ChainableBinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
@@ -330,19 +329,13 @@ private class DefaultExpressionStringifier(
         // These are not really expressions, they are part of expressions
         ""
 
-      case SimpleExistsExpression(pat, where) =>
-        val p = patterns.apply(pat)
-        val w = where.map(wh => s" WHERE ${inner(ast)(wh.expression)}").getOrElse("")
-        s"EXISTS { MATCH $p$w }"
-
-      case FullExistsExpression(q) =>
+      case ExistsExpression(q) =>
         val p = prettifier.asString(q)
         s"EXISTS { $p }"
 
-      case CountExpression(relChain, where) =>
-        val p = patterns.apply(relChain)
-        val w = where.map(wh => s" WHERE ${inner(ast)(wh)}").getOrElse("")
-        s"COUNT { $p$w }"
+      case CountExpression(q) =>
+        val p = prettifier.asString(q)
+        s"COUNT { $p }"
 
       case UnaryAdd(r) =>
         val i = inner(ast)(r)

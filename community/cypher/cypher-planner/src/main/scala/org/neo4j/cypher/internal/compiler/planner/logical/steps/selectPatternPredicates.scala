@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
-import scala.collection.immutable.ListSet
-
 trait SelectPatternPredicates extends SelectionCandidateGenerator {
 
   override def apply(

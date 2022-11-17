@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
@@ -182,9 +182,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCase(
       "MATCH (n) RETURN n AS n, count(*) AS c order by c",
-      """MATCH (`  n@0`)
-        |RETURN `  n@0` AS `  n@1`, count(*) AS c ORDER BY c""".stripMargin,
-      List(varFor("  n@0"))
+      """MATCH (n)
+        |RETURN n AS n, count(*) AS c ORDER BY c""".stripMargin,
+      List(varFor("n"))
     ),
     TestCase(
       "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng",
@@ -260,7 +260,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val existsExpression = statement.folder.treeFindByClass[SimpleExistsExpression].get
+    val existsExpression = statement.folder.treeFindByClass[ExistsExpression].get
 
     existsExpression.introducedVariables.map(_.name) should be(Set("  p@0"))
     existsExpression.scopeDependencies.map(_.name) should be(Set.empty)
@@ -269,9 +269,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   test("should rewrite introduced variables and scope dependencies of full EXISTS") {
     val query = "MATCH (n), (m) WHERE EXISTS { MATCH (p:Label)-[r]-(m) RETURN p } WITH n as m, 1 as p RETURN m"
 
-    val statement = prepareFrom(query, rewriterPhaseUnderTest, SemanticFeature.FullExistsSupport).statement()
+    val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val existsExpression = statement.folder.treeFindByClass[FullExistsExpression].get
+    val existsExpression = statement.folder.treeFindByClass[ExistsExpression].get
 
     existsExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r"))
     existsExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
@@ -281,12 +281,35 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     val query =
       "MATCH (n), (m) WHERE EXISTS { MATCH (p:Label)-[r]-(m) WHERE all(i IN p.booleans WHERE i) RETURN p } WITH n as m, 1 as p RETURN m"
 
-    val statement = prepareFrom(query, rewriterPhaseUnderTest, SemanticFeature.FullExistsSupport).statement()
+    val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val existsExpression = statement.folder.treeFindByClass[FullExistsExpression].get
+    val existsExpression = statement.folder.treeFindByClass[ExistsExpression].get
 
     existsExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r", "i"))
     existsExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
+  }
+
+  test("should rewrite introduced variables ands scope dependencies of full COUNT") {
+    val query = "MATCH (n), (m) WHERE COUNT { MATCH (p:Label)-[r]-(m) RETURN p } > 2 WITH n as m, 1 as p RETURN m"
+
+    val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
+
+    val countExpression = statement.folder.treeFindByClass[CountExpression].get
+
+    countExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r"))
+    countExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
+  }
+
+  test("should rewrite introduced variables ands scope dependencies of full COUNT with nested ScopeExpression") {
+    val query =
+      "MATCH (n), (m) WHERE COUNT { MATCH (p:Label)-[r]-(m) WHERE all(i IN p.booleans WHERE i) RETURN p } > 2 WITH n as m, 1 as p RETURN m"
+
+    val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
+
+    val countExpression = statement.folder.treeFindByClass[CountExpression].get
+
+    countExpression.introducedVariables.map(_.name) should be(Set("  p@1", "r", "i"))
+    countExpression.scopeDependencies.map(_.name) should be(Set("  m@0"))
   }
 
   // noinspection ZeroIndexToHead

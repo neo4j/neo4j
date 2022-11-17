@@ -51,9 +51,9 @@ case class CountIRExpression(
     copy(
       countVariableName = newName,
       query = query.copy(
-        query.query.asSinglePlannerQuery.withHorizon(
+        query.query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
           AggregatingQueryProjection(aggregationExpressions = Map(newName -> CountStar()(position)))
-        )
+        ))
       )
     )(position, introducedVariables, scopeDependencies)
   }

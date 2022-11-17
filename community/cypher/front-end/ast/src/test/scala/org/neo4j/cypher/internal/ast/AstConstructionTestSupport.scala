@@ -790,6 +790,38 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     alternatives: (Expression, Expression)*
   ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
 
+  def simpleExistsExpression(
+    pattern: Pattern,
+    maybeWhere: Option[Where],
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
+  ): ExistsExpression = {
+
+    val simpleMatchQuery = query(
+      singleQuery(
+        Match(optional = false, pattern, Seq(), maybeWhere)(pos)
+      )
+    )
+
+    ExistsExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)
+  }
+
+  def simpleCountExpression(
+    pattern: Pattern,
+    maybeWhere: Option[Where],
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
+  ): CountExpression = {
+
+    val simpleMatchQuery = query(
+      singleQuery(
+        Match(optional = false, pattern, Seq(), maybeWhere)(pos)
+      )
+    )
+
+    CountExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)
+  }
+
   def unique(list: Expression): Unique =
     Unique(list)(pos)
 

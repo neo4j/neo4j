@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -38,12 +38,14 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
@@ -145,31 +147,11 @@ case class CreateIrExpressions(
       )
 
     /**
-     * Rewrites exists{ (n)-[anon_0]->(anon_1:M)} into
-     * IR for MATCH (n)-[anon_0]->(anon_1:M)
-     *
-     */
-    case existsExpression @ SimpleExistsExpression(pattern, maybeWhere) =>
-      val existsVariableName = anonymousVariableNameGenerator.nextName
-      val optionalWhereExpression = maybeWhere.map(_.expression)
-      val query = getPlannerQuery(
-        pattern,
-        existsExpression.dependencies.map(_.name),
-        optionalWhereExpression,
-        RegularQueryProjection()
-      )
-      ExistsIRExpression(query, existsVariableName, stringifier(existsExpression))(
-        existsExpression.position,
-        existsExpression.introducedVariables,
-        existsExpression.scopeDependencies
-      )
-
-    /**
      * Rewrites exists{ MATCH (n)-[anon_0]->(anon_1:M) RETURN n} into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n
      *
      */
-    case existsExpression @ FullExistsExpression(q) =>
+    case existsExpression @ ExistsExpression(q) =>
       val existsVariableName = anonymousVariableNameGenerator.nextName
       val plannerQuery = toPlannerQuery(
         q,
@@ -229,21 +211,54 @@ case class CreateIrExpressions(
      * Rewrites COUNT { (n)-[anon_0]->(anon_1:M) } into
      * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN count(*)
      */
-    case ce @ CountExpression(pattern, where) =>
+    case countExpression @ CountExpression(q) =>
       val countVariableName = anonymousVariableNameGenerator.nextName
-
-      val query = getPlannerQuery(
-        pattern,
-        ce.dependencies.map(_.name),
-        where,
-        AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(ce.position)))
+      val arguments = countExpression.dependencies.map(_.name)
+      val plannerQuery = toPlannerQuery(
+        q,
+        semanticTable,
+        anonymousVariableNameGenerator,
+        arguments
       )
 
-      CountIRExpression(
-        query = query,
-        countVariableName = countVariableName,
-        solvedExpressionAsString = stringifier(ce)
-      )(ce.position, ce.introducedVariables, ce.scopeDependencies)
+      /**
+       * For single queries, it is fine to just append a horizon or tail with an aggregating projection.
+       * This cannot be done for Union queries as it cannot be cast as a single planner query and it is the
+       * result of the union that should be aggregated, that is why we add the query as a CallSubqueryHorizon
+       * and then set the tail as the aggregating query projection.
+       */
+      val finalizedQuery = plannerQuery.query match {
+        case _: SinglePlannerQuery => plannerQuery.copy(
+            plannerQuery.query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
+              AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(q.position)))
+            ))
+          )
+        case _ => PlannerQuery(
+            RegularSinglePlannerQuery(
+              queryGraph = QueryGraph(
+                argumentIds = arguments
+              ),
+              horizon = CallSubqueryHorizon(
+                callSubquery = plannerQuery.query,
+                correlated = true,
+                yielding = true,
+                inTransactionsParameters = None
+              ),
+              tail = Some(
+                RegularSinglePlannerQuery(
+                  horizon = AggregatingQueryProjection(aggregationExpressions =
+                    Map(countVariableName -> CountStar()(countExpression.position)))
+                )
+              )
+            )
+          )
+      }
+
+      CountIRExpression(finalizedQuery, countVariableName, stringifier(countExpression))(
+        countExpression.position,
+        countExpression.introducedVariables,
+        countExpression.scopeDependencies
+      )
 
     case PatternComprehension(Some(_), _, _, _) =>
       throw new IllegalStateException(

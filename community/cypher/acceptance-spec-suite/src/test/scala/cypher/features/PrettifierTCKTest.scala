@@ -89,13 +89,8 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
 
-    // Failing with M17 TCK - Not yet implemented
-    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested simple existential subquery"""",
-    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery"""",
-    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"""",
-    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"""",
-    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"""",
-    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail""""
+    // TODO: This is a bug in openCypher, remove from deny list when fixed
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation""""
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail

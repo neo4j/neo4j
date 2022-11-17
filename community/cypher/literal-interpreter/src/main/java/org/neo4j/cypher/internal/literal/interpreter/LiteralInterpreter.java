@@ -1491,7 +1491,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object countExpression(NULL p, List<NULL> aNull, Object where) {
+    public Object countExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
         throw new UnsupportedOperationException("countExpression is not a literal");
     }
 

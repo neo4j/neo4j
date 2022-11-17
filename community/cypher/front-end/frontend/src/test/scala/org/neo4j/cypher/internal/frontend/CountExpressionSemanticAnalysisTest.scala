@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class ExistsExpressionSemanticAnalysisTest
+class CountExpressionSemanticAnalysisTest
     extends CypherFunSuite
     with SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
@@ -29,71 +29,71 @@ class ExistsExpressionSemanticAnalysisTest
   override def defaultQuery: String = s"$testName"
 
   test("""MATCH (a)
-         |RETURN EXISTS { CREATE (b) }
+         |RETURN COUNT { CREATE (b) } > 1
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "An Exists Expression cannot contain any updates",
+        "A Count Expression cannot contain any updates",
         InputPosition(17, 2, 8)
       )
     )
   }
 
   test("""MATCH (m)
-         |WHERE EXISTS { OPTIONAL MATCH (a)-[r]->(b) }
+         |WHERE COUNT { OPTIONAL MATCH (a)-[r]->(b) } > 1
          |RETURN m
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("""MATCH (m)
-         |WHERE EXISTS { MATCH (a:A)-[r]->(b) USING SCAN a:A }
+         |WHERE COUNT { MATCH (a:A)-[r]->(b) USING SCAN a:A } > 1
          |RETURN m
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { SET a.name = 1 }
+         |RETURN COUNT { SET a.name = 1 } > 1
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "An Exists Expression cannot contain any updates",
+        "A Count Expression cannot contain any updates",
         InputPosition(17, 2, 8)
       )
     )
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { MATCH (b) WHERE b.a = a.a DETACH DELETE b }
+         |RETURN COUNT { MATCH (b) WHERE b.a = a.a DETACH DELETE b } > 1
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "An Exists Expression cannot contain any updates",
+        "A Count Expression cannot contain any updates",
         InputPosition(17, 2, 8)
       )
     )
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { MATCH (b) MERGE (b)-[:FOLLOWS]->(:Person) }
+         |RETURN COUNT { MATCH (b) MERGE (b)-[:FOLLOWS]->(:Person) } > 1
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
-        "An Exists Expression cannot contain any updates",
+        "A Count Expression cannot contain any updates",
         InputPosition(17, 2, 8)
       )
     )
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { CALL db.labels() }
+         |RETURN COUNT { CALL db.labels() } > 1
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS {
+         |RETURN COUNT {
          |   MATCH (a)-[:KNOWS]->(b)
          |   RETURN b.name as name
          |   UNION ALL
@@ -104,20 +104,20 @@ class ExistsExpressionSemanticAnalysisTest
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { MATCH (m)-[r]->(p), (a)-[r2]-(c) }
+         |RETURN COUNT { MATCH (m)-[r]->(p), (a)-[r2]-(c) }
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS { (a)-->(b) WHERE b.prop = 5  }
+         |RETURN COUNT { (a)-->(b) WHERE b.prop = 5  }
          |""".stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test("""WITH 5 as aNum
          |MATCH (a)
-         |RETURN EXISTS {
+         |RETURN COUNT {
          |  WITH 6 as aNum
          |  MATCH (a)-->(b) WHERE b.prop = aNum
          |  RETURN a
@@ -126,14 +126,14 @@ class ExistsExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `aNum` is shadowing a variable with the same name from the outer scope and needs to be renamed",
-        InputPosition(53, 4, 13)
+        InputPosition(52, 4, 13)
       )
     )
   }
 
   test("""WITH 5 as aNum
          |MATCH (a)
-         |RETURN EXISTS {
+         |RETURN COUNT {
          |  MATCH (a)-->(b) WHERE b.prop = aNum
          |  WITH 6 as aNum
          |  MATCH (b)-->(c) WHERE c.prop = aNum
@@ -143,13 +143,13 @@ class ExistsExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `aNum` is shadowing a variable with the same name from the outer scope and needs to be renamed",
-        InputPosition(91, 5, 13)
+        InputPosition(90, 5, 13)
       )
     )
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS {
+         |RETURN COUNT {
          |  MATCH (a)-->(b)
          |  WITH b as a
          |  MATCH (b)-->(c)
@@ -159,13 +159,13 @@ class ExistsExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
-        InputPosition(56, 4, 13)
+        InputPosition(55, 4, 13)
       )
     )
   }
 
   test("""MATCH (a)
-         |RETURN EXISTS {
+         |RETURN COUNT {
          |  MATCH (a)-->(b)
          |  WITH b as c
          |  MATCH (c)-->(d)
@@ -176,128 +176,137 @@ class ExistsExpressionSemanticAnalysisTest
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    RETURN CASE
          |       WHEN true THEN 1
          |       ELSE 2
          |    END
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
-         |    MATCH (n)
-         |    UNION
-         |    MATCH (m)
-         |}
-         |RETURN person.name
-     """.stripMargin) {
-    runSemanticAnalysis().errors.toSet shouldBe Set.empty
-  }
-
-  test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
          |    UNION ALL
          |    MATCH (m)
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
+         |    MATCH (n)
+         |    UNION
+         |    MATCH (m)
+         |} > 1
+         |RETURN person.name
+     """.stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        InputPosition(40, 3, 5)
+      ),
+      SemanticError(
+        "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+        InputPosition(64, 5, 5)
+      )
+    )
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
          |    MATCH (n)
          |    RETURN n.prop
          |    UNION ALL
          |    MATCH (m)
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(73, 5, 5)
+        InputPosition(72, 5, 5)
       )
     )
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
          |    UNION ALL
          |    MATCH (m)
          |    RETURN m
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(55, 4, 5)
+        InputPosition(54, 4, 5)
       )
     )
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
          |    RETURN n
-         |    UNION
+         |    UNION ALL
          |    MATCH (m)
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(68, 5, 5)
+        InputPosition(67, 5, 5)
       )
     )
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
-         |    UNION
+         |    UNION ALL
          |    MATCH (m)
          |    RETURN m.prop
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(55, 4, 5)
+        InputPosition(54, 4, 5)
       )
     )
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
-         |    UNION
+         |    UNION ALL
          |    MATCH (m)
          |    RETURN m
-         |    UNION
+         |    UNION ALL
          |    MATCH (l)
-         |}
+         |} > 1
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(55, 4, 5)
+        InputPosition(54, 4, 5)
       )
     )
   }
 
   test("""MATCH (person:Person)
-         |WHERE EXISTS {
+         |WHERE COUNT {
          |    MATCH (n)
          |    RETURN n
          |    UNION
@@ -306,17 +315,17 @@ class ExistsExpressionSemanticAnalysisTest
          |    UNION
          |    MATCH (l)
          |    RETURN l
-         |}
+         |} > 3
          |RETURN person.name
      """.stripMargin) {
     runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(68, 5, 5)
+        InputPosition(67, 5, 5)
       ),
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
-        InputPosition(105, 8, 5)
+        InputPosition(104, 8, 5)
       )
     )
   }

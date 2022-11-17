@@ -19,20 +19,16 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-sealed trait ExistsExpression
-    extends ScopeExpression with BooleanExpression with SubqueryExpression
-
-case class FullExistsExpression(query: Query)(
+case class ExistsExpression(query: Query)(
   val position: InputPosition,
   val introducedVariables: Set[LogicalVariable],
   val scopeDependencies: Set[LogicalVariable]
-) extends ExistsExpression with ExpressionWithComputedDependencies {
+) extends ScopeExpression with BooleanExpression with SubqueryExpression with ExpressionWithComputedDependencies {
 
   self =>
 
@@ -45,32 +41,8 @@ case class FullExistsExpression(query: Query)(
   override def subqueryAstNode: ASTNode = query
 
   override def dup(children: Seq[AnyRef]): this.type = {
-    FullExistsExpression(
+    ExistsExpression(
       children.head.asInstanceOf[Query]
-    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
-  }
-}
-
-case class SimpleExistsExpression(pattern: Pattern, maybeWhere: Option[Where])(
-  val position: InputPosition,
-  val introducedVariables: Set[LogicalVariable],
-  val scopeDependencies: Set[LogicalVariable]
-) extends ExistsExpression with ExpressionWithComputedDependencies {
-
-  self =>
-
-  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
-
-  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
-
-  override def subqueryAstNode: ASTNode = pattern
-
-  override def dup(children: Seq[AnyRef]): this.type = {
-    SimpleExistsExpression(
-      children.head.asInstanceOf[Pattern],
-      children(1).asInstanceOf[Option[Where]]
     )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
 }

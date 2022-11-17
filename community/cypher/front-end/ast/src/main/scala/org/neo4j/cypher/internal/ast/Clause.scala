@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.FilteringExpressions
-import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.stringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.error
@@ -79,7 +78,6 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -1224,9 +1222,9 @@ case class UnresolvedCall(
     argumentCheck chain resultsCheck chain invalidExpressionsCheck
   }
 
-  // At this stage we are not sure whether or not the procedure
-  // contains updates, so let's err on the side of caution
-  override def containsNoUpdates = false
+  // At this stage we can't know this, so we assume the CALL is non updating,
+  // it should be rechecked when the call is resolved
+  override def containsNoUpdates = true
 }
 
 sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
@@ -1302,8 +1300,12 @@ sealed trait ProjectionClause extends HorizonClause {
   override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck =
     SemanticCheck.fromState {
       state: SemanticState =>
-        def runChecks(scopeInUse: Scope): SemanticCheck = {
-          returnItems.declareVariables(scopeInUse) chain
+        /**
+       * scopeToImportVariablesFrom will provide the scope to bring over only the variables that are needed from the
+       * previous scope
+       */
+        def runChecks(scopeToImportVariablesFrom: Scope): SemanticCheck = {
+          returnItems.declareVariables(scopeToImportVariablesFrom) chain
             orderBy.semanticCheck chain
             checkSkip chain
             checkLimit chain
@@ -1363,12 +1365,12 @@ sealed trait ProjectionClause extends HorizonClause {
 
             for {
               _ <- SemanticCheck.setState(stateForSubClauses)
-              checksResult <- runChecks(siblingState.currentScope.scope)
+              checksResult <- runChecks(previousScope)
               // By popping the scope we will discard the special scope used for subclauses
               returnResult <- SemanticCheck.setState(checksResult.state.popScope)
               // Re-declare projected variables in the new scope since the sub-scope is discarded
               finalResult <-
-                returnItems.declareVariables(returnResult.state.currentScope.scope)
+                returnItems.declareVariables(previousScope)
             } yield {
               // Re-declare projected variables in the new scope since the sub-scope is discarded
               val niceErrors = (checksResult.errors ++ finalResult.errors).map(

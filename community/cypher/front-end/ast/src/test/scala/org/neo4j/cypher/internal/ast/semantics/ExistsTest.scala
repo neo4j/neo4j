@@ -16,8 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.FullExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -40,36 +39,40 @@ class ExistsTest extends SemanticFunSuite {
   val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
 
   test("valid exists expression passes semantic check") {
-    val expression = SimpleExistsExpression(pattern, Some(where(property)))(pos, Set.empty, Set.empty)
+    val expression = simpleExistsExpression(pattern, Some(where(property)))
 
-    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+    val result =
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
   }
 
   test("multiple patterns in inner match should not report error") {
     val multiPattern: Pattern = Pattern(Seq(EveryPath(x), EveryPath(n)))(pos)
-    val expression = SimpleExistsExpression(multiPattern, Some(where(property)))(pos, Set.empty, Set.empty)
+    val expression = simpleExistsExpression(multiPattern, Some(where(property)))
 
-    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+    val result =
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
   }
 
   test("inner where using missing identifier reports error") {
-    val expression = SimpleExistsExpression(pattern, Some(where(failingProperty)))(pos, Set.empty, Set.empty)
+    val expression = simpleExistsExpression(pattern, Some(where(failingProperty)))
 
-    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+    val result =
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
 
   test("EXISTS cannot reuse identifier with different type") {
-    val expression = SimpleExistsExpression(pattern, Some(where(property)))(pos, Set.empty, Set.empty)
+    val expression = simpleExistsExpression(pattern, Some(where(property)))
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result =
+      SemanticExpressionCheck.simple(expression)(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos)
@@ -77,23 +80,23 @@ class ExistsTest extends SemanticFunSuite {
   }
 
   test("EXISTS works for a regular query") {
-    val expression = FullExistsExpression(
+    val expression = ExistsExpression(
       query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean.withFeature(SemanticFeature.FullExistsSupport))
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
   }
 
   test("EXISTS does not work for an updating query") {
-    val expression = FullExistsExpression(
+    val expression = ExistsExpression(
       query(singleQuery(create(nodePat(Some("n")))))
     )(pos, Set.empty, Set.empty)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean.withFeature(SemanticFeature.FullExistsSupport))
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(
       SemanticError("An Exists Expression cannot contain any updates", pos)
@@ -101,24 +104,22 @@ class ExistsTest extends SemanticFunSuite {
   }
 
   test("inner where with regular query using missing identifier reports error") {
-    val expression = FullExistsExpression(
+    val expression = ExistsExpression(
       query(singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean.withFeature(SemanticFeature.FullExistsSupport))
+      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
 
   test("EXISTS with a regular query cannot reuse identifier with different type") {
-    val expression = FullExistsExpression(
+    val expression = ExistsExpression(
       query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
 
-    val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get.withFeature(
-      SemanticFeature.FullExistsSupport
-    )
+    val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 

@@ -70,8 +70,6 @@ import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.collection.immutable.ListSet
-
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   private val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
@@ -1172,7 +1170,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_4"
+    val existsVariableName = "anon_2"
 
     // (owner)-[relName]-(nodeName)
     val subqueryExpression = ExistsIRExpression(
@@ -1187,8 +1185,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         )
       ),
       existsVariableName,
-      s"EXISTS { MATCH (`owner`)-[`$relName`]-(`$nodeName`) }"
-    )(pos, Set.empty, Set.empty)
+      s"EXISTS { MATCH (owner)-[`$relName`]-(`$nodeName`) }"
+    )(pos, Set(varFor(nodeName), varFor(relName)), Set(varFor("owner")))
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),
@@ -1542,29 +1540,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val r2 = varFor("r2")
     val r3 = varFor("r3")
 
-    val existsVariableName = "anon_0"
-
-    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
-      Set("m"),
-      ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            patternNodes = Set(m.name, o.name, q.name),
-            patternRelationships =
-              Set(
-                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-              ),
-            argumentIds = Set("m"),
-            selections = Selections.from(Seq(
-              not(equals(r3, r2))
-            ))
-          )
-        ),
-        existsVariableName,
-        "EXISTS { MATCH (o)-[r2]->(m)-[r3]->(q) }"
-      )(pos, Set.empty, Set.empty)
-    )))
+    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(m.name, o.name, q.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          argumentIds = Set("m"),
+          selections = Selections.from(Seq(
+            not(equals(r3, r2))
+          ))
+        )
+      )
   }
 
   test("should insert ExistsIRExpression in Selections when having a full exists in a subquery") {
@@ -1574,7 +1564,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val m = varFor("m")
     val n = varFor("n")
 
-    val existsVariableName = "anon_3"
     val firstQuery = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set(n.name),
@@ -1594,21 +1583,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       horizon = RegularQueryProjection(Map("name" -> varFor("m")))
     )
 
-    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
-      Set("n", "m"),
-      ExistsIRExpression(
-        PlannerQuery(
-          UnionQuery(
-            firstQuery,
-            secondQuery,
-            unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
-            distinct = true
-          )
-        ),
-        existsVariableName,
-        "EXISTS { MATCH (n)\nRETURN n AS `name`\nUNION\nMATCH (m)\nRETURN m AS `name` }"
-      )(pos, Set.empty, Set.empty)
-    )))
+    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
+      PlannerQuery(
+        UnionQuery(
+          firstQuery,
+          secondQuery,
+          unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
+          distinct = true
+        )
+      )
   }
 
   // Note that namespaced names are removed in these tests by NameDeduplication
@@ -1910,7 +1893,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH (a) WHERE EXISTS { (a) ((n)-[r]->(m))+ } RETURN 1")
 
     val m_outer = "anon_0"
-    val existsVariableName = "anon_7"
     val n = "n"
     val r = "r"
     val m = "m"
@@ -1935,21 +1917,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       relationshipVariableGroupings = Set(VariableGrouping(r, r))
     )
 
-    query.queryGraph.selections shouldBe Selections(ListSet(Predicate(
-      dependencies = Set("a"),
-      expr = ExistsIRExpression(
-        queryWith(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", m_outer),
-            quantifiedPathPatterns = Set(qpp),
-            selections = Selections.from(unique(varFor("r")))
-          )
-        ),
-        existsVariableName,
-        s"EXISTS { MATCH (a) ((`n`)-[`r`]->(`m`))+ (`$m_outer`) }"
-      )(pos, Set.empty, Set.empty)
-    )))
+    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
+      queryWith(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", m_outer),
+          quantifiedPathPatterns = Set(qpp),
+          selections = Selections.from(unique(varFor("r")))
+        )
+      )
   }
 
   test("should convert a quantified pattern with a where clause") {

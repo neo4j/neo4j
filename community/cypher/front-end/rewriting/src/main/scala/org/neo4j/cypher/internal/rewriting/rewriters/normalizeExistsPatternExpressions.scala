@@ -16,11 +16,13 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.CountExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -38,6 +40,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSem
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
@@ -69,13 +72,21 @@ case class normalizeExistsPatternExpressions(
 
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
-      SimpleExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(
+      ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
+        Pattern(Seq(EveryPath(p.pattern.element)))(p.position),
+        None,
+        p.position
+      ))(
         p.position,
         p.introducedVariables,
         p.scopeDependencies
       )
     case Exists(p: PatternExpression) =>
-      SimpleExistsExpression(Pattern(Seq(EveryPath(p.pattern.element)))(p.position), None)(
+      ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
+        Pattern(Seq(EveryPath(p.pattern.element)))(p.position),
+        None,
+        p.position
+      ))(
         p.position,
         p.introducedVariables,
         p.scopeDependencies
@@ -88,6 +99,7 @@ case class normalizeExistsPatternExpressions(
   })
 
   override def apply(v: AnyRef): AnyRef = instance(v)
+
 }
 
 case object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
@@ -117,9 +129,12 @@ case object CountLikeToExistsConverter {
 
     // size([pt = (n)--(m) | pt])
     case Size(p @ PatternComprehension(_, pattern, maybePredicate, _)) =>
-      Some(SimpleExistsExpression(
-        Pattern(Seq(EveryPath(pattern.element)))(p.position),
-        maybePredicate.map(mp => Where(mp)(mp.position))
+      Some(ExistsExpression(
+        PatternToQueryConverter.convertPatternToQuery(
+          Pattern(Seq(EveryPath(pattern.element)))(p.position),
+          maybePredicate.map(mp => Where(mp)(mp.position)),
+          p.position
+        )
       )(
         p.position,
         p.introducedVariables,
@@ -127,8 +142,8 @@ case object CountLikeToExistsConverter {
       ))
 
     // COUNT { (n)--(m) }
-    case ce @ CountExpression(pattern, maybePredicate) =>
-      Some(SimpleExistsExpression(pattern, maybePredicate.map(p => Where(p)(p.position)))(
+    case ce @ CountExpression(query) =>
+      Some(ExistsExpression(query)(
         ce.position,
         ce.introducedVariables,
         ce.scopeDependencies
@@ -137,4 +152,22 @@ case object CountLikeToExistsConverter {
     case _ =>
       None
   }
+}
+
+case object PatternToQueryConverter {
+
+  def convertPatternToQuery(
+    pattern: Pattern,
+    maybeWhere: Option[Where],
+    position: InputPosition
+  ): Query = {
+    Query(
+      SingleQuery(
+        Seq(
+          Match(optional = false, pattern, Seq.empty, maybeWhere)(position)
+        )
+      )(position)
+    )(position)
+  }
+
 }

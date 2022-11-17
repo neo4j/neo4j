@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.FullExistsSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
@@ -131,6 +130,46 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |       WHEN true THEN 1
         |       ELSE 2
         |    END` }
+        |RETURN n AS n
+      """.stripMargin
+    )
+  }
+
+  test("ensure returns are aliased in Count expressions") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE COUNT {
+        |  RETURN CASE
+        |       WHEN true THEN 1
+        |       ELSE 2
+        |    END
+        |} > 1
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |  WHERE COUNT { RETURN CASE WHEN true THEN 1 ELSE 2 END AS `CASE
+        |       WHEN true THEN 1
+        |       ELSE 2
+        |    END` } > 1
+        |RETURN n AS n
+      """.stripMargin
+    )
+  }
+
+  test("ensure returns of a variable are aliased in Count expressions") {
+    assertRewrite(
+      """MATCH (n)
+        |WHERE COUNT {
+        |  MATCH (n)
+        |  RETURN n
+        |} > 1
+        |RETURN n
+      """.stripMargin,
+      """MATCH (n)
+        |  WHERE COUNT {
+        |  MATCH (n)
+        |  RETURN n AS n
+        |} > 1
         |RETURN n AS n
       """.stripMargin
     )
@@ -1061,7 +1100,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     $expectedQuery
     but was rewritten to:${prettifier.asString(result)}"""
     )
-    result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases, FullExistsSupport))
+    result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
   }
 
   override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {

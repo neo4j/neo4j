@@ -1124,7 +1124,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )),
         "anon_0",
         "EXISTS { MATCH (a), (x) }"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(varFor("x")), Set(varFor("a")))
 
       val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
       val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
@@ -1155,7 +1155,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )),
         "anon_0",
         "EXISTS { MATCH (a), (x) }"
-      )(pos, Set.empty, Set.empty)
+      )(pos, Set(varFor("x")), Set(varFor("a")))
 
       val plan = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)
       val planAgain = ctx.strategy.planInnerOfExistsSubquery(exists, LabelInfo.empty, ctx)

@@ -428,7 +428,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL countExpression(NULL p, List<NULL> aNull, NULL where) {
+    public NULL countExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
         return null;
     }
 

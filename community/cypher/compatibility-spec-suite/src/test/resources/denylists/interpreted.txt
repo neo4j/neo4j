@@ -2,12 +2,7 @@
 Feature "List11 - Create a list from a range": Scenario "Create an empty list if range direction and step direction are inconsistent"
 Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10"
 
-// Failing with M17 TCK - Not yet implemented
-Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail"
-Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested simple existential subquery"
-Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery"
-Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"
-Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"
+// TODO: This is a bug in openCypher, remove from deny list when fixed
 Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"
 
 // TODO Unmute when openCypher has been released

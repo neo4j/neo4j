@@ -14,16 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.expressions
+package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class CountExpression(pattern: Pattern, optionalWhereExpression: Option[Expression])(
+case class CountExpression(query: Query)(
   val position: InputPosition,
   val introducedVariables: Set[LogicalVariable],
   val scopeDependencies: Set[LogicalVariable]
-) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
+) extends ScopeExpression with SubqueryExpression with ExpressionWithComputedDependencies {
 
   self =>
 
@@ -33,14 +37,11 @@ case class CountExpression(pattern: Pattern, optionalWhereExpression: Option[Exp
   override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
     copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
 
-  override def subqueryAstNode: ASTNode = pattern
+  override def subqueryAstNode: ASTNode = query
 
   override def dup(children: Seq[AnyRef]): this.type = {
     CountExpression(
-      children(0).asInstanceOf[Pattern],
-      children(1).asInstanceOf[Option[Expression]]
+      children.head.asInstanceOf[Query]
     )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
-
-  override def isConstantForQuery: Boolean = optionalWhereExpression.forall(_.isConstantForQuery)
 }

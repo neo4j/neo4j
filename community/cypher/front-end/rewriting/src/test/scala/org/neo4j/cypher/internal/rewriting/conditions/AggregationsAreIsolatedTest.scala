@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.FullExistsExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -45,7 +46,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
   }
 
   test("happy when aggregations are in Exists Expressions inside an Expression") {
-    val fe = FullExistsExpression(
+    val fe = ExistsExpression(
       query(singleQuery(with_(CountStar()(pos) as "x"), match_(nodePat(Some("n"))), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
     val l = listOf(fe)
@@ -54,7 +55,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
   }
 
   test("unhappy when aggregations and Exists Expressions inside an Expression") {
-    val fe = FullExistsExpression(
+    val fe = ExistsExpression(
       query(singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
 
@@ -64,7 +65,36 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
   }
 
   test("unhappy when aggregations and Exists Expressions inside an Expression 2") {
-    val fe = FullExistsExpression(
+    val fe = ExistsExpression(
+      query(singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n"))))
+    )(pos, Set.empty, Set.empty)
+
+    val l = listOf(CountStar() _, fe)
+
+    condition(l) should equal(Seq(s"Expression $l contains child expressions which are aggregations"))
+  }
+
+  test("happy when aggregations are in Count Expressions inside an Expression") {
+    val fe = CountExpression(
+      query(singleQuery(with_(CountStar()(pos) as "x"), match_(nodePat(Some("n"))), return_(varFor("n").as("n"))))
+    )(pos, Set.empty, Set.empty)
+    val l = listOf(fe)
+
+    condition(l) shouldBe empty
+  }
+
+  test("unhappy when aggregations and Count Expressions inside an Expression") {
+    val fe = CountExpression(
+      query(singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n"))))
+    )(pos, Set.empty, Set.empty)
+
+    val l = listOf(fe, CountStar() _)
+
+    condition(l) should equal(Seq(s"Expression $l contains child expressions which are aggregations"))
+  }
+
+  test("unhappy when aggregations and Count Expressions inside an Expression 2") {
+    val fe = CountExpression(
       query(singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n"))))
     )(pos, Set.empty, Set.empty)
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ast.SimpleExistsExpression
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -900,11 +899,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        SimpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(
-          pos,
-          Set(varFor("x")),
-          Set.empty
-        ),
+        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -915,11 +910,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        SimpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(
-          pos,
-          Set(varFor("x")),
-          Set.empty
-        ),
+        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -930,11 +921,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        SimpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(
-          pos,
-          Set(varFor("x")),
-          Set.empty
-        ),
+        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -945,11 +932,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        SimpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(
-          pos,
-          Set(varFor("x")),
-          Set.empty
-        ),
+        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )

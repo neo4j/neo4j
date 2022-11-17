@@ -68,18 +68,18 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
       val newClauses = clauses.flatMap {
         case clause: ProjectionClause if clauseNeedingWork(clause) =>
           val clauseReturnItems = clause.returnItems.items
-          val (withAggregations, others) =
-            clauseReturnItems.map(_.expression).toSet.partition(hasAggregateButIsNotAggregate(_))
+          val (returnsItemsWithAggregations, others) =
+            clauseReturnItems.partition(r => hasAggregateButIsNotAggregate(r.expression))
 
-          val expressionsToIncludeInWith: Set[Expression] = others ++ extractExpressionsToInclude(withAggregations)
+          val withAggregations = returnsItemsWithAggregations.map(_.expression).toSet
 
-          val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
+          val withReturnItems: Set[ReturnItem] = extractExpressionsToInclude(withAggregations).map {
             e =>
               AliasedReturnItem(e, Variable(from.anonymousVariableNameGenerator.nextName)(e.position))(
                 e.position,
                 isAutoAliased = true
               )
-          }
+          } ++ others
           val pos = clause.position
           val withClause = With(
             distinct = false,

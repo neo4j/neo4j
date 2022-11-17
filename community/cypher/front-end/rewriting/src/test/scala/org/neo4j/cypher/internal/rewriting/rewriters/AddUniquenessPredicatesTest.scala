@@ -73,6 +73,13 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
   }
 
+  test("uniqueness check is done for one variable length relationship inside a COUNT Expression") {
+    assertRewrite(
+      "MATCH (a) WHERE COUNT { MATCH (b)-[r*0..1]->(c) RETURN 1 } > 2 RETURN *",
+      s"MATCH (a) WHERE COUNT { MATCH (b)-[r*0..1]->(c) WHERE ${unique("r")} RETURN 1 } > 2 RETURN *"
+    )
+  }
+
   test("uniqueness check is done between relationships of simple and variable pattern lengths") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
@@ -241,6 +248,11 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertRewrite(
       "MATCH (c) WHERE EXISTS { MATCH (a)-[r1]->(b) (()-[r2]->())* RETURN 1 } RETURN *",
       s"MATCH (c) WHERE EXISTS { MATCH (a)-[r1]->(b) (()-[r2]->())* WHERE NOT r1 IN r2 AND ${unique("r2")} RETURN 1 } RETURN *"
+    )
+
+    assertRewrite(
+      "MATCH (c) WHERE COUNT { MATCH (a)-[r1]->(b) (()-[r2]->())* RETURN 1 } > 2 RETURN *",
+      s"MATCH (c) WHERE COUNT { MATCH (a)-[r1]->(b) (()-[r2]->())* WHERE NOT r1 IN r2 AND ${unique("r2")} RETURN 1 } > 2 RETURN *"
     )
 
     assertRewrite(

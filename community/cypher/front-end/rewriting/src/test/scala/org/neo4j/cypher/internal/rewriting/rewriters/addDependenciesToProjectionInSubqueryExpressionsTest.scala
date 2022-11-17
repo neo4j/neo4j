@@ -241,6 +241,222 @@ class addDependenciesToProjectionInSubqueryExpressionsTest extends CypherFunSuit
     assertIsNotRewritten(testName)
   }
 
+  test("""WITH "Bosse" as x
+         |MATCH (person:Person)
+         |WHERE COUNT {
+         | WITH "Ozzy" AS y
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE d.name = y
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertRewrite(
+      testName,
+      """WITH "Bosse" as x
+        |MATCH (person:Person)
+        |WHERE COUNT {
+        | WITH "Ozzy" AS y, person AS person
+        | MATCH (person)-[:HAS_DOG]->(d:Dog)
+        | WHERE d.name = y
+        | RETURN person AS person
+        |} > 2
+        |RETURN person.name AS name""".stripMargin
+    )
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE COUNT {
+         |  WITH "Ozzy" as x
+         |  MATCH (person)-[:HAS_DOG]->(d:Dog)
+         |  WHERE d.name = x
+         |  RETURN person AS person
+         | } > 2
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertRewrite(
+      testName,
+      """MATCH (person:Person)
+        |WHERE COUNT {
+        | MATCH (person)-[:HAS_DOG]->(d:Dog)
+        | WHERE COUNT {
+        |  WITH "Ozzy" as x, person AS person, d AS d
+        |  MATCH (person)-[:HAS_DOG]->(d:Dog)
+        |  WHERE d.name = x
+        |  RETURN person AS person
+        | } > 2
+        | RETURN person AS person
+        |} > 2
+        |RETURN person.name AS name""".stripMargin
+    )
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE COUNT {
+         |  WITH "Ozzy" as x
+         |  MATCH (person)-[:HAS_DOG]->(dog1:Dog)
+         |  WHERE dog1.name = x
+         |  WITH "Bosse" as x
+         |  MATCH (dog1)-[:HAS_FRIEND]->(dog2:Dog)
+         |  WHERE dog2.name = x
+         |  RETURN person AS person
+         | } > 2
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertRewrite(
+      testName,
+      """MATCH (person:Person)
+        |WHERE COUNT {
+        | MATCH (person)-[:HAS_DOG]->(d:Dog)
+        | WHERE COUNT {
+        |  WITH "Ozzy" as x, person AS person
+        |  MATCH (person)-[:HAS_DOG]->(dog1:Dog)
+        |  WHERE dog1.name = x
+        |  WITH "Bosse" as x, person AS person
+        |  MATCH (dog1)-[:HAS_FRIEND]->(dog2:Dog)
+        |  WHERE dog2.name = x
+        |  RETURN person AS person
+        | } > 2
+        | RETURN person AS person
+        |} > 2
+        |RETURN person.name AS name""".stripMargin
+    )
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE COUNT {
+         |  WITH "Ozzy" AS dogName
+         |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+         |  WHERE dog.name = dogName
+         |  RETURN dog AS pet
+         |  UNION
+         |  WITH "Sylvester" AS catName
+         |  MATCH (person)-[:HAS_CAT]->(cat:Cat)
+         |  WHERE cat.name = catName
+         |  RETURN cat AS pet
+         | } > 2
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertRewrite(
+      testName,
+      """MATCH (person:Person)
+        |WHERE COUNT {
+        | MATCH (person)-[:HAS_DOG]->(d:Dog)
+        | WHERE COUNT {
+        |  WITH "Ozzy" AS dogName, person AS person
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  WHERE dog.name = dogName
+        |  RETURN dog AS pet
+        |  UNION
+        |  WITH "Sylvester" AS catName, person AS person
+        |  MATCH (person)-[:HAS_CAT]->(cat:Cat)
+        |  WHERE cat.name = catName
+        |  RETURN cat AS pet
+        | } > 2
+        | RETURN person AS person
+        |} > 2
+        |RETURN person.name AS name""".stripMargin
+    )
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE COUNT {
+         |  WITH "Ozzy" AS dogName
+         |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+         |  WHERE dog.name = dogName
+         |  RETURN dog AS pet
+         |  UNION ALL
+         |  WITH "Sylvester" AS catName
+         |  MATCH (person)-[:HAS_CAT]->(cat:Cat)
+         |  WHERE cat.name = catName
+         |  RETURN cat AS pet
+         | } > 2
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertRewrite(
+      testName,
+      """MATCH (person:Person)
+        |WHERE COUNT {
+        | MATCH (person)-[:HAS_DOG]->(d:Dog)
+        | WHERE COUNT {
+        |  WITH "Ozzy" AS dogName, person AS person
+        |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+        |  WHERE dog.name = dogName
+        |  RETURN dog AS pet
+        |  UNION ALL
+        |  WITH "Sylvester" AS catName, person AS person
+        |  MATCH (person)-[:HAS_CAT]->(cat:Cat)
+        |  WHERE cat.name = catName
+        |  RETURN cat AS pet
+        | } > 2
+        | RETURN person AS person
+        |} > 2
+        |RETURN person.name AS name""".stripMargin
+    )
+  }
+
+  test("""WITH "Bosse" as x
+         |MATCH (person:Person)
+         |WHERE COUNT {
+         | WITH "Ozzy" AS x, person AS person
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE d.name = x
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertIsNotRewritten(testName)
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertIsNotRewritten(testName)
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | CALL {
+         |  WITH d AS d
+         |  MATCH (d)-[:HAS_FRIEND]-(f:Dog)
+         |  RETURN d AS d
+         | }
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertIsNotRewritten(testName)
+  }
+
+  test("""MATCH (person:Person)
+         |WHERE COUNT {
+         | MATCH (person)-[:HAS_DOG]->(d:Dog)
+         | WHERE COUNT {
+         |  MATCH (person)-[:HAS_DOG]->(dog:Dog)
+         |  RETURN dog AS pet
+         |  UNION
+         |  MATCH (person)-[:HAS_CAT]->(cat:Cat)
+         |  RETURN cat AS pet
+         | } > 2
+         | RETURN person AS person
+         |} > 2
+         |RETURN person.name AS name""".stripMargin) {
+    assertIsNotRewritten(testName)
+  }
+
   private def assertIsNotRewritten(query: String): Unit = {
     assertRewrite(query, query)
   }
