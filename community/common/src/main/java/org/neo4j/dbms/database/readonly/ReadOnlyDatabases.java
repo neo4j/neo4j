@@ -51,6 +51,11 @@ public interface ReadOnlyDatabases {
     void refresh();
 
     /**
+     * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
+     */
+    long updateId();
+
+    /**
      * Objects implementing this interface create {@link Lookup}s: immutable snapshots of the logical set of read only databases
      */
     @FunctionalInterface

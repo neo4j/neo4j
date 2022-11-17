@@ -32,7 +32,7 @@ import org.mockito.Mockito;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -66,7 +66,7 @@ class PointIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName(DEFAULT_DATABASE_NAME)).thenReturn(Optional.of(defaultDatabaseId));
         var readOnlyDatabases =
-                new CommunityReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
+                new DefaultReadOnlyDatabases(new ConfigBasedLookupFactory(config, databaseIdRepository));
         var readOnlyChecker = readOnlyDatabases.forDatabase(defaultDatabaseId);
         var cacheTracer = NULL;
         return PointIndexProviderFactory.create(

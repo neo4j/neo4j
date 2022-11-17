@@ -25,12 +25,12 @@ import java.util.stream.Collectors;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public class CommunityReadOnlyDatabases implements ReadOnlyDatabases {
+public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
     private volatile Set<Lookup> readOnlyDatabases;
     private volatile long updateId;
     private final Set<LookupFactory> readOnlyDatabasesLookupFactories;
 
-    public CommunityReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
+    public DefaultReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
         this.readOnlyDatabasesLookupFactories = Set.of(readOnlyDatabasesLookupFactories);
         this.readOnlyDatabases = Set.of();
         this.updateId = -1;
@@ -51,7 +51,8 @@ public class CommunityReadOnlyDatabases implements ReadOnlyDatabases {
     /**
      * @return a numeric value which increases monotonically with each call to {@link #refresh()}. Used by {@link DatabaseReadOnlyChecker} for caching.
      */
-    long updateId() {
+    @Override
+    public long updateId() {
         return updateId;
     }
 

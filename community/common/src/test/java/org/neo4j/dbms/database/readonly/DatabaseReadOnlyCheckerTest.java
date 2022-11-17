@@ -57,7 +57,7 @@ class DatabaseReadOnlyCheckerTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<DatabaseId>();
         databases.add(foo.databaseId());
-        var globalChecker = new CommunityReadOnlyDatabases(() -> {
+        var globalChecker = new DefaultReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(databases);
             return snapshot::contains;
         });
@@ -78,7 +78,7 @@ class DatabaseReadOnlyCheckerTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<DatabaseId>();
         databases.add(foo.databaseId());
-        var globalChecker = spy(new CommunityReadOnlyDatabases(() -> {
+        var globalChecker = spy(new DefaultReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(databases);
             return snapshot::contains;
         }));

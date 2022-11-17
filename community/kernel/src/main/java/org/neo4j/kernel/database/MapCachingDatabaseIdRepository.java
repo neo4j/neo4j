@@ -57,7 +57,7 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
 
     @Override
     public Optional<NamedDatabaseId> getById(DatabaseId uuid) {
-        if (NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId().equals(uuid)) {
+        if (DatabaseId.SYSTEM_DATABASE_ID.equals(uuid)) {
             return OPT_SYS_DB;
         }
         var dbId = Optional.ofNullable(databaseIdsByUuid.computeIfAbsent(

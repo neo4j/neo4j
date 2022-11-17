@@ -52,7 +52,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
 @ExtendWith(LifeExtension.class)
-class ReadOnlyDatabasesTest {
+class DefaultReadOnlyDatabasesTest {
 
     @Inject
     private LifeSupport life;
@@ -66,7 +66,7 @@ class ReadOnlyDatabasesTest {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName("foo12345")).thenReturn(Optional.of(fooDb));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var checker = new DefaultReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -84,7 +84,7 @@ class ReadOnlyDatabasesTest {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName("foo")).thenReturn(Optional.of(fooDb));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var checker = new DefaultReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -116,10 +116,10 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName(SYSTEM_DATABASE_NAME))
                 .thenReturn(Optional.of(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var checker = new DefaultReadOnlyDatabases(readOnlyLookup);
 
         // when/then
-        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId()));
+        assertFalse(checker.isReadOnly(DatabaseId.SYSTEM_DATABASE_ID));
 
         // when configs are changed
         assertThrows(
@@ -130,7 +130,7 @@ class ReadOnlyDatabasesTest {
                         getClass().getSimpleName()));
 
         // then
-        assertFalse(checker.isReadOnly(NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID.databaseId()));
+        assertFalse(checker.isReadOnly(DatabaseId.SYSTEM_DATABASE_ID));
     }
 
     @Test
@@ -165,7 +165,7 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName("foo")).thenReturn(Optional.of(foo));
         Mockito.when(databaseIdRepository.getByName("bar")).thenReturn(Optional.of(bar));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var checker = new DefaultReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -190,7 +190,7 @@ class ReadOnlyDatabasesTest {
         Mockito.when(databaseIdRepository.getByName("bar")).thenReturn(Optional.of(bar));
         Mockito.when(databaseIdRepository.getByName("baz")).thenReturn(Optional.of(baz));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var checker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var checker = new DefaultReadOnlyDatabases(readOnlyLookup);
         var listener = new ConfigReadOnlyDatabaseListener(checker, config);
         life.add(listener);
 
@@ -206,7 +206,7 @@ class ReadOnlyDatabasesTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var readOnlyDatabases = new HashSet<DatabaseId>();
         readOnlyDatabases.add(foo.databaseId());
-        var readOnly = new CommunityReadOnlyDatabases(() -> {
+        var readOnly = new DefaultReadOnlyDatabases(() -> {
             var snapshot = Set.copyOf(readOnlyDatabases);
             return snapshot::contains;
         });
@@ -230,7 +230,7 @@ class ReadOnlyDatabasesTest {
     @Test
     void refreshShouldIncrementUpdateId() {
         // given
-        var readOnlyDatabases = new CommunityReadOnlyDatabases();
+        var readOnlyDatabases = new DefaultReadOnlyDatabases();
         var originalUpdateId = readOnlyDatabases.updateId();
 
         // when

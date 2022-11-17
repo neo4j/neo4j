@@ -44,10 +44,10 @@ public interface DatabaseReadOnlyChecker {
     class Default implements DatabaseReadOnlyChecker {
         private volatile long lastUpdated;
         private volatile boolean readOnly;
-        private final CommunityReadOnlyDatabases dbmsChecker;
+        private final ReadOnlyDatabases dbmsChecker;
         private final NamedDatabaseId namedDatabaseId;
 
-        Default(CommunityReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId) {
+        Default(ReadOnlyDatabases readOnlyDatabases, NamedDatabaseId namedDatabaseId) {
             this.lastUpdated = -1;
             this.readOnly = false;
             this.dbmsChecker = readOnlyDatabases;

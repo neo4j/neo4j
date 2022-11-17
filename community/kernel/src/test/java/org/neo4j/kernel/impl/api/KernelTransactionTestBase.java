@@ -44,7 +44,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
-import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -196,7 +196,7 @@ class KernelTransactionTestBase {
         DatabaseIdRepository databaseIdRepository = mock(DatabaseIdRepository.class);
         Mockito.when(databaseIdRepository.getByName(databaseId.name())).thenReturn(Optional.of(databaseId));
         var readOnlyLookup = new ConfigBasedLookupFactory(config, databaseIdRepository);
-        var readOnlyChecker = new CommunityReadOnlyDatabases(readOnlyLookup);
+        var readOnlyChecker = new DefaultReadOnlyDatabases(readOnlyLookup);
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         DefaultVersionStorageTracer versionStorageTracer = new DefaultVersionStorageTracer(pageCacheTracer);
         return new KernelTransactionImplementation(

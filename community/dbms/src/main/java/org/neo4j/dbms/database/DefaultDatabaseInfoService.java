@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.DatabaseStateService;
-import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseId;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class DefaultDatabaseInfoService implements DatabaseInfoService {
     private final DatabaseIdRepository idRepository;
-    private final CommunityReadOnlyDatabases readOnlyDatabases;
+    private final ReadOnlyDatabases readOnlyDatabases;
     private final ServerId serverId;
     private final SocketAddress address;
     private final DatabaseStateService stateService;
@@ -49,7 +49,7 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
             SocketAddress address,
             DatabaseContextProvider<?> databaseContextProvider,
             DatabaseStateService stateService,
-            CommunityReadOnlyDatabases readOnlyDatabases,
+            ReadOnlyDatabases readOnlyDatabases,
             DetailedDbInfoProvider detailedDbInfoProvider) {
         this.serverId = serverId;
         this.address = address;

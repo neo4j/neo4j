@@ -48,7 +48,7 @@ import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DetailedDbInfoProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.dbms.database.readonly.CommunityReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
@@ -106,7 +106,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     private FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
-    protected CommunityReadOnlyDatabases globalReadOnlyChecker;
+    protected ReadOnlyDatabases globalReadOnlyChecker;
     private Lifecycle defaultDatabaseInitializer = new LifecycleAdapter();
 
     public CommunityEditionModule(GlobalModule globalModule) {
@@ -191,7 +191,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         return databaseRepository;
     }
 
-    private static CommunityReadOnlyDatabases createGlobalReadOnlyChecker(
+    private static ReadOnlyDatabases createGlobalReadOnlyChecker(
             DatabaseContextProvider<?> databaseContextProvider,
             Config globalConfig,
             GlobalTransactionEventListeners txListeners,
@@ -201,7 +201,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 new SystemGraphReadOnlyDatabaseLookupFactory(databaseContextProvider, logProvider);
         var configReadOnlyLookup =
                 new ConfigBasedLookupFactory(globalConfig, databaseContextProvider.databaseIdRepository());
-        var globalChecker = new CommunityReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
+        var globalChecker = new DefaultReadOnlyDatabases(systemGraphReadOnlyLookup, configReadOnlyLookup);
         var configListener = new ConfigReadOnlyDatabaseListener(globalChecker, globalConfig);
         var systemGraphListener = new SystemGraphReadOnlyListener(txListeners, globalChecker);
         globalLife.add(configListener);
