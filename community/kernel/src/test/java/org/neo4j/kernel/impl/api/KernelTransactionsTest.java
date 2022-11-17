@@ -26,11 +26,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -143,6 +145,8 @@ class KernelTransactionsTest {
     @Inject
     private OtherThread t2;
 
+    private Locks locks = mock(Locks.class);
+
     @BeforeEach
     void setUp() {
         databaseAvailabilityGuard = new DatabaseAvailabilityGuard(
@@ -219,6 +223,31 @@ class KernelTransactionsTest {
 
         // THEN
         assertSame(a, b);
+    }
+
+    @Test
+    void shouldNotReuseTransactionsUnableToClose() throws Throwable {
+        // GIVEN
+        KernelTransactions transactions = newKernelTransactions();
+        Locks.Client client = mock(Locks.Client.class);
+        RuntimeException foo = new RuntimeException("foo");
+        doThrow(foo).when(client).close();
+        when(locks.newClient()).thenReturn(client);
+
+        // WHEN
+        KernelTransaction a = getKernelTransaction(transactions);
+
+        // THEN
+        assertThat(transactions.getNumberOfActiveTransactions()).isOne();
+        assertThatThrownBy(a::close).isSameAs(foo);
+        assertThat(transactions.getNumberOfActiveTransactions()).isZero();
+
+        // WHEN
+        KernelTransaction b = getKernelTransaction(transactions);
+
+        // THEN
+        assertNotSame(a, b);
+        assertThat(transactions.getNumberOfActiveTransactions()).isOne();
     }
 
     @Test
@@ -654,7 +683,6 @@ class KernelTransactionsTest {
             Config config,
             StorageReader... otherReaders)
             throws Throwable {
-        Locks locks = mock(Locks.class);
         Locks.Client client = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn(client);
 

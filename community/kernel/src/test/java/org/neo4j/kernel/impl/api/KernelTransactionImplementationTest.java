@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -858,6 +859,29 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         doThrow(foo).when(locksClient).close();
         assertThatThrownBy(transaction::close).isSameAs(foo);
         assertThatThrownBy(transaction::getInnerTransactionHandler).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldReleaseIfSuccesfulCleanup() throws TransactionFailureException {
+        KernelTransactionImplementation transaction = newTransaction(AUTH_DISABLED);
+        transaction.txState().nodeDoCreate(5);
+
+        transaction.close();
+
+        verify(txPool, times(1)).release(transaction);
+    }
+
+    @Test
+    void shouldDisposeIfFailedCleanup() {
+        KernelTransactionImplementation transaction = newTransaction(AUTH_DISABLED);
+        transaction.txState().nodeDoCreate(5);
+        RuntimeException foo = new RuntimeException("foo");
+
+        doThrow(foo).when(locksClient).close();
+        assertThatThrownBy(transaction::close).isSameAs(foo);
+
+        verify(txPool, never()).release(transaction);
+        verify(txPool, times(1)).dispose(transaction);
     }
 
     private static LoginContext loginContext(boolean isWriteTx) {

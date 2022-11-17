@@ -20,7 +20,19 @@
 package org.neo4j.collection.pool;
 
 public interface Pool<T> extends AutoCloseable {
+
+    /**
+     * Acquire object from pool. Will create if none available.
+     */
     T acquire();
 
+    /**
+     * Release object back to pool, to possibly be reused by subsequent {@link #acquire()}.
+     */
     void release(T obj);
+
+    /**
+     * Dispose object from pool. Should be used when object is not safe to reuse.
+     */
+    void dispose(T obj);
 }

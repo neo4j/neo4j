@@ -496,7 +496,7 @@ public class KernelTransactions extends LifecycleAdapter
         }
 
         @Override
-        protected void dispose(KernelTransactionImplementation tx) {
+        public void dispose(KernelTransactionImplementation tx) {
             transactions.remove(tx);
             tx.dispose();
             super.dispose(tx);
@@ -528,6 +528,12 @@ public class KernelTransactions extends LifecycleAdapter
         public void release(KernelTransactionImplementation txn) {
             activeTransactionCounter.decrementAndGet();
             delegate.release(txn);
+        }
+
+        @Override
+        public void dispose(KernelTransactionImplementation txn) {
+            activeTransactionCounter.decrementAndGet();
+            delegate.dispose(txn);
         }
 
         @Override

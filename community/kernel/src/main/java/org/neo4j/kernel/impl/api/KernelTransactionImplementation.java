@@ -250,6 +250,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private final TransactionCommitter committer;
     private final ChunkedTransactionSink txStateWriter;
+    private boolean failedCleanup = false;
 
     public KernelTransactionImplementation(
             Config externalConfig,
@@ -384,6 +385,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ClientConnectionInfo clientInfo) {
         assert transactionMemoryPool.usedHeap() == 0;
         assert transactionMemoryPool.usedNative() == 0;
+        assert !failedCleanup : "This transaction should not be reused since it did not close properly";
         this.cursorContext = contextFactory.create(TRANSACTION_TAG);
         this.transactionalCursors.reset(cursorContext);
         this.accessCapability = accessCapabilityFactory.newAccessCapability(readOnlyDatabaseChecker);
@@ -840,11 +842,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 closed();
             } catch (RuntimeException | Error e) {
                 exception = Exceptions.chain(exception, e);
+                failedCleanup = true;
             } finally {
                 try {
                     reset();
                 } catch (RuntimeException | Error e) {
                     exception = Exceptions.chain(exception, e);
+                    failedCleanup = true;
                 }
             }
         }
@@ -877,10 +881,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public void close() throws TransactionFailureException {
-        if (isOpen()) {
-            closeTransaction();
+        try {
+            if (isOpen()) {
+                closeTransaction();
+            }
+        } finally {
+            if (failedCleanup) {
+                pool.dispose(this);
+            } else {
+                pool.release(this);
+            }
         }
-        pool.release(this);
     }
 
     @Override
