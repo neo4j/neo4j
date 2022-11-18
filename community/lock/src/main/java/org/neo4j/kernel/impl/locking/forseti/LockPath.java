@@ -25,6 +25,7 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
 record LockPath(
+        ForsetiClient owner,
         long ownerTransactionId,
         ForsetiLockManager.Lock ownerWaitingForLock,
         ResourceType ownerWaitingForResourceType,
@@ -48,6 +49,7 @@ record LockPath(
         var path = this;
         while (path != null) {
             reversed = new LockPath(
+                    path.owner,
                     path.ownerTransactionId,
                     path.ownerWaitingForLock,
                     path.ownerWaitingForResourceType,
@@ -66,7 +68,11 @@ record LockPath(
 
         builder.append(lockString(resourceType, resourceId));
         while (path != null) {
-            if (path.ownerWaitingForLock.isClosed()) {
+            if (path.owner.transactionId() != path.ownerTransactionId
+                    || !path.owner.isWaitingFor(
+                            path.ownerWaitingForLock,
+                            path.ownerWaitingForResourceType,
+                            path.ownerWaitingForResourceId)) {
                 return null;
             }
             builder.append(String.format(

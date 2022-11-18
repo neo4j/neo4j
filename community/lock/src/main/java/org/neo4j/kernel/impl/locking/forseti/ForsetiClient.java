@@ -666,6 +666,10 @@ public class ForsetiClient implements Locks.Client {
         return client.getTransactionId() != getTransactionId() && waitList.contains(client);
     }
 
+    boolean isWaitingFor(ForsetiLockManager.Lock lock, ResourceType resourceType, long resourceId) {
+        return waitingForLock == lock && waitingForResourceType == resourceType && waitingForResourceId == resourceId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -822,7 +826,7 @@ public class ForsetiClient implements Locks.Client {
             if (tries > 100 && ((depth = isDeadlockReal(lock)) != NO_DEADLOCK_DEPTH)) {
                 // After checking several times, this really does look like a real deadlock.
                 if (verboseDeadlocks) {
-                    var deadlockCycleMessage = findConsistentDeadlockPath(lock, type, resourceId, depth);
+                    var deadlockCycleMessage = findDeadlockPath(lock, type, resourceId, depth);
                     if (deadlockCycleMessage != null) {
                         var message = String.format(
                                 "%s can't acquire %s %s because it would form this deadlock wait cycle:%n%s",
@@ -947,7 +951,7 @@ public class ForsetiClient implements Locks.Client {
         var owners = new HashSet<ForsetiClient>();
         var paths = new ArrayList<LockPath>();
         traverseOneStep(null, lockToWaitFor, parents, 0, owners);
-        for (var depth = 1; depth <= maxDepth; depth++) {
+        for (var depth = 1; depth <= maxDepth + 1; depth++) {
             for (var parentPath : parents) {
                 var lock = parentPath.ownerWaitingForLock();
                 if (!lock.isClosed()) {
@@ -963,27 +967,6 @@ public class ForsetiClient implements Locks.Client {
         return null;
     }
 
-    private String findConsistentDeadlockPath(
-            ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int maxDepth) {
-        String prevDeadlock = null;
-        String deadlock;
-        do {
-            deadlock = findDeadlockPath(lock, type, resourceId, maxDepth);
-            if (deadlock != null) {
-                if (deadlock.equals(prevDeadlock)) {
-                    return deadlock;
-                } else {
-                    prevDeadlock = deadlock;
-                }
-            }
-        } while (deadlock != null);
-        return null;
-    }
-
-    //    private static String lockString(ResourceType resourceType, long resourceId, LockType lockType) {
-    //        return format("%s(%d):%s", resourceType, resourceId, lockType);
-    //    }
-    //
     static String lockString(ResourceType resourceType, long resourceId) {
         return format("%s(%d)", resourceType, resourceId);
     }
@@ -1011,6 +994,7 @@ public class ForsetiClient implements Locks.Client {
             }
 
             var path = new LockPath(
+                    owner,
                     ownerTransactionId,
                     ownerWaitingForLock,
                     ownerWaitingForResourceType,
