@@ -150,7 +150,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val rewriter = inSequence(
       AddUniquenessPredicates.rewriter,
       inlineNamedPathsInPatternComprehensions.instance,
-      normalizePredicates(PredicateNormalizer.defaultNormalizer(anonymousVariableNameGenerator)),
+      normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses),
+      normalizePredicates(PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)),
       flattenBooleanOperators,
       CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)
     )

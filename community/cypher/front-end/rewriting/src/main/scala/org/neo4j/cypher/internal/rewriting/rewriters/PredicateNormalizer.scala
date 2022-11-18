@@ -74,7 +74,7 @@ object PredicateNormalizer {
  *
    * @note Needs to run before [[normalizeLabelAndPropertyPredicates]].
    */
-  def normalizeInlinedWhereClauses: PredicateNormalizer = PredicateNormalizerChain (
+  def normalizeInlinedWhereClauses: PredicateNormalizer = PredicateNormalizerChain(
     NodePatternPredicateNormalizer,
     RelationshipPatternPredicateNormalizer
   )
@@ -85,9 +85,10 @@ object PredicateNormalizer {
  *
    * @note [[normalizeInlinedWhereClauses]] needs to correctly handle scoping of nested WHERE clauses.
    */
-  def normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PredicateNormalizer =
+  def normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
+    : PredicateNormalizer =
     PredicateNormalizerChain(
       PropertyPredicateNormalizer(anonymousVariableNameGenerator),
-      LabelExpressionsInPatternsNormalizer,
+      LabelExpressionsInPatternsNormalizer
     )
 }
