@@ -28,7 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
+import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -42,7 +42,7 @@ public class ConfigReadOnlyDatabaseListenerTest {
     void configChangeShouldRefreshReadOnlyDatabases() {
         // given
         var config = Config.defaults();
-        var readOnlyDatabases = mock(DefaultReadOnlyDatabases.class);
+        var readOnlyDatabases = mock(ReadOnlyDatabases.class);
         var listener = new ConfigReadOnlyDatabaseListener(readOnlyDatabases, config);
         lifeSupport.add(listener);
 
