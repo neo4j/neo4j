@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +39,7 @@ class StatisticsCollectorTest {
         String actual = new StatisticsCollector(Format.PLAIN).collect(result);
 
         // then
-        assertThat(actual, is(""));
+        assertThat(actual).isEmpty();
     }
 
     @Test
@@ -57,6 +56,6 @@ class StatisticsCollectorTest {
         String actual = new StatisticsCollector(Format.VERBOSE).collect(resultSummary);
 
         // then
-        assertThat(actual, is("Added 10 nodes, Added 1 labels"));
+        assertThat(actual).isEqualTo("Added 10 nodes, Added 1 labels");
     }
 }

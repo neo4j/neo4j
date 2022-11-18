@@ -22,8 +22,7 @@ package org.neo4j.shell.terminal;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -150,7 +149,7 @@ class TtyPromptTest {
         when(mockPty.getAttr()).thenReturn(attributes);
         final var prompt = new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(UTF_8)), output, ISO_8859_1);
 
-        assertThat(prompt.readLine("> "), is("åäö"));
+        assertThat(prompt.readLine("> ")).isEqualTo("åäö");
     }
 
     @Test
@@ -165,7 +164,7 @@ class TtyPromptTest {
         final var prompt =
                 new TtyPrompt(mockPty, new ByteArrayInputStream(input.getBytes(ISO_8859_1)), output, ISO_8859_1);
 
-        assertThat(prompt.readLine("> "), is("åäö"));
+        assertThat(prompt.readLine("> ")).isEqualTo("åäö");
     }
 
     private void assertRead(String input, String expected, Charset defaultCharset) throws IOException {
@@ -173,8 +172,8 @@ class TtyPromptTest {
         final var prompt = newTtyPrompt(input, out, defaultCharset);
         final var reason = "Failed to read input " + input + " with actual charset " + prompt.charset()
                 + " and default charset " + defaultCharset + lineSeparator();
-        assertThat(reason, prompt.readLine("Read me: "), is(expected));
-        assertThat(out.toString(defaultCharset), is("Read me: "));
+        assertThat(prompt.readLine("Read me: ")).as(reason).isEqualTo(expected);
+        assertThat(out.toString(defaultCharset)).isEqualTo("Read me: ");
     }
 
     private void assertReadPassword(String input, String expected, Charset defaultCharset) throws IOException {
@@ -182,12 +181,12 @@ class TtyPromptTest {
         final var prompt = newTtyPrompt(input, out, defaultCharset);
         final var reason = "Failed to read input " + input + " with actual charset " + prompt.charset()
                 + " and default charset " + defaultCharset + lineSeparator();
-        assertThat(reason, prompt.readPassword("Read me: "), is(expected));
+        assertThat(prompt.readPassword("Read me: ")).as(reason).isEqualTo(expected);
 
         if (input.contains("\n") || input.contains("\r")) {
-            assertThat(out.toString(), is("Read me: " + lineSeparator()));
+            assertThat(out.toString()).isEqualTo("Read me: " + lineSeparator());
         } else {
-            assertThat(out.toString(), is("Read me: "));
+            assertThat(out.toString()).isEqualTo("Read me: ");
         }
     }
 
@@ -199,10 +198,10 @@ class TtyPromptTest {
     }
 
     private void assertEqualAttributes(Attributes attributes, Attributes expected) {
-        assertThat(attributes.getControlChars(), is(expected.getControlChars()));
-        assertThat(attributes.getControlFlags(), is(expected.getControlFlags()));
-        assertThat(attributes.getInputFlags(), is(expected.getInputFlags()));
-        assertThat(attributes.getLocalFlags(), is(expected.getLocalFlags()));
-        assertThat(attributes.getOutputFlags(), is(expected.getOutputFlags()));
+        assertThat(attributes.getControlChars()).isEqualTo(expected.getControlChars());
+        assertThat(attributes.getControlFlags()).isEqualTo(expected.getControlFlags());
+        assertThat(attributes.getInputFlags()).isEqualTo(expected.getInputFlags());
+        assertThat(attributes.getLocalFlags()).isEqualTo(expected.getLocalFlags());
+        assertThat(attributes.getOutputFlags()).isEqualTo(expected.getOutputFlags());
     }
 }

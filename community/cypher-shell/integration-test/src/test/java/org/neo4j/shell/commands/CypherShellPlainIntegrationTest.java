@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.junit.jupiter.api.AfterEach;
@@ -66,18 +65,16 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         // then
         String actual = linePrinter.output();
         //      This assertion checks everything except for time and cypher
-        assertThat(actual, containsString("Plan: \"PROFILE\""));
-        assertThat(actual, containsString("Statement: \"READ_ONLY\""));
-        assertThat(actual, containsString("Planner: \"COST\""));
-        if (runningAtLeast("5.0")) {
-            assertThat(actual, containsString("Runtime: \"SLOTTED\""));
-        } else {
-            assertThat(actual, containsString("Runtime: \"INTERPRETED\""));
-        }
-        assertThat(actual, containsString("DbHits: 0"));
-        assertThat(actual, containsString("Rows: 1"));
-        assertThat(actual, containsString("null"));
-        assertThat(actual, containsString("NULL"));
+        assertThat(actual)
+                .contains(
+                        "Plan: \"PROFILE\"",
+                        "Statement: \"READ_ONLY\"",
+                        "Planner: \"COST\"",
+                        runningAtLeast("5.0") ? "Runtime: \"SLOTTED\"" : "Runtime: \"INTERPRETED\"",
+                        "DbHits: 0",
+                        "Rows: 1",
+                        "null",
+                        "NULL");
     }
 
     @Test
@@ -92,7 +89,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         // then
         String actual = linePrinter.output();
         System.out.println(actual);
-        assertThat(actual, containsString("Memory (Bytes): "));
+        assertThat(actual).contains("Memory (Bytes): ");
     }
 
     @Test
@@ -103,9 +100,9 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
         // then
         String actual = linePrinter.output();
         //      This assertion checks everything except for time and cypher
-        assertThat(actual, containsString("Plan: \"EXPLAIN\""));
-        assertThat(actual, containsString("Statement: \"READ_ONLY\""));
-        assertThat(actual, containsString("Planner: \"COST\""));
-        assertThat(actual, containsString("Runtime: \"SLOTTED\""));
+        assertThat(actual).contains("Plan: \"EXPLAIN\"");
+        assertThat(actual).contains("Statement: \"READ_ONLY\"");
+        assertThat(actual).contains("Planner: \"COST\"");
+        assertThat(actual).contains("Runtime: \"SLOTTED\"");
     }
 }

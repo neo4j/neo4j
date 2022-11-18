@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RUNTIME_OPTION;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
@@ -68,7 +67,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnPotentiallyCachedQueries() {
-        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductNotification));
+        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
     }
 
     @Test
@@ -148,7 +147,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldNotNotifyOnEagerBeforeLoadCSVCreate() {
         assertNotifications(
                 "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
-                containsNoItem(eagerOperatorNotification));
+                doesNotContain(eagerOperatorNotification));
     }
 
     @Test
@@ -167,7 +166,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldNotNotifyOnEagerWithoutLoadCSV() {
-        assertNotifications("EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", containsNoItem(eagerOperatorNotification));
+        assertNotifications("EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", doesNotContain(eagerOperatorNotification));
     }
 
     @Test
@@ -180,7 +179,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
         assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *",
-                containsNoItem(largeLabelCSVNotification));
+                doesNotContain(largeLabelCSVNotification));
     }
 
     @Test
@@ -193,7 +192,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
         assertNotifications(
                 "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *",
-                containsNoItem(largeLabelCSVNotification));
+                doesNotContain(largeLabelCSVNotification));
     }
 
     @Test
@@ -246,7 +245,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person) WHERE n.foo = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
-                containsItem(dynamicPropertyNotification));
+                contains(dynamicPropertyNotification));
     }
 
     @Test
@@ -280,7 +279,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("CREATE INDEX FOR (n:Person) ON (n.name)");
         db.executeTransactionally("Call db.awaitIndexes()");
         for (String query : queries) {
-            assertNotifications(query, containsItem(dynamicPropertyNotification));
+            assertNotifications(query, contains(dynamicPropertyNotification));
         }
     }
 
@@ -297,7 +296,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
-                containsItem(dynamicPropertyNotification));
+                contains(dynamicPropertyNotification));
     }
 
     @Test
@@ -307,27 +306,27 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         db.executeTransactionally("Call db.awaitIndexes()");
         assertNotifications(
                 "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
-                containsItem(dynamicPropertyNotification));
+                contains(dynamicPropertyNotification));
     }
 
     @Test
     void shouldWarnOnCartesianProduct() {
 
-        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductNotification));
+        assertNotifications("explain match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
 
         assertNotifications(
                 "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *",
-                containsItem(cartesianProductNotification));
+                contains(cartesianProductNotification));
     }
 
     @Test
     void shouldNotifyOnCartesianProductWithoutExplain() {
-        assertNotifications("match (a)-->(b), (c)-->(d) return *", containsItem(cartesianProductNotification));
+        assertNotifications("match (a)-->(b), (c)-->(d) return *", contains(cartesianProductNotification));
     }
 
     @Test
     void shouldWarnOnMissingLabel() {
-        assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem(unknownLabelNotification));
+        assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", contains(unknownLabelNotification));
     }
 
     @Test
@@ -337,32 +336,31 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
             tx.commit();
         }
 
-        assertNotifications("EXPLAIN MATCH (n:Preson) RETURN *", containsItem(unknownLabelNotification));
+        assertNotifications("EXPLAIN MATCH (n:Preson) RETURN *", contains(unknownLabelNotification));
         shouldNotNotifyInStream("EXPLAIN MATCH (n:Person) RETURN *");
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginning() {
-        assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem(unknownLabelNotification));
+        assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", contains(unknownLabelNotification));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() {
         assertNotifications(
                 "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1",
-                containsItem(unknownLabelNotification));
+                contains(unknownLabelNotification));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() {
-        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", containsItem(unknownLabelNotification));
+        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", contains(unknownLabelNotification));
     }
 
     @Test
     void shouldWarnOnMissingLabelWithCommentInMiddle() {
         assertNotifications(
-                "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1",
-                containsItem(unknownLabelNotification));
+                "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", contains(unknownLabelNotification));
     }
 
     @Test
@@ -373,7 +371,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     @Test
     void shouldWarnOnMissingRelationshipType() {
         assertNotifications(
-                "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem(unknownRelationshipNotification));
+                "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", contains(unknownRelationshipNotification));
     }
 
     @Test
@@ -384,7 +382,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
         }
 
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotifications("EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem(unknownRelationshipNotification));
+        assertNotifications("EXPLAIN MATCH ()-[r:r]->() RETURN *", contains(unknownRelationshipNotification));
         shouldNotNotifyInStream("EXPLAIN MATCH ()-[r:R]->() RETURN *");
     }
 
@@ -392,21 +390,20 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnMissingRelationshipTypeWithComment() {
         assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a",
-                containsItem(unknownRelationshipNotification));
+                contains(unknownRelationshipNotification));
     }
 
     @Test
     void shouldWarnOnMissingProperty() {
         assertNotifications(
-                "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem(unknownPropertyKeyNotification));
+                "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", contains(unknownPropertyKeyNotification));
     }
 
     @Test
     void shouldWarnOnMisspelledProperty() {
         db.executeTransactionally("CREATE (n {prop : 42})");
         db.executeTransactionally("CREATE (n)-[r:R]->(m)");
-        assertNotifications(
-                "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem(unknownPropertyKeyNotification));
+        assertNotifications("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", contains(unknownPropertyKeyNotification));
         shouldNotNotifyInStream("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n");
     }
 
@@ -414,7 +411,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnMissingPropertyWithComment() {
         assertNotifications(
                 "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a",
-                containsItem(unknownPropertyKeyNotification));
+                contains(unknownPropertyKeyNotification));
     }
 
     @Test
@@ -448,14 +445,14 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                     .get(0);
 
             // Then
-            assertThat(cachedNotification.getPosition(), equalTo(new InputPosition(17, 1, 18)));
-            assertThat(nonCachedNotication.getPosition(), equalTo(new InputPosition(17, 1, 18)));
+            assertThat(cachedNotification.getPosition()).isEqualTo(new InputPosition(17, 1, 18));
+            assertThat(nonCachedNotication.getPosition()).isEqualTo(new InputPosition(17, 1, 18));
         }
     }
 
     @Test
     void shouldWarnOnExecute() {
-        assertNotifications("MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem(unknownPropertyKeyNotification));
+        assertNotifications("MATCH (a {NO_SUCH_THING: 1337}) RETURN a", contains(unknownPropertyKeyNotification));
     }
 
     @Test

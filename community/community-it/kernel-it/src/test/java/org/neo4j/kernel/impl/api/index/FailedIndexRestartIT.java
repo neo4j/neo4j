@@ -20,11 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -59,13 +56,15 @@ public class FailedIndexRestartIT {
             tx.schema().indexFor(robot).on(GENDER).create();
             tx.commit();
         }
-        var e = assertThrows(RuntimeException.class, () -> awaitIndexesOnline(database));
-        assertThat(getRootCause(e).getMessage(), containsString("Property value is too large to index"));
+
+        assertThatThrownBy(() -> awaitIndexesOnline(database))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContainingAll("IllegalArgumentException", "Property value is too large to index");
 
         // can add more nodes that do not satisfy failed index
         createNodeWithProperty(database, robot, megaProperty);
         try (Transaction transaction = database.beginTx()) {
-            assertEquals(2, count(transaction.findNodes(robot)));
+            assertThat(count(transaction.findNodes(robot))).isEqualTo(2);
         }
 
         dbmsController.restartDbms();
@@ -73,7 +72,7 @@ public class FailedIndexRestartIT {
         // can add more nodes that do not satisfy failed index after db and index restart
         createNodeWithProperty(database, robot, megaProperty);
         try (Transaction transaction = database.beginTx()) {
-            assertEquals(3, count(transaction.findNodes(robot)));
+            assertThat(count(transaction.findNodes(robot))).isEqualTo(3);
         }
     }
 

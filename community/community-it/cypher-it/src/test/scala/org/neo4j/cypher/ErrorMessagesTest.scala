@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.hamcrest.CoreMatchers.containsString
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
-
-import java.util.Optional
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
@@ -251,13 +247,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   private def expectError(query: String, expectedError: String): Unit = {
     val error = intercept[Neo4jException](executeQuery(query))
-    assertThat(error.getMessage, containsString(expectedError))
+    assertThat(error).hasMessageContaining(expectedError)
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int): Unit = {
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error.getMessage, containsString(expectedError))
-    assertThat(error.getOffset, equalTo(Optional.of(expectedOffset.asInstanceOf[java.lang.Integer])))
+    assertThat(error).hasMessageContaining(expectedError)
+    assertThat(error.getOffset).hasValue(expectedOffset);
   }
 
   private def testSyntaxErrorWithCaret(expectedError: String, query: String, expectedCaret: String): Unit = {

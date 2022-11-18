@@ -20,8 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -90,7 +89,7 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                         exact(102, update.values()[2]),
                         exact(103, update.values()[3]));
                 assertEquals(1, hits.size(), update.describe(tokens) + " " + hits);
-                assertThat(single(hits), equalTo(update.getEntityId()));
+                assertThat(single(hits)).isEqualTo(update.getEntityId());
             }
         }
     }
@@ -181,12 +180,12 @@ abstract class CompositeRandomizedIndexAccessorCompatibility extends IndexAccess
                 List<Long> actualIds = assertInOrder(IndexOrder.ASCENDING, predicates);
                 actualIds.sort(Long::compare);
                 // then
-                assertThat(actualIds, equalTo(expectedIds));
+                assertThat(actualIds).isEqualTo(expectedIds);
 
                 actualIds = assertInOrder(IndexOrder.DESCENDING, predicates);
                 actualIds.sort(Long::compare);
                 // then
-                assertThat(actualIds, equalTo(expectedIds));
+                assertThat(actualIds).isEqualTo(expectedIds);
             }
         }
 

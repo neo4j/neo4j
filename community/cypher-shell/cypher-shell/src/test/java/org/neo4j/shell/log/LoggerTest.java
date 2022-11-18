@@ -20,9 +20,7 @@
 package org.neo4j.shell.log;
 
 import static java.util.Map.entry;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.shell.log.Logger.Level.ERROR;
 import static org.neo4j.shell.log.Logger.Level.INFO;
 import static org.neo4j.shell.log.Logger.Level.WARNING;
@@ -64,13 +62,13 @@ class LoggerTest {
 
         logStatement.accept(setup.log());
 
-        assertThat(setup.handler().records.size(), is(1));
+        assertThat(setup.handler().records).hasSize(1);
         final var record = setup.handler().records.get(0);
-        assertThat(record.getMessage(), is(expectedMessage));
+        assertThat(record.getMessage()).isEqualTo(expectedMessage);
         if (expectedExceptionMessage != null) {
-            assertThat(record.getThrown().getMessage(), is(expectedExceptionMessage));
+            assertThat(record.getThrown()).hasMessage(expectedExceptionMessage);
         } else {
-            assertThat(record.getThrown(), nullValue());
+            assertThat(record.getThrown()).isNull();
         }
     }
 
@@ -92,7 +90,7 @@ class LoggerTest {
                 .map(Map.Entry::getKey)
                 .filter(l -> l.javaLevel().intValue() >= targetLevel.javaLevel().intValue())
                 .toList();
-        assertThat(setup.handler().records.size(), is(expectedStatements.size()));
+        assertThat(setup.handler().records).hasSameSizeAs(expectedStatements);
     }
 
     private TestSetup setupLogging(Level level) {

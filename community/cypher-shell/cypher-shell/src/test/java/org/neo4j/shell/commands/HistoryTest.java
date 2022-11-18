@@ -21,9 +21,7 @@ package org.neo4j.shell.commands;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -54,8 +52,9 @@ class HistoryTest {
 
     @Test
     void shouldNotAcceptSomeArgs() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
-        assertThat(exception.getMessage(), containsString("Unrecognised argument bob"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Unrecognised argument bob");
     }
 
     @Test

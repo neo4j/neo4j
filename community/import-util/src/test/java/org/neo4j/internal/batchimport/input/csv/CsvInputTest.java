@@ -23,9 +23,8 @@ import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -1790,7 +1789,7 @@ class CsvInputTest {
             fail("Should have failed");
         } catch (DuplicateHeaderException e) {
             // THEN
-            assertThat(e.getMessage(), containsString(file.getFileName().toString()));
+            assertThat(e).hasMessageContaining(file.getFileName().toString());
         }
     }
 
@@ -1815,7 +1814,7 @@ class CsvInputTest {
             fail("Should have failed");
         } catch (DuplicateHeaderException e) {
             // THEN
-            assertThat(e.getMessage(), containsString(file.getFileName().toString()));
+            assertThat(e).hasMessageContaining(file.getFileName().toString());
         }
     }
 

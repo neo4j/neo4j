@@ -19,16 +19,12 @@
  */
 package org.neo4j.shell.terminal;
 
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.hamcrest.Matcher;
+import org.assertj.core.api.Condition;
 import org.jline.reader.Candidate;
 import org.jline.reader.LineReader;
 import org.jline.reader.Parser;
@@ -74,37 +70,37 @@ class JlineCompleterTest {
 
     @Test
     void completeCommands() {
-        assertThat(complete(":"), containsInAnyOrder(allCommands.toArray()));
+        assertThat(complete(":")).containsExactlyInAnyOrderElementsOf(allCommands);
     }
 
     @Test
     void completeBlankSanity() {
-        assertThat(complete(""), emptyStatementMatcher());
+        assertThat(complete("")).is(emptyStatementMatcher());
     }
 
     @Test
     void completeCypherWhereSanity() {
         var query = "match (myFirstNode:SomeLabel)-[myRelationship]->(mySecondNode) where ";
 
-        var cypher = hasItems("IN", "ENDS", "STARTS", "CONTAINS", "IS", "RETURN");
-        var identifiers = hasItems("myFirstNode", "myRelationship", "mySecondNode");
+        var cypher = List.of("IN", "ENDS", "STARTS", "CONTAINS", "IS", "RETURN");
+        var identifiers = List.of("myFirstNode", "myRelationship", "mySecondNode");
 
-        assertThat(complete(query), allOf(cypher, identifiers));
+        assertThat(complete(query)).containsAll(cypher).containsAll(identifiers);
     }
 
     @Test
     void completeCypherWhSanity() {
-        assertThat(complete("match (n) wh"), hasItems("WHERE", "n"));
+        assertThat(complete("match (n) wh")).contains("WHERE", "n");
     }
 
     @Test
     void completeCypherMaSanity() {
-        assertThat(complete("ma"), hasItems("MATCH"));
+        assertThat(complete("ma")).contains("MATCH");
     }
 
     @Test
     void completeCypherAlterSanity() {
-        assertThat(complete("alter "), hasItems("USER", "DATABASE"));
+        assertThat(complete("alter ")).contains("USER", "DATABASE");
     }
 
     @Test
@@ -112,34 +108,34 @@ class JlineCompleterTest {
         parameters.setParameter(new Parameter("myParam", "1", 1L));
         parameters.setParameter(new Parameter("myOtherParam", "2", 2L));
 
-        assertThat(complete(""), hasItems("$myParam", "$myOtherParam"));
-        assertThat(complete("match (n) where n.p = "), hasItems("$myParam", "$myOtherParam"));
-        assertThat(complete("match (n) where n.p = $"), hasItems("$myParam", "$myOtherParam"));
-        assertThat(
-                complete("match (n) where n.p = $myParam && n.p2 = $myOtherParam "),
-                allOf(not(hasItems("myParam", "myOtherParam")), hasItems("$myParam", "$myOtherParam")));
+        assertThat(complete("")).contains("$myParam", "$myOtherParam");
+        assertThat(complete("match (n) where n.p = ")).contains("$myParam", "$myOtherParam");
+        assertThat(complete("match (n) where n.p = $")).contains("$myParam", "$myOtherParam");
+        assertThat(complete("match (n) where n.p = $myParam && n.p2 = $myOtherParam "))
+                .doesNotContain("myParam", "myOtherParam")
+                .contains("$myParam", "$myOtherParam");
     }
 
     @Test
     void completeSecondCypherStatementSanity() {
-        assertThat(complete("return 1;"), emptyStatementMatcher());
-        assertThat(complete("return 1; "), emptyStatementMatcher());
-        assertThat(complete("return 1;ret"), hasItems("RETURN"));
+        assertThat(complete("return 1;")).is(emptyStatementMatcher());
+        assertThat(complete("return 1; ")).is(emptyStatementMatcher());
+        assertThat(complete("return 1;ret")).contains("RETURN");
     }
 
     private List<String> complete(String line) {
         var parsed = parser.parse(line, line.length(), Parser.ParseContext.COMPLETE);
         var candidates = new ArrayList<Candidate>();
         completer.complete(lineReader, parsed, candidates);
-        Matcher<Iterable<String>> bla = hasItems("HEj", "hj");
         return candidates.stream().map(Candidate::value).toList();
     }
 
-    private Matcher<Iterable<String>> emptyStatementMatcher() {
-        var firstKeywords = hasItems(
+    private Condition<List<? extends String>> emptyStatementMatcher() {
+        var firstKeywords = List.of(
                 "CREATE", "MATCH", "DROP", "UNWIND", "RETURN", "WITH", "LOAD", "ALTER", "RENAME", "SHOW", "START",
                 "STOP");
-        var commands = hasItems(allCommands.toArray(new String[0]));
-        return allOf(firstKeywords, commands);
+        var commands = allCommands;
+        return new Condition<>(
+                items -> items.containsAll(firstKeywords) && items.containsAll(commands), "Empty statement matcher");
     }
 }

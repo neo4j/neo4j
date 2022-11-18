@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
@@ -48,14 +47,14 @@ class CommandHelperTest {
         Command begin = commandHelper.getCommand(":BEGIN");
 
         // Then
-        assertTrue(begin instanceof Begin);
+        assertThat(begin).isInstanceOf(Begin.class);
     }
 
     @Test
     void internalStateSanityTest() {
         var args = new Command.Factory.Arguments(logger, Historian.empty, shell, null, null);
         var factories = new CommandHelper.CommandFactoryHelper().factoryByClass();
-        factories.forEach(
-                (cls, factory) -> assertEquals(cls, factory.executor(args).getClass()));
+        assertThat(factories)
+                .allSatisfy((cls, factory) -> assertThat(factory.executor(args)).isExactlyInstanceOf(cls));
     }
 }

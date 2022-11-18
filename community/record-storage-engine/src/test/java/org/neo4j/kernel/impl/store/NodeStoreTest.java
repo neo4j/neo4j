@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringContains.containsString;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -452,11 +451,11 @@ class NodeStoreTest {
         // when loading that node and making it heavy
         NodeRecord loadedRecord = nodeStore.newRecord();
         nodeStore.getRecordByCursor(record.getId(), loadedRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
-        InvalidRecordException e =
-                assertThrows(InvalidRecordException.class, () -> nodeStore.ensureHeavy(loadedRecord, storeCursors));
 
         // then
-        assertThat(e.getMessage(), containsString(loadedRecord.toString()));
+        assertThatThrownBy(() -> nodeStore.ensureHeavy(loadedRecord, storeCursors))
+                .isInstanceOf(InvalidRecordException.class)
+                .hasMessageContaining(loadedRecord.toString());
     }
 
     @Test

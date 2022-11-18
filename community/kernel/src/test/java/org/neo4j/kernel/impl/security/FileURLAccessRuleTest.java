@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.kernel.impl.security.FileURLAccessRuleTest.ValidationStatus.ERR_ARG;
 import static org.neo4j.kernel.impl.security.FileURLAccessRuleTest.ValidationStatus.ERR_AUTH;
 import static org.neo4j.kernel.impl.security.FileURLAccessRuleTest.ValidationStatus.ERR_FRAGMENT;
@@ -40,7 +38,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -55,10 +52,10 @@ class FileURLAccessRuleTest {
     void shouldThrowWhenFileAccessIsDisabled() throws Exception {
         final URL url = new URL("file:///dir/file.csv");
         final Config config = Config.defaults(GraphDatabaseSettings.allow_file_urls, false);
-        var error = assertThrows(URLAccessValidationError.class, () -> URLAccessRules.fileAccess()
-                .validate(config, url));
-        assertThat(error.getMessage())
-                .isEqualTo("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false");
+        assertThatThrownBy(() -> URLAccessRules.fileAccess().validate(config, url))
+                .isInstanceOf(URLAccessValidationError.class)
+                .hasMessageContaining(
+                        "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false");
     }
 
     @ParameterizedTest
@@ -652,31 +649,34 @@ class FileURLAccessRuleTest {
     private void testValidation(ValidationStatus status, String root, String url, String expected) throws Exception {
         if (status.equals(OK)) {
             URL accessURL = validate(root, url);
-            assertEquals(expected, accessURL.toString());
+            assertThat(accessURL.toString()).isEqualTo(expected);
         } else if (status.equals(ERR_AUTH)) {
-            final var err = assertThrows(URLAccessValidationError.class, () -> validate(root, url));
-            MatcherAssert.assertThat(err.getMessage(), containsString("URL may not contain an authority section"));
+            assertThatThrownBy(() -> validate(root, url))
+                    .isInstanceOf(URLAccessValidationError.class)
+                    .hasMessageContaining("URL may not contain an authority section");
         } else if (status.equals(ERR_QUERY)) {
-            final var err = assertThrows(URLAccessValidationError.class, () -> validate(root, url));
-            MatcherAssert.assertThat(err.getMessage(), containsString("file URL may not contain a query component"));
+            assertThatThrownBy(() -> validate(root, url))
+                    .isInstanceOf(URLAccessValidationError.class)
+                    .hasMessageContaining("file URL may not contain a query component");
         } else if (status.equals(ERR_FRAGMENT)) {
-            final var err = assertThrows(IllegalArgumentException.class, () -> validate(root, url));
-            MatcherAssert.assertThat(err.getMessage(), containsString("URI has a fragment component"));
+            assertThatThrownBy(() -> validate(root, url))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("URI has a fragment component");
         } else if (status.equals(ERR_ARG)) {
-            assertThrows(IllegalArgumentException.class, () -> validate(root, url));
+            assertThatThrownBy(() -> validate(root, url)).isInstanceOf(IllegalArgumentException.class);
         } else if (status.equals(ERR_PATH)) {
-            assertThrows(InvalidPathException.class, () -> validate(root, url));
+            assertThatThrownBy(() -> validate(root, url)).isInstanceOf(InvalidPathException.class);
         } else if (status.equals(ERR_URL)) {
-            assertThrows(MalformedURLException.class, () -> validate(root, url));
+            assertThatThrownBy(() -> validate(root, url)).isInstanceOf(MalformedURLException.class);
         } else if (status.equals(ERR_URI)) {
-            final var err = assertThrows(Exception.class, () -> validate(root, url));
-            if (err instanceof RuntimeException) {
-                assertEquals(err.getCause().getClass(), URISyntaxException.class);
-            } else if (err instanceof URISyntaxException) {
-                assertThrows(URISyntaxException.class, () -> validate(root, url));
-            } else {
-                throw new Exception("Unpexcted test result");
-            }
+            // validate should throw either a URISyntaxException,
+            // or a RuntimeException whose cause is a URISyntaxException
+            assertThatThrownBy(() -> validate(root, url))
+                    .satisfiesAnyOf(
+                            err -> assertThat(err)
+                                    .isInstanceOf(RuntimeException.class)
+                                    .hasCauseExactlyInstanceOf(URISyntaxException.class),
+                            err -> assertThat(err).isInstanceOf(URISyntaxException.class));
         } else {
             throw new Exception("Unexpected test result");
         }

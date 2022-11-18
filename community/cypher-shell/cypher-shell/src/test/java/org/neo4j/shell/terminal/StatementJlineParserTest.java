@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.terminal;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.jline.reader.Parser.ParseContext.COMPLETE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -55,10 +54,10 @@ class StatementJlineParserTest {
     @Test
     void disableParsing() {
         parser.setEnableStatementParsing(false);
-        assertThat(parse("bla; bla; bla;"), is(new UnparsedLine("bla; bla; bla;", 14)));
-        assertThat(parse(":bla"), is(new UnparsedLine(":bla", 4)));
-        assertThat(parse(":bla", COMPLETE), is(new UnparsedLine(":bla", 4)));
-        assertThat(parse("return 1; return 2"), is(new UnparsedLine("return 1; return 2", 18)));
+        assertThat(parse("bla; bla; bla;")).isEqualTo(new UnparsedLine("bla; bla; bla;", 14));
+        assertThat(parse(":bla")).isEqualTo(new UnparsedLine(":bla", 4));
+        assertThat(parse(":bla", COMPLETE)).isEqualTo(new UnparsedLine(":bla", 4));
+        assertThat(parse("return 1; return 2")).isEqualTo(new UnparsedLine("return 1; return 2", 18));
     }
 
     @Test
@@ -87,16 +86,16 @@ class StatementJlineParserTest {
 
     @Test
     void parseCommandForCompletion() {
-        assertThat(parse(":", COMPLETE), is(new CommandCompletion(command(":", List.of(), false, 0, 0), ":", 1)));
-        assertThat(
-                parse(":hel", COMPLETE), is(new CommandCompletion(command(":hel", List.of(), false, 0, 3), ":hel", 4)));
+        assertThat(parse(":", COMPLETE)).isEqualTo(new CommandCompletion(command(":", List.of(), false, 0, 0), ":", 1));
+        assertThat(parse(":hel", COMPLETE))
+                .isEqualTo(new CommandCompletion(command(":hel", List.of(), false, 0, 3), ":hel", 4));
     }
 
     @Test
     void dontCompleteCommandWithParam() {
-        assertThat(parse(":param myParam", COMPLETE), is(new BlankCompletion(":param myParam", 14)));
-        assertThat(parse(":help :pa", COMPLETE), is(new BlankCompletion(":help :pa", 9)));
-        assertThat(parse(":help :param\n", COMPLETE), is(new BlankCompletion(":help :param\n", 13)));
+        assertThat(parse(":param myParam", COMPLETE)).isEqualTo(new BlankCompletion(":param myParam", 14));
+        assertThat(parse(":help :pa", COMPLETE)).isEqualTo(new BlankCompletion(":help :pa", 9));
+        assertThat(parse(":help :param\n", COMPLETE)).isEqualTo(new BlankCompletion(":help :param\n", 13));
     }
 
     @Test
@@ -105,16 +104,16 @@ class StatementJlineParserTest {
         var parsed = (CypherCompletion) parse(query, COMPLETE);
 
         var expectedStatement = new CypherStatement(query, false, 0, 18);
-        assertThat(parsed.statement(), is(expectedStatement));
-        assertThat(parsed.word(), is(""));
-        assertThat(parsed.line(), is(query));
-        assertThat(parsed.cursor(), is(query.length()));
+        assertThat(parsed.statement()).isEqualTo(expectedStatement);
+        assertThat(parsed.word()).isEqualTo("");
+        assertThat(parsed.line()).isEqualTo(query);
+        assertThat(parsed.cursor()).isEqualTo(query.length());
     }
 
     @Test
     void completeEmptyStatement() {
-        assertThat(parse("", COMPLETE), is(new BlankCompletion("", 0)));
-        assertThat(parse("return 1;", COMPLETE), is(new BlankCompletion("return 1;", 9)));
+        assertThat(parse("", COMPLETE)).isEqualTo(new BlankCompletion("", 0));
+        assertThat(parse("return 1;", COMPLETE)).isEqualTo(new BlankCompletion("return 1;", 9));
     }
 
     private CypherStatement cypher(String cypher) {
@@ -134,8 +133,7 @@ class StatementJlineParserTest {
     }
 
     private void assertSimpleParse(String line, StatementParser.ParsedStatement... statements) {
-        assertThat(
-                parse(line),
-                is(new SimpleParsedStatements(new ParsedStatements(List.of(statements)), line, line.length())));
+        assertThat(parse(line))
+                .isEqualTo(new SimpleParsedStatements(new ParsedStatements(List.of(statements)), line, line.length()));
     }
 }

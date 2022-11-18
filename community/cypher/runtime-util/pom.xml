@@ -168,11 +168,6 @@
         <!-- test dependencies -->
 
         <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-test-util</artifactId>
             <version>${project.version}</version>

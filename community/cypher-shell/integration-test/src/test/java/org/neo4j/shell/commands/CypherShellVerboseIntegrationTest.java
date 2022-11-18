@@ -19,14 +19,12 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.anyOf;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.shell.Conditions.contains;
 import static org.neo4j.shell.util.Versions.majorVersion;
 
 import org.junit.jupiter.api.AfterEach;
@@ -73,7 +71,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("RETURN duration({months:0.75})"));
 
         // then
-        assertThat(linePrinter.output(), containsString("P22DT19H51M49.5S"));
+        assertThat(linePrinter.output()).contains("P22DT19H51M49.5S");
     }
 
     @Test
@@ -82,7 +80,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("CREATE (:TestPerson {name: \"Jane Smith\"})"));
 
         // then
-        assertThat(linePrinter.output(), containsString("Added 1 nodes, Set 1 properties, Added 1 labels"));
+        assertThat(linePrinter.output()).contains("Added 1 nodes, Set 1 properties, Added 1 labels");
     }
 
     @Test
@@ -92,16 +90,19 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String output = linePrinter.output();
-        assertThat(output, containsString("| jane "));
-        assertThat(output, containsString("| (:TestPerson {name: \"Jane Smith\"}) |"));
-        assertThat(output, containsString("Added 1 nodes, Set 1 properties, Added 1 labels"));
+        assertThat(output)
+                .contains("| jane ")
+                .contains("| (:TestPerson {name: \"Jane Smith\"}) |")
+                .contains("Added 1 nodes, Set 1 properties, Added 1 labels");
     }
 
     @Test
     void connectTwiceThrows() {
-        assertTrue(shell.isConnected(), "Shell should already be connected");
-        CommandException exception = assertThrows(CommandException.class, () -> connect("neo"));
-        assertThat(exception.getMessage(), containsString("Already connected"));
+        assertThat(shell.isConnected()).as("Shell should already be connected").isTrue();
+
+        assertThatThrownBy(() -> connect("neo"))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Already connected");
     }
 
     @Test
@@ -115,10 +116,8 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("MATCH (n:TestPerson) RETURN n ORDER BY n.name"));
 
         String result = linePrinter.output();
-        assertThat(
-                result,
-                containsString(
-                        "| (:TestPerson {name: \"Jane Smith\"}) |\n" + "| (:TestPerson {name: \"Jane Smith\"}) |"));
+        assertThat(result)
+                .contains("| (:TestPerson {name: \"Jane Smith\"}) |\n" + "| (:TestPerson {name: \"Jane Smith\"}) |");
     }
 
     @Test
@@ -139,8 +138,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(actual, containsString("Order"));
-        assertThat(actual, containsString("n.age ASC"));
+        assertThat(actual).contains("Order").contains("n.age ASC");
     }
 
     @Test
@@ -153,9 +151,9 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(actual, containsString(TablePlanFormatter.DETAILS));
-        assertThat(actual, containsString("n.age AS age"));
-        assertThat(actual, not(containsString(TablePlanFormatter.IDENTIFIERS)));
+        assertThat(actual)
+                .contains(TablePlanFormatter.DETAILS, "n.age AS age")
+                .doesNotContain(TablePlanFormatter.IDENTIFIERS);
     }
 
     @Test
@@ -168,8 +166,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(actual, not(containsString(TablePlanFormatter.DETAILS)));
-        assertThat(actual, containsString(TablePlanFormatter.IDENTIFIERS));
+        assertThat(actual).contains(TablePlanFormatter.IDENTIFIERS).doesNotContain(TablePlanFormatter.DETAILS);
     }
 
     @Test
@@ -183,10 +180,11 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(actual, containsString("\"EXPLAIN\""));
-        assertThat(actual, containsString("\"READ_ONLY\""));
-        assertThat(actual, containsString("\"RULE\""));
-        assertThat(actual, containsString("\"INTERPRETED\""));
+        assertThat(actual)
+                .contains("\"EXPLAIN\"")
+                .contains("\"READ_ONLY\"")
+                .contains("\"RULE\"")
+                .contains("\"INTERPRETED\"");
     }
 
     @Test
@@ -201,13 +199,12 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
         // then
         String actual = linePrinter.output();
         // First table
-        assertThat(
-                actual.replace(" ", ""),
-                containsString("|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|"));
+        assertThat(actual.replace(" ", ""))
+                .contains("|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|");
         // Second table
         String upTo5_0 = "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|";
         String from5_1 = "|Operator|Id|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|";
-        assertThat(actual.replace(" ", ""), anyOf(containsString(upTo5_0), containsString(from5_1)));
+        assertThat(actual.replace(" ", "")).is(anyOf(contains(upTo5_0), contains(from5_1)));
     }
 
     @Test
@@ -217,7 +214,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(actual, containsString("3 rows\n"));
+        assertThat(actual).contains("3 rows\n");
     }
 
     @Test
@@ -227,9 +224,8 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
 
         // then
         String actual = linePrinter.output();
-        assertThat(
-                actual,
-                containsString(String.format("+-----+%n" + "| row |%n"
+        assertThat(actual)
+                .contains(String.format("+-----+%n" + "| row |%n"
                         + "+-----+%n"
                         + "| 1   |%n"
                         + "| 2   |%n"
@@ -237,6 +233,6 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest {
                         + "+-----+%n"
                         + "%n"
                         + "3 rows%n"
-                        + "ready to start consuming query after")));
+                        + "ready to start consuming query after"));
     }
 }

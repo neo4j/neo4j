@@ -23,15 +23,9 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
@@ -51,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -132,7 +127,8 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter, times(3)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
-        assertEquals("myusername@mydb> good1;\r\nmyusername@mydb> good2;\r\nmyusername@mydb> \r\n", out.toString());
+        assertThat(out.toString())
+                .isEqualTo("myusername@mydb> good1;\r\nmyusername@mydb> good2;\r\nmyusername@mydb> \r\n");
     }
 
     @Test
@@ -140,7 +136,7 @@ class InteractiveShellRunnerTest {
         var runner = runner(lines("good1;", "bad1;", "good2;", "bad2;", "good3;"));
         int code = runner.runUntilEnd();
 
-        assertEquals(0, code, "Wrong exit code");
+        assertThat(code).as("Wrong exit code").isEqualTo(EXIT_SUCCESS);
 
         verify(cmdExecuter).execute(cypher("good1"));
         verify(cmdExecuter).execute(cypher("bad1"));
@@ -156,12 +152,13 @@ class InteractiveShellRunnerTest {
     @Test
     void runUntilEndShouldStopOnExitExceptionAndReturnCode() throws CommandException {
         var runner = runner(lines("good1;", "bad1;", "good2;", "exit;", "bad2;", "good3;"));
+        final int expectedCode = 1234;
 
-        doThrow(new ExitException(1234)).when(cmdExecuter).execute(statementContains("exit"));
+        doThrow(new ExitException(expectedCode)).when(cmdExecuter).execute(statementContains("exit"));
 
         int code = runner.runUntilEnd();
 
-        assertEquals(1234, code, "Wrong exit code");
+        assertThat(code).as("Wrong exit code").isEqualTo(expectedCode);
 
         verify(cmdExecuter).execute(cypher("good1"));
         verify(cmdExecuter).execute(cypher("bad1"));
@@ -176,10 +173,8 @@ class InteractiveShellRunnerTest {
     @Test
     void historyIsRecorded() throws Exception {
         // given
-
-        String cmd1 = ":set var \"3\"";
-        String cmd2 = ":help exit";
-        var runner = runner(lines(cmd1, cmd2));
+        String[] commands = new String[] {":set var \"3\"", ":help exit"};
+        var runner = runner(lines(commands));
 
         // when
         runner.runUntilEnd();
@@ -190,14 +185,9 @@ class InteractiveShellRunnerTest {
 
         List<String> history = Files.readAllLines(historyFile.toPath());
 
-        assertEquals(2, history.size());
-        assertThat(history.get(0), endsWith(":" + cmd1));
-        assertThat(history.get(1), endsWith(":" + cmd2));
-
-        history = historian.getHistory();
-        assertEquals(2, history.size());
-        assertEquals(cmd1, history.get(0));
-        assertEquals(cmd2, history.get(1));
+        assertThat(history).zipSatisfy(Arrays.asList(commands), (entry, cmd) -> assertThat(entry)
+                .endsWith(":" + cmd));
+        assertThat(historian.getHistory()).containsExactly(commands);
     }
 
     @Test
@@ -208,9 +198,8 @@ class InteractiveShellRunnerTest {
         // when
         var statements = runner.readUntilStatement();
         // then
-        assertThat(
-                statements,
-                contains(new CommandStatement(":set", List.of("var", "\"String", "with", "!bang\""), false, 0, 27)));
+        assertThat(statements)
+                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "!bang\""), false, 0, 27));
     }
 
     @Test
@@ -222,9 +211,8 @@ class InteractiveShellRunnerTest {
         var statements = runner.readUntilStatement();
 
         // then
-        assertThat(
-                statements,
-                contains(new CommandStatement(":set", List.of("var", "\"String", "with", "\\!bang\""), false, 0, 28)));
+        assertThat(statements)
+                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "\\!bang\""), false, 0, 28));
     }
 
     @Test
@@ -233,7 +221,7 @@ class InteractiveShellRunnerTest {
         var runner = runner("\n");
 
         // when
-        assertDoesNotThrow(runner::readUntilStatement);
+        assertThatCode(runner::readUntilStatement).doesNotThrowAnyException();
     }
 
     @Test
@@ -242,7 +230,7 @@ class InteractiveShellRunnerTest {
         var runner = runner("");
 
         // when
-        assertThrows(NoMoreInputException.class, runner::readUntilStatement);
+        assertThatThrownBy(runner::readUntilStatement).isInstanceOf(NoMoreInputException.class);
     }
 
     @Test
@@ -255,8 +243,8 @@ class InteractiveShellRunnerTest {
         var statements2 = runner.readUntilStatement();
 
         // then
-        assertThat(statements1, is(List.of()));
-        assertThat(statements2, is(List.of(cypher("CREATE (n:Person) RETURN n"))));
+        assertThat(statements1).isEmpty();
+        assertThat(statements2).containsExactly(cypher("CREATE (n:Person) RETURN n"));
     }
 
     @Test
@@ -267,10 +255,9 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertThat(
-                out.toString(),
-                equalTo(
-                        "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n"));
+        assertThat(out.toString())
+                .isEqualTo(
+                        "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n");
     }
 
     @Test
@@ -282,7 +269,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertThat(out.toString(), equalTo("Disconnected> bla bla;\r\nDisconnected> \r\n"));
+        assertThat(out.toString()).isEqualTo("Disconnected> bla bla;\r\nDisconnected> \r\n");
     }
 
     @Test
@@ -298,7 +285,7 @@ class InteractiveShellRunnerTest {
 
         // then
         String wantedPrompt = "myusername@foo> return 1;\r\n";
-        assertThat(out.toString(), equalTo(wantedPrompt));
+        assertThat(out.toString()).isEqualTo(wantedPrompt);
     }
 
     @Test
@@ -313,7 +300,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertThat(out.toString(), equalTo("myusername@foo> return 1;\r\n"));
+        assertThat(out.toString()).isEqualTo("myusername@foo> return 1;\r\n");
     }
 
     @Test
@@ -328,7 +315,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertThat(out.toString(), equalTo("myusername@<default_database>> return 1;\r\n"));
+        assertThat(out.toString()).isEqualTo("myusername@<default_database>> return 1;\r\n");
     }
 
     @Test
@@ -343,7 +330,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertThat(out.toString(), equalTo("myusername@<default_database>> return 1;\r\n"));
+        assertThat(out.toString()).isEqualTo("myusername@<default_database>> return 1;\r\n");
     }
 
     @Test
@@ -358,7 +345,7 @@ class InteractiveShellRunnerTest {
 
         var exitCode = runner.runUntilEnd();
 
-        assertEquals(EXIT_SUCCESS, exitCode);
+        assertThat(exitCode).isEqualTo(EXIT_SUCCESS);
 
         var expected = "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" + "> match\n"
                 + "  (n)\n"
@@ -369,7 +356,7 @@ class InteractiveShellRunnerTest {
                 + "> return 1;\n"
                 + "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n"
                 + "> \n";
-        assertThat(out.toString().replace("\r", ""), equalTo(expected));
+        assertThat(out.toString().replace("\r", "")).isEqualTo(expected);
     }
 
     @Test
@@ -378,12 +365,12 @@ class InteractiveShellRunnerTest {
         var runner = runner(lines("   ", "   ", "bla bla;"));
         when(txHandler.isTransactionOpen()).thenReturn(true);
 
-        assertEquals(EXIT_SUCCESS, runner.runUntilEnd());
+        assertThat(runner.runUntilEnd()).isEqualTo(EXIT_SUCCESS);
 
         var expected = "myusername@mydb#    \r\n" + "myusername@mydb#    \r\n"
                 + "myusername@mydb# bla bla;\r\n"
                 + "myusername@mydb# \r\n";
-        assertThat(out.toString(), equalTo(expected));
+        assertThat(out.toString()).isEqualTo(expected);
     }
 
     @Test
@@ -395,7 +382,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertThat(out.toString(), equalTo("myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n"));
+        assertThat(out.toString()).isEqualTo("myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n");
     }
 
     @Test
@@ -566,10 +553,8 @@ class InteractiveShellRunnerTest {
         sr.runner.runUntilEnd();
 
         // then
-        assertThat(
-                sr.output.toString(),
-                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
-        assertThat(sr.error.toString(), containsString("Not available"));
+        assertThat(sr.output.toString()).contains(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT));
+        assertThat(sr.error.toString()).contains("Not available");
     }
 
     @Test
@@ -587,10 +572,8 @@ class InteractiveShellRunnerTest {
         sr.runner.runUntilEnd();
 
         // then
-        assertThat(
-                sr.output.toString(),
-                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
-        assertThat(sr.error.toString(), containsString("Not available"));
+        assertThat(sr.output.toString()).contains(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT));
+        assertThat(sr.error.toString()).contains("Not available");
     }
 
     @Test
@@ -608,10 +591,8 @@ class InteractiveShellRunnerTest {
         sr.runner.runUntilEnd();
 
         // then
-        assertThat(
-                sr.output.toString(),
-                containsString(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT)));
-        assertThat(sr.error.toString(), containsString("Not available"));
+        assertThat(sr.output.toString()).contains(format("myusername@foo%s> ", DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT));
+        assertThat(sr.error.toString()).contains("Not available");
     }
 
     @Test
@@ -629,8 +610,8 @@ class InteractiveShellRunnerTest {
         sr.runner.runUntilEnd();
 
         // then
-        assertThat(sr.output.toString(), containsString("myusername@mydb> "));
-        assertThat(sr.error.toString(), containsString("Non existing"));
+        assertThat(sr.output.toString()).contains("myusername@mydb> ");
+        assertThat(sr.error.toString()).contains("Non existing");
     }
 
     private InteractiveShellRunner runner(String input) {

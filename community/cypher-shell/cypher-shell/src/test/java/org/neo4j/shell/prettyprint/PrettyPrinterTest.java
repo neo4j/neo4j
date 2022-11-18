@@ -20,9 +20,7 @@
 package org.neo4j.shell.prettyprint;
 
 import static java.util.Collections.unmodifiableMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.driver.Record;
@@ -71,7 +68,7 @@ class PrettyPrinterTest {
         String actual = verbosePrinter.format(result);
 
         // then
-        assertThat(actual, containsString("Added 10 nodes, Added 1 labels"));
+        assertThat(actual).contains("Added 10 nodes, Added 1 labels");
     }
 
     @Test
@@ -114,7 +111,7 @@ class PrettyPrinterTest {
                 Rows: 20
                 DbHits: 1000
                 Memory (Bytes): 10""";
-        Stream.of(expected.split("\n")).forEach(e -> assertThat(actual, containsString(e)));
+        assertThat(actual).contains(expected.split("\n"));
     }
 
     @Test
@@ -156,7 +153,7 @@ class PrettyPrinterTest {
                 Rows: 20
                 DbHits: 1000
                 Memory (Bytes): "?\"""";
-        Stream.of(expected.split("\n")).forEach(e -> assertThat(actual, containsString(e)));
+        assertThat(actual).contains(expected.split("\n"));
     }
 
     @Test
@@ -192,7 +189,7 @@ class PrettyPrinterTest {
                 Planner: "COST"
                 Runtime: "INTERPRETED"
                 Time: 12""";
-        Stream.of(expected.split("\n")).forEach(e -> assertThat(actual, containsString(e)));
+        assertThat(actual).contains(expected.split("\n"));
     }
 
     @Test
@@ -213,9 +210,9 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is(String.join(NEWLINE, "col1, col2", "[\"val1_1\", \"val1_2\"], [\"val2_1\"]", "[\"val2_1\"]", "")));
+        assertThat(actual)
+                .isEqualTo(String.join(
+                        NEWLINE, "col1, col2", "[\"val1_1\", \"val1_2\"], [\"val2_1\"]", "[\"val2_1\"]", ""));
     }
 
     @Test
@@ -241,7 +238,7 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(actual, is(expectedResult));
+        assertThat(actual).isEqualTo(expectedResult);
     }
 
     @Test
@@ -270,9 +267,9 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is("col1, col2" + NEWLINE + "(:label1:label2 {prop2: prop2_value, prop1: prop1_value})" + NEWLINE));
+        assertThat(actual)
+                .isEqualTo(
+                        "col1, col2" + NEWLINE + "(:label1:label2 {prop2: prop2_value, prop1: prop1_value})" + NEWLINE);
     }
 
     @Test
@@ -301,9 +298,8 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is("rel" + NEWLINE + "[:RELATIONSHIP_TYPE {prop2: prop2_value, prop1: prop1_value}]" + NEWLINE));
+        assertThat(actual)
+                .isEqualTo("rel" + NEWLINE + "[:RELATIONSHIP_TYPE {prop2: prop2_value, prop1: prop1_value}]" + NEWLINE);
     }
 
     @Test
@@ -344,11 +340,11 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is("rel, node" + NEWLINE + "[:`RELATIONSHIP,TYPE` {prop2: prop2_value, prop1: \"prop1, value\"}], "
-                        + "(:`label ``1`:label2 {prop1: \"prop1:value\", `1prop2`: \"\", ä: not-escaped})"
-                        + NEWLINE));
+        assertThat(actual)
+                .isEqualTo(
+                        "rel, node" + NEWLINE + "[:`RELATIONSHIP,TYPE` {prop2: prop2_value, prop1: \"prop1, value\"}], "
+                                + "(:`label ``1`:label2 {prop1: \"prop1:value\", `1prop2`: \"\", ä: not-escaped})"
+                                + NEWLINE);
     }
 
     @Test
@@ -405,11 +401,10 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is("path" + NEWLINE + "(:start {prop1: prop1_value})-[:RELATIONSHIP_TYPE]->"
+        assertThat(actual)
+                .isEqualTo("path" + NEWLINE + "(:start {prop1: prop1_value})-[:RELATIONSHIP_TYPE]->"
                         + "(:middle)<-[:RELATIONSHIP_TYPE]-(:end {prop2: prop2_value})"
-                        + NEWLINE));
+                        + NEWLINE);
     }
 
     @Test
@@ -451,7 +446,7 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(actual, is("path" + NEWLINE + "(:start)-[:RELATIONSHIP_TYPE]->(:end)" + NEWLINE));
+        assertThat(actual).isEqualTo("path" + NEWLINE + "(:start)-[:RELATIONSHIP_TYPE]->(:end)" + NEWLINE);
     }
 
     @Test
@@ -511,10 +506,9 @@ class PrettyPrinterTest {
         String actual = plainPrinter.format(result);
 
         // then
-        assertThat(
-                actual,
-                is("path" + NEWLINE + "(:start)-[:RELATIONSHIP_TYPE]->"
+        assertThat(actual)
+                .isEqualTo("path" + NEWLINE + "(:start)-[:RELATIONSHIP_TYPE]->"
                         + "(:second)<-[:RELATIONSHIP_TYPE]-(:third)-[:RELATIONSHIP_TYPE]->(:end)"
-                        + NEWLINE));
+                        + NEWLINE);
     }
 }

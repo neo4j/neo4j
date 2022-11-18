@@ -24,7 +24,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.allOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,14 +41,14 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
+import org.assertj.core.api.Condition;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.Main;
@@ -78,14 +79,15 @@ public class AssertableMain {
     }
 
     public AssertableMain assertOutputLines(String... expected) {
-        return assertThatOutput(
-                Matchers.equalTo(stream(expected).map(l -> l + "\n").collect(joining())));
+        final String expectedOutput =
+                Arrays.stream(expected).map(line -> line + "\n").collect(joining());
+        return assertThatOutput(new Condition<>(expectedOutput::equals, "Should equal expected"));
     }
 
     @SafeVarargs
-    public final AssertableMain assertThatOutput(Matcher<String>... matchers) {
+    public final AssertableMain assertThatOutput(Condition<String>... conditions) {
         var output = out.toString(UTF_8).replace("\r\n", "\n");
-        stream(matchers).forEach(matcher -> assertThat(output, matcher));
+        assertThat(output).satisfies(allOf(conditions));
         return this;
     }
 
@@ -120,9 +122,9 @@ public class AssertableMain {
     }
 
     @SafeVarargs
-    public final AssertableMain assertThatErrorOutput(Matcher<String>... matchers) {
+    public final AssertableMain assertThatErrorOutput(Condition<String>... conditions) {
         var errorOutput = err.toString(UTF_8);
-        stream(matchers).forEach(matcher -> assertThat(errorOutput, matcher));
+        assertThat(errorOutput).satisfies(allOf(conditions));
         return this;
     }
 

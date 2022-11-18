@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,10 +56,9 @@ class UserMessagesHandlerTest {
     void welcomeWithImpersonation() {
         when(connector.impersonatedUser()).thenReturn(Optional.of("impersonated_user"));
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
-        assertThat(
-                userMessagesHandler.getWelcomeMessage(),
-                startsWith("Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ "
-                        + "as user @|BOLD bob|@@|YELLOW  impersonating |@@|BOLD impersonated_user|@."));
+        assertThat(userMessagesHandler.getWelcomeMessage())
+                .startsWith("Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ "
+                        + "as user @|BOLD bob|@@|YELLOW  impersonating |@@|BOLD impersonated_user|@.");
     }
 
     @Test

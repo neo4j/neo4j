@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -210,8 +208,8 @@ class EagerResultIT {
                 values.add(row.getString("n.c"));
                 return true;
             });
-            assertThat(values, hasSize(2));
-            assertThat(values, containsInAnyOrder("d", "y"));
+            assertThat(values).hasSize(2);
+            assertThat(values).containsExactlyInAnyOrder("d", "y");
             transaction.commit();
         }
     }

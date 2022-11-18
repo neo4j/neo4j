@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isA;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import java.util.List;
@@ -59,7 +58,7 @@ class JavaValueCompatibilityTest {
             List<List<Object>> x = (List<List<Object>>) next.get("x");
             Iterable objects = x.get(0);
 
-            assertThat(objects, isA(Iterable.class));
+            assertThat(objects).isInstanceOf(Iterable.class);
             transaction.commit();
         }
     }

@@ -22,17 +22,18 @@ package org.neo4j.shell;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.allOf;
+import static org.assertj.core.api.Assertions.anyOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.shell.Conditions.contains;
+import static org.neo4j.shell.Conditions.emptyString;
+import static org.neo4j.shell.Conditions.endsWith;
+import static org.neo4j.shell.Conditions.is;
+import static org.neo4j.shell.Conditions.startsWith;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
@@ -47,8 +48,7 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.driver.exceptions.ClientException;
@@ -78,10 +78,10 @@ class MainIntegrationTest {
     private static final String GOOD_BYE = format(":exit%n%nBye!%n");
 
     private final Version serverVersion = Versions.version(runInDbAndReturn("", CypherShell::getServerVersion));
-    private final Matcher<String> endsWithInteractiveExit = endsWith(format("> %s", GOOD_BYE));
+    private final Condition<String> endsWithInteractiveExit = endsWith(format("> %s", GOOD_BYE));
 
-    private Matcher<String> returned42AndExited() {
-        return Matchers.allOf(containsString(return42Output()), endsWithInteractiveExit);
+    private Condition<String> returned42AndExited() {
+        return allOf(contains(return42Output()), endsWithInteractiveExit);
     }
 
     @Test
@@ -103,8 +103,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("\"neo4j\", [\"admin\", \"PUBLIC\"], FALSE, FALSE, NULL"),
-                        endsWithInteractiveExit);
+                        contains("\"neo4j\", [\"admin\", \"PUBLIC\"], FALSE, FALSE, NULL"), endsWithInteractiveExit);
     }
 
     @Test
@@ -132,7 +131,7 @@ class MainIntegrationTest {
                 .userInputLines("bob", "expiredPassword", "match (n) return count(n);", ":exit")
                 .run()
                 .assertSuccess(false)
-                .assertThatErrorOutput(containsString("CALL dbms.changePassword"))
+                .assertThatErrorOutput(contains("CALL dbms.changePassword"))
                 .assertThatOutput(endsWithInteractiveExit);
     }
 
@@ -145,7 +144,7 @@ class MainIntegrationTest {
                 .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expiredPassword\" TO \"shinynew\";")
                 .run()
                 .assertSuccess()
-                .assertThatOutput(containsString("0 rows"));
+                .assertThatOutput(contains("0 rows"));
 
         assertUserCanConnectAndRunQuery("bob", "shinynew");
     }
@@ -159,7 +158,7 @@ class MainIntegrationTest {
                 .addArgs("ALTER CURRENT USER SET PASSWORD FROM \"expiredPassword\" TO \"höglund!\";")
                 .run()
                 .assertFailure()
-                .assertThatErrorOutput(containsString("The credentials you provided were valid, but must be changed"));
+                .assertThatErrorOutput(contains("The credentials you provided were valid, but must be changed"));
     }
 
     @Test
@@ -185,7 +184,7 @@ class MainIntegrationTest {
                 .addArgs("match (n) return n;")
                 .run()
                 .assertFailure()
-                .assertThatErrorOutput(containsString("The credentials you provided were valid, but must be changed"))
+                .assertThatErrorOutput(contains("The credentials you provided were valid, but must be changed"))
                 .assertThatOutput(emptyString());
     }
 
@@ -209,7 +208,7 @@ class MainIntegrationTest {
                 .userInputLines("", ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(expectedPrompt), endsWithInteractiveExit);
+                .assertThatOutput(contains(expectedPrompt), endsWithInteractiveExit);
     }
 
     @Test
@@ -249,7 +248,7 @@ class MainIntegrationTest {
                 .addArgs("--file", fileFromResource("single.cypher"))
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(expectedQueryResult));
+                .assertThatOutput(contains(expectedQueryResult));
     }
 
     @Test
@@ -284,7 +283,7 @@ class MainIntegrationTest {
                 .addArgs("-u", USER, "-p", PASSWORD, "--file", fileFromResource("invalid.cypher"))
                 .run()
                 .assertFailure()
-                .assertThatErrorOutput(containsString("Invalid input"))
+                .assertThatErrorOutput(contains("Invalid input"))
                 .assertOutputLines("result", "42");
     }
 
@@ -296,8 +295,7 @@ class MainIntegrationTest {
                 .userInputLines(":source " + file, ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(
-                        containsString("> :source " + file + format("%nresult%n42")), endsWithInteractiveExit);
+                .assertThatOutput(contains("> :source " + file + format("%nresult%n42")), endsWithInteractiveExit);
     }
 
     @Test
@@ -307,7 +305,7 @@ class MainIntegrationTest {
                 .userInputLines(":disconnect ", ":exit")
                 .run()
                 .assertSuccessAndDisconnected()
-                .assertThatOutput(containsString("> :disconnect " + format("%nDisconnected>")), endsWith(GOOD_BYE));
+                .assertThatOutput(contains("> :disconnect " + format("%nDisconnected>")), endsWith(GOOD_BYE));
     }
 
     @Test
@@ -316,8 +314,8 @@ class MainIntegrationTest {
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
                 .userInputLines(":disconnect ", "RETURN 42 AS x;", ":exit")
                 .run()
-                .assertThatErrorOutput(containsString("Not connected to Neo4j"))
-                .assertThatOutput(containsString("> :disconnect " + format("%nDisconnected>")), endsWith(GOOD_BYE));
+                .assertThatErrorOutput(contains("Not connected to Neo4j"))
+                .assertThatOutput(contains("> :disconnect " + format("%nDisconnected>")), endsWith(GOOD_BYE));
     }
 
     @Test
@@ -328,8 +326,8 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :help")),
-                        containsString(format("%nAvailable commands:")),
+                        contains("> :disconnect " + format("%nDisconnected> :help")),
+                        contains(format("%nAvailable commands:")),
                         endsWith(GOOD_BYE));
     }
 
@@ -341,9 +339,9 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :history")),
-                        containsString("1  :disconnect"),
-                        containsString("2  :history"),
+                        contains("> :disconnect " + format("%nDisconnected> :history")),
+                        contains("1  :disconnect"),
+                        contains("2  :history"),
                         endsWith(GOOD_BYE));
     }
 
@@ -356,7 +354,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :source %s", file)),
+                        contains("> :disconnect " + format("%nDisconnected> :source %s", file)),
                         endsWith(format("Bye!%n")));
     }
 
@@ -369,7 +367,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :disconnect "
+                        contains("> :disconnect "
                                 + format("%nDisconnected> :connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME)),
                         endsWith(format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE)));
     }
@@ -385,7 +383,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :disconnect "
+                        contains("> :disconnect "
                                 + format(
                                         "%nDisconnected> :connect --username %s --password %s --database %s",
                                         USER, PASSWORD, SYSTEM_DB_NAME)),
@@ -400,9 +398,9 @@ class MainIntegrationTest {
                         ":disconnect ", format(":connect -u %s -p %s -d %s", USER, "wut!", SYSTEM_DB_NAME), ":exit")
                 .run()
                 .assertSuccessAndDisconnected(false)
-                .assertThatErrorOutput(containsString("The client is unauthorized due to authentication failure."))
+                .assertThatErrorOutput(contains("The client is unauthorized due to authentication failure."))
                 .assertThatOutput(
-                        containsString("> :disconnect "
+                        contains("> :disconnect "
                                 + format("%nDisconnected> :connect -u %s -p %s -d %s", USER, "wut!", SYSTEM_DB_NAME)),
                         endsWith(GOOD_BYE));
     }
@@ -417,9 +415,9 @@ class MainIntegrationTest {
                         ":exit")
                 .run()
                 .assertSuccessAndDisconnected(false)
-                .assertThatErrorOutput(containsString("The client is unauthorized due to authentication failure."))
+                .assertThatErrorOutput(contains("The client is unauthorized due to authentication failure."))
                 .assertThatOutput(
-                        containsString("> :disconnect "
+                        contains("> :disconnect "
                                 + format(
                                         "%nDisconnected> :connect -u %s -p %s -d %s",
                                         "PaulWesterberg", PASSWORD, SYSTEM_DB_NAME)),
@@ -434,8 +432,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString(
-                                "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s", USER, PASSWORD)),
+                        contains("> :disconnect " + format("%nDisconnected> :connect -u %s -p %s", USER, PASSWORD)),
                         endsWith(format("%s@%s> %s", USER, DEFAULT_DEFAULT_DB_NAME, GOOD_BYE)));
     }
 
@@ -447,8 +444,8 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
-                        containsString(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
                         endsWith(format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE)));
     }
 
@@ -460,8 +457,8 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
-                        containsString(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains("> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME)),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
                         endsWith(format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE)));
     }
 
@@ -473,8 +470,8 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :disconnect " + format("%nDisconnected> :connect")),
-                        containsString(format("%nusername: %s", USER) + format("%npassword: ***")),
+                        contains("> :disconnect " + format("%nDisconnected> :connect")),
+                        contains(format("%nusername: %s", USER) + format("%npassword: ***")),
                         endsWith(GOOD_BYE));
     }
 
@@ -487,7 +484,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("> :source " + file + format("%nresult%n42%nresult%n1337%nresult%n\"done\"")),
+                        contains("> :source " + file + format("%nresult%n42%nresult%n1337%nresult%n\"done\"")),
                         endsWithInteractiveExit);
     }
 
@@ -499,7 +496,7 @@ class MainIntegrationTest {
                 .userInputLines(":source " + file, ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString("> :source " + file + newLine + USER + "@"), endsWithInteractiveExit);
+                .assertThatOutput(contains("> :source " + file + newLine + USER + "@"), endsWithInteractiveExit);
     }
 
     @Test
@@ -510,10 +507,9 @@ class MainIntegrationTest {
                 .userInputLines(":source " + file, ":exit")
                 .run()
                 .assertSuccessAndConnected(false)
-                .assertThatErrorOutput(containsString("Invalid input"))
+                .assertThatErrorOutput(contains("Invalid input"))
                 .assertThatOutput(
-                        containsString("> :source " + file + format("%nresult%n42%n") + USER + "@"),
-                        endsWithInteractiveExit);
+                        contains("> :source " + file + format("%nresult%n42%n") + USER + "@"), endsWithInteractiveExit);
     }
 
     @Test
@@ -525,7 +521,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected(false)
                 .assertThatErrorOutput(is("Cannot find file: '" + file + "'" + newLine))
-                .assertThatOutput(containsString("> :source " + file + newLine + USER + "@"), endsWithInteractiveExit);
+                .assertThatOutput(contains("> :source " + file + newLine + USER + "@"), endsWithInteractiveExit);
     }
 
     @Test
@@ -648,7 +644,7 @@ class MainIntegrationTest {
                 .userInputLines("return", "'hej' as greeting;", "return", "1", "as", "x", ";", ":history", ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(expected), endsWithInteractiveExit);
+                .assertThatOutput(contains(expected), endsWithInteractiveExit);
     }
 
     @Test
@@ -665,9 +661,9 @@ class MainIntegrationTest {
 
         var readHistory = Files.readAllLines(history);
         assertEquals(3, readHistory.size());
-        assertThat(readHistory.get(0), endsWith("return 1;"));
-        assertThat(readHistory.get(1), endsWith("return 2;"));
-        assertThat(readHistory.get(2), endsWith(":exit"));
+        assertThat(readHistory.get(0)).is(endsWith("return 1;"));
+        assertThat(readHistory.get(1)).is(endsWith("return 2;"));
+        assertThat(readHistory.get(2)).is(endsWith(":exit"));
 
         var expected1 =
                 """
@@ -690,12 +686,12 @@ class MainIntegrationTest {
                 .userInputLines("return 3;", ":history", ":history clear", ":history", ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(expected1), containsString(expected2));
+                .assertThatOutput(contains(expected1), contains(expected2));
 
         var readHistoryAfterClear = Files.readAllLines(history);
         assertEquals(2, readHistoryAfterClear.size());
-        assertThat(readHistoryAfterClear.get(0), endsWith(":history"));
-        assertThat(readHistoryAfterClear.get(1), endsWith(":exit"));
+        assertThat(readHistoryAfterClear.get(0)).is(endsWith(":history"));
+        assertThat(readHistoryAfterClear.get(1)).is(endsWith(":exit"));
     }
 
     @Test
@@ -718,8 +714,8 @@ class MainIntegrationTest {
                         ":disconnect", ":connect -u new_user -p new_password -d neo4j", "show current user yield user;")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(
-                        "show current user yield user;\n" + "user\n" + "\"new_user\"\n" + "new_user@neo4j>"));
+                .assertThatOutput(
+                        contains("show current user yield user;\n" + "user\n" + "\"new_user\"\n" + "new_user@neo4j>"));
     }
 
     @Test
@@ -731,12 +727,12 @@ class MainIntegrationTest {
                         ":connect -u new_user -p " + PASSWORD + " -d neo4j", // Wrong password
                         "show current user yield user;")
                 .run()
-                .assertThatOutput(containsString("neo4j@neo4j> :disconnect\n" + "Disconnected> :connect -u new_user -p "
+                .assertThatOutput(contains("neo4j@neo4j> :disconnect\n" + "Disconnected> :connect -u new_user -p "
                         + PASSWORD + " -d neo4j\n" + "Disconnected> show current user yield user;\n"
                         + "Disconnected>"))
                 .assertThatErrorOutput(
-                        containsString("The client is unauthorized due to authentication failure"),
-                        containsString("Not connected"));
+                        contains("The client is unauthorized due to authentication failure"),
+                        contains("Not connected"));
     }
 
     @Test
@@ -750,13 +746,13 @@ class MainIntegrationTest {
                         "show current user yield user;")
                 .run()
                 .assertThatOutput(
-                        containsString("neo4j@neo4j> :disconnect\n" + "Disconnected> :connect -u new_user -d neo4j\n"
+                        contains("neo4j@neo4j> :disconnect\n" + "Disconnected> :connect -u new_user -d neo4j\n"
                                 + "password: ***\n"
                                 + "Disconnected> show current user yield user;\n"
                                 + "Disconnected>"))
                 .assertThatErrorOutput(
-                        containsString("The client is unauthorized due to authentication failure"),
-                        containsString("Not connected"));
+                        contains("The client is unauthorized due to authentication failure"),
+                        contains("Not connected"));
     }
 
     @Test
@@ -769,8 +765,8 @@ class MainIntegrationTest {
                         ":connect -u new_user -p new_password -d neo4j", // No disconnect
                         "show current user yield user;")
                 .run()
-                .assertThatErrorOutput(containsString("Already connected"))
-                .assertThatOutput(containsString("neo4j@neo4j> :connect -u new_user -p new_password -d neo4j\n"
+                .assertThatErrorOutput(contains("Already connected"))
+                .assertThatOutput(contains("neo4j@neo4j> :connect -u new_user -p new_password -d neo4j\n"
                         + "neo4j@neo4j> show current user yield user;\n"
                         + "user\n"
                         + "\"neo4j\"\n"
@@ -784,7 +780,7 @@ class MainIntegrationTest {
                 .userInputLines("return", "1 as res", ";", ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString("neo4j@neo4j> return\n" + "             1 as res\n"
+                .assertThatOutput(contains("neo4j@neo4j> return\n" + "             1 as res\n"
                         + "             ;\n"
                         + "res\n"
                         + "1\n"
@@ -804,7 +800,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString(
+                        contains(
                                 """
                                  > :params
                                  :param advice        => ['talk', 'less', 'smile', 'more']
@@ -812,7 +808,7 @@ class MainIntegrationTest {
                                  :param purple        => 'rain'
                                  :param repeatAfterMe => 'A' + 'B' + 'C'
                                  :param when          => date('2021-01-12')"""),
-                        containsString(
+                        contains(
                                 """
                                  > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
                                  $purple, $advice, $when, $repeatAfterMe, $easyAs
@@ -835,7 +831,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString(
+                        contains(
                                 """
                                         > :params
                                         :param advice        => ['talk', 'less', 'smile', 'more']
@@ -843,7 +839,7 @@ class MainIntegrationTest {
                                         :param purple        => 'rain'
                                         :param repeatAfterMe => 'A' + 'B' + 'C'
                                         :param when          => date('2021-01-12')"""),
-                        containsString(
+                        contains(
                                 """
                                         > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
                                         $purple, $advice, $when, $repeatAfterMe, $easyAs
@@ -880,7 +876,7 @@ class MainIntegrationTest {
                 .userInputLines("EXPLAIN MATCH (n) RETURN n;", ":exit")
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput(containsString(expected));
+                .assertThatOutput(contains(expected));
     }
 
     @Test
@@ -912,8 +908,8 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString("as user neo4j impersonating impersonate_me"),
-                        containsString(
+                        contains("as user neo4j impersonating impersonate_me"),
+                        contains(
                                 """
                                 neo4j(impersonate_me)@neo4j> :impersonate
                                 neo4j@neo4j> :impersonate impersonate_me
@@ -953,9 +949,9 @@ class MainIntegrationTest {
                 .userInputLines(":impersonate impersonate_me", "MATCH (n:ImpersonationTest) RETURN n;", ":exit")
                 .run()
                 .assertSuccess(false)
-                .assertThatErrorOutput(containsString("Cannot impersonate user 'impersonate_me'"))
+                .assertThatErrorOutput(contains("Cannot impersonate user 'impersonate_me'"))
                 .assertThatOutput(
-                        containsString(
+                        contains(
                                 """
                                 alice@neo4j> :impersonate impersonate_me
                                 Disconnected> MATCH (n:ImpersonationTest) RETURN n;
@@ -973,7 +969,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccess()
                 .assertThatOutput(
-                        containsString(
+                        contains(
                                 """
                                 user
                                 "the_undertaker"
@@ -991,7 +987,7 @@ class MainIntegrationTest {
                 .run()
                 .assertSuccess()
                 .assertThatOutput(
-                        containsString(
+                        contains(
                                 """
                                 user
                                 "hulk_hogan"
@@ -1175,10 +1171,10 @@ class MainIntegrationTest {
         fail("Could not find '" + find + "' in file " + file);
     }
 
-    private Matcher<String> containsDatabaseIsUnavailable(String name) {
+    private Condition<String> containsDatabaseIsUnavailable(String name) {
         return anyOf(
-                containsString("database is unavailable"),
-                containsString("Database '" + name + "' is unavailable"),
-                containsString("database is not currently available"));
+                contains("database is unavailable"),
+                contains("Database '" + name + "' is unavailable"),
+                contains("database is not currently available"));
     }
 }

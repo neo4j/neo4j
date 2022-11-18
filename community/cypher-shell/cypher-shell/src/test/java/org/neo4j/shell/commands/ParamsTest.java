@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -53,17 +51,17 @@ class ParamsTest {
 
     @Test
     void descriptionNotNull() {
-        assertNotNull(cmd.metadata().description());
+        assertThat(cmd.metadata().description()).isNotNull();
     }
 
     @Test
     void usageNotNull() {
-        assertNotNull(cmd.metadata().usage());
+        assertThat(cmd.metadata().usage()).isNotNull();
     }
 
     @Test
     void helpNotNull() {
-        assertNotNull(cmd.metadata().help());
+        assertThat(cmd.metadata().help()).isNotNull();
     }
 
     @Test
@@ -146,14 +144,16 @@ class ParamsTest {
         addParam("var", 9);
 
         // when
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
-        assertThat(exception.getMessage(), containsString("Unknown parameter: bob"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Unknown parameter: bob");
     }
 
     @Test
     void shouldNotAcceptMoreThanOneArgs() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob", "sob")));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob", "sob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     private void addParam(String name, int value) {

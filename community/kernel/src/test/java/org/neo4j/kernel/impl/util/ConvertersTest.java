@@ -20,11 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 import static org.neo4j.kernel.impl.util.Converters.toFiles;
@@ -33,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.neo4j.test.extension.Inject;
@@ -59,7 +55,7 @@ class ConvertersTest {
                 regexFiles(true).apply(directory.file("file").toAbsolutePath().toString() + ".*");
 
         // THEN
-        assertArrayEquals(new Path[] {file1, file2, file12, file32, file123}, files);
+        assertThat(files).containsExactly(file1, file2, file12, file32, file123);
     }
 
     @Test
@@ -71,7 +67,7 @@ class ConvertersTest {
         Path[] files = regexFiles(true).apply(file.toString());
 
         // then
-        assertEquals(List.of(file), List.of(files));
+        assertThat(files).containsExactly(file);
     }
 
     @Test
@@ -87,8 +83,8 @@ class ConvertersTest {
         Path[] files2 = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\d{1,5}");
 
         // then
-        assertEquals(List.of(file1, file3, file12), List.of(files));
-        assertEquals(List.of(file1, file3, file12), List.of(files2));
+        assertThat(files).containsExactly(file1, file3, file12);
+        assertThat(files2).containsExactly(file1, file3, file12);
     }
 
     @Test
@@ -103,8 +99,8 @@ class ConvertersTest {
         Path[] files2 = regexFiles(true).apply(file1.getParent() + File.separator + "file_\\\\d{1,5}");
 
         // then
-        assertEquals(List.of(file1, file3, file12), List.of(files));
-        assertEquals(List.of(file1, file3, file12), List.of(files2));
+        assertThat(files).containsExactly(file1, file3, file12);
+        assertThat(files2).containsExactly(file1, file3, file12);
     }
 
     @Test
@@ -121,7 +117,7 @@ class ConvertersTest {
         Path[] files = converter.apply(header + ",'" + header.getParent() + File.separator + "file_\\\\d{1,5}.csv'");
 
         // then
-        assertEquals(List.of(header, file1, file3, file12), List.of(files));
+        assertThat(files).containsExactly(header, file1, file3, file12);
     }
 
     @Test
@@ -133,9 +129,9 @@ class ConvertersTest {
         Function<String, Path[]> converter = toFiles(",", regexMatcher);
 
         // when/then
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> converter.apply("thing1,'thing2,test,thing3"));
-        assertThat(exception.getMessage(), containsString("no matching end quote"));
+        assertThatThrownBy(() -> converter.apply("thing1,'thing2,test,thing3"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no matching end quote");
     }
 
     private Path existenceOfFile(String name) throws IOException {

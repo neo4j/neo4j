@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,8 +50,9 @@ class HelpTest {
 
     @Test
     void shouldNotAcceptTooManyArgs() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob", "alice")));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob", "alice")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test
@@ -90,9 +89,9 @@ class HelpTest {
 
     @Test
     void helpForNonExistingCommandThrows() {
-        CommandException exception =
-                assertThrows(CommandException.class, () -> cmd.execute(List.of("notacommandname")));
-        assertThat(exception.getMessage(), containsString("No such command: notacommandname"));
+        assertThatThrownBy(() -> cmd.execute(List.of("notacommandname")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("No such command: notacommandname");
     }
 
     @Test

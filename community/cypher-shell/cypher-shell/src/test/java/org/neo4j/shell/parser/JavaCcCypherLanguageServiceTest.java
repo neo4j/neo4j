@@ -19,11 +19,7 @@
  */
 package org.neo4j.shell.parser;
 
-import static java.util.Arrays.stream;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.COUNT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DOT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EQ;
@@ -40,9 +36,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHERE;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.parser.JavaCcCypherLanguageService.SimpleToken;
 
@@ -139,53 +133,37 @@ class JavaCcCypherLanguageServiceTest {
 
         var keywords = parser.keywords().toList();
 
-        assertThat(
-                keywords,
-                hasItems("MATCH", "OPTIONAL", "UNWIND", "WHERE", "CONTAINS", "IN", "CREATE", "MERGE", "SET", "DELETE"));
+        assertThat(keywords)
+                .contains("MATCH", "OPTIONAL", "UNWIND", "WHERE", "CONTAINS", "IN", "CREATE", "MERGE", "SET", "DELETE");
 
-        assertThat(keywords.stream().filter(String::isBlank).toList(), is(List.of()));
+        assertThat(keywords.stream().filter(String::isBlank)).isEmpty();
     }
 
-    private Matcher<CypherLanguageService.Token> token(int kind, String image, int begin, int end) {
-        return is(new SimpleToken(kind, image, begin, end));
+    private Condition<CypherLanguageService.Token> token(int kind, String image, int begin, int end) {
+        SimpleToken token = new SimpleToken(kind, image, begin, end);
+        return new Condition<>(
+                token::equals, "Token with image=" + image + ", beginOffset=" + begin + ", endOffset=" + end);
     }
 
-    private Matcher<CypherLanguageService.Token> token(String image, int begin, int end) {
-        return new BaseMatcher<>() {
-            @Override
-            public boolean matches(Object actual) {
-                if (actual instanceof CypherLanguageService.Token token) {
-                    return token.image().equals(image) && token.beginOffset() == begin && token.endOffset() == end;
-                }
-                return false;
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("Token with image=" + image + ", beginOffset=" + begin + ", endOffset=" + end);
-            }
-        };
+    private Condition<CypherLanguageService.Token> token(String image, int begin, int end) {
+        return new Condition<>(
+                token -> token.image().equals(image) && token.beginOffset() == begin && token.endOffset() == end,
+                "Token with image=" + image + ", beginOffset=" + begin + ", endOffset=" + end);
     }
 
     @SafeVarargs
-    private void assertTokens(String query, Matcher<CypherLanguageService.Token>... expected) {
-        assertTokens(query, stream(expected).toList());
+    private void assertTokens(String query, Condition<CypherLanguageService.Token>... expected) {
+        assertTokens(query, List.of(expected));
     }
 
-    private void assertTokens(String query, List<Matcher<CypherLanguageService.Token>> expected) {
-        var tokens = parser.tokenize(query);
-
-        for (int i = 0; i < tokens.size() && i < expected.size(); ++i) {
-            assertThat("Unexpected token at index " + i, tokens.get(i), expected.get(i));
-        }
-
-        if (tokens.size() != expected.size()) {
-            fail("Expected " + expected.size() + " tokens, but got: " + tokens);
-        }
+    private void assertTokens(String query, List<Condition<CypherLanguageService.Token>> expected) {
+        assertThat(parser.tokenize(query))
+                .as("Parser tokenizes query")
+                .zipSatisfy(expected, (token, condition) -> assertThat(token).is(condition));
     }
 
     private void assertSuggestions(String query, String... expected) {
-        assertThat(parser.suggestNextKeyword(query), hasItems(expected));
-        assertThat(parser.suggestNextKeyword(query.toLowerCase()), hasItems(expected));
+        assertThat(parser.suggestNextKeyword(query.toLowerCase())).contains(expected);
+        assertThat(parser.suggestNextKeyword(query)).contains(expected);
     }
 }

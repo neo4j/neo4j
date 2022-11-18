@@ -20,10 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.core.IsNull.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import org.junit.jupiter.api.Test;
@@ -48,8 +45,8 @@ class ExecutionResultTest {
                 transaction.execute("RETURN rand()/0").next();
             }
         } catch (QueryExecutionException ex) {
-            assertThat(ex.getCause(), instanceOf(QueryExecutionKernelException.class));
-            assertThat(ex.getCause().getCause(), instanceOf(ArithmeticException.class));
+            assertThat(ex).hasCauseInstanceOf(QueryExecutionKernelException.class);
+            assertThat(ex.getCause()).hasCauseInstanceOf(ArithmeticException.class);
         }
     }
 
@@ -60,8 +57,8 @@ class ExecutionResultTest {
                 transaction.execute("RETURN rand()/0").accept(row -> true);
             }
         } catch (QueryExecutionException ex) {
-            assertThat(ex.getCause(), instanceOf(QueryExecutionKernelException.class));
-            assertThat(ex.getCause().getCause(), instanceOf(ArithmeticException.class));
+            assertThat(ex).hasCauseInstanceOf(QueryExecutionKernelException.class);
+            assertThat(ex.getCause()).hasCauseInstanceOf(ArithmeticException.class);
         }
     }
 
@@ -93,7 +90,7 @@ class ExecutionResultTest {
                     .next()
                     .get("dist");
             // Then
-            assertThat(Math.round(distance), equalTo(86107L));
+            assertThat(Math.round(distance)).isEqualTo(86107L);
             transaction.commit();
         }
     }
@@ -119,7 +116,7 @@ class ExecutionResultTest {
                     .next()
                     .get("dist");
             // Then
-            assertThat(Math.round(distance), equalTo(86107L));
+            assertThat(Math.round(distance)).isEqualTo(86107L);
             transaction.commit();
         }
     }
@@ -127,12 +124,11 @@ class ExecutionResultTest {
     @Test
     void shouldHandleColumnAsWithNull() {
         try (Transaction transaction = db.beginTx()) {
-            assertThat(
-                    transaction
+            assertThat(transaction
                             .execute("RETURN toLower(null) AS lower")
                             .<String>columnAs("lower")
-                            .next(),
-                    nullValue());
+                            .next())
+                    .isNull();
         }
     }
 }

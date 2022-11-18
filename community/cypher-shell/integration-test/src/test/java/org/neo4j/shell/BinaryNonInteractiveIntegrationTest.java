@@ -19,10 +19,10 @@
  */
 package org.neo4j.shell;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.shell.Conditions.equalTo;
+import static org.neo4j.shell.Conditions.startsWith;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -33,9 +33,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.io.IOUtils;
+import org.assertj.core.api.Condition;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -76,13 +76,13 @@ public class BinaryNonInteractiveIntegrationTest {
                 .withAll(Arrays.asList(args));
     }
 
-    private void assertOutput(List<String> args, String input, Matcher<String> expectedOutput) {
+    private void assertOutput(List<String> args, String input, Condition<String> expectedOutput) {
         final var command =
                 Lists.mutable.with(cypherShellBinary.getAbsolutePath()).withAll(args);
         final var result = execute(command, input);
 
         assertEquals(0, result.exitCode(), failureMessage(result));
-        assertThat(result.out(), expectedOutput);
+        assertThat(result.out()).has(expectedOutput);
         assertEquals("", result.err());
     }
 

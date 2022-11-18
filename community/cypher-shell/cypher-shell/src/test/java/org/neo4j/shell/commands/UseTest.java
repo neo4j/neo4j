@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,8 +42,9 @@ class UseTest {
 
     @Test
     void shouldFailIfMoreThanOneArg() {
-        var expection = assertThrows(CommandException.class, () -> cmd.execute(List.of("db1", "db2")));
-        assertThat(expection.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of("db1", "db2")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test
@@ -58,7 +57,7 @@ class UseTest {
     @Test
     void printUsage() {
         String usage = cmd.metadata().usage();
-        assertEquals(usage, "database");
+        assertThat(usage).isEqualTo("database");
     }
 
     @Test

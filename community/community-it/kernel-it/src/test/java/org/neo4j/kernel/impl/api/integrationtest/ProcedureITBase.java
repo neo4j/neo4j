@@ -25,9 +25,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.assertj.core.api.Condition;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -408,21 +406,14 @@ public interface ProcedureITBase {
     private static Object[] proc(
             String procName,
             String procSignature,
-            Matcher<String> description,
+            Condition<String> description,
             TextArray roles,
             String mode,
             boolean worksOnSystem) {
-        Matcher<AnyValue> desc = new TypeSafeMatcher<>() {
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("invalid description");
-            }
 
-            @Override
-            protected boolean matchesSafely(AnyValue item) {
-                return item instanceof TextValue && description.matches(((TextValue) item).stringValue());
-            }
-        };
+        Condition<AnyValue> desc = new Condition<>(
+                item -> item instanceof TextValue value && description.matches(value.stringValue()),
+                String.format("%s: invalid description", description.description()));
 
         return new Object[] {
             stringValue(procName),

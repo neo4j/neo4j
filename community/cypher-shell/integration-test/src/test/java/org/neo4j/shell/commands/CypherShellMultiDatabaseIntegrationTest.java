@@ -19,9 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -79,7 +78,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     void switchingToSystemDatabaseWorks() throws CommandException {
         useCommand.execute(List.of(SYSTEM_DB_NAME));
 
-        assertThat(linePrinter.output(), is(""));
+        assertThat(linePrinter.output()).isEmpty();
         assertOnSystemDB();
     }
 
@@ -87,7 +86,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     void switchingToSystemDatabaseIsNotCaseSensitive() throws CommandException {
         useCommand.execute(List.of("SyStEm"));
 
-        assertThat(linePrinter.output(), is(""));
+        assertThat(linePrinter.output()).isEmpty();
         assertOnSystemDB();
     }
 
@@ -96,7 +95,7 @@ class CypherShellMultiDatabaseIntegrationTest {
         useCommand.execute(List.of(SYSTEM_DB_NAME));
         useCommand.execute(List.of(DEFAULT_DEFAULT_DB_NAME));
 
-        assertThat(linePrinter.output(), is(""));
+        assertThat(linePrinter.output()).isEmpty();
         assertOnRegularDB();
     }
 
@@ -105,16 +104,16 @@ class CypherShellMultiDatabaseIntegrationTest {
         useCommand.execute(List.of(SYSTEM_DB_NAME));
         useCommand.execute(List.of(ABSENT_DB_NAME));
 
-        assertThat(linePrinter.output(), is(""));
+        assertThat(linePrinter.output()).isEmpty();
         assertOnRegularDB();
     }
 
     @Test
     void switchingDatabaseInOpenTransactionShouldFail() throws CommandException {
         beginCommand.execute(List.of());
-        CommandException exception =
-                assertThrows(CommandException.class, () -> useCommand.execute(List.of("another_database")));
-        assertThat(exception.getMessage(), containsString("There is an open transaction."));
+        assertThatThrownBy(() -> useCommand.execute(List.of("another_database")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("There is an open transaction.");
     }
 
     @Test
@@ -123,7 +122,7 @@ class CypherShellMultiDatabaseIntegrationTest {
         rollbackCommand.execute(List.of());
         useCommand.execute(List.of(SYSTEM_DB_NAME));
 
-        assertThat(linePrinter.output(), is(""));
+        assertThat(linePrinter.output()).isEmpty();
         assertOnSystemDB();
     }
 
@@ -165,13 +164,12 @@ class CypherShellMultiDatabaseIntegrationTest {
 
     private void assertOnRegularDB() throws CommandException {
         shell.execute(CypherStatement.complete("RETURN 'toadstool'"));
-        assertThat(linePrinter.output(), containsString("toadstool"));
+        assertThat(linePrinter.output()).contains("toadstool");
     }
 
     private void assertOnSystemDB() throws CommandException {
         shell.execute(CypherStatement.complete("SHOW DATABASES"));
-        assertThat(linePrinter.output(), containsString("neo4j"));
-        assertThat(linePrinter.output(), containsString("system"));
+        assertThat(linePrinter.output()).contains("neo4j", "system");
     }
 
     private void assertOnNoValidDB() {

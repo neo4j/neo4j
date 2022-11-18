@@ -20,8 +20,10 @@
 package org.neo4j.test.conditions;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 public final class Conditions {
     public static final Condition<Boolean> TRUE = new Condition<>(value -> value, "Should be true.");
@@ -30,19 +32,38 @@ public final class Conditions {
     private Conditions() {}
 
     public static <T> Condition<T> condition(Predicate<T> predicate) {
+        Objects.requireNonNull(predicate);
         return new Condition<>(predicate, "Generic condition. See predicate for condition details.");
     }
 
+    public static <T> Condition<Iterable<T>> contains(T value) {
+        Objects.requireNonNull(value);
+        return new Condition<>(v -> Iterables.stream(v).anyMatch(value::equals), "Should contain " + value);
+    }
+
+    public static <T> Condition<String> contains(String value) {
+        Objects.requireNonNull(value);
+        return new Condition<>(v -> v.contains(value), "Should contain string \"%s\"", value);
+    }
+
     public static <T> Condition<T> equalityCondition(T value) {
-        return new Condition<>(v -> v.equals(value), "Should be equal to " + value);
+        Objects.requireNonNull(value);
+        return new Condition<>(value::equals, "Should be equal to " + value);
     }
 
     public static <T extends Comparable<T>> Condition<T> greaterThan(T value) {
+        Objects.requireNonNull(value);
         return new Condition<>(v -> v.compareTo(value) > 0, "Should be greater than " + value);
     }
 
     public static <T extends Comparable<T>> Condition<T> greaterThanOrEqualTo(T value) {
+        Objects.requireNonNull(value);
         return new Condition<>(v -> v.compareTo(value) >= 0, "Should be greater than or equal to " + value);
+    }
+
+    public static <T> Condition<T> instanceOf(Class<?> type) {
+        Objects.requireNonNull(type);
+        return new Condition<>(type::isInstance, "Should be instance of " + type.getName());
     }
 
     public static <T extends Collection<?>> Condition<T> sizeCondition(int expectedSize) {

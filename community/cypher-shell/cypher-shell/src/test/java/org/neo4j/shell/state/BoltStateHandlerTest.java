@@ -20,17 +20,8 @@
 package org.neo4j.shell.state;
 
 import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -52,7 +43,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AccessMode;
@@ -105,8 +95,8 @@ class BoltStateHandlerTest {
 
     @Test
     void protocolVersionIsEmptyBeforeConnect() {
-        assertFalse(boltStateHandler.isConnected());
-        assertEquals("", boltStateHandler.getProtocolVersion());
+        assertThat(boltStateHandler.isConnected()).isFalse();
+        assertThat(boltStateHandler.getProtocolVersion()).isEmpty();
     }
 
     @Test
@@ -121,7 +111,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler(provider, false);
         handler.connect(config);
 
-        assertEquals("", handler.getProtocolVersion());
+        assertThat(handler.getProtocolVersion()).isEmpty();
     }
 
     @Test
@@ -131,13 +121,13 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, false);
         handler.connect(config);
 
-        assertEquals("9.4.1-ALPHA", handler.getProtocolVersion());
+        assertThat(handler.getProtocolVersion()).isEqualTo("9.4.1-ALPHA");
     }
 
     @Test
     void serverVersionIsEmptyBeforeConnect() {
-        assertFalse(boltStateHandler.isConnected());
-        assertEquals("", boltStateHandler.getServerVersion());
+        assertThat(boltStateHandler.isConnected()).isFalse();
+        assertThat(boltStateHandler.getServerVersion()).isEmpty();
     }
 
     @Test
@@ -147,7 +137,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> fakeDriver, false);
         handler.connect(config);
 
-        assertEquals("4.3.0", handler.getServerVersion());
+        assertThat(handler.getServerVersion()).isEqualTo("4.3.0");
     }
 
     @Test
@@ -158,7 +148,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, false);
         handler.connect(config);
 
-        assertEquals("my_default_db", handler.getActualDatabaseAsReportedByServer());
+        assertThat(handler.getActualDatabaseAsReportedByServer()).isEqualTo("my_default_db");
     }
 
     @Test
@@ -176,13 +166,12 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, false);
         handler.connect(config);
 
-        try {
-            handler.runUserCypher("RETURN \"hello\"", Collections.emptyMap());
-            fail("should fail on runCypher");
-        } catch (Exception e) {
-            assertThat(e, is(databaseNotFound));
-            assertEquals("my_default_db", handler.getActualDatabaseAsReportedByServer());
-        }
+        assertThatThrownBy(
+                        () -> handler.runUserCypher("RETURN \"hello\"", Collections.emptyMap()),
+                        "should fail on runCypher")
+                .isEqualTo(databaseNotFound);
+
+        assertThat(handler.getActualDatabaseAsReportedByServer()).isEqualTo("my_default_db");
     }
 
     @Test
@@ -190,11 +179,11 @@ class BoltStateHandlerTest {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
 
-        assertTrue(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isTrue();
 
         boltStateHandler.rollbackTransaction();
 
-        assertFalse(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isFalse();
     }
 
     @Test
@@ -211,40 +200,38 @@ class BoltStateHandlerTest {
         when(resultMock.consume()).thenThrow(originalException);
         doThrow(thrownFromSilentDisconnect).when(session).close();
 
-        try {
-            boltStateHandler.connect();
-            fail("should fail on silent disconnect");
-        } catch (Exception e) {
-            assertThat(e.getSuppressed()[0], is(thrownFromSilentDisconnect));
-            assertThat(e, is(originalException));
-        }
+        assertThatThrownBy(boltStateHandler::connect, "should fail on silent disconnect")
+                .isEqualTo(originalException)
+                .hasSuppressedException(thrownFromSilentDisconnect);
     }
 
     @Test
     void closeTransactionAfterCommit() throws CommandException {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
-        assertTrue(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isTrue();
 
         boltStateHandler.commitTransaction();
 
-        assertFalse(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isFalse();
     }
 
     @Test
     void beginNeedsToBeConnected() {
-        assertFalse(boltStateHandler.isConnected());
+        assertThat(boltStateHandler.isConnected()).isFalse();
 
-        var exception = assertThrows(CommandException.class, boltStateHandler::beginTransaction);
-        assertThat(exception.getMessage(), containsString("Not connected to Neo4j"));
+        assertThatThrownBy(boltStateHandler::beginTransaction)
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Not connected to Neo4j");
     }
 
     @Test
     void commitNeedsToBeConnected() {
-        assertFalse(boltStateHandler.isConnected());
+        assertThat(boltStateHandler.isConnected()).isFalse();
 
-        var exception = assertThrows(CommandException.class, boltStateHandler::commitTransaction);
-        assertThat(exception.getMessage(), containsString("Not connected to Neo4j"));
+        assertThatThrownBy(boltStateHandler::commitTransaction)
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Not connected to Neo4j");
     }
 
     @Test
@@ -252,7 +239,7 @@ class BoltStateHandlerTest {
         boltStateHandler.connect();
 
         boltStateHandler.beginTransaction();
-        assertTrue(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isTrue();
     }
 
     @Test
@@ -272,26 +259,27 @@ class BoltStateHandlerTest {
         BoltResult boltResult = boltStateHandler
                 .runUserCypher("UNWIND [1,2] as num RETURN *", Collections.emptyMap())
                 .get();
-        assertEquals(result, boltResult.iterate());
+        assertThat(boltResult.iterate()).isEqualTo(result);
 
         boltStateHandler.commitTransaction();
 
-        assertFalse(boltStateHandler.isTransactionOpen());
+        assertThat(boltStateHandler.isTransactionOpen()).isFalse();
     }
 
     @Test
     void rollbackNeedsToBeConnected() {
-        assertFalse(boltStateHandler.isConnected());
+        assertThat(boltStateHandler.isConnected()).isFalse();
 
-        var exception = assertThrows(CommandException.class, boltStateHandler::rollbackTransaction);
-        assertThat(exception.getMessage(), containsString("Not connected to Neo4j"));
+        assertThatThrownBy(boltStateHandler::rollbackTransaction)
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Not connected to Neo4j");
     }
 
     @Test
     void executeNeedsToBeConnected() {
-        var exception =
-                assertThrows(CommandException.class, () -> boltStateHandler.runUserCypher("", Collections.emptyMap()));
-        assertThat(exception.getMessage(), containsString("Not connected to Neo4j"));
+        assertThatThrownBy(() -> boltStateHandler.runUserCypher("", Collections.emptyMap()))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Not connected to Neo4j");
     }
 
     @Test
@@ -299,7 +287,9 @@ class BoltStateHandlerTest {
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
 
-        assertTrue(boltStateHandler.isTransactionOpen(), "Expected a transaction");
+        assertThat(boltStateHandler.isTransactionOpen())
+                .as("Expected a transaction")
+                .isTrue();
     }
 
     @Test
@@ -325,7 +315,7 @@ class BoltStateHandlerTest {
                 boltStateHandler.runUserCypher("RETURN 999", new HashMap<>()).get();
         verify(sessionMock).run(any(Query.class), eq(userTxConf));
 
-        assertEquals("999", boltResult.getRecords().get(0).get(0).toString());
+        assertThat(boltResult.getRecords().get(0).get(0).toString()).isEqualTo("999");
     }
 
     @Test
@@ -354,21 +344,24 @@ class BoltStateHandlerTest {
         verify(driverMock, times(2)).session(any(SessionConfig.class));
         verify(sessionMock, times(2)).run(any(Query.class), eq(userTxConf));
 
-        assertEquals("999", boltResult.getRecords().get(0).get(0).toString());
+        assertThat(boltResult.getRecords().get(0).get(0).toString()).isEqualTo("999");
     }
 
     @Test
     void shouldExecuteInSessionByDefault() throws CommandException {
         boltStateHandler.connect();
 
-        assertFalse(boltStateHandler.isTransactionOpen(), "Did not expect a transaction");
+        assertThat(boltStateHandler.isTransactionOpen())
+                .as("Did not expect a transaction")
+                .isFalse();
     }
 
     @Test
     void canOnlyConnectOnce() throws CommandException {
         boltStateHandler.connect();
-        var exception = assertThrows(CommandException.class, boltStateHandler::connect);
-        assertThat(exception.getMessage(), containsString("Already connected"));
+        assertThatThrownBy(boltStateHandler::connect)
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Already connected");
     }
 
     @Test
@@ -398,16 +391,15 @@ class BoltStateHandlerTest {
         boltStateHandler.connect();
 
         Session session = boltStateHandler.session;
-        assertNotNull(session);
-        assertNotNull(boltStateHandler.driver);
-
-        assertTrue(boltStateHandler.session.isOpen());
+        assertThat(session).isNotNull();
+        assertThat(boltStateHandler.driver).isNotNull();
+        assertThat(boltStateHandler.session.isOpen()).isTrue();
 
         // when
         boltStateHandler.silentDisconnect();
 
         // then
-        assertFalse(session.isOpen());
+        assertThat(session.isOpen()).isFalse();
     }
 
     @Test
@@ -416,7 +408,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler(provider, false);
 
         handler.connect(config);
-        assertFalse(provider.config.encrypted());
+        assertThat(provider.config.encrypted()).isFalse();
     }
 
     @Test
@@ -425,7 +417,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler(provider, false);
         ConnectionConfig config = testConnectionConfig("bolt://localhost", Encryption.TRUE);
         handler.connect(config);
-        assertTrue(provider.config.encrypted());
+        assertThat(provider.config.encrypted()).isTrue();
     }
 
     @Test
@@ -505,7 +497,7 @@ class BoltStateHandlerTest {
         handler.changePassword(config, newPassword);
 
         // Then
-        assertNull(handler.session);
+        assertThat(handler.session).isNull();
 
         // When connecting to system db again
         handler.connect(config.withUsernameAndPasswordAndDatabase("", "", SYSTEM_DB_NAME));
@@ -609,7 +601,7 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler(provider, false);
         handler.connect(config);
 
-        assertTrue(provider.config.userAgent().startsWith("neo4j-cypher-shell/v"));
+        assertThat(provider.config.userAgent()).startsWith("neo4j-cypher-shell/v");
     }
 
     @Test
@@ -623,8 +615,8 @@ class BoltStateHandlerTest {
 
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
-        assertThrows(ClientException.class, boltStateHandler::commitTransaction);
-        assertFalse(boltStateHandler.isTransactionOpen());
+        assertThatThrownBy(boltStateHandler::commitTransaction).isInstanceOf(ClientException.class);
+        assertThat(boltStateHandler.isTransactionOpen()).isFalse();
     }
 
     @Test
@@ -638,8 +630,8 @@ class BoltStateHandlerTest {
 
         boltStateHandler.connect();
         boltStateHandler.beginTransaction();
-        assertThrows(ClientException.class, boltStateHandler::rollbackTransaction);
-        assertFalse(boltStateHandler.isTransactionOpen());
+        assertThatThrownBy(boltStateHandler::rollbackTransaction).isInstanceOf(ClientException.class);
+        assertThat(boltStateHandler.isTransactionOpen()).isFalse();
     }
 
     @Test
@@ -649,8 +641,8 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> fakeDriver, false);
         handler.connect(config);
 
-        assertEquals(1, fakeDriver.sessionConfigs.size());
-        assertEquals(empty(), fakeDriver.sessionConfigs.get(0).impersonatedUser());
+        assertThat(fakeDriver.sessionConfigs).hasSize(1);
+        assertThat(fakeDriver.sessionConfigs.get(0).impersonatedUser()).isEmpty();
     }
 
     @Test
@@ -660,8 +652,8 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> fakeDriver, false);
         handler.connect(config.withImpersonatedUser("emil"));
 
-        assertEquals(1, fakeDriver.sessionConfigs.size());
-        assertEquals(Optional.of("emil"), fakeDriver.sessionConfigs.get(0).impersonatedUser());
+        assertThat(fakeDriver.sessionConfigs).hasSize(1);
+        assertThat(fakeDriver.sessionConfigs.get(0).impersonatedUser()).hasValue("emil");
     }
 
     private Driver stubResultSummaryInAnOpenSession(Result resultMock, Session sessionMock, String version) {
@@ -706,7 +698,7 @@ class BoltStateHandlerTest {
         ConnectionConfig config = testConnectionConfig(initialScheme + "://localhost");
         handler.connect(config);
 
-        assertEquals(fallbackScheme, uriScheme[0]);
+        assertThat(uriScheme[0]).isEqualTo(fallbackScheme);
     }
 
     /**

@@ -22,10 +22,8 @@ package org.neo4j.shell.commands;
 import static java.util.Arrays.stream;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
@@ -60,62 +58,64 @@ class ParamTest {
 
     @Test
     void shouldFailIfNoArgs() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of()));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of()))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test
     void shouldFailIfOneArg() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
-        assertThat(
-                exception.getMessage(), containsString("Incorrect usage.\nusage: :param name => <Cypher Expression>"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage.\nusage: :param name => <Cypher Expression>");
     }
 
     @Test
     void shouldFailForVariablesWithoutEscaping() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob#   9")));
-        assertThat(
-                exception.getMessage(), containsString("Incorrect usage.\nusage: :param name => <Cypher Expression>"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob#   9")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage.\nusage: :param name => <Cypher Expression>");
     }
 
     @Test
     void shouldFailForVariablesMixingMapStyleAssignmentAndLambdas() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob: => 9")));
-        assertThat(exception.getMessage(), containsString("Incorrect usage"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob: => 9")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage");
     }
 
     @Test
     void shouldFailForEmptyVariables() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("``   9")));
-        assertThat(
-                exception.getMessage(), containsString("Incorrect usage.\nusage: :param name => <Cypher Expression>"));
+        assertThatThrownBy(() -> cmd.execute(List.of("``   9")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage.\nusage: :param name => <Cypher Expression>");
     }
 
     @Test
     void shouldFailForInvalidVariables() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("`   9")));
-        assertThat(
-                exception.getMessage(), containsString("Incorrect usage.\nusage: :param name => <Cypher Expression>"));
+        assertThatThrownBy(() -> cmd.execute(List.of("`   9")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage.\nusage: :param name => <Cypher Expression>");
     }
 
     @Test
     void shouldFailForVariablesWithoutText() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("```   9")));
-        assertThat(
-                exception.getMessage(), containsString("Incorrect usage.\nusage: :param name => <Cypher Expression>"));
+        assertThatThrownBy(() -> cmd.execute(List.of("```   9")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect usage.\nusage: :param name => <Cypher Expression>");
     }
 
     @Test
     void printUsage() {
         String usage = cmd.metadata().usage();
-        assertThat(usage, containsString("name => <Cypher Expression>"));
+        assertThat(usage).contains("name => <Cypher Expression>");
     }
 
     private void assertExecute(String args, Parameter... expected) throws CommandException {
         cmd.execute(List.of(args));
         var expectedMap = stream(expected).collect(toMap(Parameter::name, identity()));
-        assertThat(parameters.parameters(), is(expectedMap));
+        assertThat(parameters.parameters()).isEqualTo(expectedMap);
         var expectedValues = stream(expected).collect(toMap(Parameter::name, Parameter::value));
-        assertThat(parameters.parameterValues(), is(expectedValues));
+        assertThat(parameters.parameterValues()).isEqualTo(expectedValues);
     }
 }

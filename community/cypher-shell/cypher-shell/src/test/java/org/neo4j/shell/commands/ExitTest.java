@@ -19,9 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -33,12 +31,13 @@ class ExitTest {
 
     @Test
     void shouldNotAcceptArgs() {
-        CommandException exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob")));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test
     void shouldExitShell() {
-        assertThrows(ExitException.class, () -> cmd.execute(List.of()));
+        assertThatThrownBy(() -> cmd.execute(List.of())).isInstanceOf(ExitException.class);
     }
 }

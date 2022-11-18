@@ -19,9 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,16 +44,15 @@ class TablePlanFormatterTest {
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
 
-        assertThat(
-                tablePlanFormatter.formatPlan(plan),
-                is(String.join(
+        assertThat(tablePlanFormatter.formatPlan(plan))
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+-------------+----------------+",
                         "| Operator    | Estimated Rows |",
                         "+-------------+----------------+",
                         "| +Projection |             55 |",
                         "+-------------+----------------+",
-                        "")));
+                        ""));
     }
 
     @Test
@@ -65,16 +62,15 @@ class TablePlanFormatterTest {
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
 
-        assertThat(
-                tablePlanFormatter.formatPlan(plan),
-                is(String.join(
+        assertThat(tablePlanFormatter.formatPlan(plan))
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+-------------+---------+----------------+",
                         "| Operator    | Details | Estimated Rows |",
                         "+-------------+---------+----------------+",
                         "| +Projection |         |             55 |",
                         "+-------------+---------+----------------+",
-                        "")));
+                        ""));
     }
 
     @Test
@@ -84,16 +80,15 @@ class TablePlanFormatterTest {
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
 
-        assertThat(
-                tablePlanFormatter.formatPlan(plan),
-                is(String.join(
+        assertThat(tablePlanFormatter.formatPlan(plan))
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+-------------+----------------+",
                         "| Operator    | Details        |",
                         "+-------------+----------------+",
                         "| +Projection | x.prop AS prop |",
                         "+-------------+----------------+",
-                        "")));
+                        ""));
     }
 
     @Test
@@ -104,7 +99,7 @@ class TablePlanFormatterTest {
         when(plan.arguments()).thenReturn(args);
         when(plan.operatorType()).thenReturn("Projection");
 
-        assertThat(tablePlanFormatter.formatPlan(plan), containsString("| +Projection | " + details + " |"));
+        assertThat(tablePlanFormatter.formatPlan(plan)).contains("| +Projection | " + details + " |");
     }
 
     @Test
@@ -127,9 +122,8 @@ class TablePlanFormatterTest {
         when(plan.operatorType()).thenReturn("Projection");
         doReturn(List.of(childPlan, childPlan)).when(plan).children();
 
-        assertThat(
-                tablePlanFormatter.formatPlan(plan),
-                is(String.join(
+        assertThat(tablePlanFormatter.formatPlan(plan))
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+---------------+------------------------------------------------------------------------------------------------------+",
                         "| Operator      | Details                                                                                              |",
@@ -151,7 +145,7 @@ class TablePlanFormatterTest {
                         "| |             +------------------------------------------------------------------------------------------------------+",
                         "| +Argument     |                                                                                                      |",
                         "+---------------+------------------------------------------------------------------------------------------------------+",
-                        "")));
+                        ""));
     }
 
     private static String stringOfLength(int length) {

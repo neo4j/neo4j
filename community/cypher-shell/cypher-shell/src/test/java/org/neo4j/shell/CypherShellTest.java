@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -134,7 +133,7 @@ class CypherShellTest {
 
         CommandException exception = assertThrows(
                 CommandException.class, () -> shell.execute(new CypherStatement("RETURN 999;", true, 0, 0)));
-        assertThat(exception.getMessage(), containsString("Not connected to Neo4j"));
+        assertThat(exception).hasMessageContaining("Not connected to Neo4j");
     }
 
     @Test
@@ -161,6 +160,6 @@ class CypherShellTest {
     void incorrectCommandsThrowException() {
         var statement = new CommandStatement(":help", List.of("arg1", "arg2"), true, 0, 0);
         CommandException exception = assertThrows(CommandException.class, () -> offlineTestShell.execute(statement));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThat(exception).hasMessageContaining("Incorrect number of arguments");
     }
 }

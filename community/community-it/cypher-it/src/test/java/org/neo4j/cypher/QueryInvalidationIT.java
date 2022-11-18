@@ -20,10 +20,7 @@
 package org.neo4j.cypher;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.configuration.GraphDatabaseSettings.query_statistics_divergence_threshold;
 
@@ -96,8 +93,12 @@ public class QueryInvalidationIT {
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertEquals(1, monitor.discards.get(), "Query should have been replanned.");
-        assertThat("Replan should have occurred after TTL", monitor.waitTime.get(), greaterThanOrEqualTo(1L));
+        assertThat(monitor.discards.get())
+                .as("Query should have been replanned.")
+                .isEqualTo(1);
+        assertThat(monitor.waitTime.get())
+                .as("Replan should have occurred after TTL")
+                .isGreaterThanOrEqualTo(1L);
     }
 
     @Test
@@ -126,8 +127,12 @@ public class QueryInvalidationIT {
         executeDistantFriendsCountQuery(USERS, "skip");
 
         // THEN
-        assertEquals(0, monitor.compilations.get(), "Query should not have been compiled.");
-        assertEquals(0, monitor.discards.get(), "Query should not have been discarded.");
+        assertThat(monitor.compilations.get())
+                .as("Query should not have been compiled.")
+                .isEqualTo(0);
+        assertThat(monitor.discards.get())
+                .as("Query should not have been discarded.")
+                .isEqualTo(0);
 
         // AND WHEN
         monitor.reset();
@@ -135,7 +140,9 @@ public class QueryInvalidationIT {
         executeDistantFriendsCountQuery(USERS, "force");
 
         // THEN
-        assertEquals(1, monitor.compilations.get(), "Query should have been replanned.");
+        assertThat(monitor.compilations.get())
+                .as("Query should have been replanned.")
+                .isEqualTo(1);
 
         // WHEN
         monitor.reset();
@@ -143,8 +150,12 @@ public class QueryInvalidationIT {
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN should use the entry cached with "replan=force" instead of replanning again
-        assertEquals(0, monitor.compilations.get(), "Query should not have been compiled.");
-        assertEquals(0, monitor.discards.get(), "Query should not have been discarded.");
+        assertThat(monitor.compilations.get())
+                .as("Query should not have been compiled.")
+                .isEqualTo(0);
+        assertThat(monitor.discards.get())
+                .as("Query should not have been discarded.")
+                .isEqualTo(0);
     }
 
     @Test
@@ -164,10 +175,12 @@ public class QueryInvalidationIT {
 
         long replanTime = System.currentTimeMillis() + replanInterval;
 
-        assertTrue(
-                divergenceThreshold > 0.0 && divergenceThreshold < 1.0,
-                "Test does not work with edge setting for query_statistics_divergence_threshold: "
-                        + divergenceThreshold);
+        assertThat(divergenceThreshold)
+                .as(
+                        "Test does not work with edge setting for %s: %f",
+                        query_statistics_divergence_threshold, divergenceThreshold)
+                .isGreaterThan(0)
+                .isLessThan(1);
 
         int usersToCreate = ((int) (Math.ceil(((double) USERS) / (1.0 - divergenceThreshold)))) - USERS + 1;
 
@@ -185,11 +198,12 @@ public class QueryInvalidationIT {
         executeDistantFriendsCountQuery(USERS, "default");
 
         // THEN
-        assertEquals(1, monitor.discards.get(), "Query should have been replanned.");
-        assertThat(
-                "Replan should have occurred after TTL",
-                monitor.waitTime.get(),
-                greaterThanOrEqualTo(replanInterval / 1000));
+        assertThat(monitor.discards.get())
+                .as("Query should have been replanned.")
+                .isEqualTo(1);
+        assertThat(monitor.waitTime.get())
+                .as("Replan should have occurred after TTL")
+                .isGreaterThanOrEqualTo(replanInterval / 1000);
     }
 
     private void createIndex() {

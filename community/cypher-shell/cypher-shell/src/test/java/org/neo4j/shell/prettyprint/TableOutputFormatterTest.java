@@ -23,12 +23,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.core.StringContains.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -129,7 +124,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         var expected = new BufferedReader(new InputStreamReader(requireNonNull(resourceStream)))
                 .lines()
                 .collect(joining(NEWLINE));
-        assertThat(actual, startsWith(expected));
+        assertThat(actual).startsWith(expected);
     }
 
     @Test
@@ -145,8 +140,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| point({srid:4326, x:42.78, y:56.7}) |"));
-        assertThat(actual, containsString("| point({srid:4326, x:1.7, y:26.79, z:34.23}) |"));
+        assertThat(actual).contains("| point({srid:4326, x:42.78, y:56.7}) |");
+        assertThat(actual).contains("| point({srid:4326, x:1.7, y:26.79, z:34.23}) |");
     }
 
     @Test
@@ -161,7 +156,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| P1M2DT3.000000004S |"));
+        assertThat(actual).contains("| P1M2DT3.000000004S |");
     }
 
     @Test
@@ -176,7 +171,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| P1M2DT3S |"));
+        assertThat(actual).contains("| P1M2DT3S |");
     }
 
     @Test
@@ -195,7 +190,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| (:label1:label2 {prop2: \"prop2_value\", prop1: \"prop1_value\"}) |"));
+        assertThat(actual).contains("| (:label1:label2 {prop2: \"prop2_value\", prop1: \"prop1_value\"}) |");
     }
 
     @Test
@@ -216,7 +211,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| [:RELATIONSHIP_TYPE {prop2: \"prop2_value\", prop1: \"prop1_value\"}] |"));
+        assertThat(actual).contains("| [:RELATIONSHIP_TYPE {prop2: \"prop2_value\", prop1: \"prop1_value\"}] |");
     }
 
     @Test
@@ -272,7 +267,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| (:L1)<-[:R1]-(:L2)-[:R2]->(:L3) |"));
+        assertThat(actual).contains("| (:L1)<-[:R1]-(:L2)-[:R2]->(:L3) |");
     }
 
     @Test
@@ -310,11 +305,10 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         String actual = verbosePrinter.format(new ListBoltResult(asList(record), mock(ResultSummary.class)));
 
         // then
-        assertThat(actual, containsString("| [:`RELATIONSHIP,TYPE` {prop2: 1, prop1: \"prop1, value\"}] |"));
-        assertThat(
-                actual,
-                containsString("| (:`label ``1`:label2 {`1prop1`: \"\\\"\\\"\", "
-                        + "prop1: \"prop1:value\", ä: \"not-escaped\"}) |"));
+        assertThat(actual).contains("| [:`RELATIONSHIP,TYPE` {prop2: 1, prop1: \"prop1, value\"}] |");
+        assertThat(actual)
+                .contains("| (:`label ``1`:label2 {`1prop1`: \"\\\"\\\"\", "
+                        + "prop1: \"prop1:value\", ä: \"not-escaped\"}) |");
     }
 
     @Test
@@ -324,8 +318,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // WHEN
         String table = formatResult(result);
         // THEN
-        assertThat(table, containsString("| c1  | c2 |"));
-        assertThat(table, containsString("| \"a\" | 42 |"));
+        assertThat(table).contains("| c1  | c2 |");
+        assertThat(table).contains("| \"a\" | 42 |");
     }
 
     @Test
@@ -335,8 +329,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // WHEN
         String table = formatResult(result);
         // THEN
-        assertThat(table, containsString("| \"a\" | 42 |"));
-        assertThat(table, containsString("| \"b\" | 43 |"));
+        assertThat(table).contains("| \"a\" | 42 |");
+        assertThat(table).contains("| \"b\" | 43 |");
     }
 
     @Test
@@ -352,7 +346,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         // THEN
         assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
-        assertThat(actual.result().replaceAll("\\s+", ""), endsWith("|1|".repeat(5)));
+        assertThat(actual.result().replaceAll("\\s+", "")).endsWith("|1|".repeat(5));
     }
 
     @Test
@@ -368,7 +362,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         // THEN
         assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
-        assertThat(actual.result().replaceAll("\\s+", ""), endsWith("|1|".repeat(150)));
+        assertThat(actual.result().replaceAll("\\s+", "")).endsWith("|1|".repeat(150));
     }
 
     @Test
@@ -384,7 +378,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         // THEN
         assertThrows(RuntimeException.class, () -> verbosePrinter.format(result, actual));
-        assertThat(actual.result(), equalTo(String.format("+---+%n| i |%n+---+%n")));
+        assertThat(actual.result()).isEqualTo(String.format("+---+%n| i |%n+---+%n"));
     }
 
     @Test
@@ -394,11 +388,11 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // WHEN
         String table = formatResult(result);
         // THEN
-        assertThat(table, containsString("| \"a\" | 42 |"));
-        assertThat(table, containsString("| \"b\" | 43 |"));
-        assertThat(table, containsString("| \"c\" | 44 |"));
-        assertThat(table, containsString("| \"d\" | 45 |"));
-        assertThat(table, containsString("| \"e\" | 46 |"));
+        assertThat(table).contains("| \"a\" | 42 |");
+        assertThat(table).contains("| \"b\" | 43 |");
+        assertThat(table).contains("| \"c\" | 44 |");
+        assertThat(table).contains("| \"d\" | 45 |");
+        assertThat(table).contains("| \"e\" | 46 |");
     }
 
     @Test
@@ -410,9 +404,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 2).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+------+",
                         "| c1   |",
@@ -426,7 +419,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"eee |",
                         "\\ ee\"  |",
                         "+------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -453,9 +446,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 2).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+-------------+",
                         "| c1   | c2   |",
@@ -473,7 +465,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"aaa | \"bbb |",
                         "\\ aa\"  \\ bb\"  |",
                         "+-------------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -485,9 +477,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 2).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+---------------------+",
                         "| c1                  |",
@@ -498,7 +489,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| 132456798           |",
                         "| 9223372036854775807 |",
                         "+---------------------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -510,9 +501,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(false, 2).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+------+",
                         "| c1   |",
@@ -523,7 +513,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"dd… |",
                         "| \"ee… |",
                         "+------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -534,7 +524,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // WHEN
         String table = formatResult(result);
         // THEN
-        assertThat(table, containsString("| {a: 42} | [12, 13] | {a: [14, 15]} |"));
+        assertThat(table).contains("| {a: 42} | [12, 13] | {a: [14, 15]} |");
     }
 
     @Test
@@ -549,10 +539,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         // WHEN
         String table = formatResult(result);
         // THEN
-        assertThat(table, containsString("| (:Person {name: \"Mark\"}) | [:TEST {since: 2016}] |"));
-        assertThat(
-                table,
-                containsString("| (:Person {name: \"Mark\"})-[:TEST {since: 2016}]->(:Person {name: \"Mark\"}) |"));
+        assertThat(table).contains("| (:Person {name: \"Mark\"}) | [:TEST {since: 2016}] |");
+        assertThat(table).contains("| (:Person {name: \"Mark\"})-[:TEST {since: 2016}]->(:Person {name: \"Mark\"}) |");
     }
 
     @Test
@@ -564,9 +552,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+------+",
                         "| c1   |",
@@ -576,7 +563,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"🐞🐞🐞 |",
                         "\\ 🐞🐞🐞\" |",
                         "+------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -588,9 +575,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(false, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+------+",
                         "| c1   |",
@@ -599,7 +585,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"😅😅\" |",
                         "| \"🐞🐞… |",
                         "+------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -611,9 +597,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+---------+",
                         "| c1      |",
@@ -630,7 +615,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "\\ 1234567 |",
                         "\\ 8\"      |",
                         "+---------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -642,9 +627,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(false, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+---------+",
                         "| c1      |",
@@ -655,7 +639,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"12345… |",
                         "| \"12345… |",
                         "+---------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -667,9 +651,8 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         new TableOutputFormatter(true, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         String table = printer.result();
         // THEN
-        assertThat(
-                table,
-                is(String.join(
+        assertThat(table)
+                .isEqualTo(String.join(
                         NEWLINE,
                         "+---------+",
                         "| c1      |",
@@ -683,7 +666,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         "| \"1      |",
                         "\\ \"       |",
                         "+---------+",
-                        NEWLINE)));
+                        NEWLINE));
     }
 
     @Test
@@ -700,7 +683,7 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         var formatted = formatter.formatPlan(summary);
 
         // then
-        assertThat(formatted, is("SERVER SIDE PLAN"));
+        assertThat(formatted).isEqualTo("SERVER SIDE PLAN");
     }
 
     private static String formatResult(Result result) {

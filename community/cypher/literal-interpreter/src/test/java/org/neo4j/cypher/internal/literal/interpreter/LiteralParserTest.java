@@ -19,14 +19,8 @@
  */
 package org.neo4j.cypher.internal.literal.interpreter;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.anEmptyMap;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -38,6 +32,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cypher.internal.parser.javacc.Cypher;
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
@@ -105,58 +100,60 @@ public class LiteralParserTest {
 
     @Test
     void shouldInterpretList() throws Exception {
-        assertThat((List<?>) parseLiteral("[1,2,3]"), contains(1L, 2L, 3L));
-        assertThat((List<?>) parseLiteral(" [ 1, 2, 3 ] "), contains(1L, 2L, 3L));
+        assertThat(parseLiteral("[1,2,3]"))
+                .asInstanceOf(InstanceOfAssertFactories.list(Long.class))
+                .containsExactly(1L, 2L, 3L);
+
+        assertThat(parseLiteral(" [ 1, 2, 3 ] "))
+                .asInstanceOf(InstanceOfAssertFactories.list(Long.class))
+                .containsExactly(1L, 2L, 3L);
     }
 
     @Test
     void shouldInterpretNestedList() throws Exception {
         List<?> list1 = (List<?>) parseLiteral("[1,[2,[3]]]");
 
-        assertThat(list1, hasSize(2));
-        assertThat(list1.get(0), equalTo(1L));
+        assertThat(list1).hasSize(2);
+        assertThat(list1.get(0)).isEqualTo(1L);
 
         List<?> list2 = (List<?>) list1.get(1);
-        assertThat(list2, hasSize(2));
-        assertThat(list2.get(0), equalTo(2L));
+        assertThat(list2).hasSize(2);
+        assertThat(list2.get(0)).isEqualTo(2L);
 
         List<?> list3 = (List<?>) list2.get(1);
-        assertThat(list3, hasSize(1));
-        assertThat(list3.get(0), equalTo(3L));
+        assertThat(list3).hasSize(1);
+        assertThat(list3.get(0)).isEqualTo(3L);
     }
 
     @Test
     void shouldInterpretMap() throws Exception {
-        assertThat((Map<?, ?>) parseLiteral("{}}"), anEmptyMap());
-        assertThat(
-                (Map<?, ?>) parseLiteral("{age: 2}"),
-                allOf(
-                        aMapWithSize(1), // make sure there are no extra key/value pairs in map
-                        hasEntry("age", 2L)));
+        assertThat(parseLiteral("{}}"))
+                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                .isEmpty();
 
-        assertThat(
-                (Map<?, ?>) parseLiteral("{name: 'Scotty', age: 4, height: 94.3}"),
-                allOf(
-                        aMapWithSize(3),
-                        hasEntry("name", (Object) "Scotty"),
-                        hasEntry("age", (Object) 4L),
-                        hasEntry("height", 94.3)));
+        assertThat(parseLiteral("{age: 2}"))
+                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                .containsOnly(entry("age", 2L));
+
+        assertThat(parseLiteral("{name: 'Scotty', age: 4, height: 94.3}"))
+                .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                .containsOnly(entry("name", "Scotty"), entry("age", 4L), entry("height", 94.3));
     }
 
     @Test
     void shouldInterpretNestedMap() throws Exception {
         Map<?, ?> map1 = (Map<?, ?>) parseLiteral("{k1: 1, map2: {k2: 2, map3: {k3: 3}}}");
 
-        assertThat(map1, aMapWithSize(2));
-        assertThat(map1.get("k1"), equalTo(1L));
+        assertThat(map1).hasSize(2);
+        assertThat(map1.get("k1")).isEqualTo(1L);
 
         Map<?, ?> map2 = (Map<?, ?>) map1.get("map2");
-        assertThat(map2, aMapWithSize(2));
-        assertThat(map2.get("k2"), equalTo(2L));
+        assertThat(map2).hasSize(2);
+        assertThat(map2.get("k2")).isEqualTo(2L);
 
         Map<?, ?> map3 = (Map<?, ?>) map2.get("map3");
-        assertThat(map3, aMapWithSize(1));
-        assertThat(map3.get("k3"), equalTo(3L));
+        assertThat(map3).hasSize(1);
+        assertThat(map3.get("k3")).isEqualTo(3L);
     }
 
     @Test

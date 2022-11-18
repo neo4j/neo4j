@@ -27,7 +27,6 @@ import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Index.atIndex;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.bolt.testing.assertions.AnyValueAssertions.assertThat;
@@ -42,6 +41,7 @@ import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.sizeCondition;
 import static org.neo4j.test.server.HTTP.RawPayload;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 import static org.neo4j.test.server.HTTP.Response;
@@ -71,7 +71,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import org.assertj.core.api.HamcrestCondition;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -320,7 +319,7 @@ class ConnectionTrackingIT {
         assertEventually(
                 "Unexpected number of authenticated connections",
                 this::authenticatedConnectionsFromConnectionTracker,
-                new HamcrestCondition<>(hasSize(n)),
+                sizeCondition(n),
                 1,
                 MINUTES);
     }
@@ -329,7 +328,7 @@ class ConnectionTrackingIT {
         assertEventually(
                 connections -> "Unexpected number of accepted connections: " + connections,
                 this::acceptedConnectionsFromConnectionTracker,
-                new HamcrestCondition<>(hasSize(n)),
+                sizeCondition(n),
                 1,
                 MINUTES);
     }
@@ -347,7 +346,7 @@ class ConnectionTrackingIT {
         assertEventually(
                 connections -> "Unexpected number of listed connections: " + connections,
                 () -> listMatchingConnection(connector, username, expectAuthenticated),
-                new HamcrestCondition<>(hasSize(expectedCount)),
+                sizeCondition(expectedCount),
                 1,
                 MINUTES);
     }

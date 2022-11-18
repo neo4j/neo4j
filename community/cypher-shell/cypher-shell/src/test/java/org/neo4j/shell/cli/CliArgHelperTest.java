@@ -20,14 +20,12 @@
 package org.neo4j.shell.cli;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.shell.test.Util.asArray;
@@ -222,8 +220,7 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     void parseFullAddress3() {
         String failure =
                 parseAndFail("--uri", "bolt+routing://alice:foo@bar:69", "--address", "bolt+routing://bob:foo@bar:69");
-        assertThat(failure, containsString("usage: cypher-shell"));
-        assertThat(failure, containsString("cypher-shell: error: Specify one of -a/--address/--uri"));
+        assertThat(failure).contains("usage: cypher-shell", "cypher-shell: error: Specify one of -a/--address/--uri");
     }
 
     @Test
@@ -248,11 +245,10 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     void parseFullAddressWithFallback3() {
         env.put("NEO4J_URI", "bolt+routing://alice:foo@bar:69");
         env.put("NEO4J_ADDRESS", "bolt+routing://bob:foo@bar:69");
-        var exception = assertThrows(IllegalArgumentException.class, this::parse);
 
-        assertThat(
-                exception.getMessage(),
-                containsString("Specify one or none of environment variables NEO4J_ADDRESS and NEO4J_URI"));
+        assertThatThrownBy(this::parse)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Specify one or none of environment variables NEO4J_ADDRESS and NEO4J_URI");
     }
 
     @Test
@@ -320,11 +316,10 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void shouldNotAcceptInvalidEncryption() {
-        var exception =
-                assertThrows(ArgumentParserException.class, () -> parser.parseAndThrow("--encryption", "bugaluga"));
-        assertThat(
-                exception.getMessage(),
-                containsString("argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})"));
+        assertThatThrownBy(() -> parser.parseAndThrow("--encryption", "bugaluga"))
+                .isInstanceOf(ArgumentParserException.class)
+                .hasMessageContaining(
+                        "argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})");
     }
 
     @Test
@@ -337,17 +332,16 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     @Test
     void shouldParseTwoArgs() {
         CliArgs cliArgs = parser.parse("-P", "foo=>'nanana'", "-P", "bar=>35");
-        assertNotNull(cliArgs);
+        assertThat(cliArgs).isNotNull();
         var expected = List.of(new RawParameter("foo", "'nanana'"), new RawParameter("bar", "35"));
-        assertThat(cliArgs.getParameters(), is(expected));
+        assertThat(cliArgs.getParameters()).isEqualTo(expected);
     }
 
     @Test
     void shouldFailForInvalidSyntaxForArg() {
-        var exception =
-                assertThrows(IllegalArgumentException.class, () -> parser.parseAndThrow("-P", "foo: => 'nanana'"));
-        assertThat(exception.getMessage(), containsString("Incorrect usage"));
-        assertThat(exception.getMessage(), containsString("usage: --param  'name => value'"));
+        assertThatThrownBy(() -> parser.parseAndThrow("-P", "foo: => 'nanana"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll("Incorrect usage", "usage: --param  'name => value'");
     }
 
     @Test
@@ -366,8 +360,9 @@ class CliArgHelperTest extends LocaleDependentTestBase {
 
     @Test
     void helpfulIfUsingWrongFile() {
-        var exception = assertThrows(ArgumentParserException.class, () -> parser.parseAndThrow("-file", "foo"));
-        assertThat(exception.getMessage(), containsString("Unrecognized argument '-file', did you mean --file?"));
+        assertThatThrownBy(() -> parser.parseAndThrow("-file", "foo"))
+                .isInstanceOf(ArgumentParserException.class)
+                .hasMessageContaining("Unrecognized argument '-file', did you mean --file?");
     }
 
     @Test
@@ -386,7 +381,7 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     @Test
     void defaultEmptyLogHandler() {
         CliArgs arguments = parse("--log");
-        assertTrue(arguments.logHandler().get() instanceof ConsoleHandler);
+        assertThat(arguments.logHandler()).containsInstanceOf(ConsoleHandler.class);
     }
 
     @Test
@@ -394,7 +389,7 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         final var dir = Files.createTempDirectory("temp-dir");
         final var file = new File(dir.toFile(), "shell.log");
         CliArgs arguments = parse("--log", file.getAbsolutePath());
-        assertTrue(arguments.logHandler().get() instanceof FileHandler);
+        assertThat(arguments.logHandler()).containsInstanceOf(FileHandler.class);
         file.delete();
     }
 }

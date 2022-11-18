@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.driver.internal.summary.InternalProfiledPlan.PROFILED_PLAN_FROM_VALUE;
 
 import java.util.Collections;
@@ -65,7 +64,7 @@ class OutputFormatterTest {
         Map<String, Value> info = OutputFormatter.info(summary);
 
         // Then
-        assertThat(info.get("DbHits").asLong(), equalTo(2404L));
+        assertThat(info.get("DbHits").asLong()).isEqualTo(2404L);
     }
 
     private static Value buildOperator(String operator, long dbHits, long rows, Value child) {

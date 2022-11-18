@@ -19,9 +19,7 @@
  */
 package org.neo4j.shell.parser;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.List;
@@ -243,6 +241,6 @@ class ShellStatementParserTest {
     }
 
     private void assertStatements(String input, ParsedStatement... expected) throws IOException {
-        assertThat(parser.parse(input).statements(), is(asList(expected)));
+        assertThat(parser.parse(input).statements()).containsExactly(expected);
     }
 }

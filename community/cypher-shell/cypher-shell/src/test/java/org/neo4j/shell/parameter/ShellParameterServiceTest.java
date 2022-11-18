@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.parameter;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -94,7 +93,7 @@ class ShellParameterServiceTest {
     void failToEvaluate() {
         var exception = assertThrows(
                 CommandException.class, () -> parameters.evaluate(new RawParameter("somename", "INVALID")));
-        assertThat(exception.getMessage(), is("Failed to evaluate parameter somename: INVALID"));
+        assertThat(exception).hasMessage("Failed to evaluate parameter somename: INVALID");
     }
 
     @Test
@@ -118,8 +117,8 @@ class ShellParameterServiceTest {
     void setParameter() {
         var parameter = new Parameter("key", "'value'", "value");
         parameters.setParameter(parameter);
-        assertThat(parameters.parameters(), is(Map.of("key", parameter)));
-        assertThat(parameters.parameterValues(), is(Map.of("key", parameter.value())));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter));
+        assertThat(parameters.parameterValues()).isEqualTo(Map.of("key", parameter.value()));
     }
 
     @Test
@@ -127,8 +126,8 @@ class ShellParameterServiceTest {
         parameters.setParameter(new Parameter("key", "'old'", "old"));
         var parameter = new Parameter("key", "'value'", "value");
         parameters.setParameter(parameter);
-        assertThat(parameters.parameters(), is(Map.of("key", parameter)));
-        assertThat(parameters.parameterValues(), is(Map.of("key", parameter.value())));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter));
+        assertThat(parameters.parameterValues()).isEqualTo(Map.of("key", parameter.value()));
     }
 
     @Test
@@ -138,8 +137,9 @@ class ShellParameterServiceTest {
 
         parameters.setParameter(parameter1);
         parameters.setParameter(parameter2);
-        assertThat(parameters.parameters(), is(Map.of("key1", parameter1, "key2", parameter2)));
-        assertThat(parameters.parameterValues(), is(Map.of("key1", parameter1.value(), "key2", parameter2.value())));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key1", parameter1, "key2", parameter2));
+        assertThat(parameters.parameterValues())
+                .isEqualTo(Map.of("key1", parameter1.value(), "key2", parameter2.value()));
     }
 
     private void assertEvaluate(String expression, Object expectedValue) throws CommandException {
@@ -153,6 +153,6 @@ class ShellParameterServiceTest {
     private void assertParse(String input, String expectedName, String expectedExpression)
             throws ParameterService.ParameterParsingException {
         var parsed = parameters.parse(input);
-        assertThat(parsed, is(new RawParameter(expectedName, expectedExpression)));
+        assertThat(parsed).isEqualTo(new RawParameter(expectedName, expectedExpression));
     }
 }

@@ -19,10 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
@@ -80,9 +78,9 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("MATCH (n) RETURN n"));
 
         String output = linePrinter.output();
-        assertThat(output, containsString("| n "));
-        assertThat(output, containsString("| (:TestPerson {name: \"Jane Smith\"}) |"));
-        assertThat(output, not(containsString(":NotCreated")));
+        assertThat(output)
+                .contains("| n ", "| (:TestPerson {name: \"Jane Smith\"}) |")
+                .doesNotContain(":NotCreated");
     }
 
     @Test
@@ -91,13 +89,11 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         beginCommand.execute(List.of());
 
         // then
-        ErrorWhileInTransactionException exception = assertThrows(
-                ErrorWhileInTransactionException.class, () -> shell.execute(CypherStatement.complete("RETURN 1/0")));
-        assertThat(exception.getMessage(), containsString("/ by zero"));
-        assertThat(
-                exception.getMessage(),
-                containsString(
-                        "An error occurred while in an open transaction. The transaction will be rolled back and terminated."));
+        assertThatThrownBy(() -> shell.execute(CypherStatement.complete("RETURN 1/0")))
+                .isInstanceOf(ErrorWhileInTransactionException.class)
+                .hasMessageContainingAll(
+                        "/ by zero",
+                        "An error occurred while in an open transaction. The transaction will be rolled back and terminated.");
     }
 
     @Test
@@ -114,7 +110,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("RETURN 42"));
 
         // then
-        assertThat(linePrinter.output(), containsString("42"));
+        assertThat(linePrinter.output()).contains("42");
     }
 
     @Test
@@ -128,8 +124,9 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         }
 
         // then / when
-        CommandException exception = assertThrows(CommandException.class, () -> commitCommand.execute(List.of()));
-        assertThat(exception.getMessage(), containsString("There is no open transaction to commit"));
+        assertThatThrownBy(() -> commitCommand.execute(List.of()))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("There is no open transaction to commit");
     }
 
     @Test
@@ -143,8 +140,9 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         }
 
         //  then / when
-        CommandException exception = assertThrows(CommandException.class, () -> rollbackCommand.execute(List.of()));
-        assertThat(exception.getMessage(), containsString("There is no open transaction to rollback"));
+        assertThatThrownBy(() -> rollbackCommand.execute(List.of()))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("There is no open transaction to rollback");
     }
 
     @Test
@@ -163,8 +161,7 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("MATCH (n) RETURN n"));
 
         String result = linePrinter.output();
-        assertThat(result, containsString("| (:TestPerson {name: \"Jane Smith\"}) |"));
-        assertThat(result, not(containsString(":NotCreated")));
+        assertThat(result).contains("| (:TestPerson {name: \"Jane Smith\"}) |").doesNotContain(":NotCreated");
     }
 
     @Test
@@ -179,26 +176,23 @@ class CypherShellTransactionIntegrationTest extends CypherShellIntegrationTest {
         shell.execute(CypherStatement.complete("MATCH (n) RETURN n"));
 
         String result = linePrinter.output();
-        assertThat(result, containsString("| (:TestPerson {name: \"Jane Smith\"}) |"));
-        assertThat(result, not(containsString(":NotCreated")));
+        assertThat(result).contains("| (:TestPerson {name: \"Jane Smith\"}) |").doesNotContain(":NotCreated");
     }
 
     @Test
     void commitScenario() throws CommandException {
         beginCommand.execute(List.of());
         shell.execute(CypherStatement.complete("CREATE (:TestPerson {name: \"Joe Smith\"})"));
-        assertThat(linePrinter.output(), containsString("0 rows\n"));
+        assertThat(linePrinter.output()).contains("0 rows\n");
 
         linePrinter.clear();
         shell.execute(CypherStatement.complete("CREATE (:TestPerson {name: \"Jane Smith\"})"));
-        assertThat(linePrinter.output(), containsString("0 rows\n"));
+        assertThat(linePrinter.output()).contains("0 rows\n");
 
         linePrinter.clear();
         shell.execute(CypherStatement.complete("MATCH (n:TestPerson) RETURN n ORDER BY n.name"));
-        assertThat(
-                linePrinter.output(),
-                containsString(
-                        "\n| (:TestPerson {name: \"Jane Smith\"}) |\n| (:TestPerson {name: \"Joe Smith\"})  |\n"));
+        assertThat(linePrinter.output())
+                .contains("\n| (:TestPerson {name: \"Jane Smith\"}) |\n| (:TestPerson {name: \"Joe Smith\"})  |\n");
 
         commitCommand.execute(List.of());
     }

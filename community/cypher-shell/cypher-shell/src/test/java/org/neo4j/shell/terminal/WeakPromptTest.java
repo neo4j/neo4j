@@ -21,8 +21,7 @@ package org.neo4j.shell.terminal;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -56,21 +55,21 @@ class WeakPromptTest {
         var prompt = new WeakPrompt(input, new PrintWriter(out), UTF_8);
 
         var result = prompt.readLine("Tell me your inner feelings: ");
-        assertThat(result, is("Does not compute"));
+        assertThat(result).isEqualTo("Does not compute");
         input.mark(1);
-        assertThat(input.read(), is((int) ':'));
+        assertThat(input.read()).isEqualTo((int) ':');
         input.reset();
 
         result = prompt.readLine("Really?");
-        assertThat(result, is(":("));
+        assertThat(result).isEqualTo(":(");
         input.mark(1);
-        assertThat(input.read(), is((int) '.'));
+        assertThat(input.read()).isEqualTo((int) '.');
         input.reset();
 
         result = prompt.readLine("Relax!");
-        assertThat(result, is("..."));
+        assertThat(result).isEqualTo("...");
         input.mark(1);
-        assertThat(input.read(), is((int) '\n'));
+        assertThat(input.read()).isEqualTo((int) '\n');
         input.reset();
     }
 
@@ -91,18 +90,18 @@ class WeakPromptTest {
 
     private void assertRead(String input, Charset charset, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
-        assertThat(newWeakPrompt(input, out, charset).readLine("Read me: "), is(expected));
-        assertThat(out.toString(charset), is("Read me: "));
+        assertThat(newWeakPrompt(input, out, charset).readLine("Read me: ")).isEqualTo(expected);
+        assertThat(out.toString(charset)).isEqualTo("Read me: ");
     }
 
     private void assertReadPassword(String input, Charset charset, String expected) throws IOException {
         final var out = new ByteArrayOutputStream();
-        assertThat(newWeakPrompt(input, out, charset).readPassword("Read me: "), is(expected));
+        assertThat(newWeakPrompt(input, out, charset).readPassword("Read me: ")).isEqualTo(expected);
 
         if (input.contains("\n") || input.contains("\r")) {
-            assertThat(out.toString(charset), is("Read me: " + System.lineSeparator()));
+            assertThat(out.toString(charset)).isEqualTo("Read me: " + System.lineSeparator());
         } else {
-            assertThat(out.toString(charset), is("Read me: "));
+            assertThat(out.toString(charset)).isEqualTo("Read me: ");
         }
     }
 

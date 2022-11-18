@@ -19,11 +19,8 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -42,17 +39,17 @@ class SourceTest {
 
     @Test
     void descriptionNotNull() {
-        assertNotNull(cmd.metadata().description());
+        assertThat(cmd.metadata().description()).isNotNull();
     }
 
     @Test
     void usageNotNull() {
-        assertNotNull(cmd.metadata().usage());
+        assertThat(cmd.metadata().usage()).isNotNull();
     }
 
     @Test
     void helpNotNull() {
-        assertNotNull(cmd.metadata().help());
+        assertThat(cmd.metadata().help()).isNotNull();
     }
 
     @Test
@@ -65,21 +62,24 @@ class SourceTest {
 
     @Test
     void shouldFailIfFileNotThere() {
-        var exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("not.there")));
-        assertThat(exception.getMessage(), containsString("Cannot find file: 'not.there'"));
-        assertThat(exception.getCause(), instanceOf(FileNotFoundException.class));
+        assertThatThrownBy(() -> cmd.execute(List.of("not.there")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Cannot find file: 'not.there'")
+                .hasCauseInstanceOf(FileNotFoundException.class);
     }
 
     @Test
     void shouldNotAcceptMoreThanOneArgs() {
-        var exception = assertThrows(CommandException.class, () -> cmd.execute(List.of("bob", "sob")));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of("bob", "sob")))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test
     void shouldNotAcceptZeroArgs() {
-        var exception = assertThrows(CommandException.class, () -> cmd.execute(List.of()));
-        assertThat(exception.getMessage(), containsString("Incorrect number of arguments"));
+        assertThatThrownBy(() -> cmd.execute(List.of()))
+                .isInstanceOf(CommandException.class)
+                .hasMessageContaining("Incorrect number of arguments");
     }
 
     @Test

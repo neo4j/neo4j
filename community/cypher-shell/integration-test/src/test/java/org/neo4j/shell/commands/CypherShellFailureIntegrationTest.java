@@ -19,8 +19,7 @@
  */
 package org.neo4j.shell.commands;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
@@ -56,6 +55,6 @@ class CypherShellFailureIntegrationTest extends CypherShellIntegrationTest {
     @Test
     void cypherWithNoPasswordShouldReturnValidError() {
         AuthenticationException exception = assertThrows(AuthenticationException.class, () -> connect(""));
-        assertThat(exception.getMessage(), containsString("The client is unauthorized due to authentication failure."));
+        assertThat(exception).hasMessageContaining("The client is unauthorized due to authentication failure.");
     }
 }

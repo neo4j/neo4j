@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.hamcrest.MatcherAssert.assertThat
-import org.hamcrest.Matchers.greaterThanOrEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
@@ -373,7 +372,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.getNodeById(2)
     tx.getNodeById(1)
     val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
-    assertThat(Long.box(accesses), greaterThanOrEqualTo(Long.box(1L)))
+    assertThat(accesses).isGreaterThanOrEqualTo(1L)
 
     transactionalContext.close()
     tx.close()

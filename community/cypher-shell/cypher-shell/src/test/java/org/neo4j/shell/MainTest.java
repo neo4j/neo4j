@@ -20,10 +20,7 @@
 package org.neo4j.shell;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -40,6 +37,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.AuthenticationException;
@@ -77,14 +75,17 @@ class MainTest {
                 .userInput("no newline")
                 .run()
                 .assertFailure("No text could be read, exiting...")
-                .assertThatOutput(containsString("username: no newline"));
+                .assertThatOutput(new Condition<>(s -> s.contains("username: no newline"), "Should contain string"));
     }
 
     @Test
     void unrelatedErrorDoesNotPrompt() throws Exception {
         doThrow(new RuntimeException("bla")).when(mockShell).connect(any());
 
-        testWithMocks().run().assertFailure("bla").assertThatOutput(equalTo(""));
+        testWithMocks()
+                .run()
+                .assertFailure("bla")
+                .assertThatOutput(new Condition<String>(s -> s.isEmpty(), "String is empty"));
 
         verify(mockShell, times(1)).connect(any());
     }
@@ -278,7 +279,7 @@ class MainTest {
                 "purple", "rain",
                 "advice", List.of("talk", "less", "smile", "more"),
                 "when", LocalDate.of(2021, 1, 12));
-        assertThat(parameters.parameterValues(), is(expectedParams));
+        assertThat(parameters.parameterValues()).isEqualTo(expectedParams);
     }
 
     @Test
