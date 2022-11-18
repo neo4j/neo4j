@@ -35,6 +35,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,6 +94,7 @@ class DiagnosticsReportCommandIT {
         // Run command, should detect running instance
         String[] args = {"threads", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
+        var signalToIgnoreThisTest = new MutableBoolean();
         withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
             try {
                 DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
@@ -100,12 +102,17 @@ class DiagnosticsReportCommandIT {
                 diagnosticsReportCommand.execute();
             } catch (CommandFailedException e) {
                 if (e.getMessage().equals("Unknown classifier: threads")) {
-                    return; // If we get attach API is not available for example in some IBM jdk installs, ignore this
-                    // test
+                    signalToIgnoreThisTest.setTrue();
+                } else {
+                    throw e;
                 }
-                throw e;
             }
         });
+
+        // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+        if (signalToIgnoreThisTest.isTrue()) {
+            return;
+        }
 
         // Verify that we took a thread dump
         Path reports = testDirectory.directory("reports");
