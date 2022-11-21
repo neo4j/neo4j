@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
 import org.neo4j.cypher.internal.ast.generator.SemanticAwareAstGenerator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.Scope
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
@@ -86,12 +87,14 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.StatementConstants
@@ -690,7 +693,12 @@ class LogicalPlanGenerator(
     for {
       expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))
         .suchThat(e => {
-          val errors = SemanticExpressionCheck.check(Results, e)(semanticState).errors
+          val errors = SemanticExpressionCheck.check(Results, e).run(
+            semanticState,
+            new SemanticCheckContext {
+              override def errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+            }
+          ).errors
           errors.isEmpty
         })
       parameters = expression.folder.findAllByClass[Parameter].map(_.name)
