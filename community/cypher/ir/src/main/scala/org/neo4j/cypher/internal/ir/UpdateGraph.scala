@@ -493,25 +493,20 @@ trait UpdateGraph {
    */
   private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit
   semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
-    val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable)
-    val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name)) ++
-      identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier)
-    val unstableNodesToDelete = deletedNodes.filterNot(_.isStable).map(_.name).toSeq
+    val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable).map(_.name)
     val nodesWithLabelOverlap = relevantNodes
-      .flatMap(unstableNode => deletedNodes.map((unstableNode, _)))
+      .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (unstableNode, deletedNode) =>
-        unstableNode.name != deletedNode.name &&
+        unstableNode != deletedNode &&
         getDeleteOverlapWithLabelExpression(
           qgWithInfo,
-          unstableNode.name,
-          deletedNode.name
+          unstableNode,
+          deletedNode
         )
       }
-      .flatMap { case (unstableNode, _) => Set(unstableNode.name) }
+      .flatMap { case (unstableNode, _) => Set(unstableNode) }
 
-    if (unstableNodesToDelete.nonEmpty) {
-      unstableNodesToDelete.map(EagernessReason.ReadDeleteConflict(_))
-    } else if (nodesWithLabelOverlap.nonEmpty) {
+    if (nodesWithLabelOverlap.nonEmpty) {
       nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict(_)).toSeq
     } else {
       Seq.empty
