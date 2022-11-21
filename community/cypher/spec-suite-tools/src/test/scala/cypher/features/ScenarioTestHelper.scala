@@ -60,8 +60,9 @@ trait ScenarioTestHelper extends FeatureTest {
 
   def dbProvider(): TestDatabaseProvider
 
-  final override def denylist: Seq[DenylistEntry] =
-    config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
+  private lazy val denylistEntries = config.denylist.map(parseDenylist).getOrElse(Seq.empty[DenylistEntry])
+
+  final override def denylist(): Seq[DenylistEntry] = denylistEntries
 
   final override def runDenyListedScenario(scenario: Scenario): Seq[Executable] = {
     val name = scenario.toString()
@@ -78,7 +79,7 @@ trait ScenarioTestHelper extends FeatureTest {
       } match {
         case Success(_) =>
           if (!config.experimental) {
-            if (!denylist.exists(_.isFlaky(scenario)))
+            if (!denylist().exists(_.isFlaky(scenario)))
               throw new IllegalStateException("Unexpectedly succeeded in the following denylisted scenario:\n" + name)
           }
         case Failure(e) =>

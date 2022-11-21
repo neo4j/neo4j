@@ -42,9 +42,10 @@ abstract class FeatureTest {
   def scenarios: Seq[Scenario]
 
   /**
+   * Implementation can have side effects.
    * @return the scenarios which are expected to fail.
    */
-  def denylist: Seq[DenylistEntry]
+  def denylist(): Seq[DenylistEntry]
 
   /**
    * Invoked for each denylisted scenario.
@@ -64,7 +65,7 @@ abstract class FeatureTest {
 
   @TestFactory
   def runTests(): util.Collection[DynamicTest] = {
-    val (expectFail, expectPass) = scenarios.partition(s => denylist.exists(_.isDenylisted(s)))
+    val (expectFail, expectPass) = scenarios.partition(s => denylist().exists(_.isDenylisted(s)))
 
     val expectFailTests: Seq[DynamicTest] = for {
       scenario <- expectFail

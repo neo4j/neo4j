@@ -46,7 +46,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
   override val scenarios: Seq[Scenario] =
     BaseFeatureTestHolder.allAcceptanceScenarios ++ BaseFeatureTestHolder.allTckScenarios
 
-  override def denylist: Seq[DenylistEntry] = Seq(
+  override def denylist(): Seq[DenylistEntry] = Seq(
     // Does not parse
     """Feature "Mathematical3 - Subtraction": Scenario "Fail for invalid Unicode hyphen in subtraction"""",
     """Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "26"""",
