@@ -24,7 +24,9 @@ import static org.neo4j.server.startup.Bootloader.ARG_EXPAND_COMMANDS;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.AdminTool;
@@ -82,7 +84,6 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                     new DefaultFileSystemAbstraction(),
                     this::createDbmsBootloader);
             CommandLine actualCommand = getActualAdminCommand(ctx);
-
             if (unmatchedParameters.isEmpty()) { // No arguments (except expand commands/verbose), print usage
                 actualCommand.usage(adminBootloader.environment.err());
                 return CommandLine.ExitCode.USAGE;
@@ -97,6 +98,18 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                 }
                 executionInfo = getExecutionInfo(result);
             } catch (CommandLine.ParameterException e) {
+                if (e.getCommandLine() == actualCommand && e instanceof CommandLine.UnmatchedArgumentException) {
+                    // We got a mismatch on first layer, can be missing database/dbms/server
+                    // Lets add those subcommand to help the suggestion printing
+                    // Its safe to do, as we're exiting anyway
+                    Map<String, CommandLine> subcommands = actualCommand.getSubcommands();
+                    Map<String, CommandLine> permutations = new HashMap<>();
+                    subcommands.forEach((outerName, outerSubCommand) -> outerSubCommand
+                            .getSubcommands()
+                            .keySet()
+                            .forEach(innerName -> permutations.put(outerName + " " + innerName, outerSubCommand)));
+                    permutations.forEach(actualCommand::addSubcommand);
+                }
                 return e.getCommandLine()
                         .getParameterExceptionHandler()
                         .handleParseException(e, args); // Parse error, handle and exit

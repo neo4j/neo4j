@@ -179,6 +179,16 @@ class CliHelpTest extends ServerProcessTestBase {
                 .contains("Install the Windows service.");
     }
 
+    @Test
+    void missingFirstSubCommandShouldGiveReasonableSuggestions() {
+        assertThat(execute("set-initial-password")).isEqualTo(2);
+        assertThat(err.toString()).contains("Did you mean:", "dbms set-initial-password");
+
+        clearOutAndErr();
+        assertThat(execute("consistency-check")).isEqualTo(2);
+        assertThat(err.toString()).contains("Did you mean:", "database check");
+    }
+
     @Override
     protected CommandLine createCommand(
             PrintStream out,
