@@ -470,7 +470,6 @@ trait UpdateGraph {
    * and what is deleted here
    */
   def deleteOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
-    // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
     val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++ qgWithInfo.queryGraph.argumentIds
     val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
     if (overlaps.nonEmpty) {
@@ -492,17 +491,17 @@ trait UpdateGraph {
     val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name)) ++
       identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier)
     val unstableNodesToDelete = deletedNodes.filterNot(_.isStable).map(_.name).toSeq
-    lazy val nodesWithLabelOverlap = relevantNodes.filterNot(_.isStable)
+    val nodesWithLabelOverlap = relevantNodes
       .flatMap(unstableNode => deletedNodes.map((unstableNode, _)))
       .filter { case (unstableNode, deletedNode) =>
-        unstableNode.name == deletedNode.name ||
-          getDeleteOverlapWithLabelExpression(
-            qgWithInfo,
-            unstableNode,
-            deletedNode
-          )
+        unstableNode.name != deletedNode.name &&
+        getDeleteOverlapWithLabelExpression(
+          qgWithInfo,
+          unstableNode.name,
+          deletedNode.name
+        )
       }
-      .flatMap { case (unstableNode, deletedNode) => Set(unstableNode.name, deletedNode.name) }
+      .flatMap { case (unstableNode, _) => Set(unstableNode.name) }
 
     if (unstableNodesToDelete.nonEmpty) {
       unstableNodesToDelete.map(EagernessReason.ReadDeleteConflict)
@@ -534,15 +533,15 @@ trait UpdateGraph {
    */
   private def getDeleteOverlapWithLabelExpression(
     qgWithInfo: QgWithLeafInfo,
-    unstableNode: QgWithLeafInfo.Identifier,
-    deletedNode: QgWithLeafInfo.Identifier
+    unstableNode: String,
+    deletedNode: String
   ): Boolean = {
     val selections =
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections())
 
-    val unstableNodePredicates = selections.predicatesGiven(Set(unstableNode.name)).toList
-    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode.name)).toList
+    val unstableNodePredicates = selections.predicatesGiven(Set(unstableNode)).toList
+    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode)).toList
 
     val overlap = DeleteOverlaps.overlap(unstableNodePredicates, deletedNodePredicates)
 
