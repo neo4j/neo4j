@@ -64,7 +64,7 @@ public class IndexingTestUtil {
     }
 
     public static void dropTokenIndexes(GraphDatabaseService db) {
-        dropIndexes(db, index -> index.isRelationshipIndex() || index.isNodeIndex());
+        dropIndexes(db, index -> index.getIndexType() == LOOKUP);
     }
 
     private static void dropIndexes(GraphDatabaseService db, Predicate<IndexDefinition> condition) {

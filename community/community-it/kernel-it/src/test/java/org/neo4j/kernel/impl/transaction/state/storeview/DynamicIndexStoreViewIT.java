@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
@@ -50,7 +51,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -103,34 +103,55 @@ public class DynamicIndexStoreViewIT {
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringNodeScan() {
-        shouldHandleConcurrentDeletionOfTokenIndexDuringScan(this::populateNodes, this::nodeStoreScan);
+    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeNodeScan() {
+        shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(this::populateNodes, this::nodeStoreScan);
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexDuringRelationshipScan() {
-        shouldHandleConcurrentDeletionOfTokenIndexDuringScan(this::populateRelationships, this::relationshipStoreScan);
+    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeRelationshipScan() {
+        shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(
+                this::populateRelationships, this::relationshipStoreScan);
     }
 
-    private void shouldHandleConcurrentDeletionOfTokenIndexDuringScan(
+    private void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(
+            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
+        // Given
+        entitiesCreator.getAsLong();
+        var consumer = new TestTokenScanConsumer();
+        var storeScan = storeScanSupplier.apply(consumer);
+
+        // When
+        dropTokenIndexes(database);
+
+        // Then
+        assertThatThrownBy(() -> storeScan.run(new ContainsExternalUpdates()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no longer exists");
+    }
+
+    @Test
+    void shouldHandleDeletionOfNodeTokenIndexBeforeScan() {
+        shouldHandleDeletionOfTokenIndexBeforeScan(this::populateNodes, this::nodeStoreScan);
+    }
+
+    @Test
+    void shouldHandleDeletionOfRelationshipTokenIndexBeforeScan() {
+        shouldHandleDeletionOfTokenIndexBeforeScan(this::populateRelationships, this::relationshipStoreScan);
+    }
+
+    private void shouldHandleDeletionOfTokenIndexBeforeScan(
             LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
         // Given
         var entities = entitiesCreator.getAsLong();
         var consumer = new TestTokenScanConsumer();
+        dropTokenIndexes(database);
         var storeScan = storeScanSupplier.apply(consumer);
-        var scanSuccessful = new AtomicBoolean();
 
         // When
-        Race race = new Race().withRandomStartDelays();
-        race.addContestant(() -> dropSafeRun(storeScan, scanSuccessful));
-        race.addContestant(() -> dropTokenIndexes(database), 5);
-        race.goUnchecked();
+        storeScan.run(new ContainsExternalUpdates());
 
         // Then
-        if (scanSuccessful.get()) {
-            assertScanCompleted(storeScan, consumer, entities);
-        }
-        storeScan.stop();
+        assertScanCompleted(storeScan, consumer, entities);
     }
 
     @Test
