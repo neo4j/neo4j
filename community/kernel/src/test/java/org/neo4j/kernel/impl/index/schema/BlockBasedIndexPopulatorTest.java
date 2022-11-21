@@ -318,7 +318,7 @@ abstract class BlockBasedIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> {
             closed = true;
 
             // then
-            assertTrue(mergeFuture.isDone());
+            mergeFuture.get();
             assertFalse(fs.fileExists(indexFiles.getBase()));
         } finally {
             if (!closed) {
