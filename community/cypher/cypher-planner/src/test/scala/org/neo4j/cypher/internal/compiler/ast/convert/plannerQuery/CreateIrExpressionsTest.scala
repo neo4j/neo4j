@@ -446,7 +446,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollectName,
         collectionName,
-        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND r.foo > 5 AND o.prop = 5 AND not o:% AND o.foo > 5 | 5]"
+        s"[(n)-[r:R|P]->(m)<-[r2]-(o) WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 | 5]"
       )(pos, Set(m, r), Set(n))
     )
   }
@@ -940,7 +940,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND r.foo > 5 AND o.prop = 5 AND not o:% AND o.foo > 5 AND not r2 = r }"
+      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 AND not r2 = r }"
     )
   }
 

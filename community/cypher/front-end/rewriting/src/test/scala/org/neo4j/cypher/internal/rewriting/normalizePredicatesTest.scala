@@ -296,19 +296,27 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
   }
 
   test("MATCH (a WHERE EXISTS {(:A)}) RETURN *") {
-    assertRewrite("MATCH (a) WHERE EXISTS {(:A)} RETURN *")
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(s"MATCH (a) WHERE EXISTS {($node) WHERE $node:A} RETURN *")
   }
 
   test("MATCH (a WHERE COUNT {(:A)} > 1) RETURN *") {
-    assertRewrite("MATCH (a) WHERE COUNT {(:A)} > 1 RETURN *")
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(s"MATCH (a) WHERE COUNT {($node) WHERE $node:A} > 1 RETURN *")
   }
 
   test("MATCH (a)-[r WHERE EXISTS {(:A)}]-(b) RETURN *") {
-    assertRewrite("MATCH (a)-[r]-(b) WHERE EXISTS {(:A)} RETURN *")
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(s"MATCH (a)-[r]-(b) WHERE EXISTS {($node) WHERE $node:A} RETURN *")
   }
 
-  test("MATCH (a)-[r WHERE COUNT {(:A)--()} > 1]->(b) RETURN *") {
-    assertRewrite("MATCH (a)-[r]->(b) WHERE COUNT {(:A)--()} > 1 RETURN *")
+  test("MATCH (a)-[r WHERE COUNT {(:A)-[s]-(c)} > 1]->(b) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    assertRewrite(s"MATCH (a)-[r]->(b) WHERE COUNT {($node)-[s]-(c) WHERE $node:A} > 1 RETURN *")
   }
 
   test("MATCH (a WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {

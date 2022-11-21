@@ -78,7 +78,7 @@ case class CreateIrExpressions(
    * The only one that is crucial to fix is that And => Ands and Or => Ors because that is assumed in IR creation.
    */
   private val fixExtractedPredicatesRewriter =
-    flattenBooleanOperators // andThen LabelExpressionPredicateNormalizer.instance
+    flattenBooleanOperators
 
   private def createPathExpression(pattern: PatternExpression): PathExpression = {
     val pos = pattern.position
