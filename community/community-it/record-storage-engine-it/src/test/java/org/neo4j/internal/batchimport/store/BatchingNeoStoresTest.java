@@ -568,7 +568,10 @@ class BatchingNeoStoresTest {
                 txState.nodeDoCreate(node1);
                 txState.nodeDoCreate(node2);
                 txState.relationshipDoCreate(
-                        commandCreationContext.reserveRelationship(node1, node2, relTypeId), relTypeId, node1, node2);
+                        commandCreationContext.reserveRelationship(node1, node2, relTypeId, true, true),
+                        relTypeId,
+                        node1,
+                        node2);
                 apply(txState, commandCreationContext, storageEngine, storeCursors, transactionIdGenerator);
                 neoStores.flush(DatabaseFlushEvent.NULL, NULL_CONTEXT);
             }

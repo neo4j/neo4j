@@ -44,28 +44,37 @@ public interface StorageLocks {
     /**
      * Acquire the required locks (during transaction creation phase) for creating a relationship
      * Additional locks may be taken during transaction commit
-     * @param txState The transaction state
      * @param sourceNode The source node id of the relationship to be created
      * @param targetNode The target node id of the relationship to be created
+     * @param sourceNodeAddedInTx whether {@code sourceNode} is a node that is added in this transaction.
+     * @param targetNodeAddedInTx whether {@code targetNode} is a node that is added in this transaction.
      */
     void acquireRelationshipCreationLock(
-            ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode);
+            LockTracer lockTracer,
+            long sourceNode,
+            long targetNode,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx);
 
     /**
      * Acquire the required locks (during transaction creation phase) for deleting a relationship
      * Additional locks may be taken during transaction commit
      *
-     * @param txState The transaction state
      * @param sourceNode The source node id of the relationship to be deleted
      * @param targetNode The target node id of the relationship to be deleted
      * @param relationship The id of the relationship to be deleted
+     * @param relationshipAddedInTx whether {@code relationship} is a relationship that is added in this transaction.
+     * @param sourceNodeAddedInTx whether {@code sourceNode} is a node that is added in this transaction.
+     * @param targetNodeAddedInTx whether {@code targetNode} is a node that is added in this transaction.
      */
     void acquireRelationshipDeletionLock(
-            ReadableTransactionState txState,
             LockTracer lockTracer,
             long sourceNode,
             long targetNode,
-            long relationship);
+            long relationship,
+            boolean relationshipAddedInTx,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx);
 
     /**
      * Acquire the required locks (during transaction creation phase) for deleting a node

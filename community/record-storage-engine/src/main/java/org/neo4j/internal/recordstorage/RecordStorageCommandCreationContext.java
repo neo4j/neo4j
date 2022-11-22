@@ -122,7 +122,12 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     }
 
     @Override
-    public long reserveRelationship(long sourceNode, long targetNode, int relationshipType) {
+    public long reserveRelationship(
+            long sourceNode,
+            long targetNode,
+            int relationshipType,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx) {
         return nextId(StoreType.RELATIONSHIP);
     }
 

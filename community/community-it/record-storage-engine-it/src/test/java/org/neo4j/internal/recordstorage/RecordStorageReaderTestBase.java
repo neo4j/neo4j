@@ -155,7 +155,7 @@ public abstract class RecordStorageReaderTestBase {
             throws Exception {
         TxState txState = new TxState();
         int typeId = getOrCreateRelationshipTypeId(relationshipType);
-        long relationshipId = commitContext.reserveRelationship(sourceNode, targetNode, typeId);
+        long relationshipId = commitContext.reserveRelationship(sourceNode, targetNode, typeId, false, false);
         txState.relationshipDoCreate(relationshipId, typeId, sourceNode, targetNode);
         apply(txState);
         return relationshipId;

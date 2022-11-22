@@ -455,11 +455,11 @@ class RelationshipModifierTest {
         modifications
                 .creations()
                 .forEach((id, type, start, end, addedProperties) ->
-                        context.acquireRelationshipCreationLock(txState, NONE, start, end));
+                        context.acquireRelationshipCreationLock(NONE, start, end, false, false));
         modifications
                 .deletions()
                 .forEach((id, type, start, end, noProperties) ->
-                        context.acquireRelationshipDeletionLock(txState, NONE, start, end, id));
+                        context.acquireRelationshipDeletionLock(NONE, start, end, id, false, false, false));
         this.locks.preModify(false);
 
         RecordAccessSet changes = store.newRecordChanges(loadMonitor, readMonitor);

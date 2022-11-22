@@ -126,18 +126,24 @@ class RecordStorageLocks implements StorageLocks {
 
     @Override
     public void acquireRelationshipCreationLock(
-            ReadableTransactionState txState, LockTracer lockTracer, long sourceNode, long targetNode) {
-        lockGroupAndDegrees(txState, locker, lockTracer, sourceNode, targetNode);
+            LockTracer lockTracer,
+            long sourceNode,
+            long targetNode,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx) {
+        lockGroupAndDegrees(locker, lockTracer, sourceNode, targetNode, sourceNodeAddedInTx, targetNodeAddedInTx);
     }
 
     @Override
     public void acquireRelationshipDeletionLock(
-            ReadableTransactionState txState,
             LockTracer lockTracer,
             long sourceNode,
             long targetNode,
-            long relationship) {
-        lockGroupAndDegrees(txState, locker, lockTracer, sourceNode, targetNode);
+            long relationship,
+            boolean relationshipAddedInTx,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx) {
+        lockGroupAndDegrees(locker, lockTracer, sourceNode, targetNode, sourceNodeAddedInTx, targetNodeAddedInTx);
         locker.acquireExclusive(lockTracer, ResourceTypes.RELATIONSHIP_DELETE, relationship);
     }
 
@@ -169,20 +175,25 @@ class RecordStorageLocks implements StorageLocks {
     }
 
     private static void lockGroupAndDegrees(
-            ReadableTransactionState txState,
             ResourceLocker locker,
             LockTracer lockTracer,
             long sourceNode,
-            long targetNode) {
-        lockGroupAndDegrees(txState, locker, lockTracer, Math.min(sourceNode, targetNode));
+            long targetNode,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx) {
+        var minNode = Math.min(sourceNode, targetNode);
+        lockGroupAndDegrees(
+                locker, lockTracer, minNode, minNode == sourceNode ? sourceNodeAddedInTx : targetNodeAddedInTx);
         if (sourceNode != targetNode) {
-            lockGroupAndDegrees(txState, locker, lockTracer, Math.max(sourceNode, targetNode));
+            var maxNode = Math.max(sourceNode, targetNode);
+            lockGroupAndDegrees(
+                    locker, lockTracer, maxNode, maxNode == sourceNode ? sourceNodeAddedInTx : targetNodeAddedInTx);
         }
     }
 
     private static void lockGroupAndDegrees(
-            ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long node) {
-        if (!txState.nodeIsAddedInThisTx(node)) {
+            ResourceLocker locker, LockTracer lockTracer, long node, boolean nodeAddedInTx) {
+        if (!nodeAddedInTx) {
             locker.acquireShared(lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node);
             locker.acquireShared(lockTracer, ResourceTypes.DEGREES, node);
         }

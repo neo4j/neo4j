@@ -31,6 +31,9 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
 public interface CommandCreationContext extends AutoCloseable {
+    long NO_SEQUENCE_NUMBER = 0L;
+    Supplier<Long> NO_OLD_SEQUENCE_NUMBER_SUPPLIER = () -> 0L;
+
     /**
      * Reserves a node id for future use to store a node. The reason for it being exposed here is that
      * internal ids of nodes and relationships are publicly accessible all the way out to the user.
@@ -49,8 +52,15 @@ public interface CommandCreationContext extends AutoCloseable {
      * @param sourceNode id of the source node to reserve this id for.
      * @param targetNode id of the target node to reserve this id for.
      * @param relationshipType id of the relationship to reserve this id for.
+     * @param sourceNodeAddedInTx whether the {@code sourceNode} is a node that is added in this transaction.
+     * @param targetNodeAddedInTx whether the {@code targetNode} is a node that is added in this transaction.
      */
-    long reserveRelationship(long sourceNode, long targetNode, int relationshipType);
+    long reserveRelationship(
+            long sourceNode,
+            long targetNode,
+            int relationshipType,
+            boolean sourceNodeAddedInTx,
+            boolean targetNodeAddedInTx);
 
     /**
      * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here
@@ -97,7 +107,4 @@ public interface CommandCreationContext extends AutoCloseable {
             long currentTransactionSequenceNumber,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer);
-
-    public static final long NO_SEQUENCE_NUMBER = 0L;
-    public static final Supplier<Long> NO_OLD_SEQUENCE_NUMBER_SUPPLIER = () -> 0L;
 }

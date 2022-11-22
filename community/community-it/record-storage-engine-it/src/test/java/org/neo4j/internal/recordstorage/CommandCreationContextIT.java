@@ -166,8 +166,8 @@ public class CommandCreationContextIT {
                         (ToLongFunction<CommandCreationContext>) CommandCreationContext::reserveNode),
                 arguments(
                         (Function<NeoStores, CommonAbstractStore<?, ?>>) NeoStores::getRelationshipStore,
-                        (ToLongFunction<CommandCreationContext>)
-                                commandCreationContext -> commandCreationContext.reserveRelationship(-1, 0, 0)),
+                        (ToLongFunction<CommandCreationContext>) commandCreationContext ->
+                                commandCreationContext.reserveRelationship(-1, 0, 0, false, false)),
                 arguments(
                         (Function<NeoStores, CommonAbstractStore<?, ?>>) NeoStores::getLabelTokenStore,
                         (ToLongFunction<CommandCreationContext>) CommandCreationContext::reserveLabelTokenId),
