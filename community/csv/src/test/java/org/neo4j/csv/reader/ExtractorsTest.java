@@ -19,6 +19,7 @@
  */
 package org.neo4j.csv.reader;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,7 +35,14 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.csv.reader.Extractors.IntExtractor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -386,6 +394,61 @@ class ExtractorsTest {
         var value = Values.durationArray(array(Duration.of(60, ChronoUnit.SECONDS), Duration.of(2, ChronoUnit.HOURS)));
         // THEN
         assertEquals(value, extractedValue);
+    }
+
+    @MethodSource("extractorTypes")
+    @ParameterizedTest
+    <T> void shouldExtractEmptyField(Function<Extractors, Extractor<T>> extractorSelector) {
+        // given
+        var extractors = new Extractors(';');
+        var extractor = extractorSelector.apply(extractors);
+
+        // when
+        var value = extractor.extract(new char[0], 0, 0, false);
+
+        // then
+        assertThat(extractor.isEmpty(value)).isTrue();
+    }
+
+    public static Stream<Arguments> extractorTypes() {
+        List<Arguments> types = new ArrayList<>();
+        types.add(extractorType(Extractors::boolean_));
+        types.add(extractorType(Extractors::booleanArray));
+        types.add(extractorType(Extractors::byte_));
+        types.add(extractorType(Extractors::byteArray));
+        types.add(extractorType(Extractors::short_));
+        types.add(extractorType(Extractors::shortArray));
+        types.add(extractorType(Extractors::int_));
+        types.add(extractorType(Extractors::intArray));
+        types.add(extractorType(Extractors::long_));
+        types.add(extractorType(Extractors::longArray));
+        types.add(extractorType(Extractors::float_));
+        types.add(extractorType(Extractors::floatArray));
+        types.add(extractorType(Extractors::double_));
+        types.add(extractorType(Extractors::doubleArray));
+        types.add(extractorType(Extractors::char_));
+        types.add(extractorType(Extractors::string));
+        types.add(extractorType(Extractors::stringArray));
+        types.add(extractorType(Extractors::textValue));
+        types.add(extractorType(Extractors::date));
+        types.add(extractorType(Extractors::dateArray));
+        types.add(extractorType(Extractors::time));
+        types.add(extractorType(Extractors::timeArray));
+        types.add(extractorType(Extractors::dateTime));
+        types.add(extractorType(Extractors::dateTimeArray));
+        types.add(extractorType(Extractors::localDateTime));
+        types.add(extractorType(Extractors::localDateTimeArray));
+        types.add(extractorType(Extractors::localTime));
+        types.add(extractorType(Extractors::localTimeArray));
+        types.add(extractorType(Extractors::point));
+        types.add(extractorType(Extractors::pointArray));
+        types.add(extractorType(Extractors::duration));
+        types.add(extractorType(Extractors::durationArray));
+        return types.stream();
+    }
+
+    private static Arguments extractorType(Function<Extractors, Extractor<?>> selector) {
+        return Arguments.of(selector);
     }
 
     private static String toString(long[] values, char delimiter) {

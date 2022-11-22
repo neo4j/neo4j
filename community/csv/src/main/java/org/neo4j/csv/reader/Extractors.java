@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.DateArray;
@@ -363,19 +362,6 @@ public class Extractors {
         @Override
         public int hashCode() {
             return Objects.hash(getClass());
-        }
-    }
-
-    private abstract static class AbstractSingleAnyValueExtractor<T extends AnyValue> extends AbstractExtractor<T> {
-        protected AnyValue value;
-
-        AbstractSingleAnyValueExtractor(String toString) {
-            super(toString);
-        }
-
-        @Override
-        public boolean isEmpty(Object value) {
-            return super.isEmpty(value) || value == Values.NO_VALUE;
         }
     }
 
@@ -746,7 +732,7 @@ public class Extractors {
         }
     }
 
-    public static class PointExtractor extends AbstractSingleAnyValueExtractor<PointValue> {
+    public static class PointExtractor extends AbstractExtractor<PointValue> {
         public static final String NAME = "Point";
 
         PointExtractor() {
@@ -756,6 +742,9 @@ public class Extractors {
         @Override
         public PointValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return PointValue.parse(CharBuffer.wrap(data, offset, length), optionalData);
         }
     }
@@ -785,7 +774,7 @@ public class Extractors {
         }
     }
 
-    public static class DateExtractor extends AbstractSingleAnyValueExtractor<DateValue> {
+    public static class DateExtractor extends AbstractExtractor<DateValue> {
         public static final String NAME = "Date";
 
         DateExtractor() {
@@ -795,6 +784,9 @@ public class Extractors {
         @Override
         public DateValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return DateValue.parse(CharBuffer.wrap(data, offset, length));
         }
     }
@@ -825,7 +817,7 @@ public class Extractors {
         }
     }
 
-    public static class TimeExtractor extends AbstractSingleAnyValueExtractor<TimeValue> {
+    public static class TimeExtractor extends AbstractExtractor<TimeValue> {
         public static final String NAME = "Time";
 
         private final Supplier<ZoneId> defaultTimeZone;
@@ -838,6 +830,9 @@ public class Extractors {
         @Override
         public TimeValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return TimeValue.parse(CharBuffer.wrap(data, offset, length), defaultTimeZone, optionalData);
         }
     }
@@ -872,7 +867,7 @@ public class Extractors {
         }
     }
 
-    public static class DateTimeExtractor extends AbstractSingleAnyValueExtractor<DateTimeValue> {
+    public static class DateTimeExtractor extends AbstractExtractor<DateTimeValue> {
         public static final String NAME = "DateTime";
 
         private final Supplier<ZoneId> defaultTimeZone;
@@ -885,6 +880,9 @@ public class Extractors {
         @Override
         public DateTimeValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return DateTimeValue.parse(CharBuffer.wrap(data, offset, length), defaultTimeZone, optionalData);
         }
     }
@@ -919,7 +917,7 @@ public class Extractors {
         }
     }
 
-    public static class LocalTimeExtractor extends AbstractSingleAnyValueExtractor<LocalTimeValue> {
+    public static class LocalTimeExtractor extends AbstractExtractor<LocalTimeValue> {
         public static final String NAME = "LocalTime";
 
         LocalTimeExtractor() {
@@ -929,6 +927,9 @@ public class Extractors {
         @Override
         public LocalTimeValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return LocalTimeValue.parse(CharBuffer.wrap(data, offset, length));
         }
     }
@@ -959,7 +960,7 @@ public class Extractors {
         }
     }
 
-    public static class LocalDateTimeExtractor extends AbstractSingleAnyValueExtractor<LocalDateTimeValue> {
+    public static class LocalDateTimeExtractor extends AbstractExtractor<LocalDateTimeValue> {
         public static final String NAME = "LocalDateTime";
 
         LocalDateTimeExtractor() {
@@ -969,6 +970,9 @@ public class Extractors {
         @Override
         public LocalDateTimeValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return LocalDateTimeValue.parse(CharBuffer.wrap(data, offset, length));
         }
     }
@@ -1000,7 +1004,7 @@ public class Extractors {
         }
     }
 
-    public static class DurationExtractor extends AbstractSingleAnyValueExtractor<DurationValue> {
+    public static class DurationExtractor extends AbstractExtractor<DurationValue> {
         public static final String NAME = "Duration";
 
         DurationExtractor() {
@@ -1010,11 +1014,14 @@ public class Extractors {
         @Override
         public DurationValue extract(
                 char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData) {
+            if (length == 0) {
+                return null;
+            }
             return DurationValue.parse(CharBuffer.wrap(data, offset, length));
         }
     }
 
-    public static class TextValueExtractor extends AbstractSingleAnyValueExtractor<Value> {
+    public static class TextValueExtractor extends AbstractExtractor<Value> {
         public static final String NAME = "TextValue";
 
         private final boolean emptyStringsAsNull;
