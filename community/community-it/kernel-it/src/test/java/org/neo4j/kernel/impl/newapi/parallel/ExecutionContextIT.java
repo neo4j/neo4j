@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -316,6 +319,31 @@ public class ExecutionContextIT {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(
                             "Execution context cannot be used for transactions with non-empty transaction state");
+        }
+    }
+
+    @Test
+    void executionContextShouldManageResources() throws Exception {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var kts = ((InternalTransaction) transaction).kernelTransaction();
+            try (Statement statement = kts.acquireStatement()) {
+                var executionContext = kts.createExecutionContext();
+                var resource1 = mock(AutoCloseable.class);
+                var resource2 = mock(AutoCloseable.class);
+                var resource3 = mock(AutoCloseable.class);
+
+                executionContext.registerCloseableResource(resource1);
+                executionContext.registerCloseableResource(resource2);
+                executionContext.registerCloseableResource(resource3);
+                executionContext.unregisterCloseableResource(resource2);
+
+                executionContext.complete();
+                executionContext.close();
+
+                verify(resource1).close();
+                verify(resource2, never()).close();
+                verify(resource3).close();
+            }
         }
     }
 }

@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.storageengine.api.PropertySelection;
 
 public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node, NodeLabelIndexCursor, NodeCursor> {
@@ -37,9 +37,9 @@ public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node, N
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             CursorEntityFactory<NodeLabelIndexCursor, Node> nodeFactory,
-            ResourceTracker resourceTracker,
+            ResourceMonitor resourceMonitor,
             PropertyIndexQuery... queries) {
-        super(nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, resourceTracker, queries);
+        super(nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, resourceMonitor, queries);
         this.read = read;
     }
 

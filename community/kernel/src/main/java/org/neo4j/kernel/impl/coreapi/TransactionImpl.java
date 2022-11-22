@@ -71,6 +71,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.kernel.api.CloseListener;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -78,6 +79,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
@@ -102,7 +104,9 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -126,6 +130,7 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.ElementIdMapper;
@@ -135,7 +140,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * Default implementation of {@link org.neo4j.graphdb.Transaction}
  */
-public class TransactionImpl implements InternalTransaction {
+public class TransactionImpl extends DataLookup implements InternalTransaction {
     private final TokenHolders tokenHolders;
     private final TransactionalContextFactory contextFactory;
     private final DatabaseAvailabilityGuard availabilityGuard;
@@ -260,32 +265,6 @@ public class TransactionImpl implements InternalTransaction {
     }
 
     @Override
-    public Node getNodeById(long id) {
-        if (id < 0) {
-            throw new NotFoundException(
-                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
-        }
-
-        KernelTransaction ktx = kernelTransaction();
-        if (!ktx.dataRead().nodeExists(id)) {
-            throw new NotFoundException(
-                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
-        }
-        return newNodeEntity(id);
-    }
-
-    @Override
-    public Node getNodeByElementId(String elementId) {
-        Read read = kernelTransaction().dataRead();
-        long nodeId = elementIdMapper.nodeId(elementId);
-        if (!read.nodeExists(nodeId)) {
-            throw new NotFoundException(
-                    format("Node %s not found.", elementId), new EntityNotFoundException(EntityType.NODE, elementId));
-        }
-        return newNodeEntity(nodeId);
-    }
-
-    @Override
     public Result execute(String query) throws QueryExecutionException {
         return execute(query, emptyMap());
     }
@@ -376,78 +355,6 @@ public class TransactionImpl implements InternalTransaction {
         return all(TokenAccess.PROPERTY_KEYS);
     }
 
-    @Override
-    public Node findNode(final Label myLabel, final String key, final Object value) {
-        try (ResourceIterator<Node> iterator = findNodes(myLabel, key, value)) {
-            if (!iterator.hasNext()) {
-                return null;
-            }
-            Node node = iterator.next();
-            if (iterator.hasNext()) {
-                throw new MultipleFoundException(format(
-                        "Found multiple nodes with label: '%s', property name: '%s' and property "
-                                + "value: '%s' while only one was expected.",
-                        myLabel, key, value));
-            }
-            return node;
-        }
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(final Label myLabel) {
-        checkLabel(myLabel);
-        return allNodesWithLabel(myLabel);
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(final Label myLabel, final String key, final Object value) {
-        checkLabel(myLabel);
-        checkPropertyKey(key);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel(myLabel.name());
-        int propertyId = tokenRead.propertyKey(key);
-        if (invalidTokens(labelId, propertyId)) {
-            return emptyResourceIterator();
-        }
-        PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(propertyId, Values.of(value, false));
-        IndexDescriptor index =
-                findUsableMatchingIndex(transaction, SchemaDescriptors.forLabel(labelId, propertyId), query);
-        return nodesByLabelAndProperty(transaction, labelId, query, index);
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(
-            final Label myLabel, final String key, final String value, final StringSearchMode searchMode) {
-        checkLabel(myLabel);
-        checkPropertyKey(key);
-        checkArgument(value != null, "Template must not be null");
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel(myLabel.name());
-        int propertyId = tokenRead.propertyKey(key);
-        if (invalidTokens(labelId, propertyId)) {
-            return emptyResourceIterator();
-        }
-        PropertyIndexQuery query = getIndexQuery(value, searchMode, propertyId);
-        IndexDescriptor index = findUsableMatchingIndex(
-                transaction, SchemaDescriptors.forLabel(labelId, propertyId), IndexType.TEXT, query);
-
-        // We didn't find an index, but we might be able to used RANGE and filtering - let's see
-        if (index == IndexDescriptor.NO_INDEX
-                && (searchMode == StringSearchMode.SUFFIX || searchMode == StringSearchMode.CONTAINS)) {
-            PropertyIndexQuery.RangePredicate<?> allStringQuery =
-                    PropertyIndexQuery.range(propertyId, (String) null, false, null, false);
-            index = findUsableMatchingIndex(
-                    transaction, SchemaDescriptors.forLabel(labelId, propertyId), allStringQuery);
-            if (index != IndexDescriptor.NO_INDEX && index.getCapability().supportsReturningValues()) {
-                return nodesByLabelAndPropertyWithFiltering(transaction, labelId, allStringQuery, index, query);
-            }
-        }
-
-        return nodesByLabelAndProperty(transaction, labelId, query, index);
-    }
-
     private static PropertyIndexQuery getIndexQuery(String value, StringSearchMode searchMode, int propertyId) {
         return switch (searchMode) {
             case EXACT -> PropertyIndexQuery.exact(propertyId, utf8Value(value.getBytes(UTF_8)));
@@ -455,50 +362,6 @@ public class TransactionImpl implements InternalTransaction {
             case SUFFIX -> PropertyIndexQuery.stringSuffix(propertyId, utf8Value(value.getBytes(UTF_8)));
             case CONTAINS -> PropertyIndexQuery.stringContains(propertyId, utf8Value(value.getBytes(UTF_8)));
         };
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(
-            Label label, String key1, Object value1, String key2, Object value2, String key3, Object value3) {
-        checkLabel(label);
-        checkPropertyKey(key1);
-        checkPropertyKey(key2);
-        checkPropertyKey(key3);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel(label.name());
-        return nodesByLabelAndProperties(
-                transaction,
-                labelId,
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key3), Values.of(value3, false)));
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(Label label, String key1, Object value1, String key2, Object value2) {
-        checkLabel(label);
-        checkPropertyKey(key1);
-        checkPropertyKey(key2);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel(label.name());
-        return nodesByLabelAndProperties(
-                transaction,
-                labelId,
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)));
-    }
-
-    @Override
-    public ResourceIterator<Node> findNodes(Label label, Map<String, Object> propertyValues) {
-        checkLabel(label);
-        checkArgument(propertyValues != null, "Property values can not be null");
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int labelId = tokenRead.nodeLabel(label.name());
-        PropertyIndexQuery.ExactPredicate[] queries = convertToQueries(propertyValues, tokenRead);
-        return nodesByLabelAndProperties(transaction, labelId, queries);
     }
 
     @Override
@@ -790,6 +653,26 @@ public class TransactionImpl implements InternalTransaction {
     }
 
     @Override
+    protected CursorFactory cursors() {
+        return kernelTransaction().cursors();
+    }
+
+    @Override
+    protected CursorContext cursorContext() {
+        return kernelTransaction().cursorContext();
+    }
+
+    @Override
+    protected MemoryTracker memoryTracker() {
+        return kernelTransaction().memoryTracker();
+    }
+
+    @Override
+    protected QueryContext queryContext() {
+        return kernelTransaction().queryContext();
+    }
+
+    @Override
     public RelationshipType getRelationshipTypeById(int type) {
         try {
             String name =
@@ -805,55 +688,24 @@ public class TransactionImpl implements InternalTransaction {
         return new SchemaImpl(kernelTransaction());
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty(
-            KernelTransaction transaction, int labelId, PropertyIndexQuery query, IndexDescriptor index) {
-        Read read = transaction.dataRead();
-        if (index != IndexDescriptor.NO_INDEX) {
-            // Ha! We found an index - let's use it to find matching nodes
-            try {
-                NodeValueIndexCursor cursor = transaction
-                        .cursors()
-                        .allocateNodeValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
-                IndexReadSession indexSession = read.indexReadSession(index);
-                read.nodeIndexSeek(transaction.queryContext(), indexSession, cursor, unconstrained(), query);
-
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        NodeIndexCursor::nodeReference,
-                        c -> newNodeEntity(c.nodeReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // weird at this point but ignore and fallback to a label scan
-            }
-        }
-
-        return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, query);
+    @Override
+    protected TokenRead tokenRead() {
+        return kernelTransaction().tokenRead();
     }
 
-    private ResourceIterator<Node> nodesByLabelAndPropertyWithFiltering(
-            KernelTransaction transaction,
-            int labelId,
-            PropertyIndexQuery query,
-            IndexDescriptor index,
-            PropertyIndexQuery originalQuery) {
-        Read read = transaction.dataRead();
-        try {
-            NodeValueIndexCursor cursor = transaction
-                    .cursors()
-                    .allocateNodeValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
-            IndexReadSession indexSession = read.indexReadSession(index);
-            read.nodeIndexSeek(transaction.queryContext(), indexSession, cursor, unorderedValues(), query);
+    @Override
+    protected SchemaRead schemaRead() {
+        return kernelTransaction().schemaRead();
+    }
 
-            return new TrackedCursorIterator<>(
-                    new FilteringCursor<>(cursor, originalQuery),
-                    c -> cursor.nodeReference(),
-                    c -> newNodeEntity(cursor.nodeReference()),
-                    coreApiResourceTracker);
-        } catch (KernelException e) {
-            // weird at this point but ignore and fallback to a label scan
-        }
+    @Override
+    protected Read dataRead() {
+        return kernelTransaction().dataRead();
+    }
 
-        return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, query);
+    @Override
+    protected ResourceMonitor resourceMonitor() {
+        return coreApiResourceTracker;
     }
 
     @Override
@@ -1104,46 +956,6 @@ public class TransactionImpl implements InternalTransaction {
             }
         }
         return orderedQueries;
-    }
-
-    private ResourceIterator<Node> allNodesWithLabel(final Label myLabel) {
-        KernelTransaction ktx = kernelTransaction();
-
-        int labelId = ktx.tokenRead().nodeLabel(myLabel.name());
-        if (labelId == TokenRead.NO_TOKEN) {
-            return emptyResourceIterator();
-        }
-
-        TokenPredicate query = new TokenPredicate(labelId);
-        var index = findUsableMatchingIndex(ktx, SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), query);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                var session = ktx.dataRead().tokenReadSession(index);
-                var cursor = ktx.cursors().allocateNodeLabelIndexCursor(ktx.cursorContext());
-                ktx.dataRead().nodeLabelScan(session, cursor, unconstrained(), query, ktx.cursorContext());
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        NodeIndexCursor::nodeReference,
-                        c -> newNodeEntity(c.nodeReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // ignore, fallback to all node scan
-            }
-        }
-
-        return allNodesByLabelWithoutIndex(ktx, labelId);
-    }
-
-    private ResourceIterator<Node> allNodesByLabelWithoutIndex(KernelTransaction ktx, int labelId) {
-        NodeCursor cursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext());
-        ktx.dataRead().allNodesScan(cursor);
-        var filetredCursor = new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(labelId));
-        return new TrackedCursorIterator<>(
-                filetredCursor,
-                NodeCursor::nodeReference,
-                c -> newNodeEntity(c.nodeReference()),
-                coreApiResourceTracker);
     }
 
     private ResourceIterator<Relationship> allRelationshipsWithType(final RelationshipType type) {
@@ -1424,10 +1236,6 @@ public class TransactionImpl implements InternalTransaction {
 
     private static void checkPropertyKey(String key) {
         checkArgument(key != null, "Property key can not be null");
-    }
-
-    private static void checkLabel(Label label) {
-        checkArgument(label != null, "Label can not be null");
     }
 
     private static void checkRelationshipType(RelationshipType type) {

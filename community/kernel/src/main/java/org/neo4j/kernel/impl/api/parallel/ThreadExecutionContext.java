@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.ClockContext;
+import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -53,6 +55,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.ElementIdMapper;
 
 public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
+    private final CloseableResourceManager resourceManager = new CloseableResourceManager();
     private final DefaultPooledCursors cursors;
     private final CursorContext context;
     private final OverridableSecurityContext overridableSecurityContext;
@@ -149,6 +152,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     }
 
     @Override
+    public SchemaRead schemaRead() {
+        return allStoreHolder;
+    }
+
+    @Override
     public Procedures procedures() {
         return allStoreHolder;
     }
@@ -156,6 +164,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public void complete() {
         List<AutoCloseable> resources = new ArrayList<>(otherResources);
+        resources.add(resourceManager::closeAllCloseableResources);
+        resources.add(cursors::release);
         resources.add(storageCursors);
         closeAllUnchecked(resources);
         cursorTracer.complete();
@@ -217,5 +227,15 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
 
     private void mergeUnblocked(ExecutionContextCursorTracer cursorTracer) {
         ktxContext.merge(cursorTracer.snapshot());
+    }
+
+    @Override
+    public void registerCloseableResource(AutoCloseable closeableResource) {
+        resourceManager.registerCloseableResource(closeableResource);
+    }
+
+    @Override
+    public void unregisterCloseableResource(AutoCloseable closeableResource) {
+        resourceManager.unregisterCloseableResource(closeableResource);
     }
 }

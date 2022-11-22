@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
 import org.neo4j.storageengine.api.PropertySelection;
 
@@ -36,7 +36,7 @@ public abstract class PropertyFilteringIterator<
     private final ENTITY_CURSOR entityCursor;
     private final PropertyCursor propertyCursor;
     private final PropertyIndexQuery[] queries;
-    private final ResourceTracker resourceTracker;
+    private final ResourceMonitor resourceMonitor;
     private final PropertySelection propertySelection;
 
     protected PropertyFilteringIterator(
@@ -44,15 +44,15 @@ public abstract class PropertyFilteringIterator<
             ENTITY_CURSOR entityCursor,
             PropertyCursor propertyCursor,
             CursorEntityFactory<TOKEN_CURSOR, T> entityFactory,
-            ResourceTracker resourceTracker,
+            ResourceMonitor resourceMonitor,
             PropertyIndexQuery[] queries) {
         super(entityTokenCursor, entityFactory);
         this.entityTokenCursor = entityTokenCursor;
         this.entityCursor = entityCursor;
         this.propertyCursor = propertyCursor;
         this.queries = queries;
-        this.resourceTracker = resourceTracker;
-        resourceTracker.registerCloseableResource(this);
+        this.resourceMonitor = resourceMonitor;
+        resourceMonitor.registerCloseableResource(this);
         this.propertySelection = PropertySelection.selection(Arrays.stream(queries)
                 .mapToInt(PropertyIndexQuery::propertyKeyId)
                 .toArray());
@@ -74,7 +74,7 @@ public abstract class PropertyFilteringIterator<
     @Override
     void closeResources() {
         IOUtils.closeAllSilently(entityTokenCursor, entityCursor, propertyCursor);
-        resourceTracker.unregisterCloseableResource(this);
+        resourceMonitor.unregisterCloseableResource(this);
     }
 
     private boolean hasPropertiesWithValues() {

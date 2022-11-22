@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -40,7 +41,7 @@ import org.neo4j.values.ElementIdMapper;
  * to be transferred back to owning transaction.
  * After that transaction executor thread should call {@link ExecutionContext#close()}
  */
-public interface ExecutionContext extends AutoCloseable {
+public interface ExecutionContext extends AutoCloseable, ResourceMonitor {
     /**
      * Execution context cursor tracer. Page cache statistic recorded during execution reported back to owning transaction only when context is closed.
      *
@@ -64,6 +65,8 @@ public interface ExecutionContext extends AutoCloseable {
      * {@link TokenRead} implementation used for token reads as part of this context
      */
     TokenRead tokenRead();
+
+    SchemaRead schemaRead();
 
     /**
      * {@link Procedures} implementation used for procedure and function invocation as part of this context
