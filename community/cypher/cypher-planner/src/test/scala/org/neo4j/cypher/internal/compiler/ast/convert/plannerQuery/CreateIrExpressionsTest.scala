@@ -480,7 +480,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
-    existsIRExpression.solvedExpressionAsString shouldBe "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+    existsIRExpression.solvedExpressionAsString should equal(
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+    )
   }
 
   test("Rewrites Simple Exists Expression with where clause") {
@@ -514,7 +516,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
-    existsIRExpression.solvedExpressionAsString shouldBe "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2 }"
+    existsIRExpression.solvedExpressionAsString should equal(
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2 }"
+    )
   }
 
   test("Rewrites FullExistsExpression with where clause") {

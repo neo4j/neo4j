@@ -68,6 +68,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
 
+  private val NL = System.lineSeparator()
+
   private val planner = plannerBuilder()
     .setAllNodesCardinality(1000)
     .setLabelCardinality("B", 10)
@@ -154,7 +156,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       Some(
         NestedPlanExistsExpression(
           nestedPlan,
-          "EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`)\n  WHERE `anon_2`:ComedyClub }"
+          s"EXISTS { MATCH (f)-[`anon_1`:WORKS_AT]->(`anon_2`)$NL  WHERE `anon_2`:ComedyClub }"
         )(pos)
       ),
       None
@@ -1791,7 +1793,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           Head(listOf(
             NestedPlanExistsExpression(
               expectedNestedPlan,
-              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)\n  WHERE not `anon_2` = `anon_0` }"
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE not `anon_2` = `anon_0` }"
             )(pos)
           ))(pos)))
         .allNodeScan("n")
@@ -1820,7 +1822,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           Head(listOf(
             NestedPlanExistsExpression(
               expectedNestedPlan,
-              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`:B }"
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
             )(pos)
           ))(pos)))
         .allNodeScan("n")
@@ -1851,7 +1853,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           Head(listOf(
             NestedPlanExistsExpression(
               expectedNestedPlan,
-              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`:B OR `anon_1`:C }"
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
             )(pos)
           ))(pos)))
         .allNodeScan("n")
@@ -1879,7 +1881,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           Head(listOf(
             NestedPlanExistsExpression(
               expectedNestedPlan,
-              "EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
+              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
             )(
               pos
             )
@@ -2292,7 +2294,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
           .relationshipCountFromCountStore("anon_1", Some("Person"), Seq("KNOWS"), None)
           .build(),
         "anon_1",
-        "COUNT { MATCH (c)-[k:KNOWS]->(d)\n  WHERE c:Person }"
+        s"COUNT { MATCH (c)-[k:KNOWS]->(d)$NL  WHERE c:Person }"
       )(pos)
     )
   }
@@ -2842,7 +2844,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       .build()
 
     val npeExpression =
-      NestedPlanExistsExpression(expectedNestedPlan, "EXISTS { MATCH (a)-[r:X]->(b)\n  WHERE b:Foo }")(pos)
+      NestedPlanExistsExpression(expectedNestedPlan, s"EXISTS { MATCH (a)-[r:X]->(b)$NL  WHERE b:Foo }")(pos)
     val caseExp = caseExpression(Some(prop("a", "prop")), Some(falseLiteral), literalInt(1) -> npeExpression)
 
     logicalPlan should equal(

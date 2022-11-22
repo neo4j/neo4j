@@ -1540,19 +1540,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val r2 = varFor("r2")
     val r3 = varFor("r3")
 
-    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
-      queryWith(
-        QueryGraph(
-          patternNodes = Set(m.name, o.name, q.name),
-          patternRelationships =
-            Set(
-              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
-            ),
-          argumentIds = Set("m"),
-          selections = Selections.from(Seq(
-            not(equals(r3, r2))
-          ))
+    query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe
+      Some(
+        queryWith(
+          QueryGraph(
+            patternNodes = Set(m.name, o.name, q.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+                PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+              ),
+            argumentIds = Set("m"),
+            selections = Selections.from(Seq(
+              not(equals(r3, r2))
+            ))
+          )
         )
       )
   }
@@ -1583,13 +1585,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       horizon = RegularQueryProjection(Map("name" -> varFor("m")))
     )
 
-    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
-      PlannerQuery(
-        UnionQuery(
-          firstQuery,
-          secondQuery,
-          unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
-          distinct = true
+    query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe
+      Some(
+        PlannerQuery(
+          UnionQuery(
+            firstQuery,
+            secondQuery,
+            unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
+            distinct = true
+          )
         )
       )
   }
@@ -1917,13 +1921,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       relationshipVariableGroupings = Set(VariableGrouping(r, r))
     )
 
-    query.queryGraph.selections.predicates.head.expr.asInstanceOf[ExistsIRExpression].query shouldBe
-      queryWith(
-        QueryGraph(
-          argumentIds = Set("a"),
-          patternNodes = Set("a", m_outer),
-          quantifiedPathPatterns = Set(qpp),
-          selections = Selections.from(unique(varFor("r")))
+    query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe
+      Some(
+        queryWith(
+          QueryGraph(
+            argumentIds = Set("a"),
+            patternNodes = Set("a", m_outer),
+            quantifiedPathPatterns = Set(qpp),
+            selections = Selections.from(unique(varFor("r")))
+          )
         )
       )
   }

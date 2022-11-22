@@ -65,4 +65,17 @@ case class CountIRExpression(
       children(2).asInstanceOf[String]
     )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
+
+  /**
+   * The string comparison here is done so that comparisons on Windows machines work
+   * the same as on Linux based ones.
+   */
+  override def equals(countIRExpression: Any): Boolean = countIRExpression match {
+    case ce: CountIRExpression =>
+      this.query.equals(ce.query) &&
+        this.countVariableName.equals(ce.countVariableName) &&
+        this.solvedExpressionAsString.replaceAll("\r\n", "\n")
+          .equals(ce.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+    case _ => false
+  }
 }

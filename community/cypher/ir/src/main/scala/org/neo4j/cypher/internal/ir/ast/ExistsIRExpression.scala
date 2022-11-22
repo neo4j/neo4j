@@ -52,4 +52,17 @@ case class ExistsIRExpression(
       children(2).asInstanceOf[String]
     )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
   }
+
+  /**
+   * The string comparison here is done so that comparisons on Windows machines work
+   * the same as on Linux based ones.
+   */
+  override def equals(existsIRExpression: Any): Boolean = existsIRExpression match {
+    case ee: ExistsIRExpression =>
+      this.query.equals(ee.query) &&
+        this.existsVariableName.equals(ee.existsVariableName) &&
+        this.solvedExpressionAsString.replaceAll("\r\n", "\n")
+          .equals(ee.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+    case _ => false
+  }
 }
