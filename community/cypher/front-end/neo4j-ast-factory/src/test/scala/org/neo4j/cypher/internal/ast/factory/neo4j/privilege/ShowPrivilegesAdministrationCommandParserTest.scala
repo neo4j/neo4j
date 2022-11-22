@@ -547,6 +547,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "RELATIONSHIP"
          |  "ROLE"
          |  "ROLES"
+         |  "SERVER"
          |  "SERVERS"
          |  "TEXT"
          |  "TRANSACTION"
@@ -578,6 +579,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "INDEXES"
          |  "PRIVILEGE"
          |  "PRIVILEGES"
+         |  "ROLE"
          |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
 
     assertFailsWithMessage(testName, exceptionMessage)
@@ -598,19 +600,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
   }
 
   test("SHOW ALL ROLE role PRIVILEGES") {
-    val exceptionMessage =
-      s"""Invalid input 'ROLE': expected
-         |  "CONSTRAINT"
-         |  "CONSTRAINTS"
-         |  "FUNCTION"
-         |  "FUNCTIONS"
-         |  "INDEX"
-         |  "INDEXES"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
-
-    assertFailsWithMessage(testName, exceptionMessage)
+    assertFailsWithMessage(
+      testName,
+      s"""Invalid input 'role': expected "WHERE", "WITH", "YIELD" or <EOF> (line 1, column 15 (offset: 14))"""
+    )
   }
 
   test("SHOW ROLE ro%le PRIVILEGES") {

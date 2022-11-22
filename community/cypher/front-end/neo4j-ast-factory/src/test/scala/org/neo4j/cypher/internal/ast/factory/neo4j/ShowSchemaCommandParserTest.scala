@@ -303,6 +303,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "INDEXES"
         |  "PRIVILEGE"
         |  "PRIVILEGES"
+        |  "ROLE"
         |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
     )
   }
@@ -688,6 +689,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "RELATIONSHIP"
         |  "ROLE"
         |  "ROLES"
+        |  "SERVER"
         |  "SERVERS"
         |  "TEXT"
         |  "TRANSACTION"
@@ -746,6 +748,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "RELATIONSHIP"
         |  "ROLE"
         |  "ROLES"
+        |  "SERVER"
         |  "SERVERS"
         |  "TEXT"
         |  "TRANSACTION"

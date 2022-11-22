@@ -47,11 +47,19 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     yields(ast.ShowUsers(None))
   }
 
+  test("SHOW USER") {
+    yields(ast.ShowUsers(None))
+  }
+
   test("USE system SHOW USERS") {
     yields(ast.ShowUsers(None))
   }
 
   test("SHOW USERS WHERE user = 'GRANTED'") {
+    yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString))))))
+  }
+
+  test("SHOW USER WHERE user = 'GRANTED'") {
     yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString))))))
   }
 
@@ -124,16 +132,12 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     yields(ast.ShowUsers(Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))))
   }
 
-  test("SHOW USER") {
-    val exceptionMessage =
-      s"""Invalid input '': expected
-         |  "DEFINED"
-         |  "PRIVILEGE"
-         |  "PRIVILEGES"
-         |  a parameter
-         |  an identifier (line 1, column 10 (offset: 9))""".stripMargin
+  test("SHOW USERS YIELD *") {
+    yields(ast.ShowUsers(Some(Left((yieldClause(returnAllItems), None)))))
+  }
 
-    assertFailsWithMessage(testName, exceptionMessage)
+  test("SHOW USER YIELD *") {
+    yields(ast.ShowUsers(Some(Left((yieldClause(returnAllItems), None)))))
   }
 
   test("SHOW USERS YIELD *,blah RETURN user") {
@@ -160,6 +164,26 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     val return_ = returnClause(returnItems(variableReturnItem("roles")))
     val yieldOrWhere = Some(Left(yield_ -> Some(return_)))
     yields(ast.ShowCurrentUser(yieldOrWhere))
+  }
+
+  test("SHOW CURRENT USER YIELD *") {
+    yields(ast.ShowCurrentUser(Some(Left((yieldClause(returnAllItems), None)))))
+  }
+
+  test("SHOW CURRENT USER WHERE user = 'GRANTED'") {
+    yields(ast.ShowCurrentUser(Some(Right(where(equals(varUser, grantedString))))))
+  }
+
+  test("SHOW CURRENT USERS") {
+    assertFailsWithMessage(testName, """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))""")
+  }
+
+  test("SHOW CURRENT USERS YIELD *") {
+    assertFailsWithMessage(testName, """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))""")
+  }
+
+  test("SHOW CURRENT USERS WHERE user = 'GRANTED'") {
+    assertFailsWithMessage(testName, """Invalid input 'USERS': expected "USER" (line 1, column 14 (offset: 13))""")
   }
 
   //  Creating user

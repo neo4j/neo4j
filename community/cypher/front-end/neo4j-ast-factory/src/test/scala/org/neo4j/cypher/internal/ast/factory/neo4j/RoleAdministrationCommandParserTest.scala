@@ -27,9 +27,37 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   //  Showing roles
 
-  test("SHOW ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
-  }
+  Seq("ROLES", "ROLE").foreach(roleKeyword => {
+
+    test(s"SHOW $roleKeyword") {
+      yields(ast.ShowRoles(withUsers = false, showAll = true, None))
+    }
+
+    test(s"SHOW ALL $roleKeyword") {
+      yields(_ => ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
+    }
+
+    test(s"SHOW POPULATED $roleKeyword") {
+      yields(_ => ast.ShowRoles(withUsers = false, showAll = false, None)(pos))
+    }
+
+    Seq("USERS", "USER").foreach(userKeyword => {
+
+      test(s"SHOW $roleKeyword WITH $userKeyword") {
+        yields(ast.ShowRoles(withUsers = true, showAll = true, None))
+      }
+
+      test(s"SHOW ALL $roleKeyword WITH $userKeyword") {
+        yields(_ => ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
+      }
+
+      test(s"SHOW POPULATED $roleKeyword WITH $userKeyword") {
+        yields(ast.ShowRoles(withUsers = true, showAll = false, None))
+      }
+
+    })
+
+  })
 
   test("USE neo4j SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true, None))
@@ -37,26 +65,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
 
   test("USE GRAPH SYSTEM SHOW ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true, None))
-  }
-
-  test("SHOW ALL ROLES") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = true, None)(pos))
-  }
-
-  test("SHOW POPULATED ROLES") {
-    yields(_ => ast.ShowRoles(withUsers = false, showAll = false, None)(pos))
-  }
-
-  test("SHOW ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None))
-  }
-
-  test("SHOW ALL ROLES WITH USERS") {
-    yields(_ => ast.ShowRoles(withUsers = true, showAll = true, None)(pos))
-  }
-
-  test("SHOW POPULATED ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = false, None))
   }
 
   test("SHOW ALL ROLES YIELD role") {
@@ -69,7 +77,27 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     )
   }
 
+  test("SHOW ALL ROLE YIELD role") {
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = true,
+        Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))
+      )(pos)
+    )
+  }
+
   test("SHOW ALL ROLES WHERE role='PUBLIC'") {
+    yields(_ =>
+      ast.ShowRoles(
+        withUsers = false,
+        showAll = true,
+        Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))
+      )(pos)
+    )
+  }
+
+  test("SHOW ALL ROLE WHERE role='PUBLIC'") {
     yields(_ =>
       ast.ShowRoles(
         withUsers = false,
@@ -118,6 +146,14 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   test("SHOW POPULATED ROLES YIELD * RETURN *") {
     yields(ast.ShowRoles(
       withUsers = false,
+      showAll = false,
+      Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
+    ))
+  }
+
+  test("SHOW POPULATED ROLE WITH USER YIELD * RETURN *") {
+    yields(ast.ShowRoles(
+      withUsers = true,
       showAll = false,
       Some(Left((yieldClause(returnAllItems), Some(returnClause(returnAllItems)))))
     ))
@@ -179,55 +215,10 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     failsToParse
   }
 
-  test("SHOW ROLE") {
-    assertFailsWithMessage(
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))"
-    )
-  }
-
-  test("SHOW ALL ROLE") {
-    assertFailsWithMessage(
-      testName,
-      """Invalid input 'ROLE': expected
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
-    )
-  }
-
-  test("SHOW POPULATED ROLE") {
-    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
-  }
-
   test("SHOW ROLE role") {
     assertFailsWithMessage(
       testName,
       "Invalid input '': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 15 (offset: 14))"
-    )
-  }
-
-  test("SHOW ROLE WITH USERS") {
-    assertFailsWithMessage(
-      testName,
-      "Invalid input 'USERS': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))"
-    )
-  }
-
-  test("SHOW ROLES WITH USER") {
-    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
-  }
-
-  test("SHOW ROLE WITH USER") {
-    assertFailsWithMessage(
-      testName,
-      "Invalid input 'USER': expected \",\", \"PRIVILEGE\" or \"PRIVILEGES\" (line 1, column 16 (offset: 15))"
     )
   }
 
@@ -239,42 +230,6 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     failsToParse
   }
 
-  test("SHOW ALL ROLE WITH USERS") {
-    assertFailsWithMessage(
-      testName,
-      """Invalid input 'ROLE': expected
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
-    )
-  }
-
-  test("SHOW ALL ROLES WITH USER") {
-    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 21 (offset: 20))")
-  }
-
-  test("SHOW ALL ROLE WITH USER") {
-    assertFailsWithMessage(
-      testName,
-      """Invalid input 'ROLE': expected
-        |  "CONSTRAINT"
-        |  "CONSTRAINTS"
-        |  "FUNCTION"
-        |  "FUNCTIONS"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "PRIVILEGE"
-        |  "PRIVILEGES"
-        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin
-    )
-  }
-
   test("SHOW ALL ROLES YIELD role RETURN") {
     assertFailsWithMessage(
       testName,
@@ -282,20 +237,11 @@ class RoleAdministrationCommandParserTest extends AdministrationAndSchemaCommand
     )
   }
 
-  test("SHOW POPULATED ROLE WITH USERS") {
-    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
-  }
-
-  test("SHOW POPULATED ROLES WITH USER") {
-    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 27 (offset: 26))")
-  }
-
-  test("SHOW POPULATED ROLE WITH USER") {
-    assertFailsWithMessage(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
-  }
-
   test("SHOW ROLES WITH USER user") {
-    assertFailsWithMessage(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 17 (offset: 16))")
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'user': expected "WHERE", "YIELD" or <EOF> (line 1, column 22 (offset: 21))"""
+    )
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {

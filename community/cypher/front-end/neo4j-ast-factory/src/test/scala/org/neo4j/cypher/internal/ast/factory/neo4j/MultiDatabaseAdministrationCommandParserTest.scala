@@ -31,11 +31,22 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   // SHOW DATABASE
 
   Seq(
+    ("DATABASE", ast.ShowDatabase.apply(ast.AllDatabasesScope()(pos), _: ast.YieldOrWhere) _),
     ("DATABASES", ast.ShowDatabase.apply(ast.AllDatabasesScope()(pos), _: ast.YieldOrWhere) _),
     ("DEFAULT DATABASE", ast.ShowDatabase.apply(ast.DefaultDatabaseScope()(pos), _: ast.YieldOrWhere) _),
     ("HOME DATABASE", ast.ShowDatabase.apply(ast.HomeDatabaseScope()(pos), _: ast.YieldOrWhere) _),
     ("DATABASE $db", ast.ShowDatabase.apply(ast.NamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _),
-    ("DATABASE neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _)
+    (
+      "DATABASES $db",
+      ast.ShowDatabase.apply(ast.NamedDatabaseScope(stringParamName("db"))(pos), _: ast.YieldOrWhere) _
+    ),
+    ("DATABASE neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _),
+    ("DATABASES neo4j", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("neo4j"))(pos), _: ast.YieldOrWhere) _),
+    // vvv naming the database yield/where should not fail either vvv
+    ("DATABASE yield", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _),
+    ("DATABASES yield", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("yield"))(pos), _: ast.YieldOrWhere) _),
+    ("DATABASE where", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _),
+    ("DATABASES where", ast.ShowDatabase.apply(ast.NamedDatabaseScope(literal("where"))(pos), _: ast.YieldOrWhere) _)
   ).foreach { case (dbType, privilege) =>
     test(s"SHOW $dbType") {
       yields(privilege(None))
@@ -113,13 +124,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     yields(ast.ShowDatabase(ast.NamedDatabaseScope(namespacedName("foo", "bar"))(pos), None))
   }
 
-  test("SHOW DATABASE") {
-    assertFailsWithMessage(
-      testName,
-      "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))"
-    )
-  }
-
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
     failsToParse
   }
@@ -128,8 +132,50 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     failsToParse
   }
 
-  test("SHOW DATABASE YIELD (123 + xyz) AS foo") {
+  test("SHOW DATABASES YIELD (123 + xyz) AS foo") {
     failsToParse
+  }
+
+  test("SHOW DEFAULT DATABASES") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+    )
+  }
+
+  test("SHOW DEFAULT DATABASES YIELD *") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+    )
+  }
+
+  test("SHOW DEFAULT DATABASES WHERE name STARTS WITH 'foo'") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 14 (offset: 13))"""
+    )
+  }
+
+  test("SHOW HOME DATABASES") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+    )
+  }
+
+  test("SHOW HOME DATABASES YIELD *") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+    )
+  }
+
+  test("SHOW HOME DATABASES WHERE name STARTS WITH 'foo'") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'DATABASES': expected "DATABASE" (line 1, column 11 (offset: 10))"""
+    )
   }
 
   // CREATE DATABASE

@@ -37,7 +37,16 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(ast.ShowServers(None)(defaultPos))
   }
 
+  test("SHOW SERVER") {
+    assertAst(ast.ShowServers(None)(defaultPos))
+  }
+
   test("SHOW SERVERS YIELD *") {
+    val yieldOrWhere = Left((yieldClause(returnAllItems), None))
+    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+  }
+
+  test("SHOW SERVER YIELD *") {
     val yieldOrWhere = Left((yieldClause(returnAllItems), None))
     assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
@@ -80,10 +89,29 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
   }
 
+  test("SHOW SERVER WHERE name = 'badger'") {
+    val yieldOrWhere = Right(where(equals(varFor("name"), literalString("badger"))))
+    assertAst(ast.ShowServers(Some(yieldOrWhere))(defaultPos))
+  }
+
   test("SHOW SERVERS RETURN *") {
     assertFailsWithMessage(
       testName,
       "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("SHOW SERVERS 'name'") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
+    )
+  }
+
+  test("SHOW SERVER 'name'") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 13 (offset: 12))"
     )
   }
 

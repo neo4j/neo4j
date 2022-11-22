@@ -3402,7 +3402,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
     start=<SHOW>
     (
         showCommandType=<ALL> statement=ShowAllCommand( start, useClause )
-        | <POPULATED> <ROLES> statement=ShowRoles( start, useClause, false )
+        | <POPULATED> (<ROLES> | <ROLE>) statement=ShowRoles( start, useClause, false )
         | showCommandType=<BTREE> statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.BTREE )
         | showCommandType=<RANGE> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.RANGE )
         | showCommandType=<FULLTEXT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
@@ -3430,23 +3430,18 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | statement=ShowAliases( start, useClause )
         | statement=ShowServers( start, useClause )
         | statement=ShowPrivileges( start, useClause )
-        | <ROLE> statement=ShowRolePrivileges( start, useClause )
-
-        | <ROLES>
+        | (<ROLES> | <ROLE>)
             (
-                // Need these lookaheads to distinguish e.g. 'SHOW ROLES YIELD ...' from 'SHOW ROLES yield[, ...] PRIVILEGE[S]'
+                // Need these lookaheads to distinguish e.g. 'SHOW ROLE[S] YIELD ...' from 'SHOW ROLE[S] yield[, ...] PRIVILEGE[S]'
                 LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowRolePrivileges( start, useClause )
                 | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowRoles( start, useClause, true )
                 | statement=ShowRolePrivileges( start, useClause )
             )
-
-        // Need a lookahead of 3 to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
+        // Need a lookahead to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
         | LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
-        | <USER> statement=ShowUserPrivileges( start, useClause )
-
-        | <USERS>
+        | (<USERS> | <USER>)
             (
-                // Need these lookaheads to distinguish e.g. 'SHOW USERS YIELD ...' from 'SHOW USERS yield[, ...] PRIVILEGE[S]'
+                // Need these lookaheads to distinguish e.g. 'SHOW USER[S] YIELD ...' from 'SHOW USER[S] yield[, ...] PRIVILEGE[S]'
                 LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowUserPrivileges( start, useClause )
                 | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
                 | statement=ShowUserPrivileges( start, useClause )
@@ -3489,7 +3484,7 @@ STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 }
 {
     (
-        <ROLES> statement=ShowRoles( start, useClause, true )
+        (<ROLES> | <ROLE>) statement=ShowRoles( start, useClause, true )
         | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
@@ -4495,7 +4490,7 @@ STATEMENT_WITH_GRAPH ShowServers( Token start, USE_CLAUSE useClause ) throws Exc
     WHERE where = null;
 }
 {
-    <SERVERS>
+    (<SERVERS> | <SERVER>)
     (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | ( where=WhereClause() )
@@ -4604,7 +4599,7 @@ STATEMENT_WITH_GRAPH ShowRoles( Token start, USE_CLAUSE useClause, boolean showA
     WHERE where = null;
 }
 {
-    ( <WITH> <USERS> { withUsers = true; } )?
+    ( <WITH> (<USERS> | <USER>) { withUsers = true; } )?
     (
         ( yield = YieldClause() ( returnClause = ReturnClause() )? )
         | ( where=WhereClause() )
@@ -5622,39 +5617,38 @@ WAIT_CLAUSE WaitClause():
 
 STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ) throws Exception:
 {
+    Token scopeStart = null;
+    AliasName<DATABASE_NAME, PARAMETER> name = null;
+    boolean isDefault = false;
+    boolean isHome = false;
     DATABASE_SCOPE scope;
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     WHERE where = null;
 }
 {
-   scope = DatabaseScope()
-        (
-            ( yield = YieldClause() ( returnClause = ReturnClause() )? )
-            | ( where=WhereClause() )
+    // Due to allowing both DATABASE and DATABASES with and without name we need to lookahead for potential YIELD/WHERE to not consider those database names
+   (
+        (scopeStart=<DATABASES> | scopeStart=<DATABASE>) (
+            LOOKAHEAD(SymbolicAliasName() (WhereClause() | YieldClause())) name=SymbolicAliasName() (
+                ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+                | ( where=WhereClause() )
+            )
+            | LOOKAHEAD(YieldClause()) yield=YieldClause() ( returnClause=ReturnClause() ) ?
+            | LOOKAHEAD(WhereClause()) where=WhereClause()
+            | name=SymbolicAliasName()
         )?
+        | (scopeStart=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
+            | scopeStart=<HOME> <DATABASE> { isHome = true; }
+          )(
+              ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+              | ( where=WhereClause() )
+          )?
+   )
    {
+        scope = astFactory.databaseScope( pos( scopeStart ), name == null ? null : name.getLocalAliasName(astFactory), isDefault, isHome );
         return astFactory.useGraph( astFactory.showDatabase( pos( start ), scope, yield, returnClause, where), useClause );
    }
-}
-
-DATABASE_SCOPE DatabaseScope():
-{
-    Token start = null;
-    AliasName<DATABASE_NAME, PARAMETER> name = null;
-    boolean isDefault = false;
-    boolean isHome = false;
-}
-{
-    (
-        start=<DATABASE> name=SymbolicAliasName()
-        | start=<DATABASES>
-        | start=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
-        | start=<HOME> <DATABASE> { isHome = true; }
-    )
-  {
-        return astFactory.databaseScope( pos( start ), name == null ? null : name.getLocalAliasName(astFactory), isDefault, isHome );
-  }
 }
 
 List<DATABASE_SCOPE> DatabaseScopeList():
