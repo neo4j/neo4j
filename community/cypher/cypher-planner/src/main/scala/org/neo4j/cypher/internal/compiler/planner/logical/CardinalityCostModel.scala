@@ -370,8 +370,15 @@ object CardinalityCostModel {
 
       case _: NodeByLabelScan |
         _: UnionNodeByLabelsScan |
-        _: IntersectionNodeByLabelsScan |
         _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
+
+      case plan: IntersectionNodeByLabelsScan =>
+        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
+        if (propertyAccess.exists(_.variableName == plan.idName)) {
+          INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+        } else {
+          INDEX_SCAN_COST_PER_ROW
+        }
 
       case _: ProjectEndpoints => STORE_LOOKUP_COST_PER_ROW
 
