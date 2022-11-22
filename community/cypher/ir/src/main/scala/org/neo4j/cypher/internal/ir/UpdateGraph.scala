@@ -480,21 +480,21 @@ trait UpdateGraph {
   }
 
   /**
-   * Checks if any unstable node can have an overlap with the deleted node.
+   * Checks if any node can have an overlap with the deleted node.
    *
-   * Note: If the deleted node is also an unstable node, we will always have overlap.
    * @return the nodes which are overlapping, or None if there is no overlap
    */
   private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit
   semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
-    val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable).map(_.name)
+    val relevantNodes =
+      qgWithInfo.queryGraph.allPatternNodesRead
     val nodesWithLabelOverlap = relevantNodes
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
-      .filter { case (unstableNode, deletedNode) =>
-        unstableNode != deletedNode &&
+      .filter { case (readNode, deletedNode) =>
+        readNode != deletedNode &&
         getDeleteOverlapWithLabelExpression(
           qgWithInfo,
-          unstableNode,
+          readNode,
           deletedNode
         )
       }
@@ -522,23 +522,23 @@ trait UpdateGraph {
    * MATCH (x:!A), (y:A) DELETE y         false (both expressions can never be true)
    *
    * @param qgWithInfo query graph
-   * @param unstableNode the node for which to check if there exists overlap with the delete node
+   * @param readNode the node for which to check if there exists overlap with the delete node
    * @param deletedNode the deleted node
    * @return true if there exists any chance of overlap
    */
   private def getDeleteOverlapWithLabelExpression(
     qgWithInfo: QgWithLeafInfo,
-    unstableNode: String,
+    readNode: String,
     deletedNode: String
   ): Boolean = {
     val selections =
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections())
 
-    val unstableNodePredicates = selections.predicatesGiven(Set(unstableNode)).toList
+    val readNodePredicates = selections.predicatesGiven(Set(readNode)).toList
     val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode)).toList
 
-    val overlap = DeleteOverlaps.overlap(unstableNodePredicates, deletedNodePredicates)
+    val overlap = DeleteOverlaps.overlap(readNodePredicates, deletedNodePredicates)
 
     overlap match {
       case DeleteOverlaps.NoLabelOverlap                                 => false
