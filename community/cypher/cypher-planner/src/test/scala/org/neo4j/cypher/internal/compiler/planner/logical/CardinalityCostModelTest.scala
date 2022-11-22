@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_ALL_COST
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.INDEX_SCAN_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -787,5 +789,33 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val inequality = greaterThan(prop("a", "prop"), literalUnsignedInt(10))
 
     costForPredicate(andedPropertyInequalities(inequality)) shouldEqual costForPredicate(inequality)
+  }
+
+  test("should not calculate cost of plans on RHS of semiApply to less than cost of producing one row") {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .semiApply().withCardinality(500)
+      .|.expandAll("(a)<-[r:REL]-(b)").withCardinality(2)
+      .|.argument("a").withCardinality(1)
+      .nodeByLabelScan("a", "Label").withCardinality(1000)
+      .build()
+
+    val cost = costFor(
+      plan,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    )
+
+    val labelScanCost = INDEX_SCAN_COST_PER_ROW * 1000
+
+    val semiApplyRhsCost =
+      EXPAND_ALL_COST * 1 + // expandAll
+        DEFAULT_COST_PER_ROW * 1 // argument
+
+    val semiApplyCost = Cost(labelScanCost + 1000 * semiApplyRhsCost.cost)
+
+    cost should equal(semiApplyCost)
   }
 }

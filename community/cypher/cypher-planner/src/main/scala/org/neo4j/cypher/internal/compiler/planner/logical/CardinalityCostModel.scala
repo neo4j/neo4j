@@ -535,15 +535,21 @@ object CardinalityCostModel {
   ): EffectiveCardinalities = {
     val (lhsWorkReduction, rhsWorkReduction) = childrenWorkReduction(plan, workReduction, batchSize, cardinalities)
 
-    // Make sure argument leaf plans under semiApply etc. get bounded to the same cardinality as the lhs
-    val useMinimum = plan match {
+    // Make sure argument leaf plans under semiApply etc. get bounded to the same cardinality as the lhs...
+    val outputCardinalityUseMinimum = plan match {
+      case _: Argument => true
+      case _           => false
+    }
+
+    // ...and make sure that plans on top of argument lef plans under semiApply etc. get bounded to that same cardinality.
+    val inputCardinalityUseMinimum = outputCardinalityUseMinimum || plan.lhs.exists {
       case _: Argument => true
       case _           => false
     }
 
     EffectiveCardinalities(
-      outputCardinality = workReduction.calculate(outputCardinality(plan, cardinalities), useMinimum),
-      inputCardinality = lhsWorkReduction.calculate(inputCardinality(plan, cardinalities), useMinimum),
+      outputCardinality = workReduction.calculate(outputCardinality(plan, cardinalities), outputCardinalityUseMinimum),
+      inputCardinality = lhsWorkReduction.calculate(inputCardinality(plan, cardinalities), inputCardinalityUseMinimum),
       plan.lhs.map(p => lhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
       plan.rhs.map(p => rhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
       lhsWorkReduction,
