@@ -288,6 +288,7 @@ object CardinalityCostModel {
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1
   val EXPAND_INTO_COST: CostPerRow = 6.4
+  val EXPAND_ALL_COST: CostPerRow = 1.5
   val ALL_SCAN_COST_PER_ROW = 1.2
 
   val INDEX_SCAN_COST_PER_ROW = 1.0
@@ -394,7 +395,7 @@ object CardinalityCostModel {
 
       case _: Expand |
         _: VarExpand |
-        _: OptionalExpand => 1.5
+        _: OptionalExpand => EXPAND_ALL_COST
 
       case _: NodeUniqueIndexSeek |
         _: NodeIndexSeek |
