@@ -113,7 +113,7 @@ class IndexProxyCreator {
             IndexProxy proxy = new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false);
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy(proxy);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             logProvider
                     .getLog(getClass())
                     .error(

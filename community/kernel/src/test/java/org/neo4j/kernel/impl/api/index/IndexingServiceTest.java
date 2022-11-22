@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
@@ -91,9 +92,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1359,7 +1361,6 @@ class IndexingServiceTest {
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
         when(storageEngine.indexingBehaviour()).thenReturn(() -> true);
-        var numJobs = new AtomicInteger();
         Set<IndexDescriptor> populationJobDescriptors = new CopyOnWriteArraySet<>();
         var indexingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
@@ -1387,6 +1388,106 @@ class IndexingServiceTest {
         // then
         await().atMost(10, SECONDS).until(() -> populationJobDescriptors.size() == 2);
         assertThat(populationJobDescriptors).isEqualTo(Set.of(valueIndex, lookupIndex));
+    }
+
+    /*
+     * This scenario is a semi-hypothetical scenario and yet believed to have been observed at least once in the wild:
+     *
+     * - an index (with internal ID X) is created.
+     * - another member in the cluster starts a store copy and copies the index but not yet the schema store.
+     * - index is deleted and another index (which happens to get the same internal ID X) is created as a
+     *   composite index.
+     * - the store copy copies the schema store, the rest and completes.
+     * - now on that member the schema store says that index X is a composite index whereas the file on disk is a
+     *   single-property index.
+     * - replaying the transactions that happened during copy would have dropped that index and then creating the new
+     *   one, so semantically it would have been fine in the end.
+     *
+     * The problem was that index X had status ONLINE in the schema store and so IndexingService#init went ahead
+     * and just opened it, not knowing that it would open an index not matching the layout that schema store said.
+     * There was already a catch for IOException, but not for other unchecked exceptions. The fix was to also
+     * catch RuntimeException there.
+     */
+    @Test
+    void shouldHandleOpeningMismatchingIndex() throws Exception {
+        // given
+        when(indexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
+                .thenReturn(ONLINE);
+        when(indexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
+        when(indexProvider.getPopulator(
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(),
+                        any(),
+                        any(TokenNameLookup.class),
+                        any()))
+                .thenReturn(populator);
+        withData().getsProcessedByStoreScanFrom(storeView);
+        when(indexProvider.getOnlineAccessor(
+                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenThrow(new IllegalStateException("Something unexpectedly wrong with the index here"));
+        when(indexProvider.storeMigrationParticipant(
+                        any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
+                .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
+        var providerMap = life.add(new MockIndexProviderMap(indexProvider));
+        var populationStarted = new AtomicBoolean();
+        var populationCompleted = new AtomicBoolean();
+        var initialState = new MutableObject<InternalIndexState>();
+        var monitor = new IndexMonitor.MonitorAdapter() {
+            @Override
+            public void initialState(String databaseName, IndexDescriptor descriptor, InternalIndexState state) {
+                if (descriptor.equals(index)) {
+                    initialState.setValue(state);
+                }
+            }
+
+            @Override
+            public void indexPopulationScanStarting(IndexDescriptor[] indexDescriptors) {
+                for (var descriptor : indexDescriptors) {
+                    assertThat(descriptor).isEqualTo(index);
+                    populationStarted.set(true);
+                }
+            }
+
+            @Override
+            public void populationCompleteOn(IndexDescriptor descriptor) {
+                assertThat(descriptor).isEqualTo(index);
+                populationCompleted.set(true);
+            }
+        };
+        var indexingService = life.add(IndexingServiceFactory.createIndexingService(
+                storageEngine,
+                Config.defaults(),
+                life.add(scheduler),
+                providerMap,
+                storeViewFactory,
+                nameLookup,
+                loop(iterator(index)),
+                internalLogProvider,
+                monitor,
+                schemaState,
+                indexStatisticsStore,
+                CONTEXT_FACTORY,
+                INSTANCE,
+                "",
+                writable()));
+
+        // when
+        life.init();
+        assertThat(populationStarted.get()).isFalse();
+        assertThat(populationCompleted.get()).isFalse();
+        assertThat(initialState.getValue()).isEqualTo(ONLINE);
+
+        // and when
+        when(indexProvider.getOnlineAccessor(
+                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                .thenReturn(accessor);
+        life.start();
+        indexingService.getIndexProxy(index).awaitStoreScanCompleted(1, MINUTES);
+
+        // then
+        assertThat(populationStarted.get()).isTrue();
+        assertThat(populationCompleted.get()).isTrue();
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation() {
