@@ -42,12 +42,14 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -99,6 +101,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1296,6 +1299,108 @@ class IndexingServiceTest
 
         // then
         verify( accessor ).drop();
+    }
+
+    /*
+     * This scenario is a semi-hypothetical scenario and yet believed to have been observed at least once in the wild:
+     *
+     * - an index (with internal ID X) is created.
+     * - another member in the cluster starts a store copy and copies the index but not yet the schema store.
+     * - index is deleted and another index (which happens to get the same internal ID X) is created as a
+     *   composite index.
+     * - the store copy copies the schema store, the rest and completes.
+     * - now on that member the schema store says that index X is a composite index whereas the file on disk is a
+     *   single-property index.
+     * - replaying the transactions that happened during copy would have dropped that index and then creating the new
+     *   one, so semantically it would have been fine in the end.
+     *
+     * The problem was that index X had status ONLINE in the schema store and so IndexingService#init went ahead
+     * and just opened it, not knowing that it would open an index not matching the layout that schema store said.
+     * There was already a catch for IOException, but not for other unchecked exceptions. The fix was to also
+     * catch RuntimeException there.
+     */
+    @Test
+    void shouldHandleOpeningMismatchingIndex() throws Exception
+    {
+        // given
+        when( indexProvider.getInitialState( any( IndexDescriptor.class ), any( CursorContext.class ) ) )
+                .thenReturn( ONLINE );
+        when( indexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
+        when( indexProvider.getPopulator(
+                any( IndexDescriptor.class ),
+                any( IndexSamplingConfig.class ),
+                any(),
+                any(),
+                any( TokenNameLookup.class ) ) )
+                .thenReturn( populator );
+        withData().getsProcessedByStoreScanFrom( storeView );
+        when( indexProvider.getOnlineAccessor(
+                eq( index ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenThrow( new IllegalStateException( "Something unexpectedly wrong with the index here" ) );
+        when( indexProvider.storeMigrationParticipant(
+                any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
+                .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        var providerMap = life.add( new MockIndexProviderMap( indexProvider ) );
+        var populationStarted = new AtomicBoolean();
+        var populationCompleted = new AtomicBoolean();
+        var initialState = new MutableObject<InternalIndexState>();
+        var monitor = new IndexMonitor.MonitorAdapter()
+        {
+            @Override
+            public void initialState( String databaseName, IndexDescriptor descriptor, InternalIndexState state )
+            {
+                if ( descriptor.equals( index ) )
+                {
+                    initialState.setValue( state );
+                }
+            }
+
+            @Override
+            public void indexPopulationScanStarting()
+            {
+                populationStarted.set( true );
+            }
+
+            @Override
+            public void populationCompleteOn( IndexDescriptor descriptor )
+            {
+                assertThat( descriptor ).isEqualTo( index );
+                populationCompleted.set( true );
+            }
+        };
+        var indexingService = life.add( IndexingServiceFactory.createIndexingService(
+                Config.defaults(),
+                life.add( scheduler ),
+                providerMap,
+                storeViewFactory,
+                nameLookup,
+                loop( iterator( index ) ),
+                internalLogProvider,
+                userLogProvider,
+                monitor,
+                schemaState,
+                indexStatisticsStore,
+                PageCacheTracer.NULL,
+                INSTANCE,
+                "",
+                writable() ) );
+
+        // when
+        life.init();
+        assertThat( populationStarted.get() ).isFalse();
+        assertThat( populationCompleted.get() ).isFalse();
+        assertThat( initialState.getValue() ).isEqualTo( ONLINE );
+
+        // and when
+        when( indexProvider.getOnlineAccessor(
+                eq( index ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+                .thenReturn( accessor );
+        life.start();
+        indexingService.getIndexProxy( index ).awaitStoreScanCompleted( 1, MINUTES );
+
+        // then
+        assertThat( populationStarted.get() ).isTrue();
+        assertThat( populationCompleted.get() ).isTrue();
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation()
