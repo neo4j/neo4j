@@ -236,4 +236,27 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("should plan var-length expand with always-false predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val plan = planner.plan("MATCH (a)-[r*]->(b) WHERE false RETURN r").stripProduceResults
+
+    plan should (equal(
+      planner.subPlanBuilder()
+        .expand("(a)-[r*]->(b)")
+        .limit(0)
+        .allNodeScan("a")
+        .build()
+    ) or equal(
+      planner.subPlanBuilder()
+        .expand("(b)<-[r*]-(a)")
+        .limit(0)
+        .allNodeScan("b")
+        .build()
+    ))
+  }
 }

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
@@ -105,6 +106,10 @@ object extractPredicates {
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n + predicate, e, s + p)
+
+      // Inserted by AddUniquenessPredicates
+      case ((n, e, s), p @ Unique(Variable(`originalRelationshipName`))) =>
+        (n, e, s + p)
 
       case (acc, _) =>
         acc

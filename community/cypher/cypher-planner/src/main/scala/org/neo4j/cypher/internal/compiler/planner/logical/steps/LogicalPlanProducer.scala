@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.ContainsSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EndsWithSearchMode
@@ -71,7 +70,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
@@ -955,11 +953,9 @@ case class LogicalPlanProducer(
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
 
-      val uniquePredicate = Unique(Variable(pattern.name)(InputPosition.NONE))(InputPosition.NONE)
       val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
         .addPatternRelationship(pattern)
-        .addPredicates(solvedPredicates.toSeq: _*)
-        .addPredicates(uniquePredicate))
+        .addPredicates(solvedPredicates.toSeq: _*))
 
       val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
         solveSubqueryExpressionsForExtractedPredicates(source, nodePredicates, relationshipPredicates, context)

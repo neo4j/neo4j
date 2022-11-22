@@ -367,4 +367,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
+
+  test("should mark uniqueness predicate as solved") {
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(Seq(unique(varFor("r")), unique(varFor("other_rel"))), "r", "n", "m", false)
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe ListSet(unique(varFor("r")))
+  }
 }
