@@ -150,6 +150,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         this.lockClient = lockClient;
         this.cursorContext = cursorContext;
         this.clockContext.initializeTransaction(startTimeMillis);
+        this.executingQuery = null;
     }
 
     public Locks.Client locks() {
@@ -215,6 +216,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
                 throw new StatementNotClosedException(message, statementOpenCloseCalls);
             }
         }
+        this.executingQuery = null;
     }
 
     private String getStatementNotClosedMessage(int leakedStatements) {
@@ -260,7 +262,6 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
     private void cleanupResources() {
         // closing is done by KTI
         transaction.releaseStatementResources();
-        executingQuery = null;
         initialStatementHits = EMPTY_COUNTER;
         initialStatementFaults = EMPTY_COUNTER;
         closeAllCloseableResources();

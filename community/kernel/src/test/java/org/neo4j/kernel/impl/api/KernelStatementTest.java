@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -160,6 +161,34 @@ class KernelStatementTest {
 
         statement.stopQueryExecution(query1);
         assertFalse(statement.executingQuery().isPresent());
+    }
+
+    @Test
+    void shouldKeepExecutingQueryUntilForceClosedOrReused() {
+        // Given
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef);
+        var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
+        var statement = createStatement(transaction);
+        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        var query = queryFactory.createForStatement(statement, "test1", MapValue.EMPTY);
+        statement.startQueryExecution(query);
+
+        // When/Then ForceClose
+        assertThat(statement.executingQuery()).isPresent();
+        statement.close();
+        assertThat(statement.executingQuery()).isPresent();
+        statement.forceClose();
+        assertThat(statement.executingQuery()).isEmpty();
+
+        // When/Then Init
+        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        statement.startQueryExecution(query);
+
+        assertThat(statement.executingQuery()).isPresent();
+        statement.close();
+        assertThat(statement.executingQuery()).isPresent();
+        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        assertThat(statement.executingQuery()).isEmpty();
     }
 
     private KernelStatement createStatement(KernelTransactionImplementation transaction) {
