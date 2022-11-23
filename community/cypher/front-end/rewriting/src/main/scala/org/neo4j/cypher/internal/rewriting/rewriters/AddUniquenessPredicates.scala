@@ -214,11 +214,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     def isAlwaysDifferentFrom(other: SingleRelationship): Boolean = {
       val relTypesToConsider =
         getRelTypesToConsider(labelExpression).concat(getRelTypesToConsider(other.labelExpression)).distinct
-      val labelExpressionOverlaps = overlaps(relTypesToConsider, labelExpression)
-      labelExpressionOverlaps.isEmpty || (labelExpressionOverlaps intersect overlaps(
-        relTypesToConsider,
-        other.labelExpression
-      )).isEmpty
+      !overlaps(relTypesToConsider, labelExpression, other.labelExpression)
     }
   }
 
@@ -275,9 +271,11 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
   private[rewriters] def overlaps(
     relTypesToConsider: Seq[SymbolicName],
-    labelExpression: Option[LabelExpression]
-  ): Seq[SymbolicName] = {
-    relTypesToConsider.filter(relType => labelExpression.forall(le => evaluate(le, relType).result))
+    labelExpression0: Option[LabelExpression],
+    labelExpression1: Option[LabelExpression]
+  ): Boolean = {
+    // if both labelExpression0 and labelExpression1 evaluate to true when relType is present on a rel, then there's an overlap between the label expressions
+    relTypesToConsider.exists(relType => ands(Seq(labelExpression0, labelExpression1).flatten, relType).result)
   }
 
   private[rewriters] def getRelTypesToConsider(labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {

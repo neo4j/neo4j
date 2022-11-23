@@ -482,10 +482,7 @@ trait RelationshipTypeExpressionGenerators {
       val allTypes = AddUniquenessPredicates.getRelTypesToConsider(Some(value)).concat(
         AddUniquenessPredicates.getRelTypesToConsider(Some(other.value))
       )
-      (AddUniquenessPredicates.overlaps(allTypes, Some(value)) intersect AddUniquenessPredicates.overlaps(
-        allTypes,
-        Some(other.value)
-      )).nonEmpty
+      AddUniquenessPredicates.overlaps(allTypes, Some(value), Some(other.value))
     }
 
     def unary_! : RelationshipTypeExpression =
