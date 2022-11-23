@@ -315,7 +315,7 @@ trait UpdateGraph {
           qgWithInfo.queryGraph.optionalMatches.flatMap(_.selections.predicates)
       )
 
-    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode)).toList
+    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode))
 
     possibleLabelCombinations.exists { labelsToCreate =>
       val overlap = CreateOverlaps.overlap(unstableNodePredicates, labelsToCreate.map(_.name), propertiesToCreate)
@@ -541,8 +541,8 @@ trait UpdateGraph {
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections.empty)
 
-    val readNodePredicates = selections.predicatesGiven(Set(readNode)).toList
-    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode)).toList
+    val readNodePredicates = selections.predicatesGiven(Set(readNode))
+    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode))
 
     val overlap = DeleteOverlaps.overlap(readNodePredicates, deletedNodePredicates)
 

@@ -41,7 +41,7 @@ import scala.collection.mutable
 case class Selections private (predicates: Set[Predicate]) {
   def isEmpty: Boolean = predicates.isEmpty
 
-  def predicatesGiven(ids: Set[String]): collection.Seq[Expression] = {
+  def predicatesGiven(ids: Set[String]): Seq[Expression] = {
     val buffer = new mutable.ArrayBuffer[Expression]()
     predicates.foreach {
       p =>
@@ -49,7 +49,7 @@ case class Selections private (predicates: Set[Predicate]) {
           buffer += p.expr
         }
     }
-    buffer
+    buffer.toVector
   }
 
   def expressionsContainingVariable: MapView[String, Set[Predicate]] = {
