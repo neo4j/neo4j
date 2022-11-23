@@ -83,12 +83,12 @@ public class InCache implements AutoCloseable {
 
         private Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
             assert value != NO_VALUE;
-            if (cacheHits++ < delay) {
-                return CypherFunctions.in(value, list);
-            }
             if (iterator == null) {
                 iterator = list.iterator();
                 this.seen = HeapTrackingCollections.newSet(memoryTracker);
+            }
+            if (cacheHits++ < delay) {
+                return CypherFunctions.in(value, list);
             }
 
             if (seen.contains(value)) {

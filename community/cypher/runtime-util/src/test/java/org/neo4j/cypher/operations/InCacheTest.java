@@ -47,6 +47,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+@SuppressWarnings("resource")
 class InCacheTest {
     @Test
     void shouldHandleListWithNoNulls() {
@@ -148,6 +149,15 @@ class InCacheTest {
         assertEquals(
                 NO_VALUE,
                 cache.check(map(new String[] {"a"}, new AnyValue[] {NO_VALUE}), list, EmptyMemoryTracker.INSTANCE));
+    }
+
+    @Test
+    void shouldCloseCacheThatIsUsedOnce() {
+        InCache cache = new InCache();
+        ListValue list = range(1L, 256L, 1L);
+
+        cache.check(intValue(0), list, EmptyMemoryTracker.INSTANCE);
+        cache.close();
     }
 
     private static <K, V> Iterable<Entry<K, V>> shuffled(Map<K, V> map) {
