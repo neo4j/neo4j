@@ -429,6 +429,11 @@ class QueryExecutionLocksIT {
         }
 
         @Override
+        public void commit() {
+            delegate.commit();
+        }
+
+        @Override
         public void rollback() {
             delegate.rollback();
         }

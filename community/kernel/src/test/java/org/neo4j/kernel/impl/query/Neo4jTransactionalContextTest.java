@@ -26,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -39,6 +41,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
 import org.neo4j.common.DependencyResolver;
@@ -64,6 +67,7 @@ class Neo4jTransactionalContextTest {
     private ConfiguredExecutionStatistics statistics;
     private final KernelTransactionFactory transactionFactory = mock(KernelTransactionFactory.class);
     private final NamedDatabaseId namedDatabaseId = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
+    private QueryRegistry queryRegistry;
 
     @BeforeEach
     void setUp() {
@@ -268,13 +272,29 @@ class Neo4jTransactionalContextTest {
         });
     }
 
+    @Test
+    void shouldUnbindExecutingQueryAfterCommit() {
+        // Given
+        InternalTransaction tx = mock(InternalTransaction.class, RETURNS_DEEP_STUBS);
+        Neo4jTransactionalContext context = newContext(tx);
+
+        // When
+        context.commit();
+
+        // Then
+        InOrder inOrder = inOrder(statement, tx, queryRegistry);
+        inOrder.verify(statement).close();
+        inOrder.verify(tx).commit();
+        inOrder.verify(queryRegistry).unbindExecutingQuery(any(), anyLong());
+    }
+
     private void setUpMocks() {
         queryService = mock(GraphDatabaseQueryService.class);
         DependencyResolver resolver = mock(DependencyResolver.class);
         statement = mock(KernelStatement.class);
 
         statistics = new ConfiguredExecutionStatistics();
-        QueryRegistry queryRegistry = mock(QueryRegistry.class);
+        queryRegistry = mock(QueryRegistry.class);
         InternalTransaction internalTransaction = mock(InternalTransaction.class);
         when(internalTransaction.terminationReason()).thenReturn(Optional.empty());
 

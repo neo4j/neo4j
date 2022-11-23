@@ -53,4 +53,9 @@ public interface QueryRegistry {
      * Unregisters a query that was stopped
      */
     void unbindExecutingQuery(ExecutingQuery executingQuery, long userTransactionId);
+
+    /**
+     * Prepares a query to be unbound
+     */
+    void beforeUnbindExecutingQuery(ExecutingQuery executingQuery, long userTransactionId);
 }

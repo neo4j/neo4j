@@ -217,10 +217,25 @@ public class ExecutingQuery {
     }
 
     /**
-     * Called when a transaction, that this query (or part of this query) has executed in, is about to close.
-     * Removes the TransactionBinding for that transaction, after capturing some statistics that we might need even after the transaction has closed.
+     * Called when a transaction, that this query (or part of this query) has executed in, is closed.
+     * Removes the TransactionBinding for that transaction.
      */
     public void onTransactionUnbound(long userTransactionId) {
+        this.openTransactionBindings.stream()
+                .filter(binding -> binding.transactionId == userTransactionId)
+                .findFirst()
+                .ifPresentOrElse(openTransactionBindings::remove, () -> {
+                    throw new IllegalStateException(
+                            "Unbound a transaction that was never bound. ID: " + userTransactionId);
+                });
+    }
+
+    /**
+     * Called when a transaction, that this query (or part of this query) has executed in, is about to close.
+     * Captures some statistics that we might need even after the transaction has closed.
+     * NOTE: this only captures statistics that happened before commit, not during the commit, since this is called before
+     */
+    public void onPrepareTransactionOnbound(long userTransactionId) {
         this.openTransactionBindings.stream()
                 .filter(binding -> binding.transactionId == userTransactionId)
                 .findFirst()
@@ -231,7 +246,6 @@ public class ExecutingQuery {
                             //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to
                             // this field)
                             pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
-                            openTransactionBindings.remove(foundBinding);
                         },
                         () -> {
                             throw new IllegalStateException(

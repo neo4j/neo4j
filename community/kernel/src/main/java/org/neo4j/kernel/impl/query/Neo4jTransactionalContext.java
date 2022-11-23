@@ -20,8 +20,11 @@
 package org.neo4j.kernel.impl.query;
 
 import java.io.Closeable;
+import java.util.function.Consumer;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -52,6 +55,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private KernelStatement statement;
+    private QueryRegistry queryRegistry;
     private final ElementIdMapper elementIdMapper;
     private long transactionSequenceNumber;
     private final KernelTransactionFactory transactionFactory;
@@ -93,6 +97,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         this.namedDatabaseId = initialStatement.namedDatabaseId();
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
+        this.queryRegistry = statement.queryRegistry();
         this.elementIdMapper = transaction.elementIdMapper();
         this.transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
         this.transactionFactory = transactionFactory;
@@ -129,8 +134,9 @@ public class Neo4jTransactionalContext implements TransactionalContext {
                     onClose.close();
                 }
                 // Unbind the new transaction/statement from the executingQuery
-                statement.queryRegistry().unbindExecutingQuery(executingQuery, transactionSequenceNumber);
-                statement.close();
+                beforeUnbind();
+                queryRegistry.unbindExecutingQuery(executingQuery, transactionSequenceNumber);
+                closeStatement();
             } finally {
                 statement = null;
                 isOpen = false;
@@ -138,13 +144,52 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         }
     }
 
+    private void closeStatement() {
+        if (statement != null) {
+            try {
+                statement.close();
+            } finally {
+                statement = null;
+            }
+        }
+    }
+
+    private void beforeUnbind() {
+        if (statement != null) {
+            queryRegistry.beforeUnbindExecutingQuery(executingQuery, transactionSequenceNumber);
+        }
+    }
+
+    @Override
+    public void commit() {
+        safeTxOperation(Transaction::commit);
+    }
+
+    private void safeTxOperation(Consumer<InternalTransaction> operation) {
+        Throwable exception = null;
+        try {
+            beforeUnbind();
+            closeStatement();
+            operation.accept(transaction);
+        } catch (RuntimeException | Error e) {
+            exception = e;
+        } finally {
+            try {
+                close();
+            } catch (RuntimeException | Error e) {
+                exception = Exceptions.chain(exception, e);
+            }
+        }
+        if (exception != null) {
+            Exceptions.throwIfUnchecked(exception);
+            // Catching only unchecked exceptions this should be unreachable
+            throw new TransactionFailureException("Unable to close transaction", exception);
+        }
+    }
+
     @Override
     public void rollback() {
-        try {
-            close();
-        } finally {
-            transaction.rollback();
-        }
+        safeTxOperation(Transaction::rollback);
     }
 
     @Override
@@ -170,18 +215,20 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         checkNotTerminated();
 
         // (1) Remember old statement
-        QueryRegistry oldQueryRegistry = statement.queryRegistry();
+        QueryRegistry oldQueryRegistry = queryRegistry;
         KernelStatement oldStatement = statement;
         KernelTransaction oldKernelTx = transaction.kernelTransaction();
 
         // (2) Unregister the old transaction from the executing query
+        oldQueryRegistry.beforeUnbindExecutingQuery(executingQuery, transactionSequenceNumber);
         oldQueryRegistry.unbindExecutingQuery(executingQuery, transactionSequenceNumber);
 
         // (3) Create and register new transaction
         kernelTransaction = transactionFactory.beginKernelTransaction(transactionType, securityContext, clientInfo);
         statement = (KernelStatement) kernelTransaction.acquireStatement();
+        queryRegistry = statement.queryRegistry();
         transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
-        statement.queryRegistry().bindExecutingQuery(executingQuery);
+        queryRegistry.bindExecutingQuery(executingQuery);
         transaction.setTransaction(kernelTransaction);
 
         // (4) Update statistic provider with new kernel transaction
@@ -243,7 +290,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
         if (!isOpen) {
             statement = (KernelStatement) kernelTransaction.acquireStatement();
-            statement.queryRegistry().bindExecutingQuery(executingQuery);
+            queryRegistry = statement.queryRegistry();
+            queryRegistry.bindExecutingQuery(executingQuery);
             isOpen = true;
         }
         return this;

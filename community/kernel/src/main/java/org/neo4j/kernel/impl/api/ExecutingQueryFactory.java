@@ -84,4 +84,8 @@ public class ExecutingQueryFactory {
     public static void unbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {
         executingQuery.onTransactionUnbound(userTransactionId);
     }
+
+    public static void beforeUnbindFromTransaction(ExecutingQuery executingQuery, long userTransactionId) {
+        executingQuery.onPrepareTransactionOnbound(userTransactionId);
+    }
 }

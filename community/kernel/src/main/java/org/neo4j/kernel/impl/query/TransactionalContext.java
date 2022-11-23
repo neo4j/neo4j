@@ -49,6 +49,11 @@ public interface TransactionalContext {
     void close();
 
     /**
+     * Close this context and propagate the commit call to the underlying transaction.
+     */
+    void commit();
+
+    /**
      * Close and rollback this context. This will propagate the rollback call to the underlying transaction.
      */
     void rollback();

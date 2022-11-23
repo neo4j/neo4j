@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -46,7 +47,9 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING;
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -54,6 +57,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -61,6 +66,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -90,6 +96,10 @@ import org.neo4j.values.virtual.VirtualValues;
 
 @ImpermanentDbmsExtension
 class Neo4jTransactionalContextIT {
+
+    @Inject
+    private DatabaseManagementService dbms;
+
     @Inject
     private GraphDatabaseAPI databaseAPI;
 
@@ -270,8 +280,7 @@ class Neo4jTransactionalContextIT {
             }
             closedInnerHits += getPageCacheHits(innerCtx);
             closedInnerFaults += getPageCacheFaults(innerCtx);
-            innerCtx.close();
-            innerCtx.transaction().commit();
+            innerCtx.commit();
         }
 
         var openInnerCtx = outerCtx.contextWithNewTransaction();
@@ -310,8 +319,7 @@ class Neo4jTransactionalContextIT {
             if (i % 2 == 0) {
                 generatePageCacheHits(innerCtx);
             }
-            innerCtx.close();
-            innerCtx.transaction().commit();
+            innerCtx.commit();
         }
 
         var openInnerCtx = outerCtx.contextWithNewTransaction();
@@ -440,8 +448,7 @@ class Neo4jTransactionalContextIT {
         // Get some locks
         getLocks(innerCtxCommit, "C");
         var closedInnerActiveLocksCommit = getActiveLockCount(innerCtxCommit);
-        innerCtxCommit.close();
-        innerCtxCommit.transaction().commit();
+        innerCtxCommit.commit();
 
         // Leave open
         var innerCtxOpen = outerCtx.contextWithNewTransaction();
@@ -508,8 +515,7 @@ class Neo4jTransactionalContextIT {
                 operatorMemoryTracker.releaseHeap(i);
                 accHighWaterMark = i;
             }
-            innerCtx.close();
-            innerCtx.transaction().commit();
+            innerCtx.commit();
             innerHighWaterMark = Math.max(innerHighWaterMark, accHighWaterMark);
         }
 
@@ -601,8 +607,7 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
 
         // When
-        innerCtx.close();
-        innerCtx.transaction().commit();
+        innerCtx.commit();
 
         // Then
         assertFalse(hasInnerTransaction(ctx));
@@ -662,7 +667,7 @@ class Neo4jTransactionalContextIT {
         assertThrows(
                 TransactionFailureException.class,
                 // When
-                outerTx::commit);
+                ctx::commit);
     }
 
     @Test
@@ -673,14 +678,13 @@ class Neo4jTransactionalContextIT {
         var innerCtx = ctx.contextWithNewTransaction();
         var innerTx = innerCtx.transaction();
 
-        innerCtx.close();
-        innerTx.commit();
+        innerCtx.commit();
         ctx.close();
 
         // Then
         assertDoesNotThrow(
                 // When
-                outerTx::commit);
+                ctx::commit);
     }
 
     @Test
@@ -769,8 +773,7 @@ class Neo4jTransactionalContextIT {
         innerCtx.statement().registerCloseableResource(innerCloseable);
 
         // When
-        innerCtx.close();
-        innerCtx.transaction().commit();
+        innerCtx.commit();
 
         // Then
         verify(innerCloseable).close();
@@ -1054,5 +1057,50 @@ class Neo4jTransactionalContextIT {
         assertThat(secondStatement).isNotSameAs(firstStatement);
         assertThat(secondExecutingQuery).isSameAs(firstExecutingQuery);
         assertTrue(firstKernelTx.isOpen());
+    }
+
+    @Test
+    void shouldBeAbleToAccessExecutingQueryWhileCommitting() {
+        // Given
+        KernelTransactions kernelTransactions =
+                graph.getDependencyResolver().resolveDependency(KernelTransactions.class);
+        BinaryLatch inCommitLatch = new BinaryLatch();
+        BinaryLatch releaseCommitLatch = new BinaryLatch();
+        dbms.registerTransactionEventListener(databaseAPI.databaseName(), new TransactionEventListenerAdapter<>() {
+
+            @Override
+            public Object beforeCommit(
+                    TransactionData data, Transaction transaction, GraphDatabaseService databaseService)
+                    throws Exception {
+                inCommitLatch.release();
+                releaseCommitLatch.await();
+                return super.beforeCommit(data, transaction, databaseService);
+            }
+        });
+
+        // When
+
+        try (OtherThreadExecutor executor = new OtherThreadExecutor("test")) {
+            AtomicReference<QueryRegistry> reg = new AtomicReference<>();
+            executor.executeDontWait(() -> {
+                var internalTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
+                var ctx = createTransactionContext(internalTx);
+                internalTx.execute("CREATE (n)");
+                reg.set(((KernelStatement) ctx.statement()).queryRegistry());
+                ctx.commit();
+                return null;
+            });
+            try {
+                inCommitLatch.await();
+
+                // Then
+                var txs = kernelTransactions.executingTransactions();
+                assertThat(txs).hasSize(1);
+                assertThat(txs.iterator().next().executingQuery()).isPresent();
+                assertThat(reg.get().executingQuery()).isPresent();
+            } finally {
+                releaseCommitLatch.release();
+            }
+        }
     }
 }
