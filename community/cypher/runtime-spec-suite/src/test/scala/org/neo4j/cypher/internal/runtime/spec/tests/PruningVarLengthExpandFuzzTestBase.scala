@@ -48,10 +48,19 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
     val millisToRun = 10000
 
     withClue("seed used: " + seed) {
-      runForMillis(millisToRun)(() => testPruningVarExpand(nodes(random.nextInt(population)), random))
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), BOTH, random))
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), OUTGOING, random))
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), INCOMING, random))
+    }
+  }
+
+  test("random and compare, var-length") {
+    // non-bfs variant uses a lot more memory so we run these tests with a smaller database
+    val nodes = setUpGraph(8 + random.nextInt(4))
+    val millisToRun = 10000
+
+    withClue("seed used: " + seed) {
+      runForMillis(millisToRun)(() => testPruningVarExpand(nodes(random.nextInt(population)), random))
     }
   }
 
