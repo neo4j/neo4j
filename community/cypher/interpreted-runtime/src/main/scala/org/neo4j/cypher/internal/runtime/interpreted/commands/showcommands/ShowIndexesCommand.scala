@@ -130,7 +130,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "state" -> Values.stringValue(indexStatus.state),
           // % of index population, for example 0.0, 100.0, or 75.1
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
-          // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT", "BTREE" or "LOOKUP"
+          // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),

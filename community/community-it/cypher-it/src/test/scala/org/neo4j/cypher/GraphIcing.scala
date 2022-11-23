@@ -548,6 +548,18 @@ trait GraphIcing {
       })
     }
 
+    def getIndexTypeByName(name: String): IndexType =
+      withTx(tx => tx.schema().getIndexByName(name).getIndexType)
+
+    def indexExists(name: String): Boolean = withTx(tx =>
+      try {
+        tx.schema().getIndexByName(name)
+        true
+      } catch {
+        case _: Throwable => false
+      }
+    )
+
     // Find constraint
 
     def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition =
@@ -592,6 +604,15 @@ trait GraphIcing {
 
     def getConstraintTypeByName(name: String): ConstraintType =
       withTx(tx => tx.schema().getConstraintByName(name).getConstraintType)
+
+    def constraintExists(name: String): Boolean = withTx(tx =>
+      try {
+        tx.schema().getConstraintByName(name)
+        true
+      } catch {
+        case _: Throwable => false
+      }
+    )
 
     // Transaction methods
 
