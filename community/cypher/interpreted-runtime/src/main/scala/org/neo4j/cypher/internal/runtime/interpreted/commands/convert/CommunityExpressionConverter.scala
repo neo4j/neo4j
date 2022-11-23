@@ -593,14 +593,19 @@ case class CommunityExpressionConverter(
           self.toCommandExpression(id, invocation.arguments.head),
           self.toCommandExpression(id, invocation.arguments(1))
         )
-      case Round => commands.expressions.RoundFunction(
+      case Round =>
+        val maybeMode = toCommandExpression(id, invocation.arguments.lift(2), self)
+        val (mode, explicitMode) = maybeMode match {
+          case Some(mode) => (mode, true)
+          case None       => (commands.expressions.Literal(Values.stringValue("HALF_UP")), false)
+        }
+        commands.expressions.RoundFunction(
           self.toCommandExpression(id, invocation.arguments.head),
           toCommandExpression(id, invocation.arguments.lift(1), self).getOrElse(
             commands.expressions.Literal(intValue(0))
           ),
-          toCommandExpression(id, invocation.arguments.lift(2), self).getOrElse(
-            commands.expressions.Literal(Values.stringValue("HALF_UP"))
-          )
+          mode,
+          commands.expressions.Literal(Values.booleanValue(explicitMode))
         )
       case RTrim => commands.expressions.RTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Sign  => commands.expressions.SignFunction(self.toCommandExpression(id, invocation.arguments.head))

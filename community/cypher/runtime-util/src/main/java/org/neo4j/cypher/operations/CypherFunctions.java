@@ -22,7 +22,6 @@ package org.neo4j.cypher.operations;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
-import static java.math.RoundingMode.HALF_UP;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
@@ -199,15 +198,20 @@ public final class CypherFunctions {
 
     @CalledFromGeneratedCode
     public static DoubleValue round(AnyValue in) {
-        return round(in, Values.ZERO_INT, Values.stringValue("HALF_UP"));
+        return round(in, Values.ZERO_INT, Values.stringValue("HALF_UP"), Values.booleanValue(false));
     }
 
     @CalledFromGeneratedCode
     public static DoubleValue round(AnyValue in, AnyValue precision) {
-        return round(in, precision, Values.stringValue("HALF_UP"));
+        return round(in, precision, Values.stringValue("HALF_UP"), Values.booleanValue(false));
     }
 
     public static DoubleValue round(AnyValue in, AnyValue precisionValue, AnyValue modeValue) {
+        return round(in, precisionValue, modeValue, Values.booleanValue(true));
+    }
+
+    public static DoubleValue round(
+            AnyValue in, AnyValue precisionValue, AnyValue modeValue, AnyValue explicitModeValue) {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         assert precisionValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
@@ -225,6 +229,8 @@ public final class CypherFunctions {
 
         if (in instanceof NumberValue && precisionValue instanceof NumberValue) {
             int precision = asIntExact(precisionValue, () -> "Invalid input for precision value in function 'round()'");
+            boolean explicitMode = ((BooleanValue) explicitModeValue).booleanValue();
+
             if (precision < 0) {
                 throw new InvalidArgumentException("Precision argument to 'round()' cannot be negative");
             } else {
@@ -232,8 +238,12 @@ public final class CypherFunctions {
                 if (Double.isInfinite(value) || Double.isNaN(value)) {
                     return doubleValue(value);
                 }
-                // For the default values, standard Java round is faster
-                else if (precision == 0 && mode.equals(HALF_UP)) {
+                /*
+                 * For precision zero and no explicit rounding mode, we want to fall back to Java Math.round().
+                 * This rounds towards the nearest integer and if there is a tie, towards positive infinity,
+                 * which doesn't correspond to any of the rounding modes.
+                 */
+                else if (precision == 0 && !explicitMode) {
                     return doubleValue(Math.round(value));
                 } else {
                     return doubleValue(

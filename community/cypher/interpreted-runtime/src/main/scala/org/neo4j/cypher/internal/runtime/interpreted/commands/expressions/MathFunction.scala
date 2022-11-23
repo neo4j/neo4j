@@ -379,16 +379,18 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
 
-case class RoundFunction(argument: Expression, precision: Expression, mode: Expression) extends MathFunction(argument) {
+case class RoundFunction(argument: Expression, precision: Expression, mode: Expression, explicitMode: Expression)
+    extends MathFunction(argument) {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue =
-    (argument(row, state), precision(row, state), mode(row, state)) match {
-      case (value, precision, mode) if (value eq NO_VALUE) || (precision eq NO_VALUE) || (mode eq NO_VALUE) => NO_VALUE
-      case (value, precision, mode) => CypherFunctions.round(value, precision, mode)
+    (argument(row, state), precision(row, state), mode(row, state), explicitMode(row, state)) match {
+      case (value, precision, mode, _) if (value eq NO_VALUE) || (precision eq NO_VALUE) || (mode eq NO_VALUE) =>
+        NO_VALUE
+      case (value, precision, mode, explicitMode) => CypherFunctions.round(value, precision, mode, explicitMode)
     }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(RoundFunction(argument.rewrite(f), precision.rewrite(f), mode.rewrite(f)))
+    f(RoundFunction(argument.rewrite(f), precision.rewrite(f), mode.rewrite(f), explicitMode.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
