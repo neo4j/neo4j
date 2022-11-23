@@ -25,9 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
-import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
@@ -36,6 +33,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asR
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,6 +61,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -70,13 +69,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
@@ -846,34 +838,20 @@ class FulltextIndexConsistencyCheckIT {
                     .close();
             tx.commit();
         }
-        long nodeId;
+        managementService.shutdown();
+        Path copyRoot = testDirectory.directory("cpy");
+        copyStoreFiles(copyRoot);
+        db = createDatabase();
+
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             Node node = tx.createNode();
-            nodeId = node.getId();
             node.setProperty("prop", "value");
             tx.commit();
         }
-        NeoStores stores = getNeoStores(db);
-        try (var storeCursors = new CachedStoreCursors(stores, NULL_CONTEXT)) {
-            var nodeStore = stores.getNodeStore();
-            var record = nodeStore.newRecord();
-            PropertyStore propertyStore = stores.getPropertyStore();
-            nodeStore.getRecordByCursor(nodeId, record, RecordLoad.NORMAL, storeCursors.readCursor(NODE_CURSOR));
-            long propId = record.getNextProp();
-            record.setNextProp(AbstractBaseRecord.NO_ID);
-            try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
-                nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
-            }
-            PropertyRecord propRecord = propertyStore.newRecord();
-            propertyStore.getRecordByCursor(
-                    propId, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
-            propRecord.setInUse(false);
-            try (var cursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
-                propertyStore.updateRecord(propRecord, cursor, NULL_CONTEXT, storeCursors);
-            }
-        }
         managementService.shutdown();
+
+        restoreStoreFiles(copyRoot);
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse(result.isSuccessful());
@@ -888,40 +866,36 @@ class FulltextIndexConsistencyCheckIT {
                     .close();
             tx.commit();
         }
-        long relId;
+
+        managementService.shutdown();
+        Path copyRoot = testDirectory.directory("cpy");
+        copyStoreFiles(copyRoot);
+        db = createDatabase();
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
-            relId = rel.getId();
             rel.setProperty("prop", "value");
             tx.commit();
         }
-        NeoStores stores = getNeoStores(db);
-        try (CachedStoreCursors storeCursors = new CachedStoreCursors(stores, NULL_CONTEXT)) {
-            RelationshipStore relationshipStore = stores.getRelationshipStore();
-            RelationshipRecord record = relationshipStore.newRecord();
-            PropertyStore propertyStore = stores.getPropertyStore();
-            relationshipStore.getRecordByCursor(
-                    relId, record, RecordLoad.NORMAL, storeCursors.readCursor(RELATIONSHIP_CURSOR));
-            long propId = record.getNextProp();
-            record.setNextProp(AbstractBaseRecord.NO_ID);
-            try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
-                relationshipStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
-            }
-            PropertyRecord propRecord = propertyStore.newRecord();
-            propertyStore.getRecordByCursor(
-                    propId, propRecord, RecordLoad.NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
-            propRecord.setInUse(false);
-            try (var cursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
-                propertyStore.updateRecord(propRecord, cursor, NULL_CONTEXT, storeCursors);
-            }
-        }
         managementService.shutdown();
+
+        restoreStoreFiles(copyRoot);
 
         ConsistencyCheckService.Result result = checkConsistency();
         assertFalse(result.isSuccessful());
         assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
+    }
+
+    private void copyStoreFiles(Path into) throws IOException {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        for (Path storeFile : databaseLayout.mandatoryStoreFiles()) {
+            fileSystem.copyFile(storeFile, into.resolve(storeFile.getFileName()));
+        }
+    }
+
+    private void restoreStoreFiles(Path from) throws IOException {
+        testDirectory.getFileSystem().copyRecursively(from, databaseLayout.databaseDirectory());
     }
 
     private GraphDatabaseAPI createDatabase() {
