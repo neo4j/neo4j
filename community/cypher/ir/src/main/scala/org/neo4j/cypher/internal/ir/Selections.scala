@@ -50,7 +50,7 @@ case class Selections private (predicates: Set[Predicate]) {
           buffer += p.expr
         }
     }
-    buffer
+    buffer.toVector
   }
 
   def expressionsContainingVariable: Map[String, Set[Predicate]] = {
