@@ -188,6 +188,7 @@ public class DynamicIndexStoreViewIT {
                 storeScan.run(new ContainsExternalUpdates());
                 return null;
             });
+            barrier.await();
             var drop = t3.executeDontWait(() -> {
                 dropTokenIndexes(database);
                 return null;
@@ -206,16 +207,6 @@ public class DynamicIndexStoreViewIT {
     private static void assertScanCompleted(StoreScan storeScan, TestTokenScanConsumer consumer, long entities) {
         assertThat(storeScan.getProgress().getProgress()).isEqualTo(1.0f);
         assertThat(consumer.consumedEntities()).isEqualTo(entities);
-    }
-
-    private void dropSafeRun(StoreScan storeScan, AtomicBoolean scanSuccessful) {
-        try {
-            storeScan.run(new ContainsExternalUpdates());
-            scanSuccessful.set(true);
-        } catch (IllegalStateException e) {
-            // If this scan starts after the index has been dropped this exception will be thrown
-            scanSuccessful.set(false);
-        }
     }
 
     private class ContainsExternalUpdates implements StoreScan.ExternalUpdatesCheck {
