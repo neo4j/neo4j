@@ -210,7 +210,6 @@ class CsvImporter implements Importer {
                             new SimpleLogService(logProvider),
                             pageCacheTracer,
                             contextFactory));
-                    var logTailMetaData = readLogTailMetaData(storageEngineFactory, logProvider);
                     var importer = storageEngineFactory.incrementalBatchImporter(
                             databaseLayout,
                             fileSystem,
@@ -220,12 +219,11 @@ class CsvImporter implements Importer {
                             stdOut,
                             verbose,
                             AdditionalInitialIds.EMPTY,
-                            logTailMetaData,
+                            () -> readLogTailMetaData(storageEngineFactory, logProvider),
                             databaseConfig,
                             new PrintingImportLogicMonitor(stdOut, stdErr),
                             jobScheduler,
                             badCollector,
-                            TransactionLogInitializer.getLogFilesInitializer(),
                             new IndexImporterFactoryImpl(),
                             memoryTracker,
                             contextFactory,
@@ -288,12 +286,10 @@ class CsvImporter implements Importer {
 
     private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory, Log4jLogProvider logProvider)
             throws IOException {
-        return incremental
-                ? LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
-                        .withStorageEngineFactory(storageEngineFactory)
-                        .build()
-                        .getTailMetadata()
-                : LogTailMetadata.EMPTY_LOG_TAIL;
+        return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
+                .withStorageEngineFactory(storageEngineFactory)
+                .build()
+                .getTailMetadata();
     }
 
     /**

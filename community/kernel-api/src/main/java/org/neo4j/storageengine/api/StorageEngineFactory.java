@@ -40,6 +40,7 @@ import org.neo4j.consistency.checking.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -369,12 +370,11 @@ public interface StorageEngineFactory {
             PrintStream progressOutput,
             boolean verboseProgressOutput,
             AdditionalInitialIds additionalInitialIds,
-            LogTailMetadata logTailMetadata,
+            ThrowingSupplier<LogTailMetadata, IOException> logTailMetadataSupplier,
             Config dbConfig,
             Monitor monitor,
             JobScheduler jobScheduler,
             Collector badCollector,
-            LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,

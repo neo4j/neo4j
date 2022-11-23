@@ -24,8 +24,10 @@ import static java.lang.String.format;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.function.Function;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import picocli.CommandLine;
 
 public class CommandTestUtils {
     /**
@@ -55,6 +57,39 @@ public class CommandTestUtils {
         }
     }
 
+    /**
+     * Runs a command with suppressed output. The difference between this method and {@link #runAdminToolWithSuppressedOutput(Path, Path, FileSystemAbstraction, String...)}
+     * is that this method calls {@link AbstractCommand#execute()} directly which propagates its exception,
+     * whereas the other one calls {@link AdminTool#execute(ExecutionContext, String...)} which just returns
+     * the exit code of the command.
+     *
+     * @param homeDir home directory to give to the {@link ExecutionContext}.
+     * @param confDir config directory to give to the {@link ExecutionContext}.
+     * @param fs file system this is run on.
+     * @param command instantiator of the command.
+     * @param args arguments to the command.
+     */
+    public static void runCommandWithSuppressedOutput(
+            Path homeDir,
+            Path confDir,
+            FileSystemAbstraction fs,
+            Function<ExecutionContext, AbstractCommand> command,
+            String... args) {
+        withSuppressedOutput(homeDir, confDir, fs, ctx -> {
+            var cmd = command.apply(ctx);
+            CommandLine.populateCommand(cmd, args);
+            cmd.execute();
+        });
+    }
+
+    /**
+     * Runs the {@link AdminTool} with suppressed output.
+     *
+     * @param homeDir home directory to give to the {@link ExecutionContext}.
+     * @param confDir config directory to give to the {@link ExecutionContext}.
+     * @param fs file system this is run on.
+     * @param args arguments to the admin tool
+     */
     public static void runAdminToolWithSuppressedOutput(
             Path homeDir, Path confDir, FileSystemAbstraction fs, String... args) {
         withSuppressedOutput(homeDir, confDir, fs, ctx -> AdminTool.execute(ctx, args));

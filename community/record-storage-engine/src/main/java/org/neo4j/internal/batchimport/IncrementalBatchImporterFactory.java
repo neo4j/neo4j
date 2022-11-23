@@ -21,10 +21,12 @@ package org.neo4j.internal.batchimport;
 
 import static java.util.Comparator.comparingLong;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.NoSuchElementException;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -37,7 +39,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.LogFilesInitializer;
 
 @Service
 public abstract class IncrementalBatchImporterFactory implements NamedService {
@@ -56,12 +57,11 @@ public abstract class IncrementalBatchImporterFactory implements NamedService {
             PrintStream progressOutput,
             boolean verboseProgressOutput,
             AdditionalInitialIds additionalInitialIds,
-            LogTailMetadata logTailMetadata,
+            ThrowingSupplier<LogTailMetadata, IOException> logTailMetadataSupplier,
             Config dbConfig,
             Monitor monitor,
             JobScheduler jobScheduler,
             Collector badCollector,
-            LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
