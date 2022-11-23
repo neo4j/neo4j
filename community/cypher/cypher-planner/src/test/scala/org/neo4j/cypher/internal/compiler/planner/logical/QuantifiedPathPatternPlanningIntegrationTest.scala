@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -1146,6 +1146,105 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.expandAll("(a)-[r]->(b)")
       .|.argument("a")
       .nodeByLabelScan("start", "A")
+      .build()
+  }
+
+  test(
+    "shouldn't insert eager when a quantified path pattern and a created node don't overlap"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("A", 5)
+      .setLabelCardinality("B", 5)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("()-[]->(:B)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+      .setRelationshipCardinality("(:B)-[]->(:A)", 10)
+      .setRelationshipCardinality("(:B)-[]->(:B)", 10)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val query = "MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) CREATE (c:C) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(start)((a)-[r]->(b))*(end)` =
+      TrailParameters(
+        min = 0,
+        max = UpperBound.Unlimited,
+        start = "start",
+        end = "end",
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set(("a", "a"), ("b", "b")),
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .create(createNode("c", "C"))
+      .filter("end:B")
+      .trail(`(start)((a)-[r]->(b))*(end)`)
+      .|.filter("b:B")
+      .|.expandAll("(a)-[r]->(b)")
+      .|.filter("a:A")
+      .|.argument("a")
+      .nodeByLabelScan("start", "A")
+      .build()
+  }
+
+  test(
+    "shouldn't insert eager when a quantified path pattern and a deleted node don't overlap"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .setLabelCardinality("A", 5)
+      .setLabelCardinality("B", 5)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("()-[]->(:B)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+      .setRelationshipCardinality("(:B)-[]->(:A)", 10)
+      .setRelationshipCardinality("(:B)-[]->(:B)", 10)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val query = "MATCH (x:!%) OPTIONAL MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) DELETE x"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(start)((a)-[r]->(b))*(end)` =
+      TrailParameters(
+        min = 0,
+        max = UpperBound.Unlimited,
+        start = "start",
+        end = "end",
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set(("a", "a"), ("b", "b")),
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .emptyResult()
+      .deleteNode("x")
+      .apply()
+      .|.optional("x")
+      .|.filter("end:B")
+      .|.trail(`(start)((a)-[r]->(b))*(end)`)
+      .|.|.filter("b:B")
+      .|.|.expandAll("(a)-[r]->(b)")
+      .|.|.filter("a:A")
+      .|.|.argument("a")
+      .|.nodeByLabelScan("start", "A")
+      .filter("not x:%")
+      .allNodeScan("x")
       .build()
   }
 }
