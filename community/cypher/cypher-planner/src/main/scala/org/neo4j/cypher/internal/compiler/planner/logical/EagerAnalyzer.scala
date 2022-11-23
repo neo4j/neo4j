@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
+import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -109,6 +111,22 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   implicit private val semanticTable: SemanticTable = context.staticComponents.semanticTable
 
   /**
+   * Get a LeafPlansPredicatesResolver that looks at the leaves of the given plan.
+   */
+  private def getLeafPlansPredicatesResolver(plan: LogicalPlan): LeafPlansPredicatesResolver = (entityName: String) => {
+    val leaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
+      case n: NodeLogicalLeafPlan if n.idName == entityName         => n
+      case r: RelationshipLogicalLeafPlan if r.idName == entityName => r
+    }
+
+    leaves.map { p =>
+      val solvedPredicates =
+        context.staticComponents.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
+      SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
+    }
+  }
+
+  /**
    * Determines whether there is a conflict between the so-far planned LogicalPlan
    * and the remaining parts of the PlannerQuery. This function assumes that the
    * argument PlannerQuery is the very head of the PlannerQuery chain.
@@ -155,6 +173,8 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         case a: Argument                    => a.argumentIds
       }.to(ListSet)
 
+      val leafPlansPredicatesResolver = getLeafPlansPredicatesResolver(plan)
+
       val headQgWithLeafInfo = QgWithLeafInfo(
         plannerQuery.queryGraph,
         stablySolvedPredicates,
@@ -163,7 +183,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
       )
 
       // Start recursion by checking the given plannerQuery against itself
-      headConflicts(plannerQuery, plannerQuery, headQgWithLeafInfo)
+      headConflicts(plannerQuery, plannerQuery, headQgWithLeafInfo, leafPlansPredicatesResolver)
     }
   }
 
@@ -171,7 +191,8 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   private def headConflicts(
     head: SinglePlannerQuery,
     tail: SinglePlannerQuery,
-    headQgWithLeafInfo: QgWithLeafInfo
+    headQgWithLeafInfo: QgWithLeafInfo,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): ListSet[EagernessReason.Reason] = {
     // _.allQGsWithLeafInfo will remove the stable identifiers. As we want to keep the identifiers, we therefore need to treat headQgWithLeafInfo separately
     val allHeadQgsIncludingStableIterators =
@@ -181,7 +202,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
     val allHeadQgsIgnoringStableIterators = head.queryGraph.allQGsWithLeafInfo
 
     def overlapsHead(readQgs: Seq[QgWithLeafInfo])(writeQg: QueryGraph): ListSet[EagernessReason.Reason] =
-      readQgs.view.flatMap(readQg => writeQg.overlaps(readQg)).to(ListSet)
+      readQgs.view.flatMap(readQg => writeQg.overlaps(readQg, leafPlansPredicatesResolver)).to(ListSet)
 
     val conflictsWithQqInHorizon: ListSet[EagernessReason.Reason] = tail.horizon match {
       // if we are running CALL { ... } IN TRANSACTIONS, we cannot rely on stable iterators
@@ -212,7 +233,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
     else if (tail.tail.isEmpty)
       ListSet.empty
     else
-      headConflicts(head, tail.tail.get, headQgWithLeafInfo)
+      headConflicts(head, tail.tail.get, headQgWithLeafInfo, leafPlansPredicatesResolver)
   }
 
   override def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan = {
@@ -241,7 +262,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         ListSet(EagernessReason.UpdateStrategyEager)
       )
     else {
-      val conflicts = readWriteConflict(query, query)
+      val conflicts = readWriteConflict(query, query, getLeafPlansPredicatesResolver(inputPlan))
       if (conflicts.nonEmpty)
         context.staticComponents.logicalPlanProducer.planEager(inputPlan, context, conflicts)
       else
@@ -260,7 +281,8 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
       )
     else {
       val conflicts =
-        if (query.tail.isDefined) readWriteConflictInTail(query, query.tail.get)
+        if (query.tail.isDefined)
+          readWriteConflictInTail(query, query.tail.get, getLeafPlansPredicatesResolver(inputPlan))
         else ListSet.empty[EagernessReason.Reason]
       if (conflicts.nonEmpty)
         context.staticComponents.logicalPlanProducer.planEager(inputPlan, context, conflicts)
@@ -278,8 +300,12 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         ListSet(EagernessReason.UpdateStrategyEager)
       )
     else {
-      val conflictsInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
-      val conflictsInHead = if (query.tail.isDefined) writeReadConflictInHead(query, query.tail.get) else Seq.empty
+      val conflictsInHorizon =
+        query.queryGraph.overlapsHorizon(query.horizon, getLeafPlansPredicatesResolver(inputPlan))
+      val conflictsInHead =
+        if (query.tail.isDefined)
+          writeReadConflictInHead(query, query.tail.get, getLeafPlansPredicatesResolver(inputPlan))
+        else Seq.empty
       val conflicts = conflictsInHorizon ++ conflictsInHead
 
       if (conflicts.nonEmpty)
@@ -298,8 +324,12 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         ListSet(EagernessReason.UpdateStrategyEager)
       )
     else {
-      val conflictsInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
-      val conflictsInTail = if (query.tail.isDefined) writeReadConflictInTail(query, query.tail.get) else ListSet.empty
+      val conflictsInHorizon =
+        query.queryGraph.overlapsHorizon(query.horizon, getLeafPlansPredicatesResolver(inputPlan))
+      val conflictsInTail =
+        if (query.tail.isDefined)
+          writeReadConflictInTail(query, query.tail.get, getLeafPlansPredicatesResolver(inputPlan))
+        else ListSet.empty
       val conflicts = conflictsInHorizon ++ conflictsInTail
 
       if (conflicts.nonEmpty)
@@ -333,7 +363,11 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         ListSet(EagernessReason.UpdateStrategyEager)
       )
     else {
-      val conflicts = horizonReadWriteConflict(query) ++ horizonWriteReadConflict(query)
+      val leafPlansPredicatesResolver = getLeafPlansPredicatesResolver(inputPlan)
+      val conflicts = horizonReadWriteConflict(query, leafPlansPredicatesResolver) ++ horizonWriteReadConflict(
+        query,
+        leafPlansPredicatesResolver
+      )
       if (conflicts.nonEmpty)
         context.staticComponents.logicalPlanProducer.planEager(pcWrappedPlan, context, conflicts)
       else
@@ -341,15 +375,28 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
     }
   }
 
-  private def horizonReadWriteConflict(query: SinglePlannerQuery): ListSet[EagernessReason.Reason] = {
-    query.tail.toSeq.view.flatMap(_.allQGsWithLeafInfo).flatMap(_.queryGraph.overlapsHorizon(query.horizon)).to(ListSet)
+  private def horizonReadWriteConflict(
+    query: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  ): ListSet[EagernessReason.Reason] = {
+    query.tail.toSeq.view.flatMap(_.allQGsWithLeafInfo).flatMap(_.queryGraph.overlapsHorizon(
+      query.horizon,
+      leafPlansPredicatesResolver
+    )).to(
+      ListSet
+    )
   }
 
-  private def horizonWriteReadConflict(query: SinglePlannerQuery): ListSet[EagernessReason.Reason] = {
+  private def horizonWriteReadConflict(
+    query: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  ): ListSet[EagernessReason.Reason] = {
     val horizonQgs = query.horizon.allQueryGraphs.map(_.queryGraph)
     val tailQgs = query.tail.toSeq.flatMap(_.allQGsWithLeafInfo).view
 
-    tailQgs.flatMap(readQg => horizonQgs.flatMap(writeQg => writeQg.overlaps(readQg))).to(ListSet)
+    tailQgs.flatMap(readQg => horizonQgs.flatMap(writeQg => writeQg.overlaps(readQg, leafPlansPredicatesResolver))).to(
+      ListSet
+    )
   }
 
   /**
@@ -360,24 +407,28 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   @tailrec
   private def readWriteConflictInTail(
     head: SinglePlannerQuery,
-    tail: SinglePlannerQuery
+    tail: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): ListSet[EagernessReason.Reason] = {
-    val conflicts = readWriteConflict(head, tail)
+    val conflicts = readWriteConflict(head, tail, leafPlansPredicatesResolver)
     if (conflicts.nonEmpty)
       conflicts
     else if (tail.tail.isEmpty)
       ListSet.empty
     else
-      readWriteConflictInTail(head, tail.tail.get)
+      readWriteConflictInTail(head, tail.tail.get, leafPlansPredicatesResolver)
   }
 
   private def readWriteConflict(
     readQuery: SinglePlannerQuery,
-    writeQuery: SinglePlannerQuery
+    writeQuery: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): ListSet[EagernessReason.Reason] = {
     val readQGsWithLeafInfo = readQuery.queryGraph.allQGsWithLeafInfo
     def overlapsWithReadQg(writeQg: QueryGraph): ListSet[EagernessReason.Reason] =
-      readQGsWithLeafInfo.view.flatMap(readQgWithLeafInfo => writeQg.overlaps(readQgWithLeafInfo)).to(ListSet)
+      readQGsWithLeafInfo.view.flatMap(readQgWithLeafInfo =>
+        writeQg.overlaps(readQgWithLeafInfo, leafPlansPredicatesResolver)
+      ).to(ListSet)
 
     val conflictsWithQgInHorizon =
       writeQuery.horizon.allQueryGraphs.view.map(_.queryGraph).flatMap(overlapsWithReadQg).to(ListSet)
@@ -394,18 +445,21 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
   @tailrec
   private def writeReadConflictInTail(
     head: SinglePlannerQuery,
-    tail: SinglePlannerQuery
+    tail: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): ListSet[EagernessReason.Reason] = {
     val readQGsWithLeafInfo = tail.queryGraph.allQGsWithLeafInfo
     def overlapsWithReadQg(writeQg: QueryGraph): ListSet[EagernessReason.Reason] =
-      readQGsWithLeafInfo.view.flatMap(readQgWithLeafInfo => writeQg.overlaps(readQgWithLeafInfo)).to(ListSet)
+      readQGsWithLeafInfo.view.flatMap(readQgWithLeafInfo =>
+        writeQg.overlaps(readQgWithLeafInfo, leafPlansPredicatesResolver)
+      ).to(ListSet)
 
     val conflicts =
       if (tail.queryGraph.writeOnly) ListSet.empty[EagernessReason.Reason]
       else {
         val qgS = head.queryGraph.allQGsWithLeafInfo.map(_.queryGraph)
         (qgS.flatMap(overlapsWithReadQg) ++
-          qgS.flatMap(_.overlapsHorizon(tail.horizon)) ++
+          qgS.flatMap(_.overlapsHorizon(tail.horizon, leafPlansPredicatesResolver)) ++
           qgS.flatMap(deleteReadOverlap(_, tail.queryGraph))).to(ListSet)
       }
     if (conflicts.nonEmpty)
@@ -413,7 +467,7 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
     else if (tail.tail.isEmpty)
       ListSet.empty
     else
-      writeReadConflictInTail(head, tail.tail.get)
+      writeReadConflictInTail(head, tail.tail.get, leafPlansPredicatesResolver)
   }
 
   private def deleteReadOverlap(from: QueryGraph, to: QueryGraph): Seq[EagernessReason.Reason] = {
@@ -438,30 +492,35 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
 
   private def writeReadConflictInHead(
     head: SinglePlannerQuery,
-    tail: SinglePlannerQuery
+    tail: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): ListSet[EagernessReason.Reason] = {
     // If the first planner query is write only, we can use a different overlaps method (writeOnlyHeadOverlaps)
     // that makes us less eager
     if (head.queryGraph.writeOnly) {
-      writeReadConflictInHeadRecursive(head, tail).to(ListSet)
+      writeReadConflictInHeadRecursive(head, tail, leafPlansPredicatesResolver).to(ListSet)
     } else
-      writeReadConflictInTail(head, tail)
+      writeReadConflictInTail(head, tail, leafPlansPredicatesResolver)
   }
 
   @tailrec
   private def writeReadConflictInHeadRecursive(
     head: SinglePlannerQuery,
-    tail: SinglePlannerQuery
+    tail: SinglePlannerQuery,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): Seq[EagernessReason.Reason] = {
     // TODO:H Refactor: This is same as writeReadConflictInTail, but with different overlaps method. Pass as a parameter
     if (!tail.queryGraph.writeOnly)
       // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
       // write-only head could cause problems with reads in future horizons
-      head.queryGraph writeOnlyHeadOverlaps qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
+      head.queryGraph.writeOnlyHeadOverlaps(
+        qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph),
+        leafPlansPredicatesResolver
+      )
     else if (tail.tail.isEmpty)
       Seq.empty
     else
-      writeReadConflictInHeadRecursive(head, tail.tail.get)
+      writeReadConflictInHeadRecursive(head, tail.tail.get, leafPlansPredicatesResolver)
   }
 }
 

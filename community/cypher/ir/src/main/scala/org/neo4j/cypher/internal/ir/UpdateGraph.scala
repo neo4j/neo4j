@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -31,12 +32,33 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
+import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
+
+object UpdateGraph {
+
+  /**
+   * Callback to obtain the predicates solved by the leaf plan(s) that find the
+   * entity with the given name. Grouped by leaf plan.
+   *
+   * This is not guaranteed to find the leaf pkan(s), so it might return
+   * an empty sequence.
+   */
+  trait LeafPlansPredicatesResolver {
+    def apply(entityName: String): Seq[SolvedPredicatesOfOneLeafPlan]
+  }
+
+  /**
+   * The predicates solved by a single leaf plan.
+   */
+  case class SolvedPredicatesOfOneLeafPlan(predicates: Seq[Expression])
+}
 
 trait UpdateGraph {
 
@@ -176,7 +198,10 @@ trait UpdateGraph {
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
+  def overlaps(
+    qgWithInfo: QgWithLeafInfo,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  )(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
     if (!containsUpdates) {
       ListSet.empty
     } else {
@@ -191,7 +216,7 @@ trait UpdateGraph {
         foreachOverlap(readQg)
 
       val checkers = Seq(
-        deleteOverlap(_),
+        deleteOverlap(_, leafPlansPredicatesResolver),
         removeLabelOverlap(_),
         setLabelOverlap(_)
       )
@@ -213,23 +238,28 @@ trait UpdateGraph {
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
-  def overlapsHorizon(horizon: QueryHorizon)(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
+  def overlapsHorizon(
+    horizon: QueryHorizon,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  )(implicit semanticTable: SemanticTable): ListSet[EagernessReason.Reason] = {
     if (!containsUpdates || !horizon.couldContainRead) {
       ListSet.empty
     } else {
-      horizon.allQueryGraphs.view.flatMap(overlaps).to(ListSet)
+      horizon.allQueryGraphs.view.flatMap(overlaps(_, leafPlansPredicatesResolver)).to(ListSet)
     }
   }
 
-  def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  def writeOnlyHeadOverlaps(
+    qgWithInfo: QgWithLeafInfo,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     if (!containsUpdates) {
       Seq.empty
     } else {
       val readQg =
         qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
 
-      val overlap = deleteOverlap(readQg)
+      val overlap = deleteOverlap(readQg, leafPlansPredicatesResolver)
 
       if (overlap.nonEmpty) {
         overlap
@@ -472,7 +502,10 @@ trait UpdateGraph {
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
-  def deleteOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  def deleteOverlap(
+    qgWithInfo: QgWithLeafInfo,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     val identifiersToRead =
       qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
         _.name
@@ -481,7 +514,7 @@ trait UpdateGraph {
     if (overlaps.nonEmpty) {
       overlaps.map(EagernessReason.ReadDeleteConflict(_))
     } else {
-      deleteLabelExpressionOverlap(qgWithInfo)
+      deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
     }
   }
 
@@ -490,8 +523,10 @@ trait UpdateGraph {
    *
    * @return the nodes which are overlapping, or None if there is no overlap
    */
-  private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  private def deleteLabelExpressionOverlap(
+    qgWithInfo: QgWithLeafInfo,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
+  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     val relevantNodes =
       qgWithInfo.queryGraph.allPatternNodesRead
     val nodesWithLabelOverlap = relevantNodes
@@ -501,7 +536,8 @@ trait UpdateGraph {
         getDeleteOverlapWithLabelExpression(
           qgWithInfo,
           readNode,
-          deletedNode
+          deletedNode,
+          leafPlansPredicatesResolver
         )
       }
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
@@ -535,20 +571,32 @@ trait UpdateGraph {
   private def getDeleteOverlapWithLabelExpression(
     qgWithInfo: QgWithLeafInfo,
     readNode: String,
-    deletedNode: String
+    deletedNode: String,
+    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): Boolean = {
+    // For the read node, we must use the predicates that are solved by the leaf plan(s) solving that node.
+    // If any of the predicates for one leaf plan overlaps with the deletedNodePredicates, we have to be Eager.
+    val readNodePredicates = leafPlansPredicatesResolver(readNode)
+
+    // For the deleted node, we can include all predicates, since they are all applied before the node gets deleted.
+    // We collect the predicates from both the readQG (qgWithInfo) and the writeQG (getMaybeQueryGraph).
+    // This is not necessarily all predicates, but missing some will only be conservative.
     val selections =
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections.empty)
-
-    val readNodePredicates = selections.predicatesGiven(Set(readNode))
     val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode))
 
-    val overlap = DeleteOverlaps.overlap(readNodePredicates, deletedNodePredicates)
+    // If readNodePredicates.isEmpty, we could not find the leaf plan(s) that solve the read node.
+    // This happens for instance when we are on the RHS of an Apply.
+    // Since we don't know the predicates, we have to be conservative.
+    readNodePredicates.isEmpty || readNodePredicates.exists {
+      case SolvedPredicatesOfOneLeafPlan(readNodePredicatesForLeafPlan) =>
+        val overlap = DeleteOverlaps.overlap(readNodePredicatesForLeafPlan, deletedNodePredicates)
 
-    overlap match {
-      case DeleteOverlaps.NoLabelOverlap                                 => false
-      case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+        overlap match {
+          case DeleteOverlaps.NoLabelOverlap                                 => false
+          case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+        }
     }
   }
 

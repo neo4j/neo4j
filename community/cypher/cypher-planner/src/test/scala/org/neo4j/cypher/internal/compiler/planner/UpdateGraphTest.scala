@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
@@ -70,6 +71,8 @@ import scala.collection.immutable.ListSet
 class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit private val semanticTable: SemanticTable = SemanticTable()
 
+  private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => Seq.empty
+
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
     val setLabel = SetLabelPattern("name", Seq.empty)
@@ -82,7 +85,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("no overlap when reading all labels and not setting any label") {
@@ -94,7 +97,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(setProperty("a", "prop", "[]")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("overlap when reading all labels and removing a label") {
@@ -106,7 +109,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabel("a", "Label")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(LabelReadRemoveConflict(labelName("Label")))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(
+      LabelReadRemoveConflict(labelName("Label"))
+    )
   }
 
   test("overlap when reading and creating the same label") {
@@ -115,7 +120,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and creating different labels") {
@@ -125,7 +130,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L3")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("no overlap when properties don't overlap and no label on read GQ, but a label on write QG") {
@@ -137,7 +142,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("Don't overlap when properties don't overlap but labels explicitly do for simple predicates") {
@@ -152,7 +157,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("Overlap when properties don't overlap but labels explicitly do for difficult predicates") {
@@ -167,7 +172,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("overlap when reading all rel types and creating a specific type") {
@@ -177,7 +182,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T", "b")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and writing different rel types") {
@@ -193,7 +198,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T2", "b")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("overlap when reading and writing same rel types") {
@@ -209,7 +214,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and writing same rel types but matching on rel property") {
@@ -232,7 +237,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("overlap when reading and writing same property and rel type") {
@@ -275,7 +280,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("overlap when reading, deleting and merging") {
@@ -295,7 +300,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.ReadDeleteConflict("a"))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(
+      EagernessReason.ReadDeleteConflict("a")
+    )
   }
 
   test("overlap when reading and deleting with collections") {
@@ -307,7 +314,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.ReadDeleteConflict("col"))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(
+      EagernessReason.ReadDeleteConflict("col")
+    )
   }
 
   test("overlap when reading and merging on the same label and property") {
@@ -328,7 +337,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("overlap when reading and merging on the same property, no label on MATCH") {
@@ -348,7 +357,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.Unknown)
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
   }
 
   test("no overlap when reading and merging on the same property but different labels") {
@@ -369,7 +378,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe empty
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
 
   test("allQueryGraphs should include IRExpressions recursively") {
