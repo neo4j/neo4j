@@ -152,6 +152,11 @@ class InCacheTest {
     }
 
     @Test
+    void shouldCloseCacheThatIsNeverUsed() {
+        new InCache().close();
+    }
+
+    @Test
     void shouldCloseCacheThatIsUsedOnce() {
         InCache cache = new InCache();
         ListValue list = range(1L, 256L, 1L);
