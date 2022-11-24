@@ -115,6 +115,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+          Set.empty,
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -333,7 +334,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         new LogicalPlanBuilder()
           .produceResults("nnn")
           .expandAll("(nnn)<-[r]-(m)")
-          .projection("n AS nnn")
+          .projection(project = Seq("n AS nnn"), discard = Set("n"))
           .nodeByLabelScan("n", "Awesome", plannedOrder)
           .build()
       )
@@ -415,6 +416,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               indexOrder =
                 IndexOrderNone
             ),
+            Set.empty,
             Map("n.prop" -> prop("n", "prop"))
           ),
           Seq(sortOrder("n.prop"))
@@ -458,8 +460,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "n:Awesome(prop > 'foo')",
                 indexOrder = plannedOrder
               ),
+              Set.empty,
               Map("n.prop" -> prop("n", "prop"))
             ),
+            Set.empty,
             Map("n.foo" -> prop("n", "foo"))
           ),
           Seq(sortOrder("n.prop")),
@@ -543,8 +547,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "n:Awesome(prop > 'foo')",
                 indexOrder = plannedOrder
               ),
+              Set.empty,
               Map("n.prop" -> prop("n", "prop"))
             ),
+            Set.empty,
             Map("n.foo + 1" -> add(prop("n", "foo"), literalInt(1)))
           ),
           Seq(sortOrder("n.prop")),
@@ -568,11 +574,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   "n:Awesome(prop > 'foo')",
                   indexOrder = plannedOrder
                 ),
+                Set.empty,
                 Map("f" -> prop("n", "foo"), "p" -> prop("n", "prop"))
               ),
               Seq(sortOrder("p")),
               Seq(Ascending("f"))
             ),
+            Set.empty,
             Map("n.bar" -> prop("n", "bar"))
           ),
           Seq(sortOrder("p"), Ascending("f")),
@@ -599,6 +607,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "n:Awesome(prop > 'foo')",
                 indexOrder = plannedOrder
               ),
+              Set("n"),
               Map("nnn" -> varFor("n"))
             ),
             "nnn",
@@ -607,6 +616,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "m",
             "r"
           ),
+          Set.empty,
           Map("nnn.prop" -> prop("nnn", "prop"))
         )
       )
@@ -623,6 +633,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+          Set.empty,
           Map("m" -> varFor("n"))
         )
       )
@@ -688,6 +699,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop STARTS WITH 'foo')",
             indexOrder = plannedOrder
           ),
+          Set.empty,
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -730,6 +742,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
+          Set.empty,
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -956,6 +969,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               argumentIds = Set("a")
             )
           ),
+          Set.empty,
           Map("a.prop" -> cachedNodeProp("a", "prop"))
         )
       )
@@ -1097,6 +1111,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 argumentIds = Set("a")
               )
             ),
+            Set.empty,
             Map("a.prop" -> cachedNodeProp("a", "prop"), "b.prop" -> prop("b", "prop"))
           ),
           Seq(sortOrder("a.prop")),
@@ -1117,6 +1132,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "a:A(prop > 'foo')",
             indexOrder = plannedOrder
           ),
+          Set("a"),
           Map("theProp" -> prop("a", "prop"), "x" -> literalInt(1))
         )
       )
@@ -1181,8 +1197,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "b",
                 "r"
               ),
+              Set.empty,
               Map("a.prop" -> prop("a", "prop"))
             ),
+            Set.empty,
             Map("b.prop" -> prop("b", "prop"))
           ),
           Seq(sortOrder("a.prop")),
@@ -1227,8 +1245,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                     "b",
                     "r"
                   ),
+                  Set.empty,
                   Map("a.prop" -> prop("a", "prop"))
                 ),
+                Set.empty,
                 Map("b.prop" -> prop("b", "prop"))
               ),
               Seq(sortOrder("a.prop")),
@@ -1352,6 +1372,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "r"
             )
           ),
+          Set.empty,
           Map("a.prop" -> prop("a", "prop"))
         )
       )
@@ -1378,6 +1399,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             ),
             AllNodesScan("b", Set("a"))
           ),
+          Set.empty,
           Map("a.prop" -> prop("a", "prop"))
         )
       )
@@ -1460,6 +1482,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
+          Set.empty,
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -1825,13 +1848,17 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
           plan._1 should equal {
             if (shouldPartialSort)
-              PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
+              PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projectionBoth), alreadySorted, sortItems)
             else if (shouldFullSort && sortOnOnlyOne)
-              Projection(Sort(Projection(Selection(expr, leafPlan), projectionProp1), sortItems), projectionProp2)
+              Projection(
+                Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionProp1), sortItems),
+                Set.empty,
+                projectionProp2
+              )
             else if (shouldFullSort && !sortOnOnlyOne)
-              Sort(Projection(Selection(expr, leafPlan), projectionBoth), sortItems)
+              Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionBoth), sortItems)
             else
-              Projection(Selection(expr, leafPlan), projectionBoth)
+              Projection(Selection(expr, leafPlan), Set.empty, projectionBoth)
           }
         }
     }
@@ -1953,6 +1980,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3))),
                 nodeIndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder, getValue = _ => GetValue)
               ),
+              Set.empty,
               Map(
                 "n.prop1" -> cachedNodeProp("n", "prop1"),
                 "n.prop2" -> cachedNodeProp("n", "prop2"),
@@ -2224,11 +2252,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )
         plan._1 should equal {
           if (fullSort)
-            Sort(Projection(Selection(expr, leafPlan), projectionsAll), sortItems)
+            Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionsAll), sortItems)
           else if (partialSort)
-            PartialSort(Projection(Selection(expr, leafPlan), projectionsAll), alreadySorted, sortItems)
+            PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projectionsAll), alreadySorted, sortItems)
           else
-            Projection(Selection(expr, leafPlan), projectionsAll)
+            Projection(Selection(expr, leafPlan), Set.empty, projectionsAll)
         }
     }
   }
@@ -2410,11 +2438,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         plan._1 should equal {
           if (sort)
             Projection(
-              PartialSort(Projection(Selection(expr, leafPlan), projections), alreadySorted, toSort),
+              PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projections), alreadySorted, toSort),
+              Set.empty,
               projectionsAfterSort
             )
           else
-            Projection(Selection(expr, leafPlan), projections)
+            Projection(Selection(expr, leafPlan), Set.empty, projections)
         }
     }
   }
@@ -2987,17 +3016,25 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           plan._1 should equal {
             if (fullSort)
               Sort(
-                Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections),
+                Projection(
+                  Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections),
+                  Set.empty,
+                  sortProjections
+                ),
                 sortItems
               )
             else if (partialSort)
               PartialSort(
-                Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections),
+                Projection(
+                  Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections),
+                  Set.empty,
+                  sortProjections
+                ),
                 alreadySorted,
                 sortItems
               )
             else
-              Projection(Selection(selectionExpression, leafPlan), returnProjections)
+              Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections)
           }
         }
     }
@@ -3124,9 +3161,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             nodeIndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
           plan._1 should equal {
             if (shouldSort)
-              PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
+              PartialSort(Projection(leafPlan, Set.empty, projection), alreadySorted, toBeSorted)
             else
-              Projection(leafPlan, projection)
+              Projection(leafPlan, Set.empty, projection)
           }
         }
     }
@@ -3260,9 +3297,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           )
           plan._1 should equal {
             if (shouldSort)
-              Sort(Projection(leafPlan, projection), toBeSorted)
+              Sort(Projection(leafPlan, Set.empty, projection), toBeSorted)
             else
-              Projection(leafPlan, projection)
+              Projection(leafPlan, Set.empty, projection)
           }
         }
     }
@@ -3352,6 +3389,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           plan._1 should equal(Projection(
             nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue),
+            Set.empty,
             projection
           ))
         }
@@ -3448,6 +3486,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 plannedOrder,
                 IndexType.RANGE
               ),
+              Set.empty,
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -3493,6 +3532,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Limit(
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
+              Set.empty,
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -3512,6 +3552,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Limit(
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
+              Set.empty,
               Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
@@ -3539,6 +3580,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Limit(
               Projection(
                 nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
+                Set.empty,
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
@@ -3561,6 +3603,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Limit(
               Projection(
                 nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
+                Set.empty,
                 Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
@@ -3587,6 +3630,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Limit(
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
+              Set.empty,
               Map("agg" -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)

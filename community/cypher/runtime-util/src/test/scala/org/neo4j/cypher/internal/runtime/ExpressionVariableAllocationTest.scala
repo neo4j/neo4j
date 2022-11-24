@@ -387,7 +387,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
   private def projectPlan(exprs: Expression*): LogicalPlan = {
     val projections = (for (i <- exprs.indices) yield s"x$i" -> exprs(i)).toMap
-    Projection(Argument(), projections)
+    Projection(Argument(), Set.empty, projections)
   }
 
   private def varLengthPlan(

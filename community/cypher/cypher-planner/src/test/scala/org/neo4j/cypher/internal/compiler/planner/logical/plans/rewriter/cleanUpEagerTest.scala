@@ -42,16 +42,16 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val leaf = newMockedLogicalPlan()
     val eager1 = Eager(leaf)
     val eager2 = Eager(eager1)
-    val topPlan = Projection(eager2, Map.empty)
+    val topPlan = Projection(eager2, Set.empty, Map.empty)
 
-    rewrite(topPlan) should equal(Projection(Eager(leaf), Map.empty))
+    rewrite(topPlan) should equal(Projection(Eager(leaf), Set.empty, Map.empty))
   }
 
   test("should not move eager below unwind") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)
     val unwind = UnwindCollection(eager, "i", null)
-    val topPlan = Projection(unwind, Map.empty)
+    val topPlan = Projection(unwind, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)
   }
@@ -60,9 +60,9 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val leaf = newMockedLogicalPlan()
     val unwind = UnwindCollection(leaf, "i", null)
     val eager = Eager(unwind)
-    val topPlan = Projection(eager, Map.empty)
+    val topPlan = Projection(eager, Set.empty, Map.empty)
 
-    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf), "i", null), Map.empty))
+    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf), "i", null), Set.empty, Map.empty))
   }
 
   test("should move eager on top of unwind to below it repeatedly") {
@@ -73,7 +73,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val eager2 = Eager(unwind2)
     val unwind3 = UnwindCollection(eager2, "i", null)
     val eager3 = Eager(unwind3)
-    val topPlan = Projection(eager3, Map.empty)
+    val topPlan = Projection(eager3, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(
       Projection(
@@ -86,6 +86,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
           "i",
           null
         ),
+        Set.empty,
         Map.empty
       )
     )
@@ -96,11 +97,12 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val url = literalString("file:///tmp/foo.csv")
     val loadCSV = LoadCSV(leaf, url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
     val eager = Eager(loadCSV)
-    val topPlan = Projection(eager, Map.empty)
+    val topPlan = Projection(eager, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(
       Projection(
         LoadCSV(Eager(leaf), url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB),
+        Set.empty,
         Map.empty
       )
     )
@@ -115,6 +117,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
           Eager(leaf),
           literalInt(12)
         ),
+        Set.empty,
         Map.empty
       )
     ) should equal(
@@ -122,6 +125,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
         Eager(
           Limit(leaf, literalInt(12))
         ),
+        Set.empty,
         Map.empty
       )
     )
@@ -139,7 +143,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE_4MB
     )
-    val topPlan = Projection(loadCSV, Map.empty)
+    val topPlan = Projection(loadCSV, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)
   }
@@ -152,6 +156,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
           Eager(leaf),
           literalInt(12)
         ),
+        Set.empty,
         Map.empty
       )
     ) should equal(
@@ -159,6 +164,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
         Eager(
           ExhaustiveLimit(leaf, literalInt(12))
         ),
+        Set.empty,
         Map.empty
       )
     )
@@ -169,9 +175,9 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val aggregatingExpression = distinctFunction("count", varFor("to"))
     val aggregation = Aggregation(leaf, Map.empty, Map("x" -> aggregatingExpression))
     val eager = Eager(aggregation)
-    val topPlan = Projection(eager, Map.empty)
+    val topPlan = Projection(eager, Set.empty, Map.empty)
 
-    rewrite(topPlan) should equal(Projection(aggregation, Map.empty))
+    rewrite(topPlan) should equal(Projection(aggregation, Set.empty, Map.empty))
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

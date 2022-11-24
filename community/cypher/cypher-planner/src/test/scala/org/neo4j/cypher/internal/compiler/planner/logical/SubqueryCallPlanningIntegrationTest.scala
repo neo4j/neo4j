@@ -836,7 +836,7 @@ class SubqueryCallPlanningIntegrationTest
         .produceResults("n", "x")
         .apply(fromSubquery = true)
         .|.allNodeScan("n", "x")
-        .projection("n AS x")
+        .projection(project = Seq("n AS x"), discard = Set("n"))
         .projection("1 AS n")
         .argument()
         .build()

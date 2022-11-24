@@ -134,7 +134,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-      .projection("n AS a", "m AS b")
+      .projection(project = Seq("n AS a", "m AS b"), discard = Set("n", "m"))
       .cartesianProduct()
       .|.allNodeScan("m")
       .allNodeScan("n")
@@ -156,7 +156,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
         )
       )
-      .projection("n AS a")
+      .projection(project = Seq("n AS a"), discard = Set("n"))
       .allNodeScan("n")
       .build()
   }

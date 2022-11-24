@@ -98,7 +98,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 WITH n AS x RETURN x.prop1").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection(Map("x.prop1" -> cachedNodeProp("n", "prop1", "x")))
-      .projection("n AS x")
+      .projection(project = Seq("n AS x"), discard = Set("n"))
       .filter("cacheNFromStore[n.prop1] > 42")
       .allNodeScan("n")
       .build()
@@ -109,7 +109,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = cfg.plan("MATCH (n) WHERE n.prop1 > 42 WITH n AS x WHERE x.prop1 > 42 RETURN x").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filterExpression(greaterThan(cachedNodeProp("n", "prop1", "x"), literalInt(42)))
-      .projection("n AS x")
+      .projection(project = Seq("n AS x"), discard = Set("n"))
       .filter("cacheNFromStore[n.prop1] > 42")
       .allNodeScan("n")
       .build()
@@ -125,7 +125,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
         "m.prop1" -> cachedNodeProp("n", "prop1", "m"),
         "x.prop1" -> cachedNodeProp("m", "prop1", "x")
       ))
-      .projection("n AS m", "m AS x")
+      // TODO This is wrong because of name deduplication used in this test
+      .projection(project = Seq("n AS m", "m AS x"), discard = Set("n", "m"))
       .cartesianProduct()
       .|.filter("cacheNFromStore[m.prop1] > 42")
       .|.allNodeScan("m")

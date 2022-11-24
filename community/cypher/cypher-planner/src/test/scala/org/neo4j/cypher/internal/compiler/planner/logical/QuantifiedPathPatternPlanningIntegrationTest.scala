@@ -679,7 +679,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.|.expandAll("(m)<-[anon_4]-(n)")
         .|.|.argument("m", "prop")
         .|.allNodeScan("anon_2", "prop")
-        .projection("a.prop AS prop")
+        .projection(project = Seq("a.prop AS prop"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )

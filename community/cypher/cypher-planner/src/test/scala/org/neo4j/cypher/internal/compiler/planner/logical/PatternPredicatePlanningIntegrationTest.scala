@@ -245,7 +245,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .semiApply()
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection("a AS b")
+        .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
@@ -272,7 +272,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .antiSemiApply()
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection("a AS b")
+        .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
@@ -628,7 +628,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection("a AS b")
+        .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
@@ -645,7 +645,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection("a AS b")
+        .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
@@ -678,7 +678,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .|.filter("anon_1:Foo")
         .|.expandAll("(b)-[anon_0:X]->(anon_1)")
         .|.argument("b")
-        .projection("a AS b")
+        .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
@@ -1494,7 +1494,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection("[n] AS nodes")
+      .projection(project = Seq("[n] AS nodes"), discard = Set("n"))
       .allNodeScan("n")
       .build())
   }
@@ -1531,7 +1531,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection("[r] AS rels")
+      .projection(project = Seq("[r] AS rels"), discard = Set("r", "anon_0", "anon_1"))
       .eager(ListSet(
         EagernessReason.ReadDeleteConflict("anon_0"),
         EagernessReason.ReadDeleteConflict("rels"),
@@ -1574,7 +1574,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         EagernessReason.ReadDeleteConflict("a"),
         EagernessReason.ReadDeleteConflict("b")
       ))
-      .projection("{rel: r} AS rels")
+      .projection(project = Seq("{rel: r} AS rels"), discard = Set("r", "anon_0", "anon_1"))
       .eager(ListSet(
         EagernessReason.ReadDeleteConflict("anon_0"),
         EagernessReason.ReadDeleteConflict("rels"),

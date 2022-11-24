@@ -406,7 +406,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     // given
     val node = varFor("n")
     val allNodes = AllNodesScan(node.name, Set.empty)
-    val projection = Projection(allNodes, Map("n.prop" -> nProp))
+    val projection = Projection(allNodes, Set.empty, Map("n.prop" -> nProp))
     val produceResult = ProduceResult(projection, Seq("n.prop"))
     val nodeOffset = 0
     val slots =
@@ -423,7 +423,8 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val result = rewriter(produceResult, lookup)
 
     // then
-    val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")(nProp)))
+    val newProjection =
+      Projection(allNodes, Set.empty, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")(nProp)))
     result should equal(
       ProduceResult(newProjection, Seq("n.prop"))
     )
@@ -433,7 +434,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
     // given
     val leaf = NodeByLabelScan("x", labelName("label"), Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> xPropKey))
+    val projection = Projection(leaf, Set.empty, Map("x" -> varFor("x"), "x.propertyKey" -> xPropKey))
     val tokenContext = mock[ReadTokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -454,6 +455,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     resultPlan should equal(
       Projection(
         leaf,
+        Set.empty,
         Map(
           "x" -> NodeFromSlot(0, "x"),
           "x.propertyKey" -> NodeProperty(slots.getLongOffsetFor("x"), tokenId, "x.propertyKey")(xPropKey)
@@ -465,7 +467,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("make sure to handle nullable nodes correctly") {
     // given
     val leaf = NodeByLabelScan("x", labelName("label"), Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> xPropKey))
+    val projection = Projection(leaf, Set.empty, Map("x" -> varFor("x"), "x.propertyKey" -> xPropKey))
     val tokenContext = mock[ReadTokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -487,6 +489,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     resultPlan should equal(
       Projection(
         leaf,
+        Set.empty,
         Map(
           "x" -> NullCheckVariable(0, NodeFromSlot(0, "x")),
           "x.propertyKey" -> NullCheckProperty(nodeOffset, NodeProperty(nodeOffset, tokenId, "x.propertyKey")(xPropKey))
@@ -498,9 +501,9 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
   test("argument on two sides of Apply") {
     val sr1 = Argument()
     val sr2 = Argument()
-    val pr1A = Projection(sr1, Map("x" -> literalInt(42)))
-    val pr1B = Projection(pr1A, Map("xx" -> varFor("x")))
-    val pr2 = Projection(sr2, Map("y" -> literalInt(666)))
+    val pr1A = Projection(sr1, Set.empty, Map("x" -> literalInt(42)))
+    val pr1B = Projection(pr1A, Set.empty, Map("xx" -> varFor("x")))
+    val pr2 = Projection(sr2, Set.empty, Map("y" -> literalInt(666)))
     val apply = Apply(pr1B, pr2)
 
     val lhsPipeline =
@@ -522,7 +525,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // then
 
-    val pr1BafterRewrite = Projection(pr1A, Map("xx" -> ReferenceFromSlot(0, "x")))
+    val pr1BafterRewrite = Projection(pr1A, Set.empty, Map("xx" -> ReferenceFromSlot(0, "x")))
     val applyAfterRewrite = Apply(pr1BafterRewrite, pr2)
 
     resultPlan should equal(

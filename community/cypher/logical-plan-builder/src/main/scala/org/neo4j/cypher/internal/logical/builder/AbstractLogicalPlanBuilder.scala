@@ -816,14 +816,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(projectionStrings: String*): IMPL = {
-    projection(Parser.parseProjections(projectionStrings: _*))
+    projectionWithDiscard(Parser.parseProjections(projectionStrings: _*), Set.empty)
   }
 
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
+    projectionWithDiscard(projectExpressions, Set.empty)
+  }
+
+  def projection(project: Seq[String], discard: Set[String]): IMPL = {
+    projectionWithDiscard(Parser.parseProjections(project: _*), discard)
+  }
+
+  def projectionWithDiscard(projectExpressions: Map[String, Expression], discard: Set[String]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenProjections = projectExpressions.map { case (name, expr) => name -> rewriteExpression(expr) }
       projectExpressions.foreach { case (name, expr) => newAlias(varFor(name), expr) }
-      Projection(lp, rewrittenProjections)(_)
+      Projection(lp, discard, rewrittenProjections)(_)
     }))
     self
   }
@@ -1889,19 +1897,26 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nestedPlanCollectExpressionProjection(resultList: String, resultPart: String): IMPL = {
     val inner = parseExpression(resultPart)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      Projection(lhs, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)
+      // TODO Set.empty?
+      Projection(lhs, Set.empty, Map(resultList -> NestedPlanCollectExpression(rhs, inner, "collect(...)")(NONE)))(_)
     ))
   }
 
   def nestedPlanExistsExpressionProjection(resultList: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      Projection(lhs, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
+      // TODO Set.empty?
+      Projection(lhs, Set.empty, Map(resultList -> NestedPlanExistsExpression(rhs, "exists(...)")(NONE)))(_)
     ))
   }
 
   def nestedPlanGetByNameExpressionProjection(columnNameToGet: String, resultName: String): IMPL = {
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
-      Projection(lhs, Map(resultName -> NestedPlanGetByNameExpression(rhs, columnNameToGet, "getByName(...)")(NONE)))(_)
+      // TODO Set.empty?
+      Projection(
+        lhs,
+        Set.empty,
+        Map(resultName -> NestedPlanGetByNameExpression(rhs, columnNameToGet, "getByName(...)")(NONE))
+      )(_)
     ))
   }
 

@@ -700,7 +700,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     expectCardinality(A * 2)
     expectPlanCardinality(
       {
-        case Projection(_, MapKeys("f")) => true
+        case Projection(_, _, MapKeys("f")) => true
       },
       A * 2
     )
@@ -738,7 +738,7 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     )
     expectPlanCardinality(
       {
-        case Projection(_, _) => true
+        case Projection(_, _, _) => true
       },
       A
     )

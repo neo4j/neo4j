@@ -205,7 +205,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("should group plans with same available symbols after selection") {
-    val plan: LogicalPlan = Projection(AllNodesScan("a", Set.empty), Map("b" -> varFor("a")))
+    val plan: LogicalPlan = Projection(AllNodesScan("a", Set.empty), Set.empty, Map("b" -> varFor("a")))
     val projectionPlanner: LeafPlanner = (_, _, _) => Set(plan)
     val queryPlanConfig = QueryPlannerConfiguration(
       pickBestCandidate = _ =>

@@ -407,7 +407,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("optional refslot value") {
     // given
     val arg = Argument(Set.empty)
-    val project = Projection(arg, Map("x" -> literalInt(1)))
+    val project = Projection(arg, Set.empty, Map("x" -> literalInt(1)))
     val plan = Optional(project)
 
     // when
@@ -635,7 +635,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("labelscan with projection") {
     // given
     val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
+    val projection = Projection(leaf, Set.empty, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
 
     // when
     val pipe = build(projection)
@@ -654,7 +654,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("labelscan with projection and alias") {
     // given
     val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Map("A" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
+    val projection = Projection(leaf, Set.empty, Map("A" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
 
     // when
     val pipe = build(projection)

@@ -205,7 +205,10 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.projectEndpoints("(a)-[rs*1..]->(b)", startInScope = false, endInScope = false)
         .|.filter("all(anon_4 IN rs WHERE single(anon_5 IN rs WHERE anon_4 = anon_5))")
         .|.argument("rs")
-        .projection("[r, q] AS rs")
+        .projection(
+          project = Seq("[r, q] AS rs"),
+          discard = Set("anon_2", "r", "q", "anon_1", "anon_0", "anon_3")
+        )
         .cartesianProduct()
         .|.allRelationshipsScan("(anon_2)-[q]->(anon_3)")
         .allRelationshipsScan("(anon_0)-[r]->(anon_1)")

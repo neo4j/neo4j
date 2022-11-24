@@ -493,7 +493,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     )(pos)
 
     val func = function("nodes", PathExpression(pathProjector)(pos))
-    val projection = Projection(originalExpand, Map("d" -> func))
+    val projection = Projection(originalExpand, Set.empty, Map("d" -> func))
     val distinct = Distinct(projection, Map("d" -> varFor("d")))
 
     assertNotRewritten(distinct)
