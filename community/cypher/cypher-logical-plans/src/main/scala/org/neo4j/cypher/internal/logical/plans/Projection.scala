@@ -20,16 +20,32 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * For each source row, produce the source row augmented with 'expressions'. For entry in
- * 'expressions', the produced row get an extra variable name as the key, with the value of
- * the expression.
+ * For each source row produce:
+ * - the projected expressions (`projectExpressions`)
+ * - columns from the source that are not discarded (`discardSymbols`)
+ * 
+ * For each entry in 'expressions', the produced row get an extra variable 
+ * name as the key, with the value of the expression.
+ * 
+ * Implementations are allowed to ignore the `discardSymbols` 
+ * (for performance reasons for example). 
  */
-case class Projection(override val source: LogicalPlan, projectExpressions: Map[String, Expression])(implicit
-idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
+case class Projection(
+  override val source: LogicalPlan,
+  discardSymbols: Set[String],
+  projectExpressions: Map[String, Expression]
+)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    discardSymbols.diff(source.availableSymbols).isEmpty,
+    s"Unknown discard symbols: ${discardSymbols.diff(source.availableSymbols)}"
+  )
+
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols ++ projectExpressions.keySet
+  val availableSymbols: Set[String] = (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
 }

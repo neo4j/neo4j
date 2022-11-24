@@ -818,7 +818,7 @@ case class InterpretedPipeMapper(
     }
 
     plan match {
-      case Projection(_, expressions) =>
+      case Projection(_, _, expressions) =>
         ProjectionPipe(source, InterpretedCommandProjection(Eagerly.immutableMapValues(expressions, buildExpression)))(
           id = id
         )

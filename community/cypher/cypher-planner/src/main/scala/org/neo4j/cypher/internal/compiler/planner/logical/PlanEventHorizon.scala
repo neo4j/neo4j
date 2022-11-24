@@ -162,7 +162,14 @@ case object PlanEventHorizon extends EventHorizonPlanner {
               context.staticComponents.logicalPlanProducer.planEmptyProjection(plan, context)
             }
           } else {
-            projection(limited, regularProjection.projections, Some(regularProjection.projections), context)
+            val keepAllColumns = query.tail.isEmpty
+            projection(
+              limited,
+              regularProjection.projections,
+              Some(regularProjection.projections),
+              keepAllColumns,
+              context
+            )
           }
         if (regularProjection.selections.isEmpty) {
           projected

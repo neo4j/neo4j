@@ -205,6 +205,7 @@ case object plannerQueryPartPlanner {
         val queryPlanWithProjection =
           context.staticComponents.logicalPlanProducer.planRegularProjection(
             queryPlan,
+            Set.empty,
             projectionsForQuery,
             None,
             context

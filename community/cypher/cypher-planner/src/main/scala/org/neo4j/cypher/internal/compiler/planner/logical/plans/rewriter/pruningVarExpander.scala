@@ -61,7 +61,7 @@ case object pruningVarExpander extends Rewriter {
           distinctSet += expand
           dependencies
 
-        case Projection(_, expressions) =>
+        case Projection(_, _, expressions) =>
           dependencies.map(_ ++ expressions.values.flatMap(_.dependencies.map(_.name)))
 
         case Selection(Ands(predicates), _) =>

@@ -175,7 +175,7 @@ case object planLegacyShortestPaths {
 
     // Projection with path
     val map = Map(pathName -> createPathExpression(shortestPath.expr.element))
-    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, Some(map), context)
+    val rhsProjection = lpp.planRegularProjection(rhsVarExpand, Set.empty, map, Some(map), context)
 
     // Filter using predicates
     val rhsFiltered = context.staticComponents.logicalPlanProducer.planSelection(rhsProjection, predicates, context)
@@ -187,7 +187,7 @@ case object planLegacyShortestPaths {
     val columnName = context.staticComponents.anonymousVariableNameGenerator.nextName
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
-    val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, Some(rhsProjMap), context)
+    val rhsProjected = lpp.planRegularProjection(rhsFiltered, Set.empty, rhsProjMap, Some(rhsProjMap), context)
     val sortDescription = Seq(Ascending(columnName))
     val plan =
       if (shortestPath.single) {

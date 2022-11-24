@@ -51,7 +51,7 @@ case object countStorePlanner {
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
         countStorePlan.map { plan =>
-          val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), context)
+          val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), keepAllColumns = true, context)
           context.staticComponents.logicalPlanProducer.planHorizonSelection(
             projectionPlan,
             selections.flatPredicates,

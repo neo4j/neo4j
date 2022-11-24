@@ -919,7 +919,7 @@ class SlottedPipeMapper(
         val nullableSlots = symbolsToSlots(inner.availableSymbols -- symbols, slots)
         OptionalSlottedPipe(source, nullableSlots)(id)
 
-      case Projection(_, expressions) =>
+      case Projection(_, _, expressions) =>
         val toProject = expressions collect {
           case (k, e) if isRefSlotAndNotAlias(slots, k) => k -> e
         }

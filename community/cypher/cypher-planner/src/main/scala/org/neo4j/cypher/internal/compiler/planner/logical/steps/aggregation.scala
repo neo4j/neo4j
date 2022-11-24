@@ -80,6 +80,7 @@ object aggregation {
     if (projectionMapForLimit.nonEmpty) {
       val projectedPlan = context.staticComponents.logicalPlanProducer.planRegularProjection(
         rewrittenPlan,
+        Set.empty,
         projectionMapForLimit,
         None,
         context

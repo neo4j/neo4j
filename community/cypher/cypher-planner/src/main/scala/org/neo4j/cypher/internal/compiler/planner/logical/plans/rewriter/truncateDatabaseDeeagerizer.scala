@@ -69,6 +69,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
       ) => true
     case ProduceResult(
         Projection(
+          _,
           ReturningTruncate(_),
           _
         ),
@@ -101,6 +102,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
       case TransactionApply(
           NodeLeafPlan(n),
           Projection(
+            _,
             DeletePlan(m),
             _
           ),
@@ -111,6 +113,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
       case Apply(
           NodeLeafPlan(n),
           Projection(
+            _,
             DeletePlan(m),
             _
           ),

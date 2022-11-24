@@ -238,8 +238,14 @@ object LogicalPlanToPlanBuilderString {
         s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectStrs(
           groupingExpressions
         )} """.trim
-      case Projection(_, projectExpressions) =>
-        projectStrs(projectExpressions)
+      case Projection(_, discardSymbols, projectExpressions) =>
+        if (discardSymbols.isEmpty) {
+          projectStrs(projectExpressions)
+        } else {
+          val projectString = projectStrs(projectExpressions)
+          val discardString = wrapInQuotationsAndMkString(discardSymbols)
+          s"project = Seq($projectString), discard = Set($discardString)"
+        }
       case UnwindCollection(_, variable, expression) =>
         projectStrs(Map(variable -> expression))
       case AllNodesScan(idName, argumentIds) =>

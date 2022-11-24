@@ -1698,6 +1698,7 @@ case class LogicalPlanProducer(
    */
   def planRegularProjection(
     inner: LogicalPlan,
+    discardSymbols: Set[String],
     expressions: Map[String, Expression],
     reported: Option[Map[String, Expression]],
     context: LogicalPlanningContext
@@ -1706,7 +1707,7 @@ case class LogicalPlanProducer(
     val solved = reported.fold(innerSolved) { reported =>
       innerSolved.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
     }
-    planRegularProjectionHelper(inner, expressions, context, solved)
+    planRegularProjectionHelper(inner, discardSymbols, expressions, context, solved)
   }
 
   /**
@@ -2212,7 +2213,12 @@ case class LogicalPlanProducer(
     expressions: Map[String, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    annotate(Projection(inner, expressions), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
+    annotate(
+      Projection(inner, Set.empty, expressions),
+      solveds.get(inner.id),
+      providedOrders.get(inner.id).fromLeft,
+      context
+    )
   }
 
   def planUnion(
@@ -2866,13 +2872,14 @@ case class LogicalPlanProducer(
 
   private def planRegularProjectionHelper(
     inner: LogicalPlan,
+    discardSymbols: Set[String],
     expressions: Map[String, Expression],
     context: LogicalPlanningContext,
     solved: SinglePlannerQuery
   ) = {
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
-    annotate(Projection(inner, expressions), solved, providedOrder, context)
+    annotate(Projection(inner, discardSymbols, expressions), solved, providedOrder, context)
   }
 
   /**
