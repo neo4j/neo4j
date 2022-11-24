@@ -8,3 +8,8 @@
 
 %:
 	dh $@
+
+# Ubuntu 22.04 uses zstd compression by default, which Debian does not support.
+# This forces debuild to use xz instead.
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
