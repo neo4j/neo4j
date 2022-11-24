@@ -53,6 +53,14 @@ class LiteralReplacementTest extends CypherFunSuite {
     assertRewrite("RETURN [1, 2, 3] as result", "RETURN $`  AUTOLIST0` as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
+  test("should extract literals in call clause") {
+    assertRewrite(
+      "CALL  { RETURN 1 as result } RETURN result",
+      "CALL { RETURN $`  AUTOINT0` as result } RETURN result",
+      Map("  AUTOINT0" -> 1)
+    )
+  }
+
   test("should not extract literals if configured to never extract") {
     assertRewrite("RETURN 1 as result", "RETURN 1 as result", Map.empty, extractLiterals = Never)
   }
