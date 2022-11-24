@@ -113,29 +113,37 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, true );
         while ( currentVersion >= lowestVersion )
         {
-            try ( var channel = channelAllocator.openLogChannel( currentVersion );
-                  var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
-                  var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
+            if ( logFileExist( currentVersion ) )
             {
-                log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
-                LogEntryDetachedCheckpoint checkpoint = null;
-                var lastCheckpointLocation = reader.getCurrentPosition();
-                var lastLocation = lastCheckpointLocation;
-                while ( logEntryCursor.next() )
+                try ( var channel = channelAllocator.openLogChannel( currentVersion );
+                        var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
+                        var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
                 {
-                    lastCheckpointLocation = lastLocation;
-                    LogEntry logEntry = logEntryCursor.get();
-                    checkpoint = verify( logEntry );
-                    lastLocation = reader.getCurrentPosition();
+                    log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
+                    LogEntryDetachedCheckpoint checkpoint = null;
+                    var lastCheckpointLocation = reader.getCurrentPosition();
+                    var lastLocation = lastCheckpointLocation;
+                    while ( logEntryCursor.next() )
+                    {
+                        lastCheckpointLocation = lastLocation;
+                        LogEntry logEntry = logEntryCursor.get();
+                        checkpoint = verify( logEntry );
+                        lastLocation = reader.getCurrentPosition();
+                    }
+                    if ( checkpoint != null )
+                    {
+                        return Optional.of( new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
+                    }
                 }
-                if ( checkpoint != null )
-                {
-                    return Optional.of( new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
-                }
-                currentVersion--;
             }
+            currentVersion--;
         }
         return Optional.empty();
+    }
+
+    private boolean logFileExist( long currentVersion )
+    {
+        return context.getFileSystem().fileExists( fileHelper.getLogFileForVersion( currentVersion ) );
     }
 
     @Override
@@ -155,24 +163,27 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         var checkpoints = new ArrayList<CheckpointInfo>();
         while ( currentVersion <= highestVersion )
         {
-            try ( var channel = channelAllocator.openLogChannel( currentVersion );
-                    var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
-                    var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
+            if ( logFileExist( currentVersion ) )
             {
-                log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
-                LogEntryDetachedCheckpoint checkpoint;
-                var lastCheckpointLocation = reader.getCurrentPosition();
-                var lastLocation = lastCheckpointLocation;
-                while ( logEntryCursor.next() )
+                try ( var channel = channelAllocator.openLogChannel( currentVersion );
+                        var reader = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, context.getMemoryTracker() );
+                        var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
                 {
-                    lastCheckpointLocation = lastLocation;
-                    LogEntry logEntry = logEntryCursor.get();
-                    checkpoint = verify( logEntry );
-                    checkpoints.add(  new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
-                    lastLocation = reader.getCurrentPosition();
+                    log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
+                    LogEntryDetachedCheckpoint checkpoint;
+                    var lastCheckpointLocation = reader.getCurrentPosition();
+                    var lastLocation = lastCheckpointLocation;
+                    while ( logEntryCursor.next() )
+                    {
+                        lastCheckpointLocation = lastLocation;
+                        LogEntry logEntry = logEntryCursor.get();
+                        checkpoint = verify( logEntry );
+                        checkpoints.add( new CheckpointInfo( checkpoint, lastCheckpointLocation ) );
+                        lastLocation = reader.getCurrentPosition();
+                    }
                 }
-                currentVersion++;
             }
+            currentVersion++;
         }
         return checkpoints;
     }

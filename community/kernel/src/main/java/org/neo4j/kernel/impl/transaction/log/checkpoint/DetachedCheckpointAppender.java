@@ -81,13 +81,27 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     {
         this.storeId = context.getStoreId();
         logVersionRepository = requireNonNull( context.getLogVersionRepository() );
-        long initialVersion = logVersionRepository.getCheckpointLogVersion();
+        long initialVersion = getCheckpointLogVersion();
         channel = channelAllocator.createLogChannel( initialVersion, context::getLastCommittedTransactionId );
         context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), initialVersion );
         channel.position( channel.size() );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );
         checkpointWriter = new DetachedCheckpointLogEntryWriter( writer );
+    }
+
+    private long getCheckpointLogVersion()
+    {
+        long metadataStoreVersion = logVersionRepository.getCheckpointLogVersion();
+        long highestLogVersion = checkpointFile.getHighestLogVersion();
+        if ( metadataStoreVersion >= highestLogVersion )
+        {
+            return metadataStoreVersion;
+        }
+        log.warn( "Metadata store checkpoint version pointing to a file number %d that is lower to higher available file number %d. " +
+                "Update metadata store to point to higher file.", metadataStoreVersion, highestLogVersion );
+        logVersionRepository.setCheckpointLogVersion( highestLogVersion, CursorContext.NULL );
+        return highestLogVersion;
     }
 
     @Override

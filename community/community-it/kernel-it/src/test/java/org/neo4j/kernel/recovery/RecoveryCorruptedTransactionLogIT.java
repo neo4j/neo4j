@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -80,7 +78,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
-import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
@@ -89,7 +86,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
@@ -371,48 +367,6 @@ class RecoveryCorruptedTransactionLogIT
                 .hasMessage( "Transaction log files with version 0 has 50 unreadable bytes. Was able to read upto " +
                         (996 + txOffsetAfterStart) +
                         " but " + (1046 + txOffsetAfterStart) + " is available." );
-    }
-
-    @Test
-    void restoreCheckpointLogVersionFromFileVersion() throws IOException
-    {
-        DatabaseManagementService managementService = databaseFactory.build();
-        GraphDatabaseAPI database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        logFiles = buildDefaultLogFiles( getStoreId( database ) );
-        generateTransaction( database );
-        managementService.shutdown();
-
-        int rotations = 10;
-        try ( Lifespan lifespan = new Lifespan( logFiles ) )
-        {
-            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
-            DetachedCheckpointAppender checkpointAppender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
-
-            for ( int i = 0; i < rotations; i++ )
-            {
-                checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, HEADER_OFFSET ), Instant.now(), "test" + i);
-                checkpointAppender.rotate();
-            }
-        }
-
-        for ( int i = rotations - 1; i > 0; i-- )
-        {
-            var restartedDbms = databaseFactory.build();
-            try
-            {
-                StorageEngine storageEngine =
-                        ((GraphDatabaseAPI) restartedDbms.database( DEFAULT_DATABASE_NAME )).getDependencyResolver().resolveDependency( StorageEngine.class );
-                assertEquals( i, storageEngine.metadataProvider().getCheckpointLogVersion() );
-            }
-            finally
-            {
-                restartedDbms.shutdown();
-            }
-            // we remove 3 checkpoints: 1 from shutdown and 1 from recovery and one that we created in a loop before
-            removeLastCheckpointRecordFromLastLogFile();
-            removeLastCheckpointRecordFromLastLogFile();
-            removeLastCheckpointRecordFromLastLogFile();
-        }
     }
 
     @Test
