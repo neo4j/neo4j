@@ -383,7 +383,7 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             return this;
         }
 
-        public InstanceNodeBuilder asDraining() {
+        public InstanceNodeBuilder asDeallocating() {
             node.setProperty(INSTANCE_STATUS_PROPERTY, TopologyGraphDbmsModel.InstanceStatus.DEALLOCATING.name());
             return this;
         }
