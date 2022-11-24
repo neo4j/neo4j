@@ -252,7 +252,7 @@ trait UpdateGraph {
   def writeOnlyHeadOverlaps(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  ): Seq[EagernessReason.Reason] = {
     if (!containsUpdates) {
       Seq.empty
     } else {
@@ -505,7 +505,7 @@ trait UpdateGraph {
   def deleteOverlap(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  ): Seq[EagernessReason.Reason] = {
     val identifiersToRead =
       qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
         _.name
@@ -526,19 +526,19 @@ trait UpdateGraph {
   private def deleteLabelExpressionOverlap(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  )(implicit semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
+  ): Seq[EagernessReason.Reason] = {
     val relevantNodes =
       qgWithInfo.queryGraph.allPatternNodesRead
     val nodesWithLabelOverlap = relevantNodes
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
         readNode != deletedNode &&
-        getDeleteOverlapWithLabelExpression(
-          qgWithInfo,
-          readNode,
-          deletedNode,
-          leafPlansPredicatesResolver
-        )
+          getDeleteOverlapWithLabelExpression(
+            qgWithInfo,
+            readNode,
+            deletedNode,
+            leafPlansPredicatesResolver
+          )
       }
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
 
