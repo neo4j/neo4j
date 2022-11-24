@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
@@ -372,5 +373,138 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       queryGraphSolver
     )
     // if we fail planning for this query the test fails
+  }
+
+  test("should discard unused variable") {
+
+    val plan = planner.plan(
+      """MATCH (n1)
+        |WITH collect(n1.value) AS bigList
+        |WITH size(bigList) AS listSize
+        |MATCH (foo) WHERE foo.size = listSize
+        |RETURN foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("foo")
+        .filter("foo.size = listSize")
+        .apply()
+        .|.allNodeScan("foo", "listSize")
+        .projection(project = Seq("size(bigList) AS listSize"), discard = Set("bigList"))
+        .aggregation(Seq.empty, Seq("collect(n1.value) AS bigList"))
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should keep used variable") {
+
+    val plan = planner.plan(
+      """MATCH (n1)
+        |WITH n1, n1.foo AS foo
+        |RETURN n1, foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1", "foo")
+        .projection("n1.foo AS foo")
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should discard variable that is projected for ORDER BY") {
+
+    val plan = planner.plan(
+      """MATCH (n1)
+        |WITH n1.foo AS foo ORDER BY n1.bar
+        |RETURN foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("foo")
+        .projection(project = Seq("n1.foo AS foo"), discard = Set("n1", "n1.bar"))
+        .sort(Seq(Ascending("n1.bar")))
+        .projection("n1.bar AS `n1.bar`")
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should keep variable that is projected for ORDER BY and kept in WITH") {
+
+    val plan = planner.plan(
+      """MATCH (n1)
+        |WITH n1.bar AS bar, n1.foo AS foo ORDER BY bar
+        |RETURN bar, foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("bar", "foo")
+        .projection(project = Seq("n1.foo AS foo"), discard = Set("n1"))
+        .sort(Seq(Ascending("bar")))
+        .projection("n1.bar AS bar")
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should keep more variables that are projected for ORDER BY and kept in WITH") {
+
+    val plan = planner.plan(
+      """MATCH (n1)
+        |WITH n1, n1.bar AS bar, n1.foo AS foo ORDER BY bar
+        |RETURN n1, bar, foo""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1", "bar", "foo")
+        .projection("n1.foo AS foo")
+        .sort(Seq(Ascending("bar")))
+        .projection("n1.bar AS bar")
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should not plan projection directly before RETURN") {
+
+    val plan = planner.plan(
+      """MATCH (n1), (n2)
+        |RETURN n1""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1")
+        .cartesianProduct()
+        .|.allNodeScan("n2")
+        .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should keep everything and project one extra variable") {
+    val plan = planner.plan(
+      """MATCH (n1), (n2)
+        |WITH n1, n2, n1.prop AS prop
+        |RETURN *""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1", "n2", "prop")
+        .projection("cacheN[n1.prop] AS prop")
+        .cartesianProduct(fromSubquery = false)
+        .|.allNodeScan("n2")
+        .cacheProperties("cacheNFromStore[n1.prop]")
+        .allNodeScan("n1")
+        .build()
+    )
   }
 }
