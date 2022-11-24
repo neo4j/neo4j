@@ -144,6 +144,7 @@ class DiagnosticsReportCommandIT {
         // Run command, should detect running instance
         String[] args = {"heap", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
+        var signalToIgnoreThisTest = new MutableBoolean();
         withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
             try {
                 DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
@@ -151,12 +152,16 @@ class DiagnosticsReportCommandIT {
                 diagnosticsReportCommand.execute();
             } catch (CommandFailedException e) {
                 if (e.getMessage().equals("Unknown classifier: heap")) {
-                    return; // If we get attach API is not available for example in some IBM jdk installs, ignore this
-                    // test
+                    signalToIgnoreThisTest.setTrue();
                 }
                 throw e;
             }
         });
+
+        // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+        if (signalToIgnoreThisTest.isTrue()) {
+            return;
+        }
 
         // Verify that we took a heap dump
         Path reports = testDirectory.directory("reports");
