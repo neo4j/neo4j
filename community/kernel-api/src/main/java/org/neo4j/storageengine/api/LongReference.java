@@ -32,5 +32,5 @@ public class LongReference implements Reference {
         return id == NULL ? NULL_REFERENCE : new LongReference(id);
     }
 
-    public static Reference NULL_REFERENCE = new LongReference(NULL);
+    public static final Reference NULL_REFERENCE = new LongReference(NULL);
 }

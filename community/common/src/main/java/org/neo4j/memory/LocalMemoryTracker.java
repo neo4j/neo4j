@@ -37,7 +37,7 @@ import java.util.function.BooleanSupplier;
  * allocations.
  */
 public class LocalMemoryTracker implements LimitedMemoryTracker {
-    public static Monitor NO_MONITOR = allocatedBytesNative -> {};
+    public static final Monitor NO_MONITOR = allocatedBytesNative -> {};
     public static final long NO_LIMIT = 0;
     private static final long INFINITY = Long.MAX_VALUE;
     private static final long DEFAULT_GRAB_SIZE = 1024;

@@ -42,7 +42,7 @@ public class HttpExecutionPlanDescription implements ExecutionPlanDescription {
     private final ProfilerStatistics profilerStatistics;
     private static final DefaultValueMapper valueMapper = new DefaultValueMapper(null);
 
-    public HttpExecutionPlanDescription(
+    private HttpExecutionPlanDescription(
             String name,
             List<ExecutionPlanDescription> children,
             Map<String, Object> arguments,
@@ -77,11 +77,13 @@ public class HttpExecutionPlanDescription implements ExecutionPlanDescription {
         return children;
     }
 
+    @SuppressWarnings("unchecked")
     private static Set<String> extractIdentifiers(ListValue identifiers) {
         List<String> identifierList = (List<String>) identifiers.map(valueMapper);
         return new HashSet<>(identifierList);
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, Object> extractArguments(MapValue argumentsMapValue) {
         return (Map<String, Object>) argumentsMapValue.map(valueMapper);
     }
@@ -116,7 +118,7 @@ public class HttpExecutionPlanDescription implements ExecutionPlanDescription {
         return profilerStatistics;
     }
 
-    public static ExecutionPlanDescription EMPTY = new ExecutionPlanDescription() {
+    public static final ExecutionPlanDescription EMPTY = new ExecutionPlanDescription() {
         @Override
         public String getName() {
             return "";

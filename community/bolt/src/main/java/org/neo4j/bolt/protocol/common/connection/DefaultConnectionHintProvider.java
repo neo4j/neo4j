@@ -24,18 +24,20 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.values.storable.Values;
 
-public class DefaultConnectionHintProvider {
-
+public final class DefaultConnectionHintProvider {
     private static final String HINT_CONNECTION_RECV_TIMEOUT_SECONDS = "connection.recv_timeout_seconds";
 
-    public static Function<Config, ConnectionHintProvider> connectionHintProviderFunction = config -> hints -> {
-        if (config.get(BoltConnector.connection_keep_alive_type) == BoltConnector.KeepAliveRequestType.ALL) {
-            var keepAliveInterval = config.get(BoltConnector.connection_keep_alive);
-            var keepAliveProbes = config.get(BoltConnector.connection_keep_alive_probes);
+    public static final Function<Config, ConnectionHintProvider> CONNECTION_HINT_PROVIDER_FUNCTION =
+            config -> hints -> {
+                if (config.get(BoltConnector.connection_keep_alive_type) == BoltConnector.KeepAliveRequestType.ALL) {
+                    var keepAliveInterval = config.get(BoltConnector.connection_keep_alive);
+                    var keepAliveProbes = config.get(BoltConnector.connection_keep_alive_probes);
 
-            hints.add(
-                    HINT_CONNECTION_RECV_TIMEOUT_SECONDS,
-                    Values.longValue(keepAliveInterval.toSeconds() * keepAliveProbes));
-        }
-    };
+                    hints.add(
+                            HINT_CONNECTION_RECV_TIMEOUT_SECONDS,
+                            Values.longValue(keepAliveInterval.toSeconds() * keepAliveProbes));
+                }
+            };
+
+    private DefaultConnectionHintProvider() {}
 }

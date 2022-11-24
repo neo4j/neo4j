@@ -42,8 +42,8 @@ import org.neo4j.storageengine.api.format.CapabilityType;
  * Also takes care of migration from versions before 5.0.
  */
 public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
-    public static String LEGACY_LABEL_INDEX_STORE = "neostore.labelscanstore.db";
-    public static String LEGACY_RELATIONSHIP_TYPE_INDEX_STORE = "neostore.relationshiptypescanstore.db";
+    private static final String LEGACY_LABEL_INDEX_STORE = "neostore.labelscanstore.db";
+    private static final String LEGACY_RELATIONSHIP_TYPE_INDEX_STORE = "neostore.relationshiptypescanstore.db";
 
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;

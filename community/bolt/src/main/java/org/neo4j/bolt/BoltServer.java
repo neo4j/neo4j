@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt;
 
-import static org.neo4j.bolt.protocol.common.connection.DefaultConnectionHintProvider.connectionHintProviderFunction;
+import static org.neo4j.bolt.protocol.common.connection.DefaultConnectionHintProvider.CONNECTION_HINT_PROVIDER_FUNCTION;
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 import static org.neo4j.function.Suppliers.lazySingleton;
@@ -161,7 +161,7 @@ public class BoltServer extends LifecycleAdapter {
         this.loopbackAuthManager = loopbackAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.connectionHintProvider = connectionHintProviderFunction.apply(config);
+        this.connectionHintProvider = CONNECTION_HINT_PROVIDER_FUNCTION.apply(config);
 
         this.executorServiceFactory = new ThreadPoolExecutorServiceFactory(
                 config.get(BoltConnector.thread_pool_min_size),
