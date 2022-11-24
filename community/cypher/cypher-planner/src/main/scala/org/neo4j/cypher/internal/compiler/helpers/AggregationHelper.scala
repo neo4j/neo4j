@@ -50,7 +50,7 @@ object AggregationHelper {
   ): T = {
     aggregation match {
       case f: FunctionInvocation =>
-        f.name match {
+        f.name.toLowerCase match {
           case "min" =>
             check(f, minResult, otherResult)
           case "max" =>

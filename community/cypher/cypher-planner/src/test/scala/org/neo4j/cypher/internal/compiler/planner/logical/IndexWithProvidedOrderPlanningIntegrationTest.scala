@@ -3384,7 +3384,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   for (
     (TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <-
-      List((ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))
+      List((ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"), (ASCENDING_BOTH, "miN"), (DESCENDING_BOTH, "maX"))
   ) {
 
     // Node label scan
