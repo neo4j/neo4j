@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -71,10 +72,17 @@ public class DbRepresentation
                 DbRepresentation result = new DbRepresentation();
                 for ( Node node : transaction.getAllNodes() )
                 {
-                    NodeRep nodeRep = new NodeRep( node );
-                    result.nodes.put( node.getId(), nodeRep );
-                    result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    try
+                    {
+                        NodeRep nodeRep = new NodeRep( node );
+                        result.nodes.put( node.getId(), nodeRep );
+                        result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
+                        result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    }
+                    catch ( EntityNotFoundException e )
+                    {
+                        // ignore
+                    }
                 }
                 for ( IndexDefinition indexDefinition : schema.getIndexes() )
                 {
@@ -270,7 +278,7 @@ public class DbRepresentation
         private final long highestRelationshipId;
         private final long id;
 
-        NodeRep( Node node )
+        NodeRep( Node node ) throws EntityNotFoundException
         {
             id = node.getId();
             properties = new PropertiesRep( node, node.getId() );
