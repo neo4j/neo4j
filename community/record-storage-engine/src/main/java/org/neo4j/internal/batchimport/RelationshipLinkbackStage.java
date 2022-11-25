@@ -20,6 +20,7 @@
 package org.neo4j.internal.batchimport;
 
 import static org.neo4j.internal.batchimport.RecordIdIterator.backwards;
+import static org.neo4j.internal.batchimport.staging.ReadRecordsStep.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 
 import java.util.function.Function;
@@ -76,8 +77,9 @@ public class RelationshipLinkbackStage extends Stage {
                 config,
                 true,
                 store,
+                contextFactory,
                 new RecordDataAssembler<>(store::newRecord, readFilter, true),
-                contextFactory));
+                NO_MONITOR));
         add(new RelationshipLinkbackStep(control(), config, cache, changeFilter, nodeTypes, additionalStatsProvider));
         add(new UpdateRecordsStep<>(
                 control(),

@@ -37,8 +37,11 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
 public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends ProcessorStep<LongIterator> {
+    public static final Monitor NO_MONITOR = id -> {};
+
     private final RecordStore<RECORD> store;
     private final int batchSize;
+    private final Monitor monitor;
     private final RecordDataAssembler<RECORD> assembler;
 
     public ReadRecordsStep(
@@ -47,13 +50,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
             boolean inRecordWritingStage,
             RecordStore<RECORD> store,
             CursorContextFactory contextFactory) {
-        this(
-                control,
-                config,
-                inRecordWritingStage,
-                store,
-                new RecordDataAssembler<>(store::newRecord, true),
-                contextFactory);
+        this(control, config, inRecordWritingStage, store, contextFactory, defaultAssembler(store), NO_MONITOR);
     }
 
     public ReadRecordsStep(
@@ -61,8 +58,9 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
             Configuration config,
             boolean inRecordWritingStage,
             RecordStore<RECORD> store,
+            CursorContextFactory contextFactory,
             RecordDataAssembler<RECORD> converter,
-            CursorContextFactory contextFactory) {
+            Monitor monitor) {
         super(
                 control,
                 ">",
@@ -77,6 +75,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();
+        this.monitor = monitor;
     }
 
     private static boolean parallelReading(Configuration config, boolean inRecordWritingStage) {
@@ -105,6 +104,8 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
             while (hasNext) {
                 if (assembler.append(store, cursor, batch, id, i)) {
                     i++;
+                } else {
+                    monitor.recordSkipped(id);
                 }
                 if (hasNext = idRange.hasNext()) {
                     id = idRange.next();
@@ -113,5 +114,14 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         }
 
         sender.send(assembler.cutOffAt(batch, i));
+    }
+
+    public interface Monitor {
+        void recordSkipped(long id);
+    }
+
+    public static <RECORD extends AbstractBaseRecord> RecordDataAssembler<RECORD> defaultAssembler(
+            RecordStore<RECORD> store) {
+        return new RecordDataAssembler<>(store::newRecord, true);
     }
 }
