@@ -44,7 +44,9 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
       qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
         case (acc, current) => current match {
             case HasLabels(variable @ Variable(varName), labels)
-              if !skipIDs.contains(varName) && context.planContext.canLookupNodesByLabel && (qg.patternNodes(
+              if !skipIDs.contains(
+                varName
+              ) && context.staticComponents.planContext.canLookupNodesByLabel && (qg.patternNodes(
                 varName
               ) && !qg.argumentIds(varName)) =>
               val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
@@ -77,7 +79,7 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
         val hints = qg.hints.collect {
           case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
         }
-        context.logicalPlanProducer.planIntersectNodeByLabelsScan(
+        context.staticComponents.logicalPlanProducer.planIntersectNodeByLabelsScan(
           variable,
           labels.toSeq,
           Seq(HasLabels(variable, labels.toSeq)(InputPosition.NONE)),
