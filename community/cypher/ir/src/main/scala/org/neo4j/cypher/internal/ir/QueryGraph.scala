@@ -246,14 +246,21 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     inlinedTypes ++ whereClauseTypes ++ whereClauseLabelOrTypes
   }
 
+  private def traverseAllQueryGraphs[A](f: QueryGraph => Set[A]): Set[A] =
+    f(this) ++
+      optionalMatches.flatMap(_.traverseAllQueryGraphs(f))
+
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
-    possibleLabelsOnNode(node) ++ optionalMatches.flatMap(_.allPossibleLabelsOnNode(node))
+    traverseAllQueryGraphs(_.possibleLabelsOnNode(node))
 
   def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
-    possibleTypesOnRel(rel) ++ optionalMatches.flatMap(_.allPossibleTypesOnRel(rel))
+    traverseAllQueryGraphs(_.possibleTypesOnRel(rel))
 
   def allKnownPropertiesOnIdentifier(idName: String): Set[PropertyKeyName] =
-    knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
+    traverseAllQueryGraphs(_.knownProperties(idName))
+
+  def allSelections: Selections =
+    Selections(traverseAllQueryGraphs(_.selections.predicates))
 
   def findRelationshipsEndingOn(id: String): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }

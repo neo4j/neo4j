@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
+import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.annotation.tailrec
@@ -51,6 +53,12 @@ trait UpdateGraph {
     case _:Property => true
     case _:ContainerIndex => true
   }
+
+  private def getMaybeQueryGraph: Option[QueryGraph] =
+    this match {
+      case qg: QueryGraph => Some(qg)
+      case _ => None
+    }
 
   /*
    * Finds all nodes being created with CREATE ...
@@ -102,12 +110,13 @@ trait UpdateGraph {
   }).toSet
 
   /*
-   * Finds all node properties being created with CREATE (:L)
+   * Finds all labels for each node being created
+   * CREATE (:A) CREATE (:B:C) would make a Set(Set(A), Set(B,C))
    */
-  lazy val createLabels: Set[LabelName] =
-    createPatterns.flatMap(_.nodes.flatMap(_.labels)).toSet ++
-    mergeNodePatterns.flatMap(_.createNode.labels) ++
-    mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
+  lazy val createLabels: Set[Set[LabelName]] =
+    createPatterns.flatMap(_.nodes).map(_.labels.toSet).toSet ++
+      mergeNodePatterns.map(_.createNode.labels.toSet) ++
+      mergeRelationshipPatterns.flatMap(_.createNodes).map(_.labels.toSet)
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
@@ -192,7 +201,7 @@ trait UpdateGraph {
     }
   }
 
-  def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     containsUpdates && {
       val readQg = qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
 
@@ -220,26 +229,73 @@ trait UpdateGraph {
 
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
-      val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
-      val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
-      val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
+      lazy val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
+      lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
+      val unstableIdentifierNeedsEager = currentNode match {
+        case _: StableIdentifier => false
+        case _: UnstableIdentifier =>
+          val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
+          val noLabelOrPropOverlap = labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
 
-      val noLabelOrPropOverlap = currentNode match {
-        case _:UnstableIdentifier => labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes
-        case _:StableIdentifier => false
+          // MATCH () CREATE/MERGE (...)?
+          noLabelOrPropOverlap ||
+          // MATCH (A&B|!C) CREATE (:A:B)
+          ((labelsOnCurrentNode.nonEmpty || propertiesOnCurrentNode.nonEmpty) && labelAndPropertyExpressionsOverlap(
+            qgWithInfo,
+            labelsToCreate,
+            NodesToCheckOverlap(None, currentNode.name),
+            propertiesToCreate
+          )) ||
+          // MATCH ({prop:42}) CREATE ({prop:...})
+          (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.exists(propertiesToCreate.overlaps))
       }
 
-      noLabelOrPropOverlap || //MATCH () CREATE/MERGE (...)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.nonEmpty &&
-            (labelsOnCurrentNode subsetOf labelsToCreate)) || //MATCH (:A:B) CREATE (:A:B:C)?
-          (!currentNode.isStable &&
-            labelsOnCurrentNode.isEmpty &&
-            propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || //MATCH ({prop:42}) CREATE ({prop:...})
-          //MATCH (n:A), (m:B) REMOVE n:B
-          //MATCH (n:A), (m:A) REMOVE m:A
-          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+      unstableIdentifierNeedsEager ||
+      // MATCH (n:A), (m:B) REMOVE n:B
+      // MATCH (n:A), (m:A) REMOVE m:A
+      (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+
     }
+  }
+
+  /**
+   * Uses an expression evaluator to figure out if we have a label or a property overlap.
+   * For example, if we have `CREATE (:A:B{prop:foo})` we need to solve the predicates given labels A, B and prop (and no other labels or properties).
+   * For predicates which contains non label expressions or properties we default to true.
+   *
+   * If we have multiple predicates, we will only have an overlap if all predicates are evaluated to true.
+   * For example, if we have `MATCH (n) WHERE n:A AND n:B CREATE (:A)` we don't need to insert an eager since the predicate `(n:B)` will be evaluated to false.
+   *
+   * @param qgWithInfo
+   * @param possibleLabelCombinations A set of all possible combinations of Labels
+   * @param nodes                     The nodes we are checking overlaps between
+   * @param propertiesToCreate - the created node and property
+   * @return
+   */
+  private def labelAndPropertyExpressionsOverlap(
+    qgWithInfo: QgWithLeafInfo,
+    possibleLabelCombinations: Set[Set[LabelName]],
+    nodes: NodesToCheckOverlap,
+    propertiesToCreate: CreatesPropertyKeys
+  ): Boolean = {
+    val selections = qgWithInfo.queryGraph.allSelections
+
+    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode)).toList
+
+    possibleLabelCombinations.exists { labelsToCreate =>
+      val overlap = CreateOverlaps.overlap(unstableNodePredicates, labelsToCreate.map(_.name), propertiesToCreate)
+      overlap match {
+        case CreateOverlaps.NoPropertyOverlap                                                 => false
+        case CreateOverlaps.NoLabelOverlap                                                    => false
+        case CreateOverlaps.Overlap(unprocessedExpressions, propertiesOverlap, labelsOverlap) => true
+      }
+    }
+  }
+
+  private case class NodesToCheckOverlap(updatedNode: Option[String], matchedNode: String) {
+
+    def contains(node: String): Boolean =
+      updatedNode.contains(node) || matchedNode == node
   }
 
   //if we do match delete and merge we always need to be eager
@@ -375,10 +431,74 @@ trait UpdateGraph {
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
-  def deleteOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  def deleteOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
     val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++ qgWithInfo.queryGraph.argumentIds
-    (identifiersToRead intersect identifiersToDelete).nonEmpty
+    (identifiersToRead intersect identifiersToDelete).nonEmpty || deleteLabelExpressionOverlap(qgWithInfo)
+  }
+
+  /**
+   * Checks if any unstable node can have an overlap with the deleted node.
+   *
+   * Note: If the deleted node is also an unstable node, we will always have overlap.
+   * @return the nodes which are overlapping, or None if there is no overlap
+   */
+  private def deleteLabelExpressionOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
+    val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable)
+    val deletedNodes = relevantNodes.filter(relNode => identifiersToDelete.contains(relNode.name)) ++
+      identifiersToDelete.filterNot(relevantNodes.map(_.name)).map(StableIdentifier)
+    val unstableNodesToDelete = deletedNodes.filterNot(_.isStable)
+    lazy val nodesWithLabelOverlap = relevantNodes.filterNot(_.isStable)
+      .flatMap(unstableNode => deletedNodes.map((unstableNode, _)))
+      .filter { case (unstableNode, deletedNode) =>
+        unstableNode.name == deletedNode.name ||
+          getDeleteOverlapWithLabelExpression(
+            qgWithInfo,
+            unstableNode,
+            deletedNode
+          )
+      }
+
+    unstableNodesToDelete.nonEmpty || nodesWithLabelOverlap.nonEmpty
+  }
+
+  /**
+   * Checks if there is any overlap between the unstable node and deleted node.
+   * This is done by checking if there is any set of labels which evaluates both the deleted nodes label expression and the unstable nodes label expression
+   * to true.
+   *
+   * E.g
+   * Given:
+   * unstable node: x
+   * deleted node: y
+   *
+   * Expression                           Return
+   * MATCH (x:A), (y:B) DELETE y          true (overlap if we have a node with both label "A" and Label "B")
+   * MATCH (x:!A), (y:A) DELETE y         false (both expressions can never be true)
+   *
+   * @param qgWithInfo query graph
+   * @param unstableNode the node for which to check if there exists overlap with the delete node
+   * @param deletedNode the deleted node
+   * @return true if there exists any chance of overlap
+   */
+  private def getDeleteOverlapWithLabelExpression(
+    qgWithInfo: QgWithLeafInfo,
+    unstableNode: QgWithLeafInfo.Identifier,
+    deletedNode: QgWithLeafInfo.Identifier
+  ): Boolean = {
+    val selections =
+      qgWithInfo.queryGraph.allSelections ++
+        getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections())
+
+    val unstableNodePredicates = selections.predicatesGiven(Set(unstableNode.name)).toList
+    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode.name)).toList
+
+    val overlap = DeleteOverlaps.overlap(unstableNodePredicates, deletedNodePredicates)
+
+    overlap match {
+      case DeleteOverlaps.NoLabelOverlap                                 => false
+      case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+    }
   }
 
   def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
