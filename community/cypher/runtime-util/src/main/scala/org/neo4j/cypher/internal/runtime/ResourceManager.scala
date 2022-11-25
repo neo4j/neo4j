@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
 import org.neo4j.cypher.internal.runtime.SingleThreadedResourcePool.SHALLOW_SIZE
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
+import org.neo4j.internal.kernel.api.AutoCloseablePlus.UNTRACKED
 import org.neo4j.internal.kernel.api.CloseListener
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
@@ -134,7 +135,6 @@ trait ResourcePool {
   def add(resource: AutoCloseablePlus): Unit
   def remove(resource: AutoCloseablePlus): Boolean
   def all(): Iterator[AutoCloseablePlus]
-  def clear(): Unit
   def closeAll(): Unit
   override def toString: String = all().toList.toString()
 }
@@ -153,10 +153,18 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
   memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize)
 
   def add(resource: AutoCloseablePlus): Unit = {
-    ensureCapacity()
-    closeables(highMark) = resource
-    resource.setToken(highMark)
-    highMark += 1
+    val i = resource.getToken
+    if (i == UNTRACKED) {
+      ensureCapacity()
+      closeables(highMark) = resource
+      resource.setToken(highMark)
+      highMark += 1
+    } else {
+      // resource already there, make sure it is the same object though
+      if (!(closeables(i) eq resource)) {
+        throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
+      }
+    }
   }
 
   def remove(resource: AutoCloseablePlus): Boolean = {
@@ -165,6 +173,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
       if (!(closeables(i) eq resource)) {
         throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
+      resource.setToken(UNTRACKED)
       closeables(i) = null
       if (i == highMark - 1) { // we removed the last item, hence no holes
         highMark -= 1
@@ -196,7 +205,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
     }
   }
 
-  def clear(): Unit = {
+  private def clear(): Unit = {
     if (highMark > 0) {
       highMark = 0
       memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE)
@@ -211,6 +220,7 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
         val resource = closeables(i)
         if (resource != null) {
           monitor.close(resource)
+          resource.setToken(UNTRACKED)
           resource.setCloseListener(null) // We don't want a call to onClosed any longer
           resource.close()
         }
@@ -271,8 +281,6 @@ class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
   override def remove(resource: AutoCloseablePlus): Boolean = resources.remove(resource)
 
   override def all(): Iterator[AutoCloseablePlus] = resources.iterator().asScala
-
-  override def clear(): Unit = resources.clear()
 
   override def closeAll(): Unit = {
     val iterator = resources.iterator()

@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 public abstract class DefaultCloseListenable implements AutoCloseablePlus {
     protected CloseListener closeListener;
-    private int token;
+    private int token = UNTRACKED;
 
     @Override
     public final void setCloseListener(CloseListener closeListener) {

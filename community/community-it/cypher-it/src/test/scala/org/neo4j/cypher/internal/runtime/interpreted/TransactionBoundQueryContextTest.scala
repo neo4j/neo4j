@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.DummyResource
+import org.neo4j.cypher.internal.runtime.DummyResource.verifyClose
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -42,7 +44,6 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -392,9 +393,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
-    val resource1 = mock[AutoCloseablePlus]
-    val resource2 = mock[AutoCloseablePlus]
-    val resource3 = mock[AutoCloseablePlus]
+    val resource1 = new DummyResource
+    val resource2 = new DummyResource
+    val resource3 = new DummyResource
     context.resources.trace(resource1)
     context.resources.trace(resource2)
     context.resources.trace(resource3)
@@ -403,9 +404,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.resources.close()
 
     // THEN
-    verify(resource1).close()
-    verify(resource2).close()
-    verify(resource3).close()
+    verifyClose(resource1)
+    verifyClose(resource2)
+    verifyClose(resource3)
   }
 
   test("should add cursor as resource when calling all") {

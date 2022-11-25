@@ -26,6 +26,8 @@ package org.neo4j.internal.kernel.api;
  * Also provides ability to register a listener for when this is closed.
  */
 public interface AutoCloseablePlus extends AutoCloseable {
+    int UNTRACKED = -1;
+
     @Override
     void close();
 

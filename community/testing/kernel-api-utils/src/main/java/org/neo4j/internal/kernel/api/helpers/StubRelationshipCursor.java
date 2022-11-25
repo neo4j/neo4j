@@ -43,6 +43,10 @@ public class StubRelationshipCursor extends DefaultCloseListenable implements Re
     private RelationshipSelection selection;
     private long neighbourNodeReference;
 
+    public StubRelationshipCursor() {
+        this(Collections.emptyList());
+    }
+
     public StubRelationshipCursor(TestRelationshipChain chain) {
         this(Collections.singletonList(chain));
     }

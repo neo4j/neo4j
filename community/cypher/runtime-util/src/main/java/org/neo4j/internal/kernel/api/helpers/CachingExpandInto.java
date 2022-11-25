@@ -307,7 +307,7 @@ public class CachingExpandInto extends DefaultCloseListenable {
         @Unmetered
         private final Read read;
 
-        private int token;
+        private int token = UNTRACKED;
 
         private final long firstNode;
         private final long secondNode;
