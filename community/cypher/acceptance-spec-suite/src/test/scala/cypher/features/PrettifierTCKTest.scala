@@ -87,10 +87,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     // Relationship type expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"""",
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
-
-    // TODO: This is a bug in openCypher, remove from deny list when fixed
-    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation""""
+    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression""""
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail

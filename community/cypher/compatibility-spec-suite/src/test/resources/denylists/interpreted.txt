@@ -2,11 +2,5 @@
 Feature "List11 - Create a list from a range": Scenario "Create an empty list if range direction and step direction are inconsistent"
 Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10"
 
-// TODO: This is a bug in openCypher, remove from deny list when fixed
-Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"
-
-// TODO Unmute when openCypher has been released
-?Feature "Aggregation5 - Collect": Scenario "OPTIONAL MATCH and `collect()` on node property"
-
 // Timezone update 2022b changed the expected result, exclude until all the JVMs have been upgraded
 ?Feature "Temporal2 - Create Temporal Values from a String": Scenario "Should parse date time with named time zone from string": Example "4"
