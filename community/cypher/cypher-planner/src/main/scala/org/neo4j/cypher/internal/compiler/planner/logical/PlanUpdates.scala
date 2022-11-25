@@ -292,13 +292,9 @@ case object PlanUpdates extends UpdatesPlanner {
    * {{{
    *        apply
    *         /\
-   * scan(a)  merge(create(b), create(r))
-   *             |
-   *          either
-   *            /\
-   *      expand expand
-   *               \
-   *              lock(a)
+   * scan(a)  lockingMerge(create(b), create(r), lock(a))
+   *            \
+   *          expand(a->b) 
    * }}}
    */
   def planMerge(
