@@ -54,35 +54,38 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
       }
     }
 
-    combined.flatMap {
+    // We only create one plan with the intersection of all labels, we could change this to generate all combinations, e.g.
+    // given labels A, B and C
+    // - (A,B,C)
+    // - (A,B)
+    // - (B,C)
+    // - (A, C)
+    // and in that way create more flexibility for the planner to plan things like
+    //
+    //   .nodeHashJoin("x")
+    //  .|.intersectionNodeByLabelsScan("n", Seq("B", "C"))
+    //  .nodeUniqueIndexSeek("n:A(prop = 42)")
+    //
+    // Will leave this as a future potential improvement.
+    combined.map {
       case (variable, labels) =>
         val providedOrder = ResultOrdering.providedOrderForLabelScan(
           interestingOrderConfig.orderToSolve,
           variable,
           context.providedOrderFactory
         )
-
-        // Given (n:A&B&C) we want to plan :
-        // - intersectionNodeLabelScan(A,B,C)
-        // - intersectionNodeLabelScan(A,B)
-        // - intersectionNodeLabelScan(B,C)
-        // - intersectionNodeLabelScan(A,C),
-        labels.subsets.flatMap {
-          case subset if subset.isEmpty || subset.size == 1 => None
-          case subset =>
-            val hints = qg.hints.collect {
-              case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
-            }
-            Some(context.logicalPlanProducer.planIntersectNodeByLabelsScan(
-              variable,
-              subset.toSeq,
-              Seq(HasLabels(variable, subset.toSeq)(InputPosition.NONE)),
-              hints.toSeq,
-              qg.argumentIds,
-              providedOrder,
-              context
-            ))
+        val hints = qg.hints.collect {
+          case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
         }
+        context.logicalPlanProducer.planIntersectNodeByLabelsScan(
+          variable,
+          labels.toSeq,
+          Seq(HasLabels(variable, labels.toSeq)(InputPosition.NONE)),
+          hints.toSeq,
+          qg.argumentIds,
+          providedOrder,
+          context
+        )
     }.toSet
   }
 }
