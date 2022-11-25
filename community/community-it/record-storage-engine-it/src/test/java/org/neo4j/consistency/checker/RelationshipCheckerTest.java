@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
@@ -28,6 +29,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 class RelationshipCheckerTest extends CheckerTestBase {
     private int type;
@@ -264,6 +266,32 @@ class RelationshipCheckerTest extends CheckerTestBase {
 
         // then
         expect(RelationshipConsistencyReport.class, RelationshipConsistencyReport::idIsFreed);
+    }
+
+    @Test
+    void shouldReportDeletedRelationshipWithIdNotForReuse() throws Exception {
+        // Given
+        long relId;
+        try (AutoCloseable ignored = tx()) {
+            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
+        }
+        try (AutoCloseable ignored = tx()) {
+            try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
+                relationshipStore.updateRecord(
+                        new RelationshipRecord(relId), storeCursor, CursorContext.NULL_CONTEXT, storeCursors);
+            }
+        }
+
+        markAsUsedId(relationshipStore, relId);
+
+        // when
+        check();
+
+        // then
+        expect(RelationshipConsistencyReport.class, RelationshipConsistencyReport::idIsNotFreed);
     }
 
     private void check() throws Exception {

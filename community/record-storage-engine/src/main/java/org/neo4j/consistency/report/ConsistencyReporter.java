@@ -86,10 +86,10 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter {
     private final Monitor monitor;
 
     public interface Monitor {
-        void reported(Class<?> report, String method, String message);
+        void reported(Class<?> report, String method, String message, boolean isError);
     }
 
-    public static final Monitor NO_MONITOR = (report, method, message) -> {};
+    public static final Monitor NO_MONITOR = (report, method, message, isError) -> {};
 
     public ConsistencyReporter(InconsistencyReport report) {
         this(report, NO_MONITOR);
@@ -164,14 +164,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter {
             }
 
             String message = DocumentedUtils.extractMessage(method);
-            if (method.getAnnotation(Warning.class) == null) {
+            var isError = method.getAnnotation(Warning.class) == null;
+            if (isError) {
                 logError(message, args);
                 report.updateSummary(type, 1, 0);
             } else {
                 logWarning(message, args);
                 report.updateSummary(type, 0, 1);
             }
-            monitor.reported(factory.type(), method.getName(), message);
+            monitor.reported(factory.type(), method.getName(), message, isError);
             inconsistencyReported();
             return null;
         }

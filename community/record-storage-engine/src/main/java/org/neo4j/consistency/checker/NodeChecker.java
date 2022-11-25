@@ -151,11 +151,14 @@ class NodeChecker implements Checker {
             for (long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++) {
                 localProgress.add(1);
                 NodeRecord nodeRecord = nodeReader.read(nodeId);
-                if (!nodeRecord.inUse()) {
-                    continue;
-                }
                 while (nextFreeId < nodeId && freeIdsIterator.hasNext()) {
                     nextFreeId = freeIdsIterator.next();
+                }
+                if (!nodeRecord.inUse()) {
+                    if (nodeId != nextFreeId) {
+                        reporter.forNode(nodeRecord).idIsNotFreed();
+                    }
+                    continue;
                 }
                 if (nodeId == nextFreeId) {
                     reporter.forNode(nodeRecord).idIsFreed();

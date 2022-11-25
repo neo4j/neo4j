@@ -157,8 +157,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         AtomicInteger stopCount = new AtomicInteger(0);
         ConsistencyReporter.Monitor monitor = ConsistencyReporter.NO_MONITOR;
         if (stopCountThreshold > 0) {
-            monitor = (ignoredArg1, ignoredArg2, ignoredArg3) -> {
-                if (!isCancelled() && stopCount.incrementAndGet() >= stopCountThreshold) {
+            monitor = (ignoredArg1, ignoredArg2, ignoredArg3, isError) -> {
+                if (isError && !isCancelled() && stopCount.incrementAndGet() >= stopCountThreshold) {
                     cancel("Observed " + stopCount.get() + " inconsistencies.");
                 }
             };

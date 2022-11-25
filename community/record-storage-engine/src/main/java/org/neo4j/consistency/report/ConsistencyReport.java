@@ -107,6 +107,10 @@ public interface ConsistencyReport {
 
         @Documented("The referenced record is in use but the id is up for reuse in the id file.")
         void idIsFreed();
+
+        @Warning
+        @Documented("The referenced record is not in use but the id is not up for reuse in the id file.")
+        void idIsNotFreed();
     }
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport {}

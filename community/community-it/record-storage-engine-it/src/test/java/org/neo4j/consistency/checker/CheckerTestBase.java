@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -327,7 +328,7 @@ class CheckerTestBase {
     }
 
     private void expect(Class<? extends ConsistencyReport> reportClass, String reportMethod) {
-        verify(monitor, atLeastOnce()).reported(eq(reportClass), eq(reportMethod), anyString());
+        verify(monitor, atLeastOnce()).reported(eq(reportClass), eq(reportMethod), anyString(), anyBoolean());
     }
 
     long index(SchemaDescriptor descriptor) throws KernelException {
@@ -467,6 +468,12 @@ class CheckerTestBase {
     void markAsDeletedId(CommonAbstractStore store, long id) {
         try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
             marker.markDeleted(id);
+        }
+    }
+
+    void markAsUsedId(CommonAbstractStore store, long id) {
+        try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
+            marker.markUsed(id);
         }
     }
 

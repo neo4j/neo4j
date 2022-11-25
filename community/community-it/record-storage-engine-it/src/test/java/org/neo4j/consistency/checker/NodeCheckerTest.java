@@ -42,6 +42,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -333,6 +334,28 @@ class NodeCheckerTest extends CheckerTestBase {
 
         // then
         expect(NodeConsistencyReport.class, NodeConsistencyReport::idIsFreed);
+    }
+
+    @Test
+    void shouldReportDeletedNodeWithIdNotForReuse() throws Exception {
+        // Given
+        long nodeId;
+        try (AutoCloseable ignored = tx()) {
+            nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+        }
+        try (AutoCloseable ignored = tx()) {
+            try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
+                nodeStore.updateRecord(new NodeRecord(nodeId), storeCursor, CursorContext.NULL_CONTEXT, storeCursors);
+            }
+        }
+
+        markAsUsedId(nodeStore, nodeId);
+
+        // when
+        check();
+
+        // then
+        expect(NodeConsistencyReport.class, NodeConsistencyReport::idIsNotFreed);
     }
 
     // invalidLength of dynamic label record: (impossible, right?)

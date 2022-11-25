@@ -145,7 +145,17 @@ class RelationshipChecker implements Checker {
                     relationshipId++) {
                 localProgress.add(1);
                 RelationshipRecord relationshipRecord = relationshipReader.read(relationshipId);
+                if (firstRound) {
+                    while (nextFreeId < relationshipId && freeIdsIterator.hasNext()) {
+                        nextFreeId = freeIdsIterator.next();
+                    }
+                }
                 if (!relationshipRecord.inUse()) {
+                    if (firstRound) {
+                        if (relationshipId != nextFreeId) {
+                            reporter.forRelationship(relationshipRecord).idIsNotFreed();
+                        }
+                    }
                     continue;
                 }
 
@@ -194,9 +204,6 @@ class RelationshipChecker implements Checker {
                 }
 
                 if (firstRound) {
-                    while (nextFreeId < relationshipId && freeIdsIterator.hasNext()) {
-                        nextFreeId = freeIdsIterator.next();
-                    }
                     if (relationshipId == nextFreeId) {
                         reporter.forRelationship(relationshipRecord).idIsFreed();
                     }
