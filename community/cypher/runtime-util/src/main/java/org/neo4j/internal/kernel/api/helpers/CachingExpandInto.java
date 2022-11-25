@@ -543,7 +543,6 @@ public class CachingExpandInto extends DefaultCloseListenable {
             long startNode = otherNode == secondNode ? firstNode : secondNode;
             degreeCache.put(startNode, expandDirection, degree);
             relationshipCache.add(firstNode, secondNode, direction, connections, diff);
-            close();
             return false;
         }
 
