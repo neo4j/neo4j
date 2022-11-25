@@ -176,7 +176,7 @@ case class ShortestPathPipe(
             }
           }
       }
-      output.closing(nodeCursor).closing(traversalCursor).closing(biDirectionalBFS)
+      output.closing(traversalCursor).closing(nodeCursor).closing(biDirectionalBFS)
     }
   }
 }
