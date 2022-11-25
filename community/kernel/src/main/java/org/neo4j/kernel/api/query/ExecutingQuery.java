@@ -242,9 +242,8 @@ public class ExecutingQuery {
                 .ifPresentOrElse(
                         foundBinding -> {
                             pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
-                            // Write volatile field last
-                            //noinspection NonAtomicOperationOnVolatileField (we only have one thread which writes to
-                            // this field)
+                            // Write volatile field last (we only have one thread which writes to this field)
+                            //noinspection NonAtomicOperationOnVolatileField
                             pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
                         },
                         () -> {
