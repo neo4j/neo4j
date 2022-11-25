@@ -91,11 +91,11 @@ class LiteralReplacementTest extends CypherFunSuite {
     assertDoesNotRewrite(s"MATCH ({a:false})")
   }
 
-  test("should extract literals in skip clause") {
+  test("should not extract literals in limit or skip") {
     assertRewrite(
-      s"RETURN 0 as x SKIP 1 limit 2",
-      s"RETURN $$`  AUTOINT0` as x SKIP $$`  AUTOINT1` LIMIT 2",
-      Map("  AUTOINT0" -> 0, "  AUTOINT1" -> 1)
+      s"RETURN 0 as x SKIP 1 LIMIT 2",
+      s"RETURN $$`  AUTOINT0` as x SKIP 1 LIMIT 2",
+      Map("  AUTOINT0" -> 0)
     )
   }
 

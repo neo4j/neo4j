@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.SetClause
+import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.With
@@ -83,6 +84,7 @@ object literalReplacement {
       acc => TraverseChildren(acc)
     case _: Clause |
       _: Limit |
+      _: Skip |
       _: GraphPatternQuantifier =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
