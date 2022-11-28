@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.e
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.getEffectiveBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -99,6 +100,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
@@ -245,6 +247,34 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       // Volcano: The RHS is executed for each LHS row
       val rhsExecutions = batchSize.numBatchesFor(lhsCardinality)
       lhsCost + rhsExecutions * rhsCost
+
+    case t: Trail =>
+      val lhsCardinality = effectiveCardinalities.lhs
+      val rhsCardinality = effectiveCardinalities.rhs
+
+      val qppRange = qppRangeForEstimations(t.repetition)
+
+      // For iteration 1 the RHS executes with LHS cardinality.
+      val iteration1Cost =
+        if (qppRange.start == 0 && qppRange.end == 0) Cost(0)
+        else lhsCardinality * rhsCost
+
+      // Starting from iteration 2 the RHS executes with the cardinality of the previous RHS iteration.
+      // We don't have separate estimations for the RHS iterations, so we simply use
+      // lhsCardinality * rhsCardinality, assuming each iteration returns the same amount of rows.
+      // In the future, if there are more alternatives that can solve a QPP, we should improve this.
+      // In NodeConnectionMultiplierCalculator we estimate the separate iterations, so we could extract that logic
+      // to be used here as well.
+
+      // We also disregard a supplied min, since we need to execute iterations up to min, even if their result
+      // is not yielded.
+      val iterationsNCost = {
+        val from2Range = 2 to qppRange.end
+        val rhsInvocations = from2Range.length * lhsCardinality * rhsCardinality
+        rhsInvocations * rhsCost
+      }
+
+      lhsCost + iteration1Cost + iterationsNCost
 
     case _: ApplyPlan =>
       val lhsCardinality = effectiveCardinalities.lhs

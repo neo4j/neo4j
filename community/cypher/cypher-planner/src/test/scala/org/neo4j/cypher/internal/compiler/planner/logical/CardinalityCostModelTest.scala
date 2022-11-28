@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
@@ -46,9 +47,12 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.UpperBound
+import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertion
 
 class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSupport
     with LogicalPlanConstructionTestSupport {
@@ -817,5 +821,109 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     val semiApplyCost = Cost(labelScanCost + 1000 * semiApplyRhsCost.cost)
 
     cost should equal(semiApplyCost)
+  }
+
+  case class TrailTestCase(
+    builder: LogicalPlanBuilder,
+    plan: LogicalPlan,
+    lhsCardinality: Cardinality,
+    rhsCardinality: Cardinality,
+    lhsCost: Cost,
+    rhsCost: Cost
+  )
+
+  def trailTestCase(min: Int, max: UpperBound): TrailTestCase = {
+    val lhsCardinality = Cardinality(10)
+    val rhsCardinality = Cardinality(1.5)
+    val trailParams = TrailParameters(
+      min = min,
+      max = max,
+      start = "a",
+      end = "b",
+      innerStart = "a",
+      innerEnd = "b",
+      groupNodes = Set(("a", "a"), ("b", "b")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = builder
+      .trail(trailParams)
+      .|.expand("(a)-[r]->(b)").withCardinality(rhsCardinality.amount)
+      .|.argument("a").withCardinality(1)
+      .argument("a").withCardinality(lhsCardinality.amount)
+      .build()
+
+    val lhsCost = costFor(
+      plan.lhs.get,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    )
+    val rhsCost = costFor(
+      plan.rhs.get,
+      QueryGraphSolverInput.empty,
+      builder.getSemanticTable,
+      builder.cardinalities,
+      builder.providedOrders
+    )
+    TrailTestCase(builder, plan, lhsCardinality, rhsCardinality, lhsCost, rhsCost)
+  }
+
+  def assertTrailHasExpectedCost(testCase: TrailTestCase, expectedCost: Cost): Assertion = {
+    costFor(
+      testCase.plan,
+      QueryGraphSolverInput.empty,
+      testCase.builder.getSemanticTable,
+      testCase.builder.cardinalities,
+      testCase.builder.providedOrders
+    ) should equal(expectedCost)
+  }
+
+  test("trail cost {0}") {
+    val testCase = trailTestCase(0, Limited(0))
+    assertTrailHasExpectedCost(testCase, testCase.lhsCost)
+  }
+
+  test("trail cost {X, 1}") {
+    val testCase0_1 = trailTestCase(0, Limited(1))
+    val testCase1_1 = trailTestCase(1, Limited(1))
+
+    val expected = testCase0_1.lhsCost + testCase0_1.lhsCardinality * testCase0_1.rhsCost
+    assertTrailHasExpectedCost(testCase0_1, expected)
+    assertTrailHasExpectedCost(testCase1_1, expected)
+  }
+
+  test("trail cost {X, 2}") {
+    val testCase0_2 = trailTestCase(0, Limited(2))
+    val testCase1_2 = trailTestCase(1, Limited(2))
+    val testCase2_2 = trailTestCase(2, Limited(2))
+
+    val iter1Cost = testCase0_2.lhsCardinality * testCase0_2.rhsCost
+    val iter2Cost = testCase0_2.lhsCardinality * testCase0_2.rhsCardinality * testCase0_2.rhsCost
+    val expected = testCase0_2.lhsCost + iter1Cost + iter2Cost
+    assertTrailHasExpectedCost(testCase0_2, expected)
+    assertTrailHasExpectedCost(testCase1_2, expected)
+    assertTrailHasExpectedCost(testCase2_2, expected)
+  }
+
+  test("trail cost {X, 3}") {
+    val testCase0_3 = trailTestCase(0, Limited(3))
+    val testCase1_3 = trailTestCase(1, Limited(3))
+    val testCase2_3 = trailTestCase(2, Limited(3))
+    val testCase3_3 = trailTestCase(3, Limited(3))
+
+    val iter1Cost = testCase0_3.lhsCardinality * testCase0_3.rhsCost
+    val iterNCost = testCase0_3.lhsCardinality * testCase0_3.rhsCardinality * testCase0_3.rhsCost
+    val expected = testCase0_3.lhsCost + iter1Cost + iterNCost + iterNCost
+    assertTrailHasExpectedCost(testCase0_3, expected)
+    assertTrailHasExpectedCost(testCase1_3, expected)
+    assertTrailHasExpectedCost(testCase2_3, expected)
+    assertTrailHasExpectedCost(testCase3_3, expected)
   }
 }

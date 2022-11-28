@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedB
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Unspecified
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -52,6 +53,7 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Selectivity
 
 object NodeConnectionMultiplierCalculator {
@@ -61,6 +63,16 @@ object NodeConnectionMultiplierCalculator {
     require(n >= 1, "Cannot calculate relationship uniqueness for less than 1 relationship")
     val numberOfPairs = n * (n - 1) / 2
     Selectivity(Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor, numberOfPairs))
+  }
+
+  /**
+   * Turn a QPP repetition into a Range that we use for estimations.
+   */
+  def qppRangeForEstimations(repetition: Repetition): Range = {
+    val max = Math.min(repetition.max.limit.getOrElse(MAX_VAR_LENGTH.toLong), MAX_VAR_LENGTH).toInt
+    val min = Math.min(repetition.min, max).toInt
+
+    min to max
   }
 }
 
@@ -210,10 +222,9 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
 
     // See patternRelationshipMultiplier case VarPatternLength
 
-    val max = Math.min(qpp.repetition.max.limit.getOrElse(MAX_VAR_LENGTH.toLong), MAX_VAR_LENGTH).toInt
-    val min = Math.min(qpp.repetition.min, max).toInt
+    val range = qppRangeForEstimations(qpp.repetition)
 
-    val multipliersPerStep = for (length <- min to max) yield {
+    val multipliersPerStep = for (length <- range) yield {
       length match {
         case 0 =>
           Multiplier.ofDivision(1, totalNbrOfNodes).getOrElse(Multiplier.ZERO)
