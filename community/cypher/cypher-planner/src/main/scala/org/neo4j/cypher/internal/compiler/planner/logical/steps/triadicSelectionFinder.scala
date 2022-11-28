@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
@@ -237,7 +236,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
   ): Boolean = pattern match {
     // (a)-[:X]->(c)
     case ExistsIRExpression(
-        PlannerQuery(RegularSinglePlannerQuery(
+        RegularSinglePlannerQuery(
           QueryGraph(
             SetExtractor(PatternRelationship(
               rel,
@@ -259,7 +258,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
           RegularQueryProjection(_, QueryPagination.empty, Selections.empty),
           None,
           None
-        )),
+        ),
         _,
         _
       )

@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -79,14 +78,12 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   ) _
 
   private val subqueryExp = ExistsIRExpression(
-    PlannerQuery(
-      RegularSinglePlannerQuery(
-        QueryGraph(
-          argumentIds = Set(argName),
-          patternNodes = Set(argName, nodeName),
-          patternRelationships =
-            Set(patternRel)
-        )
+    RegularSinglePlannerQuery(
+      QueryGraph(
+        argumentIds = Set(argName),
+        patternNodes = Set(argName, nodeName),
+        patternRelationships =
+          Set(patternRel)
       )
     ),
     "",
@@ -94,14 +91,12 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   )(pos, Set(varFor(nodeName)), Set(varFor(argName)))
 
   private val subqueryExp2 = ExistsIRExpression(
-    PlannerQuery(
-      RegularSinglePlannerQuery(
-        QueryGraph(
-          argumentIds = Set(argName),
-          patternNodes = Set(argName, nodeName2),
-          patternRelationships =
-            Set(PatternRelationship(relName2, (argName, nodeName2), dir, types, SimplePatternLength))
-        )
+    RegularSinglePlannerQuery(
+      QueryGraph(
+        argumentIds = Set(argName),
+        patternNodes = Set(argName, nodeName2),
+        patternRelationships =
+          Set(PatternRelationship(relName2, (argName, nodeName2), dir, types, SimplePatternLength))
       )
     ),
     "",

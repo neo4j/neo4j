@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -369,7 +369,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private def promoteOnlyPlansSolving(
     patternNodes: Set[String],
     expressions: Set[Expression]
-  ): PartialFunction[PlannerQueryPart, Double] = {
+  ): PartialFunction[PlannerQuery, Double] = {
     case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == patternNodes =>
       queryGraph.selections.predicates.map(_.expr) match {
         case es if es == expressions => 10.0

@@ -117,6 +117,6 @@ trait QueryGraphProducer {
     val semanticTable = output.semanticTable()
     val plannerQuery =
       toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)
-    (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
+    (plannerQuery.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }

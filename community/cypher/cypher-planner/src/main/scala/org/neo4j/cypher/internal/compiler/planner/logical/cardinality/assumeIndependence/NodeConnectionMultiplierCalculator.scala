@@ -252,7 +252,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             }
 
             val stepCardinality = cardinalityModel.apply(
-              queryPart = RegularSinglePlannerQuery(queryGraph = stepQg),
+              query = RegularSinglePlannerQuery(queryGraph = stepQg),
               labelInfo = labelInfo,
               relTypeInfo = Map.empty,
               semanticTable = semanticTable,

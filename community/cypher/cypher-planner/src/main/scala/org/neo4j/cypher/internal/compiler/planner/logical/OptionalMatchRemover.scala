@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
@@ -316,7 +315,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     val innerPreds = innerVars.flatMap(predicates.get)
 
     val arguments = innerVars.intersect(elementsToKeep)
-    val query = PlannerQuery(RegularSinglePlannerQuery(
+    val query = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(
         argumentIds = arguments,
         patternNodes = Set(pattern.nodes._1, pattern.nodes._2),
@@ -324,7 +323,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         selections = Selections.from(innerPreds)
       ),
       horizon = RegularQueryProjection()
-    ))
+    )
 
     val whereString = innerPreds match {
       case SetExtractor()           => ""

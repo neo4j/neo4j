@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
@@ -166,12 +165,12 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def newListIrExpression(argumentIds: Set[String], patternNodes: Set[String]): ListIRExpression = {
     ListIRExpression(
-      PlannerQuery(RegularSinglePlannerQuery(
+      RegularSinglePlannerQuery(
         QueryGraph(
           argumentIds = argumentIds,
           patternNodes = patternNodes
         )
-      )),
+      ),
       "anon_0",
       "anon_1",
       "ListIRExpression"
@@ -180,12 +179,12 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private def newExistsIrExpression(argumentIds: Set[String], patternNodes: Set[String]): ExistsIRExpression = {
     ExistsIRExpression(
-      PlannerQuery(RegularSinglePlannerQuery(
+      RegularSinglePlannerQuery(
         QueryGraph(
           argumentIds = argumentIds,
           patternNodes = patternNodes
         )
-      )),
+      ),
       "anon_0",
       "ExistsIRExpression"
     )(pos, Set.empty, argumentIds.map(name => varFor(name)))

@@ -249,7 +249,7 @@ case class ExpressionSelectivityCalculator(
 
     case x: ExistsIRExpression =>
       val subqueryCardinality = cardinalityModel.apply(
-        x.query.query,
+        x.query,
         labelInfo,
         relTypeInfo,
         semanticTable,

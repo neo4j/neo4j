@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -111,12 +111,12 @@ object Metrics {
      * This metric estimates how many rows of data a query produces
      * (e.g. by asking the database for statistics)
      *
-     * @param queryPart        the query part to estimate cardinality for
+     * @param query        the query to estimate cardinality for
      * @param cardinalityModel subquery expressions need to recursively call into the top-level cardinality model, so we pass it down.
      * @return the cardinality of the query
      */
     def apply(
-      queryPart: PlannerQueryPart,
+      query: PlannerQuery,
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
@@ -128,13 +128,13 @@ object Metrics {
      * Passes down this CardinalityModel for recursive calls.
      */
     final def apply(
-      plannerQueryPart: PlannerQueryPart,
+      plannerQuery: PlannerQuery,
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,
       indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext
     ): Cardinality = apply(
-      plannerQueryPart,
+      plannerQuery,
       labelInfo,
       relTypeInfo,
       semanticTable,

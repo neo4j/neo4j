@@ -62,7 +62,7 @@ trait QueryHorizon extends Foldable {
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
     val iRExpressions: Seq[QgWithLeafInfo] = filtered.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
-      e.query.query.allQGsWithLeafInfo
+      e.query.allQGsWithLeafInfo
     )
     QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(getQueryGraphFromDependingExpressions) +: iRExpressions
   }
@@ -120,7 +120,7 @@ case class LoadCSVProjection(
 }
 
 case class CallSubqueryHorizon(
-  callSubquery: PlannerQueryPart,
+  callSubquery: PlannerQuery,
   correlated: Boolean,
   yielding: Boolean,
   inTransactionsParameters: Option[InTransactionsParameters]

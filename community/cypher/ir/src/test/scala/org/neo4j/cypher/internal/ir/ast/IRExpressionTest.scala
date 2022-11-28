@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ir.ast
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -30,14 +29,14 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("ListIRExpression should return the correct dependencies") {
     val e = ListIRExpression(
-      PlannerQuery(RegularSinglePlannerQuery(
+      RegularSinglePlannerQuery(
         QueryGraph(
           argumentIds = Set("a"),
           patternNodes = Set("a", "b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )
-      )),
+      ),
       "anon_0",
       "anon_1",
       "ListIRExpression"
@@ -48,14 +47,14 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("ExistsIRExpression should return the correct dependencies") {
     val e = ExistsIRExpression(
-      PlannerQuery(RegularSinglePlannerQuery(
+      RegularSinglePlannerQuery(
         QueryGraph(
           argumentIds = Set("a"),
           patternNodes = Set("a", "b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )
-      )),
+      ),
       "anon_0",
       "ExistsIRExpression"
     )(pos, Set(varFor("b")), Set(varFor("a")))
@@ -65,14 +64,14 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("ListIRExpression contained in another expression should return the correct dependencies") {
     val e = listOf(ListIRExpression(
-      PlannerQuery(RegularSinglePlannerQuery(
+      RegularSinglePlannerQuery(
         QueryGraph(
           argumentIds = Set("a"),
           patternNodes = Set("a", "b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )
-      )),
+      ),
       "anon_0",
       "anon_1",
       "ListIRExpression"

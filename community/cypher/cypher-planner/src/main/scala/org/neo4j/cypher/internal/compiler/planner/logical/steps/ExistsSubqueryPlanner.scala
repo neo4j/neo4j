@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.PlannerState
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
-import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPlanner
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -45,7 +45,7 @@ case object ExistsSubqueryPlanner extends ExistsSubqueryPlanner {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val subqueryContext = context.withModifiedPlannerState(_.withFusedLabelInfo(labelInfo))
-    plannerQueryPartPlanner.planSubquery(subquery, subqueryContext)
+    plannerQueryPlanner.planSubquery(subquery, subqueryContext)
   }
 }
 

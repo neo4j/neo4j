@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
@@ -51,7 +51,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
   def withCallSubquery(
-    subquery: PlannerQueryPart,
+    subquery: PlannerQuery,
     correlated: Boolean,
     yielding: Boolean,
     inTransactionsParameters: Option[InTransactionsParameters]

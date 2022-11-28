@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPl
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -1116,12 +1115,12 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }.withLogicalPlanningContext { (_, ctx) =>
       val exists = ExistsIRExpression(
-        PlannerQuery(RegularSinglePlannerQuery(
+        RegularSinglePlannerQuery(
           queryGraph = QueryGraph(
             patternNodes = Set("a", "x"),
             argumentIds = Set("a")
           )
-        )),
+        ),
         "anon_0",
         "EXISTS { MATCH (a), (x) }"
       )(pos, Set(varFor("x")), Set(varFor("a")))
@@ -1151,12 +1150,12 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }.withLogicalPlanningContext { (_, ctx) =>
       val exists = ExistsIRExpression(
-        PlannerQuery(RegularSinglePlannerQuery(
+        RegularSinglePlannerQuery(
           queryGraph = QueryGraph(
             patternNodes = Set("a", "x"),
             argumentIds = Set("a")
           )
-        )),
+        ),
         "anon_0",
         "EXISTS { MATCH (a), (x) }"
       )(pos, Set(varFor("x")), Set(varFor("a")))

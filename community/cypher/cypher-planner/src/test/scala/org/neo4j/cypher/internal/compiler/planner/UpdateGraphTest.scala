@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
@@ -386,8 +385,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val innerQg2 = QueryGraph(patternNodes = Set("b"))
     val qg = QueryGraph(
       selections = Selections.from(Seq(
-        ExistsIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg1)), "", "")(pos, Set.empty, Set.empty),
-        ListIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg2)), "", "", "")(pos, Set.empty, Set.empty)
+        ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), "", "")(pos, Set.empty, Set.empty),
+        ListIRExpression(RegularSinglePlannerQuery(innerQg2), "", "", "")(pos, Set.empty, Set.empty)
       ))
     )
 
@@ -399,8 +398,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val innerQg2 = QueryGraph(patternNodes = Set("b"))
     val horizon = RegularQueryProjection(
       Map(
-        "a" -> ExistsIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg1)), "", "")(pos, Set.empty, Set.empty),
-        "b" -> ListIRExpression(PlannerQuery(RegularSinglePlannerQuery(innerQg2)), "", "", "")(
+        "a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), "", "")(pos, Set.empty, Set.empty),
+        "b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), "", "", "")(
           pos,
           Set.empty,
           Set.empty

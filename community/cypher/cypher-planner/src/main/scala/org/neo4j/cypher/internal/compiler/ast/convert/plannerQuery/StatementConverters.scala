@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.ASTNode
@@ -55,7 +54,7 @@ object StatementConverters {
   /**
    * Convert an AST SingleQuery into an IR SinglePlannerQuery
    */
-  private def toPlannerQuery(
+  private def toSinglePlannerQuery(
     q: SingleQuery,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
@@ -114,29 +113,27 @@ object StatementConverters {
     importedVariables: Set[String] = Set.empty
   ): PlannerQuery = {
     val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable))
-    val plannerQueryPart =
-      toPlannerQueryPart(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
-    PlannerQuery(plannerQueryPart)
+    partToPlannerQuery(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
   }
 
-  def toPlannerQueryPart(
+  def partToPlannerQuery(
     queryPart: QueryPart,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     importedVariables: Set[String] = Set.empty
-  ): PlannerQueryPart = {
+  ): PlannerQuery = {
     val nodes = findBlacklistedNodes(queryPart)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
     queryPart match {
       case singleQuery: SingleQuery =>
-        toPlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        toSinglePlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
       case unionQuery: ast.ProjectingUnion =>
-        val lhs: PlannerQueryPart =
-          toPlannerQueryPart(unionQuery.lhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        val lhs: PlannerQuery =
+          partToPlannerQuery(unionQuery.lhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
         val rhs: SinglePlannerQuery =
-          toPlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
+          toSinglePlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll      => false

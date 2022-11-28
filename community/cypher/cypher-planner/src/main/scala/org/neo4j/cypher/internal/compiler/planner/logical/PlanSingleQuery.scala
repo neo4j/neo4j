@@ -79,14 +79,14 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
     }
 
     remainingPartsWithExtras.foldLeft((plans, context)) {
-      case ((plans, context), (queryPart, limitSelectivityConfig, prevQueryPart)) =>
+      case ((plans, context), (plannerQuery, limitSelectivityConfig, prevPlannerQuery)) =>
         tailPlanner.plan(
           plans,
-          queryPart,
-          prevQueryPart.interestingOrder,
+          plannerQuery,
+          prevPlannerQuery.interestingOrder,
           context.withModifiedPlannerState(_
             .withLimitSelectivityConfig(limitSelectivityConfig)
-            .withLastSolvedQueryPart(prevQueryPart))
+            .withLastSolvedPlannerQuery(prevPlannerQuery))
         )
     }
   }

@@ -232,7 +232,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
               .withUpdatedLabelInfo(plan, context.staticComponents.planningAttributes.solveds))
           else
             context.withModifiedPlannerState(_.forSubquery())
-        val subPlan = plannerQueryPartPlanner.plan(callSubquery, subqueryContext)
+        val subPlan = plannerQueryPlanner.plan(callSubquery, subqueryContext)
         val projected = context.staticComponents.logicalPlanProducer.planSubquery(
           plan,
           subPlan,

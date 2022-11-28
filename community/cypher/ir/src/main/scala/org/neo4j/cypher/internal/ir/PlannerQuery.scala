@@ -25,19 +25,12 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 /**
  * A query in a representation that is consumed by the planner.
  */
-case class PlannerQuery(query: PlannerQueryPart) {
-  def readOnly: Boolean = query.readOnly
-}
-
-/**
- * A part of a PlannerQuery.
- */
-trait PlannerQueryPart {
+trait PlannerQuery {
   def readOnly: Boolean
   def returns: Set[String]
 
   def allHints: Set[Hint]
-  def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart
+  def withoutHints(hintsToIgnore: Set[Hint]): PlannerQuery
   def numHints: Int
   def visitHints[A](acc: A)(f: (A, Hint, QueryGraph) => A): A
 
@@ -63,11 +56,11 @@ trait PlannerQueryPart {
  * @param unionMappings mappings of return items from both parts
  */
 case class UnionQuery(
-  lhs: PlannerQueryPart,
+  lhs: PlannerQuery,
   rhs: SinglePlannerQuery,
   distinct: Boolean,
   unionMappings: List[UnionMapping]
-) extends PlannerQueryPart {
+) extends PlannerQuery {
   override def readOnly: Boolean = lhs.readOnly && rhs.readOnly
 
   override def returns: Set[String] = lhs.returns.map { returnColInLhs =>
@@ -78,7 +71,7 @@ case class UnionQuery(
 
   override def allHints: Set[Hint] = lhs.allHints ++ rhs.allHints
 
-  override def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart = copy(
+  override def withoutHints(hintsToIgnore: Set[Hint]): PlannerQuery = copy(
     lhs = lhs.withoutHints(hintsToIgnore),
     rhs = rhs.withoutHints(hintsToIgnore)
   )

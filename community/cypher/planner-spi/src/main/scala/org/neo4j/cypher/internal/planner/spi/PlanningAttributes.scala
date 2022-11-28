@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.PartialAttribute
 
 object PlanningAttributes {
-  class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
+  class Solveds extends Attribute[LogicalPlan, PlannerQuery]
   class Cardinalities extends Attribute[LogicalPlan, Cardinality]
   class EffectiveCardinalities extends Attribute[LogicalPlan, EffectiveCardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]

@@ -278,8 +278,8 @@ object LogicalPlanningContext {
     def withUpdatedLabelInfo(plan: LogicalPlan, solveds: Solveds): PlannerState =
       copy(input = input.withUpdatedLabelInfo(plan, solveds))
 
-    def withLastSolvedQueryPart(queryPart: SinglePlannerQuery): PlannerState = {
-      val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !queryPart.readOnlySelf
+    def withLastSolvedPlannerQuery(plannerQuery: SinglePlannerQuery): PlannerState = {
+      val hasUpdates = indexCompatiblePredicatesProviderContext.outerPlanHasUpdates || !plannerQuery.readOnlySelf
       copy(indexCompatiblePredicatesProviderContext =
         indexCompatiblePredicatesProviderContext.copy(outerPlanHasUpdates = hasUpdates)
       )

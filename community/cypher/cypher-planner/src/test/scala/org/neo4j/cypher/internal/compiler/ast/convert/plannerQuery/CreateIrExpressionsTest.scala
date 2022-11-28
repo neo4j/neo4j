@@ -163,12 +163,10 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     horizon: Option[QueryHorizon],
     tail: Option[SinglePlannerQuery] = None
   ): PlannerQuery = {
-    PlannerQuery(
-      RegularSinglePlannerQuery(
-        queryGraph = qg,
-        horizon = horizon.getOrElse(RegularQueryProjection()),
-        tail = tail
-      )
+    RegularSinglePlannerQuery(
+      queryGraph = qg,
+      horizon = horizon.getOrElse(RegularQueryProjection()),
+      tail = tail
     )
   }
 
@@ -637,31 +635,29 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
 
     existsIRExpression.query should equal(
-      PlannerQuery(
-        UnionQuery(
-          RegularSinglePlannerQuery(
-            QueryGraph(
-              patternNodes = Set(n.name, m.name),
-              patternRelationships =
-                Set(
-                  PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                )
-            ),
-            horizon = RegularQueryProjection(Map("n" -> n))
+      UnionQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+              )
           ),
-          RegularSinglePlannerQuery(
-            QueryGraph(
-              patternNodes = Set(n.name, m.name),
-              patternRelationships =
-                Set(
-                  PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                )
-            ),
-            horizon = RegularQueryProjection(Map("n" -> n))
+          horizon = RegularQueryProjection(Map("n" -> n))
+        ),
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+              )
           ),
-          distinct = true,
-          List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
-        )
+          horizon = RegularQueryProjection(Map("n" -> n))
+        ),
+        distinct = true,
+        List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
       )
     )
     existsIRExpression.existsVariableName shouldBe existsVariableName
@@ -795,34 +791,32 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n.name)
         ),
         horizon = Some(CallSubqueryHorizon(
-          callSubquery = PlannerQuery(
-            UnionQuery(
-              RegularSinglePlannerQuery(
-                QueryGraph(
-                  patternNodes = Set(n.name, m.name),
-                  argumentIds = Set(n.name),
-                  patternRelationships =
-                    Set(
-                      PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                    )
-                ),
-                horizon = RegularQueryProjection(Map("n" -> n))
+          callSubquery = UnionQuery(
+            RegularSinglePlannerQuery(
+              QueryGraph(
+                patternNodes = Set(n.name, m.name),
+                argumentIds = Set(n.name),
+                patternRelationships =
+                  Set(
+                    PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                  )
               ),
-              RegularSinglePlannerQuery(
-                QueryGraph(
-                  patternNodes = Set(n.name, m.name),
-                  argumentIds = Set(n.name),
-                  patternRelationships =
-                    Set(
-                      PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
-                    )
-                ),
-                horizon = RegularQueryProjection(Map("n" -> n))
+              horizon = RegularQueryProjection(Map("n" -> n))
+            ),
+            RegularSinglePlannerQuery(
+              QueryGraph(
+                patternNodes = Set(n.name, m.name),
+                argumentIds = Set(n.name),
+                patternRelationships =
+                  Set(
+                    PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+                  )
               ),
-              distinct = true,
-              List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
-            )
-          ).query,
+              horizon = RegularQueryProjection(Map("n" -> n))
+            ),
+            distinct = true,
+            List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+          ),
           correlated = true,
           yielding = true,
           inTransactionsParameters = None

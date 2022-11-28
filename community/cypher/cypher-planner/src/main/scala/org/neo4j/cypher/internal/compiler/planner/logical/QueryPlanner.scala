@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
@@ -127,9 +126,9 @@ case object QueryPlanner
     }
 
   def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): LogicalPlan = {
-    val plan = plannerQueryPartPlanner.plan(query.query, context)
+    val plan = plannerQueryPlanner.plan(query, context)
 
-    val lastInterestingOrder = query.query match {
+    val lastInterestingOrder = query match {
       case spq: SinglePlannerQuery => Some(spq.last.interestingOrder)
       case _                       => None
     }
@@ -141,7 +140,7 @@ case object QueryPlanner
         lastInterestingOrder,
         context
       )
-    VerifyBestPlan(plan = planWithProduceResults, expected = query.query, context = context)
+    VerifyBestPlan(plan = planWithProduceResults, expected = query, context = context)
     planWithProduceResults
   }
 
@@ -171,23 +170,23 @@ case object QueryPlanner
 /**
  * Combines multiple PlannerQuery plans together with Union
  */
-case object plannerQueryPartPlanner {
+case object plannerQueryPlanner {
 
   private val planSingleQuery = PlanSingleQuery()
 
   /**
-   * Plan a part of a query
-   * @param plannerQueryPart the part to plan
+   * Plan a query
+   * @param plannerQuery the query to plan
    * @param context the context
    * @param distinctifyUnions if `true`, a distinct will be inserted for distinct UNIONs.
    * @return the plan
    */
   def plan(
-    plannerQueryPart: PlannerQueryPart,
+    plannerQuery: PlannerQuery,
     context: LogicalPlanningContext,
     distinctifyUnions: Boolean = true
   ): LogicalPlan =
-    plannerQueryPart match {
+    plannerQuery match {
       case pq: SinglePlannerQuery =>
         planSingleQuery.plan(pq, context)
       case UnionQuery(lhs, rhs, distinct, unionMappings) =>
@@ -242,7 +241,7 @@ case object plannerQueryPartPlanner {
    * Plan a subquery from an IRExpression with the given context.
    */
   def planSubquery(subqueryExpression: IRExpression, context: LogicalPlanningContext): LogicalPlan =
-    plan(subqueryExpression.query.query, context.withModifiedPlannerState(_.forSubquery()))
+    plan(subqueryExpression.query, context.withModifiedPlannerState(_.forSubquery()))
 }
 
 trait SingleQueryPlanner {

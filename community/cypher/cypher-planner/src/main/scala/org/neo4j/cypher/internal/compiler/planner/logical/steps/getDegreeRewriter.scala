@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
@@ -201,7 +200,7 @@ object QuerySolvableByGetDegree {
   }
 
   def unapply(arg: Any): Option[(String, String, String, Seq[RelTypeName], SemanticDirection)] = arg match {
-    case PlannerQuery(RegularSinglePlannerQuery(
+    case RegularSinglePlannerQuery(
         QueryGraph(
           SetExtractor(PatternRelationship(
             relationship,
@@ -223,7 +222,7 @@ object QuerySolvableByGetDegree {
         RegularQueryProjection(_, QueryPagination.empty, Selections.empty) | _: AggregatingQueryProjection,
         None,
         None
-      )) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
+      ) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
       Some((firstNode, relationship, secondNode, types, direction))
     case _ => None
   }

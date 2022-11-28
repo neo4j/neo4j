@@ -90,7 +90,7 @@ import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
@@ -1507,7 +1507,7 @@ case class LogicalPlanProducer(
   private def planSelectionWithGivenSolved(
     source: LogicalPlan,
     predicates: Seq[Expression],
-    solved: PlannerQueryPart,
+    solved: PlannerQuery,
     context: LogicalPlanningContext
   ): Selection = {
     val sortedPredicates = sortPredicatesBySelectivity(source, predicates, context)
@@ -2294,7 +2294,7 @@ case class LogicalPlanProducer(
     }
   }
 
-  private def markDistinctInUnion(query: PlannerQueryPart): PlannerQueryPart = {
+  private def markDistinctInUnion(query: PlannerQuery): PlannerQuery = {
     query match {
       case u @ UnionQuery(lhs, _, _, _) => u.copy(lhs = markDistinctInUnion(lhs), distinct = true)
       case s                            => s
@@ -2824,7 +2824,7 @@ case class LogicalPlanProducer(
    */
   private def annotate[T <: LogicalPlan](
     plan: T,
-    solved: PlannerQueryPart,
+    solved: PlannerQuery,
     providedOrder: ProvidedOrder,
     context: LogicalPlanningContext
   ): T = {

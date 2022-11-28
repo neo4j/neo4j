@@ -78,7 +78,6 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityTo
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
@@ -387,7 +386,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithSolved(
     planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
     idNames: Set[String],
-    solved: PlannerQueryPart,
+    solved: PlannerQuery,
     cardinality: Cardinality = Cardinality(1),
     providedOrder: ProvidedOrder = ProvidedOrder.empty,
     availablePropertiesFromIndexes: Map[Property, String] = Map.empty
@@ -426,7 +425,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     procedureLookup: Option[QualifiedName => ProcedureSignature] = None,
     functionLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None
   ): SinglePlannerQuery = {
-    buildPlannerQuery(query, procedureLookup, functionLookup).query match {
+    buildPlannerQuery(query, procedureLookup, functionLookup) match {
       case pq: SinglePlannerQuery => pq
       case _                      => throw new IllegalArgumentException("This method cannot be used for UNION queries")
     }

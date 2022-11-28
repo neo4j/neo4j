@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.ir.CommandProjection
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -66,13 +66,13 @@ class StatisticsBackedCardinalityModel(
 ) extends CardinalityModel {
 
   override def apply(
-    queryPart: PlannerQueryPart,
+    query: PlannerQuery,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
-  ): Cardinality = queryPart match {
+  ): Cardinality = query match {
     case singlePlannerQuery: SinglePlannerQuery =>
       singlePlannerQueryCardinality(
         singlePlannerQuery,

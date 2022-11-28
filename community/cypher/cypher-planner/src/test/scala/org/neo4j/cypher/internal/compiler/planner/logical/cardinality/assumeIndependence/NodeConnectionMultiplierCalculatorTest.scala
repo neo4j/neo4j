@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -49,7 +49,7 @@ class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstCons
   implicit private val cardinalityModel: CardinalityModel = new CardinalityModel {
 
     override def apply(
-      queryPart: PlannerQueryPart,
+      query: PlannerQuery,
       labelInfo: LabelInfo,
       relTypeInfo: RelTypeInfo,
       semanticTable: SemanticTable,

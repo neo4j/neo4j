@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -501,7 +501,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should throw when finding unfulfillable index hint in a subquery") {
-    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQueryPart = {
+    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQuery = {
       RegularSinglePlannerQuery(
         horizon = CallSubqueryHorizon(
           callSubquery = RegularSinglePlannerQuery(
@@ -530,7 +530,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should throw when finding unfulfillable text index hint in a subquery") {
-    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQueryPart = {
+    def plannerQueryWithSubquery(hints: Set[Hint]): PlannerQuery = {
       RegularSinglePlannerQuery(
         horizon = CallSubqueryHorizon(
           callSubquery = RegularSinglePlannerQuery(
@@ -559,7 +559,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should throw when finding unfulfillable text index hint in UNION") {
-    def plannerUnionQuery(hints: Set[Hint]): PlannerQueryPart = {
+    def plannerUnionQuery(hints: Set[Hint]): PlannerQuery = {
       UnionQuery(
         rhs = RegularSinglePlannerQuery(
           QueryGraph(
@@ -588,7 +588,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should throw when finding unfulfillable text index hint in OPTIONAL MATCH") {
-    def plannerQueryWithOptionalMatch(hints: Set[Hint]): PlannerQueryPart = {
+    def plannerQueryWithOptionalMatch(hints: Set[Hint]): PlannerQuery = {
       RegularSinglePlannerQuery(
         QueryGraph.empty.withAddedOptionalMatch(
           QueryGraph(

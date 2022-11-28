@@ -378,12 +378,10 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("allKnownUnstableNodeProperties includes ir expression property key names") {
     val a = StableIdentifier("a")
     val irExp = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          horizon = RegularQueryProjection(Map(
-            "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
-          ))
-        )
+      RegularSinglePlannerQuery(
+        horizon = RegularQueryProjection(Map(
+          "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+        ))
       ),
       "",
       ""
@@ -414,12 +412,10 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("allKnownUnstableRelProperties includes ir expression property key names") {
     val a = StableIdentifier("a")
     val irExp = ListIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          horizon = RegularQueryProjection(Map(
-            "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
-          ))
-        )
+      RegularSinglePlannerQuery(
+        horizon = RegularQueryProjection(Map(
+          "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+        ))
       ),
       "",
       "",

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeE
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -60,12 +60,12 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
     def singlePlannerQuery(i: Int): SinglePlannerQuery =
       RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(s"n_$i")))
 
-    val plannerQueryPart = 1.until(depth).foldLeft[PlannerQueryPart](singlePlannerQuery(0)) {
+    val plannerQuery = 1.until(depth).foldLeft[PlannerQuery](singlePlannerQuery(0)) {
       case (lhs, i) => UnionQuery(lhs, singlePlannerQuery(i), distinct = false, Nil)
     }
 
     cachedCardinalityModel.apply(
-      plannerQueryPart = plannerQueryPart,
+      plannerQuery = plannerQuery,
       labelInfo = Map.empty,
       relTypeInfo = Map.empty,
       semanticTable = SemanticTable.apply(),

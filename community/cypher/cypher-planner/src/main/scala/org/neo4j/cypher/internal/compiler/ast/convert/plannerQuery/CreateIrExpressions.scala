@@ -133,8 +133,7 @@ case class CreateIrExpressions(
       queryGraph = qg,
       horizon = horizon
     )
-    val finalizedQuery = PlannerQueryBuilder.finalizeQuery(query)
-    PlannerQuery(finalizedQuery)
+    PlannerQueryBuilder.finalizeQuery(query)
   }
 
   private val instance: Rewriter = topDown(Rewriter.lift {
@@ -232,28 +231,24 @@ case class CreateIrExpressions(
        * result of the union that should be aggregated, that is why we add the query as a CallSubqueryHorizon
        * and then set the tail as the aggregating query projection.
        */
-      val finalizedQuery = plannerQuery.query match {
-        case _: SinglePlannerQuery => plannerQuery.copy(
-            plannerQuery.query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
-              AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(q.position)))
-            ))
-          )
-        case _ => PlannerQuery(
-            RegularSinglePlannerQuery(
-              queryGraph = QueryGraph(
-                argumentIds = arguments
-              ),
-              horizon = CallSubqueryHorizon(
-                callSubquery = plannerQuery.query,
-                correlated = true,
-                yielding = true,
-                inTransactionsParameters = None
-              ),
-              tail = Some(
-                RegularSinglePlannerQuery(
-                  horizon = AggregatingQueryProjection(aggregationExpressions =
-                    Map(countVariableName -> CountStar()(countExpression.position)))
-                )
+      val finalizedQuery = plannerQuery match {
+        case _: SinglePlannerQuery => plannerQuery.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
+            AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(q.position)))
+          ))
+        case _ => RegularSinglePlannerQuery(
+            queryGraph = QueryGraph(
+              argumentIds = arguments
+            ),
+            horizon = CallSubqueryHorizon(
+              callSubquery = plannerQuery,
+              correlated = true,
+              yielding = true,
+              inTransactionsParameters = None
+            ),
+            tail = Some(
+              RegularSinglePlannerQuery(
+                horizon = AggregatingQueryProjection(aggregationExpressions =
+                  Map(countVariableName -> CountStar()(countExpression.position)))
               )
             )
           )

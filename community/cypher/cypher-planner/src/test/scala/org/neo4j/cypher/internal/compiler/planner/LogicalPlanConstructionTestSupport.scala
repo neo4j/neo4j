@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -58,7 +58,7 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def copy(from: Id, to: Id): Unit = {}
   }
 
-  class StubSolveds extends Solveds with StubAttribute[LogicalPlan, PlannerQueryPart] {
+  class StubSolveds extends Solveds with StubAttribute[LogicalPlan, PlannerQuery] {
     override def defaultValue: SinglePlannerQuery = SinglePlannerQuery.empty
   }
 

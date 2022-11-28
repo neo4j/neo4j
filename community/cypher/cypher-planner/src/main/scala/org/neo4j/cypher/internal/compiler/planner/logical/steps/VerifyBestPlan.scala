@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -62,8 +62,8 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 object VerifyBestPlan {
   private val prettifier = Prettifier(ExpressionStringifier())
 
-  def apply(plan: LogicalPlan, expected: PlannerQueryPart, context: LogicalPlanningContext): Unit = {
-    val constructed: PlannerQueryPart = context.staticComponents.planningAttributes.solveds.get(plan.id)
+  def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext): Unit = {
+    val constructed: PlannerQuery = context.staticComponents.planningAttributes.solveds.get(plan.id)
 
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context)
@@ -71,8 +71,8 @@ object VerifyBestPlan {
       val expectedWithoutUnfulfillableHints =
         expected.withoutHints(unfulfillableIndexHints.hints ++ unfulfillableJoinHints)
       if (expectedWithoutUnfulfillableHints != constructed) {
-        val a: PlannerQueryPart = expected.withoutHints(expected.allHints)
-        val b: PlannerQueryPart = constructed.withoutHints(constructed.allHints)
+        val a: PlannerQuery = expected.withoutHints(expected.allHints)
+        val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
           val moreDetails =
@@ -212,7 +212,7 @@ object VerifyBestPlan {
   }
 
   private def findUnfulfillableIndexHints(
-    query: PlannerQueryPart,
+    query: PlannerQuery,
     context: LogicalPlanningContext
   ): UnfulfillableIndexHints = {
     val planContext = context.staticComponents.planContext
@@ -311,14 +311,14 @@ object VerifyBestPlan {
     UnfulfillableIndexHints(hintsWithoutIndex, hintsForWrongType.toVector)
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQueryPart): Set[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQuery): Set[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }
   }
 
   private def collectWrongPropertyTypeHints(
-    query: PlannerQueryPart,
+    query: PlannerQuery,
     semanticTable: SemanticTable
   ): Set[WrongPropertyTypeHint] = {
     query.visitHints(Set.empty[WrongPropertyTypeHint]) {

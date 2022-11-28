@@ -694,14 +694,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val nodeName = "anon_1"
     val existsVariableName = "anon_2"
     val exp = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", nodeName),
-            patternRelationships =
-              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", nodeName),
+          patternRelationships =
+            Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
       existsVariableName,
@@ -757,14 +755,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val existsVariableName = "anon_2"
 
     val exp1 = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", nodeName),
-            patternRelationships =
-              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", nodeName),
+          patternRelationships =
+            Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
       existsVariableName,
@@ -789,14 +785,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val existsVariableName = "anon_2"
 
     val exp1 = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", nodeName),
-            patternRelationships =
-              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", nodeName),
+          patternRelationships =
+            Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
       existsVariableName,
@@ -821,14 +815,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val existsVariableName = "anon_2"
 
     val exp1 = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", nodeName),
-            patternRelationships =
-              Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", nodeName),
+          patternRelationships =
+            Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
       existsVariableName,
@@ -1174,14 +1166,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // (owner)-[relName]-(nodeName)
     val subqueryExpression = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("owner"),
-            patternNodes = Set("owner", nodeName),
-            patternRelationships =
-              Set(PatternRelationship(relName, ("owner", nodeName), BOTH, Seq(), SimplePatternLength))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("owner"),
+          patternNodes = Set("owner", nodeName),
+          patternRelationships =
+            Set(PatternRelationship(relName, ("owner", nodeName), BOTH, Seq(), SimplePatternLength))
         )
       ),
       existsVariableName,
@@ -1523,12 +1513,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   private def queryWith(qg: QueryGraph, horizon: QueryHorizon = RegularQueryProjection()): PlannerQuery = {
-    PlannerQuery(
-      RegularSinglePlannerQuery(
-        queryGraph = qg,
-        horizon = horizon,
-        tail = None
-      )
+    RegularSinglePlannerQuery(
+      queryGraph = qg,
+      horizon = horizon,
+      tail = None
     )
   }
 
@@ -1587,13 +1575,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe
       Some(
-        PlannerQuery(
-          UnionQuery(
-            firstQuery,
-            secondQuery,
-            unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
-            distinct = true
-          )
+        UnionQuery(
+          firstQuery,
+          secondQuery,
+          unionMappings = List(UnionMapping(varFor("name"), varFor("name"), varFor("name"))),
+          distinct = true
         )
       )
   }

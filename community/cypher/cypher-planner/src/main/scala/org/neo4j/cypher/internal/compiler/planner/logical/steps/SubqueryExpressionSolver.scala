@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.irExpressionRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPartPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.plannerQueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates.planPredicates
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -221,7 +221,7 @@ object SubqueryExpressionSolver {
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) = {
     val collectionName = maybeKey.getOrElse(expr.collectionName)
-    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
+    val subQueryPlan = plannerQueryPlanner.planSubqueryWithLabelInfo(source, expr, context)
     val producedPlan = context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
       source,
       subQueryPlan,
@@ -242,7 +242,7 @@ object SubqueryExpressionSolver {
     val countVariableName = maybeKey.getOrElse(expr.countVariableName)
     val subQueryPlan = {
       val exprToPlan = maybeKey.fold(expr)(expr.renameCountVariable)
-      plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, exprToPlan, context)
+      plannerQueryPlanner.planSubqueryWithLabelInfo(source, exprToPlan, context)
     }
     val producedPlan =
       context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planCountExpressionApply(
@@ -262,7 +262,7 @@ object SubqueryExpressionSolver {
     context: LogicalPlanningContext
   ): (LogicalPlan, Variable) = {
     val variableName = maybeKey.getOrElse(expr.existsVariableName)
-    val subQueryPlan = plannerQueryPartPlanner.planSubqueryWithLabelInfo(source, expr, context)
+    val subQueryPlan = plannerQueryPlanner.planSubqueryWithLabelInfo(source, expr, context)
     val producedPlan = fn(source, subQueryPlan, variableName, context)
 
     (producedPlan, Variable(variableName)(expr.position))

@@ -33,7 +33,7 @@ import scala.util.hashing.MurmurHash3
 /**
  * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
  */
-trait SinglePlannerQuery extends PlannerQueryPart {
+trait SinglePlannerQuery extends PlannerQuery {
 
   /**
    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.

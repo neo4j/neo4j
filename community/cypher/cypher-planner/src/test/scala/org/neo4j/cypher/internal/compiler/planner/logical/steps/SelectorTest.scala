@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -132,20 +131,18 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // MATCH (a) WHERE (a)-->()
     val subqueryExpression = ExistsIRExpression(
-      PlannerQuery(
-        RegularSinglePlannerQuery(
-          QueryGraph(
-            argumentIds = Set("a"),
-            patternNodes = Set("a", "  UNNAMED2"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "  UNNAMED1",
-                ("a", "  UNNAMED2"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          )
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set("a"),
+          patternNodes = Set("a", "  UNNAMED2"),
+          patternRelationships =
+            Set(PatternRelationship(
+              "  UNNAMED1",
+              ("a", "  UNNAMED2"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            ))
         )
       ),
       "",

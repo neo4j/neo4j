@@ -119,7 +119,7 @@ case class QueryGraph(
    */
   lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val iRExpressions: Seq[QgWithLeafInfo] = this.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
-      e.query.query.allQGsWithLeafInfo
+      e.query.allQGsWithLeafInfo
     )
     QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
       (iRExpressions ++

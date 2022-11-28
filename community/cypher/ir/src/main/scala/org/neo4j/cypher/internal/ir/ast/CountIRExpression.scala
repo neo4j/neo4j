@@ -50,11 +50,9 @@ case class CountIRExpression(
   def renameCountVariable(newName: String): CountIRExpression = {
     copy(
       countVariableName = newName,
-      query = query.copy(
-        query.query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
-          AggregatingQueryProjection(aggregationExpressions = Map(newName -> CountStar()(position)))
-        ))
-      )
+      query = query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
+        AggregatingQueryProjection(aggregationExpressions = Map(newName -> CountStar()(position)))
+      ))
     )(position, introducedVariables, scopeDependencies)
   }
 

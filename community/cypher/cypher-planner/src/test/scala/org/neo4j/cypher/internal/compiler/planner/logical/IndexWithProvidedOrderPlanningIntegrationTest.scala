@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -1036,7 +1036,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     def byPredicateSelectivity(
       baseCardinality: Double,
       patternNodesPredicateSelectivity: Map[Set[String], Map[Expression, Double]]
-    ): PartialFunction[PlannerQueryPart, Double] = {
+    ): PartialFunction[PlannerQuery, Double] = {
       def mapsPatternNodes(patternNodes: Set[String]) = patternNodesPredicateSelectivity.contains(patternNodes)
       def mapsPredicate(patternNodes: Set[String], predicate: Predicate) =
         patternNodesPredicateSelectivity(patternNodes).contains(predicate.expr)

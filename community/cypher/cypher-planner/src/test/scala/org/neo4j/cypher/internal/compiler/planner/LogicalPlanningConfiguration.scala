@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCard
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -85,13 +85,13 @@ trait LogicalPlanningConfiguration {
   def executionModel: ExecutionModel
   def lookupRelationshipsByType: LookupRelationshipsByType
 
-  protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double])
-    : PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply(_))
+  protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] =
+    pf.andThen(Cardinality.apply(_))
 
   protected def selectivitiesCardinality(
     selectivities: Map[Expression, Double],
     baseCardinality: QueryGraph => Double
-  ): PartialFunction[PlannerQueryPart, Cardinality] = mapCardinality {
+  ): PartialFunction[PlannerQuery, Cardinality] = mapCardinality {
     case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>
       queryGraph.selections.predicates.foldLeft(baseCardinality(queryGraph)) { case (rows, predicate) =>
         rows * selectivities(predicate.expr)

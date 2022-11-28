@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityMod
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.Cardinality
@@ -34,20 +34,20 @@ import scala.collection.mutable
 class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalityModel) extends CardinalityModel {
 
   type CardinalityModelInput =
-    (PlannerQueryPart, LabelInfo, RelTypeInfo, SemanticTable, IndexCompatiblePredicatesProviderContext)
+    (PlannerQuery, LabelInfo, RelTypeInfo, SemanticTable, IndexCompatiblePredicatesProviderContext)
 
   final private val cache: mutable.HashMap[CardinalityModelInput, Cardinality] = mutable.HashMap.empty
 
   override def apply(
-    plannerQueryPart: PlannerQueryPart,
+    plannerQuery: PlannerQuery,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     semanticTable: SemanticTable,
     indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
   ): Cardinality = {
-    def cacheKey(part: PlannerQueryPart): CardinalityModelInput =
-      (part, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext)
+    def cacheKey(query: PlannerQuery): CardinalityModelInput =
+      (query, labelInfo, relTypeInfo, semanticTable, indexCompatiblePredicatesProviderContext)
 
     def singlePlannerQueryCardinality(singlePlannerQuery: SinglePlannerQuery): Cardinality =
       wrapped.singlePlannerQueryCardinality(
@@ -64,9 +64,9 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
 
     // First, try to retrieve the cardinality from the cache
     cache.getOrElseUpdate(
-      cacheKey(plannerQueryPart),
+      cacheKey(plannerQuery),
       // If it isn't in the cache, then check the type of the query
-      plannerQueryPart match {
+      plannerQuery match {
         // If it's a simple SinglePlannerQuery, our base case, we hand it over to the underlying cardinality model, and then store the result
         case singlePlannerQuery: SinglePlannerQuery =>
           singlePlannerQueryCardinality(singlePlannerQuery)
@@ -93,10 +93,10 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
           lazy val unions: mutable.Stack[(UnionQuery, Cardinality)] =
             mutable.Stack((unionQuery, cachedSinglePlannerQueryCardinality(unionQuery.rhs)))
           // pointer to the current layer
-          var part: PlannerQueryPart = unionQuery.lhs
+          var query: PlannerQuery = unionQuery.lhs
           // Phase 1: "peel off" layers of the union until we hit the SinglePlannerQuery at the bottom, or if one of the nested unions is already in the cache
           while (cardinality == null) {
-            part match {
+            query match {
               case singlePlannerQuery: SinglePlannerQuery =>
                 // We have reached the base layer, try to get the value from the cache or else calculate and store it
                 cardinality = cachedSinglePlannerQueryCardinality(singlePlannerQuery)
@@ -110,12 +110,12 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
 
                   case None =>
                     // If it isn't in the cache, then we move the pointer one layer deeper, and push the nexted union in the cache
-                    part = nestedUnionQuery.lhs
+                    query = nestedUnionQuery.lhs
                     unions.push((nestedUnionQuery, cachedSinglePlannerQueryCardinality(nestedUnionQuery.rhs)))
                 }
 
               case other =>
-                throw new IllegalArgumentException(s"Unexpected PlannerQueryPart: ${other.getClass.getName}")
+                throw new IllegalArgumentException(s"Unexpected PlannerQuery: ${other.getClass.getName}")
             }
           }
           // Phase 2: repeatedly pop union layers from the stack
@@ -130,7 +130,7 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
           cardinality
 
         case other =>
-          throw new IllegalArgumentException(s"Unexpected PlannerQueryPart: ${other.getClass.getName}")
+          throw new IllegalArgumentException(s"Unexpected PlannerQuery: ${other.getClass.getName}")
       }
     )
   }

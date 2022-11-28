@@ -179,7 +179,7 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val arguments = subquery.dependencies.map(_.name)
-    // We compute LabelInfo here instead of using plannerQueryPartPlanner.planSubqueryWithLabelInfo
+    // We compute LabelInfo here instead of using plannerQueryPlanner.planSubqueryWithLabelInfo
     // This has the benefit of a smaller cache key (just the labelInfo, and not the whole plan).
     val labelInfo =
       context.staticComponents.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo
