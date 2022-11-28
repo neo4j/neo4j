@@ -69,8 +69,8 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
     //  .nodeUniqueIndexSeek("n:A(prop = 42)")
     //
     // Will leave this as a future potential improvement.
-    combined.map {
-      case (variable, labels) =>
+    combined.collect {
+      case (variable, labels) if labels.size > 1 =>
         val providedOrder = ResultOrdering.providedOrderForLabelScan(
           interestingOrderConfig.orderToSolve,
           variable,
