@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.expressions.Expression.TreeAcc
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren

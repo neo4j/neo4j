@@ -40,8 +40,6 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntInteger
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
-import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
-import org.neo4j.internal.kernel.api.procs.UserAggregationUpdater
 import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction.BasicUserAggregationFunction

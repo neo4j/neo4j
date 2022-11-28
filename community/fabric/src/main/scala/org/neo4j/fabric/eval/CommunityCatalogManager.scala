@@ -35,7 +35,6 @@ import org.neo4j.graphdb.event.TransactionEventListenerAdapter
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
-import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
