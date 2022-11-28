@@ -71,30 +71,32 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
         variableIfAllEqualHasLabels(exprs).collect {
           case (variable, labels)
             if !skipIDs.contains(variable.name) &&
-              context.staticComponents.planContext.nodeTokenIndex.nonEmpty && // TODO
               qg.patternNodes(variable.name) &&
               !qg.argumentIds(variable.name) =>
-            val hints = qg.hints.toSeq.collect {
-              case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
-                if labels.map(_.name).contains(labelName) => hint
+            context.staticComponents.planContext.nodeTokenIndex.map { nodeTokenIndex =>
+              val hints = qg.hints.toSeq.collect {
+                case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
+                  if labels.map(_.name).contains(labelName) => hint
+              }
+
+              val providedOrder = ResultOrdering.providedOrderForLabelScan(
+                interestingOrderConfig.orderToSolve,
+                variable,
+                nodeTokenIndex.orderCapability,
+                context.providedOrderFactory
+              )
+
+              context.staticComponents.logicalPlanProducer.planUnionNodeByLabelsScan(
+                variable,
+                labels,
+                Seq(ors),
+                hints,
+                qg.argumentIds,
+                providedOrder,
+                context
+              )
             }
-
-            val providedOrder = ResultOrdering.providedOrderForLabelScan(
-              interestingOrderConfig.orderToSolve,
-              variable,
-              context.providedOrderFactory
-            )
-
-            context.staticComponents.logicalPlanProducer.planUnionNodeByLabelsScan(
-              variable,
-              labels,
-              Seq(ors),
-              hints,
-              qg.argumentIds,
-              providedOrder,
-              context
-            )
-        }
+        }.flatten
       case _ =>
         None
     }

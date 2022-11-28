@@ -141,15 +141,43 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order") {
-      val plan = new given().getLogicalPlanFor(
-        s"MATCH (n:Awesome) RETURN n ORDER BY n $cypherToken",
-        stripProduceResults = false
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("Awesome", 10)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:Awesome) RETURN n ORDER BY n $cypherToken"
       )
 
-      plan._1 should equal(
-        new LogicalPlanBuilder()
+      plan should equal(
+        planner.planBuilder()
           .produceResults("n")
           .nodeByLabelScan("n", "Awesome", plannedOrder)
+          .build()
+      )
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Order by variable from label scan with token index with no ordering should not plan with provided order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("Awesome", 10)
+        .addNodeLookupIndex(IndexOrderCapability.NONE)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:Awesome) RETURN n ORDER BY n $cypherToken"
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("n")
+          .sort(Seq(sortOrder("n")))
+          .nodeByLabelScan("n", "Awesome")
           .build()
       )
     }
@@ -170,6 +198,30 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         planner.planBuilder()
           .produceResults("n")
           .unionNodeByLabelsScan("n", Seq("A", "B"), plannedOrder)
+          .build()
+      )
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Order by variable from union label scan with token index with no ordering should not plan with provided order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 10)
+        .addNodeLookupIndex(IndexOrderCapability.NONE)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:A|B) RETURN n ORDER BY n $cypherToken"
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("n")
+          .sort(Seq(sortOrder("n")))
+          .unionNodeByLabelsScan("n", Seq("A", "B"))
           .build()
       )
     }
@@ -197,6 +249,30 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(
+      s"$cypherToken-$orderCapability: Order by variable from intersection label scan with token index with no ordering should not plan with provided order"
+    ) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setAllRelationshipsCardinality(100)
+        .setLabelCardinality("A", 10)
+        .setLabelCardinality("B", 10)
+        .addNodeLookupIndex(IndexOrderCapability.NONE)
+        .build()
+
+      val plan = planner.plan(
+        s"MATCH (n:A&B) RETURN n ORDER BY n $cypherToken"
+      )
+
+      plan should equal(
+        planner.planBuilder()
+          .produceResults("n")
+          .sort(Seq(sortOrder("n")))
+          .intersectionNodeByLabelsScan("n", Seq("A", "B"))
+          .build()
+      )
+    }
+
+    test(
       s"$cypherToken-$orderCapability: Order by variable from relationship type scan should plan with provided order"
     ) {
       val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
@@ -212,6 +288,27 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(planner.subPlanBuilder()
         .produceResults("r")
         .relationshipTypeScan("(n)-[r:REL]->(m)", plannedOrder)
+        .build())
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Order by variable from relationship type scan with token index with no ordering should not plan with provided order"
+    ) {
+      val query = s"MATCH (n)-[r:REL]->(m) RETURN r ORDER BY r $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .addRelationshipLookupIndex(IndexOrderCapability.NONE)
+        .build()
+
+      val plan = planner.plan(query)
+
+      plan should equal(planner.subPlanBuilder()
+        .produceResults("r")
+        .sort(Seq(sortOrder("r")))
+        .relationshipTypeScan("(n)-[r:REL]->(m)")
         .build())
     }
 
@@ -232,6 +329,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(planner.subPlanBuilder()
         .produceResults("r")
         .unionRelationshipTypesScan("(n)-[r:REL|LER]->(m)", plannedOrder)
+        .build())
+    }
+
+    test(
+      s"$cypherToken-$orderCapability: Order by variable from union relationship type scan with token index with no ordering should not plan with provided order"
+    ) {
+      val query = s"MATCH (n)-[r:REL|LER]->(m) RETURN r ORDER BY r $cypherToken"
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setAllRelationshipsCardinality(100)
+        .setRelationshipCardinality("()-[:REL]-()", 100)
+        .setRelationshipCardinality("()-[:LER]-()", 100)
+        .addRelationshipLookupIndex(IndexOrderCapability.NONE)
+        .build()
+
+      val plan = planner.plan(query)
+
+      plan should equal(planner.subPlanBuilder()
+        .produceResults("r")
+        .sort(Seq(sortOrder("r")))
+        .unionRelationshipTypesScan("(n)-[r:REL|LER]->(m)")
         .build())
     }
 

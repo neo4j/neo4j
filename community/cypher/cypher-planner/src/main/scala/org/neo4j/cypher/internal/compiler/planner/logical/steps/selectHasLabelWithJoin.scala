@@ -40,36 +40,37 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    if (context.staticComponents.planContext.nodeTokenIndex.isEmpty) { // TODO
-      Iterator.empty
-    } else {
-      unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {
-        case s @ HasLabels(variable: Variable, Seq(labelName))
-          if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
-          val providedOrder = ResultOrdering.providedOrderForLabelScan(
-            interestingOrderConfig.orderToSolve,
-            variable,
-            context.providedOrderFactory
-          )
-          val labelScan = context.staticComponents.logicalPlanProducer.planNodeByLabelScan(
-            variable,
-            labelName,
-            Seq(s),
-            None,
-            queryGraph.argumentIds,
-            providedOrder,
-            context
-          )
-          val plan =
-            context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-              Set(variable.name),
-              input,
-              labelScan,
-              Set.empty,
+    context.staticComponents.planContext.nodeTokenIndex match {
+      case None => Iterator.empty
+      case Some(nodeTokenIndex) =>
+        unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {
+          case s @ HasLabels(variable: Variable, Seq(labelName))
+            if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
+            val providedOrder = ResultOrdering.providedOrderForLabelScan(
+              interestingOrderConfig.orderToSolve,
+              variable,
+              nodeTokenIndex.orderCapability,
+              context.providedOrderFactory
+            )
+            val labelScan = context.staticComponents.logicalPlanProducer.planNodeByLabelScan(
+              variable,
+              labelName,
+              Seq(s),
+              None,
+              queryGraph.argumentIds,
+              providedOrder,
               context
             )
-          SelectionCandidate(plan, Set(s))
-      }
+            val plan =
+              context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+                Set(variable.name),
+                input,
+                labelScan,
+                Set.empty,
+                context
+              )
+            SelectionCandidate(plan, Set(s))
+        }
     }
   }
 }

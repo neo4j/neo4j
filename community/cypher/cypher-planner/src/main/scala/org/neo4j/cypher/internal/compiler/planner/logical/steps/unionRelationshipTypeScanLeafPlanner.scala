@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 
 case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
@@ -42,23 +43,32 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      context.staticComponents.planContext.relationshipTokenIndex.isEmpty || // TODO
-        queryGraph.argumentIds.contains(pattern.name) ||
+      queryGraph.argumentIds.contains(pattern.name) ||
         skipIDs.contains(pattern.name) ||
         skipIDs.contains(pattern.left) ||
         skipIDs.contains(pattern.right)
 
     queryGraph.patternRelationships.flatMap {
-
       case relationship @ PatternRelationship(name, (_, _), _, types, SimplePatternLength)
         if types.distinct.length > 1 && !shouldIgnore(relationship) =>
-        Some(planHiddenSelectionAndRelationshipLeafPlan(
-          queryGraph.argumentIds,
-          relationship,
-          context,
-          planUnionRelationshipTypeScan(name, types, _, _, _, queryGraph, interestingOrderConfig, context)
-        ))
-
+        context.staticComponents.planContext.relationshipTokenIndex.map { relTokenIndex =>
+          planHiddenSelectionAndRelationshipLeafPlan(
+            queryGraph.argumentIds,
+            relationship,
+            context,
+            planUnionRelationshipTypeScan(
+              name,
+              types,
+              _,
+              _,
+              _,
+              queryGraph,
+              interestingOrderConfig,
+              relTokenIndex.orderCapability,
+              context
+            )
+          )
+        }
       case _ => None
     }
   }
@@ -71,11 +81,13 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     hiddenSelections: Seq[Expression],
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
+    indexOrderCapability: IndexOrderCapability,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     def providedOrderFor = ResultOrdering.providedOrderForRelationshipTypeScan(
       interestingOrderConfig.orderToSolve,
       _,
+      indexOrderCapability,
       context.providedOrderFactory
     )
     context.staticComponents.logicalPlanProducer.planUnionRelationshipByTypeScan(

@@ -190,36 +190,48 @@ object ResultOrdering {
   def providedOrderForLabelScan(
     interestingOrder: InterestingOrder,
     variable: Variable,
+    indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
   ): ProvidedOrder = {
-    providedOrderForScan(interestingOrder, variable, providedOrderFactory)
+    providedOrderForScan(interestingOrder, variable, indexOrderCapability, providedOrderFactory)
 
   }
 
   def providedOrderForRelationshipTypeScan(
     interestingOrder: InterestingOrder,
     name: String,
+    indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
   ): ProvidedOrder = {
-    providedOrderForScan(interestingOrder, Variable(name)(InputPosition.NONE), providedOrderFactory)
+    providedOrderForScan(
+      interestingOrder,
+      Variable(name)(InputPosition.NONE),
+      indexOrderCapability,
+      providedOrderFactory
+    )
   }
 
   private def providedOrderForScan(
     interestingOrder: InterestingOrder,
     variable: Variable,
+    indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder = {
     def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
       extractVariableForValue(expression, projections).contains(variable)
 
-    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
+    indexOrderCapability match {
+      case IndexOrderCapability.NONE => ProvidedOrder.empty
+      case IndexOrderCapability.BOTH =>
+        val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
 
-    candidates.map(_.headOption).collectFirst {
-      case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
-        providedOrderFactory.desc(variable)
-      case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
-        providedOrderFactory.asc(variable)
-    }.getOrElse(ProvidedOrder.empty)
+        candidates.map(_.headOption).collectFirst {
+          case Some(Desc(expression, projection)) if satisfies(expression, projection) =>
+            providedOrderFactory.desc(variable)
+          case Some(Asc(expression, projection)) if satisfies(expression, projection) =>
+            providedOrderFactory.asc(variable)
+        }.getOrElse(ProvidedOrder.empty)
+    }
   }
 
   @tailrec
