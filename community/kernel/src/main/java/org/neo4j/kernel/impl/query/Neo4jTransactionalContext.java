@@ -166,24 +166,22 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     private void safeTxOperation(Consumer<InternalTransaction> operation) {
-        Throwable exception = null;
+        RuntimeException exception = null;
         try {
             beforeUnbind();
             closeStatement();
             operation.accept(transaction);
-        } catch (RuntimeException | Error e) {
+        } catch (RuntimeException e) {
             exception = e;
         } finally {
             try {
                 close();
-            } catch (RuntimeException | Error e) {
+            } catch (RuntimeException e) {
                 exception = Exceptions.chain(exception, e);
             }
         }
         if (exception != null) {
-            Exceptions.throwIfUnchecked(exception);
-            // Catching only unchecked exceptions this should be unreachable
-            throw new TransactionFailureException("Unable to close transaction", exception);
+            throw exception;
         }
     }
 
