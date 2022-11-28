@@ -661,7 +661,7 @@ trait UpdateGraph {
         case SetNodePropertiesFromMapPattern(_, expression, _)  => CreatesPropertyKeys(expression)
         case SetPropertiesFromMapPattern(_, expression, _) => CreatesPropertyKeys(expression)
         case SetNodePropertyPattern(_, key, _)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(key))
-        case SetNodePropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesPropertyKeys(items.map(_._2):_*))
+        case SetNodePropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
         case SetPropertiesPattern(_, items)  => toNodePropertyPattern(patterns.tail, acc + CreatesKnownPropertyKeys(items.map(_._1).toSet))
         case MergeNodePattern(_, _, onCreate, onMatch) =>
           toNodePropertyPattern(patterns.tail, acc + extractPropertyKey(onCreate) + extractPropertyKey(onMatch))
