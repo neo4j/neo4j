@@ -140,7 +140,7 @@ class PlanStalenessCallerTest extends CypherFunSuite {
     }
   }
 
-  test("should update the timestamp if the life time is expired but transaction has not changed") {
+  test("should not update the timestamp if the life time is expired but transaction has not changed") {
     testAll { (algorithm, clock) =>
       val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
       val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
@@ -156,7 +156,28 @@ class PlanStalenessCallerTest extends CypherFunSuite {
 
       clock.forward(500, MILLISECONDS)
       idSupplier.id = 23
+      planStalenessCaller.staleness(fingerprintRef, stats) shouldBe a[Stale]
+    }
+  }
+
+  test("should only update timestamp when at least minReplanInterval time has passed") {
+    testAll { (algorithm, clock) =>
+      val snapshot = GraphStatisticsSnapshot(Map(NodesWithLabelCardinality(label(21)) -> 5.0))
+      val fingerprintRef = new PlanFingerprintReference(PlanFingerprint(clock.millis(), 17, snapshot))
+      val divergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(algorithm, 0.5, 0.1, 1000, 100000)
+
+      val stats: GraphStatistics = nodesWithLabelCardinality(21, 15.0)
+      val idSupplier = TransactionIdSupplier(17)
+      val planStalenessCaller = new DefaultPlanStalenessCaller(clock, divergenceCalculator, idSupplier, not_used, null)
+
+      clock.forward(500, MILLISECONDS)
+      idSupplier.id = 23
       planStalenessCaller.staleness(fingerprintRef, stats) shouldBe NotStale
+
+      clock.forward(500, MILLISECONDS)
+      idSupplier.id = 24
+      // even though we checked staleness once after 500 ms, the total passed time is now 1000 ms and our stalenessCaller should therefore do the calculation
+      planStalenessCaller.staleness(fingerprintRef, stats) shouldBe a[Stale]
     }
   }
 

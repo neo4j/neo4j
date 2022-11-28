@@ -64,10 +64,8 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
     lazy val lastCommittedTxId = lastCommittedTxIdProvider()
 
     if (
-      divergenceCalculator.shouldCheck(
-        currentTimeMillis,
-        f.lastCheckTimeMillis
-      ) && lastCommittedTxId != f.lastCommittedTxId
+      divergenceCalculator.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
+      lastCommittedTxId != f.lastCommittedTxId
     ) {
       // check if we have diverged?
       val threshold = divergenceCalculator.decay(currentTimeMillis - f.creationTimeMillis)
@@ -84,7 +82,6 @@ class DefaultPlanStalenessCaller[EXECUTABLE_QUERY](
         NotStale
       }
     } else {
-      ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis)
       NotStale
     }
   }
