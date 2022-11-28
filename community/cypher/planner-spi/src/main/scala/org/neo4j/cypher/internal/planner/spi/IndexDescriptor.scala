@@ -182,3 +182,8 @@ case class IndexDescriptor(
     copy(maybeKernelIndexCapability = Some(kqt))
   def unique(setUnique: Boolean = true): IndexDescriptor = copy(isUnique = setUnique)
 }
+
+case class TokenIndexDescriptor(
+  entityType: org.neo4j.common.EntityType,
+  orderCapability: IndexOrderCapability
+)

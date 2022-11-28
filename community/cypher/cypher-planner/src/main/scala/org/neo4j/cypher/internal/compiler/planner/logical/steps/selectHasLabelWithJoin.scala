@@ -40,7 +40,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator with Sele
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    if (!context.staticComponents.planContext.canLookupNodesByLabel) {
+    if (context.staticComponents.planContext.nodeTokenIndex.isEmpty) { // TODO
       Iterator.empty
     } else {
       unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {

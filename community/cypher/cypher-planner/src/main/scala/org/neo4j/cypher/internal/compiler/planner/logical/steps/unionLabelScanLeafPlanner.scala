@@ -71,7 +71,7 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
         variableIfAllEqualHasLabels(exprs).collect {
           case (variable, labels)
             if !skipIDs.contains(variable.name) &&
-              context.staticComponents.planContext.canLookupNodesByLabel &&
+              context.staticComponents.planContext.nodeTokenIndex.nonEmpty && // TODO
               qg.patternNodes(variable.name) &&
               !qg.argumentIds(variable.name) =>
             val hints = qg.hints.toSeq.collect {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.common
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
@@ -83,12 +84,14 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
@@ -344,10 +347,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         )
       }
 
-      override def canLookupNodesByLabel: Boolean = true
+      override def nodeTokenIndex: Option[TokenIndexDescriptor] =
+        Some(TokenIndexDescriptor(common.EntityType.NODE, IndexOrderCapability.BOTH))
 
-      override def canLookupRelationshipsByType: Boolean =
-        config.lookupRelationshipsByType.canLookupRelationshipsByType
+      override def relationshipTokenIndex: Option[TokenIndexDescriptor] =
+        if (config.lookupRelationshipsByType.canLookupRelationshipsByType)
+          Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, IndexOrderCapability.BOTH))
+        else None
 
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         config.nodeConstraints.filter(p => p._1 == labelName).flatMap(p => p._2)

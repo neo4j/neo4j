@@ -25,6 +25,7 @@ import org.mockito.Mockito.spy
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.common
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Hint
@@ -96,10 +97,12 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
@@ -332,7 +335,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPlanContext(statistics: InstrumentedGraphStatistics = newMockedStatistics): PlanContext = {
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
-    doReturn(true, Nil: _*).when(context).canLookupNodesByLabel
+    doReturn(Some(TokenIndexDescriptor(common.EntityType.NODE, IndexOrderCapability.BOTH)), Nil: _*).when(context).nodeTokenIndex
     context
   }
 

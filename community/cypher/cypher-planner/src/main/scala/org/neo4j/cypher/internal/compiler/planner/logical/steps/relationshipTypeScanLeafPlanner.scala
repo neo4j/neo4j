@@ -42,7 +42,7 @@ case class relationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      !context.staticComponents.planContext.canLookupRelationshipsByType ||
+      context.staticComponents.planContext.relationshipTokenIndex.isEmpty || // TODO
         queryGraph.argumentIds.contains(pattern.name) ||
         skipIDs.contains(pattern.name) ||
         skipIDs.contains(pattern.left) ||

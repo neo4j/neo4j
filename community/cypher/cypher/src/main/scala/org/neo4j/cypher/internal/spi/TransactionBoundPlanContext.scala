@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
@@ -324,12 +325,32 @@ class TransactionBoundPlanContext(
     }
   }
 
-  override def canLookupNodesByLabel: Boolean = {
-    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)).hasNext
+  private def getTokenIndexDescriptor(indexes: java.util.Iterator[schema.IndexDescriptor])
+    : Option[TokenIndexDescriptor] = {
+    indexes.asScala
+      .nextOption()
+      .map { kernelIndexDescriptor =>
+        val typ = kernelIndexDescriptor.schema().entityType()
+        val orderCapability =
+          if (kernelIndexDescriptor.getCapability.supportsOrdering()) {
+            IndexOrderCapability.BOTH
+          } else {
+            IndexOrderCapability.NONE
+          }
+        TokenIndexDescriptor(typ, orderCapability)
+      }
   }
 
-  override def canLookupRelationshipsByType: Boolean = {
-    tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP)).hasNext
+  override def nodeTokenIndex: Option[TokenIndexDescriptor] = {
+    getTokenIndexDescriptor(
+      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+    )
+  }
+
+  override def relationshipTokenIndex: Option[TokenIndexDescriptor] = {
+    getTokenIndexDescriptor(
+      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))
+    )
   }
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {

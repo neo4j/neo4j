@@ -142,13 +142,15 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
 
   /**
    * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.
+   * Returns an IndexDescriptor if it is possible, otherwise None.
    */
-  def canLookupNodesByLabel: Boolean
+  def nodeTokenIndex: Option[TokenIndexDescriptor]
 
   /**
    * Checks if it is possible to lookup relationships by their types, without taking any schema locks.
+   * Returns an IndexDescriptor if it is possible, otherwise None.
    */
-  def canLookupRelationshipsByType: Boolean
+  def relationshipTokenIndex: Option[TokenIndexDescriptor]
 
   def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 

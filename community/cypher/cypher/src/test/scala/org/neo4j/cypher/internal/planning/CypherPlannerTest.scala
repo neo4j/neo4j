@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.neo4j.common
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.PreParsedQuery
@@ -45,9 +46,11 @@ import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.NodesAllCardinality
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
@@ -246,7 +249,8 @@ class CypherPlannerTest extends CypherFunSuite {
         new MutableGraphStatisticsSnapshot(mutable.Map(NodesAllCardinality -> 1.0))
       )
       override def getPropertiesWithExistenceConstraint: Set[String] = Set.empty
-      override def canLookupNodesByLabel: Boolean = true
+      override def nodeTokenIndex: Option[TokenIndexDescriptor] =
+        Some(TokenIndexDescriptor(common.EntityType.NODE, IndexOrderCapability.BOTH))
       override def lastCommittedTxIdProvider: () => Long = getTx
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
     }

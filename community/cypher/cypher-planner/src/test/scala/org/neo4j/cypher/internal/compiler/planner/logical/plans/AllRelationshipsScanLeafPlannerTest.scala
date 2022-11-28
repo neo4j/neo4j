@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
+import org.neo4j.common
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -34,6 +35,8 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -167,7 +170,10 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
   def planningContext(typeScanEnabled: Boolean = true): LogicalPlanningContext = {
     val planContext = newMockedPlanContext()
-    when(planContext.canLookupRelationshipsByType).thenReturn(typeScanEnabled)
+    val tokenIndex =
+      if (typeScanEnabled) Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, IndexOrderCapability.BOTH))
+      else None
+    when(planContext.relationshipTokenIndex).thenReturn(tokenIndex)
     newMockedLogicalPlanningContext(planContext = planContext, semanticTable = newMockedSemanticTable)
   }
 

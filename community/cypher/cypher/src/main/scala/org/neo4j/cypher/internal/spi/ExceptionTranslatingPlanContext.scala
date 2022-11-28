@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateExcept
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.planning.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
@@ -126,11 +127,11 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def indexExistsForRelType(relTypeId: Int): Boolean =
     translateException(tokenNameLookup, inner.indexExistsForRelType(relTypeId))
 
-  override def canLookupNodesByLabel: Boolean =
-    translateException(tokenNameLookup, inner.canLookupNodesByLabel)
+  override def nodeTokenIndex: Option[TokenIndexDescriptor] =
+    translateException(tokenNameLookup, inner.nodeTokenIndex)
 
-  override def canLookupRelationshipsByType: Boolean =
-    translateException(tokenNameLookup, inner.canLookupRelationshipsByType)
+  override def relationshipTokenIndex: Option[TokenIndexDescriptor] =
+    translateException(tokenNameLookup, inner.relationshipTokenIndex)
 
   override def hasNodePropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(tokenNameLookup, inner.hasNodePropertyExistenceConstraint(labelName, propertyKey))

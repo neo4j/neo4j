@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.common
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.graphcounts.Constraint
 import org.neo4j.cypher.graphcounts.GraphCountData
@@ -66,6 +67,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -165,7 +167,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class IndexDefinition(
-    entityType: IndexDefinition.EntityType,
+    entityType: EntityType,
     indexType: graphdb.schema.IndexType,
     propertyKeys: Seq[String],
     uniqueValueSelectivity: Double,
@@ -186,8 +188,10 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class Indexes(
-    nodeLookupIndex: Boolean = true,
-    relationshipLookupIndex: Boolean = true,
+    nodeLookupIndex: Option[TokenIndexDescriptor] =
+      Some(TokenIndexDescriptor(common.EntityType.NODE, IndexOrderCapability.BOTH)),
+    relationshipLookupIndex: Option[TokenIndexDescriptor] =
+      Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, IndexOrderCapability.BOTH)),
     propertyIndexes: Seq[IndexDefinition] = Seq.empty
   ) {
 
@@ -201,10 +205,15 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
       oldDef.indexType == indexDefinition.indexType
     }
 
-    def addNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = true)
-    def removeNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = false)
-    def addRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = true)
-    def removeRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = false)
+    def addNodeLookupIndex(orderCapability: IndexOrderCapability): Indexes =
+      this.copy(nodeLookupIndex = Some(TokenIndexDescriptor(common.EntityType.NODE, orderCapability)))
+
+    def removeNodeLookupIndex(): Indexes = this.copy(nodeLookupIndex = None)
+
+    def addRelationshipLookupIndex(orderCapability: IndexOrderCapability): Indexes =
+      this.copy(relationshipLookupIndex = Some(TokenIndexDescriptor(common.EntityType.RELATIONSHIP, orderCapability)))
+
+    def removeRelationshipLookupIndex(): Indexes = this.copy(relationshipLookupIndex = None)
   }
 
   case class ExistenceConstraintDefinition(entityType: IndexDefinition.EntityType, propertyKey: String)
@@ -387,16 +396,18 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     }
   }
 
-  def addNodeLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(indexes = indexes.addNodeLookupIndex())
+  def addNodeLookupIndex(orderCapability: IndexOrderCapability = IndexOrderCapability.BOTH)
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.addNodeLookupIndex(orderCapability))
   }
 
   def removeNodeLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(indexes = indexes.removeNodeLookupIndex())
   }
 
-  def addRelationshipLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    this.copy(indexes = indexes.addRelationshipLookupIndex())
+  def addRelationshipLookupIndex(orderCapability: IndexOrderCapability = IndexOrderCapability.BOTH)
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(indexes = indexes.addRelationshipLookupIndex(orderCapability))
   }
 
   def removeRelationshipLookupIndex(): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -726,9 +737,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         indexes.propertyIndexes.toIterator.flatMap(newIndexDescriptor)
       }
 
-      override def canLookupNodesByLabel: Boolean = indexes.nodeLookupIndex
+      override def nodeTokenIndex: Option[TokenIndexDescriptor] = indexes.nodeLookupIndex
 
-      override def canLookupRelationshipsByType: Boolean = indexes.relationshipLookupIndex
+      override def relationshipTokenIndex: Option[TokenIndexDescriptor] = indexes.relationshipLookupIndex
 
       override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
         constraints.collect {

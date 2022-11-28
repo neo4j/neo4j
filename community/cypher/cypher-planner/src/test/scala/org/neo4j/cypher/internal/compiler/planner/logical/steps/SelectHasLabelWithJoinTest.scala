@@ -151,7 +151,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
 
   test("should not produce any candidates when node by label lookup is disabled") {
     val planContext = mock[PlanContext]
-    when(planContext.canLookupNodesByLabel).thenReturn(false)
+    when(planContext.nodeTokenIndex).thenReturn(None)
 
     val ctx = mock[LogicalPlanningContext](RETURNS_DEEP_STUBS)
     when(ctx.staticComponents.planContext).thenReturn(planContext)
