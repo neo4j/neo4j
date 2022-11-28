@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities.text_2_0
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.collection.immutable.ListSet
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -899,6 +901,7 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .apply(fromSubquery = true)
       .|.setNodeProperty("n", "prop", "c")
       .|.eager()
@@ -1033,6 +1036,7 @@ class IndexPlanningIntegrationTest
 
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .apply(fromSubquery = true)
       .|.setRelationshipProperty("r", "prop", "c")
       .|.eager()

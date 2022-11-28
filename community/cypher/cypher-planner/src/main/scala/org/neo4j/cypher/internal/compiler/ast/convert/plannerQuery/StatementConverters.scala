@@ -57,14 +57,15 @@ object StatementConverters {
     q: SingleQuery,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    importedVariables: Set[String]
+    importedVariables: Set[String],
+    nonTerminating: Boolean
   ): SinglePlannerQuery = {
     val allImportedVars = importedVariables ++ q.importWith.map((wth: With) =>
       wth.returnItems.items.map(_.name).toSet
     ).getOrElse(Set.empty)
 
     val builder = PlannerQueryBuilder(semanticTable, allImportedVars)
-    addClausesToPlannerQueryBuilder(q.clauses, builder, anonymousVariableNameGenerator).build()
+    addClausesToPlannerQueryBuilder(q.clauses, builder, anonymousVariableNameGenerator, nonTerminating).build()
   }
 
   /**
@@ -73,7 +74,8 @@ object StatementConverters {
   def addClausesToPlannerQueryBuilder(
     clauses: Seq[Clause],
     builder: PlannerQueryBuilder,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    nonTerminating: Boolean
   ): PlannerQueryBuilder = {
     @tailrec
     def addClausesToPlannerQueryBuilderRec(clauses: Seq[Clause], builder: PlannerQueryBuilder): PlannerQueryBuilder =
@@ -83,7 +85,8 @@ object StatementConverters {
         val clause = clauses.head
         val nextClauses = clauses.tail
         val nextClause = nextClauses.headOption
-        val newBuilder = addToLogicalPlanInput(builder, clause, nextClause, anonymousVariableNameGenerator)
+        val newBuilder =
+          addToLogicalPlanInput(builder, clause, nextClause, anonymousVariableNameGenerator, nonTerminating)
         addClausesToPlannerQueryBuilderRec(nextClauses, newBuilder)
       }
 
@@ -110,7 +113,8 @@ object StatementConverters {
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     importedVariables: Set[String] = Set.empty,
-    rewrite: Boolean = true
+    rewrite: Boolean = true,
+    nonTerminating: Boolean = false
   ): PlannerQuery = {
     val rewrittenQuery =
       if (rewrite) query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)) else query
@@ -119,7 +123,13 @@ object StatementConverters {
 
     rewrittenQuery match {
       case singleQuery: SingleQuery =>
-        toSinglePlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        toSinglePlannerQuery(
+          singleQuery,
+          semanticTable,
+          anonymousVariableNameGenerator,
+          importedVariables,
+          nonTerminating
+        )
 
       case unionQuery: ast.ProjectingUnion =>
         val lhs: PlannerQuery =
@@ -128,10 +138,11 @@ object StatementConverters {
             semanticTable,
             anonymousVariableNameGenerator,
             importedVariables,
-            rewrite = false
+            rewrite = false,
+            nonTerminating = true
           )
         val rhs: SinglePlannerQuery =
-          toSinglePlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
+          toSinglePlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables, true)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll      => false

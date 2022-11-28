@@ -47,12 +47,20 @@ trait QueryHorizon extends Foldable {
 
   def allHints: Set[Hint]
   def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon
+  def isTerminatingProjection: Boolean
 
   /**
    * If dependingExpressions is empty, or only contains variables, we can assume that it doesn't contain any reads
-   * @return 'true' if the this horizon might do database reads. 'false' otherwise.
+   * @return 'true' if this horizon might do database reads. 'false' otherwise.
    */
-  def couldContainRead: Boolean = dependingExpressions.exists(!_.isInstanceOf[Variable])
+  def couldContainRead: Boolean = dependingExpressions.exists(!_.isInstanceOf[Variable]) || returnsNodesOrRelationships
+
+  private def returnsNodesOrRelationships: Boolean = {
+    this match {
+      case qp: QueryProjection => qp.isTerminatingProjection && qp.projections.values.exists(_.isInstanceOf[Variable])
+      case _                   => false
+    }
+  }
 
   /**
      * @return all recursively included query graphs, with leaf information for Eagerness analysis.
@@ -64,7 +72,10 @@ trait QueryHorizon extends Foldable {
     val iRExpressions: Seq[QgWithLeafInfo] = filtered.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
       e.query.allQGsWithLeafInfo
     )
-    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(getQueryGraphFromDependingExpressions) +: iRExpressions
+    QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(
+      getQueryGraphFromDependingExpressions,
+      this.isTerminatingProjection
+    ) +: iRExpressions
   }
 
   protected def getQueryGraphFromDependingExpressions: QueryGraph = {
@@ -92,6 +103,8 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
   override def allHints: Set[Hint] = Set.empty
 
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
+
+  override def isTerminatingProjection: Boolean = false
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
@@ -102,6 +115,8 @@ case class UnwindProjection(variable: String, exp: Expression) extends QueryHori
   override def allHints: Set[Hint] = Set.empty
 
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
+
+  override def isTerminatingProjection: Boolean = false
 }
 
 case class LoadCSVProjection(
@@ -117,6 +132,8 @@ case class LoadCSVProjection(
   override def allHints: Set[Hint] = Set.empty
 
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
+
+  override def isTerminatingProjection: Boolean = false
 }
 
 case class CallSubqueryHorizon(
@@ -146,6 +163,8 @@ case class CallSubqueryHorizon(
   override def couldContainRead: Boolean = true
 
   override lazy val allQueryGraphs: Seq[QgWithLeafInfo] = super.getAllQGsWithLeafInfo ++ callSubquery.allQGsWithLeafInfo
+
+  override def isTerminatingProjection: Boolean = false
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
@@ -153,9 +172,12 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def projections: Map[String, Expression]
   def queryPagination: QueryPagination
   def keySet: Set[String]
+  def isTerminating: Boolean
+  override def isTerminatingProjection: Boolean = isTerminating
   def withSelection(selections: Selections): QueryProjection
   def withAddedProjections(projections: Map[String, Expression]): QueryProjection
   def withPagination(queryPagination: QueryPagination): QueryProjection
+  def withIsTerminating(boolean: Boolean): QueryProjection
 
   override def dependingExpressions: Seq[Expression] = projections.values.toSeq ++ selections.predicates.map(_.expr)
 
@@ -191,7 +213,8 @@ object QueryProjection {
 final case class RegularQueryProjection(
   projections: Map[String, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
-  selections: Selections = Selections()
+  selections: Selections = Selections(),
+  isTerminating: Boolean = false
 ) extends QueryProjection {
   def keySet: Set[String] = projections.keySet
 
@@ -199,8 +222,12 @@ final case class RegularQueryProjection(
     RegularQueryProjection(
       projections = projections ++ other.projections,
       queryPagination = queryPagination ++ other.queryPagination,
-      selections = selections ++ other.selections
+      selections = selections ++ other.selections,
+      isTerminating = isTerminating && other.isTerminating
     )
+
+  override def withIsTerminating(boolean: Boolean): RegularQueryProjection =
+    copy(isTerminating = boolean)
 
   override def withAddedProjections(projections: Map[String, Expression]): RegularQueryProjection =
     copy(projections = this.projections ++ projections)
@@ -217,13 +244,17 @@ final case class AggregatingQueryProjection(
   groupingExpressions: Map[String, Expression] = Map.empty,
   aggregationExpressions: Map[String, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
-  selections: Selections = Selections()
+  selections: Selections = Selections(),
+  isTerminating: Boolean = false
 ) extends QueryProjection {
 
   assert(
     !(groupingExpressions.isEmpty && aggregationExpressions.isEmpty),
     "Everything can't be empty"
   )
+
+  override def withIsTerminating(boolean: Boolean): AggregatingQueryProjection =
+    copy(isTerminating = boolean)
 
   override def projections: Map[String, Expression] = groupingExpressions ++ aggregationExpressions
 
@@ -246,12 +277,16 @@ final case class AggregatingQueryProjection(
 final case class DistinctQueryProjection(
   groupingExpressions: Map[String, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
-  selections: Selections = Selections()
+  selections: Selections = Selections(),
+  isTerminating: Boolean = false
 ) extends QueryProjection {
 
   def projections: Map[String, Expression] = groupingExpressions
 
   def keySet: Set[String] = groupingExpressions.keySet
+
+  override def withIsTerminating(boolean: Boolean): DistinctQueryProjection =
+    copy(isTerminating = boolean)
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)

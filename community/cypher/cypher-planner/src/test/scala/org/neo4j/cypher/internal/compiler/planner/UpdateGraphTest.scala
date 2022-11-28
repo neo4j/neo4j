@@ -442,7 +442,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val allQGsWithLeafInfo =
       List(queryGraph, innerQueryGraph)
-        .map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
+        .map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(_))
 
     queryGraph.allQGsWithLeafInfo shouldEqual allQGsWithLeafInfo
   }

@@ -555,7 +555,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             not(equals(r3, r2))
           ))
         ),
-        horizon = Some(RegularQueryProjection(Map("n" -> n)))
+        horizon = Some(RegularQueryProjection(Map("n" -> n), isTerminating = true))
       )
     )
 
@@ -592,7 +592,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
-        horizon = Some(RegularQueryProjection(Map("n" -> n)))
+        horizon = Some(RegularQueryProjection(Map("n" -> n), isTerminating = true))
       )
     )
 

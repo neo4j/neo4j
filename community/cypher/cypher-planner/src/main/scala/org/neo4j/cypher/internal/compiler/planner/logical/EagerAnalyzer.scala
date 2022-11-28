@@ -183,7 +183,8 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
         plannerQuery.queryGraph,
         stablySolvedPredicates,
         unstableLeaves = unstableLeafIdNames,
-        stableIdentifier = stableIdentifier
+        stableIdentifier = stableIdentifier,
+        isTerminatingProjection = plannerQuery.horizon.isTerminatingProjection
       )
 
       // Start recursion by checking the given plannerQuery against itself

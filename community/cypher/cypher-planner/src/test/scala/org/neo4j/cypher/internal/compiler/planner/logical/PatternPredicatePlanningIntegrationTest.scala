@@ -1592,6 +1592,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .setNodeProperty("n", "foo", "reduce(sum = 0, x IN anon_2 | sum + x)")
       .rollUpApply("anon_2", "anon_1")
       .|.projection("b.age AS anon_1")
@@ -1609,6 +1610,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .setNodePropertiesFromMap("n", "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}", removeOtherProps = true)
       .rollUpApply("anon_2", "anon_1")
       .|.projection("b.age AS anon_1")
@@ -1626,6 +1628,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .setRelationshipProperty("r", "foo", "reduce(sum = 0, x IN anon_4 | sum + x)")
       .rollUpApply("anon_4", "anon_3")
       .|.projection("b.age AS anon_3")
@@ -1643,6 +1646,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
+      .eager(ListSet(EagernessReason.Unknown))
       .setRelationshipPropertiesFromMap("r", "{foo: reduce(sum = 0, x IN anon_4 | sum + x)}", true)
       .rollUpApply("anon_4", "anon_3")
       .|.projection("b.age AS anon_3")

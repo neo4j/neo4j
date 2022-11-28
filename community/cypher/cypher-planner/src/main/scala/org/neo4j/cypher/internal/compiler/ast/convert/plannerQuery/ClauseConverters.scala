@@ -146,9 +146,10 @@ object ClauseConverters {
     acc: PlannerQueryBuilder,
     clause: Clause,
     nextClause: Option[Clause],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    nonTerminating: Boolean
   ): PlannerQueryBuilder = clause match {
-    case c: Return          => addReturnToLogicalPlanInput(acc, c)
+    case c: Return          => addReturnToLogicalPlanInput(acc, c, nonTerminating)
     case c: Match           => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)
     case c: Unwind          => addUnwindToLogicalPlanInput(acc, c)
@@ -188,7 +189,11 @@ object ClauseConverters {
   private def asSelections(optWhere: Option[Where]) =
     Selections(optWhere.map(_.expression.asPredicates).getOrElse(Set.empty))
 
-  private def asQueryProjection(distinct: Boolean, items: Seq[ReturnItem]): QueryProjection = {
+  private def asQueryProjection(
+    distinct: Boolean,
+    items: Seq[ReturnItem],
+    returningQueryProjection: Boolean
+  ): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
       items.partition(item => IsAggregate(item.expression))
 
@@ -201,19 +206,28 @@ object ClauseConverters {
       throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
 
     if (aggregationsMap.nonEmpty)
-      AggregatingQueryProjection(groupingExpressions = projectionMap, aggregationExpressions = aggregationsMap)
+      AggregatingQueryProjection(
+        groupingExpressions = projectionMap,
+        aggregationExpressions = aggregationsMap,
+        isTerminating = returningQueryProjection
+      )
     else if (distinct)
-      DistinctQueryProjection(groupingExpressions = projectionMap)
+      DistinctQueryProjection(groupingExpressions = projectionMap, isTerminating = returningQueryProjection)
     else
-      RegularQueryProjection(projections = projectionMap)
+      RegularQueryProjection(projections = projectionMap, isTerminating = returningQueryProjection)
   }
 
-  private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Return): PlannerQueryBuilder =
+  private def addReturnToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: Return,
+    nonTerminating: Boolean
+  ): PlannerQueryBuilder =
     clause match {
       case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _, _) if !star =>
         val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
-        val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
+        val projection =
+          asQueryProjection(distinct, items, returningQueryProjection = !nonTerminating).withPagination(queryPagination)
         val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
         acc
@@ -228,16 +242,16 @@ object ClauseConverters {
 
     val sortItems = if (optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
-      case RegularQueryProjection(projections, _, _) =>
+      case RegularQueryProjection(projections, _, _, _) =>
         val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, projections)
         (requiredOrderCandidate, Seq.empty)
-      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
+      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _, _) =>
         val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingCandidates =
           interestingOrderCandidatesForGroupingExpressions(groupingExpressions) ++
             interestingOrderCandidateForMinOrMax(groupingExpressions, aggregationExpressions)
         (requiredOrderCandidate, interestingCandidates)
-      case DistinctQueryProjection(groupingExpressions, _, _) =>
+      case DistinctQueryProjection(groupingExpressions, _, _, _) =>
         val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingCandidates = interestingOrderCandidatesForGroupingExpressions(groupingExpressions)
 
@@ -525,7 +539,13 @@ object ClauseConverters {
   ): PlannerQueryBuilder = {
     val subquery = clause.innerQuery
     val callSubquery =
-      StatementConverters.toPlannerQuery(subquery, acc.semanticTable, anonymousVariableNameGenerator, rewrite = false)
+      StatementConverters.toPlannerQuery(
+        subquery,
+        acc.semanticTable,
+        anonymousVariableNameGenerator,
+        rewrite = false,
+        nonTerminating = true
+      )
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
 
@@ -545,7 +565,9 @@ object ClauseConverters {
     val queryPagination = QueryPagination().withLimit(`yield`.limit).withSkip(`yield`.skip)
 
     val queryProjection =
-      asQueryProjection(distinct = false, returnItems).withPagination(queryPagination).withSelection(selections)
+      asQueryProjection(distinct = false, returnItems, returningQueryProjection = false).withPagination(
+        queryPagination
+      ).withSelection(selections)
 
     val requiredOrder = findRequiredOrder(queryProjection, `yield`.orderBy)
 
@@ -636,7 +658,11 @@ object ClauseConverters {
         builder
           .withHorizon(PassthroughAllHorizon())
           .withTail(RegularSinglePlannerQuery(queryGraph = queryGraph))
-          .withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds)))
+          .withHorizon(asQueryProjection(
+            distinct = false,
+            QueryProjection.forIds(queryGraph.allCoveredIds),
+            returningQueryProjection = false
+          ))
           .withTail(RegularSinglePlannerQuery())
 
       // MERGE (n)-[r: R]->(m)
@@ -699,7 +725,11 @@ object ClauseConverters {
 
         builder.withHorizon(PassthroughAllHorizon()).withTail(
           RegularSinglePlannerQuery(queryGraph = queryGraph)
-        ).withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).withTail(
+        ).withHorizon(asQueryProjection(
+          distinct = false,
+          QueryProjection.forIds(queryGraph.allCoveredIds),
+          returningQueryProjection = false
+        )).withTail(
           RegularSinglePlannerQuery()
         )
 
@@ -772,7 +802,9 @@ object ClauseConverters {
         val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
 
         val queryProjection =
-          asQueryProjection(distinct, returnItems).withPagination(queryPagination).withSelection(selections)
+          asQueryProjection(distinct, returnItems, returningQueryProjection = false).withPagination(
+            queryPagination
+          ).withSelection(selections)
 
         val requiredOrder = findRequiredOrder(queryProjection, orderBy)
 
@@ -817,7 +849,8 @@ object ClauseConverters {
     val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(
       clause.updates,
       innerBuilder,
-      anonymousVariableNameGenerator
+      anonymousVariableNameGenerator,
+      nonTerminating = false
     ).build()
 
     val foreachPattern = ForeachPattern(

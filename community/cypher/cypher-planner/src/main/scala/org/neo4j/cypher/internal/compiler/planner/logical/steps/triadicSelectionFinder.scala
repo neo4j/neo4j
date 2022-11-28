@@ -255,7 +255,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
             IndexedSeq()
           ),
           InterestingOrder.empty,
-          RegularQueryProjection(_, QueryPagination.empty, Selections.empty),
+          RegularQueryProjection(_, QueryPagination.empty, Selections.empty, _),
           None,
           None
         ),

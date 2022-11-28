@@ -84,7 +84,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         case RegularSinglePlannerQuery(
             graph,
             interestingOrder,
-            proj @ AggregatingQueryProjection(distinctExpressions, aggregations, _, _),
+            proj @ AggregatingQueryProjection(distinctExpressions, aggregations, _, _, _),
             tail,
             queryInput
           ) if validAggregations(aggregations) =>
@@ -95,7 +95,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         case RegularSinglePlannerQuery(
             graph,
             interestingOrder,
-            proj @ DistinctQueryProjection(distinctExpressions, _, _),
+            proj @ DistinctQueryProjection(distinctExpressions, _, _, _),
             tail,
             queryInput
           ) =>

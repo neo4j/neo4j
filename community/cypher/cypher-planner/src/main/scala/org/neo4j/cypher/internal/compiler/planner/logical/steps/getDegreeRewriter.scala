@@ -219,7 +219,7 @@ object QuerySolvableByGetDegree {
           IndexedSeq()
         ),
         InterestingOrder.empty,
-        RegularQueryProjection(_, QueryPagination.empty, Selections.empty) | _: AggregatingQueryProjection,
+        RegularQueryProjection(_, QueryPagination.empty, Selections.empty, _) | _: AggregatingQueryProjection,
         None,
         None
       ) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
