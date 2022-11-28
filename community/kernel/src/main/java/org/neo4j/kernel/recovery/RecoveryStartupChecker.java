@@ -39,7 +39,7 @@ public class RecoveryStartupChecker {
     }
 
     void checkIfCanceled() throws DatabaseStartAbortedException {
-        if (databaseStartupController.shouldAbort(namedDatabaseId)) {
+        if (databaseStartupController.shouldAbort()) {
             throw new DatabaseStartAbortedException(namedDatabaseId);
         }
     }

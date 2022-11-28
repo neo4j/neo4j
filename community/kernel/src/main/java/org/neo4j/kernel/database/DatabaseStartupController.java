@@ -24,7 +24,7 @@ package org.neo4j.kernel.database;
  */
 @FunctionalInterface
 public interface DatabaseStartupController {
-    DatabaseStartupController NEVER_ABORT = id -> false;
+    DatabaseStartupController NEVER_ABORT = () -> false;
 
-    boolean shouldAbort(NamedDatabaseId namedDatabaseId);
+    boolean shouldAbort();
 }

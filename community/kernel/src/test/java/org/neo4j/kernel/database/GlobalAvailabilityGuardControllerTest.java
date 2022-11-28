@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -35,12 +34,12 @@ class GlobalAvailabilityGuardControllerTest {
     @Test
     void doNotAbortOnRunning() {
         when(guard.isShutdown()).thenReturn(false);
-        assertFalse(guardController.shouldAbort(new NamedDatabaseId("any", randomUUID())));
+        assertFalse(guardController.shouldAbort());
     }
 
     @Test
     void abortOnShutdown() {
         when(guard.isShutdown()).thenReturn(true);
-        assertTrue(guardController.shouldAbort(new NamedDatabaseId("any", randomUUID())));
+        assertTrue(guardController.shouldAbort());
     }
 }
