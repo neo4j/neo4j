@@ -25,23 +25,24 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Used to solve queries like: `(start) [(innerStart)-->(innerEnd)]{i, j} (end)`
  *
- * @param left                          source plan
- * @param right                         inner plan to repeat
- * @param repetition                    how many times to repeat the RHS on each partial result
- * @param start                         the outside node variable where the quantified pattern
- *                                      starts. Assumed to be present in the output of `left`.
- *                                      [[start]] (and for subsequent iterations [[innerEnd]]) is projected to [[innerStart]].
- * @param end                           the outside node variable where the quantified pattern
- *                                      ends. Projected in output if present.
- * @param innerStart                    the node variable where the inner pattern starts
- * @param innerEnd                      the node variable where the inner pattern ends.
- *                                      [[innerEnd]] will eventually be projected to [[end]] (if present).
- * @param nodeVariableGroupings         node variables to aggregate
- * @param relationshipVariableGroupings relationship variables to aggregate
- * @param innerRelationships    all inner relationships, whether they get projected or not
- * @param previouslyBoundRelationships all relationship variables of the same MATCH that are present in lhs
+ * @param left                              source plan
+ * @param right                             inner plan to repeat
+ * @param repetition                        how many times to repeat the RHS on each partial result
+ * @param start                             the outside node variable where the quantified pattern
+ *                                          starts. Assumed to be present in the output of `left`.
+ *                                          [[start]] (and for subsequent iterations [[innerEnd]]) is projected to [[innerStart]].
+ * @param end                               the outside node variable where the quantified pattern
+ *                                          ends. Projected in output if present.
+ * @param innerStart                        the node variable where the inner pattern starts
+ * @param innerEnd                          the node variable where the inner pattern ends.
+ *                                          [[innerEnd]] will eventually be projected to [[end]] (if present).
+ * @param nodeVariableGroupings             node variables to aggregate
+ * @param relationshipVariableGroupings     relationship variables to aggregate
+ * @param innerRelationships                all inner relationships, whether they get projected or not
+ * @param previouslyBoundRelationships      all relationship variables of the same MATCH that are present in lhs
  * @param previouslyBoundRelationshipGroups all relationship group variables of the same MATCH that are present in lhs
-*/
+ * @param reverseGroupVariableProjections   if `true` reverse the group variable lists
+ */
 case class Trail(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
@@ -54,7 +55,8 @@ case class Trail(
   relationshipVariableGroupings: Set[VariableGrouping],
   innerRelationships: Set[String],
   previouslyBoundRelationships: Set[String],
-  previouslyBoundRelationshipGroups: Set[String]
+  previouslyBoundRelationshipGroups: Set[String],
+  reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)

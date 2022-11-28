@@ -1538,7 +1538,8 @@ case class InterpretedPipeMapper(
           groupRelationships,
           innerRelationships,
           previouslyBoundRelationships,
-          previouslyBoundRelationshipGroups
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
         ) =>
         TrailPipe(
           lhs,

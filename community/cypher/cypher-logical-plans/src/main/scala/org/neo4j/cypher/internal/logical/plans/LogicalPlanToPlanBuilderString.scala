@@ -543,7 +543,8 @@ object LogicalPlanToPlanBuilderString {
           groupRelationships,
           innerRelationships,
           previouslyBoundRelationships,
-          previouslyBoundRelationshipGroups
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
         ) =>
         def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
           groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
@@ -555,7 +556,8 @@ object LogicalPlanToPlanBuilderString {
             s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
             s"Set(${wrapInQuotationsAndMkString(innerRelationships)}), " +
             s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)})"
+            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)}), " +
+            reverseGroupVariableProjections
 
         s"TrailParameters($trailParameters)"
 

@@ -5854,7 +5854,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Set(VariableGrouping("  UNNAMED113", "r")),
           Set("r"),
           Set.empty,
-          Set.empty
+          Set.empty,
+          reverseGroupVariableProjections = false
         ),
         2345.0
       ),

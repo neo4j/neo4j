@@ -1424,7 +1424,8 @@ class SlottedPipeMapper(
           groupRelationships,
           innerRelationships,
           previouslyBoundRelationships,
-          previouslyBoundRelationshipGroups
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
         ) =>
         val rhsSlots = slotConfigs(rhs.id)
         val lhsSlots = slotConfigs(lhs.id)

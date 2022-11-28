@@ -1094,7 +1094,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         rhs
 
-      case Trail(_, _, _, _, end, _, _, groupNodes, groupRelationships, _, _, _) =>
+      case Trail(_, _, _, _, end, _, _, groupNodes, groupRelationships, _, _, _, _) =>
         recordArgument(lp)
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
         result.newLong(end, nullable, CTNode)
@@ -1126,7 +1126,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case _             => lhs.newReference(variableName, true, CTAny)
         }
 
-      case Trail(_, _, _, _, _, innerStart, _, _, _, _, _, _) =>
+      case Trail(_, _, _, _, _, innerStart, _, _, _, _, _, _, _) =>
         // The slot for the per-repetition inner node variable of Trail needs to be available as an argument on the RHS of the Trail
         // so we allocate it on the LHS (even though its value will not be needed after the Trail is done).
         lhs.newLong(innerStart, false, CTNode) // nullable?

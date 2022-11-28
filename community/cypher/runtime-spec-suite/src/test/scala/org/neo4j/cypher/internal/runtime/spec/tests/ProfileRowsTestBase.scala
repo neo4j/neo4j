@@ -2412,7 +2412,8 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         groupRelationships = Set(("r_inner", "r")),
         innerRelationships = Set("r_inner"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       ))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
       .|.argument("me", "a_inner")

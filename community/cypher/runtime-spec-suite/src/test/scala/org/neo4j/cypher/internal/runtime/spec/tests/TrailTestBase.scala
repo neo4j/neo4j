@@ -54,7 +54,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     groupRelationships = Set(("r_inner", "r")),
     innerRelationships = Set("r_inner"),
     previouslyBoundRelationships = Set.empty,
-    previouslyBoundRelationshipGroups = Set.empty
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
   )
 
   test("should respect upper limit") {
@@ -97,7 +98,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -135,7 +137,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -186,7 +189,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -245,7 +249,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner", "ranon"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -327,7 +332,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
@@ -434,7 +440,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("rr_inner", "rr")),
       innerRelationships = Set("rr_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("r")
+      previouslyBoundRelationshipGroups = Set("r"),
+      reverseGroupVariableProjections = false
     )
     val `(me:START) [(a)-[r]->(b)]{0,1} (anon)` = TrailParameters(
       min = 0,
@@ -447,7 +454,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -504,7 +512,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("rr_inner", "rr")),
       innerRelationships = Set("rr_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("r")
+      previouslyBoundRelationshipGroups = Set("r"),
+      reverseGroupVariableProjections = false
     )
     val `(me:START) [(a)-[r]->(b)]{0,2} (anon)` = TrailParameters(
       min = 0,
@@ -517,7 +526,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -583,7 +593,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("f_inner", "f")),
       innerRelationships = Set("f_inner"),
       previouslyBoundRelationships = Set("e"),
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -620,7 +631,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_anon_inner", "r_anon")),
       innerRelationships = Set("r_anon_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "m", "n")
@@ -666,7 +678,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       groupRelationships = Set(("r_inner", "r"), ("s_inner", "s")),
       innerRelationships = Set("r_inner", "s_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c", "r", "s")

@@ -86,7 +86,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("  r@2", "  r@4")),
       innerRelationships = Set("  r@2"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -113,7 +114,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_3", "anon_7")),
       innerRelationships = Set("anon_3"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -141,7 +143,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_3", "anon_7")),
       innerRelationships = Set("anon_3"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -169,7 +172,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -198,7 +202,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     plan should equal(
       planner.subPlanBuilder()
@@ -225,7 +230,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -253,7 +259,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -283,7 +290,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set("anon_2"),
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -311,7 +319,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -341,7 +350,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set("r3", "r4"),
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -376,7 +386,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set("r3", "r4"),
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -409,7 +420,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_5", "anon_9")),
       innerRelationships = Set("anon_5"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val `((a)--(b))+` = TrailParameters(
       min = 1,
@@ -422,7 +434,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_11", "anon_15")),
       innerRelationships = Set("anon_11"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("anon_9")
+      previouslyBoundRelationshipGroups = Set("anon_9"),
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -453,7 +466,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val `(x) ((a)-[r2]-(b))+ (v)` = TrailParameters(
       min = 1,
@@ -466,7 +480,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2")),
       innerRelationships = Set("r2"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -500,7 +515,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_5", "anon_9")),
       innerRelationships = Set("anon_5"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
     val `((a)-[]->(b))+` = TrailParameters(
       min = 1,
@@ -513,7 +529,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_11", "anon_15")),
       innerRelationships = Set("anon_11"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -543,7 +560,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("r3", "r4")
+      previouslyBoundRelationshipGroups = Set("r3", "r4"),
+      reverseGroupVariableProjections = true
     )
     val `((a)-[r3:T]-(b)<-[r4]-(c))+` = TrailParameters(
       min = 1,
@@ -556,7 +574,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r3", "r3"), ("r4", "r4")),
       innerRelationships = Set("r4", "r3"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     val plan = planner.plan(query).stripProduceResults
@@ -591,7 +610,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("r4")
+      previouslyBoundRelationshipGroups = Set("r4"),
+      reverseGroupVariableProjections = true
     )
     val `((a)-[r3:T]-(b)<-[r4]-(c))+` = TrailParameters(
       min = 1,
@@ -604,7 +624,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r3", "r3"), ("r4", "r4")),
       innerRelationships = Set("r4", "r3"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     val plan = planner.plan(query).stripProduceResults
@@ -638,7 +659,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -668,7 +690,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -700,7 +723,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
     )
 
     plan should equal(
@@ -734,7 +758,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -770,7 +795,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r_inner", "r_inner")),
       innerRelationships = Set("r_inner"),
       previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
@@ -824,7 +850,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set()
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
     )
 
     plan shouldBe planner.subPlanBuilder()
@@ -854,7 +881,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set()
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
     )
 
     plan shouldBe planner.subPlanBuilder()
@@ -891,7 +919,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set()
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
     )
 
     plan shouldBe planner.subPlanBuilder()
@@ -932,7 +961,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r", "r")),
       innerRelationships = Set("r"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set()
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
     )
 
     plan shouldBe planner.subPlanBuilder()
@@ -997,7 +1027,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r1", "r1")),
       innerRelationships = Set("r1"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set("r2")
+      previouslyBoundRelationshipGroups = Set("r2"),
+      reverseGroupVariableProjections = true
     )
 
     val p_r2_q_trail = TrailParameters(
@@ -1011,7 +1042,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       groupRelationships = Set(("r2", "r2")),
       innerRelationships = Set("r2"),
       previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set()
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
     )
 
     plan shouldBe planner.subPlanBuilder()
@@ -1047,7 +1079,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1076,7 +1109,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1124,7 +1158,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1180,7 +1215,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -1227,7 +1263,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()

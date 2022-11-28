@@ -412,7 +412,8 @@ object expandSolverStep {
       innerPlan,
       predicates = solvedPredicates,
       previouslyBoundRelationships,
-      previouslyBoundRelationshipGroups
+      previouslyBoundRelationshipGroups,
+      reverseGroupVariableProjections = !fromLeft
     )
   }
 }

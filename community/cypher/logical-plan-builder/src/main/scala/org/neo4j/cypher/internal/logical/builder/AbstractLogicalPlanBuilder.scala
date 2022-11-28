@@ -2003,7 +2003,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         trailParameters.groupRelationships.map { case (inner, outer) => VariableGrouping(inner, outer) },
         trailParameters.innerRelationships,
         trailParameters.previouslyBoundRelationships,
-        trailParameters.previouslyBoundRelationshipGroups
+        trailParameters.previouslyBoundRelationshipGroups,
+        trailParameters.reverseGroupVariableProjections
       )(_)
     ))
   }
@@ -2154,7 +2155,8 @@ object AbstractLogicalPlanBuilder {
     groupRelationships: Set[(String, String)],
     innerRelationships: Set[String],
     previouslyBoundRelationships: Set[String],
-    previouslyBoundRelationshipGroups: Set[String]
+    previouslyBoundRelationshipGroups: Set[String],
+    reverseGroupVariableProjections: Boolean
   )
 
   def createPattern(

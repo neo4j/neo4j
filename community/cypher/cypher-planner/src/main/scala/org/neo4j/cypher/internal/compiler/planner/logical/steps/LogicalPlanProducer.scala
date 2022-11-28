@@ -1021,7 +1021,8 @@ case class LogicalPlanProducer(
     innerPlan: LogicalPlan,
     predicates: Seq[Expression],
     previouslyBoundRelationships: Set[String],
-    previouslyBoundRelationshipGroups: Set[String]
+    previouslyBoundRelationshipGroups: Set[String],
+    reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
 
     val innerPlanSolvedQG = solveds.get(innerPlan.id).asSinglePlannerQuery.queryGraph
@@ -1054,7 +1055,8 @@ case class LogicalPlanProducer(
         },
         innerRelationships = pattern.pattern.patternRelationships.map(_.name),
         previouslyBoundRelationships = previouslyBoundRelationships,
-        previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups
+        previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups,
+        reverseGroupVariableProjections = reverseGroupVariableProjections
       ),
       solved,
       providedOrder,
