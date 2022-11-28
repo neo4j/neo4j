@@ -453,28 +453,28 @@ object Union {
    */
   case class UnionMapping(
     unionVariable: LogicalVariable,
-    variableInPart: LogicalVariable,
-    variableInQuery: LogicalVariable
+    variableInLhs: LogicalVariable,
+    variableInRhs: LogicalVariable
   )
 }
 
 sealed trait Union extends QueryPart with SemanticAnalysisTooling {
-  def part: QueryPart
-  def query: SingleQuery
+  def lhs: QueryPart
+  def rhs: SingleQuery
 
   def unionMappings: List[UnionMapping]
 
   def returnColumns: List[LogicalVariable] = unionMappings.map(_.unionVariable)
 
-  def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
+  def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
   def semanticCheckAbstract(
     partCheck: QueryPart => SemanticCheck,
-    queryCheck: SingleQuery => SemanticCheck
+    singleQueryCheck: SingleQuery => SemanticCheck
   ): SemanticCheck =
     checkUnionAggregation chain
-      withScopedState(partCheck(part)) chain
-      withScopedState(queryCheck(query)) chain
+      withScopedState(partCheck(lhs)) chain
+      withScopedState(singleQueryCheck(rhs)) chain
       checkColumnNamesAgree chain
       defineUnionVariables chain
       checkInputDataStream chain
@@ -483,40 +483,40 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def semanticCheck: SemanticCheck =
     semanticCheckAbstract(
-      part => SemanticCheck.nestedCheck(part.semanticCheck),
-      query => query.semanticCheck
+      lhs => SemanticCheck.nestedCheck(lhs.semanticCheck),
+      rhs => rhs.semanticCheck
     )
 
   override def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck =
     semanticCheckAbstract(
-      part => SemanticCheck.nestedCheck(part.semanticCheckInSubqueryExpressionContext(canOmitReturn)),
-      query => query.semanticCheckInSubqueryExpressionContext(canOmitReturn)
+      lhs => SemanticCheck.nestedCheck(lhs.semanticCheckInSubqueryExpressionContext(canOmitReturn)),
+      rhs => rhs.semanticCheckInSubqueryExpressionContext(canOmitReturn)
     )
 
   override def checkImportingWith: SemanticCheck =
-    SemanticCheck.nestedCheck(part.checkImportingWith) chain
-      query.checkImportingWith
+    SemanticCheck.nestedCheck(lhs.checkImportingWith) chain
+      rhs.checkImportingWith
 
-  override def isCorrelated: Boolean = query.isCorrelated || part.isCorrelated
+  override def isCorrelated: Boolean = lhs.isCorrelated || rhs.isCorrelated
 
-  override def isReturning: Boolean = query.isReturning // we assume part has the same value
+  override def isReturning: Boolean = rhs.isReturning // we assume lhs has the same value
 
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck =
     semanticCheckAbstract(
-      part => SemanticCheck.nestedCheck(part.semanticCheckInSubqueryContext(outer)),
-      query => query.semanticCheckInSubqueryContext(outer)
+      lhs => SemanticCheck.nestedCheck(lhs.semanticCheckInSubqueryContext(outer)),
+      rhs => rhs.semanticCheckInSubqueryContext(outer)
     )
 
   private def defineUnionVariables: SemanticCheck = (state: SemanticState) => {
     var result = SemanticCheckResult.success(state)
-    val scopeFromPart = part.finalScope(state.scope(part).get)
-    val scopeFromQuery = query.finalScope(state.scope(query).get)
+    val scopeFromLhs = lhs.finalScope(state.scope(lhs).get)
+    val scopeFromRhs = rhs.finalScope(state.scope(rhs).get)
     for {
       unionMapping <- unionMappings
-      symbolFromPart <- scopeFromPart.symbol(unionMapping.variableInPart.name)
-      symbolFromQuery <- scopeFromQuery.symbol(unionMapping.variableInQuery.name)
+      symbolFromLhs <- scopeFromLhs.symbol(unionMapping.variableInLhs.name)
+      symbolFromRhs <- scopeFromRhs.symbol(unionMapping.variableInRhs.name)
     } yield {
-      val unionType = symbolFromPart.types.union(symbolFromQuery.types)
+      val unionType = symbolFromLhs.types.union(symbolFromRhs.types)
       result = result.state.declareVariable(unionMapping.unionVariable, unionType) match {
         case Left(err)        => SemanticCheckResult(result.state, err +: result.errors)
         case Right(nextState) => SemanticCheckResult(nextState, result.errors)
@@ -546,16 +546,16 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       }
     }
 
-    val partResult = part match {
+    val lhsResult = lhs match {
       case q: SingleQuery => checkSingleQuery(q, state)
       case _              => SemanticCheckResult.success(state)
     }
 
-    val queryResult = checkSingleQuery(query, state)
-    SemanticCheckResult(state, partResult.errors ++ queryResult.errors)
+    val rhsResult = checkSingleQuery(rhs, state)
+    SemanticCheckResult(state, lhsResult.errors ++ rhsResult.errors)
   }
 
-  private def checkUnionAggregation: SemanticCheck = (part, this) match {
+  private def checkUnionAggregation: SemanticCheck = (lhs, this) match {
     case (_: SingleQuery, _)                                      => None
     case (_: UnionAll, _: UnionAll)                               => None
     case (_: UnionDistinct, _: UnionDistinct)                     => None
@@ -565,7 +565,7 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   }
 
   private def checkNoCallInTransactionInsideUnion: SemanticCheck = {
-    val nestedCallInTransactions = Seq(part, query).flatMap { qp => SubqueryCall.findTransactionalSubquery(qp) }
+    val nestedCallInTransactions = Seq(lhs, rhs).flatMap { qp => SubqueryCall.findTransactionalSubquery(qp) }
 
     nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
       error("CALL { ... } IN TRANSACTIONS in a UNION is not supported", nestedCallInTransactions.position)
@@ -575,9 +575,9 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
 
   @tailrec
-  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = part match {
-    case q: SingleQuery => accum :+ query :+ q
-    case u: Union       => u.unionedQueries(accum :+ query)
+  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = lhs match {
+    case q: SingleQuery => accum :+ rhs :+ q
+    case u: Union       => u.unionedQueries(accum :+ rhs)
   }
 }
 
@@ -600,11 +600,11 @@ sealed trait UnmappedUnion extends Union {
   // This is helpful if the variable is used by reference from the semantic state.
   private var _unionMappings = {
     for {
-      partCol <- part.returnColumns
-      queryCol <- query.returnColumns.find(_.name == partCol.name)
+      lhsCol <- lhs.returnColumns
+      rhsCol <- rhs.returnColumns.find(_.name == lhsCol.name)
     } yield {
-      // This assumes that part.returnColumns and query.returnColumns agree
-      UnionMapping(Variable(partCol.name)(this.position), partCol, queryCol)
+      // This assumes that lhs.returnColumns and rhs.returnColumns agree
+      UnionMapping(Variable(lhsCol.name)(this.position), lhsCol, rhsCol)
     }
   }
 
@@ -613,17 +613,17 @@ sealed trait UnmappedUnion extends Union {
   override def dup(children: Seq[AnyRef]): UnmappedUnion.this.type = {
     val res = super.dup(children)
 
-    val thisPartCols = part.returnColumns
-    val thisQueryCols = query.returnColumns
-    val resPartCols = res.part.returnColumns
-    val resQueryCols = res.query.returnColumns
+    val thisLhsCols = lhs.returnColumns
+    val thisRhsCols = rhs.returnColumns
+    val resLhsCols = res.lhs.returnColumns
+    val resRhsCols = res.rhs.returnColumns
 
     def containTheSameInstances[X <: AnyRef](a: Seq[X], b: Seq[X]): Boolean =
       a.forall(elemA => b.exists(elemB => elemA eq elemB)) && a.size == b.size
 
     // If we have not rewritten any return column (by reference equality), then we can simply reuse this.unionMappings.
     // This is important because the variables are used by reference from the semantic state.
-    if (containTheSameInstances(thisPartCols, resPartCols) && containTheSameInstances(thisQueryCols, resQueryCols)) {
+    if (containTheSameInstances(thisLhsCols, resLhsCols) && containTheSameInstances(thisRhsCols, resRhsCols)) {
       res._unionMappings = this.unionMappings
     }
 
@@ -633,10 +633,10 @@ sealed trait UnmappedUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
     val myScope: Scope = state.currentScope.scope
 
-    val partScope = if (part.isReturning) part.finalScope(myScope.children.head) else Scope.empty
-    val queryScope = if (query.isReturning) query.finalScope(myScope.children.last) else Scope.empty
+    val lhsScope = if (lhs.isReturning) lhs.finalScope(myScope.children.head) else Scope.empty
+    val rhsScope = if (rhs.isReturning) rhs.finalScope(myScope.children.last) else Scope.empty
     val errors =
-      if (partScope.symbolNames == queryScope.symbolNames) {
+      if (lhsScope.symbolNames == rhsScope.symbolNames) {
         Seq.empty
       } else {
         Seq(SemanticError("All sub queries in an UNION must have the same return column names", position))
@@ -650,13 +650,13 @@ sealed trait ProjectingUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheck.success
 }
 
-final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
-final case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionAll(lhs: QueryPart, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionDistinct(lhs: QueryPart, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
 
-final case class ProjectingUnionAll(part: QueryPart, query: SingleQuery, unionMappings: List[UnionMapping])(
+final case class ProjectingUnionAll(lhs: QueryPart, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
 ) extends ProjectingUnion
 
-final case class ProjectingUnionDistinct(part: QueryPart, query: SingleQuery, unionMappings: List[UnionMapping])(
+final case class ProjectingUnionDistinct(lhs: QueryPart, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
 ) extends ProjectingUnion

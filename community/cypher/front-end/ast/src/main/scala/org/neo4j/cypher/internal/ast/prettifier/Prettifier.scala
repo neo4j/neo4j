@@ -887,8 +887,8 @@ case class Prettifier(
           clauses.map(dispatch).filter(_.nonEmpty).mkString(NL)
 
         case union: Union =>
-          val lhs = queryPart(union.part)
-          val rhs = queryPart(union.query)
+          val lhs = queryPart(union.lhs)
+          val rhs = queryPart(union.rhs)
           val operation = union match {
             case _: UnionAll | _: ProjectingUnionAll           => s"${INDENT}UNION ALL"
             case _: UnionDistinct | _: ProjectingUnionDistinct => s"${INDENT}UNION"
@@ -897,7 +897,7 @@ case class Prettifier(
       }
 
     private def asString(u: UnionMapping): String = {
-      s"${u.unionVariable.name}: [${u.variableInPart.name}, ${u.variableInQuery.name}]"
+      s"${u.unionVariable.name}: [${u.variableInLhs.name}, ${u.variableInRhs.name}]"
     }
 
     def asString(clause: Clause): String = dispatch(clause)

@@ -133,17 +133,17 @@ object StatementConverters {
         toPlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
       case unionQuery: ast.ProjectingUnion =>
-        val part: PlannerQueryPart =
-          toPlannerQueryPart(unionQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
-        val query: SinglePlannerQuery =
-          toPlannerQuery(unionQuery.query, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        val lhs: PlannerQueryPart =
+          toPlannerQueryPart(unionQuery.lhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
+        val rhs: SinglePlannerQuery =
+          toPlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll      => false
           case _: ProjectingUnionDistinct => true
         }
 
-        UnionQuery(part, query, distinct, unionQuery.unionMappings)
+        UnionQuery(lhs, rhs, distinct, unionQuery.unionMappings)
       case _ =>
         throw new InternalException(s"Received an AST-clause that has no representation the QG: $queryPart")
     }

@@ -772,7 +772,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def use(e: Expression): UseGraph =
     UseGraph(e)(defaultPos)
 
-  def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
+  def union(lhs: QueryPart, rhs: SingleQuery): UnionDistinct = UnionDistinct(lhs, rhs)(pos)
 
   def yieldClause(
     returnItems: ReturnItems,
@@ -857,7 +857,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   }
 
   implicit class UnionLiteralOps(u: UnionDistinct) {
-    def all: UnionAll = UnionAll(u.part, u.query)(pos)
+    def all: UnionAll = UnionAll(u.lhs, u.rhs)(pos)
   }
 
   def increasePos(position: InputPosition, inc: Int): InputPosition = {

@@ -561,13 +561,13 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("should throw when finding unfulfillable text index hint in UNION") {
     def plannerUnionQuery(hints: Set[Hint]): PlannerQueryPart = {
       UnionQuery(
-        query = RegularSinglePlannerQuery(
+        rhs = RegularSinglePlannerQuery(
           QueryGraph(
             patternNodes = Set("a"),
             hints = hints
           )
         ),
-        part = RegularSinglePlannerQuery(
+        lhs = RegularSinglePlannerQuery(
           QueryGraph(patternNodes = Set("a"))
         ),
         distinct = true,

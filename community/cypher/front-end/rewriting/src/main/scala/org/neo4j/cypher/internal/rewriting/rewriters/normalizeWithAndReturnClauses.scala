@@ -125,10 +125,10 @@ case class normalizeWithAndReturnClauses(
    */
   private def rewriteTopLevelQueryPart(queryPart: QueryPart): QueryPart = queryPart match {
     case sq: SingleQuery => rewriteTopLevelSingleQuery(sq)
-    case union @ UnionAll(part, query) =>
-      union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
-    case union @ UnionDistinct(part, query) =>
-      union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+    case union @ UnionAll(lhs, rhs) =>
+      union.copy(lhs = rewriteTopLevelQueryPart(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
+    case union @ UnionDistinct(lhs, rhs) =>
+      union.copy(lhs = rewriteTopLevelQueryPart(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
     case _: ProjectingUnion =>
       throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
   }

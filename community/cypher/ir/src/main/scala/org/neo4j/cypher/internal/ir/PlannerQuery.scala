@@ -57,41 +57,41 @@ trait PlannerQueryPart {
 
 /**
  * This represents the union of the queries.
- * @param part the first part, which can itself be either a UnionQuery or a SinglePlannerQuery
- * @param query the second part, which is a SinglePlannerQuery
+ * @param lhs the first part, which can itself be either a UnionQuery or a SinglePlannerQuery
+ * @param rhs the second part, which is a SinglePlannerQuery
  * @param distinct whether it is a distinct union
  * @param unionMappings mappings of return items from both parts
  */
 case class UnionQuery(
-  part: PlannerQueryPart,
-  query: SinglePlannerQuery,
+  lhs: PlannerQueryPart,
+  rhs: SinglePlannerQuery,
   distinct: Boolean,
   unionMappings: List[UnionMapping]
 ) extends PlannerQueryPart {
-  override def readOnly: Boolean = part.readOnly && query.readOnly
+  override def readOnly: Boolean = lhs.readOnly && rhs.readOnly
 
-  override def returns: Set[String] = part.returns.map { returnColInPart =>
+  override def returns: Set[String] = lhs.returns.map { returnColInLhs =>
     unionMappings.collectFirst {
-      case UnionMapping(varAfterUnion, varInPart, _) if varInPart.name == returnColInPart => varAfterUnion.name
+      case UnionMapping(varAfterUnion, varInLhs, _) if varInLhs.name == returnColInLhs => varAfterUnion.name
     }.get
   }
 
-  override def allHints: Set[Hint] = part.allHints ++ query.allHints
+  override def allHints: Set[Hint] = lhs.allHints ++ rhs.allHints
 
   override def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart = copy(
-    part = part.withoutHints(hintsToIgnore),
-    query = query.withoutHints(hintsToIgnore)
+    lhs = lhs.withoutHints(hintsToIgnore),
+    rhs = rhs.withoutHints(hintsToIgnore)
   )
 
-  override def numHints: Int = part.numHints + query.numHints
+  override def numHints: Int = lhs.numHints + rhs.numHints
 
   override def visitHints[A](acc: A)(f: (A, Hint, QueryGraph) => A): A = {
-    val queryAcc = query.visitHints(acc)(f)
-    part.visitHints(queryAcc)(f)
+    val queryAcc = rhs.visitHints(acc)(f)
+    lhs.visitHints(queryAcc)(f)
   }
 
   override def asSinglePlannerQuery: SinglePlannerQuery =
     throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 
-  override def allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
+  override def allQGsWithLeafInfo: collection.Seq[QgWithLeafInfo] = lhs.allQGsWithLeafInfo ++ rhs.allQGsWithLeafInfo
 }

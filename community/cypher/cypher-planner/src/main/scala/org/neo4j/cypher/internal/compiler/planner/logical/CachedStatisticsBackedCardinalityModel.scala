@@ -91,9 +91,9 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
           var cardinality: Cardinality = null
           // the stack of union layers that we peel off to get to a cached value / the base layer
           lazy val unions: mutable.Stack[(UnionQuery, Cardinality)] =
-            mutable.Stack((unionQuery, cachedSinglePlannerQueryCardinality(unionQuery.query)))
+            mutable.Stack((unionQuery, cachedSinglePlannerQueryCardinality(unionQuery.rhs)))
           // pointer to the current layer
-          var part: PlannerQueryPart = unionQuery.part
+          var part: PlannerQueryPart = unionQuery.lhs
           // Phase 1: "peel off" layers of the union until we hit the SinglePlannerQuery at the bottom, or if one of the nested unions is already in the cache
           while (cardinality == null) {
             part match {
@@ -110,8 +110,8 @@ class CachedStatisticsBackedCardinalityModel(wrapped: StatisticsBackedCardinalit
 
                   case None =>
                     // If it isn't in the cache, then we move the pointer one layer deeper, and push the nexted union in the cache
-                    part = nestedUnionQuery.part
-                    unions.push((nestedUnionQuery, cachedSinglePlannerQueryCardinality(nestedUnionQuery.query)))
+                    part = nestedUnionQuery.lhs
+                    unions.push((nestedUnionQuery, cachedSinglePlannerQueryCardinality(nestedUnionQuery.rhs)))
                 }
 
               case other =>

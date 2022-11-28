@@ -33,12 +33,12 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
     val unionQuery = query.query.asInstanceOf[UnionQuery]
     unionQuery.distinct should equal(true)
 
-    unionQuery.part should be(a[SinglePlannerQuery])
-    val q1 = unionQuery.part.asInstanceOf[SinglePlannerQuery]
+    unionQuery.lhs should be(a[SinglePlannerQuery])
+    val q1 = unionQuery.lhs.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
     q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
 
-    val q2 = unionQuery.query
+    val q2 = unionQuery.rhs
     q2.queryGraph.patternNodes shouldBe empty
     q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
   }
@@ -49,20 +49,20 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
     val unionQuery = query.query.asInstanceOf[UnionQuery]
     unionQuery.distinct should equal(false)
 
-    unionQuery.part should be(a[UnionQuery])
-    val innerUnion = unionQuery.part.asInstanceOf[UnionQuery]
+    unionQuery.lhs should be(a[UnionQuery])
+    val innerUnion = unionQuery.lhs.asInstanceOf[UnionQuery]
     innerUnion.distinct should equal(false)
 
-    innerUnion.part should be(a[SinglePlannerQuery])
-    val q1 = innerUnion.part.asInstanceOf[SinglePlannerQuery]
+    innerUnion.lhs should be(a[SinglePlannerQuery])
+    val q1 = innerUnion.lhs.asInstanceOf[SinglePlannerQuery]
     q1.queryGraph.patternNodes shouldBe empty
     q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
 
-    val q2 = innerUnion.query
+    val q2 = innerUnion.rhs
     q2.queryGraph.patternNodes shouldBe empty
     q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
 
-    val q3 = unionQuery.query
+    val q3 = unionQuery.rhs
     q3.queryGraph.patternNodes shouldBe empty
     q3.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(3))))
   }

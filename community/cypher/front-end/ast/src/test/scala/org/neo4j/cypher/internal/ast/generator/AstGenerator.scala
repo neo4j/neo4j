@@ -1310,11 +1310,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield SingleQuery(clauses)(pos)
 
   def _union: Gen[Union] = for {
-    part <- _queryPart
-    single <- _singleQuery
+    lhs <- _queryPart
+    rhs <- _singleQuery
     union <- oneOf(
-      UnionDistinct(part, single)(pos),
-      UnionAll(part, single)(pos)
+      UnionDistinct(lhs, rhs)(pos),
+      UnionAll(lhs, rhs)(pos)
     )
   } yield union
 

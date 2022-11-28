@@ -76,15 +76,15 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
   private def rewriteQueryPart(queryPart: QueryPart, scopeDependencies: Set[LogicalVariable]): QueryPart =
     queryPart match {
       case sq: SingleQuery => rewriteSingleQuery(sq, scopeDependencies)
-      case union @ UnionAll(part, query) =>
+      case union @ UnionAll(lhs, rhs) =>
         union.copy(
-          part = rewriteQueryPart(part, scopeDependencies),
-          query = rewriteSingleQuery(query, scopeDependencies)
+          lhs = rewriteQueryPart(lhs, scopeDependencies),
+          rhs = rewriteSingleQuery(rhs, scopeDependencies)
         )(union.position)
-      case union @ UnionDistinct(part, query) =>
+      case union @ UnionDistinct(lhs, rhs) =>
         union.copy(
-          part = rewriteQueryPart(part, scopeDependencies),
-          query = rewriteSingleQuery(query, scopeDependencies)
+          lhs = rewriteQueryPart(lhs, scopeDependencies),
+          rhs = rewriteSingleQuery(rhs, scopeDependencies)
         )(union.position)
       case _: ProjectingUnion =>
         throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")

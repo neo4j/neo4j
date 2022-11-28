@@ -287,12 +287,12 @@ case class FabricStitcher(
           val lhs = stitch(union.lhs, outermost, outerUse)
           val rhs = stitchChain(union.rhs, outermost, outerUse)
           val uses = lhs.useAppearances ++ rhs.useAppearances :+ UnionUse(lhs.lastUse, rhs.lastUse)
-          val query = SingleQuery(rhs.clauses)(union.rhs.pos)
+          val rhsQuery = SingleQuery(rhs.clauses)(union.rhs.pos)
           val result =
             if (union.distinct) {
-              UnionDistinct(lhs.queryPart, query)(union.pos)
+              UnionDistinct(lhs.queryPart, rhsQuery)(union.pos)
             } else {
-              UnionAll(lhs.queryPart, query)(union.pos)
+              UnionAll(lhs.queryPart, rhsQuery)(union.pos)
             }
           StitchResult(result, rhs.lastUse, uses)
       }

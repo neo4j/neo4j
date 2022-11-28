@@ -190,32 +190,32 @@ case object plannerQueryPartPlanner {
     plannerQueryPart match {
       case pq: SinglePlannerQuery =>
         planSingleQuery.plan(pq, context)
-      case UnionQuery(part, query, distinct, unionMappings) =>
-        val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
-        val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
+      case UnionQuery(lhs, rhs, distinct, unionMappings) =>
+        val projectionsForLhs = unionMappings.map(um => um.unionVariable.name -> um.variableInLhs).toMap
+        val projectionsForRhs = unionMappings.map(um => um.unionVariable.name -> um.variableInRhs).toMap
 
-        val partPlan = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
-        val partPlanWithProjection =
+        val lhsPlan = plan(lhs, context, distinctifyUnions = false) // Only one distinct at the top level
+        val lhsPlanWithProjection =
           context.staticComponents.logicalPlanProducer.planProjectionForUnionMapping(
-            partPlan,
-            projectionsForPart,
+            lhsPlan,
+            projectionsForLhs,
             context
           )
 
-        val queryPlan = planSingleQuery.plan(query, context)
-        val queryPlanWithProjection =
+        val rhsPlan = planSingleQuery.plan(rhs, context)
+        val rhsPlanWithProjection =
           context.staticComponents.logicalPlanProducer.planRegularProjection(
-            queryPlan,
+            rhsPlan,
             Set.empty,
-            projectionsForQuery,
+            projectionsForRhs,
             None,
             context
           )
 
         val unionPlan =
           context.staticComponents.logicalPlanProducer.planUnion(
-            partPlanWithProjection,
-            queryPlanWithProjection,
+            lhsPlanWithProjection,
+            rhsPlanWithProjection,
             unionMappings,
             context
           )

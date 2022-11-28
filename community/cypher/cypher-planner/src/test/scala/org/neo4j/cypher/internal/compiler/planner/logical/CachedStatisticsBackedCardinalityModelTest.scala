@@ -61,7 +61,7 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
       RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(s"n_$i")))
 
     val plannerQueryPart = 1.until(depth).foldLeft[PlannerQueryPart](singlePlannerQuery(0)) {
-      case (part, i) => UnionQuery(part, singlePlannerQuery(i), distinct = false, Nil)
+      case (lhs, i) => UnionQuery(lhs, singlePlannerQuery(i), distinct = false, Nil)
     }
 
     cachedCardinalityModel.apply(

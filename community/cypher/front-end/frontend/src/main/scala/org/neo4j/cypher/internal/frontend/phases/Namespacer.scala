@@ -141,8 +141,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
     // This needs to be topDown so that Unions do net get copied before being replaced by a ProjectingUnion,
     // otherwise we create new copies of the unionMapping variables which are then unknown to the semantic state.
     topDown(Rewriter.lift {
-      case u: UnionAll      => ProjectingUnionAll(u.part, u.query, u.unionMappings)(u.position)
-      case u: UnionDistinct => ProjectingUnionDistinct(u.part, u.query, u.unionMappings)(u.position)
+      case u: UnionAll      => ProjectingUnionAll(u.lhs, u.rhs, u.unionMappings)(u.position)
+      case u: UnionDistinct => ProjectingUnionDistinct(u.lhs, u.rhs, u.unionMappings)(u.position)
     })
   }
 

@@ -2296,8 +2296,8 @@ case class LogicalPlanProducer(
 
   private def markDistinctInUnion(query: PlannerQueryPart): PlannerQueryPart = {
     query match {
-      case u @ UnionQuery(part, _, _, _) => u.copy(part = markDistinctInUnion(part), distinct = true)
-      case s                             => s
+      case u @ UnionQuery(lhs, _, _, _) => u.copy(lhs = markDistinctInUnion(lhs), distinct = true)
+      case s                            => s
     }
   }
 
@@ -2350,8 +2350,8 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(orPlan.id) match {
-      case UnionQuery(part, query, _, _) => query.updateTailOrSelf { that =>
-          val newHints = part.allHints ++ query.allHints
+      case UnionQuery(lhs, rhs, _, _) => rhs.updateTailOrSelf { that =>
+          val newHints = lhs.allHints ++ rhs.allHints
           that.withQueryGraph(solvedQueryGraph.withHints(newHints))
         }
     }

@@ -82,11 +82,11 @@ class StatisticsBackedCardinalityModel(
         indexPredicateProviderContext,
         cardinalityModel
       )
-    case uq @ UnionQuery(part, query, _, _) =>
+    case uq @ UnionQuery(lhs, rhs, _, _) =>
       combineUnion(
         uq,
-        apply(part, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel),
-        apply(query, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel)
+        apply(lhs, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel),
+        apply(rhs, labelInfo, relTypeInfo, semanticTable, indexPredicateProviderContext, cardinalityModel)
       )
   }
 
@@ -122,8 +122,8 @@ class StatisticsBackedCardinalityModel(
     output.cardinality
   }
 
-  def combineUnion(unionQuery: UnionQuery, partCardinality: Cardinality, queryCardinality: Cardinality): Cardinality = {
-    val unionCardinality = partCardinality + queryCardinality
+  def combineUnion(unionQuery: UnionQuery, lhsCardinality: Cardinality, rhsCardinality: Cardinality): Cardinality = {
+    val unionCardinality = lhsCardinality + rhsCardinality
     if (unionQuery.distinct) {
       unionCardinality * DEFAULT_DISTINCT_SELECTIVITY
     } else {
