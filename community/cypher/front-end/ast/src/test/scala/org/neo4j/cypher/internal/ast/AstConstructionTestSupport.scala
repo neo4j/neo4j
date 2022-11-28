@@ -640,8 +640,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def subqueryCall(cs: Clause*): SubqueryCall =
     SubqueryCall(SingleQuery(cs)(pos), None)(pos)
 
-  def subqueryCall(part: QueryPart): SubqueryCall =
-    SubqueryCall(part, None)(pos)
+  def subqueryCall(innerQuery: QueryPart): SubqueryCall =
+    SubqueryCall(innerQuery, None)(pos)
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
     val call = subqueryCall(cs: _*)

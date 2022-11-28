@@ -66,7 +66,7 @@ case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory
 
   private val subqueryRewriter: Rewriter = topDown(Rewriter.lift {
     case s: SubqueryCall =>
-      s.copy(part = s.part.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
+      s.copy(innerQuery = s.innerQuery.endoRewrite(innerRewriter(insideSubquery = true)))(s.position)
   })
 
   val instance: Rewriter = inSequence(innerRewriter(insideSubquery = false), subqueryRewriter)

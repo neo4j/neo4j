@@ -947,7 +947,7 @@ case class Prettifier(
     def asString(c: SubqueryCall): String = {
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
       s"""${INDENT}CALL {
-         |${indented().queryPart(c.part)}
+         |${indented().queryPart(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }
 

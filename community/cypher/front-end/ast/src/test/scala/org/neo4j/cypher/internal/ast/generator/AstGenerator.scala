@@ -1272,9 +1272,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield UseGraph(expression)(pos)
 
   def _subqueryCall: Gen[SubqueryCall] = for {
-    part <- _queryPart
+    innerQuery <- _queryPart
     params <- option(_inTransactionsParameters)
-  } yield SubqueryCall(part, params)(pos)
+  } yield SubqueryCall(innerQuery, params)(pos)
 
   def _inTransactionsParameters: Gen[InTransactionsParameters] =
     for {

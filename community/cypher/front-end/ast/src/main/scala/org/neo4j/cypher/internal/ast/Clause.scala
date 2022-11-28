@@ -1605,7 +1605,7 @@ object SubqueryCall {
     node.folder.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
-case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(
+case class SubqueryCall(innerQuery: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(
   val position: InputPosition
 ) extends HorizonClause with SemanticAnalysisTooling {
 
@@ -1625,11 +1625,11 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
 
   def checkSubquery: SemanticCheck = {
     for {
-      outerStateWithImports <- part.checkImportingWith
+      outerStateWithImports <- innerQuery.checkImportingWith
       // Create empty scope under root
       _ <- SemanticCheck.setState(outerStateWithImports.state.newBaseScope)
       // Check inner query. Allow it to import from outer scope
-      innerChecked <- part.semanticCheckInSubqueryContext(outerStateWithImports.state)
+      innerChecked <- innerQuery.semanticCheckInSubqueryContext(outerStateWithImports.state)
       _ <- returnToOuterScope(outerStateWithImports.state.currentScope)
       // Declare variables that are in output from subquery
       merged <- declareOutputVariablesInOuterScope(innerChecked.state.currentScope.scope)
@@ -1669,14 +1669,14 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   }
 
   private def declareOutputVariablesInOuterScope(rootScope: Scope): SemanticCheck = {
-    when(part.isReturning) {
-      val scopeForDeclaringVariables = part.finalScope(rootScope)
+    when(innerQuery.isReturning) {
+      val scopeForDeclaringVariables = innerQuery.finalScope(rootScope)
       declareVariables(scopeForDeclaringVariables.symbolTable.values)
     }
   }
 
   private def checkNoNestedCallInTransactions: SemanticCheck = {
-    val nestedCallInTransactions = SubqueryCall.findTransactionalSubquery(part)
+    val nestedCallInTransactions = SubqueryCall.findTransactionalSubquery(innerQuery)
     nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
       error("Nested CALL { ... } IN TRANSACTIONS is not supported", nestedCallInTransactions.position)
     }
@@ -1685,7 +1685,7 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   private def checkNoCallInTransactionsInsideRegularCall: SemanticCheck = {
     val nestedCallInTransactions =
       if (inTransactionsParameters.isEmpty) {
-        SubqueryCall.findTransactionalSubquery(part)
+        SubqueryCall.findTransactionalSubquery(innerQuery)
       } else
         None
 
