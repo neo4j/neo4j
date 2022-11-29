@@ -55,8 +55,10 @@ object projection {
       // Note, if keepAllColumns == false there might be some cases when runtime would benefit from planning a projection anyway to get rid of unused columns
       context.staticComponents.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved)
     } else {
+      // TODO We could plan discards also in sub queries,
+      //      but we can't discard symbols from the outer query.
       val discardSymbols =
-        if (keepAllColumns) Set.empty[String]
+        if (keepAllColumns || context.plannerState.isInSubquery) Set.empty[String]
         else ids -- projectionsToPlan.keySet -- projectionsDiff.keySet
       context.staticComponents.logicalPlanProducer.planRegularProjection(
         plan,

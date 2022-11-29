@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -504,6 +507,113 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .|.allNodeScan("n2")
         .cacheProperties("cacheNFromStore[n1.prop]")
         .allNodeScan("n1")
+        .build()
+    )
+  }
+
+  test("should not discard outer variables in sub query") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH n AS n1, n.prop AS prop
+        |CALL {
+        |  WITH n1
+        |  MATCH (n1)-->(n2)
+        |  WITH n2.prop AS prop2
+        |  RETURN prop2
+        |}
+        |RETURN n1, prop, prop2""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1", "prop", "prop2")
+        .projection("n2.prop AS prop2")
+        .expandAll("(n1)-[anon_0]->(n2)")
+        .projection(project = Seq("n AS n1", "n.prop AS prop"), discard = Set("n"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should not discard variables in sub query 2") {
+    val query =
+      """WITH 1 AS x, 2 AS y 
+        |CALL { 
+        |  WITH x
+        |  MATCH (y) 
+        |  WHERE y.value > x
+        |  WITH y AS y2
+        |  RETURN sum(y2.prop) AS sum 
+        |} RETURN sum""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("sum")
+        .apply(fromSubquery = true)
+        .|.aggregation(Seq(), Seq("sum(y2.prop) AS sum"))
+        .|.projection("y AS y2")
+        .|.filter("y.value > x")
+        .|.allNodeScan("y", "x")
+        .projection("1 AS x", "2 AS y")
+        .argument()
+        .build()
+    )
+  }
+
+  test("should not discard outer variables in write sub query") {
+    val plan = planner.plan(
+      """MATCH (n)
+        |WITH n AS n1, n.prop AS prop
+        |CALL {
+        |  WITH n1
+        |  CREATE (n1)-[:LIKES]->(n2 {prop: n1.x})
+        |  WITH n2.prop AS prop2
+        |  RETURN prop2
+        |}
+        |RETURN n1, prop, prop2""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n1", "prop", "prop2")
+        .projection("n2.prop AS prop2")
+        .apply(fromSubquery = true)
+        .|.create(
+          nodes = Seq(createNodeWithProperties("n2", Seq(), "{prop: n1.x}")),
+          relationships = Seq(createRelationship("anon_0", "n1", "LIKES", "n2", OUTGOING))
+        )
+        .|.argument("n1")
+        .projection(project = Seq("n AS n1", "n.prop AS prop"), discard = Set("n"))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("should not discard outer variables in nested sub query") {
+    val plan = planner.plan(
+      """WITH 1 AS a, 2 AS b, 3 AS c
+        |CALL {
+        |  WITH a
+        |  WITH 2*a AS aa, 4 AS d, 5 AS e
+        |  CALL {
+        |    WITH d
+        |    WITH 2*d AS dd, 6 AS f, 7 AS g
+        |    RETURN dd, f
+        |  }
+        |  RETURN dd, f, aa, d
+        |}
+        |WITH a, b, dd, f, aa, d, 2*c AS cc 
+        |RETURN a, b, dd, f, aa, d, cc""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "dd", "f", "aa", "d", "cc")
+        .projection(project = Seq("c * 2 AS cc"), discard = Set("e", "g", "c"))
+        .projection("d * 2 AS dd", "6 AS f", "7 AS g")
+        .projection("a * 2 AS aa", "4 AS d", "5 AS e")
+        .projection("1 AS a", "2 AS b", "3 AS c")
+        .argument()
         .build()
     )
   }

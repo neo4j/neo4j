@@ -922,3 +922,24 @@ Feature: SubqueryAcceptance
     Then the result should be, in any order:
       | m |
     And no side effects
+
+  Scenario: Accessing variables from outer query
+    When executing query:
+      """
+      UNWIND [1,2] AS x
+      WITH 2*x AS xx, x
+      CALL {
+        WITH x
+        UNWIND [10,20,30] AS y
+        RETURN x+y AS xy
+      }
+      RETURN x, xx, xy
+      """
+    Then the result should be, in order:
+      | x | xx | xy |
+      | 1 |  2 | 11 |
+      | 1 |  2 | 21 |
+      | 1 |  2 | 31 |
+      | 2 |  4 | 12 |
+      | 2 |  4 | 22 |
+      | 2 |  4 | 32 |
