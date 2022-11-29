@@ -808,7 +808,7 @@ class FabricPlannerTest
       plan(q)
         .check(_.executionType.shouldEqual(FabricPlan.EXPLAIN))
         .check(_.query.withoutLocalAndRemote.shouldEqual(
-          init(defaultUse).exec(query(return_(literal(1).as("x"))), Seq("x"))
+          init(defaultUse).exec(singleQuery(return_(literal(1).as("x"))), Seq("x"))
         ))
     }
 
@@ -821,7 +821,7 @@ class FabricPlannerTest
       plan(q, params)
         .check(_.executionType.shouldEqual(FabricPlan.PROFILE))
         .check(_.query.withoutLocalAndRemote.shouldEqual(
-          init(defaultUse).exec(query(return_(literal(1).as("x"))), Seq("x"))
+          init(defaultUse).exec(singleQuery(return_(literal(1).as("x"))), Seq("x"))
         ))
     }
 
@@ -849,7 +849,7 @@ class FabricPlannerTest
       plan(q)
         .check(_.debugOptions.shouldEqual(DebugOptions(logPlan = true, logRecords = true)))
         .check(_.query.withoutLocalAndRemote.shouldEqual(
-          init(defaultUse).exec(query(return_(literal(1).as("x"))), Seq("x"))
+          init(defaultUse).exec(singleQuery(return_(literal(1).as("x"))), Seq("x"))
         ))
     }
 
@@ -1565,7 +1565,7 @@ class FabricPlannerTest
 
       local.query.state.statement()
         .shouldEqual(
-          query(return_(parameter("p", ct.int).as("p")))
+          singleQuery(return_(parameter("p", ct.int).as("p")))
         )
 
     }

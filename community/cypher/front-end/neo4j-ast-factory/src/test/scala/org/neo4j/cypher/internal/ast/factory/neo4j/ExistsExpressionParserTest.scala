@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -45,25 +44,21 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        SingleQuery(
-          Seq(
-            match_(
-              RelationshipChain(
-                nodePat(Some("m")),
-                RelationshipPattern(Some(Variable("r")(InputPosition(30, 2, 21))), None, None, None, None, OUTGOING)(
-                  InputPosition(28, 2, 19)
-                ),
-                nodePat(Some("p"))
-              )(pos)
-            )
-          )
-        )(pos)
+      singleQuery(
+        match_(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(Some(Variable("r")(InputPosition(30, 2, 21))), None, None, None, None, OUTGOING)(
+              InputPosition(28, 2, 19)
+            ),
+            nodePat(Some("p"))
+          )(pos)
+        )
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -76,26 +71,22 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        SingleQuery(
-          Seq(
-            match_(
-              RelationshipChain(
-                nodePat(Some("m")),
-                RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
-                  InputPosition(34, 2, 25)
-                ),
-                nodePat(Some("p"))
-              )(pos),
-              Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
-            )
-          )
-        )(pos)
+      singleQuery(
+        match_(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
+              InputPosition(34, 2, 25)
+            ),
+            nodePat(Some("p"))
+          )(pos),
+          Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
+        )
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -108,25 +99,21 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        SingleQuery(
-          Seq(
-            match_(
-              RelationshipChain(
-                nodePat(Some("m")),
-                RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
-                  InputPosition(34, 2, 25)
-                ),
-                nodePat(Some("p"))
-              )(pos)
-            )
-          )
-        )(pos)
+      singleQuery(
+        match_(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
+              InputPosition(34, 2, 25)
+            ),
+            nodePat(Some("p"))
+          )(pos)
+        )
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -139,26 +126,22 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        SingleQuery(
-          Seq(
-            match_(
-              RelationshipChain(
-                nodePat(Some("m")),
-                RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
-                  InputPosition(34, 2, 25)
-                ),
-                nodePat(Some("p"))
-              )(pos)
+      singleQuery(
+        match_(
+          RelationshipChain(
+            nodePat(Some("m")),
+            RelationshipPattern(Some(Variable("r")(InputPosition(36, 2, 27))), None, None, None, None, OUTGOING)(
+              InputPosition(34, 2, 25)
             ),
-            return_(variableReturnItem("p"))
-          )
-        )(pos)
+            nodePat(Some("p"))
+          )(pos)
+        ),
+        return_(variableReturnItem("p"))
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -171,26 +154,20 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        UnionDistinct(
-          SingleQuery(
-            Seq(
-              match_(nodePat(name = Some("m"), None)),
-              return_(variableReturnItem("m"))
-            )
-          )(pos),
-          SingleQuery(
-            Seq(
-              match_(nodePat(name = Some("p"), None)),
-              return_(variableReturnItem("p"))
-            )
-          )(pos)
-        )(InputPosition(44, 2, 35))
-      )
+      UnionDistinct(
+        singleQuery(
+          match_(nodePat(name = Some("m"), None)),
+          return_(variableReturnItem("m"))
+        ),
+        singleQuery(
+          match_(nodePat(name = Some("p"), None)),
+          return_(variableReturnItem("p"))
+        )
+      )(InputPosition(44, 2, 35))
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -203,14 +180,14 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
+      singleQuery(
         create(nodePat(name = Some("n"))),
         InputPosition(25, 2, 16)
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
@@ -223,33 +200,29 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       |RETURN m""".stripMargin
   ) {
     val existsExpression: ExistsExpression = ExistsExpression(
-      query(
-        SingleQuery(
-          Seq(
-            match_(
-              nodePat(name = Some("n")),
-              Some(
-                where(
-                  AllIterablePredicate(
-                    FilterScope(
-                      varFor("i"),
-                      Some(
-                        Equals(varFor("i"), SignedDecimalIntegerLiteral("4")(pos))(pos)
-                      )
-                    )(pos),
-                    Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)
-                  )(pos)
-                )
-              )
-            ),
-            return_(variableReturnItem("n"))
+      singleQuery(
+        match_(
+          nodePat(name = Some("n")),
+          Some(
+            where(
+              AllIterablePredicate(
+                FilterScope(
+                  varFor("i"),
+                  Some(
+                    Equals(varFor("i"), SignedDecimalIntegerLiteral("4")(pos))(pos)
+                  )
+                )(pos),
+                Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)
+              )(pos)
+            )
           )
-        )(pos)
+        ),
+        return_(variableReturnItem("n"))
       )
     )(InputPosition(16, 2, 7), Set.empty, Set.empty)
 
     givesIncludingPositions {
-      query(
+      singleQuery(
         match_(nodePat(name = Some("m")), Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )

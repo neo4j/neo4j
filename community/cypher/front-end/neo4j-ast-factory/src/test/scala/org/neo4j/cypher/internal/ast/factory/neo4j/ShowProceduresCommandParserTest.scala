@@ -35,23 +35,23 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   Seq("PROCEDURE", "PROCEDURES").foreach { procKeyword =>
     test(s"SHOW $procKeyword") {
-      assertAst(query(ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(None, None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE") {
-      assertAst(query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT USER") {
-      assertAst(query(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(Some(CurrentUser), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY user") {
-      assertAst(query(ShowProceduresClause(Some(User("user")), None, hasYield = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(Some(User("user")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"SHOW $procKeyword EXECUTABLE BY CURRENT") {
-      assertAst(query(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(defaultPos)))
+      assertAst(singleQuery(ShowProceduresClause(Some(User("CURRENT")), None, hasYield = false)(defaultPos)))
     }
 
     test(s"USE db SHOW $procKeyword") {
@@ -65,7 +65,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   // Filtering tests
 
   test("SHOW PROCEDURE WHERE name = 'my.proc'") {
-    assertAst(query(ShowProceduresClause(
+    assertAst(singleQuery(ShowProceduresClause(
       None,
       Some(Where(
         Equals(
@@ -78,7 +78,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES YIELD description") {
-    assertAst(query(
+    assertAst(singleQuery(
       ShowProceduresClause(None, None, hasYield = true)(defaultPos),
       yieldClause(
         ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 23, 22))))((1, 23, 22))
@@ -87,14 +87,14 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURES EXECUTABLE BY user YIELD *") {
-    assertAst(query(
+    assertAst(singleQuery(
       ShowProceduresClause(Some(User("user")), None, hasYield = true)(defaultPos),
       yieldClause(returnAllItems)
     ))
   }
 
   test("SHOW PROCEDURES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    assertAst(query(
+    assertAst(singleQuery(
       ShowProceduresClause(None, None, hasYield = true)(defaultPos),
       yieldClause(
         returnAllItems((1, 25, 24)),
@@ -109,7 +109,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("USE db SHOW PROCEDURES YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowProceduresClause(None, None, hasYield = true)(pos),
         yieldClause(
@@ -126,7 +126,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     "USE db SHOW PROCEDURES EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowProceduresClause(Some(CurrentUser), None, hasYield = true)(pos),
         yieldClause(
@@ -144,7 +144,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
 
   test("SHOW PROCEDURES YIELD name AS PROCEDURE, mode AS OUTPUT") {
     assertAst(
-      query(
+      singleQuery(
         ShowProceduresClause(None, None, hasYield = true)(pos),
         yieldClause(returnItems(aliasedReturnItem("name", "PROCEDURE"), aliasedReturnItem("mode", "OUTPUT")))
       ),

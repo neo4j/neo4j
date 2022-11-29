@@ -176,7 +176,7 @@ class CountTest extends SemanticFunSuite {
 
   test("COUNT works for a regular query") {
     val expression = CountExpression(
-      query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -187,7 +187,7 @@ class CountTest extends SemanticFunSuite {
 
   test("COUNT does not work for an updating query") {
     val expression = CountExpression(
-      query(singleQuery(create(nodePat(Some("n")))))
+      singleQuery(create(nodePat(Some("n"))))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -200,7 +200,7 @@ class CountTest extends SemanticFunSuite {
 
   test("inner where with regular query using missing identifier reports error") {
     val expression = CountExpression(
-      query(singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -211,7 +211,7 @@ class CountTest extends SemanticFunSuite {
 
   test("COUNT with a regular query cannot reuse identifier with different type") {
     val expression = CountExpression(
-      query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get

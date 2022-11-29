@@ -61,7 +61,7 @@ class FabricStitcherTest
       stitching(
         init(defaultUse).leaf(Seq(return_(literal(1).as("a"))), Seq("a"))
       ).shouldEqual(
-        init(defaultUse).exec(query(return_(literal(1).as("a"))), Seq("a"))
+        init(defaultUse).exec(singleQuery(return_(literal(1).as("a"))), Seq("a"))
       )
     }
 
@@ -69,7 +69,7 @@ class FabricStitcherTest
       stitching(
         init(defaultUse).leaf(Seq(use("foo"), return_(literal(1).as("a"))), Seq("a"))
       ).shouldEqual(
-        init(defaultUse).exec(query(return_(literal(1).as("a"))), Seq("a"))
+        init(defaultUse).exec(singleQuery(return_(literal(1).as("a"))), Seq("a"))
       )
     }
 
@@ -78,7 +78,7 @@ class FabricStitcherTest
         init(defaultUse, Seq("x", "y"), Seq("y")).leaf(Seq(return_(literal(1).as("a"))), Seq("a"))
       ).shouldEqual(
         init(defaultUse, Seq("x", "y"), Seq("y")).exec(
-          query(importParams("y"), return_(literal(1).as("a"))),
+          singleQuery(importParams("y"), return_(literal(1).as("a"))),
           Seq("a")
         )
       )
@@ -88,7 +88,7 @@ class FabricStitcherTest
       stitching(
         init(defaultUse).leaf(Seq(call(Seq("my"), "proc")), Seq())
       ).shouldEqual(
-        init(defaultUse).exec(query(call(Seq("my"), "proc")), Seq())
+        init(defaultUse).exec(singleQuery(call(Seq("my"), "proc")), Seq())
       )
     }
 
@@ -104,7 +104,7 @@ class FabricStitcherTest
       ).shouldEqual(
         init(defaultUse)
           .exec(
-            query(
+            singleQuery(
               with_(literal(1).as("a")),
               subqueryCall(return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
@@ -131,7 +131,7 @@ class FabricStitcherTest
       ).shouldEqual(
         init(defaultUse)
           .exec(
-            query(
+            singleQuery(
               with_(literal(1).as("a")),
               subqueryCall(
                 with_(literal(2).as("b")),
@@ -161,7 +161,7 @@ class FabricStitcherTest
       ).shouldEqual(
         init(defaultUse)
           .exec(
-            query(
+            singleQuery(
               with_(literal(1).as("a")),
               subqueryCall(return_(literal(2).as("b"))),
               subqueryCall(return_(literal(3).as("c"))),
@@ -184,7 +184,7 @@ class FabricStitcherTest
       ).shouldEqual(
         init(Declared(use("foo")))
           .exec(
-            query(
+            singleQuery(
               subqueryCall(return_(literal(2).as("b"))),
               return_(literal(3).as("c"))
             ),
@@ -205,10 +205,10 @@ class FabricStitcherTest
       ).shouldEqual(
         init(defaultUse, Seq("x", "y", "z"), Seq("y", "z"))
           .exec(
-            query(union(
+            union(
               singleQuery(importParams("y"), return_(literal(1).as("a"))),
               singleQuery(importParams("z"), return_(literal(2).as("a")))
-            )),
+            ),
             Seq("a")
           )
       )
@@ -231,7 +231,7 @@ class FabricStitcherTest
       ).shouldEqual(
         init(defaultUse)
           .exec(
-            query(
+            singleQuery(
               with_(literal(1).as("x"), literal(2).as("y"), literal(3).as("z")),
               subqueryCall(union(
                 singleQuery(with_(varFor("y").as("y")), return_(varFor("y").as("a"))),
@@ -286,12 +286,12 @@ class FabricStitcherTest
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
           .apply(_ =>
             init(Declared(use("foo")), Seq("a"))
-              .exec(query(return_(literal(2).as("b"))), Seq("b"))
+              .exec(singleQuery(return_(literal(2).as("b"))), Seq("b"))
           )
-          .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
+          .exec(singleQuery(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
     }
 
@@ -306,15 +306,19 @@ class FabricStitcherTest
           .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
       ).shouldEqual(
         init(defaultUse)
-          .exec(query(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
+          .exec(singleQuery(with_(literal(1).as("a")), return_(varFor("a").as("a"))), Seq("a"))
           .apply(_ =>
             init(Declared(use("foo")), Seq("a"), Seq("a"))
               .exec(
-                query(with_(parameter("@@a", ct.any).as("a")), with_(varFor("a").as("a")), return_(literal(2).as("b"))),
+                singleQuery(
+                  with_(parameter("@@a", ct.any).as("a")),
+                  with_(varFor("a").as("a")),
+                  return_(literal(2).as("b"))
+                ),
                 Seq("b")
               )
           )
-          .exec(query(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
+          .exec(singleQuery(input(varFor("a"), varFor("b")), return_(literal(3).as("c"))), Seq("c"))
       )
     }
 

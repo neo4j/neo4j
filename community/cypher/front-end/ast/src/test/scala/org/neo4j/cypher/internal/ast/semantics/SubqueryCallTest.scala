@@ -42,7 +42,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN b, 1 AS c
     // }
     // RETURN a, b, c
-    query(
+    singleQuery(
       with_(literal(1).as("a")),
       subqueryCall(
         with_(literal(1).as("b")),
@@ -65,7 +65,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN a AS b
     // }
     // RETURN a
-    query(
+    singleQuery(
       with_(literal(1).as("a")),
       subqueryCall(
         return_(varFor("a").as("b"))
@@ -84,7 +84,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN b, 1 AS c ORDER BY b, c
     // }
     // RETURN a, b, b AS c ORDER BY a, b, c
-    query(
+    singleQuery(
       with_(literal(1).as("a")),
       subqueryCall(
         with_(literal(1).as("b")),
@@ -482,7 +482,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN a AS b
     // }
     // RETURN a, b
-    query(
+    singleQuery(
       with_(literal(1).as("a")),
       subqueryCall(unionDistinct(
         singleQuery(
@@ -513,7 +513,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN c AS x
     // }
     // RETURN a, b, c, x
-    query(
+    singleQuery(
       with_(literal(1).as("a"), literal(1).as("b"), literal(1).as("c")),
       subqueryCall(unionDistinct(
         singleQuery(
@@ -544,20 +544,18 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //     UNION
     //   WITH c
     //   RETURN c AS x
-    query(
-      unionDistinct(
-        singleQuery(
-          with_(literal(1).as("a")),
-          return_(varFor("a").as("x"))
-        ),
-        singleQuery(
-          with_(literal(1).as("b")),
-          return_(varFor("b").as("x"))
-        ),
-        singleQuery(
-          with_(literal(1).as("c")),
-          return_(varFor("c").as("x"))
-        )
+    unionDistinct(
+      singleQuery(
+        with_(literal(1).as("a")),
+        return_(varFor("a").as("x"))
+      ),
+      singleQuery(
+        with_(literal(1).as("b")),
+        return_(varFor("b").as("x"))
+      ),
+      singleQuery(
+        with_(literal(1).as("c")),
+        return_(varFor("c").as("x"))
       )
     )
       .semanticCheck(clean)

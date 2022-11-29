@@ -622,14 +622,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
   }
 
-  // TODO simplify away
-  def query(query: Query): Query =
-    query
-
-  def query(cs: Clause*): Query =
-    SingleQuery(cs)(defaultPos)
-
-  def query(cs: Clause, position: InputPosition): Query =
+  def singleQuery(cs: Clause, position: InputPosition): Query =
     SingleQuery(List(cs))(position)
 
   def singleQuery(cs: Clause*): SingleQuery =
@@ -811,10 +804,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): ExistsExpression = {
 
-    val simpleMatchQuery = query(
-      singleQuery(
-        Match(optional = false, pattern, Seq(), maybeWhere)(pos)
-      )
+    val simpleMatchQuery = singleQuery(
+      Match(optional = false, pattern, Seq(), maybeWhere)(pos)
     )
 
     ExistsExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)
@@ -827,10 +818,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): CountExpression = {
 
-    val simpleMatchQuery = query(
-      singleQuery(
-        Match(optional = false, pattern, Seq(), maybeWhere)(pos)
-      )
+    val simpleMatchQuery = singleQuery(
+      Match(optional = false, pattern, Seq(), maybeWhere)(pos)
     )
 
     CountExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)

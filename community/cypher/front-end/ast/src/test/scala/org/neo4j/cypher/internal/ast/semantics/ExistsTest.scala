@@ -81,7 +81,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("EXISTS works for a regular query") {
     val expression = ExistsExpression(
-      query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -92,7 +92,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("EXISTS does not work for an updating query") {
     val expression = ExistsExpression(
-      query(singleQuery(create(nodePat(Some("n")))))
+      singleQuery(create(nodePat(Some("n"))))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -105,7 +105,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("inner where with regular query using missing identifier reports error") {
     val expression = ExistsExpression(
-      query(singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val result =
@@ -116,7 +116,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("EXISTS with a regular query cannot reuse identifier with different type") {
     val expression = ExistsExpression(
-      query(singleQuery(match_(relChain), return_(varFor("n").as("n"))))
+      singleQuery(match_(relChain), return_(varFor("n").as("n")))
     )(pos, Set.empty, Set.empty)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get

@@ -35,7 +35,7 @@ class UseParserTest extends JavaccParserAstTestBase[Statement] {
 
   test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
     gives {
-      query(
+      singleQuery(
         subqueryCall(
           use(varFor("neo4j")),
           returnLit(1 -> "y")
@@ -47,7 +47,7 @@ class UseParserTest extends JavaccParserAstTestBase[Statement] {
 
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
     gives {
-      query(
+      singleQuery(
         with_(literal(1) as "x"),
         subqueryCall(
           with_(variableReturnItem("x")),
@@ -61,12 +61,10 @@ class UseParserTest extends JavaccParserAstTestBase[Statement] {
 
   test("USE foo UNION ALL RETURN 1") {
     gives {
-      query(
-        union(
-          singleQuery(use(varFor("foo"))),
-          singleQuery(return_(returnItem(literal(1), "1")))
-        ).all
-      )
+      union(
+        singleQuery(use(varFor("foo"))),
+        singleQuery(return_(returnItem(literal(1), "1")))
+      ).all
     }
   }
 }

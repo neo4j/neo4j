@@ -51,55 +51,59 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"SHOW $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW ALL $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW BTREE $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW RANGE $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW FULLTEXT $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(
+          ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)
+        )
       )
     }
 
     test(s"SHOW TEXT $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW POINT $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     test(s"SHOW LOOKUP $indexKeyword") {
       assertAst(
-        query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(
+          ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)
+        )
       )
     }
 
     test(s"USE db SHOW $indexKeyword") {
       assertAst(
-        query(
+        singleQuery(
           use(varFor("db")),
           ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)
         ),
@@ -110,40 +114,52 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     // Brief output (deprecated)
 
     test(s"SHOW $indexKeyword BRIEF") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW $indexKeyword BRIEF OUTPUT") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW ALL $indexKeyword BRIEF") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW BTREE $indexKeyword BRIEF") {
       assertAst(
-        query(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
       )
     }
 
     // Verbose output (deprecated)
 
     test(s"SHOW $indexKeyword VERBOSE") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW ALL $indexKeyword VERBOSE") {
-      assertAst(query(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos)))
+      assertAst(
+        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+      )
     }
 
     test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
       assertAst(
-        query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
       )
     }
   }
@@ -152,7 +168,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
     assertAst(
-      query(ShowIndexesClause(
+      singleQuery(ShowIndexesClause(
         AllIndexes,
         brief = false,
         verbose = false,
@@ -165,7 +181,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW INDEXES YIELD populationPercent") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnItems(variableReturnItem("populationPercent")))
       ),
@@ -175,7 +191,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW POINT INDEXES YIELD populationPercent") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnItems(variableReturnItem("populationPercent")))
       ),
@@ -185,7 +201,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW BTREE INDEXES YIELD *") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnAllItems)
       ),
@@ -195,7 +211,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
@@ -205,7 +221,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW RANGE INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
@@ -215,7 +231,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("USE db SHOW FULLTEXT INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(
@@ -232,7 +248,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     "USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(
@@ -250,7 +266,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
       ),
@@ -260,7 +276,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW TEXT INDEXES YIELD name AS INDEX, type AS OUTPUT") {
     assertAst(
-      query(
+      singleQuery(
         ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
       ),
@@ -270,7 +286,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW LOOKUP INDEXES WHERE name = 'GRANT'") {
     assertAst(
-      query(ShowIndexesClause(
+      singleQuery(ShowIndexesClause(
         LookupIndexes,
         brief = false,
         verbose = false,
@@ -462,7 +478,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       (oldConstraintTypes ++ newConstraintType).foreach {
         case (constraintTypeKeyword, constraintType) =>
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
-            assertAst(query(ShowConstraintsClause(
+            assertAst(singleQuery(ShowConstraintsClause(
               constraintType,
               brief = false,
               verbose = false,
@@ -473,7 +489,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
             assertAst(
-              query(
+              singleQuery(
                 use(varFor("db")),
                 ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)
               ),
@@ -488,7 +504,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       oldConstraintTypes.foreach {
         case (constraintTypeKeyword, constraintType) =>
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
-            assertAst(query(ShowConstraintsClause(
+            assertAst(singleQuery(ShowConstraintsClause(
               constraintType,
               brief = true,
               verbose = false,
@@ -498,7 +514,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
-            assertAst(query(ShowConstraintsClause(
+            assertAst(singleQuery(ShowConstraintsClause(
               constraintType,
               brief = true,
               verbose = false,
@@ -508,7 +524,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
-            assertAst(query(ShowConstraintsClause(
+            assertAst(singleQuery(ShowConstraintsClause(
               constraintType,
               brief = false,
               verbose = true,
@@ -518,7 +534,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
-            assertAst(query(ShowConstraintsClause(
+            assertAst(singleQuery(ShowConstraintsClause(
               constraintType,
               brief = false,
               verbose = true,
@@ -533,7 +549,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW CONSTRAINT WHERE entityType = 'RELATIONSHIP'") {
     assertAst(
-      query(ShowConstraintsClause(
+      singleQuery(ShowConstraintsClause(
         AllConstraints,
         brief = false,
         verbose = false,
@@ -546,7 +562,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
     assertAst(
-      query(
+      singleQuery(
         ShowConstraintsClause(RelExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
           pos
         ),
@@ -558,7 +574,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW UNIQUE CONSTRAINTS YIELD *") {
     assertAst(
-      query(
+      singleQuery(
         ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnAllItems)
       ),
@@ -568,7 +584,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW CONSTRAINTS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
-      query(
+      singleQuery(
         ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
@@ -578,7 +594,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(
@@ -595,7 +611,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     "USE db SHOW CONSTRAINTS YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
         yieldClause(
@@ -613,7 +629,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
     assertAst(
-      query(
+      singleQuery(
         ShowConstraintsClause(ExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
           pos
         ),
@@ -625,7 +641,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
   test("SHOW NODE EXIST CONSTRAINTS WHERE name = 'GRANT'") {
     assertAst(
-      query(ShowConstraintsClause(
+      singleQuery(ShowConstraintsClause(
         NodeExistsConstraints(ValidSyntax),
         brief = false,
         verbose = false,

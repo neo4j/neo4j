@@ -32,36 +32,41 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       ("USER DEFINED", ast.UserDefinedFunctions)
     ).foreach { case (typeString, functionType) =>
       test(s"SHOW $typeString $funcKeyword") {
-        assertAst(query(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)))
+        assertAst(singleQuery(ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)))
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE") {
         assertAst(
-          query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos))
+          singleQuery(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos))
         )
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT USER") {
         assertAst(
-          query(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos))
+          singleQuery(ast.ShowFunctionsClause(functionType, Some(ast.CurrentUser), None, hasYield = false)(defaultPos))
         )
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY user") {
         assertAst(
-          query(ast.ShowFunctionsClause(functionType, Some(ast.User("user")), None, hasYield = false)(defaultPos))
+          singleQuery(ast.ShowFunctionsClause(functionType, Some(ast.User("user")), None, hasYield = false)(defaultPos))
         )
       }
 
       test(s"SHOW $typeString $funcKeyword EXECUTABLE BY CURRENT") {
         assertAst(
-          query(ast.ShowFunctionsClause(functionType, Some(ast.User("CURRENT")), None, hasYield = false)(defaultPos))
+          singleQuery(
+            ast.ShowFunctionsClause(functionType, Some(ast.User("CURRENT")), None, hasYield = false)(defaultPos)
+          )
         )
       }
 
       test(s"USE db SHOW $typeString $funcKeyword") {
         assertAst(
-          query(use(varFor("db")), ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)),
+          singleQuery(
+            use(varFor("db")),
+            ast.ShowFunctionsClause(functionType, None, None, hasYield = false)(defaultPos)
+          ),
           comparePosition = false
         )
       }
@@ -73,7 +78,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTION WHERE name = 'my.func'") {
     assertAst(
-      query(ast.ShowFunctionsClause(
+      singleQuery(ast.ShowFunctionsClause(
         ast.AllFunctions,
         None,
         Some(where(equals(varFor("name"), literalString("my.func")))),
@@ -84,7 +89,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   }
 
   test("SHOW FUNCTIONS YIELD description") {
-    assertAst(query(
+    assertAst(singleQuery(
       ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
       yieldClause(
         ast.ReturnItems(includeExisting = false, Seq(variableReturnItem("description", (1, 22, 21))))((1, 22, 21))
@@ -94,7 +99,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW USER DEFINED FUNCTIONS EXECUTABLE BY user YIELD *") {
     assertAst(
-      query(
+      singleQuery(
         ast.ShowFunctionsClause(ast.UserDefinedFunctions, Some(ast.User("user")), None, hasYield = true)(defaultPos),
         yieldClause(returnAllItems)
       ),
@@ -104,7 +109,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW FUNCTIONS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
-      query(
+      singleQuery(
         ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
         yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
@@ -114,7 +119,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("USE db SHOW BUILT IN FUNCTIONS YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ast.ShowFunctionsClause(ast.BuiltInFunctions, None, None, hasYield = true)(defaultPos),
         yieldClause(
@@ -131,7 +136,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
     "USE db SHOW FUNCTIONS EXECUTABLE YIELD name, description AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
     assertAst(
-      query(
+      singleQuery(
         use(varFor("db")),
         ast.ShowFunctionsClause(ast.AllFunctions, Some(ast.CurrentUser), None, hasYield = true)(defaultPos),
         yieldClause(
@@ -149,7 +154,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
 
   test("SHOW ALL FUNCTIONS YIELD name AS FUNCTION, mode AS OUTPUT") {
     assertAst(
-      query(
+      singleQuery(
         ast.ShowFunctionsClause(ast.AllFunctions, None, None, hasYield = true)(defaultPos),
         yieldClause(returnItems(aliasedReturnItem("name", "FUNCTION"), aliasedReturnItem("mode", "OUTPUT")))
       ),

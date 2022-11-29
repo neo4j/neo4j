@@ -65,7 +65,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     ("TERMINATE", terminate: TransactionClause, "TERMINATE", terminate: TransactionClause)
   ).foreach { case (firstCommand, firstClause, secondCommand, secondClause) =>
     test(s"$firstCommand TRANSACTIONS $secondCommand TRANSACTION") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
         secondClause(Left(List.empty), None, false, List.empty)(pos)
       ))
@@ -73,7 +73,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
 
     test(s"USE db $firstCommand TRANSACTIONS $secondCommand TRANSACTION") {
       assertAst(
-        query(
+        singleQuery(
           use(varFor("db")),
           firstClause(Left(List.empty), None, false, List.empty)(pos),
           secondClause(Left(List.empty), None, false, List.empty)(pos)
@@ -83,21 +83,21 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS $secondCommand TRANSACTION 'db1-transaction-123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
         secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
       ))
     }
 
     test(s"$firstCommand TRANSACTIONS 'db1-transaction-123' $secondCommand TRANSACTION") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
         secondClause(Left(List.empty), None, false, List.empty)(pos)
       ))
     }
 
     test(s"$firstCommand TRANSACTIONS 'db1-transaction-123' $secondCommand TRANSACTION 'db1-transaction-123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
         secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
       ))
@@ -106,21 +106,21 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS 'db1-transaction-123', 'db1-transaction-123' $secondCommand TRANSACTION 'db1-transaction-123', 'db1-transaction-123'"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List("db1-transaction-123", "db1-transaction-123")), None, false, List.empty)(defaultPos),
         secondClause(Left(List("db1-transaction-123", "db1-transaction-123")), None, false, List.empty)(pos)
       ))
     }
 
     test(s"$firstCommand TRANSACTIONS $$txId $secondCommand TRANSACTION $$txId") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Right(parameter("txId", CTAny)), None, false, List.empty)(defaultPos),
         secondClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos)
       ))
     }
 
     test(s"$firstCommand TRANSACTIONS WHERE transactionId = '123' $secondCommand TRANSACTION 'db1-transaction-123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Left(List.empty),
           Some((where(equals(varFor("transactionId"), literalString("123"))), getWherePosition())),
@@ -132,7 +132,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS $secondCommand TRANSACTION 'db1-transaction-123' WHERE transactionId = '123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
         secondClause(
           Right(literalString("db1-transaction-123")),
@@ -148,7 +148,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     ) {
       val where1Pos = getWherePosition()
       val where2Pos = getWherePosition(where1Pos.offset + 1)
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Left(List.empty),
           Some((where(equals(varFor("transactionId"), literalString("123"))), where1Pos)),
@@ -165,7 +165,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION 'db1-transaction-123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos)
@@ -175,7 +175,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION 'db1-transaction-123' YIELD username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(
@@ -191,7 +191,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD transactionId AS txId RETURN txId $secondCommand TRANSACTION 'db1-transaction-123' YIELD username RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         returnClause(returnItems(variableReturnItem("txId"))),
@@ -209,7 +209,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION 'db1-transaction-123' YIELD username RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(
@@ -226,7 +226,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION YIELD username RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(Left(List.empty), None, false, List(commandResultItem("username", Some("username"))))(pos),
@@ -238,7 +238,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD * $secondCommand TRANSACTION YIELD username RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, true, List.empty)(defaultPos),
         withFromYield(returnAllItems),
         secondClause(Left(List.empty), None, false, List(commandResultItem("username", Some("username"))))(pos),
@@ -250,7 +250,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION YIELD * RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(Left(List.empty), None, true, List.empty)(pos),
@@ -262,7 +262,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS YIELD * $secondCommand TRANSACTION YIELD * RETURN txId, username"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, true, List.empty)(defaultPos),
         withFromYield(returnAllItems),
         secondClause(Left(List.empty), None, true, List.empty)(pos),
@@ -278,7 +278,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
          |YIELD username, message
          |RETURN *""".stripMargin
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Right(literalString("db1-transaction-123")),
           None,
@@ -315,7 +315,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
       test(
         s"$firstCommand TRANSACTIONS $secondCommand TRANSACTION $thirdCommand TRANSACTIONS $fourthCommand TRANSACTION"
       ) {
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(Left(List.empty), None, false, List.empty)(defaultPos),
           secondClause(Left(List.empty), None, false, List.empty)(pos),
           thirdClause(Left(List.empty), None, false, List.empty)(pos),
@@ -329,7 +329,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
            |$thirdCommand TRANSACTIONS 'db1-transaction-123'
            |$fourthCommand TRANSACTION 'db1-transaction-123'""".stripMargin
       ) {
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(defaultPos),
           secondClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos),
           thirdClause(Right(literalString("db1-transaction-123")), None, false, List.empty)(pos),
@@ -340,7 +340,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
       test(
         s"$firstCommand TRANSACTIONS $$txId $secondCommand TRANSACTION $$txId $thirdCommand TRANSACTIONS $$txId $fourthCommand TRANSACTION $$txId"
       ) {
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(Right(parameter("txId", CTAny)), None, false, List.empty)(defaultPos),
           secondClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos),
           thirdClause(Right(parameter("txId", CTAny)), None, false, List.empty)(pos),
@@ -358,7 +358,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
            |$fourthCommand TRANSACTION 'db1-transaction-123'
            |YIELD *""".stripMargin
       ) {
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(Right(literalString("db1-transaction-123")), None, true, List.empty)(defaultPos),
           withFromYield(returnAllItems),
           secondClause(Right(literalString("db1-transaction-123")), None, true, List.empty)(pos),
@@ -381,7 +381,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
            |YIELD transactionId AS txId, message AS status
            |RETURN *""".stripMargin
       ) {
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(
             Right(literalString("db1-transaction-123")),
             None,
@@ -431,7 +431,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
         val where2Pos = getWherePosition(where1Pos.offset + 1)
         val where3Pos = getWherePosition(where2Pos.offset + 1)
         val where4Pos = getWherePosition(where3Pos.offset + 1)
-        assertAst(query(
+        assertAst(singleQuery(
           firstClause(
             Right(literalString("db1-transaction-123")),
             Some((where(equals(varFor("message"), literalString("Transaction terminated."))), where1Pos)),
@@ -463,7 +463,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     // general expression and not just string/param
 
     test(s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION txId") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(Right(varFor("txId")), None, false, List.empty)(pos)
@@ -471,7 +471,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS foo YIELD transactionId AS show $secondCommand TRANSACTION show") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Right(varFor("foo")),
           None,
@@ -486,7 +486,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     test(
       s"$firstCommand TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'] YIELD transactionId AS show $secondCommand TRANSACTION show"
     ) {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Right(listOfString("db1-transaction-123", "db2-transaction-456")),
           None,
@@ -499,7 +499,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS YIELD transactionId AS txId $secondCommand TRANSACTION txId + '123'") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(Left(List.empty), None, false, List(commandResultItem("transactionId", Some("txId"))))(defaultPos),
         withFromYield(returnAllItems.withDefaultOrderOnColumns(List("txId"))),
         secondClause(Right(add(varFor("txId"), literalString("123"))), None, false, List.empty)(pos)
@@ -507,7 +507,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     }
 
     test(s"$firstCommand TRANSACTIONS yield YIELD transactionId AS show $secondCommand TRANSACTION show") {
-      assertAst(query(
+      assertAst(singleQuery(
         firstClause(
           Right(varFor("yield")),
           None,
@@ -539,7 +539,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
     // From astGenerator, it wasn't a parsing problem
     // but now I have already added the test to check that so it can stay :shrug:
     assertAst(
-      query(
+      singleQuery(
         use(literalFloat(-4.918690900648941E76)),
         ast.ShowTransactionsClause(Right(literalString("")), None, List.empty, yieldAll = true)(pos),
         withFromYield(returnAllItems),
@@ -616,7 +616,7 @@ class CombinedTransactionsCommandParserTest extends AdministrationAndSchemaComma
   })
 
   test("SHOW TRANSACTIONS MATCH (n)") {
-    assertAst(query(
+    assertAst(singleQuery(
       ast.ShowTransactionsClause(Right(function("MATCH", varFor("n"))), None, List.empty, yieldAll = false)(pos)
     ))
   }

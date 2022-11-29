@@ -38,7 +38,7 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   test("RETURN 1 AS x //l33t comment") {
     implicit val parser: JavaccRule[Statement] = JavaccRule.Statement
     gives {
-      query(returnLit(1 -> "x"))
+      singleQuery(returnLit(1 -> "x"))
     }
   }
 
