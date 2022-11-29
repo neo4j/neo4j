@@ -51,7 +51,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -84,14 +83,12 @@ import org.neo4j.util.VisibleForTesting;
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
 public class TransactionLogFile extends LifecycleAdapter implements LogFile {
-    private static final String TRANSACTION_LOG_FILE_ROTATION_TAG = "transactionLogFileRotation";
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>(ThreadLink.END);
     private final Lock forceLock = new ReentrantLock();
     private final AtomicLong rotateAtSize;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
-    private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
     private final TransactionLogFileInformation logFileInformation;
     private final TransactionLogChannelAllocator channelAllocator;
@@ -121,7 +118,6 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         this.channelAllocator = new TransactionLogChannelAllocator(
                 context, fileHelper, logHeaderCache, new LogFileChannelNativeAccessor(fileSystem, context));
         this.readerLogVersionBridge = new ReaderLogVersionBridge(this);
-        this.pageCacheTracer = context.getDatabaseTracers().getPageCacheTracer();
         this.logRotation = transactionLogRotation(
                 this, context.getClock(), databaseHealth, context.getMonitors().newMonitor(LogRotationMonitor.class));
         this.memoryTracker = context.getMemoryTracker();
