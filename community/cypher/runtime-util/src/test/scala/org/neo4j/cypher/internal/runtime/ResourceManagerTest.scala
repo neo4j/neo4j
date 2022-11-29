@@ -234,6 +234,28 @@ class ResourceManagerTest extends CypherFunSuite {
     pool.computeNewSize(Int.MaxValue - 1) shouldBe Int.MaxValue
   }
 
+  test("Resource pool attempt not to create holes") {
+    // given
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], mock[MemoryTracker])
+
+    val r1 = new DummyResource
+    val r2 = new DummyResource
+    val r3 = new DummyResource
+    val r4 = new DummyResource
+    pool.add(r1)
+    pool.add(r2)
+    pool.add(r3)
+    pool.add(r4)
+
+    pool.remove(r3)
+    pool.remove(r4)
+    // adding resources back shouldn't force the underlying array to grow
+    pool.add(r4)
+    pool.add(r3)
+
+    pool.allIncludingNullValues should equal(List(r1, r2, r4, r3))
+  }
+
   private def verifyTrace(resource: AutoCloseablePlus, monitor: ResourceMonitor, resources: ResourceManager): Unit = {
     resources.trace(resource)
     verify(resource).setCloseListener(resources)

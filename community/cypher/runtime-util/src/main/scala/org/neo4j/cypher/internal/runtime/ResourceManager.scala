@@ -155,9 +155,15 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
         throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
       closeables(i) = null
-      if (i == highMark - 1) { //we removed the last item, hence no holes
-        highMark -= 1
+      if (i == highMark - 1) {
+        // Make an effort to remove holes
+        var j = i
+        while (j >= 0 && closeables(j) == null) {
+          highMark -= 1
+          j -= 1
+        }
       }
+
       true
     } else {
       false
@@ -191,6 +197,9 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
       memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE)
     }
   }
+
+  @VisibleForTesting
+  def allIncludingNullValues: Seq[AutoCloseablePlus] = closeables.toSeq
 
   def closeAll(): Unit = {
     var error: Throwable = null
