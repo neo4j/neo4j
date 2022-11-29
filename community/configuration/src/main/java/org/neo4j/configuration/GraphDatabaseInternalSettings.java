@@ -324,6 +324,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
 
     @Internal
+    @Description("If set to true we can force source code generation by appending debug=generate_java_source to query")
+    public static final Setting<Boolean> cypher_allow_source_generation = newBuilder(
+                    "internal.cypher.pipelined.allow_source_generation", BOOL, false)
+            .build();
+
+    @Internal
     @Description(
             "For compiled execution, specialized code is generated and then executed. "
                     + "More optimizations such as operator fusion may apply. "

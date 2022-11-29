@@ -115,6 +115,8 @@ class CypherConfiguration private (val config: Config) {
 
   val extractLiterals: ExtractLiteral = config.get(GraphDatabaseInternalSettings.extract_literals)
 
+  val allowSourceGeneration: Boolean = config.get(GraphDatabaseInternalSettings.cypher_allow_source_generation)
+
   // dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
   private var _renderPlanDescription: Boolean = config.get(GraphDatabaseSettings.cypher_render_plan_descriptions)

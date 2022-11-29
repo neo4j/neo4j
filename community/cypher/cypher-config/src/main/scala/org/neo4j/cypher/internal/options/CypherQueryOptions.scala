@@ -88,6 +88,10 @@ object CypherQueryOptions {
         val keys = remainder.keyValues.map(_._1).mkString(", ")
         throw new InvalidCypherOption(s"Unsupported options: $keys")
       case OptionReader.Result(_, options) =>
+        if (options.debugOptions.generateJavaSourceEnabled && !config.allowSourceGeneration) {
+          throw new InvalidCypherOption("In order to use source generation you need to enable " +
+            "`internal.cypher.pipelined.allow_source_generation`")
+        }
         options
     }
   }
