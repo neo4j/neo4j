@@ -115,8 +115,12 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
-      checkIfMixingLegacyVarLengthWithQPPs
+      when(shouldRunGpmChecks) {
+        fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
+          checkIfMixingLegacyVarLengthWithQPPs
+      }
+
+  protected def shouldRunGpmChecks: Boolean = true
 
   private val stringifier = ExpressionStringifier()
 
@@ -1107,6 +1111,8 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
       checkRelTypes(pattern) chain
       SemanticState.recordCurrentScope(pattern)
+
+  override protected def shouldRunGpmChecks: Boolean = false
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
