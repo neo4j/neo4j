@@ -246,6 +246,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     {
         DISABLED, DEFAULT, ALL, WHITELISTED_PLANS_ONLY
     }
+    @Internal
+    @Description( "If set to true we can force source code generation by appending debug=generate_java_source to query" )
+    public static final Setting<Boolean> cypher_allow_source_generation = newBuilder(
+            "internal.cypher.pipelined.allow_source_generation", BOOL, false )
+            .build();
 
     @Internal
     @Description( "Use interpreted pipes as a fallback for operators that do not have a specialized implementation in the pipelined runtime. " +
