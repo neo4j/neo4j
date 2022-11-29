@@ -170,6 +170,25 @@ class ResourceManagerTest extends CypherFunSuite {
     resource.getToken shouldBe 0
   }
 
+  test("Should handle removing the same item multiple times") {
+    // given
+    val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)
+
+    // when
+    val resource = new DummyResource
+    pool.add(resource)
+
+    pool.remove(resource)
+    pool.remove(resource)
+    pool.remove(resource)
+    pool.remove(resource)
+    pool.remove(resource)
+
+    // then
+    pool.all().size shouldBe 0
+    resource.getToken shouldBe UNTRACKED
+  }
+
   test("Should be able to remove resource") {
     val resources = Array(new DummyResource, new DummyResource, new DummyResource, new DummyResource, new DummyResource)
     val pool = new SingleThreadedResourcePool(4, mock[ResourceMonitor], EmptyMemoryTracker.INSTANCE)

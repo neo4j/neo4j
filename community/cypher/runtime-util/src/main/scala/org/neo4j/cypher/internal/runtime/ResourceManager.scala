@@ -169,7 +169,8 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
 
   def remove(resource: AutoCloseablePlus): Boolean = {
     val i = resource.getToken
-    if (i < highMark) {
+    if (i < highMark && i != UNTRACKED) {
+      // If we don't close the expected resource something have gone terribly wrong
       if (!(closeables(i) eq resource)) {
         throw new IllegalStateException(s"$resource does not match ${closeables(i)}")
       }
