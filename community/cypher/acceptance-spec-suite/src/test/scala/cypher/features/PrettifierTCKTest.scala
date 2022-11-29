@@ -87,7 +87,9 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     // Relationship type expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"""",
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression""""
+    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
+    """Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjacent to a QPP"""",
+    """Feature "QuantifiedPathPatternAcceptance": Scenario "Quantifier lower bound must be less than or equal to upper bound, upper bound needs to be positive": Example "1""""
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail

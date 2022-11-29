@@ -1,0 +1,21 @@
+// path assignment is not supported yet, solved in https://trello.com/c/0U5WvGo2
+Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Path and subpath variables"
+
+// Horizontal aggregations are currently not supported. Solved in https://trello.com/c/hO4INisk/
+Feature "QuantifiedPathPatternAcceptance": Scenario "Referencing previously-bound, non-local unconditional singleton"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Referencing non-local unconditional singletons within the same path pattern containing the quantified path pattern"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Using an unconditional singleton together with a group variable to formulate an expression as input to an aggregating operation"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Using an multiple unconditional singletons together with a group variable to formulate an expression as input to an aggregating operation"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Multiple references to the same group variable within an aggregating operation"
+Feature "QuantifiedPathPatternAcceptance": Scenario "Multiple aggregating operations"
+
+// Leaving out nodes is currently not supported. Will be handled in https://trello.com/c/rcFdSCvc/
+Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjacent to a QPP"
+
+// Non-local predicates not implemented. Solved in https://trello.com/c/XexwQoc1/
+Feature "QuantifiedPathPatternAcceptance": Scenario "References to non-local unconditional singletons that are dependent on the evaluation of the quantification"
+
+// Repeatable relationships is not implemented. Solved in https://trello.com/c/c8hczVMn/
+Feature "GraphPatternAcceptance": Scenario "Singleton element variable can be repeated across graph pattern to express implicit join"
+Feature "GraphPatternAcceptance": Scenario "Element variable can be repeated in a path pattern inside a QPP"

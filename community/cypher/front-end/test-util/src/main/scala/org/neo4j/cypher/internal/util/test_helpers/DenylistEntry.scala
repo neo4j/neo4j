@@ -31,6 +31,7 @@ case class FeatureDenylistEntry(
 ) extends DenylistEntry {
   override def isDenylisted(scenario: Scenario): Boolean = scenario.featureName == featureName
   override def isFlaky: Boolean = false
+  override def toString: String = s"""Feature "$featureName""""
 }
 
 case class ScenarioDenylistEntry(
@@ -42,30 +43,36 @@ case class ScenarioDenylistEntry(
 
   def isDenylisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name &&
-    (featureName.isEmpty || featureName.get == scenario.featureName) &&
-    (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
+    featureName.forall(_ == scenario.featureName) &&
+    exampleNumberOrName.forall(_ == scenario.exampleIndex.map(_.toString).getOrElse(""))
   }
 
   override def toString: String = {
-    if (featureName.isDefined) {
-      s"""Feature "${featureName.get}": Scenario "$scenarioName"""" +
-        (if (exampleNumberOrName.isEmpty) "" else s""": Example "${exampleNumberOrName.get}"""")
-    } else {
-      s"""$scenarioName""" // legacy version
+    val entry = featureName.map { feature =>
+      val scenarioString = s"""Feature "$feature": Scenario "$scenarioName""""
+      exampleNumberOrName.map { example =>
+        s"""$scenarioString: Example "$example""""
+      } getOrElse {
+        scenarioString
+      }
+    } getOrElse {
+      // legacy version
+      scenarioName
     }
+    if (isFlaky) s"?$entry" else entry
   }
 }
 
 object DenylistEntry {
-  val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "([^"]*)"(: Example "(.*)")?""".r
+  val entryPattern: Regex = """(\??)Feature "([^"]*)": Scenario "([^"]*)"(?:: Example "(.*)")?""".r
   val featurePattern: Regex = """^Feature "([^"]+)"$""".r
 
   def apply(line: String): DenylistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
-        case entryPattern(questionMark, featureName, scenarioName, null, null) =>
+        case entryPattern(questionMark, featureName, scenarioName, null) =>
           ScenarioDenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
-        case entryPattern(questionMark, featureName, scenarioName, _, exampleNumberOrName) =>
+        case entryPattern(questionMark, featureName, scenarioName, exampleNumberOrName) =>
           ScenarioDenylistEntry(
             Some(featureName),
             scenarioName,
@@ -77,6 +84,9 @@ object DenylistEntry {
         case other => throw new UnsupportedOperationException(s"Could not parse denylist entry $other")
       }
 
-    } else ScenarioDenylistEntry(None, line, None, isFlaky = false)
+    } else {
+      // Legacy case of just stating the scenario
+      ScenarioDenylistEntry(None, line, None, isFlaky = false)
+    }
   }
 }

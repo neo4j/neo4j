@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.neo4j.cypher.internal.util.test_helpers
+
+class DenylistEntryTest extends CypherFunSuite {
+
+  test("parseSimpleScenario") {
+    DenylistEntry(
+      """Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable""""
+    ) should equal(
+      ScenarioDenylistEntry(
+        Some("QuantifiedPathPatternAcceptance"),
+        "Solutions can be assigned to path variable",
+        None,
+        isFlaky = false
+      )
+    )
+  }
+
+  test("parseExampleScenario") {
+    DenylistEntry(
+      """Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10""""
+    ) should equal(
+      ScenarioDenylistEntry(
+        Some("List11 - Create a list from a range"),
+        "Create list from `range()` with explicitly given step",
+        Some("10"),
+        isFlaky = false
+      )
+    )
+  }
+
+  test("parseFlakyScenario") {
+    DenylistEntry(
+      """?Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable""""
+    ) should equal(
+      ScenarioDenylistEntry(
+        Some("QuantifiedPathPatternAcceptance"),
+        "Solutions can be assigned to path variable",
+        None,
+        isFlaky = true
+      )
+    )
+  }
+
+  test("parseFeatureOnly") {
+    DenylistEntry("""Feature "QuantifiedPathPatternAcceptance"""") should equal(
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance")
+    )
+  }
+
+  test("toStringFlakyFeature") {
+    FeatureDenylistEntry("QuantifiedPathPatternAcceptance").toString should equal(
+      """Feature "QuantifiedPathPatternAcceptance""""
+    )
+  }
+
+  test("toStringExample") {
+    ScenarioDenylistEntry(
+      Some("List11 - Create a list from a range"),
+      "Create list from `range()` with explicitly given step",
+      Some("10"),
+      isFlaky = true
+    ).toString should equal(
+      """?Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10""""
+    )
+
+  }
+}

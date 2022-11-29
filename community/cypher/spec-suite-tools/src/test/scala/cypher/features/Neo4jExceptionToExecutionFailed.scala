@@ -196,20 +196,24 @@ object Neo4jExceptionToExecutionFailed {
     )
       VARIABLE_ALREADY_BOUND
     else if (
-      msg.matches("Can't create node `(\\w+)` with labels or properties here. It already exists in this context")
-    )
-      VARIABLE_ALREADY_BOUND
-    else if (
       msg.matches(
         "Can't create `\\w+` with properties or labels here. The variable is already declared in this context"
       )
     )
       VARIABLE_ALREADY_BOUND
-    else if (msg.matches("Can't create `\\w+` with properties or labels here. It already exists in this context"))
-      VARIABLE_ALREADY_BOUND
-    else if (msg.matches("Can't create `(\\w+)` with labels or properties here. It already exists in this context"))
-      VARIABLE_ALREADY_BOUND
     else if (msg.matches(semanticError("\\w+ already declared")))
+      VARIABLE_ALREADY_BOUND
+    else if (
+      msg.matches(
+        semanticError("The variable `\\w+` occurs in multiple quantified path patterns and needs to be renamed.")
+      )
+    )
+      VARIABLE_ALREADY_BOUND
+    else if (
+      msg.matches(semanticError(
+        "The variable `\\w+` occurs both inside and outside a quantified path pattern and needs to be renamed."
+      ))
+    )
       VARIABLE_ALREADY_BOUND
     else if (msg.matches(semanticError("Only directed relationships are supported in ((CREATE)|(MERGE))")))
       REQUIRES_DIRECTED_RELATIONSHIP

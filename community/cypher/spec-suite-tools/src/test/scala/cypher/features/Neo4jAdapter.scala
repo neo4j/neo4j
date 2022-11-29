@@ -57,7 +57,7 @@ object Neo4jAdapter {
   val defaultTestConfigValues: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "QuantifiedPathPatternAcceptance" =>
+    case "QuantifiedPathPatternAcceptance" | "QuantifiedPathPatternGpmTests" | "GraphPatternAcceptance" =>
       enableSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
     case "CallInTransactions" | "CallInTransactionsErrorHandling" | "CallInTransactionsErrorHandlingWithReturn" =>
       enableSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
