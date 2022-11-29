@@ -5839,7 +5839,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
-  test("Trail") {
+  test("Repeat(Trail)") {
     assertGood(
       attach(
         Trail(
@@ -5861,7 +5861,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       ),
       planDescription(
         id,
-        "Trail",
+        "Repeat(Trail)",
         TwoChildren(lhsPD, rhsPD),
         List(details("{0, *}")),
         Set("r", "a", "b", "start", "end")

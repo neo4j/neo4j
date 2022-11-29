@@ -2166,7 +2166,7 @@ case class LogicalPlan2PlanDescription(
         }
         PlanDescriptionImpl(
           id = plan.id,
-          plan.productPrefix,
+          "Repeat(Trail)",
           children,
           Seq(Details(PrettyString(repString))),
           variables,
