@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -27,7 +28,9 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.util.StoreIdDecodeUtils;
 
 /**
  * An extension of {@link DatabaseInfo} with the additional fields for the information returned by {@link DatabaseInfoService#requestDetailedInfo(Set, org.neo4j.graphdb.Transaction)}.
@@ -41,6 +44,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
     private final StoreId storeId;
     private final int primariesCount;
     private final int secondariesCount;
+
+    private final ExternalStoreId externalStoreId;
 
     /**
      * If the lastCommittedTxId is set to COMMITTED_TX_ID_NOT_AVAILABLE both lastCommittedTxId() and txCommitLag() will return empty optionals
@@ -60,7 +65,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             long txCommitLag,
             StoreId storeId,
             int primariesCount,
-            int secondariesCount) {
+            int secondariesCount,
+            ExternalStoreId externalStoreId) {
         super(
                 namedDatabaseId,
                 serverId,
@@ -77,6 +83,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
         this.storeId = storeId;
         this.primariesCount = primariesCount;
         this.secondariesCount = secondariesCount;
+        this.externalStoreId = externalStoreId;
     }
 
     /**
@@ -112,6 +119,18 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
      */
     public Optional<String> storeId() {
         return storeId.equals(StoreId.UNKNOWN) ? Optional.empty() : Optional.of(storeId.getStoreVersionUserString());
+    }
+
+    public Optional<String> externalStoreId() {
+        if (externalStoreId == null) {
+            return Optional.empty();
+        } else {
+            try {
+                return Optional.of(StoreIdDecodeUtils.decodeId(externalStoreId));
+            } catch (NoSuchAlgorithmException e) {
+                return Optional.empty();
+            }
+        }
     }
 
     public int primariesCount() {

@@ -24,7 +24,9 @@ import static org.neo4j.dbms.database.ExtendedDatabaseInfo.COMMITTED_TX_ID_NOT_A
 import java.util.Optional;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.storageengine.StoreFileClosedException;
+import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class DetailedDbInfoProvider {
@@ -62,5 +64,21 @@ public class DetailedDbInfoProvider {
                     }
                 })
                 .orElse(StoreId.UNKNOWN);
+    }
+
+    public ExternalStoreId externalStoreId(DatabaseId databaseId) {
+        return databaseContextProvider
+                .getDatabaseContext(databaseId)
+                .filter(databaseContext -> databaseContext.database().isStarted())
+                .map(DatabaseContext::dependencies)
+                .map(dependencies -> dependencies.resolveDependency(StoreIdProvider.class))
+                .flatMap(storeIdProvider -> {
+                    try {
+                        return Optional.of(storeIdProvider.getExternalStoreId());
+                    } catch (StoreFileClosedException e) {
+                        return Optional.empty();
+                    }
+                })
+                .orElse(null);
     }
 }

@@ -91,7 +91,8 @@ public class DatabaseInfo {
                 lastCommittedTxId - maxCommittedTxId,
                 storeId,
                 primariesCount,
-                secondariesCount);
+                secondariesCount,
+                detailedDatabaseInfo.externalStoreId());
     }
 
     public NamedDatabaseId namedDatabaseId() {

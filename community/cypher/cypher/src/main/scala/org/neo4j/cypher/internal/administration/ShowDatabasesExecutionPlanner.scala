@@ -104,9 +104,6 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.database.DatabaseId
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DefaultDatabaseResolver
-import org.neo4j.kernel.internal.GraphDatabaseAPI
-import org.neo4j.storageengine.api.StoreIdProvider
-import org.neo4j.storageengine.util.StoreIdDecodeUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -119,7 +116,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
 import scala.util.Using
 
 case class ShowDatabasesExecutionPlanner(
@@ -404,7 +400,8 @@ case class ShowDatabasesExecutionPlanner(
     LAST_COMMITTED_TX_COL,
     REPLICATION_LAG_COL,
     CURRENT_PRIMARIES_COUNT_COL,
-    CURRENT_SECONDARIES_COUNT_COL
+    CURRENT_SECONDARIES_COUNT_COL,
+    DATABASE_ID_COL
   )
 
   private def requiresDetailedLookup(yields: Yield): Boolean = {
@@ -469,24 +466,15 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
         Values.booleanValue(extendedDatabaseInfo.writer()),
         Values.stringValue(extendedDatabaseInfo.status()),
         Values.stringValue(extendedDatabaseInfo.statusMessage()),
-        getDatabaseId(databaseManagementService, extendedDatabaseInfo.namedDatabaseId().name()).map(
-          Values.stringValue
-        ).getOrElse(Values.NO_VALUE),
+        if (extendedDatabaseInfo.isInstanceOf[ExtendedDatabaseInfo])
+          extendedDatabaseInfo.asInstanceOf[ExtendedDatabaseInfo].externalStoreId().map[AnyValue](s =>
+            Values.stringValue(s)
+          ).orElse(Values.NO_VALUE)
+        else Values.NO_VALUE,
         extendedDatabaseInfo.serverId().toScala.map(srvId => Values.stringValue(srvId.uuid().toString)).getOrElse(
           Values.NO_VALUE
         )
       )
-    )
-  }
-
-  private def getDatabaseId(dbms: DatabaseManagementService, dbName: String): Option[String] = {
-    Try(dbms.database(dbName).asInstanceOf[GraphDatabaseAPI]).toOption.flatMap(graphDatabaseAPI =>
-      if (graphDatabaseAPI.isAvailable(0)) {
-        val storeIdProvider = graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[StoreIdProvider])
-        Some(StoreIdDecodeUtils.decodeId(storeIdProvider))
-      } else {
-        None
-      }
     )
   }
 }

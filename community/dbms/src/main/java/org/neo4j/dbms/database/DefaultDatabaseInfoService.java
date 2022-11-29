@@ -71,7 +71,9 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
                     var db = databaseInfo.namedDatabaseId.databaseId();
                     var lastCommittedTxId = detailedDbInfoProvider.lastCommittedTxId(db);
                     var storeId = detailedDbInfoProvider.storeId(db);
-                    return databaseInfo.extendWith(new DetailedDatabaseInfo(lastCommittedTxId, storeId));
+                    var externalStoreId = detailedDbInfoProvider.externalStoreId(db);
+                    return databaseInfo.extendWith(
+                            new DetailedDatabaseInfo(lastCommittedTxId, storeId, externalStoreId));
                 })
                 .collect(Collectors.toList());
     }

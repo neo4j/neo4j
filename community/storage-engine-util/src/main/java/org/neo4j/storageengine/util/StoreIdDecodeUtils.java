@@ -21,6 +21,7 @@ package org.neo4j.storageengine.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.string.HexString;
 
@@ -30,7 +31,11 @@ public class StoreIdDecodeUtils {
     private StoreIdDecodeUtils() {}
 
     public static String decodeId(StoreIdProvider storeIdProvider) throws NoSuchAlgorithmException {
-        var storeIdString = storeIdProvider.getExternalStoreId().getId().toString();
+        return decodeId(storeIdProvider.getExternalStoreId());
+    }
+
+    public static String decodeId(ExternalStoreId externalStoreId) throws NoSuchAlgorithmException {
+        var storeIdString = externalStoreId.getId().toString();
         var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
         messageDigest.update(storeIdString.getBytes());
         return HexString.encodeHexString(messageDigest.digest());
