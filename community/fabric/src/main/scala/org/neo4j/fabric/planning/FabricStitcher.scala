@@ -201,7 +201,7 @@ case class FabricStitcher(
 
   private def failDynamicGraph(use: Use): Nothing =
     throw new SyntaxException(
-      s"""Dynamic graph lookup not allowed here. This feature is only available in a Fabric database
+      s"""Dynamic graph lookup not allowed here. This feature is only available on composite databases.
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
       queryString,
       use.position.offset
@@ -209,7 +209,7 @@ case class FabricStitcher(
 
   private def failMultipleGraphs(use: Use): Nothing =
     throw new SyntaxException(
-      s"""Multiple graphs in the same query not allowed here. This feature is only available in a Fabric database.
+      s"""Multiple graphs in the same query not allowed here. This feature is only available on composite databases.
          |Attempted to access graph ${Use.show(use)}""".stripMargin,
       queryString,
       use.position.offset
@@ -225,7 +225,7 @@ case class FabricStitcher(
 
   private def failFabricTransactionalSubquery(pos: InputPosition): Nothing =
     throw new SyntaxException(
-      "Transactional subquery is not allowed here. This feature is not supported in a Fabric database.",
+      "Transactional subquery is not allowed here. This feature is not supported on composite databases.",
       queryString,
       pos.offset
     )

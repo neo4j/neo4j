@@ -837,7 +837,7 @@ class FabricPlannerTest
           |""".stripMargin
 
       the[InvalidSemanticsException].thrownBy(plan(q, params, sessionDatabaseName = fabricName))
-        .check(_.getMessage.should(include("'PROFILE' not supported in Fabric context")))
+        .check(_.getMessage.should(include("'PROFILE' is not supported on composite databases.")))
     }
 
     "allow fabric debug options" in {
