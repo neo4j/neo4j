@@ -48,4 +48,16 @@ case class Projection(
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = (source.availableSymbols -- discardSymbols) ++ projectExpressions.keySet
+
+  /**
+   * Custom copy method to make rewriting work.
+   */
+  def copy(
+    source: LogicalPlan = this.source,
+    discardSymbols: Set[String] = this.discardSymbols,
+    projectExpressions: Map[String, Expression] = this.projectExpressions
+  )(implicit idGen: IdGen = this.idGen): Projection = {
+    val newDiscardSymbols = discardSymbols.intersect(source.availableSymbols)
+    Projection(source, newDiscardSymbols, projectExpressions)(idGen)
+  }
 }
