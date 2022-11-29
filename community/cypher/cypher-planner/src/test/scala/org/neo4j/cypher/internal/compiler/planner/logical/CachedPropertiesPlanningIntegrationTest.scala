@@ -116,20 +116,19 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should cache with byzantine renaming: n AS m, m AS x") {
-    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val cfg = plannerBuilder().setAllNodesCardinality(100).enableDeduplicateNames(false).build()
     val plan = cfg.plan(
       "MATCH (n), (m) WHERE n.prop1 > 42 AND m.prop1 > 42 WITH n AS m, m AS x RETURN m.prop1, x.prop1"
     ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection(Map(
-        "m.prop1" -> cachedNodeProp("n", "prop1", "m"),
-        "x.prop1" -> cachedNodeProp("m", "prop1", "x")
+        "m.prop1" -> cachedNodeProp("n", "prop1", "  m@1"),
+        "x.prop1" -> cachedNodeProp("  m@0", "prop1", "x")
       ))
-      // TODO This is wrong because of name deduplication used in this test
-      .projection(project = Seq("n AS m", "m AS x"), discard = Set("n", "m"))
+      .projection(project = Seq("n AS `  m@1`", "`  m@0` AS x"), discard = Set("n", "  m@0"))
       .cartesianProduct()
-      .|.filter("cacheNFromStore[m.prop1] > 42")
-      .|.allNodeScan("m")
+      .|.filter("cacheNFromStore[`  m@0`.prop1] > 42")
+      .|.allNodeScan("`  m@0`")
       .filter("cacheNFromStore[n.prop1] > 42")
       .allNodeScan("n")
       .build()
