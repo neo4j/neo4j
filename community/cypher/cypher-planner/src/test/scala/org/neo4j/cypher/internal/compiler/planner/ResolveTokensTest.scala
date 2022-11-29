@@ -61,17 +61,15 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
-              Seq(),
-              Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Seq(),
+            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         pkToken.name should equal("name")
         semanticTable.id(pkToken) should equal(Some(PropertyKeyId(12)))
     }
@@ -85,17 +83,15 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
-              Seq(),
-              Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Seq(),
+            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         pkToken.name should equal("name")
         semanticTable.id(pkToken) should equal(None)
     }
@@ -109,17 +105,15 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
-              Seq(),
-              Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Seq(),
+            Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         labelToken.name should equal("Resolved")
         semanticTable.id(labelToken) should equal(Some(LabelId(12)))
     }
@@ -133,17 +127,15 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
-              Seq(),
-              Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Seq(),
+            Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         labelToken.name should equal("Unresolved")
         semanticTable.id(labelToken) should equal(None)
     }
@@ -157,28 +149,26 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(RelationshipChain(
-                NodePattern(None, None, None, None),
-                RelationshipPattern(
-                  None,
-                  Some(Leaf(relTypeToken: RelTypeName)),
-                  None,
-                  None,
-                  None,
-                  SemanticDirection.OUTGOING
-                ),
-                NodePattern(None, None, None, None)
-              )))),
-              Seq(),
-              None
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(RelationshipChain(
+              NodePattern(None, None, None, None),
+              RelationshipPattern(
+                None,
+                Some(Leaf(relTypeToken: RelTypeName)),
+                None,
+                None,
+                None,
+                SemanticDirection.OUTGOING
+              ),
+              NodePattern(None, None, None, None)
+            )))),
+            Seq(),
+            None
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         relTypeToken.name should equal("RESOLVED")
         semanticTable.id(relTypeToken) should equal(Some(RelTypeId(12)))
     }
@@ -192,28 +182,26 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(
-          SingleQuery(Seq(
-            Match(
-              false,
-              Pattern(Seq(EveryPath(RelationshipChain(
-                NodePattern(None, None, None, None),
-                RelationshipPattern(
-                  None,
-                  Some(Leaf(relTypeToken: RelTypeName)),
-                  None,
-                  None,
-                  None,
-                  SemanticDirection.OUTGOING
-                ),
-                NodePattern(None, None, None, None)
-              )))),
-              Seq(),
-              None
-            ),
-            Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
-          ))
-        ) =>
+      case SingleQuery(Seq(
+          Match(
+            false,
+            Pattern(Seq(EveryPath(RelationshipChain(
+              NodePattern(None, None, None, None),
+              RelationshipPattern(
+                None,
+                Some(Leaf(relTypeToken: RelTypeName)),
+                None,
+                None,
+                None,
+                SemanticDirection.OUTGOING
+              ),
+              NodePattern(None, None, None, None)
+            )))),
+            Seq(),
+            None
+          ),
+          Return(false, ReturnItems(true, Seq(), _), None, None, None, _, _)
+        )) =>
         relTypeToken.name should equal("UNRESOLVED")
         semanticTable.id(relTypeToken) should equal(None)
     }

@@ -199,7 +199,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val original = prepRewrite(s"${wizz}RETURN *")
     val checkResult = original.semanticCheck(SemanticState.clean)
     val after = original.rewrite(expandStar(checkResult.state))
-    val returnItem = after.asInstanceOf[Query].part.asInstanceOf[SingleQuery]
+    val returnItem = after.asInstanceOf[Query].asInstanceOf[SingleQuery]
       .clauses.last.asInstanceOf[Return].returnItems.items.head.asInstanceOf[AliasedReturnItem]
     returnItem.expression.position should equal(expressionPos)
     returnItem.variable.position.offset should equal(expressionPos.offset)
@@ -280,10 +280,9 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def updateClauses(statement: Statement, updateClauses: Seq[Clause] => Seq[Clause]): Statement = {
     val query = statement.asInstanceOf[Query]
-    val singleQuery = query.part.asInstanceOf[SingleQuery]
+    val singleQuery = query.asInstanceOf[SingleQuery]
     val clauses = singleQuery.clauses
     val newClauses = updateClauses(clauses)
-    val newSingleQuery = singleQuery.copy(newClauses)(singleQuery.position)
-    query.copy(newSingleQuery)(query.position)
+    singleQuery.copy(newClauses)(singleQuery.position)
   }
 }

@@ -529,7 +529,7 @@ class Neo4jASTFactory(query: String)
     if (clauses.isEmpty) {
       throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
     }
-    Query(SingleQuery(clauses.asScala.toList)(p))(p)
+    SingleQuery(clauses.asScala.toList)(p)
   }
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
@@ -537,12 +537,12 @@ class Neo4jASTFactory(query: String)
       throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
     }
     val pos = clauses.get(0).position
-    Query(SingleQuery(clauses.asScala.toList)(pos))(pos)
+    SingleQuery(clauses.asScala.toList)(pos)
   }
 
   override def newUnion(p: InputPosition, lhs: Query, rhs: Query, all: Boolean): Query = {
     val rhsQuery =
-      rhs.part match {
+      rhs match {
         case x: SingleQuery => x
         case other =>
           throw new Neo4jASTConstructionException(
@@ -550,10 +550,8 @@ class Neo4jASTFactory(query: String)
           )
       }
 
-    val union =
-      if (all) UnionAll(lhs.part, rhsQuery)(p)
-      else UnionDistinct(lhs.part, rhsQuery)(p)
-    Query(union)(lhs.position)
+    if (all) UnionAll(lhs, rhsQuery)(p)
+    else UnionDistinct(lhs, rhsQuery)(p)
   }
 
   override def useClause(p: InputPosition, e: Expression): UseGraph = UseGraph(e)(p)
@@ -779,7 +777,7 @@ class Neo4jASTFactory(query: String)
     subquery: Query,
     inTransactions: SubqueryCall.InTransactionsParameters
   ): Clause =
-    SubqueryCall(subquery.part, Option(inTransactions))(p)
+    SubqueryCall(subquery, Option(inTransactions))(p)
 
   // PATTERNS
 
@@ -1186,12 +1184,10 @@ class Neo4jASTFactory(query: String)
     } else {
       val patternParts = patterns.asScala.toList
       val patternPos = patternParts.head.position
-      Query(
-        SingleQuery(
-          Seq(
-            Match(optional = false, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(patternPos)
-          )
-        )(patternPos)
+      SingleQuery(
+        Seq(
+          Match(optional = false, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(patternPos)
+        )
       )(patternPos)
     }
   }

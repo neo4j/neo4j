@@ -30,25 +30,12 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.Symbol
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 
 import scala.annotation.tailrec
 
-case class Query(part: QueryPart)(val position: InputPosition)
-    extends Statement with SemanticAnalysisTooling {
-
-  override def returnColumns: List[LogicalVariable] = part.returnColumns
-
-  def finalScope(scope: Scope): Scope = part.finalScope(scope)
-
-  override def semanticCheck: SemanticCheck = part.semanticCheck
-
-  override def containsUpdates: Boolean = part.containsUpdates
-}
-
-sealed trait QueryPart extends ASTNode with SemanticCheckable {
+sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysisTooling {
   def containsUpdates: Boolean
   def returnColumns: List[LogicalVariable]
 
@@ -64,7 +51,7 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def checkImportingWith: SemanticCheck
 
   /**
-   * Semantic check for when this `QueryPart` is in a subquery, and might import
+   * Semantic check for when this `Query` is in a subquery, and might import
    * variables from the `outer` scope
    */
   def semanticCheckInSubqueryContext(outer: SemanticState): SemanticCheck
@@ -87,7 +74,7 @@ sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck
 }
 
-case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart
+case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends Query
     with SemanticAnalysisTooling {
   assert(clauses.nonEmpty)
 
@@ -458,8 +445,8 @@ object Union {
   )
 }
 
-sealed trait Union extends QueryPart with SemanticAnalysisTooling {
-  def lhs: QueryPart
+sealed trait Union extends Query {
+  def lhs: Query
   def rhs: SingleQuery
 
   def unionMappings: List[UnionMapping]
@@ -469,11 +456,11 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
   def semanticCheckAbstract(
-    partCheck: QueryPart => SemanticCheck,
+    queryCheck: Query => SemanticCheck,
     singleQueryCheck: SingleQuery => SemanticCheck
   ): SemanticCheck =
     checkUnionAggregation chain
-      withScopedState(partCheck(lhs)) chain
+      withScopedState(queryCheck(lhs)) chain
       withScopedState(singleQueryCheck(rhs)) chain
       checkColumnNamesAgree chain
       defineUnionVariables chain
@@ -650,13 +637,13 @@ sealed trait ProjectingUnion extends Union {
   override def checkColumnNamesAgree: SemanticCheck = SemanticCheck.success
 }
 
-final case class UnionAll(lhs: QueryPart, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
-final case class UnionDistinct(lhs: QueryPart, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionAll(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
+final case class UnionDistinct(lhs: Query, rhs: SingleQuery)(val position: InputPosition) extends UnmappedUnion
 
-final case class ProjectingUnionAll(lhs: QueryPart, rhs: SingleQuery, unionMappings: List[UnionMapping])(
+final case class ProjectingUnionAll(lhs: Query, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
 ) extends ProjectingUnion
 
-final case class ProjectingUnionDistinct(lhs: QueryPart, rhs: SingleQuery, unionMappings: List[UnionMapping])(
+final case class ProjectingUnionDistinct(lhs: Query, rhs: SingleQuery, unionMappings: List[UnionMapping])(
   val position: InputPosition
 ) extends ProjectingUnion

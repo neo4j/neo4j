@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting.conditions
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -34,7 +33,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   private val condition: Any => Seq[String] = containsNamedPathOnlyForShortestPath
 
   test("happy when we have no named paths") {
-    val ast = Query(SingleQuery(Seq(
+    val ast = SingleQuery(Seq(
       Match(
         optional = false,
         Pattern(Seq(EveryPath(NodePattern(Some(varFor("n")), None, None, None)(pos))))(pos),
@@ -51,7 +50,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         None,
         None
       )(pos)
-    ))(pos))(pos)
+    ))(pos)
 
     condition(ast) shouldBe empty
   }
@@ -59,7 +58,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   test("unhappy when we have a named path") {
     val namedPattern: NamedPatternPart =
       NamedPatternPart(varFor("p"), EveryPath(NodePattern(Some(varFor("n")), None, None, None)(pos)))(pos)
-    val ast = Query(SingleQuery(Seq(
+    val ast = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
       Return(
         distinct = false,
@@ -71,13 +70,13 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         None,
         None
       )(pos)
-    ))(pos))(pos)
+    ))(pos)
 
     condition(ast) should equal(Seq(s"Expected none but found $namedPattern at position $pos"))
   }
 
   test("should allow named path for shortest path") {
-    val ast = Query(SingleQuery(Seq(
+    val ast = SingleQuery(Seq(
       Match(
         optional = false,
         Pattern(Seq(NamedPatternPart(
@@ -97,7 +96,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         None,
         None
       )(pos)
-    ))(pos))(pos)
+    ))(pos)
 
     condition(ast) shouldBe empty
   }

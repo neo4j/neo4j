@@ -525,7 +525,7 @@ object ClauseConverters {
   ): PlannerQueryBuilder = {
     val subquery = clause.innerQuery
     val callSubquery =
-      StatementConverters.partToPlannerQuery(subquery, acc.semanticTable, anonymousVariableNameGenerator)
+      StatementConverters.toPlannerQuery(subquery, acc.semanticTable, anonymousVariableNameGenerator, rewrite = false)
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
 

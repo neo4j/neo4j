@@ -183,7 +183,6 @@ import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
@@ -1272,7 +1271,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield UseGraph(expression)(pos)
 
   def _subqueryCall: Gen[SubqueryCall] = for {
-    innerQuery <- _queryPart
+    innerQuery <- _query
     params <- option(_inTransactionsParameters)
   } yield SubqueryCall(innerQuery, params)(pos)
 
@@ -1310,7 +1309,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield SingleQuery(clauses)(pos)
 
   def _union: Gen[Union] = for {
-    lhs <- _queryPart
+    lhs <- _query
     rhs <- _singleQuery
     union <- oneOf(
       UnionDistinct(lhs, rhs)(pos),
@@ -1318,14 +1317,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield union
 
-  def _queryPart: Gen[QueryPart] = frequency(
+  def _query: Gen[Query] = frequency(
     5 -> lzy(_singleQuery),
     1 -> lzy(_union)
   )
-
-  def _query: Gen[Query] = for {
-    part <- _queryPart
-  } yield Query(part)(pos)
 
   // Show commands
   // ----------------------------------
@@ -1373,7 +1368,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _ => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _showConstraints: Gen[Query] = for {
@@ -1390,7 +1385,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _ => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _showProcedures: Gen[Query] = for {
@@ -1406,7 +1401,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _                        => Seq(ShowProceduresClause(exec, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _showFunctions: Gen[Query] = for {
@@ -1423,7 +1418,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _                        => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _showTransactions: Gen[Query] = for {
@@ -1445,7 +1440,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _ => Seq(ShowTransactionsClause(ids, None, List.empty, yieldAll = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _terminateTransactions: Gen[Query] = for {
@@ -1467,7 +1462,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case _ => Seq(TerminateTransactionsClause(ids, List.empty, yieldAll = false, None)(pos))
     }
     val fullClauses = use.map(u => u +: terminateClauses).getOrElse(terminateClauses)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   def _combinedTransactionCommands: Gen[Query] = for {
@@ -1502,7 +1497,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
     val clausesWithReturn = clauses :+ returns
     val fullClauses = use.map(u => u +: clausesWithReturn).getOrElse(clausesWithReturn)
-    Query(SingleQuery(fullClauses)(pos))(pos)
+    SingleQuery(fullClauses)(pos)
   }
 
   private def showAsPartOfCombined: Gen[Seq[Clause]] = for {

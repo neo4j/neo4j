@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.GraphSelection
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -90,13 +89,13 @@ trait RewriteProcedureCalls {
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q @ Query(part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
+    case q @ SingleQuery(Seq(resolved: ResolvedCall)) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
-      q.copy(part = part.copy(clauses = newResolved +: projection.toSeq)(part.position))(q.position)
+      q.copy(clauses = newResolved +: projection.toSeq)(q.position)
 
-    case q @ Query(part @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
+    case q @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall)) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
-      q.copy(part = part.copy(clauses = Seq(graph, newResolved) ++ projection)(part.position))(q.position)
+      q.copy(clauses = Seq(graph, newResolved) ++ projection)(q.position)
   }
 
   private def getResolvedAndProjection(resolved: ResolvedCall): (ResolvedCall, Option[Return]) = {

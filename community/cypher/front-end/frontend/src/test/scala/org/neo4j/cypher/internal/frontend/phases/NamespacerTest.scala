@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
@@ -52,7 +51,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCaseWithStatement(
       "MATCH (a) ((x)-->(y))+ WHERE x = 0 WITH '1' as x WHERE y IS NOT NULL RETURN x",
-      Query(singleQuery(
+      singleQuery(
         match_(
           pathConcatenation(
             nodePat(Some("a")),
@@ -78,12 +77,12 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
           where = Some(where(isNotNull(varFor("  y@4"))))
         )(pos),
         return_(aliasedReturnItem(varFor("  x@6")))
-      ))(pos),
+      ),
       List(varFor("  x@0"), varFor("  x@3"), varFor("  x@6"), varFor("  y@2"), varFor("  y@4"))
     ),
     TestCaseWithStatement(
       "MATCH ( (a)-->(b) WHERE all(a IN a.prop WHERE a > 0) )+ RETURN a",
-      Query(singleQuery(
+      singleQuery(
         match_(
           pathConcatenation(
             nodePat(Some("  UNNAMED0")),
@@ -108,7 +107,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
           )
         ),
         return_(aliasedReturnItem(varFor("  a@4")))
-      ))(pos),
+      ),
       List(varFor("  a@0"), varFor("  a@4"), varFor("  a@3"), varFor("  b@2"), varFor("  b@5"))
     ),
     TestCase(
@@ -156,7 +155,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCaseWithStatement(
       "MATCH (a:Party) RETURN a AS a UNION MATCH (a:Animal) RETURN a AS a",
-      Query(ProjectingUnionDistinct(
+      ProjectingUnionDistinct(
         singleQuery(
           match_(
             NodePattern(Some(varFor("  a@0")), None, None, None)(pos),
@@ -172,7 +171,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
           return_(varFor("  a@1").as("  a@1"))
         ),
         List(UnionMapping(varFor("  a@2"), varFor("  a@0"), varFor("  a@1")))
-      )(pos))(pos),
+      )(pos),
       List(varFor("  a@0"), varFor("  a@1"))
     ),
     TestCase(

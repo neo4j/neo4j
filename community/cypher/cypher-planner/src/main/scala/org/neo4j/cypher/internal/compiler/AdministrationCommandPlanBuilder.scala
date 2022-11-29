@@ -75,7 +75,6 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.ParsedAsYield
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReallocateServers
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
@@ -991,18 +990,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         ))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case Query(SingleQuery(Seq(
+      case SingleQuery(Seq(
           resolved @ plans.ResolvedCall(signature, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
-        ))) if signature.systemProcedure =>
+        )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case Query(SingleQuery(Seq(resolved @ plans.ResolvedCall(signature, _, _, _, _, _))))
-        if signature.systemProcedure =>
+      case SingleQuery(Seq(resolved @ plans.ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
-      case q @ Query(SingleQuery(clauses)) if checkClausesAllowedOnSystem(clauses) =>
+      case q @ SingleQuery(clauses) if checkClausesAllowedOnSystem(clauses) =>
         q.folder.treeExists {
           case p: PatternExpression => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include a pattern expression on a system database",

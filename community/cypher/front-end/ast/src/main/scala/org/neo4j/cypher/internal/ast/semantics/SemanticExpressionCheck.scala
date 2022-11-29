@@ -703,7 +703,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: ExistsExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.query.part.semanticCheckInSubqueryExpressionContext(true) chain
+            x.query.semanticCheckInSubqueryExpressionContext(true) chain
               when(x.query.containsUpdates) {
                 SemanticError("An Exists Expression cannot contain any updates", x.position)
               } chain
@@ -715,7 +715,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: CountExpression =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.query.part.semanticCheckInSubqueryExpressionContext(!x.query.part.isInstanceOf[UnionDistinct]) chain
+            x.query.semanticCheckInSubqueryExpressionContext(!x.query.isInstanceOf[UnionDistinct]) chain
               when(x.query.containsUpdates) {
                 SemanticError("A Count Expression cannot contain any updates", x.position)
               } chain

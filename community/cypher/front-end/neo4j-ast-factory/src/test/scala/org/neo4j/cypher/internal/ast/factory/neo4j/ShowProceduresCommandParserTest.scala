@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.OrderBy
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -56,9 +55,9 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     }
 
     test(s"USE db SHOW $procKeyword") {
-      assertAst(Query(SingleQuery(
+      assertAst(SingleQuery(
         List(use(varFor("db", (1, 5, 4))), ShowProceduresClause(None, None, hasYield = false)((1, 8, 7)))
-      )((1, 8, 7)))((1, 8, 7)))
+      )((1, 8, 7)))
     }
 
   }

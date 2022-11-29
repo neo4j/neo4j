@@ -20,7 +20,6 @@
 package org.neo4j.fabric.util
 
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -87,7 +86,7 @@ trait PrettyPrintingUtils {
 
   def query(cs: Seq[Clause]): Stream[String] = {
     val pos = InputPosition.NONE
-    query(Query(SingleQuery(cs)(pos))(pos))
+    query(SingleQuery(cs)(pos))
   }
 
   def list(ss: Seq[Any]): String =

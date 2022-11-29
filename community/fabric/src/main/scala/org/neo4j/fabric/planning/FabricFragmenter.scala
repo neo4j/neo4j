@@ -45,7 +45,7 @@ class FabricFragmenter(
   private val start = Init(defaultUse)
 
   def fragment: Fragment = queryStatement match {
-    case query: ast.Query => fragmentPart(start, query.part)
+    case query: ast.Query => fragmentQuery(start, query)
     case command: ast.AdministrationCommand =>
       Fragment.AdminCommand(systemUse, command)
     case command: ast.SchemaCommand =>
@@ -53,13 +53,13 @@ class FabricFragmenter(
       Fragment.SchemaCommand(use, command)
   }
 
-  private def fragmentPart(
+  private def fragmentQuery(
     input: Fragment.Init,
-    part: ast.QueryPart
+    part: ast.Query
   ): Fragment = part match {
     case sq: ast.SingleQuery => fragmentSingle(input, sq)
     case uq: ast.Union =>
-      Union(input, isDistinct(uq), fragmentPart(input, uq.lhs), fragmentSingle(input, uq.rhs))(
+      Union(input, isDistinct(uq), fragmentQuery(input, uq.lhs), fragmentSingle(input, uq.rhs))(
         uq.position
       )
   }
@@ -93,7 +93,7 @@ class FabricFragmenter(
             val use = Use.Inherited(input.use)(subquery.innerQuery.position)
             Apply(
               input,
-              fragmentPart(Init(use, input.outputColumns, Seq.empty), subquery.innerQuery),
+              fragmentQuery(Init(use, input.outputColumns, Seq.empty), subquery.innerQuery),
               subquery.inTransactionsParameters
             )(subquery.position)
         }

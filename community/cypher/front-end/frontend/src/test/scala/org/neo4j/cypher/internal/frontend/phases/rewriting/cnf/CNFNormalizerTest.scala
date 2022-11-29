@@ -20,7 +20,6 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -242,11 +241,11 @@ object TestStatement {
       includeExisting = false,
       Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))(InputPosition.NONE, isAutoAliased = false))
     )(InputPosition.NONE))(InputPosition.NONE)
-    Query(SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
+    SingleQuery(Seq(returnClause))(InputPosition.NONE)
   }
 
   def unapply(s: Statement): Option[Expression] = s match {
-    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _, _)))) =>
+    case SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _, _))) =>
       Some(expression)
     case _ => None
   }

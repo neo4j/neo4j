@@ -64,12 +64,12 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
-    val original = Query(SingleQuery(Seq(unresolved)) _)(pos)
+    val original = SingleQuery(Seq(unresolved)) _
 
     val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
     val rewrittenTry = tryRewriteProcedureCalls(procLookup, fcnLookup, original)
 
-    val expected = Query(SingleQuery(
+    val expected = SingleQuery(
       Seq(
         ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations,
         Return(
@@ -86,7 +86,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
           None
         )(pos)
       )
-    )(pos))(pos)
+    )(pos)
 
     rewritten should equal(expected)
     rewrittenTry should equal(expected)
@@ -95,12 +95,12 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   test("should resolve in-query procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
     val headClause = Unwind(varFor("x"), varFor("y"))(pos)
-    val original = Query(SingleQuery(Seq(headClause, unresolved)) _)(pos)
+    val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
     val rewrittenTry = tryRewriteProcedureCalls(procLookup, fcnLookup, original)
 
-    val expected = Query(SingleQuery(Seq(headClause, ResolvedCall(procLookup)(unresolved).coerceArguments)) _)(pos)
+    val expected = SingleQuery(Seq(headClause, ResolvedCall(procLookup)(unresolved).coerceArguments))(pos)
 
     rewritten should equal(expected)
     rewrittenTry should equal(expected)
@@ -109,7 +109,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   test("TryRewriteProcedureCalls should return original for unresolved procedures") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
     val headClause = Unwind(varFor("x"), varFor("y"))(pos)
-    val original = Query(SingleQuery(Seq(headClause, unresolved)) _)(pos)
+    val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val rewrittenTry = Try(tryRewriteProcedureCalls(failingProcLookup, failingFcnLookup, original))
 
@@ -118,7 +118,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
 
   test("TryRewriteProcedureCalls should return original for unresolved functions") {
     val headClause = Unwind(function("missing", varFor("x")), varFor("y"))(pos)
-    val original = Query(SingleQuery(Seq(headClause)) _)(pos)
+    val original = SingleQuery(Seq(headClause))(pos)
 
     val rewrittenTry = tryRewriteProcedureCalls(failingProcLookup, failingFcnLookup, original)
 
@@ -129,7 +129,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     "should not generate a Return clause when resolving a standalone procedure call with no output signature (aka unit procedure)"
   ) {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
-    val original = Query(SingleQuery(Seq(unresolved))(pos))(pos)
+    val original = SingleQuery(Seq(unresolved))(pos)
 
     val procLookupNoOutput: QualifiedName => ProcedureSignature = _ => signature.copy(outputSignature = None)
 
@@ -137,7 +137,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val rewrittenTry = tryRewriteProcedureCalls(procLookupNoOutput, fcnLookup, original)
 
     val resolved = ResolvedCall(procLookupNoOutput)(unresolved).coerceArguments.withFakedFullDeclarations
-    val expected = Query(SingleQuery(Seq(resolved))(pos))(pos)
+    val expected = SingleQuery(Seq(resolved))(pos)
 
     rewritten should equal(expected)
     rewrittenTry should equal(expected)

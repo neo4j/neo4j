@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.debug
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -92,7 +91,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
       None,
       Set.empty
     )(pos)
-    val newStatement = Query(SingleQuery(Seq(returnClause))(pos))(pos)
+    val newStatement = SingleQuery(Seq(returnClause))(pos)
     val newReturnColumns = Seq("col")
 
     (logicalPlan, newStatement, newReturnColumns)

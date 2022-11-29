@@ -131,7 +131,6 @@ import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateServers
@@ -878,17 +877,14 @@ case class Prettifier(
     private def asNewLine(l: String) = NL + l
 
     def query(q: Query): String =
-      queryPart(q.part)
-
-    def queryPart(part: QueryPart): String =
-      part match {
+      q match {
         case SingleQuery(clauses) =>
           // Need to filter away empty strings as SHOW/TERMINATE commands might get an empty string from YIELD/WITH/RETURN clauses
           clauses.map(dispatch).filter(_.nonEmpty).mkString(NL)
 
         case union: Union =>
-          val lhs = queryPart(union.lhs)
-          val rhs = queryPart(union.rhs)
+          val lhs = query(union.lhs)
+          val rhs = query(union.rhs)
           val operation = union match {
             case _: UnionAll | _: ProjectingUnionAll           => s"${INDENT}UNION ALL"
             case _: UnionDistinct | _: ProjectingUnionDistinct => s"${INDENT}UNION"
@@ -947,7 +943,7 @@ case class Prettifier(
     def asString(c: SubqueryCall): String = {
       val inTxParams = c.inTransactionsParameters.map(asString).getOrElse("")
       s"""${INDENT}CALL {
-         |${indented().queryPart(c.innerQuery)}
+         |${indented().query(c.innerQuery)}
          |$INDENT}$inTxParams""".stripMargin
     }
 

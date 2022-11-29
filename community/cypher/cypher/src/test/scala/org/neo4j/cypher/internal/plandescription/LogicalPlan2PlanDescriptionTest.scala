@@ -60,7 +60,6 @@ import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
@@ -5077,7 +5076,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         AllowedNonAdministrationCommands(
-          Query(SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos))(pos)
+          SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos)
         ),
         1.0
       ),

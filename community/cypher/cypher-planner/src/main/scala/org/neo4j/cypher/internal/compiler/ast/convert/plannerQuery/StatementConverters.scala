@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.ProjectingUnionAll
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
@@ -99,8 +98,8 @@ object StatementConverters {
     classOf[UnionDistinct]
   )
 
-  private def findBlacklistedNodes(queryPart: QueryPart): Seq[ASTNode] = {
-    queryPart.folder.treeFold(Seq.empty[ASTNode]) {
+  private def findBlacklistedNodes(query: Query): Seq[ASTNode] = {
+    query.folder.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
         acc => TraverseChildren(acc :+ node)
     }
@@ -110,28 +109,27 @@ object StatementConverters {
     query: Query,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    importedVariables: Set[String] = Set.empty
+    importedVariables: Set[String] = Set.empty,
+    rewrite: Boolean = true
   ): PlannerQuery = {
-    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable))
-    partToPlannerQuery(rewrittenQuery.part, semanticTable, anonymousVariableNameGenerator, importedVariables)
-  }
-
-  def partToPlannerQuery(
-    queryPart: QueryPart,
-    semanticTable: SemanticTable,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    importedVariables: Set[String] = Set.empty
-  ): PlannerQuery = {
-    val nodes = findBlacklistedNodes(queryPart)
+    val rewrittenQuery =
+      if (rewrite) query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)) else query
+    val nodes = findBlacklistedNodes(rewrittenQuery)
     require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
 
-    queryPart match {
+    rewrittenQuery match {
       case singleQuery: SingleQuery =>
         toSinglePlannerQuery(singleQuery, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
       case unionQuery: ast.ProjectingUnion =>
         val lhs: PlannerQuery =
-          partToPlannerQuery(unionQuery.lhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
+          toPlannerQuery(
+            unionQuery.lhs,
+            semanticTable,
+            anonymousVariableNameGenerator,
+            importedVariables,
+            rewrite = false
+          )
         val rhs: SinglePlannerQuery =
           toSinglePlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables)
 
@@ -142,7 +140,7 @@ object StatementConverters {
 
         UnionQuery(lhs, rhs, distinct, unionQuery.unionMappings)
       case _ =>
-        throw new InternalException(s"Received an AST-clause that has no representation the QG: $queryPart")
+        throw new InternalException(s"Received an AST-clause that has no representation the QG: $rewrittenQuery")
     }
   }
 

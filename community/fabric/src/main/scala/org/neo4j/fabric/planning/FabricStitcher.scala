@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.InputDataStream
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -142,7 +141,7 @@ case class FabricStitcher(
 
     asExec(
       input = leaf.input,
-      statement = Query(SingleQuery(clauses)(pos))(pos),
+      statement = SingleQuery(clauses)(pos),
       outputColumns = leaf.outputColumns
     )
   }
@@ -173,9 +172,8 @@ case class FabricStitcher(
       case (true, _, _, Some(use))  => failInvalidOverride(use)
 
       case (_, _, None, None) =>
-        val query = Query(stitched.queryPart)(stitched.queryPart.position)
         val init = Fragment.Init(stitched.lastUse, fragment.argumentColumns, fragment.importColumns)
-        Some(asExec(init, query, fragment.outputColumns))
+        Some(asExec(init, stitched.query, fragment.outputColumns))
 
       case (_, _, _, _) => None
     }
@@ -233,7 +231,7 @@ case class FabricStitcher(
     )
 
   private case class StitchResult(
-    queryPart: QueryPart,
+    query: Query,
     lastUse: Use,
     useAppearances: Seq[UseAppearance]
   )
@@ -290,9 +288,9 @@ case class FabricStitcher(
           val rhsQuery = SingleQuery(rhs.clauses)(union.rhs.pos)
           val result =
             if (union.distinct) {
-              UnionDistinct(lhs.queryPart, rhsQuery)(union.pos)
+              UnionDistinct(lhs.query, rhsQuery)(union.pos)
             } else {
-              UnionAll(lhs.queryPart, rhsQuery)(union.pos)
+              UnionAll(lhs.query, rhsQuery)(union.pos)
             }
           StitchResult(result, rhs.lastUse, uses)
       }
@@ -317,7 +315,7 @@ case class FabricStitcher(
           val before = stitchChain(apply.input, outermost, outerUse)
           val inner = stitch(apply.inner, outermost = false, Some(before.lastUse))
           before.copy(
-            clauses = before.clauses :+ SubqueryCall(inner.queryPart, apply.inTransactionsParameters)(apply.pos),
+            clauses = before.clauses :+ SubqueryCall(inner.query, apply.inTransactionsParameters)(apply.pos),
             useAppearances = before.useAppearances ++ inner.useAppearances
           )
 

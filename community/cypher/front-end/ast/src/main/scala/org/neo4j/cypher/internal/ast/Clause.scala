@@ -1605,7 +1605,7 @@ object SubqueryCall {
     node.folder.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
-case class SubqueryCall(innerQuery: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(
+case class SubqueryCall(innerQuery: Query, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(
   val position: InputPosition
 ) extends HorizonClause with SemanticAnalysisTooling {
 

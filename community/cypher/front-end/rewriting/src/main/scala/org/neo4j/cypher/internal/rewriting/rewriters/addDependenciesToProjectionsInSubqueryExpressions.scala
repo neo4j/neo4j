@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnion
-import org.neo4j.cypher.internal.ast.QueryPart
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -64,26 +64,26 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
   val instance = bottomUp(Rewriter.lift {
     case e: ExistsExpression =>
       val scopeDependencies = e.scopeDependencies
-      val newQueryPart = rewriteQueryPart(e.query.part, scopeDependencies)
-      e.copy(query = e.query.copy(newQueryPart)(e.query.position))(e.position, e.introducedVariables, scopeDependencies)
+      val newQuery = rewriteQuery(e.query, scopeDependencies)
+      e.copy(query = newQuery)(e.position, e.introducedVariables, scopeDependencies)
 
     case e: CountExpression =>
       val scopeDependencies = e.scopeDependencies
-      val newQueryPart = rewriteQueryPart(e.query.part, scopeDependencies)
-      e.copy(query = e.query.copy(newQueryPart)(e.query.position))(e.position, e.introducedVariables, scopeDependencies)
+      val newQuery = rewriteQuery(e.query, scopeDependencies)
+      e.copy(query = newQuery)(e.position, e.introducedVariables, scopeDependencies)
   })
 
-  private def rewriteQueryPart(queryPart: QueryPart, scopeDependencies: Set[LogicalVariable]): QueryPart =
-    queryPart match {
+  private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable]): Query =
+    query match {
       case sq: SingleQuery => rewriteSingleQuery(sq, scopeDependencies)
       case union @ UnionAll(lhs, rhs) =>
         union.copy(
-          lhs = rewriteQueryPart(lhs, scopeDependencies),
+          lhs = rewriteQuery(lhs, scopeDependencies),
           rhs = rewriteSingleQuery(rhs, scopeDependencies)
         )(union.position)
       case union @ UnionDistinct(lhs, rhs) =>
         union.copy(
-          lhs = rewriteQueryPart(lhs, scopeDependencies),
+          lhs = rewriteQuery(lhs, scopeDependencies),
           rhs = rewriteSingleQuery(rhs, scopeDependencies)
         )(union.position)
       case _: ProjectingUnion =>

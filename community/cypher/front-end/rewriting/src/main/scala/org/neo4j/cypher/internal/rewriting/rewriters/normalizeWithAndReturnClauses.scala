@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Query
-import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.ShowAliases
@@ -82,7 +81,7 @@ case class normalizeWithAndReturnClauses(
 ) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = that match {
-    case q @ Query(queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
+    case q: Query => rewriteTopLevelQuery(q)
 
     case s @ ShowPrivileges(_, Some(Left((yields, returns))), _) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields), returns.map(addAliasesToReturn)))))(s.position)
@@ -123,15 +122,16 @@ case class normalizeWithAndReturnClauses(
    * Rewrites all single queries in the top level query (which can be a single or a union query of single queries).
    * It does not rewrite query parts in subqueries.
    */
-  private def rewriteTopLevelQueryPart(queryPart: QueryPart): QueryPart = queryPart match {
-    case sq: SingleQuery => rewriteTopLevelSingleQuery(sq)
-    case union @ UnionAll(lhs, rhs) =>
-      union.copy(lhs = rewriteTopLevelQueryPart(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
-    case union @ UnionDistinct(lhs, rhs) =>
-      union.copy(lhs = rewriteTopLevelQueryPart(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
-    case _: ProjectingUnion =>
-      throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
-  }
+  private def rewriteTopLevelQuery(query: org.neo4j.cypher.internal.ast.Query): org.neo4j.cypher.internal.ast.Query =
+    query match {
+      case sq: SingleQuery => rewriteTopLevelSingleQuery(sq)
+      case union @ UnionAll(lhs, rhs) =>
+        union.copy(lhs = rewriteTopLevelQuery(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
+      case union @ UnionDistinct(lhs, rhs) =>
+        union.copy(lhs = rewriteTopLevelQuery(lhs), rhs = rewriteTopLevelSingleQuery(rhs))(union.position)
+      case _: ProjectingUnion =>
+        throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
+    }
 
   /**
    * Adds aliases to all return items in Return clauses in the top level query.
@@ -185,14 +185,14 @@ case class normalizeWithAndReturnClauses(
       clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri))
 
     case exists @ ExistsExpression(query) =>
-      exists.copy(query = query.copy(part = rewriteTopLevelQueryPart(query.part))(query.position))(
+      exists.copy(query = rewriteTopLevelQuery(query))(
         exists.position,
         exists.introducedVariables,
         exists.scopeDependencies
       )
 
     case count @ CountExpression(query) =>
-      count.copy(query = query.copy(part = rewriteTopLevelQueryPart(query.part))(query.position))(
+      count.copy(query = rewriteTopLevelQuery(query))(
         count.position,
         count.introducedVariables,
         count.scopeDependencies

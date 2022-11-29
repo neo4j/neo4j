@@ -163,8 +163,8 @@ object Fragment {
   ) extends Fragment.Segment {
 
     override val producesResults: Boolean = query match {
-      case Query(part) => part.isReturning
-      case _           => true
+      case query: Query => query.isReturning
+      case _            => true
     }
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
     val executable: Boolean = hasExecutableClauses(query)

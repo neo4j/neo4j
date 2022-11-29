@@ -622,25 +622,26 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
   }
 
-  def query(part: QueryPart): Query =
-    Query(part)(pos)
+  // TODO simplify away
+  def query(query: Query): Query =
+    query
 
   def query(cs: Clause*): Query =
-    Query(SingleQuery(cs)(defaultPos))(defaultPos)
+    SingleQuery(cs)(defaultPos)
 
   def query(cs: Clause, position: InputPosition): Query =
-    Query(SingleQuery(List(cs))(position))(position)
+    SingleQuery(List(cs))(position)
 
   def singleQuery(cs: Clause*): SingleQuery =
     SingleQuery(cs)(pos)
 
-  def unionDistinct(qs: SingleQuery*): QueryPart =
-    qs.reduceLeft[QueryPart](UnionDistinct(_, _)(pos))
+  def unionDistinct(qs: SingleQuery*): Query =
+    qs.reduceLeft[Query](UnionDistinct(_, _)(pos))
 
   def subqueryCall(cs: Clause*): SubqueryCall =
     SubqueryCall(SingleQuery(cs)(pos), None)(pos)
 
-  def subqueryCall(innerQuery: QueryPart): SubqueryCall =
+  def subqueryCall(innerQuery: Query): SubqueryCall =
     SubqueryCall(innerQuery, None)(pos)
 
   def subqueryCallInTransactions(cs: Clause*): SubqueryCall = {
@@ -772,7 +773,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def use(e: Expression): UseGraph =
     UseGraph(e)(defaultPos)
 
-  def union(lhs: QueryPart, rhs: SingleQuery): UnionDistinct = UnionDistinct(lhs, rhs)(pos)
+  def union(lhs: Query, rhs: SingleQuery): UnionDistinct = UnionDistinct(lhs, rhs)(pos)
 
   def yieldClause(
     returnItems: ReturnItems,

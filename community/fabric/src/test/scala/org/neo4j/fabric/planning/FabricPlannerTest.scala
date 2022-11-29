@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -122,7 +121,7 @@ class FabricPlannerTest
           |""".stripMargin
       )
 
-      parse(remote.query).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[SingleQuery].clauses
         .shouldEqual(Seq(
           return_(literal(1).as("x"))
         ))
@@ -135,7 +134,7 @@ class FabricPlannerTest
           |""".stripMargin
       )
 
-      parse(remote.query).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[SingleQuery].clauses
         .shouldEqual(Seq(
           return_(literal(1).as("x"))
         ))
@@ -202,7 +201,7 @@ class FabricPlannerTest
         sessionDatabaseName = fabricName
       )
 
-      parse(remote.query).as[Query].part.as[SingleQuery].clauses
+      parse(remote.query).as[SingleQuery].clauses
         .shouldEqual(Seq(
           with_(parameter("@@a", CTAny).as("a")),
           with_(varFor("a").as("a")),
@@ -390,13 +389,11 @@ class FabricPlannerTest
       val local = inst.asLocal(exec).query
 
       local.state.statement().shouldEqual(
-        Query(
-          singleQuery(
-            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
-            with_(varFor("n").as("true")),
-            returnVars("true")
-          )
-        )(pos)
+        singleQuery(
+          match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+          with_(varFor("n").as("true")),
+          returnVars("true")
+        )
       )
       local.state.queryText should endWith("RETURN `true`")
     }
@@ -414,13 +411,11 @@ class FabricPlannerTest
       val local = inst.asLocal(exec).query
 
       local.state.statement().shouldEqual(
-        Query(
-          singleQuery(
-            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
-            with_(varFor("n").as("true")),
-            returnLit(true -> "true")
-          )
-        )(pos)
+        singleQuery(
+          match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+          with_(varFor("n").as("true")),
+          returnLit(true -> "true")
+        )
       )
       local.state.queryText should endWith("RETURN true")
     }
@@ -1593,7 +1588,7 @@ class FabricPlannerTest
   implicit class FullyParsedQueryHelp(q: FullyParsedQuery) {
 
     def asSingleQuery: SingleQuery =
-      q.state.statement().as[Query].part.as[SingleQuery]
+      q.state.statement().as[SingleQuery]
   }
 
   val beFullyStitched: Matcher[Try[FabricPlan]] = Matcher[Try[FabricPlan]] {

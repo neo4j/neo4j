@@ -20,7 +20,6 @@
 package org.neo4j.fabric.pipeline
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -56,7 +55,7 @@ case class TryResolveProcedures(signatures: ProcedureSignatureResolver) extends 
       .rewritten
       .bottomUp {
         // Expand implicit yields and yield * and add return
-        case q @ Query(part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
+        case q @ SingleQuery(Seq(resolved: ResolvedCall)) =>
           val expanded = resolved.withFakedFullDeclarations
           val aliases = expanded.callResults.map { item =>
             val copy1 = Variable(item.variable.name)(item.variable.position)
@@ -70,7 +69,7 @@ case class TryResolveProcedures(signatures: ProcedureSignatureResolver) extends 
             None,
             None
           )(resolved.position)
-          q.copy(part = part.copy(clauses = Seq(expanded, projection))(part.position))(q.position)
+          q.copy(clauses = Seq(expanded, projection))(q.position)
       }
 
 }

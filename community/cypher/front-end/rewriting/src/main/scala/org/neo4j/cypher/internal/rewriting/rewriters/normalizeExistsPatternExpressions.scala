@@ -161,12 +161,10 @@ case object PatternToQueryConverter {
     maybeWhere: Option[Where],
     position: InputPosition
   ): Query = {
-    Query(
-      SingleQuery(
-        Seq(
-          Match(optional = false, pattern, Seq.empty, maybeWhere)(position)
-        )
-      )(position)
+    SingleQuery(
+      Seq(
+        Match(optional = false, pattern, Seq.empty, maybeWhere)(position)
+      )
     )(position)
   }
 
