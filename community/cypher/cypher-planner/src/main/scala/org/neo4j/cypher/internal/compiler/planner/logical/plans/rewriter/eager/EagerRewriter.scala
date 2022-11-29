@@ -44,6 +44,14 @@ import scala.collection.immutable.ListSet
 case object LogicalPlanContainsEagerIfNeeded extends StepSequencer.Condition
 
 /**
+ * [[EagernessReason.Conflict]] contains references to other plans by ID.
+ * This condition is important so that other rewriters that change and create
+ * IDs can be run before this phase, or take extra actions to make sure that
+ * references are updates accordingly.
+ */
+case object LogicalPlanContainsIDReferences extends StepSequencer.Condition
+
+/**
  * Insert Eager into the logical plan where needed.
  */
 case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step
@@ -73,7 +81,8 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    LogicalPlanContainsEagerIfNeeded
+    LogicalPlanContainsEagerIfNeeded,
+    LogicalPlanContainsIDReferences
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(

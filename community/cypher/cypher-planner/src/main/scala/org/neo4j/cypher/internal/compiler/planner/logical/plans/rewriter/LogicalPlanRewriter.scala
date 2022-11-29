@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsIDReferences
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -68,7 +68,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         fuseSelections,
         unnestApply(solveds, cardinalities, providedOrders, otherAttributes.withAlso(effectiveCardinalities)),
         unnestCartesianProduct,
-        cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
+        if (context.debugOptions.useLPEagerAnalyzer) identity
+        else cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
         simplifyPredicates,
         unnestOptional,
         predicateRemovalThroughJoins(
@@ -94,8 +95,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
     CompilationContains[LogicalPlan],
-    // cleanUpEager needs Eager to be present
-    LogicalPlanContainsEagerIfNeeded
+    // Rewriters mess with IDs so let's rather have this run before Eagerness analysis.
+    !LogicalPlanContainsIDReferences
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

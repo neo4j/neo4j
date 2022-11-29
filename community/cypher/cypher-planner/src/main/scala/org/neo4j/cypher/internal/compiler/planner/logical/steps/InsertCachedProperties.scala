@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -430,7 +431,10 @@ case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineT
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
     AndedPropertyInequalitiesRemoved,
     // PushdownPropertyReads needs effectiveCardinalities
-    LogicalPlanUsesEffectiveOutputCardinality
+    LogicalPlanUsesEffectiveOutputCardinality,
+    // There are rules to make sure not to push reads over Eager boundaries, so we need those to be
+    // present before this phase.
+    LogicalPlanContainsEagerIfNeeded
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
