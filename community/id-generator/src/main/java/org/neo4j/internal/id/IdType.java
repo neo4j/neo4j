@@ -26,4 +26,14 @@ public interface IdType {
     boolean highActivity();
 
     String name();
+
+    /**
+     * @return {@code true} for types that represent IDs for schema-related stores, otherwise {@code false}.
+     * This is useful to know in certain test setups where the environment is set up to let stores
+     * start from a higher, sometimes much higher, start ID. This generally doesn't work so well for
+     * schema/token stores.
+     */
+    default boolean isSchemaType() {
+        return false;
+    }
 }
