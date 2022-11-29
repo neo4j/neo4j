@@ -82,6 +82,8 @@ import java.util.function.BiFunction;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Configuration;
@@ -346,6 +348,20 @@ class SettingTest {
     void testURI() {
         var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.URI);
         assertEquals(URI.create("/path/to/../something/"), setting.parse("/path/to/../something/"));
+    }
+
+    @Test
+    void testHttpsURI() {
+        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI);
+        assertEquals(URI.create("https://www.example.com/path"), setting.parse("https://www.example.com/path"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http://www.example.com", "neo4js://database", "/path/to/../something/"})
+    void testHttpsURIWithInvalidUris(String uri) {
+        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI);
+        var exception = assertThrows(IllegalArgumentException.class, () -> setting.parse(uri));
+        assertEquals(String.format("'%s' does not have required scheme 'https'", uri), exception.getMessage());
     }
 
     @Test

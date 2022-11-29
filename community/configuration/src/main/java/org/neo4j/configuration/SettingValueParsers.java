@@ -601,6 +601,27 @@ public final class SettingValueParsers {
         }
     };
 
+    public static final SettingValueParser<URI> HTTPS_URI = new SettingValueParser<>() {
+        @Override
+        public java.net.URI parse(String value) {
+            java.net.URI uri = URI.parse(value);
+            if (uri.getScheme() == null || !uri.getScheme().equalsIgnoreCase("https")) {
+                throw new IllegalArgumentException(format("'%s' does not have required scheme 'https'", value));
+            }
+            return uri;
+        }
+
+        @Override
+        public String getDescription() {
+            return "a URI with the https:// schema";
+        }
+
+        @Override
+        public Class<java.net.URI> getType() {
+            return URI.getType();
+        }
+    };
+
     public static final SettingValueParser<URI> NORMALIZED_RELATIVE_URI = new SettingValueParser<>() {
         @Override
         public URI parse(String value) {
