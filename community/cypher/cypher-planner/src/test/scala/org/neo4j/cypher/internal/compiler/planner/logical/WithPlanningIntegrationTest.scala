@@ -45,7 +45,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should equal(
       planner.planBuilder()
         .produceResults("b")
-        .projection("1 AS b")
+        .projection(project = Seq("1 AS b"), discard = Set("a"))
         .limit(1)
         .allNodeScan("a")
         .build()
