@@ -108,8 +108,8 @@ class TimeZonesTest
         String timeZonesInfo = Files.readString( path ).replace( "\r\n", "\n" );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
         assertThat( timeZonesHash ).isEqualTo(
-                new byte[]{92, 26, -114, 87, 84, -74, 57, 107, -126, -30, -111, 79, -11, 20, -3, 69, -69, -75, 72, 59, 33, 30, 21, -17,
-            -55, 2, 109, -102, 92, -128, -120, -38} );
+                new byte[]{35, -43, 67, 83, 87, 122, 22, 39, -47, -39, -12, 107, -17, -102, 97, 112, -83, -23, -78, -54, 17, -115,
+                           -75, -42, 79, 67, 39, 85, 113, 82, -120, -13} );
     }
 
     @Disabled( "Too restrictive as-is: Zone IDs aren't stable across JDKs, 'Pacific/Kanton' isn't currently supported by x86-ubuntu-oraclejdk-17" )
