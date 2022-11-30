@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.expressions.functions.Haversin
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Keys
-import org.neo4j.cypher.internal.expressions.functions.LTrim
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Last
 import org.neo4j.cypher.internal.expressions.functions.Left
@@ -64,6 +63,7 @@ import org.neo4j.cypher.internal.expressions.functions.Length3_5
 import org.neo4j.cypher.internal.expressions.functions.Linenumber
 import org.neo4j.cypher.internal.expressions.functions.Log
 import org.neo4j.cypher.internal.expressions.functions.Log10
+import org.neo4j.cypher.internal.expressions.functions.LTrim
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Nodes
@@ -72,7 +72,6 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Pi
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.expressions.functions.Properties
-import org.neo4j.cypher.internal.expressions.functions.RTrim
 import org.neo4j.cypher.internal.expressions.functions.Radians
 import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.expressions.functions.RandomUUID
@@ -81,6 +80,7 @@ import org.neo4j.cypher.internal.expressions.functions.Replace
 import org.neo4j.cypher.internal.expressions.functions.Reverse
 import org.neo4j.cypher.internal.expressions.functions.Right
 import org.neo4j.cypher.internal.expressions.functions.Round
+import org.neo4j.cypher.internal.expressions.functions.RTrim
 import org.neo4j.cypher.internal.expressions.functions.Sign
 import org.neo4j.cypher.internal.expressions.functions.Sin
 import org.neo4j.cypher.internal.expressions.functions.Size
@@ -479,10 +479,18 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
           self.toCommandExpression(id, invocation.arguments.head),
           self.toCommandExpression(id, invocation.arguments(1))
         )
-      case Round => commands.expressions.RoundFunction(
-        self.toCommandExpression(id, invocation.arguments.head),
-        toCommandExpression(id, invocation.arguments.lift(1), self).getOrElse(commands.expressions.Literal(intValue(0))),
-        toCommandExpression(id, invocation.arguments.lift(2), self).getOrElse(commands.expressions.Literal(Values.stringValue("HALF_UP")))
+      case Round =>
+        val maybeMode = toCommandExpression(id, invocation.arguments.lift(2), self)
+        val (mode, explicitMode) = maybeMode match {
+          case Some(mode) => (mode, true)
+          case None       => (commands.expressions.Literal(Values.stringValue("HALF_UP")), false)
+        }
+        commands.expressions.RoundFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          toCommandExpression(id, invocation.arguments.lift(1), self).getOrElse(commands.expressions.Literal(intValue(0))),
+          mode,
+          commands.expressions.Literal(Values.booleanValue(explicitMode)
+        )
       )
       case RTrim => commands.expressions.RTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Sign => commands.expressions.SignFunction(self.toCommandExpression(id, invocation.arguments.head))
