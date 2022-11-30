@@ -32,6 +32,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.isNodeBased;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
@@ -146,29 +147,22 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             createdInTx2 = createRelationship(tx.dataWrite(), typeOne);
             tx.dataWrite().relationshipSetProperty(createdInTx2, propKey, two);
 
-            try (RelationshipTypeIndexCursor relCursor =
-                    tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT)) {
-                MutableLongSet uniqueIds = new LongHashSet();
-
-                // when
-                relationshipTypeScan(tx, typeOne, relCursor, order);
-
-                // then
-                assertRelationships(relCursor, uniqueIds, assertOrder, inStore, inStore2, createdInTx, createdInTx2);
-            }
-
-            final var expectedReads = List.of(
+            final var expectedReads = Lists.mutable.of(
                     new RelRead(inStore, null),
                     new RelRead(inStore2, one),
                     new RelRead(createdInTx, null),
                     new RelRead(createdInTx2, two));
+            expectedReads.sortThis();
+            if (assertOrder == IndexOrder.DESCENDING) {
+                Collections.reverse(expectedReads);
+            }
 
             try (RelationshipTypeIndexCursor relCursor =
                             tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
                     var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
                 relationshipTypeScan(tx, typeOne, relCursor, order);
 
-                final var actualReads = new ArrayList<RelRead>();
+                final var actualReads = Lists.mutable.<RelRead>empty();
                 for (final var ignored : expectedReads) {
                     assertThat(relCursor.next()).isTrue();
                     assertThat(relCursor.readFromStore()).isTrue();
@@ -188,18 +182,13 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 assertThat(relCursor.next()).isFalse();
 
                 switch (assertOrder) {
-                    case ASCENDING -> assertThat(expectedReads).containsExactlyElementsOf(actualReads);
-                    case DESCENDING -> {
-                        Collections.reverse(actualReads);
-                        assertThat(expectedReads).containsExactlyElementsOf(actualReads);
-                    }
-                    case NONE -> assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
+                    case ASCENDING, DESCENDING -> assertThat(actualReads).containsExactlyElementsOf(expectedReads);
+                    case NONE -> assertThat(actualReads).containsExactlyInAnyOrderElementsOf(expectedReads);
                 }
             }
         }
     }
 
-    // @Test
     @ParameterizedTest
     @EnumSource(value = IndexOrder.class)
     void shouldFindRelationshipDetailsByTypeAllInSameTx(IndexOrder order) throws KernelException {
@@ -617,7 +606,12 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     private record NodeRead(long id, boolean isSource, boolean label1Present, boolean label2Present) {}
 
-    private record RelRead(long id, Value propValue) {}
+    private record RelRead(long id, Value propValue) implements Comparable<RelRead> {
+        @Override
+        public int compareTo(RelRead other) {
+            return Long.compare(id, other.id);
+        }
+    }
 
     private record NodeRelRead(long source, long rel, long target, Value propValue) {}
 }
