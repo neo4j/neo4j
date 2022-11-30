@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LoadCsvTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LoadCsvWithCallInTransactionsAndMerge
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.MemoryLeakTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MergeProfileRowsTestBase
@@ -376,6 +377,9 @@ class InterpretedMemoryDeallocationTest
 
 class InterpretedProfileMemoryTest extends ProfileMemoryTestBase(COMMUNITY.EDITION, InterpretedRuntime)
     with FullSupportProfileMemoryTestBase[CommunityRuntimeContext]
+
+class InterpretedMemoryLeakTest
+    extends MemoryLeakTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 
 class InterpretedSubscriberErrorTest extends SubscriberErrorTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 

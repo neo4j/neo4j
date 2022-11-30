@@ -128,12 +128,14 @@ case class VarLengthExpandPipe(
             }
           }
         }
-        val projectedRels =
+        val projectedRels = {
           if (projectBackwards(dir, projectedDir)) {
             rels.reverse
           } else {
             rels
           }
+        }
+        rels.close()
         (node, projectedRels)
       }
 
