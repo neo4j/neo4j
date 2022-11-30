@@ -87,7 +87,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("a.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("a.age")))
-    val resultProjection = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val resultProjection = Projection(sort, Set("a", "a.age"), Map("a.name" -> nameProperty))
 
     plan should equal(resultProjection)
   }
@@ -100,7 +100,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val projection = Projection(labelScan, Set.empty, Map("a.age" -> cachedNodePropFromStore("a", "age")))
     val sort = Sort(projection, Seq(Ascending("a.age")))
     val resultProjection =
-      Projection(sort, Set.empty, Map("a.name" -> nameProperty, "a.age" -> cachedNodeProp("a", "age")))
+      Projection(sort, Set("a"), Map("a.name" -> nameProperty, "a.age" -> cachedNodeProp("a", "age")))
 
     plan should equal(resultProjection)
   }
@@ -114,7 +114,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("age")))
-    val resultProjection = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val resultProjection = Projection(sort, Set("a"), Map("a.name" -> nameProperty))
 
     plan should equal(resultProjection)
   }
@@ -128,7 +128,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should equal(
       new LogicalPlanBuilder()
         .produceResults("`b.name`", "age")
-        .projection("b.name AS `b.name`")
+        .projection(project = Seq("b.name AS `b.name`"), discard = Set("b"))
         .projection(project = Seq("a AS b", "a.age AS age"), discard = Set("a"))
         .nodeByLabelScan("a", "A", IndexOrderAscending)
         .build()
@@ -144,7 +144,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should equal(
       new LogicalPlanBuilder()
         .produceResults("`b.name`", "age")
-        .projection("b.name AS `b.name`")
+        .projection(project = Seq("b.name AS `b.name`"), discard = Set("b"))
         .projection(project = Seq("a AS b", "a.age AS age"), discard = Set("a"))
         .nodeByLabelScan("a", "A", IndexOrderAscending)
         .build()
@@ -165,7 +165,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val projection2 =
       Projection(projection, Set.empty, Map("b.foo" -> fooProperty, "age + 5" -> add(varFor("age"), literalInt(5))))
     val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("age + 5")))
-    val result = Projection(sort, Set.empty, Map("b.name" -> nameProperty))
+    val result = Projection(sort, Set("age + 5", "a", "b.foo", "b"), Map("b.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -183,7 +183,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     plan should equal(new LogicalPlanBuilder()
       .produceResults("`b.name`", "age")
-      .projection("b.name AS `b.name`")
+      .projection(project = Seq("b.name AS `b.name`"), discard = Set("b"))
       .projection(project = Seq("cacheN[a.age] AS age"), discard = Set("a", "b.foo", "b.age + 5"))
       .sort(Seq(Ascending("b.foo"), Ascending("b.age + 5")))
       .projection(Map(
@@ -205,7 +205,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("a.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("a.age")))
-    val result = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val result = Projection(sort, Set("a", "a.age"), Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -219,7 +219,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("a.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("a.age")))
-    val result = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val result = Projection(sort, Set("a"), Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -233,7 +233,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("age")))
-    val result = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val result = Projection(sort, Set("a"), Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -283,7 +283,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val projection = Projection(labelScan, Set.empty, Map("a.age + 4" -> add(ageProperty, literalInt(4))))
     val sort = Sort(projection, Seq(Ascending("a.age + 4")))
-    val result = Projection(sort, Set.empty, Map("a.name" -> nameProperty))
+    val result = Projection(sort, Set("a", "a.age + 4"), Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }

@@ -54,7 +54,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     val cfg = plannerConfig()
     val plan = cfg.plan("MATCH p = (a:X)-[r]->(b) RETURN p").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(Map("p" -> pathExpr))
+      .projection(project = Map("p" -> pathExpr), discard = Set("a", "b", "r"))
       .expandAll("(a)-[r]->(b)")
       .nodeByLabelScan("a", "X")
       .build()

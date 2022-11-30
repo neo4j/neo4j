@@ -962,7 +962,7 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("n.p1 AS p")
+        .projection(project = Seq("n.p1 AS p"), discard = Set("n"))
         .unionNodeByLabelsScan("n", Seq("L", "P"))
         .build()
     ) or equal(
@@ -990,13 +990,13 @@ class OrLeafPlanningIntegrationTest
     plan should (equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("r.p1 AS p")
+        .projection(project = Seq("r.p1 AS p"), discard = Set("r", "a", "b"))
         .unionRelationshipTypesScan("(a)-[r:REL1|REL2]->(b)")
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("p")
-        .projection("r.p1 AS p")
+        .projection(project = Seq("r.p1 AS p"), discard = Set("r", "a", "b"))
         .unionRelationshipTypesScan("(a)-[r:REL2|REL1]->(b)")
         .build()
     ))

@@ -827,6 +827,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     projectionWithDiscard(Parser.parseProjections(project: _*), discard)
   }
 
+  def projection(project: Map[String, Expression], discard: Set[String]): IMPL = {
+    projectionWithDiscard(project, discard)
+  }
+
   private def projectionWithDiscard(projectExpressions: Map[String, Expression], discard: Set[String]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenProjections = projectExpressions.map { case (name, expr) => name -> rewriteExpression(expr) }

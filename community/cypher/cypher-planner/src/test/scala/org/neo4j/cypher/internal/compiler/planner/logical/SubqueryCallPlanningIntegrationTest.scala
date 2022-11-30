@@ -65,7 +65,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
-        .projection("2 AS y")
+        .projection(project = Seq("2 AS y"), discard = Set("x"))
         .projection("1 AS x")
         .argument()
         .build()
@@ -138,7 +138,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
-        .projection("3 AS y")
+        .projection(project = Seq("3 AS y"), discard = Set("x"))
         .distinct("x AS x")
         .union()
         .|.projection("x AS x")
@@ -217,7 +217,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "y")
-        .projection("x + 1 AS res")
+        .projection(project = Seq("x + 1 AS res"), discard = Set("x"))
         .cartesianProduct(fromSubquery = true)
         .|.filter("y.prop = 5")
         .|.allNodeScan("y")
@@ -232,7 +232,7 @@ class SubqueryCallPlanningIntegrationTest
     planFor(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("res", "sum")
-        .projection("x + 1 AS res")
+        .projection(project = Seq("x + 1 AS res"), discard = Set("x"))
         .cartesianProduct(fromSubquery = true)
         .|.aggregation(Seq.empty, Seq("sum(y.prop) AS sum"))
         .|.allNodeScan("y")
@@ -298,7 +298,7 @@ class SubqueryCallPlanningIntegrationTest
     cfg.plan(query) should equal(
       new LogicalPlanBuilder()
         .produceResults("five")
-        .projection("5 AS five")
+        .projection(project = Seq("5 AS five"), discard = Set("x", "r", "y"))
         .cartesianProduct(fromSubquery = true)
         .|.expand("(x)<-[r]-(y)")
         .|.nodeByLabelScan("x", "X")
@@ -651,6 +651,7 @@ class SubqueryCallPlanningIntegrationTest
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 100)
       .setLabelCardinality("B", 100)
+      .enableDeduplicateNames(false)
       .build()
 
     val query =
@@ -668,18 +669,21 @@ class SubqueryCallPlanningIntegrationTest
 
     cfg.plan(query) should equal {
       new LogicalPlanBuilder()
-        .produceResults("q", "a", "b")
-        .projection(s"a AS q", s"b AS a", s"q AS b")
+        .produceResults("`  q@7`", "`  a@8`", "`  b@9`")
+        .projection(
+          project = Seq("`  a@5` AS `  q@7`", "`  b@6` AS `  a@8`", "`  q@0` AS `  b@9`"),
+          discard = Set("  q@0", "  a@5", "  b@6")
+        )
         .apply(fromSubquery = true)
-        .|.distinct(s"a AS a", s"b AS b")
+        .|.distinct("`  a@5` AS `  a@5`", "`  b@6` AS `  b@6`")
         .|.union()
-        .|.|.projection(s"a AS a", s"b AS b")
-        .|.|.projection(s"q AS b")
-        .|.|.nodeByLabelScan("a", "B", IndexOrderNone, "q")
-        .|.projection(s"a AS a", s"b AS b")
-        .|.projection(s"1 AS b")
-        .|.nodeByLabelScan("a", "A", IndexOrderNone)
-        .projection(s"1 AS q")
+        .|.|.projection("`  a@3` AS `  a@5`", "`  b@4` AS `  b@6`")
+        .|.|.projection("`  q@0` AS `  b@4`")
+        .|.|.nodeByLabelScan("`  a@3`", "B", IndexOrderNone, "`  q@0`")
+        .|.projection("`  a@1` AS `  a@5`", "`  b@2` AS `  b@6`")
+        .|.projection("1 AS `  b@2`")
+        .|.nodeByLabelScan("`  a@1`", "A", IndexOrderNone)
+        .projection("1 AS `  q@0`")
         .argument()
         .build()
     }
@@ -1247,7 +1251,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("a.prop AS `a.prop`")
+      .projection(project = Seq("a.prop AS `a.prop`"), discard = Set("a"))
       .eager()
       .transactionForeach()
       .|.setNodeProperty("a", "prop", "1")
@@ -1274,7 +1278,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("1 AS x")
+      .projection(project = Seq("1 AS x"), discard = Set("line"))
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
@@ -1305,7 +1309,7 @@ class SubqueryCallPlanningIntegrationTest
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("1 AS x")
+      .projection(project = Seq("1 AS x"), discard = Set("a"))
       .transactionForeach()
       .|.setNodeProperty("n", "prop", "1")
       .|.allNodeScan("n")
@@ -1339,7 +1343,10 @@ class SubqueryCallPlanningIntegrationTest
     val plan = cfg.plan(query).stripProduceResults
 
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("cacheN[a.prop] AS otherProp")
+      .projection(
+        project = Seq("cacheN[a.prop] AS otherProp"),
+        discard = Set("c", "b", "a", "anon_1", "anon_0", "dummy")
+      )
       .expandAll("(b)-[anon_1]->(c)")
       .cacheProperties("cacheNFromStore[a.prop]")
       .transactionForeach()

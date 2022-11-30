@@ -115,7 +115,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Set.empty,
+          Set("n"),
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -133,7 +133,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
-          .projection("n.prop AS p")
+          .projection(project = Seq("n.prop AS p"), discard = Set("n", "foo"))
           .projection("1 AS foo")
           .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, indexType = IndexType.RANGE)
           .build()
@@ -436,7 +436,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
-          .projection("n.prop AS p")
+          .projection(project = Seq("n.prop AS p"), discard = Set("n", "r", "m", "foo"))
           .projection("1 AS foo")
           .expandAll("(n)-[r]->(m)")
           .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, indexType = IndexType.RANGE)
@@ -616,7 +616,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "m",
             "r"
           ),
-          Set.empty,
+          Set("nnn", "r", "m"),
           Map("nnn.prop" -> prop("nnn", "prop"))
         )
       )
@@ -633,7 +633,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Set.empty,
+          Set("n"),
           Map("m" -> varFor("n"))
         )
       )
@@ -699,7 +699,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop STARTS WITH 'foo')",
             indexOrder = plannedOrder
           ),
-          Set.empty,
+          Set("n"),
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -722,7 +722,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         plan should equal(
           planner.planBuilder()
             .produceResults("`n.prop`")
-            .projection("cacheN[n.prop] AS `n.prop`")
+            .projection(project = Seq("cacheN[n.prop] AS `n.prop`"), discard = Set("n"))
             .filter(s"cacheNFromStore[n.prop] $predicate 'foo'")
             .nodeIndexOperator("n:Awesome(prop)", indexOrder = plannedOrder, indexType = IndexType.RANGE)
             .build()
@@ -742,7 +742,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
-          Set.empty,
+          Set("n"),
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -765,7 +765,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]-(b)",
           indexOrder = plannedOrder,
@@ -792,7 +792,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]-(b)",
           indexOrder = plannedOrder,
@@ -819,7 +819,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop > 123)]-(b)",
           indexOrder = plannedOrder,
@@ -854,7 +854,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'sub')]-(b)",
           indexOrder = plannedOrder,
@@ -889,7 +889,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'sub')]-(b)",
           indexOrder = plannedOrder,
@@ -969,7 +969,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               argumentIds = Set("a")
             )
           ),
-          Set.empty,
+          Set("a", "b"),
           Map("a.prop" -> cachedNodeProp("a", "prop"))
         )
       )
@@ -993,7 +993,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b", "c", "d", "r", "r2"))
         .apply()
         .|.relationshipIndexOperator(
           "(c)-[r2:REL2(prop = ???)]-(d)",
@@ -1372,7 +1372,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "r"
             )
           ),
-          Set.empty,
+          Set("b", "a", "r"),
           Map("a.prop" -> prop("a", "prop"))
         )
       )
@@ -1399,7 +1399,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             ),
             AllNodesScan("b", Set("a"))
           ),
-          Set.empty,
+          Set("a"),
           Map("a.prop" -> prop("a", "prop"))
         )
       )
@@ -1425,7 +1425,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .apply()
         .|.allNodeScan("c", "r")
         .cacheProperties("cacheRFromStore[r.prop]")
@@ -1454,7 +1454,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .apply()
         .|.allNodeScan("c", "r")
         .cacheProperties("cacheRFromStore[r.prop]")
@@ -1482,7 +1482,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
-          Set.empty,
+          Set("n"),
           Map("n.prop" -> prop("n", "prop"))
         )
       )
@@ -1506,7 +1506,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .projection("cacheR[r.prop] AS `r.prop`")
+        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("r", "a", "b"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]-(b)",
           indexOrder = plannedOrder,
@@ -1852,13 +1852,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             else if (shouldFullSort && sortOnOnlyOne)
               Projection(
                 Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionProp1), sortItems),
-                Set.empty,
+                Set("n"),
                 projectionProp2
               )
             else if (shouldFullSort && !sortOnOnlyOne)
               Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionBoth), sortItems)
             else
-              Projection(Selection(expr, leafPlan), Set.empty, projectionBoth)
+              Projection(Selection(expr, leafPlan), Set("n"), projectionBoth)
           }
         }
     }
@@ -1912,7 +1912,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   .projection(projectionBoth)
               else if (shouldFullSort && sortOnOnlyOne)
                 planner.subPlanBuilder()
-                  .projection(projectionProp2)
+                  .projection(project = projectionProp2, discard = Set("a", "b", "r"))
                   .sort(sortItems)
                   .projection(projectionProp1)
               else if (shouldFullSort && !sortOnOnlyOne)
@@ -1921,7 +1921,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   .projection(projectionBoth)
               else
                 planner.subPlanBuilder()
-                  .projection(projectionBoth)
+                  .projection(project = projectionBoth, discard = Set("a", "b", "r"))
             }
 
             planBuilderWithSorting
@@ -2256,7 +2256,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           else if (partialSort)
             PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projectionsAll), alreadySorted, sortItems)
           else
-            Projection(Selection(expr, leafPlan), Set.empty, projectionsAll)
+            Projection(Selection(expr, leafPlan), Set("n"), projectionsAll)
         }
     }
   }
@@ -2294,10 +2294,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           planBuilderWithSorting
             .projection(
-              "cacheR[r.prop1] AS `r.prop1`",
-              "cacheR[r.prop2] AS `r.prop2`",
-              "cacheR[r.prop3] AS `r.prop3`",
-              "cacheR[r.prop4] AS `r.prop4`"
+              project = Seq(
+                "cacheR[r.prop1] AS `r.prop1`",
+                "cacheR[r.prop2] AS `r.prop2`",
+                "cacheR[r.prop3] AS `r.prop3`",
+                "cacheR[r.prop4] AS `r.prop4`"
+              ),
+              discard = if (fullSort || partialSort) Set.empty else Set("a", "b", "r")
             )
             .filter("cacheR[r.prop2] <= 3", "cacheR[r.prop3] > 'a'", "cacheR[r.prop4] < 'f'")
             .relationshipIndexOperator(
@@ -2439,11 +2442,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           if (sort)
             Projection(
               PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projections), alreadySorted, toSort),
-              Set.empty,
+              Set("n"),
               projectionsAfterSort
             )
           else
-            Projection(Selection(expr, leafPlan), Set.empty, projections)
+            Projection(Selection(expr, leafPlan), Set("n"), projections)
         }
     }
   }
@@ -2485,13 +2488,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           val planBuilderWithSort =
             if (sort)
               planner.subPlanBuilder()
-                .projection(projectionsAfterSort)
+                .projection(project = projectionsAfterSort, discard = Set("a", "b", "r"))
                 .partialSort(alreadySorted, toSort)
+                .projection(projections)
             else
               planner.subPlanBuilder()
+                .projection(project = projections, discard = Set("a", "b", "r"))
 
           planBuilderWithSort
-            .projection(projections)
             .filter("cacheR[r.prop2] <= 3", "cacheR[r.prop3] > 'a'", "cacheR[r.prop4] < 'f'")
             .relationshipIndexOperator(
               "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')]->(b)",
@@ -3034,7 +3038,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 sortItems
               )
             else
-              Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections)
+              Projection(Selection(selectionExpression, leafPlan), Set("n"), returnProjections)
           }
         }
     }
@@ -3077,15 +3081,17 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 planner.subPlanBuilder()
                   .sort(sortItems)
                   .projection(sortProjections)
+                  .projection(returnProjections)
               else if (partialSort)
                 planner.subPlanBuilder()
                   .partialSort(alreadySorted, sortItems)
                   .projection(sortProjections)
+                  .projection(returnProjections)
               else
                 planner.subPlanBuilder()
+                  .projection(project = returnProjections, discard = Set("a", "b", "r"))
 
             planBuilderWithSort
-              .projection(returnProjections)
               .filterExpression(selectionExpression.exprs.toSeq: _*)
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > '')]->(b)",
@@ -3163,7 +3169,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (shouldSort)
               PartialSort(Projection(leafPlan, Set.empty, projection), alreadySorted, toBeSorted)
             else
-              Projection(leafPlan, Set.empty, projection)
+              Projection(leafPlan, Set("n"), projection)
           }
         }
     }
@@ -3202,7 +3208,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               else planner.subPlanBuilder()
 
             planBuilderWithSort
-              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+              .projection(
+                project = Seq("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`"),
+                discard = Set("r", "a", "b")
+              )
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 = 42, prop2 <= 3)]->(b)",
                 indexOrder = indexOrder,
@@ -3299,7 +3308,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (shouldSort)
               Sort(Projection(leafPlan, Set.empty, projection), toBeSorted)
             else
-              Projection(leafPlan, Set.empty, projection)
+              Projection(leafPlan, Set("n"), projection)
           }
         }
     }
@@ -3332,13 +3341,18 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           val plan = planner.plan(query).stripProduceResults
 
           // Then
+          val projections = Seq("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
           val expectedPlan = {
             val planBuilderWithSort =
-              if (shouldSort) planner.subPlanBuilder().sort(toBeSorted)
-              else planner.subPlanBuilder()
+              if (shouldSort)
+                planner.subPlanBuilder()
+                  .sort(toBeSorted)
+                  .projection(projections: _*)
+              else
+                planner.subPlanBuilder()
+                  .projection(project = projections, discard = Set("r", "a", "b"))
 
             planBuilderWithSort
-              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
               .filter("cacheR[r.prop2] = 3")
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 <= 42, prop2 = 3)]->(b)",
@@ -3389,7 +3403,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           plan._1 should equal(Projection(
             nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue),
-            Set.empty,
+            Set("n"),
             projection
           ))
         }
@@ -3424,7 +3438,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           // Then
           withClue(query) {
             plan shouldBe planner.subPlanBuilder()
-              .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`")
+              .projection(
+                project = Seq("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`"),
+                discard = Set("r", "a", "b")
+              )
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 = 42, prop2 = 3)]->(b)",
                 indexOrder = indexOrder,

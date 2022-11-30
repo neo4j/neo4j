@@ -164,7 +164,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("clowns" -> projectionExpression))
+        .projection(project = Map("clowns" -> projectionExpression), discard = Set("friends"))
         .orderedAggregation(Seq("a AS a"), Seq("collect(b) AS friends"), Seq("a"))
         .filter("b:Person")
         .expandAll("(a)-[anon_0:KNOWS]->(b)")
@@ -181,7 +181,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("`u.id`")
-        .projection("u.id AS `u.id`")
+        .projection(project = Seq("u.id AS `u.id`"), discard = Set("u", "anon_1", "size(anon_6)"))
         .sort(Seq(Ascending("size(anon_6)")))
         .projection("size(anon_1) AS `size(anon_6)`")
         .rollUpApply("anon_1", "anon_0")
@@ -695,7 +695,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("p" -> pathExpression))
+        .projection(project = Map("p" -> pathExpression), discard = Set("a", "b", "r"))
         .expand(
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
@@ -718,7 +718,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("p" -> pathExpression))
+        .projection(project = Map("p" -> pathExpression), discard = Set("a", "b", "r"))
         .expand(
           "(a)-[r*1..]->(b)",
           expandMode = ExpandAll,
@@ -1217,7 +1217,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
     plan should equal(
       planner.subPlanBuilder()
-        .projection("[1, anon_2, 2] AS ages")
+        .projection(project = Seq("[1, anon_2, 2] AS ages"), discard = Set("n", "anon_2"))
         .rollUpApply("anon_2", "anon_1")
         .|.projection("b.age AS anon_1")
         .|.expandAll("(n)-[anon_0]->(b)")
@@ -1762,10 +1762,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("age" -> containerIndex(
-          NestedPlanCollectExpression(expectedNestedPlan, varFor("anon_1"), "[(n)-[`anon_0`]->(b) | b.age]")(pos),
-          literalInt(1)
-        )))
+        .projection(
+          project = Map("age" -> containerIndex(
+            NestedPlanCollectExpression(expectedNestedPlan, varFor("anon_1"), "[(n)-[`anon_0`]->(b) | b.age]")(pos),
+            literalInt(1)
+          )),
+          discard = Set("n")
+        )
         .allNodeScan("n")
         .build()
     )
@@ -1789,13 +1792,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("foo" ->
-          Head(listOf(
-            NestedPlanExistsExpression(
-              expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE not `anon_2` = `anon_0` }"
-            )(pos)
-          ))(pos)))
+        .projection(
+          project = Map("foo" ->
+            Head(listOf(
+              NestedPlanExistsExpression(
+                expectedNestedPlan,
+                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)-[`anon_2`]->(`anon_3`)$NL  WHERE not `anon_2` = `anon_0` }"
+              )(pos)
+            ))(pos)),
+          discard = Set("n")
+        )
         .allNodeScan("n")
         .build()
     )
@@ -1818,13 +1824,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("foo" ->
-          Head(listOf(
-            NestedPlanExistsExpression(
-              expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
-            )(pos)
-          ))(pos)))
+        .projection(
+          project = Map("foo" ->
+            Head(listOf(
+              NestedPlanExistsExpression(
+                expectedNestedPlan,
+                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B }"
+              )(pos)
+            ))(pos)),
+          discard = Set("n")
+        )
         .allNodeScan("n")
         .build()
     )
@@ -1849,13 +1858,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("foo" ->
-          Head(listOf(
-            NestedPlanExistsExpression(
-              expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
-            )(pos)
-          ))(pos)))
+        .projection(
+          project = Map("foo" ->
+            Head(listOf(
+              NestedPlanExistsExpression(
+                expectedNestedPlan,
+                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`:B OR `anon_1`:C }"
+              )(pos)
+            ))(pos)),
+          discard = Set("n")
+        )
         .allNodeScan("n")
         .build()
     )
@@ -1877,15 +1889,18 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan should equal(
       planner.subPlanBuilder()
-        .projection(Map("foo" ->
-          Head(listOf(
-            NestedPlanExistsExpression(
-              expectedNestedPlan,
-              s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
-            )(
-              pos
-            )
-          ))(pos)))
+        .projection(
+          project = Map("foo" ->
+            Head(listOf(
+              NestedPlanExistsExpression(
+                expectedNestedPlan,
+                s"EXISTS { MATCH (n)-[`anon_0`]->(`anon_1`)$NL  WHERE `anon_1`.prop IN [5] AND `anon_1`:D }"
+              )(
+                pos
+              )
+            ))(pos)),
+          discard = Set("n")
+        )
         .allNodeScan("n")
         .build()
     )
@@ -1929,7 +1944,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Map("size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)))
+      .projection(
+        project = Map(
+          "size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
+        ),
+        discard = Set("a")
+      )
       .allNodeScan("a")
       .build())
   }
@@ -1944,12 +1964,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Map("exists" -> HasDegreeGreaterThan(
-        varFor("a"),
-        Some(RelTypeName("FOO")(pos)),
-        SemanticDirection.OUTGOING,
-        literalInt(0)
-      )(pos)))
+      .projection(
+        project = Map("exists" -> HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("FOO")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)),
+        discard = Set("a")
+      )
       .allNodeScan("a")
       .build())
   }
@@ -1964,11 +1987,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Map("foos" -> GetDegree(
-        varFor("a"),
-        Some(RelTypeName("FOO")(pos)),
-        SemanticDirection.OUTGOING
-      )(pos)))
+      .projection(
+        project = Map("foos" -> GetDegree(
+          varFor("a"),
+          Some(RelTypeName("FOO")(pos)),
+          SemanticDirection.OUTGOING
+        )(pos)),
+        discard = Set("a")
+      )
       .allNodeScan("a")
       .build())
   }
@@ -1983,12 +2009,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection(Map("moreThan10Foos" -> HasDegreeGreaterThan(
-        varFor("a"),
-        Some(RelTypeName("FOO")(pos)),
-        SemanticDirection.OUTGOING,
-        literalInt(10)
-      )(pos)))
+      .projection(
+        project = Map("moreThan10Foos" -> HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("FOO")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(10)
+        )(pos)),
+        discard = Set("a")
+      )
       .allNodeScan("a")
       .build())
   }
@@ -2255,7 +2284,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     plan.stripProduceResults should equal(
       planner.subPlanBuilder()
-        .projection(Map("list" -> expectedExpression))
+        .projection(Map("list" -> expectedExpression), discard = Set("a", "anon_7"))
         .rollUpApply("anon_7", "anon_6")
         .|.projection("b.prop4 = true AS anon_6")
         .|.expandAll("(a)<-[anon_1]-(b)")
@@ -2319,7 +2348,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       "MATCH (a:Foo) RETURN COUNT { MATCH (a)-[r]->(b), (a)<-[r2]-(b) } = 2 AS foo"
     ).stripProduceResults
     plan shouldBe planner.subPlanBuilder()
-      .projection("anon_0 = 2 AS foo")
+      .projection(project = Seq("anon_0 = 2 AS foo"), discard = Set("a", "anon_0"))
       .apply()
       .|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
       .|.filter("not r = r2")
@@ -2378,7 +2407,9 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     ).stripProduceResults
     plan should equal(planner.subPlanBuilder()
       .projection(
-        Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos))
+        project =
+          Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos)),
+        discard = Set("a")
       )
       .nodeByLabelScan("a", "Person", IndexOrderNone)
       .build())
@@ -2403,7 +2434,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("counts")
-        .projection("[anon_2] AS counts")
+        .projection(project = Seq("[anon_2] AS counts"), discard = Set("a", "anon_2"))
         .apply()
         .|.aggregation(Seq(), Seq("count(*) AS anon_2"))
         .|.filter("anon_1:Foo")
@@ -2419,12 +2450,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(Map("exists" -> HasDegreeGreaterThan(
-          varFor("a"),
-          Some(RelTypeName("X")(pos)),
-          SemanticDirection.OUTGOING,
-          literalInt(0)
-        )(pos)))
+        .projection(
+          project = Map("exists" -> HasDegreeGreaterThan(
+            varFor("a"),
+            Some(RelTypeName("X")(pos)),
+            SemanticDirection.OUTGOING,
+            literalInt(0)
+          )(pos)),
+          discard = Set("a")
+        )
         .allNodeScan("a")
         .build()
     )
@@ -2484,7 +2518,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("anon_2 AND a.prop = 10 AS exists")
+        .projection(project = Seq("anon_2 AND a.prop = 10 AS exists"), discard = Set("a", "anon_2"))
         .letSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2513,7 +2547,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("[anon_2] AS notExists")
+        .projection(project = Seq("[anon_2] AS notExists"), discard = Set("a", "anon_2"))
         .letAntiSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2528,7 +2562,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("anon_2 AND a.prop = 10 AS notExists")
+        .projection(project = Seq("anon_2 AND a.prop = 10 AS notExists"), discard = Set("a", "anon_2"))
         .letAntiSemiApply("anon_2")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2543,7 +2577,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_2 AS exists"),
+          discard = Set("a", "anon_2")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2558,7 +2595,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("[anon_2] AS exists")
+        .projection(project = Seq("[anon_2] AS exists"), discard = Set("a", "anon_2"))
         .letSelectOrSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2573,7 +2610,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("anon_2 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_2 AS exists"),
+          discard = Set("a", "anon_2")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2589,7 +2629,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("[anon_2] AS exists")
+        .projection(project = Seq("[anon_2] AS exists"), discard = Set("a", "anon_2"))
         .letSelectOrSemiApply("anon_2", "a.prop = 10 OR a.foo = 5")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2604,7 +2644,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("anon_2 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_2 AS notExists"),
+          discard = Set("a", "anon_2")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2619,7 +2662,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("[anon_2] AS notExists")
+        .projection(project = Seq("[anon_2] AS notExists"), discard = Set("a", "anon_2"))
         .letSelectOrAntiSemiApply("anon_2", "a.prop = 10")
         .|.filter("anon_1:Foo")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
@@ -2635,7 +2678,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_5 AS exists"),
+          discard = Set("a", "anon_4", "anon_5")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2655,7 +2701,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("[anon_5] AS exists")
+        .projection(project = Seq("[anon_5] AS exists"), discard = Set("a", "anon_4", "anon_5"))
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2675,7 +2721,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_5 AS notExists"),
+          discard = Set("a", "anon_4", "anon_5")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2695,7 +2744,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("[anon_5] AS notExists")
+        .projection(project = Seq("[anon_5] AS notExists"), discard = Set("a", "anon_4", "anon_5"))
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2719,7 +2768,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("anon_5 AS exists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_5 AS exists"),
+          discard = Set("a", "anon_4", "anon_5")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2743,7 +2795,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection("[anon_5] AS exists")
+        .projection(project = Seq("[anon_5] AS exists"), discard = Set("a", "anon_4", "anon_5"))
         .letSelectOrSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2774,7 +2826,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("`person.name`")
-        .projection("cacheN[person.name] AS `person.name`")
+        .projection(project = Seq("cacheN[person.name] AS `person.name`"), discard = Set("person"))
         .semiApply()
         .|.filter("dog:Dog", "dog.name = 'Bosse'", "dog.lastname = 'Bosse'")
         .|.expandAll("(person)-[anon_0:HAS_DOG]->(dog)")
@@ -2795,7 +2847,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("anon_5 AS notExists") // We could remove this unneeded projection, but it doesn't do much harm
+        .projection(
+          project = Seq("anon_5 AS notExists"),
+          discard = Set("a", "anon_4", "anon_5")
+        ) // We could remove this unneeded projection, but it doesn't do much harm
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2819,7 +2874,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("notExists")
-        .projection("[anon_5] AS notExists")
+        .projection(project = Seq("[anon_5] AS notExists"), discard = Set("a", "anon_4", "anon_5"))
         .letSelectOrAntiSemiApply("anon_5", "anon_4")
         .|.filter("anon_3:Bar")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
@@ -2850,7 +2905,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("exists")
-        .projection(Map("exists" -> caseExp))
+        .projection(project = Map("exists" -> caseExp), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )

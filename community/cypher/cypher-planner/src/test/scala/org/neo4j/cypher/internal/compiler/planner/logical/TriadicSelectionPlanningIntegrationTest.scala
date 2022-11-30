@@ -53,7 +53,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE NOT (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
@@ -83,7 +83,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE NOT (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2:A]->(c)")
@@ -97,7 +97,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE NOT (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2:B]->(c)")
       .|.argument("b", "r1")
@@ -110,7 +110,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE NOT (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)<-[r2:B]-(c)")
       .|.argument("b", "r1")
@@ -133,7 +133,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1")
       .triadicSelection(positivePredicate = true, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
@@ -163,7 +163,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1")
       .triadicSelection(positivePredicate = true, "a", "b", "c")
       .|.expandAll("(b)-[r2:A]->(c)")
@@ -177,7 +177,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .triadicSelection(positivePredicate = true, "a", "b", "c")
       .|.expandAll("(b)-[r2:B]->(c)")
       .|.argument("b", "r1")
@@ -190,7 +190,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE (a)-[:A]->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .triadicSelection(positivePredicate = true, "a", "b", "c")
       .|.expandAll("(b)<-[r2:B]-(c)")
       .|.argument("b", "r1")
@@ -205,7 +205,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b:Y)-[r2]->(c:Y) WHERE NOT (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1", "c:Y")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
@@ -236,7 +236,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b)-[r2]->(c:Z) WHERE NOT (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("c:Z", "not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
@@ -250,7 +250,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b:Y:Z)-[r2]->(c:Z) WHERE NOT (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("c:Z", "not r2 = r1")
       .triadicSelection(positivePredicate = false, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")
@@ -267,7 +267,7 @@ class TriadicSelectionPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planner.plan("MATCH (a:X)-[r1]->(b:Y)-[r2]->(c:Y) WHERE (a)-->(c) RETURN 1").stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .projection("1 AS 1")
+      .projection(project = Seq("1 AS 1"), discard = Set("c", "r1", "r2", "b", "a"))
       .filter("not r2 = r1", "c:Y")
       .triadicSelection(positivePredicate = true, "a", "b", "c")
       .|.expandAll("(b)-[r2]->(c)")

@@ -202,7 +202,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     plan shouldEqual planner.planBuilder()
       .produceResults("p")
-      .projection(Map("p" -> path))
+      .projection(project = Map("p" -> path), discard = Set("a", "r", "b"))
       .filterExpression(
         allInList(
           varFor("x"),
