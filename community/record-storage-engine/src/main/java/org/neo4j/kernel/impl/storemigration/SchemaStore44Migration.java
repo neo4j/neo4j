@@ -110,13 +110,15 @@ public class SchemaStore44Migration {
                         pair -> nonReplacedConstraintsString.add(pair.first().userDescription(srcTokenHolders)));
                 throw new IllegalStateException(
                         "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. "
-                                + "To guard from unintentionally removing indexes or constraints, "
-                                + "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or "
-                                + "need to have a valid replacement. "
+                                + "To guard against unintentionally removing indexes or constraints, "
+                                + "it is recommended for all BTREE indexes or constraints backed by BTREE indexes to have a valid replacement. "
                                 + "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. "
                                 + "Please drop your indexes and constraints or create replacements and retry the migration. "
                                 + "The indexes and constraints without replacement are: "
-                                + nonReplacedIndexString + " and " + nonReplacedConstraintsString);
+                                + nonReplacedIndexString + " and " + nonReplacedConstraintsString + ". "
+                                + "Alternatively, you can use the option --force-btree-indexes-to-range to force all BTREE indexes or constraints backed by "
+                                + "BTREE indexes to be replaced by RANGE equivalents. Be aware that RANGE indexes are not always the optimal replacement of BTREEs "
+                                + "and performance may be affected while the new indexes are populated. See the Neo4j v5 migration guide online for more information.");
             }
         }
 

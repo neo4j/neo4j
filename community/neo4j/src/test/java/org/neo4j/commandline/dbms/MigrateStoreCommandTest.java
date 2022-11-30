@@ -43,9 +43,9 @@ class MigrateStoreCommandTest {
 
                          USAGE
 
-                         migrate [-h] [--expand-commands] [--verbose] [--additional-config=<file>]
-                                 [--pagecache=<size>] [--to-format=standard|high_limit|aligned]
-                                 <database>
+                         migrate [-h] [--expand-commands] [--force-btree-indexes-to-range] [--verbose]
+                                 [--additional-config=<file>] [--pagecache=<size>]
+                                 [--to-format=standard|high_limit|aligned] <database>
 
                          DESCRIPTION
 
@@ -63,6 +63,17 @@ class MigrateStoreCommandTest {
                                --additional-config=<file>
                                                     Configuration file with additional configuration.
                                --expand-commands    Allow command expansion in config value evaluation.
+                               --force-btree-indexes-to-range
+                                                    Special option for automatically turning all BTREE
+                                                      indexes/constraints into RANGE. Be aware that
+                                                      RANGE indexes are not always the optimal
+                                                      replacement of BTREEs and performance may be
+                                                      affected while the new indexes are populated. See
+                                                      the Neo4j v5 migration guide online for more
+                                                      information. The newly created indexes will be
+                                                      populated in the background on the first database
+                                                      start up following the migration and users should
+                                                      monitor the successful completion of that process.
                            -h, --help               Show this help message and exit.
                                --pagecache=<size>   The size of the page cache to use for the migration
                                                       process. The general rule is that values up to the

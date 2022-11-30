@@ -69,9 +69,8 @@ import org.neo4j.token.api.TokenHolder;
 class SchemaStore44MigratorTest {
     private static final String MISSING_REPLACEMENT_MESSAGE =
             "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. "
-                    + "To guard from unintentionally removing indexes or constraints, "
-                    + "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or "
-                    + "need to have a valid replacement. "
+                    + "To guard against unintentionally removing indexes or constraints, "
+                    + "it is recommended for all BTREE indexes or constraints backed by BTREE indexes to have a valid replacement. "
                     + "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. "
                     + "Please drop your indexes and constraints or create replacements and retry the migration. "
                     + "The indexes and constraints without replacement are: ";

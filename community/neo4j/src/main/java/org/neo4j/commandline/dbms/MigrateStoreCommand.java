@@ -123,10 +123,25 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--force-btree-indexes-to-range",
+            fallbackValue = "true",
+            description = "Special option for automatically turning all BTREE indexes/constraints into RANGE. "
+                    + "Be aware that RANGE indexes are not always the optimal replacement of BTREEs "
+                    + "and performance may be affected while the new indexes are populated. "
+                    + "See the Neo4j v5 migration guide online for more information. "
+                    + "The newly created indexes will be populated in the background on the first database start up "
+                    + "following the migration and users should monitor the successful completion of that process.")
+    private boolean forceBtreeToRange;
+
+    // This is a special option for Aura. It is generally guaranteed to work only on Aura DBMSes,
+    // because Aura does not use many of the advanced DBMS stuff like multi-database feature.
+    @Option(
+            names = "--force-system-database",
             hidden = true,
             fallbackValue = "true",
-            description = "Special option for turning all btree indexes/constraints into range")
-    private boolean forceBtreeToRange;
+            description = "A special option for forcing migration of Enterprise System database. "
+                    + "This is only for internal use, because it works only if a well-defined subset of the DBMS "
+                    + "features is used. The result is undefined in other cases.")
+    protected boolean forceSystemDatabase;
 
     public MigrateStoreCommand(ExecutionContext ctx) {
         super(ctx);
