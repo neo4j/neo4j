@@ -59,6 +59,9 @@ import picocli.CommandLine.Model.UsageMessageSpec;
                     + "This variable is incompatible with HEAP_SIZE and takes precedence over HEAP_SIZE."
         })
 public class AdminTool {
+    private static final String ENV_NEO4J_HOME = "NEO4J_HOME";
+    private static final String ENV_NEO4J_CONF = "NEO4J_CONF";
+
     // Accept arguments also used by Neo4jAdminCommand, just to let them show in the usage
     @CommandLine.Option(
             names = "--expand-commands",
@@ -73,8 +76,8 @@ public class AdminTool {
     }
 
     public static void main(String[] args) {
-        final var homeDir = getDirOrExit("NEO4J_HOME");
-        final var confDir = getDirOrExit("NEO4J_CONF");
+        final var homeDir = getHomeDir();
+        final var confDir = getConfDir(homeDir);
         final var ctx = new ExecutionContext(homeDir, confDir);
         final var exitCode = execute(ctx, args);
         System.exit(exitCode);
@@ -162,16 +165,36 @@ public class AdminTool {
                 .values();
     }
 
-    private static Path getDirOrExit(String envVar) {
-        final var value = System.getenv(envVar);
+    private static Path getHomeDir() {
+        var value = System.getenv(ENV_NEO4J_HOME);
         if (isBlank(value)) {
-            System.err.printf("Required environment variable '%s' is not set%n", envVar);
+            System.err.printf("Required environment variable '%s' is not set%n", ENV_NEO4J_HOME);
             System.exit(ExitCode.USAGE);
         }
-        final var path = Path.of(value).toAbsolutePath();
+        var path = Path.of(value).toAbsolutePath();
+        checkExistsAndIsDirectory(path, true, ENV_NEO4J_HOME);
+        return path;
+    }
+
+    private static void checkExistsAndIsDirectory(Path path, boolean mustExist, String envVariable) {
+        if (!mustExist && !Files.exists(path)) {
+            // This directory doesn't need to exist, and it doesn't so don't check any further.
+            // This explicit check is done because the below check would yield false for a non-existent path.
+            return;
+        }
+
         if (!Files.isDirectory(path)) {
-            System.err.printf("%s path doesn't exist or not a directory: %s%n", envVar, path);
+            System.err.printf("%s path doesn't exist or not a directory: %s%n", envVariable, path);
             System.exit(ExitCode.USAGE);
+        }
+    }
+
+    private static Path getConfDir(Path homeDir) {
+        var value = System.getenv(ENV_NEO4J_CONF);
+        var isExplicitlySet = !isBlank(value);
+        var path = isExplicitlySet ? Path.of(value).toAbsolutePath() : homeDir.resolve("conf");
+        if (isExplicitlySet) {
+            checkExistsAndIsDirectory(path, false, ENV_NEO4J_CONF);
         }
         return path;
     }
@@ -241,8 +264,8 @@ public class AdminTool {
         }
 
         public static void main(String[] args) {
-            final var homeDir = getDirOrExit("NEO4J_HOME");
-            final var confDir = getDirOrExit("NEO4J_CONF");
+            final var homeDir = getHomeDir();
+            final var confDir = getConfDir(homeDir);
             final var ctx = new ExecutionContext(homeDir, confDir);
             final var exitCode = execute(ctx, args);
             System.exit(exitCode);
