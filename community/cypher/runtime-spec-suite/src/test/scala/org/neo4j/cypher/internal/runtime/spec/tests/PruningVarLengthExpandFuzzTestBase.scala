@@ -49,11 +49,8 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
 
     withClue("seed used: " + seed) {
       runForMillis(millisToRun)(() => testPruningVarExpand(nodes(random.nextInt(population)), random))
-      restartTx()
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), BOTH, random))
-      restartTx()
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), OUTGOING, random))
-      restartTx()
       runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), INCOMING, random))
     }
   }
