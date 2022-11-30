@@ -159,7 +159,7 @@ object BFSPruningVarLengthExpandPipe {
     query.resources.trace(traversalCursor)
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.endNode() else -1L
-      override def close(): Unit = IOUtils.closeAll(nodeCursor, traversalCursor)
+      override def close(): Unit = IOUtils.closeAll(traversalCursor, nodeCursor, cursor)
     }
   }
 }

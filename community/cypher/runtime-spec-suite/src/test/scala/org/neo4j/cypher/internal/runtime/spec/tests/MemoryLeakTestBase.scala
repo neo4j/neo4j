@@ -56,4 +56,38 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
     // then
     tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
   }
+
+  test("pruning-var-expand should not leak memory") {
+    // given
+    val (nodes, _) = given(circleGraph(1000))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("from", "to")
+      .pruningVarExpand(s"(from)-[*1..4]-(to)")
+      .input(nodes = Seq("from"))
+      .build()
+
+    consume(execute(logicalQuery, runtime, inputValues(Array(nodes.head))))
+
+    // then
+    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
+  }
+
+  test("bfs-pruning-var-expand should not leak memory") {
+    // given
+    val (nodes, _) = given(circleGraph(1000))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("from", "to")
+      .bfsPruningVarExpand(s"(from)-[*1..4]-(to)")
+      .input(nodes = Seq("from"))
+      .build()
+
+    consume(execute(logicalQuery, runtime, inputValues(Array(nodes.head))))
+
+    // then
+    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
+  }
 }
