@@ -64,13 +64,14 @@ public interface IndexUpdateListener {
         public void createIndexes(Subject subject, IndexDescriptor... indexes) {}
 
         @Override
-        public void activateIndex(IndexDescriptor index) {}
+        public void activateIndex(IndexDescriptor index) throws KernelException {}
 
         @Override
         public void dropIndex(IndexDescriptor index) {}
 
         @Override
         public void applyUpdates(
-                Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel) {}
+                Iterable<IndexEntryUpdate<IndexDescriptor>> updates, CursorContext cursorContext, boolean parallel)
+                throws IOException, KernelException {}
     }
 }
