@@ -1438,10 +1438,16 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(defaultUser))
   }
 
-  test("should not be able to alter a users default database in community") {
+  test("should not be able to alter a users home database in community") {
     // WHEN
     assertFailure(
       "ALTER USER foo SET HOME DATABASE foo",
+      "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition."
+    )
+
+    // WHEN
+    assertFailure(
+      "ALTER USER foo REMOVE HOME DATABASE",
       "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition."
     )
 

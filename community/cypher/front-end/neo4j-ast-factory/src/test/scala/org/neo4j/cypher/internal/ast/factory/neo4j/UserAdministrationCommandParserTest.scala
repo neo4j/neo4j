@@ -1547,11 +1547,24 @@ class UserAdministrationCommandParserTest extends AdministrationAndSchemaCommand
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE") {
-    failsToParse
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 37 (offset: 36))"""
+    )
   }
 
   test("ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE") {
-    failsToParse
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'REMOVE': expected ".", "SET" or <EOF> (line 1, column 38 (offset: 37))"""
+    )
+  }
+
+  test("ALTER USER foo REMOVE HOME DATABASE SET PASSWORD CHANGE REQUIRED") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'SET': expected <EOF> (line 1, column 37 (offset: 36))"""
+    )
   }
 
   test("ALTER USER foo SET DEFAULT DATABASE db1") {
