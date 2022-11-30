@@ -22,6 +22,8 @@ package org.neo4j.bolt.v41.messaging;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.ResponseMessage;
@@ -36,9 +38,8 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.AnyValue;
 
 /**
- * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
- * All methods need to be synchronized because both bolt worker threads and also bolt keep-alive thread could try
- * to write to the output at the same time.
+ * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}. All methods need to be synchronized because both bolt worker threads and also bolt
+ * keep-alive thread could try to write to the output at the same time.
  */
 public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
 {
@@ -50,11 +51,13 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     private boolean shouldFlushAfterRecord;
     private boolean closed;
 
+    private final Lock lock = new ReentrantLock();
+
     public BoltResponseMessageWriterV41( PackProvider packerProvider, PackOutput output, LogService logService,
-            SystemNanoClock clock, Duration keepAliveInterval )
+                                         SystemNanoClock clock, Duration keepAliveInterval )
     {
         this( new BoltResponseMessageWriterV3( packerProvider, output, logService ),
-                new MessageWriterTimer( clock, keepAliveInterval ) );
+              new MessageWriterTimer( clock, keepAliveInterval ) );
     }
 
     BoltResponseMessageWriterV41( BoltResponseMessageWriterV3 writer, MessageWriterTimer timer )
@@ -64,16 +67,32 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     }
 
     @Override
-    public synchronized void write( ResponseMessage message ) throws IOException
+    public void write( ResponseMessage message ) throws IOException
     {
-        delegator.write( message );
+        lock.lock();
+        try
+        {
+            delegator.write( message );
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized void flush() throws IOException
+    public void flush() throws IOException
     {
-        timer.reset();
-        delegator.flush();
+        lock.lock();
+        try
+        {
+            timer.reset();
+            delegator.flush();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -82,54 +101,101 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
         // Double-check locking. The timeout variable inside timer is volatile.
         if ( !this.closed && timer.isTimedOut() )
         {
-            synchronized ( this )
+            if ( lock.tryLock() )
             {
-                if ( !this.closed && timer.isTimedOut() )
+                try
                 {
-                    flushBufferOrSendKeepAlive();
+                    if ( !this.closed && timer.isTimedOut() )
+                    {
+                        flushBufferOrSendKeepAlive();
+                    }
+                }
+                finally
+                {
+                    lock.unlock();
                 }
             }
         }
     }
 
     @Override
-    public synchronized void initKeepAliveTimer()
+    public void initKeepAliveTimer()
     {
         timer.reset();
     }
 
     @Override
-    public synchronized void beginRecord( int numberOfFields ) throws IOException
+    public void beginRecord( int numberOfFields ) throws IOException
     {
-        beforeRecord();
-        delegator.beginRecord( numberOfFields );
+        lock.lock();
+        try
+        {
+            beforeRecord();
+            delegator.beginRecord( numberOfFields );
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized void consumeField( AnyValue value ) throws IOException
+    public void consumeField( AnyValue value ) throws IOException
     {
-        delegator.consumeField( value );
+        lock.lock();
+        try
+        {
+            delegator.consumeField( value );
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized void endRecord() throws IOException
+    public void endRecord() throws IOException
     {
-        delegator.endRecord();
-        afterRecord();
+        lock.lock();
+        try
+        {
+            delegator.endRecord();
+            afterRecord();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized void onError() throws IOException
+    public void onError() throws IOException
     {
-        delegator.onError();
-        afterRecord();
+        lock.lock();
+        try
+        {
+            delegator.onError();
+            afterRecord();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     @Override
-    public synchronized void close() throws IOException
+    public void close() throws IOException
     {
-        this.closed = true;
-        delegator.close();
+        lock.lock();
+        try
+        {
+            this.closed = true;
+            delegator.close();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     private void beforeRecord()
@@ -149,9 +215,14 @@ public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
     @Override
     public void flushBufferOrSendKeepAlive() throws IOException
     {
-        synchronized ( this )
+        lock.lock();
+        try
         {
             this.doFlushBufferOrSendKeepAlive();
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 
