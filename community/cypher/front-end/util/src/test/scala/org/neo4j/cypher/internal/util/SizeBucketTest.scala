@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SizeBucketTest extends CypherFunSuite {
@@ -30,5 +31,19 @@ class SizeBucketTest extends CypherFunSuite {
     SizeBucket.computeBucket(17) shouldEqual ApproximateSize(100)
     SizeBucket.computeBucket(42) shouldEqual ApproximateSize(100)
     SizeBucket.computeBucket(1001) shouldEqual ApproximateSize(10000)
+  }
+
+  test("noop rewriter should not duplicate ExactSize") {
+    val rewriter = topDown(Rewriter.noop)
+    val original = ExactSize(123456)
+    val rewritten = original.endoRewrite(rewriter)
+    (original eq rewritten) shouldBe true
+  }
+
+  test("noop rewriter should not duplicate ApproximateSize") {
+    val rewriter = topDown(Rewriter.noop)
+    val original = ApproximateSize(123456)
+    val rewritten = original.endoRewrite(rewriter)
+    (original eq rewritten) shouldBe true
   }
 }

@@ -45,12 +45,24 @@ case object UnknownSize extends BucketSize {
   override def toOption: Option[Int] = None
 }
 
-case class ExactSize(size: Int) extends BucketSize {
+case class ExactSize(size: Int) extends BucketSize with Rewritable {
   override def toOption: Option[Int] = Some(size)
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    val newSize = children.head.asInstanceOf[Int]
+    if (newSize == size) this
+    else copy(size = newSize).asInstanceOf[this.type]
+  }
 }
 
-case class ApproximateSize(size: Int) extends BucketSize {
+case class ApproximateSize(size: Int) extends BucketSize with Rewritable {
   override def toOption: Option[Int] = Some(size)
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    val newSize = children.head.asInstanceOf[Int]
+    if (newSize == size) this
+    else copy(size = newSize).asInstanceOf[this.type]
+  }
 }
 
 object WithSizeHint {
