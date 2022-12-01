@@ -1525,7 +1525,6 @@ public class FullCheckIntegrationTest {
         ConsistencySummaryStatistics stats = check();
 
         // then
-        neoStores.close();
         on(stats).verify(RecordType.RELATIONSHIP_TYPE, 1).andThatsAllFolks();
     }
 

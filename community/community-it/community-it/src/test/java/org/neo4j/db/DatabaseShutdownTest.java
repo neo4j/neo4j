@@ -20,6 +20,7 @@
 package org.neo4j.db;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -77,7 +78,8 @@ class DatabaseShutdownTest {
         DatabaseStateService dbStateService =
                 databaseService.getDependencyResolver().resolveDependency(DatabaseStateService.class);
         factory.setFailFlush(true);
-        managementService.shutdown();
+
+        assertThrows(RuntimeException.class, managementService::shutdown);
         assertTrue(dbStateService.causeOfFailure(databaseService.databaseId()).isPresent());
         assertEquals(LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus());
     }

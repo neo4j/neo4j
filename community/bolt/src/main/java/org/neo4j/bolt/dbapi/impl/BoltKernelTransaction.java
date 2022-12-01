@@ -64,7 +64,9 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
 
     @Override
     public void close() throws TransactionFailureException {
-        kernelTransaction.close();
+        if (kernelTransaction.isOpen()) {
+            kernelTransaction.close();
+        }
     }
 
     @Override

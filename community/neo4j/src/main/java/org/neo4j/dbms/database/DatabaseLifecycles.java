@@ -20,6 +20,7 @@
 package org.neo4j.dbms.database;
 
 import static java.lang.String.format;
+import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
@@ -101,6 +102,7 @@ public final class DatabaseLifecycles {
         try {
             log.info("Stopping '%s'.", namedDatabaseId);
             Database database = context.database();
+
             database.stop();
             log.info("Stopped '%s' successfully.", namedDatabaseId);
         } catch (Throwable t) {
@@ -118,7 +120,7 @@ public final class DatabaseLifecycles {
             database.start();
         } catch (Throwable t) {
             log.error("Failed to start " + namedDatabaseId, t);
-            context.fail(new DatabaseManagementException(
+            context.fail(new UnableToStartDatabaseException(
                     format("An error occurred! Unable to start `%s`.", namedDatabaseId), t));
         }
     }
@@ -147,7 +149,30 @@ public final class DatabaseLifecycles {
         public void stop() throws Exception {
             var standaloneDatabaseContext = defaultContext();
             standaloneDatabaseContext.ifPresent(DatabaseLifecycles.this::stopDatabase);
-            stopDatabase(systemContext());
+
+            StandaloneDatabaseContext systemContext = systemContext();
+            stopDatabase(systemContext);
+
+            executeAll(
+                    () -> standaloneDatabaseContext.ifPresent(this::throwIfUnableToStop),
+                    () -> throwIfUnableToStop(systemContext));
+        }
+
+        private void throwIfUnableToStop(StandaloneDatabaseContext ctx) {
+
+            if (!ctx.isFailed()) {
+                return;
+            }
+
+            // If we have not been able to start the database instance, then
+            // we do not want to add a compounded error due to not being able
+            // to stop the database.
+            if (ctx.failureCause() instanceof UnableToStartDatabaseException) {
+                return;
+            }
+
+            throw new DatabaseManagementException(
+                    "Failed to stop " + ctx.database().getNamedDatabaseId().name() + " database.", ctx.failureCause());
         }
     }
 

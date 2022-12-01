@@ -20,6 +20,7 @@
 package org.neo4j.dbms.database;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -46,11 +48,14 @@ class DatabaseLifecyclesTest {
     private final Database neo4j = mock(Database.class);
     private final DatabaseRepository<StandaloneDatabaseContext> databaseRepository =
             new DatabaseRepository<>(new SimpleDatabaseIdRepository());
+
     private final DatabaseLifecycles databaseLifecycles = new DatabaseLifecycles(
             databaseRepository,
             DEFAULT_DATABASE_NAME,
             (namedDatabaseId, databaseOptions) -> getContext(namedDatabaseId),
             NullLogProvider.getInstance());
+
+    private StandaloneDatabaseContext context = null;
 
     @Test
     void shouldCreateSystemOmInitThenStart() throws Exception {
@@ -88,6 +93,28 @@ class DatabaseLifecyclesTest {
     }
 
     @Test
+    void shutdownShouldRaiseErrors() throws Exception {
+        // given
+        var systemDatabaseStarter = databaseLifecycles.systemDatabaseStarter();
+        systemDatabaseStarter.init();
+        systemDatabaseStarter.start();
+        databaseLifecycles.defaultDatabaseStarter().start();
+        var context =
+                databaseRepository.getDatabaseContext(DEFAULT_DATABASE_NAME).get();
+        var message = "Oh noes...";
+
+        // when
+        when(context.isFailed()).thenReturn(true);
+        when(context.failureCause()).thenReturn(new AssertionError(message));
+
+        // then
+        assertThatThrownBy(() -> databaseLifecycles.allDatabaseShutdown().stop())
+                .isInstanceOf(DatabaseManagementException.class)
+                .hasCauseInstanceOf(AssertionError.class)
+                .hasRootCauseMessage(message);
+    }
+
+    @Test
     void shouldCreateAndStartDefault() throws Exception {
         databaseLifecycles.defaultDatabaseStarter().start();
         verify(neo4j).start();
@@ -95,15 +122,21 @@ class DatabaseLifecyclesTest {
     }
 
     private StandaloneDatabaseContext getContext(NamedDatabaseId namedDatabaseId) {
-        var mock = mock(StandaloneDatabaseContext.class);
+        context = mock(StandaloneDatabaseContext.class);
+        Database db = null;
+
         if (namedDatabaseId.name().equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
-            when(mock.database()).thenReturn(system);
+            db = system;
         } else if (namedDatabaseId.name().equals(DEFAULT_DATABASE_NAME)) {
-            when(mock.database()).thenReturn(neo4j);
+            db = neo4j;
         } else {
             throw new IllegalArgumentException("Not expected id " + namedDatabaseId);
         }
-        return mock;
+
+        when(context.database()).thenReturn(db);
+        when(db.getNamedDatabaseId()).thenReturn(namedDatabaseId);
+
+        return context;
     }
 
     private static class SimpleDatabaseIdRepository implements DatabaseIdRepository {
