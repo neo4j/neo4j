@@ -82,7 +82,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def graph: GraphDatabaseQueryService = tc.graph()
 
-  override def commitTransaction(): Unit = tc.transaction.commit()
+  override def commitTransaction(): Unit = tc.commit()
 
   override def kernelQueryContext: QueryContext = tc.kernelTransaction.queryContext
 

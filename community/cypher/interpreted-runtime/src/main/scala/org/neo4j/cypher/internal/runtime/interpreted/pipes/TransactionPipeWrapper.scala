@@ -251,7 +251,6 @@ object TransactionPipeWrapper {
     innerTxContext: QueryTransactionalContext,
     outerQueryState: QueryState
   ): Unit = {
-    innerTxContext.close()
     innerTxContext.commitTransaction()
 
     val executionStatistics = QueryStatistics(transactionsCommitted = 1)
