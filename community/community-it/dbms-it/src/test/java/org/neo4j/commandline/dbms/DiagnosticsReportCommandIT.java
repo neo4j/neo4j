@@ -153,8 +153,9 @@ class DiagnosticsReportCommandIT {
             } catch (CommandFailedException e) {
                 if (e.getMessage().equals("Unknown classifier: heap")) {
                     signalToIgnoreThisTest.setTrue();
+                } else {
+                    throw e;
                 }
-                throw e;
             }
         });
 
