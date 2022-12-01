@@ -234,7 +234,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         return new DefaultDatabaseInfoService(
                 identityModule.serverId(),
                 address,
-                databaseContextProvider,
                 databaseStateService,
                 globalReadOnlyChecker,
                 detailedDbInfoProvider);

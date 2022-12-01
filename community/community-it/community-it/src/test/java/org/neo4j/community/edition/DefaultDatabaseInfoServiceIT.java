@@ -30,15 +30,17 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PR
 
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseInfo;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -73,7 +75,7 @@ public class DefaultDatabaseInfoServiceIT {
         // given
         var dependencyResolver = ((GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME)).getDependencyResolver();
         var databaseInfoService = dependencyResolver.resolveDependency(DatabaseInfoService.class);
-        var nonExistingDatabase = DatabaseIdFactory.from(UUID.randomUUID());
+        var nonExistingDatabase = DatabaseIdFactory.from("unknown", UUID.randomUUID());
         var existingDatabases =
                 dbms.listDatabases().stream().map(this::getIdForName).collect(Collectors.toSet());
         var allDatabases = new HashSet<>(existingDatabases);
@@ -82,22 +84,23 @@ public class DefaultDatabaseInfoServiceIT {
         // when
         // DefaultDatabaseInfoService does not use the transaction
         var results = databaseInfoService.lookupCachedInfo(allDatabases, null);
-        var returnedDatabases = results.stream()
-                .map(databaseInfo -> databaseInfo.namedDatabaseId().databaseId())
-                .collect(Collectors.toSet());
+        var returnedDatabases =
+                results.stream().collect(Collectors.toMap(DatabaseInfo::namedDatabaseId, Function.identity()));
 
         // then
-        assertThat(returnedDatabases.size()).isEqualTo(existingDatabases.size());
-        assertTrue(returnedDatabases.containsAll(existingDatabases));
+        assertThat(returnedDatabases.size()).isEqualTo(allDatabases.size());
+        assertThat(returnedDatabases.get(nonExistingDatabase).status()).isEqualTo("unknown");
+        assertThat(returnedDatabases.get(existingDatabases.iterator().next()).status())
+                .isEqualTo("online");
     }
 
-    DatabaseId getIdForName(String name) {
+    NamedDatabaseId getIdForName(String name) {
         try (Transaction tx = dbms.database(SYSTEM_DATABASE_NAME).beginTx()) {
             String temp = tx.findNodes(DATABASE_LABEL, DATABASE_NAME_PROPERTY, name)
                     .next()
                     .getProperty(DATABASE_UUID_PROPERTY)
                     .toString();
-            return DatabaseIdFactory.from(UUID.fromString(temp));
+            return DatabaseIdFactory.from(name, UUID.fromString(temp));
         } catch (Exception e) {
             fail(e);
             return null;

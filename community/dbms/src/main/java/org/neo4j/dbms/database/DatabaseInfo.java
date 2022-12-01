@@ -34,6 +34,8 @@ public class DatabaseInfo {
     public static final String ROLE_PRIMARY = "primary";
     public static final String ROLE_SECONDARY = "secondary";
     public static final String ROLE_UNKNOWN = "unknown";
+    public static final String STATUS_UNKNOWN = "unknown";
+    public static final String STATUS_UNKNOWN_MESSAGE = "Server is unavailable";
 
     final NamedDatabaseId namedDatabaseId;
     final ServerId serverId;
@@ -64,6 +66,10 @@ public class DatabaseInfo {
         this.writer = writer;
         this.status = status;
         this.statusMessage = statusMessage;
+    }
+
+    public DatabaseInfo(NamedDatabaseId namedDatabaseId, ServerId serverId, DatabaseAccess access, String role) {
+        this(namedDatabaseId, serverId, access, null, null, role, false, STATUS_UNKNOWN, STATUS_UNKNOWN_MESSAGE);
     }
 
     public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo) {
@@ -127,6 +133,11 @@ public class DatabaseInfo {
 
     public String role() {
         return role;
+    }
+
+    public DatabaseInfo updateRole(String role) {
+        return new DatabaseInfo(
+                namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, writer, status, statusMessage);
     }
 
     public boolean writer() {

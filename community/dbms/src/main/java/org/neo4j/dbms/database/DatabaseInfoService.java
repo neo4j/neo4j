@@ -22,7 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.List;
 import java.util.Set;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface DatabaseInfoService {
     /**
@@ -36,7 +36,7 @@ public interface DatabaseInfoService {
      *                    use it to make queries on the system database
      * @return a list containing one item per database per server
      */
-    List<DatabaseInfo> lookupCachedInfo(Set<DatabaseId> databaseIds, Transaction transaction);
+    List<DatabaseInfo> lookupCachedInfo(Set<NamedDatabaseId> databaseIds, Transaction transaction);
 
     /**
      * Similar to {@link #lookupCachedInfo(Set, Transaction)}  but with additional information that might require network calls.
@@ -46,5 +46,5 @@ public interface DatabaseInfoService {
      *                    use it to make queries on the system database
      * @return a list containing one item per database per server
      */
-    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<DatabaseId> databaseIds, Transaction transaction);
+    List<ExtendedDatabaseInfo> requestDetailedInfo(Set<NamedDatabaseId> databaseIds, Transaction transaction);
 }
