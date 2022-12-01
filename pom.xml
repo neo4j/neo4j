@@ -149,6 +149,7 @@
     <slf4j.version>2.0.3</slf4j.version>
     <neo4j-java-driver.version>5.2.0</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
+    <eclipse-collections.version>11.1.0</eclipse-collections.version>
   </properties>
 
   <modules>
@@ -1317,7 +1318,7 @@
       <dependency>
         <groupId>org.eclipse.collections</groupId>
         <artifactId>eclipse-collections</artifactId>
-        <version>11.1.0</version>
+        <version>${eclipse-collections.version}</version>
       </dependency>
       <dependency>
         <groupId>org.jctools</groupId>
