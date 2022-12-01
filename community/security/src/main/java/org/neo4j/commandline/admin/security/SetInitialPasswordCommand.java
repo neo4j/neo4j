@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.admin.security.exception.InvalidPasswordException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -109,9 +110,9 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
     private static void validatePassword(String password, Config config) {
         Integer minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length);
         if (password == null || password.length() == 0) {
-            throw new IllegalArgumentException("A password cannot be empty.");
+            throw new InvalidPasswordException("A password cannot be empty.");
         } else if (password.length() < minimumPasswordLength) {
-            throw new IllegalArgumentException("A password must be at least " + minimumPasswordLength + " characters.");
+            throw new InvalidPasswordException("A password must be at least " + minimumPasswordLength + " characters.");
         }
     }
 }

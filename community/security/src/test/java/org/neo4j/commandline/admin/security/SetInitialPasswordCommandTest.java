@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.admin.security.exception.InvalidPasswordException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.security.User;
@@ -120,7 +121,7 @@ class SetInitialPasswordCommandTest {
     }
 
     @Test
-    void shouldFailToSetShortInitialPassword() throws Throwable {
+    void shouldFailToSetShortInitialPassword() {
         // Given
         assertFalse(fileSystem.fileExists(authInitFile));
 
@@ -128,7 +129,9 @@ class SetInitialPasswordCommandTest {
         CommandLine.populateCommand(command, "123");
 
         // Then
-        assertThrows(IllegalArgumentException.class, () -> command.execute());
+        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
+
+        assertThat(e.getStackTrace().length).isEqualTo(0);
     }
 
     @Test
@@ -146,11 +149,11 @@ class SetInitialPasswordCommandTest {
     }
 
     @Test
-    void shouldNotWorkWithSamePassword() throws Throwable {
+    void shouldNotWorkWithSamePassword() {
         CommandLine.populateCommand(command, "neo4j");
 
         // Then
-        assertThrows(IllegalArgumentException.class, () -> command.execute());
+        assertThrows(InvalidPasswordException.class, () -> command.execute());
     }
 
     private void assertAuthIniFile(String password) throws Throwable {
