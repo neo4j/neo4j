@@ -206,6 +206,9 @@ class CheckPointSchedulerTest {
             public long lastCheckPointedTransactionId() {
                 return 42;
             }
+
+            @Override
+            public void shutdown() {}
         };
 
         final CheckPointScheduler scheduler =
@@ -345,6 +348,9 @@ class CheckPointSchedulerTest {
         public long lastCheckPointedTransactionId() {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void shutdown() {}
     }
 
     private static class WaitUnlimitedCheckPointer implements CheckPointer {
@@ -392,6 +398,9 @@ class CheckPointSchedulerTest {
         public long lastCheckPointedTransactionId() {
             return 0;
         }
+
+        @Override
+        public void shutdown() {}
 
         boolean isCheckpointCreated() {
             return checkpointCreated;

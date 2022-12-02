@@ -62,6 +62,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private final Clock clock;
     private final IOController ioController;
 
+    private volatile boolean shutdown;
     private volatile long lastCheckPointedTx;
 
     public CheckPointerImpl(
@@ -95,6 +96,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     public void start() {
         var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
         threshold.initialize(lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition());
+    }
+
+    @Override
+    public void shutdown() {
+        shutdown = true;
     }
 
     @Override
@@ -146,6 +152,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     }
 
     private long doCheckPoint(TriggerInfo triggerInfo) throws IOException {
+        if (shutdown) {
+            log.warn("Checkpoint was requested on already shutdown checkpointer. Requester: "
+                    + triggerInfo.describe(NO_TRANSACTION_ID));
+            return NO_TRANSACTION_ID;
+        }
         var databaseTracer = tracers.getDatabaseTracer();
         try (var cursorContext = cursorContextFactory.create(CHECKPOINT_TAG);
                 LogCheckPointEvent checkPointEvent = databaseTracer.beginCheckPoint()) {
