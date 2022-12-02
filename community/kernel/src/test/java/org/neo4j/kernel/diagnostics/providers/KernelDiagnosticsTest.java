@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.device.DeviceMapper.UNKNOWN_MAPPER;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -64,7 +65,7 @@ class KernelDiagnosticsTest {
         when(storageEngineFactory.listStorageFiles(any(), any())).thenReturn(Collections.emptyList());
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, layout);
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, layout, UNKNOWN_MAPPER);
         storeFiles.dump(logProvider.getLog(getClass())::debug);
 
         assertThat(logProvider).containsMessages("Disk space on partition");
@@ -75,7 +76,8 @@ class KernelDiagnosticsTest {
         StorageEngineFactory storageEngineFactory = mock(StorageEngineFactory.class);
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout);
+        StoreFilesDiagnostics storeFiles =
+                new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, UNKNOWN_MAPPER);
         storeFiles.dump(logProvider.getLog(getClass())::debug);
 
         assertThat(logProvider).containsMessages("Storage files stored on file store: ");
@@ -96,7 +98,7 @@ class KernelDiagnosticsTest {
         when(storageEngineFactory.listStorageFiles(any(), any())).thenReturn(singletonList(metadataStore));
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, layout);
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, layout, UNKNOWN_MAPPER);
         storeFiles.dump(logProvider.getLog(getClass())::debug);
 
         assertThat(logProvider)

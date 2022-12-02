@@ -46,6 +46,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
@@ -324,6 +325,7 @@ class DbmsDiagnosticsManagerTest {
         databaseDependencies.satisfyDependency(new DefaultFileSystemAbstraction());
         databaseDependencies.satisfyDependency(logFilesBasedOnlyBuilder(directory.homePath(), directory.getFileSystem())
                 .build());
+        databaseDependencies.satisfyDependency(DeviceMapper.UNKNOWN_MAPPER);
         when(database.getDependencyResolver()).thenReturn(databaseDependencies);
         when(database.getNamedDatabaseId()).thenReturn(databaseId);
         when(database.isStarted()).thenReturn(true);

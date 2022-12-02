@@ -20,7 +20,6 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import static org.neo4j.io.ByteUnit.bytesToString;
-import static org.neo4j.io.fs.FileUtils.getFileStoreType;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -36,6 +35,7 @@ import java.util.function.Predicate;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -46,19 +46,25 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider {
     private final StorageEngineFactory storageEngineFactory;
     private final FileSystemAbstraction fs;
     private final DatabaseLayout databaseLayout;
+    private final DeviceMapper deviceMapper;
 
     public StoreFilesDiagnostics(
-            StorageEngineFactory storageEngineFactory, FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
+            StorageEngineFactory storageEngineFactory,
+            FileSystemAbstraction fs,
+            DatabaseLayout databaseLayout,
+            DeviceMapper deviceMapper) {
         super("Store files");
         this.storageEngineFactory = storageEngineFactory;
         this.fs = fs;
         this.databaseLayout = databaseLayout;
+        this.deviceMapper = deviceMapper;
     }
 
     @Override
     public void dump(DiagnosticsLogger logger) {
         logger.log(getDiskSpace(databaseLayout));
-        logger.log("Storage files stored on file store: " + getFileStoreType(databaseLayout.databaseDirectory()));
+        logger.log(
+                "Storage files stored on file store: " + deviceMapper.describePath(databaseLayout.databaseDirectory()));
         logger.log("Storage files: (filename : modification date - size)");
         MappedFileCounter mappedCounter = new MappedFileCounter();
         long totalSize = logStoreFiles(logger, "  ", databaseLayout.databaseDirectory(), mappedCounter);

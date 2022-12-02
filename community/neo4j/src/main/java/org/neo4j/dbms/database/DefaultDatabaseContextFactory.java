@@ -27,6 +27,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
@@ -45,6 +46,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 public class DefaultDatabaseContextFactory
         extends AbstractDatabaseContextFactory<StandaloneDatabaseContext, Optional<?>> {
     private final DatabaseTransactionStats.Factory transactionStatsFactory;
+    private final DeviceMapper deviceMapper;
     private final IOControllerService controllerService;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
@@ -53,11 +55,13 @@ public class DefaultDatabaseContextFactory
             GlobalModule globalModule,
             DatabaseTransactionStats.Factory transactionStatsFactory,
             IdContextFactory idContextFactory,
+            DeviceMapper deviceMapper,
             IOControllerService controllerService,
             CommitProcessFactory commitProcessFactory,
             DefaultDatabaseContextFactoryComponents components) {
         super(globalModule, idContextFactory);
         this.transactionStatsFactory = transactionStatsFactory;
+        this.deviceMapper = deviceMapper;
         this.controllerService = controllerService;
         this.commitProcessFactory = commitProcessFactory;
         this.components = components;
@@ -83,6 +87,7 @@ public class DefaultDatabaseContextFactory
                     globalModule,
                     globalModule.getGlobalDependencies(),
                     contextFactory,
+                    deviceMapper,
                     new CommunityVersionStorageFactory(),
                     databaseConfig,
                     globalModule.getGlobalMonitors(),

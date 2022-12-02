@@ -31,8 +31,8 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -54,9 +54,10 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
         FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
 
         LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        var deviceMapper = dependencyResolver.resolveDependency(DeviceMapper.class);
         try {
             logger.log("Transaction log files stored on file store: "
-                    + FileUtils.getFileStoreType(logFiles.logFilesDirectory()));
+                    + deviceMapper.describePath(logFiles.logFilesDirectory()));
             dumpTransactionLogInformation(logger, logFiles.getLogFile(), fileSystem);
             dumpCheckpointLogInformation(logger, logFiles.getCheckpointFile());
         } catch (Exception e) {

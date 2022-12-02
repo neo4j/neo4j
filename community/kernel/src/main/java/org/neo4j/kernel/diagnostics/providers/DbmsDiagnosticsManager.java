@@ -38,6 +38,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -166,12 +167,14 @@ public class DbmsDiagnosticsManager {
                     FileSystemAbstraction fs = databaseResolver.resolveDependency(FileSystemAbstraction.class);
                     StorageEngineFactory storageEngineFactory =
                             databaseResolver.resolveDependency(StorageEngineFactory.class);
+                    DeviceMapper deviceMapper = databaseResolver.resolveDependency(DeviceMapper.class);
                     StorageEngine storageEngine = databaseResolver.resolveDependency(StorageEngine.class);
 
                     DiagnosticsManager.dump(
                             new VersionDiagnostics(dbmsInfo, database.getStoreId()), log, stringJoiner::add);
                     DiagnosticsManager.dump(
-                            new StoreFilesDiagnostics(storageEngineFactory, fs, database.getDatabaseLayout()),
+                            new StoreFilesDiagnostics(
+                                    storageEngineFactory, fs, database.getDatabaseLayout(), deviceMapper),
                             log,
                             stringJoiner::add);
                     DiagnosticsManager.dump(new TransactionRangeDiagnostics(database), log, stringJoiner::add);

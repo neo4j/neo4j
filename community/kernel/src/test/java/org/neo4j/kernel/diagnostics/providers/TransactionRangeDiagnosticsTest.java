@@ -21,6 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.device.DeviceMapper.UNKNOWN_MAPPER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -31,6 +32,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -209,6 +211,7 @@ class TransactionRangeDiagnosticsTest {
         Dependencies dependencies = mock(Dependencies.class);
         when(dependencies.resolveDependency(LogFiles.class)).thenReturn(files);
         when(dependencies.resolveDependency(FileSystemAbstraction.class)).thenReturn(fs);
+        when(dependencies.resolveDependency(DeviceMapper.class)).thenReturn(UNKNOWN_MAPPER);
         Database database = mock(Database.class);
         when(database.getDependencyResolver()).thenReturn(dependencies);
         return database;

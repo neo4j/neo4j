@@ -39,6 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
@@ -66,8 +67,9 @@ class KernelDiagnosticsIT {
 
         // when
         DatabaseLayout databaseLayout = db.databaseLayout();
+        DeviceMapper deviceMapper = db.getDependencyResolver().resolveDependency(DeviceMapper.class);
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        StoreFilesDiagnostics files = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout);
+        StoreFilesDiagnostics files = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, deviceMapper);
         SizeCapture capture = new SizeCapture();
         files.dump(capture::log);
         assertNotNull(capture.size);

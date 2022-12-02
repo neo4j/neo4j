@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -106,6 +107,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final HostedOnMode mode;
     private final CursorContextFactory contextFactory;
     private final VersionStorageFactory versionStorageFactory;
+    private final DeviceMapper deviceMapper;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout, DatabaseLayoutWatcher> watcherServiceFactory;
@@ -127,6 +129,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             GlobalModule globalModule,
             Dependencies globalDependencies,
             CursorContextFactory contextFactory,
+            DeviceMapper deviceMapper,
             VersionStorageFactory versionStorageFactory,
             DatabaseConfig databaseConfig,
             Monitors parentMonitors,
@@ -148,6 +151,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
+        this.deviceMapper = deviceMapper;
         this.versionStorageFactory = versionStorageFactory;
         this.queryEngineProvider = queryEngineProvider;
         this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
@@ -397,6 +401,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public VersionStorageFactory getVersionStorageFactory() {
         return versionStorageFactory;
+    }
+
+    @Override
+    public DeviceMapper getDeviceMapper() {
+        return deviceMapper;
     }
 
     @Override

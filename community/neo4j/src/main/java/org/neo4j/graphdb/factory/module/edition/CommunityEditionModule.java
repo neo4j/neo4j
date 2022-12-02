@@ -61,6 +61,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
@@ -103,6 +104,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected final GlobalModule globalModule;
     protected final ServerIdentity identityModule;
     private final MapCachingDatabaseReferenceRepository databaseReferenceRepo;
+    private final DeviceMapper deviceMapper;
     private FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
@@ -129,6 +131,9 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 .create(globalModule);
         globalDependencies.satisfyDependency(identityModule);
 
+        deviceMapper = DeviceMapper.UNKNOWN_MAPPER;
+        globalDependencies.satisfyDependency(deviceMapper);
+
         connectionTracker = globalDependencies.satisfyDependency(createConnectionTracker());
         databaseReferenceRepo = new MapCachingDatabaseReferenceRepository();
     }
@@ -139,6 +144,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 globalModule,
                 getTransactionMonitorFactory(),
                 createIdContextFactory(globalModule),
+                deviceMapper,
                 new CommunityIOControllerService(),
                 createCommitProcessFactory(),
                 this);

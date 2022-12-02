@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.diagnostics;
 
+import static org.neo4j.io.device.DeviceMapper.UNKNOWN_MAPPER;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 
@@ -125,7 +126,9 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory(List<DiagnosticsReportSource> sources) {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout);
+        // TODO:
+        StoreFilesDiagnostics storeFiles =
+                new StoreFilesDiagnostics(storageEngineFactory, fs, databaseLayout, UNKNOWN_MAPPER);
 
         List<String> files = new ArrayList<>();
         storeFiles.dump(files::add);

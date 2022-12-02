@@ -29,6 +29,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -156,4 +157,6 @@ public interface DatabaseCreationContext {
     }
 
     VersionStorageFactory getVersionStorageFactory();
+
+    DeviceMapper getDeviceMapper();
 }
