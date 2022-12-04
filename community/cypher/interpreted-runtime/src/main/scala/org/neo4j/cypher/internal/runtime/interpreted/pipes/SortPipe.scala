@@ -42,6 +42,7 @@ case class SortPipe(source: Pipe, comparator: Comparator[ReadableRow])(val id: I
     var arrayList: HeapTrackingArrayList[CypherRow] = HeapTrackingArrayList.newArrayList(256, scopedMemoryTracker)
     while (input.hasNext) {
       val row = input.next()
+      // Note, not safe to call row.compact() here, like we do in pipelined, because sort is not breaking in slotted.
       scopedMemoryTracker.allocateHeap(row.estimatedHeapUsage())
       arrayList.add(row)
     }

@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.values.storable.Values.stringValue
 
 abstract class SortTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -225,5 +227,73 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("A").withRows(List(Array(1), Array(2), Array(3), Array(4), Array(5), Array(6)))
+  }
+
+  test("should discard columns") {
+    assume(runtime.name != "interpreted" && runtime.name != "slotted")
+
+    val probe1 = RecordingProbe("keep", "discard")
+    val probe2 = RecordingProbe("keep", "discard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keep")
+      .prober(probe2)
+      .nonFuseable() // Needed because of limitation in prober
+      .sort(Seq(Ascending("keep")))
+      .prober(probe1)
+      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("'bla' + a as keep", "'blö' + a as discard")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val sortedRange = Range.inclusive(0, sizeHint)
+      .map(_.toString)
+      .sorted
+    result should beColumns("keep")
+      .withRows(inOrder(sortedRange.map(i => Array(s"bla$i"))))
+
+    probe1.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint)
+        .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+
+    probe2.seenRows.map(_.toSeq).toSeq shouldBe
+      sortedRange.map(i => Seq(stringValue(s"bla$i"), null))
+  }
+
+  // Sort do not break in slotted, so should not discard
+  test("should not discard columns (slotted)") {
+    assume(runtime.name == "slotted")
+
+    val probe1 = RecordingProbe("keep", "discard")
+    val probe2 = RecordingProbe("keep", "discard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keep")
+      .prober(probe2)
+      // We discard here but should not remove because there's no eager buffer after this point
+      .projection(project = Seq("0 as hi"), discard = Set("keep"))
+      .sort(Seq(Ascending("keep")))
+      .prober(probe1)
+      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("'bla' + a as keep", "'blö' + a as discard")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    val sortedRange = Range.inclusive(0, sizeHint)
+      .map(_.toString)
+      .sorted
+    result should beColumns("keep")
+      .withRows(inOrder(sortedRange.map(i => Array(s"bla$i"))))
+
+    probe1.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint)
+        .map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+
+    probe2.seenRows.map(_.toSeq).toSeq shouldBe
+      sortedRange.map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
   }
 }

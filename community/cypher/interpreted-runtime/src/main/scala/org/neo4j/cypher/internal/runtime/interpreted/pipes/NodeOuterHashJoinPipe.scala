@@ -89,10 +89,14 @@ class ProbeTable(memoryTracker: MemoryTracker) extends DefaultCloseListenable {
     EagerBuffer.createEagerBuffer[CypherRow](memoryTracker, 16, 8192, GROW_NEW_CHUNKS_BY_100_PCT)
 
   def addValue(key: LongArray, newValue: CypherRow): Unit = {
+    newValue.compact()
     table.put(key, newValue)
   }
 
-  def addNull(context: CypherRow): Unit = rowsWithNullInKey.add(context)
+  def addNull(context: CypherRow): Unit = {
+    context.compact()
+    rowsWithNullInKey.add(context)
+  }
 
   def apply(key: LongArray): java.util.Iterator[CypherRow] = table.get(key)
 

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewri
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.collection.GenTraversable
 
@@ -686,6 +687,36 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       consume(result)
       result should beColumns("x").withRows(expected)
     }
+  }
+
+  test("should discard columns") {
+    assume(runtime.name != "interpreted")
+
+    val probe1 = RecordingProbe("keep", "discard")
+    val probe2 = RecordingProbe("keep", "discard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keep")
+      .prober(probe2)
+      .nonFuseable() // Needed because of limitation in prober
+      // keep is discarded here but should not be removed since we don't put it in an eager buffer
+      .projection(project = Seq("0 as hi"), discard = Set("keep"))
+      .eager()
+      .prober(probe1)
+      .projection(project = Seq("keep as keep"), discard = Set("discard"))
+      .projection("'bla' + a as keep", "'blö' + a as discard")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+    result should beColumns("keep")
+      .withRows(Range.inclusive(0, sizeHint).map(i => Array(s"bla$i")))
+
+    probe1.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint).map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
+
+    probe2.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint).map(i => Seq(stringValue(s"bla$i"), null))
   }
 
   protected def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {

@@ -95,6 +95,11 @@ trait CypherRow extends ReadWriteRow with Measurable {
   def copyMapped(func: AnyValue => AnyValue): CypherRow
 
   def isNull(key: String): Boolean
+
+  /**
+   * Reduce size of row, by removing unused data, if possible.
+   */
+  def compact(): Unit = {}
 }
 
 object MapCypherRow {

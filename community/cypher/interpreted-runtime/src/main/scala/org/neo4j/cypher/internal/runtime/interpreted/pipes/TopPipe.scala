@@ -64,6 +64,7 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
       val row = input.next()
       val evictedRow = topTable.addAndGetEvicted(row)
       if (row ne evictedRow) {
+        // Note, not safe to call row.compact() here, like we do in pipelined, because slotted does not break on top
         scopedMemoryTracker.allocateHeap(row.estimatedHeapUsage())
         if (evictedRow != null)
           scopedMemoryTracker.releaseHeap(evictedRow.estimatedHeapUsage())

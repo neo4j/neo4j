@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
@@ -642,4 +644,37 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "y2").withRows(expectedResultRows)
   }
 
+  test("should discard columns") {
+    assume(runtime.name != "interpreted")
+
+    val size = 15
+    given {
+      nodePropertyGraph(size, { case i => Map("p" -> i) })
+    }
+
+    val probe = RecordingProbe("lhsKeep", "lhsDiscard", "rhsKeep", "rhsDiscard")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("lhsKeep", "rhsKeep", "rhsDiscard")
+      .prober(probe)
+      // We discard here but should not remove since we don't put it in an eager buffer
+      .projection(project = Seq("0 as hi"), discard = Set("lhsKeep", "rhsKeep"))
+      .rightOuterHashJoin("n")
+      // Note, discarding from rhs is not implemented
+      .|.projection(project = Seq("rhsKeep AS rhsKeep"), discard = Set("rhsDiscard"))
+      .|.projection("toString(n.p + 2) AS rhsKeep", "toString(n.p + 3) AS rhsDiscard")
+      .|.allNodeScan("n")
+      .projection(project = Seq("lhsKeep AS lhsKeep"), discard = Set("lhsDiscard"))
+      .projection("toString(n.p) AS lhsKeep", "toString(n.p + 1) AS lhsDiscard")
+      .allNodeScan("n")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
+      .withRows(inOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
+
+    probe.seenRows.map(_.toSeq).toSeq shouldBe
+      Range(0, size)
+        .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
+  }
 }

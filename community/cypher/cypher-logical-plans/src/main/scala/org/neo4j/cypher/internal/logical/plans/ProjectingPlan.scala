@@ -31,4 +31,9 @@ trait ProjectingPlan extends LogicalUnaryPlan {
 
   def aliases: Map[String, Expression] =
     projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }
+
+  /**
+   * Columns from the source plan that can be discarded after this plan.
+   */
+  def discardSymbols: Set[String] = Set.empty
 }

@@ -77,6 +77,7 @@ case class NodeHashJoinSlottedPipe(
       fillKeyArray(current, key, lhsOffsets, lhsIsReference)
 
       if (key(0) != -1) {
+        current.compact()
         table.put(Values.longArray(key), current)
       }
     }

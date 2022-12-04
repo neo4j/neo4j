@@ -41,6 +41,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 
 object SlottedPipelineBreakingPolicy extends PipelineBreakingPolicy {
 
+  // When making changes here, please keep in mind that slot discarding (SlottedRow.compact)
+  // relies on breaks to function correctly.
   override def breakOn(lp: LogicalPlan, outerApplyPlanId: Id): Boolean = {
 
     lp match {

@@ -36,6 +36,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.UUID
+
 import scala.util.Random
 
 object MemoryDeallocationTestBase {
@@ -663,6 +665,95 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
   }
 
+  test("should deallocate discarded slots with eager") {
+    assume(runtime.name != "interpreted")
+
+    val nRows = sizeHint
+    val inputListSize = 4
+    def createInputRow(): Array[Array[String]] =
+      Array(Range(0, inputListSize)
+        .map(_ => UUID.randomUUID().toString).toArray)
+    def createInput(): InputDataStream =
+      finiteInput(
+        nRows,
+        data = Some(_ => createInputRow().asInstanceOf[Array[Any]])
+      )
+
+    def plan(discard: Set[String]) = {
+      if (runtime.name == "slotted") {
+        new LogicalQueryBuilder(this)
+          .produceResults("res")
+          .eager()
+          // Limitation of discarding in slotted makes us need an extra pipeline break
+          .unwind("[0] as needExtraPipelineBreak")
+          .projection(project = Seq("size(x) as res"), discard = discard)
+          .input(variables = Seq("x"))
+          .build()
+      } else {
+        new LogicalQueryBuilder(this)
+          .produceResults("res")
+          .eager()
+          .projection(project = Seq("size(x) as res"), discard = discard)
+          .input(variables = Seq("x"))
+          .build()
+      }
+    }
+
+    // given
+    val planWithoutDiscard = plan(Set.empty)
+    val planWithDiscard = plan(Set("x"))
+
+    // then
+    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)
+    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput)
+
+    val expectedSavingsPerRow = Values.of(createInputRow()(0)).estimatedHeapUsage()
+    val expectedSavings = nRows * expectedSavingsPerRow
+    expectedSavings should be > 10000L // ensure test integrity
+
+    val actualSavings = maxMemWithoutDiscard - maxMemWithDiscard
+    actualSavings should be > (expectedSavings * 0.9).toLong
+  }
+
+  test("should deallocate discarded slots with sort") {
+    assume(runtime.name != "interpreted" && runtime.name != "slotted")
+
+    val nRows = sizeHint
+    val inputListSize = 4
+    def createInputRow(): Array[Array[String]] =
+      Array(Range(0, inputListSize)
+        .map(_ => UUID.randomUUID().toString).toArray)
+    def createInput(): InputDataStream =
+      finiteInput(
+        nRows,
+        data = Some(_ => createInputRow().asInstanceOf[Array[Any]])
+      )
+
+    def plan(discard: Set[String]) = {
+      new LogicalQueryBuilder(this)
+        .produceResults("res")
+        .sort(Seq(Ascending("res")))
+        .projection(project = Seq("size(x) as res"), discard = discard)
+        .input(variables = Seq("x"))
+        .build()
+    }
+
+    // given
+    val planWithoutDiscard = plan(Set.empty)
+    val planWithDiscard = plan(Set("x"))
+
+    // then
+    val maxMemWithoutDiscard = maxAllocatedMem(planWithoutDiscard, createInput)
+    val maxMemWithDiscard = maxAllocatedMem(planWithDiscard, createInput)
+
+    val expectedSavingsPerRow = Values.of(createInputRow()(0)).estimatedHeapUsage()
+    val expectedSavings = nRows * expectedSavingsPerRow
+    expectedSavings should be > 10000L // ensure test integrity
+
+    val actualSavings = maxMemWithoutDiscard - maxMemWithDiscard
+    actualSavings should be > (expectedSavings * 0.9).toLong
+  }
+
   protected def compareMemoryUsage(
     logicalQuery1: LogicalQuery,
     logicalQuery2: LogicalQuery,
@@ -699,17 +790,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     input2: () => InputDataStream,
     toleratedDeviation: Double
   ): Unit = {
-    restartTx()
-    val runtimeResult1 = profile(logicalQuery1, runtime, input1())
-    consume(runtimeResult1)
-    val queryProfile1 = runtimeResult1.runtimeResult.queryProfile()
-    val maxMem1 = queryProfile1.maxAllocatedMemory()
-
-    restartTx()
-    val runtimeResult2 = profile(logicalQuery2, runtime, input2())
-    consume(runtimeResult2)
-    val queryProfile2 = runtimeResult2.runtimeResult.queryProfile()
-    val maxMem2 = queryProfile2.maxAllocatedMemory()
+    val maxMem1 = maxAllocatedMem(logicalQuery1, input1)
+    val maxMem2 = maxAllocatedMem(logicalQuery2, input2)
     val memDiff = Math.abs(maxMem2 - maxMem1)
 
     maxMem1 shouldNot be(0)
@@ -729,5 +811,13 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
         deviation <= toleratedDeviation shouldBe true
       }
     }
+  }
+
+  private def maxAllocatedMem(query: LogicalQuery, input: () => InputDataStream): Long = {
+    restartTx()
+    val runtimeResult = profile(query, runtime, input())
+    consume(runtimeResult)
+    val queryProfile1 = runtimeResult.runtimeResult.queryProfile()
+    queryProfile1.maxAllocatedMemory()
   }
 }

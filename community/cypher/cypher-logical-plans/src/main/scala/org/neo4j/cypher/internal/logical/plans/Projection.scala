@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  */
 case class Projection(
   override val source: LogicalPlan,
-  discardSymbols: Set[String],
+  override val discardSymbols: Set[String],
   projectExpressions: Map[String, Expression]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
 

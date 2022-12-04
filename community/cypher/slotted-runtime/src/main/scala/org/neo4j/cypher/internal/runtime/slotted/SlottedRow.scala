@@ -491,4 +491,24 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
     })
     tuples.iterator
   }
+
+  /**
+   * Removes slots that have been marked as "discarded" in the slot configuration.
+   * 
+   * Caution!! Only safe to call when the current "pipeline" is done processing this row.
+   * In slotted this is before a "break", where rows are copied 
+   * (see [[SlottedPipelineBreakingPolicy]]).
+   */
+  // Node, consider adding a test case in SlottedPipelineBreakingPolicyTest
+  // if you add calls to this method
+  override def compact(): Unit = {
+    if (refs.length > 0 && slots.discardedRefSlotOffsets().nonEmpty) {
+      val discard = slots.discardedRefSlotOffsets()
+      var i = 0
+      while (i < discard.length) {
+        refs(discard(i)) = null
+        i += 1
+      }
+    }
+  }
 }

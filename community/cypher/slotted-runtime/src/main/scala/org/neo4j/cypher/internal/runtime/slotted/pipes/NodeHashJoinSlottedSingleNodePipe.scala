@@ -90,6 +90,7 @@ case class NodeHashJoinSlottedSingleNodePipe(
     for (current <- lhsInput) {
       val nodeId = SlottedRow.getNodeId(current, lhsOffset, lhsIsReference)
       if (nodeId != -1) {
+        current.compact()
         table.put(nodeId, current)
       }
     }

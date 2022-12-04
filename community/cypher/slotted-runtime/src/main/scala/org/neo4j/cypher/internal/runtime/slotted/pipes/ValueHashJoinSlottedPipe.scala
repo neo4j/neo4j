@@ -77,6 +77,7 @@ case class ValueHashJoinSlottedPipe(
       context <- input
       joinKey <- computeKey(context, leftSide, queryState)
     } {
+      context.compact()
       table.put(joinKey, context)
     }
 

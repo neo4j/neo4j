@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -617,4 +619,31 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .build()
     )
   }
+
+  test("should discard in load csv with call in transactions") {
+    val plan = planner.plan(
+      """LOAD CSV WITH HEADERS from $param AS row
+        |CALL {
+        |  WITH row
+        |  CREATE (n {name: row.name, age: toInteger(row.age)})
+        |  RETURN n
+        |} IN TRANSACTIONS
+        |RETURN n.name, n.age ORDER BY n.age ASC""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`n.name`", "`n.age`")
+        .projection(project = Seq("n.name AS `n.name`"), discard = Set("row", "n"))
+        .sort(Seq(Ascending("n.age")))
+        .projection("n.age AS `n.age`")
+        .transactionApply(1000, OnErrorFail)
+        .|.create(createNodeWithProperties("n", Seq(), "{name: row.name, age: toInteger(row.age)}"))
+        .|.argument("row")
+        .loadCSV("$param", "row", HasHeaders, None)
+        .argument()
+        .build()
+    )
+  }
+
 }

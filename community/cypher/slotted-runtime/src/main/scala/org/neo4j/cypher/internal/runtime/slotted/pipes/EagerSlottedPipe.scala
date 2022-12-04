@@ -45,7 +45,9 @@ case class EagerSlottedPipe(source: Pipe, slots: SlotConfiguration)(val id: Id =
     )
     state.query.resources.trace(buffer)
     while (input.hasNext) {
-      buffer.add(input.next())
+      val row = input.next()
+      row.compact()
+      buffer.add(row)
     }
     buffer.autoClosingIterator().asClosingIterator.map { bufferedRow =>
       // this is necessary because Eager is the beginning of a new pipeline

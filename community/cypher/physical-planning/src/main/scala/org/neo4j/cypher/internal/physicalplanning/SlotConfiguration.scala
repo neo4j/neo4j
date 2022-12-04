@@ -23,6 +23,7 @@ import org.eclipse.collections.api.list.primitive.MutableIntList
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyA
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityById
+import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -40,10 +42,13 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
 
+import java.util.Objects
+
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object SlotConfiguration {
-  def empty = new SlotConfiguration(mutable.Map.empty, 0, 0)
+  def empty = new SlotConfiguration(mutable.Map.empty, 0, 0, new mutable.BitSet(0))
 
   case class Size(nLongs: Int, nReferences: Int)
 
@@ -73,12 +78,14 @@ object SlotConfiguration {
  * @param slots the slots of the configuration.
  * @param numberOfLongs the number of long slots.
  * @param numberOfReferences the number of ref slots.
+ * @param markedDiscarded ref slot offsets that have been marked as can be discarded on next copy
  */
 class SlotConfiguration private (
   // Note, make sure to sync cachedPropertyOffsets when adding mutating calls to this map
   private val slots: mutable.Map[SlotConfiguration.SlotKey, Slot],
   var numberOfLongs: Int,
-  var numberOfReferences: Int
+  var numberOfReferences: Int,
+  private val markedDiscarded: mutable.BitSet
 ) {
 
   // Contains all slot offsets of cached property slots, for fast access.
@@ -115,8 +122,10 @@ class SlotConfiguration private (
       VariableSlotKey(existingKey),
       throw new SlotAllocationFailed(s"Tried to alias non-existing slot '$existingKey'  with alias '$newKey'")
     )
+    markNotDiscarded(slot)
     slots.put(VariableSlotKey(newKey), slot)
     slotAliases.addBinding(rootKey(existingKey), newKey)
+
     this
   }
 
@@ -161,8 +170,16 @@ class SlotConfiguration private (
     }
   }
 
+  /**
+   * Make a copy of this slot configuration.
+   */
   def copy(): SlotConfiguration = {
-    val newPipeline = new SlotConfiguration(this.slots.clone(), numberOfLongs, numberOfReferences)
+    val newPipeline = new SlotConfiguration(
+      slots = this.slots.clone(),
+      numberOfLongs,
+      numberOfReferences,
+      this.markedDiscarded.clone()
+    )
     slotAliases.foreach {
       case (key, aliases) =>
         newPipeline.slotAliases.put(key, mutable.Set.empty[String])
@@ -272,6 +289,7 @@ class SlotConfiguration private (
     val slotKey = VariableSlotKey(key)
     slots.get(slotKey) match {
       case Some(existingSlot) =>
+        markNotDiscarded(existingSlot)
         if (!existingSlot.isTypeCompatibleWith(slot)) {
           throw new InternalException(
             s"Tried overwriting already taken variable name '$key' as $slot (was: $existingSlot)"
@@ -527,16 +545,21 @@ class SlotConfiguration private (
       (that canEqual this) &&
         slots == that.slots &&
         numberOfLongs == that.numberOfLongs &&
-        numberOfReferences == that.numberOfReferences
+        numberOfReferences == that.numberOfReferences &&
+        markedDiscarded == that.markedDiscarded
     case _ => false
   }
 
   override def hashCode(): Int = {
-    val state = Seq[Any](slots, numberOfLongs, numberOfReferences)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    Objects.hash(slots, numberOfLongs, numberOfReferences, markedDiscarded)
   }
 
-  override def toString = s"SlotConfiguration(longs=$numberOfLongs, refs=$numberOfReferences, slots=$slots)"
+  override def toString(): String = s"SlotConfiguration${System.identityHashCode(this)}(" +
+    s"longs=$numberOfLongs, " +
+    s"refs=$numberOfReferences, " +
+    s"discarded=${discardedRefSlotOffsets.mkString(",")}, " +
+    s"markedDiscarded=${markedDiscarded.mkString(",")}, " +
+    s"slots=$slots)"
 
   def hasCachedPropertySlot(key: ASTCachedProperty.RuntimeKey): Boolean = slots.contains(CachedPropertySlotKey(key))
 
@@ -558,6 +581,37 @@ class SlotConfiguration private (
   def getMetaDataSlot(key: String): Option[RefSlot] = slots.get(MetaDataSlotKey(key)).asInstanceOf[Option[RefSlot]]
 
   def hasCachedProperties: Boolean = _hasCachedProperties
+
+  /**
+   * Marks that a slot can be discarded in next copy.
+   */
+  def markDiscarded(key: String): Unit = {
+    // We only discard ref slots that are not an alias or has aliases
+    if (slotAliases.get(key).exists(_.isEmpty)) {
+      get(key)
+        .collect { case RefSlot(offset, _, _) => offset }
+        .foreach(offset => markedDiscarded += offset)
+    }
+  }
+
+  private def markNotDiscarded(slot: Slot): Unit = {
+    if (!slot.isLongSlot && markedDiscarded.contains(slot.offset)) {
+      markedDiscarded.remove(slot.offset)
+    }
+  }
+
+  private[this] var discardedRefSlotOffsetsSorted: Array[Int] = _
+
+  def discardedRefSlotOffsets(): Array[Int] = {
+    if (!finalized) {
+      markedDiscarded.toArray
+    } else if (discardedRefSlotOffsetsSorted != null) {
+      discardedRefSlotOffsetsSorted
+    } else {
+      discardedRefSlotOffsetsSorted = markedDiscarded.toArray
+      discardedRefSlotOffsetsSorted
+    }
+  }
 
   private var _hasCachedProperties = false // Cache this once for fast lookups during runtime
 

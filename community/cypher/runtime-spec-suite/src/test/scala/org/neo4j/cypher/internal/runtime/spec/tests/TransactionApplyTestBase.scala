@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.Assertion
@@ -686,6 +688,81 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       transactionsStarted = expectedTxCommitted,
       transactionsCommitted = expectedTxCommitted
     )
+  }
+
+  test("should discard columns") {
+    assume(runtime.name != "interpreted" && runtime.name != "slotted")
+
+    val probe = RecordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keepLhs", "keepRhs", "comesFromDiscarded")
+      .prober(probe)
+      .nonFuseable() // Needed because of limitation in prober
+      // Discarded but should not be removed because there's no eager buffer after this point
+      .projection(project = Seq("0 as hello"), Set("keepRhs", "keepLhs", "comesFromDiscarded"))
+      .transactionApply()
+      .|.projection("discardLhs + discardRhs as comesFromDiscarded")
+      .|.projection(project = Seq("keepRhs as keepRhs"), discard = Set("discardRhs"))
+      .|.projection("'bla' + (a+2) as keepRhs", "'blö' + (a+3) as discardRhs")
+      .|.argument()
+      .projection(project = Seq("keepLhs as keepLhs"), discard = Set("discardLhs"))
+      .projection("'bla' + (a) as keepLhs", "'blö' + (a+1) as discardLhs")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("keepLhs", "keepRhs", "comesFromDiscarded")
+      .withRows(inOrder(
+        Range.inclusive(0, sizeHint)
+          .map(i => Array(s"bla$i", s"bla${i + 2}", s"blö${i + 1}blö${i + 3}"))
+      ))
+
+    probe.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint).map { i =>
+        Seq(stringValue(s"bla$i"), null, stringValue(s"bla${i + 2}"), null)
+      }
+  }
+
+  // TransactionApply do not break in slotted, so should not discard
+  test("should not discard columns (slotted)") {
+    assume(runtime.name == "slotted")
+
+    val probe = RecordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("keepLhs", "keepRhs", "comesFromDiscarded")
+      .prober(probe)
+      // Discarded but should not be removed because there's no eager buffer after this point
+      .projection(project = Seq("0 as hello"), Set("keepRhs", "keepLhs", "comesFromDiscarded"))
+      .transactionApply()
+      .|.projection("discardLhs + discardRhs as comesFromDiscarded")
+      .|.projection(project = Seq("keepRhs as keepRhs"), discard = Set("discardRhs"))
+      .|.projection("'bla' + (a+2) as keepRhs", "'blö' + (a+3) as discardRhs")
+      .|.argument()
+      .projection(project = Seq("keepLhs as keepLhs"), discard = Set("discardLhs"))
+      .projection("'bla' + (a) as keepLhs", "'blö' + (a+1) as discardLhs")
+      .unwind(s"range(0, $sizeHint) AS a")
+      .argument()
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+
+    result should beColumns("keepLhs", "keepRhs", "comesFromDiscarded")
+      .withRows(inOrder(
+        Range.inclusive(0, sizeHint)
+          .map(i => Array(s"bla$i", s"bla${i + 2}", s"blö${i + 1}blö${i + 3}"))
+      ))
+
+    probe.seenRows.map(_.toSeq).toSeq shouldBe
+      Range.inclusive(0, sizeHint).map { i =>
+        Seq(
+          stringValue(s"bla$i"),
+          stringValue(s"blö${i + 1}"),
+          stringValue(s"bla${i + 2}"),
+          stringValue(s"blö${i + 3}")
+        )
+      }
   }
 
   protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
