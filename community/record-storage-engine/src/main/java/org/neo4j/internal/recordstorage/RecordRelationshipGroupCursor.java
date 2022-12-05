@@ -20,6 +20,9 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
+import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
+import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
+import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.Numbers;
@@ -30,7 +33,9 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipSelection;
 
 class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements AutoCloseable {
     private final RelationshipStore relationshipStore;
@@ -94,30 +99,49 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         return true;
     }
 
-    int outgoingCount() {
-        return count(outgoingRawId(), hasExternalDegreesOut(), RelationshipDirection.OUTGOING);
-    }
-
-    int incomingCount() {
-        return count(incomingRawId(), hasExternalDegreesIn(), RelationshipDirection.INCOMING);
-    }
-
-    int loopCount() {
-        return count(loopsRawId(), hasExternalDegreesLoop(), RelationshipDirection.LOOP);
-    }
-
-    private int count(long reference, boolean hasExternal, RelationshipDirection direction) {
-        if (reference == NO_ID) {
-            return 0;
+    boolean degree(Degrees.Mutator mutator, RelationshipSelection selection) {
+        if (selection.test(getType())) {
+            return count(outgoingRawId(), hasExternalDegreesOut(), OUTGOING, mutator, selection)
+                    && count(incomingRawId(), hasExternalDegreesIn(), INCOMING, mutator, selection)
+                    && count(loopsRawId(), hasExternalDegreesLoop(), LOOP, mutator, selection);
         }
+        return true;
+    }
+
+    private boolean count(
+            long reference,
+            boolean hasExternal,
+            RelationshipDirection direction,
+            Degrees.Mutator mutator,
+            RelationshipSelection selection) {
+        if (reference == NO_ID || !selection.test(direction)) {
+            return true;
+        }
+
+        // Since we have a pointer we have at least 1. Sometimes that's all we're looking for
+        if (!add(direction, mutator, 1)) {
+            return false;
+        }
+
+        int count;
         if (hasExternal) {
-            return Numbers.safeCastLongToInt(groupDegreesStore.degree(getId(), direction, cursorContext));
+            count = Numbers.safeCastLongToInt(groupDegreesStore.degree(getId(), direction, cursorContext));
+        } else {
+            if (edgePage == null) {
+                edgePage = relationshipStore.openPageCursorForReading(reference, cursorContext);
+            }
+            relationshipStore.getRecordByCursor(reference, edge, loadMode.orElse(ALWAYS), edgePage);
+            count = (int) edge.getPrevRel(getOwningNode());
         }
-        if (edgePage == null) {
-            edgePage = relationshipStore.openPageCursorForReading(reference, cursorContext);
-        }
-        relationshipStore.getRecordByCursor(reference, edge, loadMode.orElse(ALWAYS), edgePage);
-        return (int) edge.getPrevRel(getOwningNode());
+        return add(direction, mutator, Math.max(count - 1, 0));
+    }
+
+    private boolean add(RelationshipDirection direction, Degrees.Mutator mutator, int count) {
+        return switch (direction) {
+            case OUTGOING -> mutator.add(getType(), count, 0, 0);
+            case INCOMING -> mutator.add(getType(), 0, count, 0);
+            case LOOP -> mutator.add(getType(), 0, 0, count);
+        };
     }
 
     @Override

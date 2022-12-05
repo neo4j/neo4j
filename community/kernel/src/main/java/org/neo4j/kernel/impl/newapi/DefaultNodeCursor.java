@@ -287,8 +287,8 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     private void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
         if (hasChanges()) {
             var nodeTxState = read.txState().getNodeState(nodeReference());
-            if (nodeTxState != null) {
-                nodeTxState.fillDegrees(selection, degrees);
+            if (nodeTxState != null && !nodeTxState.fillDegrees(selection, degrees)) {
+                return;
             }
         }
         if (currentAddedInTx == NO_ID) {
@@ -320,7 +320,9 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
                         continue;
                     }
                 }
-                degrees.add(type, outgoing ? 1 : 0, incoming ? 1 : 0, loop ? 1 : 0);
+                if (!degrees.add(type, outgoing ? 1 : 0, incoming ? 1 : 0, loop ? 1 : 0)) {
+                    return;
+                }
             }
         }
     }

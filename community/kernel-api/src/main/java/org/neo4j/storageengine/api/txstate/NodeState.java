@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 public interface NodeState extends EntityState {
     LongDiffSets labelDiffSets();
 
-    void fillDegrees(RelationshipSelection selection, Degrees.Mutator degree);
+    boolean fillDegrees(RelationshipSelection selection, Degrees.Mutator degree);
 
     long getId();
 

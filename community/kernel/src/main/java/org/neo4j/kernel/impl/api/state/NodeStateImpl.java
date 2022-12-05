@@ -81,8 +81,9 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
         }
 
         @Override
-        public void fillDegrees(RelationshipSelection selection, Degrees.Mutator degree) {
+        public boolean fillDegrees(RelationshipSelection selection, Degrees.Mutator degree) {
             // do nothing
+            return true;
         }
 
         @Override
@@ -199,7 +200,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
     }
 
     @Override
-    public void fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
+    public boolean fillDegrees(RelationshipSelection selection, Degrees.Mutator degrees) {
         IntIterator txTypes = getAddedAndRemovedRelationshipTypes().intIterator();
         while (txTypes.hasNext()) {
             int type = txTypes.next();
@@ -214,10 +215,11 @@ class NodeStateImpl extends EntityStateImpl implements NodeState {
                         ? augmentDegree(RelationshipDirection.LOOP, type)
                         : 0;
                 if (!degrees.add(type, outgoing, incoming, loop)) {
-                    return;
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     boolean hasAddedRelationships() {

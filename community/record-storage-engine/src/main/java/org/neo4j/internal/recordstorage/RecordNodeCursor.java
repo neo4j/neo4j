@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.min;
+import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.recordstorage.RelationshipReferenceEncoding.encodeDense;
 import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
@@ -238,14 +239,14 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     @Override
     public void degrees(RelationshipSelection selection, Degrees.Mutator mutator) {
         if (!mutator.isSplit() && !isDense() && !selection.isLimited()) {
-            // There's an optimization for getting only the total degree directly and we're not limited by security
+            // There's an optimization for getting only the total degree directly
             ensureRelationshipScanCursorInitialized();
             relationshipScanCursor.single(getNextRel());
             if (relationshipScanCursor.next()) {
                 int degree = relationshipScanCursor.sourceNodeReference() == getId()
                         ? (int) relationshipScanCursor.getFirstPrevRel()
                         : (int) relationshipScanCursor.getSecondPrevRel();
-                mutator.add(-1, degree, 0, 0);
+                mutator.add(ANY_RELATIONSHIP_TYPE, degree, 0, 0);
             }
             return;
         }
@@ -282,17 +283,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
             boolean typeLimited = selection.isTypeLimited();
             int numCriteria = selection.numberOfCriteria();
             while (groupCursor.next()) {
-                if (selection.test(groupCursor.getType())) {
-                    int outgoing = 0;
-                    int incoming = 0;
-                    int loop = groupCursor.loopCount();
-                    if (selection.test(RelationshipDirection.OUTGOING)) {
-                        outgoing = groupCursor.outgoingCount();
-                    }
-                    if (selection.test(RelationshipDirection.INCOMING)) {
-                        incoming = groupCursor.incomingCount();
-                    }
-                    if (!mutator.add(groupCursor.getType(), outgoing, incoming, loop)) {
+                int type = groupCursor.getType();
+                if (selection.test(type)) {
+                    if (!groupCursor.degree(mutator, selection)) {
                         return;
                     }
                     if (typeLimited && ++criteriaMet >= numCriteria) {
