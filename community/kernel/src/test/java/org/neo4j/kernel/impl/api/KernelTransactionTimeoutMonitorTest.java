@@ -23,16 +23,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.transaction_termination_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
+import java.time.Duration;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -112,8 +125,107 @@ class KernelTransactionTimeoutMonitorTest {
         assertThat(logProvider).doesNotContainMessage("timeout");
     }
 
+    @ParameterizedTest
+    @EnumSource(
+            value = TransactionTracingLevel.class,
+            names = {"DISABLED", "ALL"})
+    void logStaleTransactions(TransactionTracingLevel traceLevel) {
+        final var terminationTimeout = Duration.ofSeconds(1);
+        Config config = Config.newBuilder()
+                .set(GraphDatabaseSettings.transaction_tracing_level, traceLevel)
+                .set(transaction_termination_timeout, terminationTimeout)
+                .build();
+
+        TraceProvider traceProvider = TraceProviderFactory.getTraceProvider(config);
+
+        Set<KernelTransactionHandle> transactions = new HashSet<>();
+        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0);
+        when(tx1.getTerminationMark())
+                .thenReturn(Optional.of(
+                        new TerminationMark(Status.Transaction.TransactionMarkedAsFailed, fakeClock.nanos())));
+        var initializationTrace = traceProvider.getTraceInfo();
+        when(tx1.getInitializationTrace()).thenReturn(initializationTrace);
+
+        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle(tx1, fakeClock);
+        transactions.add(handle1);
+
+        when(kernelTransactions.activeTransactions()).thenReturn(transactions);
+
+        KernelTransactionMonitor transactionMonitor = buildTransactionMonitor(config);
+
+        // Should not log before time limit
+        fakeClock.forward(terminationTimeout.toNanos() - 1, TimeUnit.NANOSECONDS);
+        transactionMonitor.run();
+        assertThat(tx1.getTerminationMark())
+                .hasValueSatisfying(mark -> assertThat(mark.isMarkedAsStale()).isFalse());
+        assertThat(logProvider)
+                .as("should not log before time limit")
+                .doesNotContainMessage("has been marked for termination for");
+
+        // Should log at time limit...
+        fakeClock.forward(1, TimeUnit.NANOSECONDS);
+        transactionMonitor.run();
+        assertThat(tx1.getTerminationMark())
+                .hasValueSatisfying(mark -> assertThat(mark.isMarkedAsStale()).isTrue());
+
+        // ...and the log message should contain what we expect:
+        var expectedTraceMessage = traceLevel == TransactionTracingLevel.DISABLED
+                ? "For a transaction initialization trace, set '%s=ALL'.".formatted(transaction_tracing_level.name())
+                : "Initialization trace:\n" + initializationTrace.getTrace();
+        var expectedLogMessage =
+                "Transaction %s has been marked for termination for %d seconds; it may have been leaked. %s"
+                        .formatted(handle1.toString(), terminationTimeout.toSeconds(), expectedTraceMessage);
+
+        assertThat(logProvider)
+                .as("should log expected message at time limit")
+                .containsMessagesOnce(expectedLogMessage);
+
+        // Should only log once
+        fakeClock.forward(terminationTimeout);
+        transactionMonitor.run();
+        assertThat(logProvider).as("should only log once").containsMessagesOnce("has been marked for termination for");
+
+        logProvider.clear();
+    }
+
+    @Test
+    void doNotLogStaleTransactionsIfDisabled() {
+        Config config = Config.newBuilder()
+                .set(transaction_termination_timeout, Duration.ZERO)
+                .build();
+
+        Set<KernelTransactionHandle> transactions = new HashSet<>();
+        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0);
+        when(tx1.getTerminationMark())
+                .thenReturn(Optional.of(
+                        new TerminationMark(Status.Transaction.TransactionMarkedAsFailed, fakeClock.nanos())));
+        when(tx1.getInitializationTrace()).thenReturn(TransactionInitializationTrace.NONE);
+
+        KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle(tx1, fakeClock);
+        transactions.add(handle1);
+
+        when(kernelTransactions.activeTransactions()).thenReturn(transactions);
+
+        KernelTransactionMonitor transactionMonitor = buildTransactionMonitor(config);
+
+        // Should not log
+        fakeClock.forward(1, TimeUnit.SECONDS);
+        transactionMonitor.run();
+        assertThat(tx1.getTerminationMark())
+                .hasValueSatisfying(mark -> assertThat(mark.isMarkedAsStale()).isFalse());
+        assertThat(logProvider)
+                .as("should not log before time limit")
+                .doesNotContainMessage("has been marked for termination for");
+
+        logProvider.clear();
+    }
+
     private KernelTransactionMonitor buildTransactionMonitor() {
-        return new KernelTransactionMonitor(kernelTransactions, fakeClock, logService);
+        return buildTransactionMonitor(Config.defaults());
+    }
+
+    private KernelTransactionMonitor buildTransactionMonitor(Config config) {
+        return new KernelTransactionMonitor(kernelTransactions, config, fakeClock, logService);
     }
 
     private static KernelTransactionImplementation prepareTxMock(long userTxId, long startMillis, long timeoutMillis) {

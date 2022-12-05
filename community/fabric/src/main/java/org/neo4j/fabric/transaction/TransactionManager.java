@@ -22,7 +22,6 @@ package org.neo4j.fabric.transaction;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
-import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -42,17 +41,20 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.time.SystemNanoClock;
 
 public class TransactionManager extends LifecycleAdapter {
     private final FabricRemoteExecutor remoteExecutor;
     private final FabricLocalExecutor localExecutor;
+    private final Config config;
     private final ErrorReporter errorReporter;
     private final FabricConfig fabricConfig;
     private final FabricTransactionMonitor transactionMonitor;
     private final AbstractSecurityLog securityLog;
-    private final Clock clock;
+    private final SystemNanoClock clock;
 
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
     private final long awaitActiveTransactionDeadlineMillis;
@@ -66,13 +68,14 @@ public class TransactionManager extends LifecycleAdapter {
             FabricConfig fabricConfig,
             FabricTransactionMonitor transactionMonitor,
             AbstractSecurityLog securityLog,
-            Clock clock,
+            SystemNanoClock clock,
             Config config,
             AvailabilityGuard availabilityGuard,
             ErrorReporter errorReporter) {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.catalogManager = catalogManager;
+        this.config = config;
         this.errorReporter = errorReporter;
         this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
@@ -107,7 +110,9 @@ public class TransactionManager extends LifecycleAdapter {
                 this,
                 fabricConfig,
                 catalogManager.currentCatalog(),
-                catalogManager);
+                catalogManager,
+                clock,
+                TraceProviderFactory.getTraceProvider(config));
 
         openTransactions.add(fabricTransaction);
         transactionMonitor.startMonitoringTransaction(fabricTransaction, transactionInfo);

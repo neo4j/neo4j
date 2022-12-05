@@ -31,6 +31,7 @@ import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
 
@@ -44,7 +45,11 @@ public interface FabricTransaction {
 
     void markForTermination(Status reason);
 
-    Optional<Status> getReasonIfTerminated();
+    default Optional<Status> getReasonIfTerminated() {
+        return getTerminationMark().map(info -> info.getReason());
+    }
+
+    Optional<TerminationMark> getTerminationMark();
 
     FabricTransactionInfo getTransactionInfo();
 

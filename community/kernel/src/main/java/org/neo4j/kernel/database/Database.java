@@ -967,7 +967,7 @@ public class Database extends AbstractDatabase {
 
     private void buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor =
-                new KernelTransactionMonitor(kernelTransactions, clock, databaseLogService);
+                new KernelTransactionMonitor(kernelTransactions, config, clock, databaseLogService);
         databaseDependencies.satisfyDependency(kernelTransactionTimeoutMonitor);
         TransactionMonitorScheduler transactionMonitorScheduler = new TransactionMonitorScheduler(
                 kernelTransactionTimeoutMonitor,

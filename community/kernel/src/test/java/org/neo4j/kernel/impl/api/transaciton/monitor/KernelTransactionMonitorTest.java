@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -41,8 +42,8 @@ class KernelTransactionMonitorTest {
         // given
         KernelTransactions kernelTransactions = mock(KernelTransactions.class);
         FakeClock clock = new FakeClock(100, MINUTES);
-        KernelTransactionMonitor monitor =
-                new KernelTransactionMonitor(kernelTransactions, clock, NullLogService.getInstance());
+        KernelTransactionMonitor monitor = new KernelTransactionMonitor(
+                kernelTransactions, Config.defaults(), clock, NullLogService.getInstance());
         // a 2 minutes old schema transaction which has a timeout of 1 minute
         KernelTransactionHandle oldSchemaTransaction = mock(KernelTransactionHandle.class);
         when(oldSchemaTransaction.isSchemaTransaction()).thenReturn(true);

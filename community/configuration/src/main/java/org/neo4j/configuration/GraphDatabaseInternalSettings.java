@@ -708,6 +708,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.dbms.routing.driver.logging.leaked_sessions", BOOL, false)
             .build();
 
+    @Internal
+    @Description("Specifies the time after which a transaction marked for termination is logged as potentially leaked. "
+            + "A value of zero disables the check.")
+    public static final Setting<Duration> transaction_termination_timeout = newBuilder(
+                    "internal.db.transaction.termination_timeout", DURATION, Duration.ofMinutes(5))
+            .dynamic()
+            .build();
+
     @Description("Specifies at which file size the checkpoint log will auto-rotate. Minimum accepted value is 1 KiB. ")
     @Internal
     public static final Setting<Long> checkpoint_logical_log_rotation_threshold = newBuilder(

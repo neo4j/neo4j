@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -835,8 +836,8 @@ class QueryExecutionLocksIT {
         }
 
         @Override
-        public Optional<Status> getReasonIfTerminated() {
-            return internal.getReasonIfTerminated();
+        public Optional<TerminationMark> getTerminationMark() {
+            return internal.getTerminationMark();
         }
 
         @Override

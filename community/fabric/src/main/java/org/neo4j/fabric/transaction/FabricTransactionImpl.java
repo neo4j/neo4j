@@ -49,9 +49,13 @@ import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.time.SystemNanoClock;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -66,6 +70,7 @@ public class FabricTransactionImpl
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
     private final Catalog catalogSnapshot;
+    private final SystemNanoClock clock;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
@@ -74,11 +79,13 @@ public class FabricTransactionImpl
     private final FabricLocalExecutor.LocalTransactionContext localTransactionContext;
     private final AtomicReference<StatementType> statementType = new AtomicReference<>();
     private State state = State.OPEN;
-    private Status terminationStatus;
+    private TerminationMark terminationMark;
     private StatementLifecycle lastSubmittedStatement;
 
     private SingleDbTransaction writingTransaction;
     private LocationCache locationCache;
+
+    private final TransactionInitializationTrace initializationTrace;
 
     FabricTransactionImpl(
             FabricTransactionInfo transactionInfo,
@@ -89,14 +96,18 @@ public class FabricTransactionImpl
             TransactionManager transactionManager,
             FabricConfig fabricConfig,
             Catalog catalogSnapshot,
-            CatalogManager catalogManager) {
+            CatalogManager catalogManager,
+            SystemNanoClock clock,
+            TraceProvider traceProvider) {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.catalogSnapshot = catalogSnapshot;
+        this.clock = clock;
         this.id = ID_GENERATOR.incrementAndGet();
+        this.initializationTrace = traceProvider.getTraceInfo();
 
         this.locationCache = new LocationCache(catalogManager, transactionInfo);
 
@@ -178,7 +189,7 @@ public class FabricTransactionImpl
             if (state == State.TERMINATED) {
                 // Wait for all children to be rolled back. Ignore errors
                 doOnChildren(readingTransactions, writingTransaction, SingleDbTransaction::rollback);
-                throw new TransactionTerminatedException(terminationStatus);
+                throw new TransactionTerminatedException(terminationMark.getReason());
             }
 
             if (state == State.CLOSED) {
@@ -324,7 +335,7 @@ public class FabricTransactionImpl
 
     private void checkTransactionOpenForStatementExecution() {
         if (state == State.TERMINATED) {
-            throw new TransactionTerminatedException(terminationStatus);
+            throw new TransactionTerminatedException(terminationMark.getReason());
         }
 
         if (state == State.CLOSED) {
@@ -360,7 +371,7 @@ public class FabricTransactionImpl
                 return;
             }
 
-            terminationStatus = reason;
+            terminationMark = new TerminationMark(reason, clock.nanos());
             state = State.TERMINATED;
 
             terminateChildren(reason);
@@ -370,12 +381,8 @@ public class FabricTransactionImpl
     }
 
     @Override
-    public Optional<Status> getReasonIfTerminated() {
-        if (terminationStatus != null) {
-            return Optional.of(terminationStatus);
-        }
-
-        return Optional.empty();
+    public Optional<TerminationMark> getTerminationMark() {
+        return Optional.ofNullable(terminationMark);
     }
 
     @Override
@@ -508,6 +515,10 @@ public class FabricTransactionImpl
 
     public long getId() {
         return id;
+    }
+
+    public TransactionInitializationTrace getInitializationTrace() {
+        return initializationTrace;
     }
 
     private record ReadingTransaction(SingleDbTransaction singleDbTransaction, boolean readingOnly) {}

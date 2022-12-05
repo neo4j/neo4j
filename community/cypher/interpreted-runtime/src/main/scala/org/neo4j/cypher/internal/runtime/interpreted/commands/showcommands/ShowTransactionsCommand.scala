@@ -350,7 +350,7 @@ case class ShowTransactionsCommand(
     handle: KernelTransactionHandle,
     transactionDependenciesResolver: TransactionDependenciesResolver
   ): String =
-    handle.terminationReason.map[String](reason => String.format(TransactionId.TERMINATED_STATE, reason.code))
+    handle.terminationMark.map[String](info => String.format(TransactionId.TERMINATED_STATE, info.getReason.code))
       .orElseGet(() => getExecutingStatus(handle, transactionDependenciesResolver))
 
   private def getExecutingStatus(

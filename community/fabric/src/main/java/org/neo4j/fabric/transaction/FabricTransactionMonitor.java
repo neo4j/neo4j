@@ -21,12 +21,16 @@ package org.neo4j.fabric.transaction;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.neo4j.configuration.Config;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
@@ -35,8 +39,9 @@ public class FabricTransactionMonitor extends TransactionMonitor {
     private final SystemNanoClock clock;
     private final FabricConfig fabricConfig;
 
-    public FabricTransactionMonitor(SystemNanoClock clock, LogService logService, FabricConfig fabricConfig) {
-        super(clock, logService);
+    public FabricTransactionMonitor(
+            Config config, SystemNanoClock clock, LogService logService, FabricConfig fabricConfig) {
+        super(config, clock, logService);
 
         this.clock = clock;
         this.fabricConfig = fabricConfig;
@@ -90,6 +95,11 @@ public class FabricTransactionMonitor extends TransactionMonitor {
         }
 
         @Override
+        public Optional<TerminationMark> terminationMark() {
+            return fabricTransaction.getTerminationMark();
+        }
+
+        @Override
         public boolean markForTermination(Status reason) {
             fabricTransaction.markForTermination(reason);
             return true;
@@ -115,6 +125,11 @@ public class FabricTransactionMonitor extends TransactionMonitor {
 
             sb.append("]");
             return sb.toString();
+        }
+
+        @Override
+        public TransactionInitializationTrace transactionInitialisationTrace() {
+            return fabricTransaction.getInitializationTrace();
         }
     }
 }

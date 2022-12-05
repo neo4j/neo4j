@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
@@ -50,7 +51,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     private final SystemNanoClock clock;
     private final ClientConnectionInfo clientInfo;
     private final AuthSubject subject;
-    private final Optional<Status> terminationReason;
+    private final Optional<TerminationMark> terminationMark;
     private final Optional<ExecutingQuery> executingQuery;
     private final Map<String, Object> metaData;
     private final String statusDetails;
@@ -65,7 +66,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.startTimeNanos = tx.startTimeNanos();
         this.timeoutMillis = tx.timeout();
         this.subject = tx.subjectOrAnonymous();
-        this.terminationReason = tx.getReasonIfTerminated();
+        this.terminationMark = tx.getTerminationMark();
         this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
         this.statusDetails = tx.statusDetails();
@@ -123,8 +124,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public Optional<Status> terminationReason() {
-        return terminationReason;
+    public Optional<TerminationMark> terminationMark() {
+        return terminationMark;
     }
 
     @Override

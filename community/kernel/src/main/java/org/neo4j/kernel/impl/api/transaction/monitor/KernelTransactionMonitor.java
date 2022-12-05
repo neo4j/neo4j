@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.transaction.monitor;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
@@ -32,8 +36,8 @@ public class KernelTransactionMonitor extends TransactionMonitor {
     private final KernelTransactions kernelTransactions;
 
     public KernelTransactionMonitor(
-            KernelTransactions kernelTransactions, SystemNanoClock clock, LogService logService) {
-        super(clock, logService);
+            KernelTransactions kernelTransactions, Config config, SystemNanoClock clock, LogService logService) {
+        super(config, clock, logService);
         this.kernelTransactions = kernelTransactions;
     }
 
@@ -62,6 +66,11 @@ public class KernelTransactionMonitor extends TransactionMonitor {
         }
 
         @Override
+        public Optional<TerminationMark> terminationMark() {
+            return kernelTransaction.terminationMark();
+        }
+
+        @Override
         public boolean isSchemaTransaction() {
             return kernelTransaction.isSchemaTransaction();
         }
@@ -76,6 +85,11 @@ public class KernelTransactionMonitor extends TransactionMonitor {
             // this is a legacy implementation, so let's use
             // 'toString' on KernelTransactionHandle which was used for years for this purpose
             return kernelTransaction.toString();
+        }
+
+        @Override
+        public TransactionInitializationTrace transactionInitialisationTrace() {
+            return kernelTransaction.transactionInitialisationTrace();
         }
     }
 }

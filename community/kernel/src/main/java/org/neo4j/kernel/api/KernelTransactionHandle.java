@@ -96,11 +96,11 @@ public interface KernelTransactionHandle {
     Map<String, Object> getMetaData();
 
     /**
-     * Transaction termination reason that transaction had when handle was created.
+     * Transaction termination mark that transaction had when handle was created.
      *
-     * @return transaction termination reason.
+     * @return transaction termination mark.
      */
-    Optional<Status> terminationReason();
+    Optional<TerminationMark> terminationMark();
 
     /**
      * Check if this handle points to the same underlying transaction as the given one.

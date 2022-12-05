@@ -216,7 +216,14 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     /**
      * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
      */
-    Optional<Status> getReasonIfTerminated();
+    default Optional<Status> getReasonIfTerminated() {
+        return getTerminationMark().map(info -> info.getReason());
+    }
+
+    /**
+     * @return {@link TerminationMark} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
+     */
+    Optional<TerminationMark> getTerminationMark();
 
     /**
      * @return true if transaction was terminated, otherwise false

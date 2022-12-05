@@ -19,21 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.transaction.monitor;
 
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
 /**
- * Transaction monitor that check transactions with a configured timeout for expiration.
+ * Transaction monitor that checks transactions with a configured timeout for expiration
+ * and for being stuck in a terminating state (stale).
  * In case if transaction timed out it will be terminated.
  */
 public abstract class TransactionMonitor implements Runnable {
+    private final Config config;
     private final SystemNanoClock clock;
     private final InternalLog log;
 
-    public TransactionMonitor(SystemNanoClock clock, LogService logService) {
+    public TransactionMonitor(Config config, SystemNanoClock clock, LogService logService) {
+        this.config = config;
         this.clock = clock;
         this.log = logService.getInternalLog(TransactionMonitor.class);
     }
@@ -42,21 +53,61 @@ public abstract class TransactionMonitor implements Runnable {
     public void run() {
         long nowNanos = clock.nanos();
         Set<MonitoredTransaction> activeTransactions = getActiveTransactions();
-        checkExpiredTransactions(activeTransactions, nowNanos);
+        checkActiveTransactions(activeTransactions, nowNanos);
     }
 
     protected abstract Set<MonitoredTransaction> getActiveTransactions();
 
-    private void checkExpiredTransactions(Set<MonitoredTransaction> activeTransactions, long nowNanos) {
-        for (MonitoredTransaction activeTransaction : activeTransactions) {
-            long transactionTimeoutNanos = activeTransaction.timeoutNanos();
-            if (transactionTimeoutNanos > 0) {
-                if (isTransactionExpired(activeTransaction, nowNanos, transactionTimeoutNanos)
-                        && !activeTransaction.isSchemaTransaction()) {
-                    if (activeTransaction.markForTermination(Status.Transaction.TransactionTimedOut)) {
-                        log.warn("Transaction %s timeout.", activeTransaction.getIdentifyingDescription());
-                    }
+    private void checkExpiredTransaction(MonitoredTransaction transaction, long nowNanos) {
+        long transactionTimeoutNanos = transaction.timeoutNanos();
+        if (transactionTimeoutNanos > 0) {
+            if (isTransactionExpired(transaction, nowNanos, transactionTimeoutNanos)
+                    && !transaction.isSchemaTransaction()) {
+                if (transaction.markForTermination(Status.Transaction.TransactionTimedOut)) {
+                    log.warn("Transaction %s timeout.", transaction.getIdentifyingDescription());
                 }
+            }
+        }
+    }
+
+    private void checkStaleTerminatedTransaction(
+            MonitoredTransaction transaction, long nowNanos, long terminationTimeoutNanos) {
+        transaction.terminationMark().ifPresent(mark -> {
+            if (mark.isMarkedAsStale()) {
+                return;
+            }
+
+            final var nanosSinceTermination = nowNanos - mark.getTimestampNanos();
+            if (nanosSinceTermination >= terminationTimeoutNanos) {
+                log.warn(
+                        "Transaction %s has been marked for termination for %d seconds; it may have been leaked. %s",
+                        transaction.getIdentifyingDescription(),
+                        TimeUnit.NANOSECONDS.toSeconds(nanosSinceTermination),
+                        buildTraceOrHelpMessage(transaction.transactionInitialisationTrace()));
+                mark.markAsStale();
+            }
+        });
+    }
+
+    private static String buildTraceOrHelpMessage(TransactionInitializationTrace initializationTrace) {
+        final String trace = initializationTrace.getTrace();
+        if (StringUtils.isEmpty(trace)) {
+            return "For a transaction initialization trace, set '%s=ALL'."
+                    .formatted(GraphDatabaseSettings.transaction_tracing_level.name());
+        } else {
+            return "Initialization trace:%n%s".formatted(trace);
+        }
+    }
+
+    private void checkActiveTransactions(Set<MonitoredTransaction> activeTransactions, long nowNanos) {
+        long terminationTimeoutNanos = config.get(GraphDatabaseInternalSettings.transaction_termination_timeout)
+                .toNanos();
+
+        for (MonitoredTransaction activeTransaction : activeTransactions) {
+            checkExpiredTransaction(activeTransaction, nowNanos);
+
+            if (terminationTimeoutNanos > 0) {
+                checkStaleTerminatedTransaction(activeTransaction, nowNanos, terminationTimeoutNanos);
             }
         }
     }
@@ -72,6 +123,8 @@ public abstract class TransactionMonitor implements Runnable {
         long timeoutNanos();
 
         boolean isSchemaTransaction();
+
+        Optional<TerminationMark> terminationMark();
 
         /**
          * Mark the underlying transaction for termination.
@@ -90,5 +143,7 @@ public abstract class TransactionMonitor implements Runnable {
          * that timed out.
          */
         String getIdentifyingDescription();
+
+        TransactionInitializationTrace transactionInitialisationTrace();
     }
 }

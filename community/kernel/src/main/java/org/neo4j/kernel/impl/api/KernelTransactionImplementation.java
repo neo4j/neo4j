@@ -90,6 +90,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -207,7 +208,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile boolean closed;
     private boolean failure;
     private boolean success;
-    private volatile Status terminationReason;
+
+    private volatile TerminationMark terminationMark;
     private long startTimeMillis;
     private volatile long startTimeNanos;
     private volatile long timeoutMillis;
@@ -394,7 +396,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionSequenceNumber = transactionSequenceNumber;
         this.leaseClient = leaseService.newClient();
         this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
-        this.terminationReason = null;
+        this.terminationMark = null;
         this.closing = false;
         this.closed = false;
         this.failure = false;
@@ -523,7 +525,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public boolean canCommit() {
-        return success && !failure && terminationReason == null;
+        return success && !failure && terminationMark == null;
     }
 
     public void failure() {
@@ -531,8 +533,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Optional<Status> getReasonIfTerminated() {
-        return Optional.ofNullable(terminationReason);
+    public Optional<TerminationMark> getTerminationMark() {
+        return Optional.ofNullable(terminationMark);
     }
 
     boolean markForTermination(long expectedTransactionSequenceNumber, Status reason) {
@@ -625,7 +627,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 innerTransactionHandler.terminateInnerTransactions(reason);
             }
             failure = true;
-            terminationReason = reason;
+            terminationMark = new TerminationMark(reason, clocks.systemClock().nanos());
             if (lockClient != null) {
                 lockClient.stop();
             }
@@ -788,9 +790,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public void assertOpen() {
-        Status reason = this.terminationReason;
-        if (reason != null) {
-            throw new TransactionTerminatedException(reason);
+        var terminationMark = this.terminationMark;
+        if (terminationMark != null) {
+            throw new TransactionTerminatedException(terminationMark.getReason());
         }
         assertTransactionOpen();
     }
@@ -915,7 +917,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException {
         if (success && isTerminated()) {
-            throw new TransactionTerminatedException(terminationReason);
+            throw new TransactionTerminatedException(terminationMark.getReason());
         }
         if (success) {
             // Success was called, but also failure which means that the client code using this
@@ -1233,7 +1235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
-            terminationReason = null;
+            terminationMark = null;
             type = null;
             overridableSecurityContext = null;
             transactionEvent = null;
@@ -1314,7 +1316,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public boolean isTerminated() {
-        return terminationReason != null;
+        return terminationMark != null;
     }
 
     @Override
