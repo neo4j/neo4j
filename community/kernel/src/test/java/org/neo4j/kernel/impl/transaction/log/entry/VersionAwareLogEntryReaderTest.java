@@ -74,7 +74,7 @@ class VersionAwareLogEntryReaderTest {
         // given
         KernelVersion version = LATEST;
         TestCommand testCommand = new TestCommand(new byte[] {100, 101, 102});
-        final LogEntryCommand command = new LogEntryCommand(version, testCommand);
+        final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         channel.put(version.version());

@@ -31,6 +31,7 @@ public class LogEntryStart extends AbstractLogEntry {
     private final int previousChecksum;
     private final byte[] additionalHeader;
     private final LogPosition startPosition;
+    private final KernelVersion version;
 
     public LogEntryStart(
             long timeWritten,
@@ -54,12 +55,17 @@ public class LogEntryStart extends AbstractLogEntry {
             int previousChecksum,
             byte[] additionalHeader,
             LogPosition startPosition) {
-        super(version, TX_START);
+        super(TX_START);
         this.previousChecksum = previousChecksum;
         this.startPosition = startPosition;
         this.timeWritten = timeWritten;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.additionalHeader = additionalHeader;
+        this.version = version;
+    }
+
+    public KernelVersion getVersion() {
+        return version;
     }
 
     public LogPosition getStartPosition() {
@@ -81,7 +87,7 @@ public class LogEntryStart extends AbstractLogEntry {
     @Override
     public String toString() {
         return "Start[" + "kernelVersion="
-                + getVersion() + "," + "time="
+                + version + "," + "time="
                 + timestamp(timeWritten) + "," + "lastCommittedTxWhenTransactionStarted="
                 + lastCommittedTxWhenTransactionStarted + "," + "previousChecksum="
                 + previousChecksum + "," + "additionalHeaderLength="
@@ -104,6 +110,7 @@ public class LogEntryStart extends AbstractLogEntry {
 
         return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted
                 && timeWritten == start.timeWritten
+                && version == start.version
                 && previousChecksum == start.previousChecksum
                 && Arrays.equals(additionalHeader, start.additionalHeader)
                 && startPosition.equals(start.startPosition);

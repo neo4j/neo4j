@@ -28,16 +28,22 @@ public class LogEntryCommit extends AbstractLogEntry {
     private final long txId;
     private final long timeWritten;
     private final int checksum;
+    private final KernelVersion version;
 
     public LogEntryCommit(long txId, long timeWritten, int checksum) {
         this(KernelVersion.LATEST, txId, timeWritten, checksum);
     }
 
     public LogEntryCommit(KernelVersion version, long txId, long timeWritten, int checksum) {
-        super(version, TX_COMMIT);
+        super(TX_COMMIT);
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.checksum = checksum;
+        this.version = version;
+    }
+
+    public KernelVersion getVersion() {
+        return version;
     }
 
     public long getTxId() {
@@ -66,11 +72,14 @@ public class LogEntryCommit extends AbstractLogEntry {
             return false;
         }
         LogEntryCommit that = (LogEntryCommit) o;
-        return txId == that.txId && timeWritten == that.timeWritten && checksum == that.checksum;
+        return txId == that.txId
+                && timeWritten == that.timeWritten
+                && checksum == that.checksum
+                && version == that.version;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(txId, timeWritten, checksum);
+        return Objects.hash(txId, timeWritten, checksum, version);
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.entry.legacy;
 
 import java.util.Objects;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
@@ -28,8 +27,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 public class LegacyInlinedCheckPoint extends AbstractLogEntry {
     private final LogPosition logPosition;
 
-    LegacyInlinedCheckPoint(KernelVersion version, LogPosition logPosition) {
-        super(version, LogEntryTypeCodes.LEGACY_CHECK_POINT);
+    LegacyInlinedCheckPoint(LogPosition logPosition) {
+        super(LogEntryTypeCodes.LEGACY_CHECK_POINT);
         this.logPosition = logPosition;
     }
 

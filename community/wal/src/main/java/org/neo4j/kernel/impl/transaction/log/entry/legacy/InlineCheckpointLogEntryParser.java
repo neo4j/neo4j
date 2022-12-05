@@ -51,6 +51,6 @@ public class InlineCheckpointLogEntryParser extends LogEntryParser {
             // checksums present in some of old versions. We do not need them here, so we ignore them.
             channel.getInt();
         }
-        return new LegacyInlinedCheckPoint(version, new LogPosition(logVersion, byteOffset));
+        return new LegacyInlinedCheckPoint(new LogPosition(logVersion, byteOffset));
     }
 }

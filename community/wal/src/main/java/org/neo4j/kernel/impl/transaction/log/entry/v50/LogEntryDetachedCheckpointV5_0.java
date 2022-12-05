@@ -34,6 +34,7 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
     private final long checkpointTime;
     private final StoreId storeId;
     private final String reason;
+    private final KernelVersion version;
 
     public LogEntryDetachedCheckpointV5_0(
             KernelVersion version,
@@ -42,12 +43,13 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        super(version, DETACHED_CHECK_POINT_V5_0);
+        super(DETACHED_CHECK_POINT_V5_0);
         this.transactionId = transactionId;
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
         this.storeId = storeId;
         this.reason = reason;
+        this.version = version;
     }
 
     @Override
@@ -63,12 +65,17 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
                 && Objects.equals(transactionId, that.transactionId)
                 && Objects.equals(logPosition, that.logPosition)
                 && Objects.equals(storeId, that.storeId)
+                && version == that.version
                 && Objects.equals(reason, that.reason);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(getVersion(), transactionId, logPosition, checkpointTime, storeId, reason);
+    }
+
+    public KernelVersion getVersion() {
+        return version;
     }
 
     public StoreId getStoreId() {
@@ -89,7 +96,12 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry {
 
     @Override
     public String toString() {
-        return "LogEntryDetachedCheckpointV5_0{" + "transactionId=" + transactionId + ", logPosition=" + logPosition
-                + ", checkpointTime=" + checkpointTime + ", storeId=" + storeId + ", reason='" + reason + '\'' + '}';
+        return "LogEntryDetachedCheckpointV5_0{" + "transactionId="
+                + transactionId + ", logPosition="
+                + logPosition + ", checkpointTime="
+                + checkpointTime + ", storeId="
+                + storeId + ", reason='"
+                + reason + '\'' + ", version="
+                + version + '}';
     }
 }

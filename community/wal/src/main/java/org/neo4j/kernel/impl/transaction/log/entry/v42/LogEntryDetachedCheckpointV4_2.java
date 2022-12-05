@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
 import org.neo4j.storageengine.api.StoreId;
 
 public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
+    private final KernelVersion version;
     private final LogPosition logPosition;
     private final long checkpointTime;
     private final StoreId storeId;
@@ -35,7 +36,8 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
 
     public LogEntryDetachedCheckpointV4_2(
             KernelVersion version, LogPosition logPosition, long checkpointMillis, StoreId storeId, String reason) {
-        super(version, DETACHED_CHECK_POINT);
+        super(DETACHED_CHECK_POINT);
+        this.version = version;
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
         this.storeId = storeId;
@@ -53,13 +55,18 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
         LogEntryDetachedCheckpointV4_2 that = (LogEntryDetachedCheckpointV4_2) o;
         return Objects.equals(logPosition, that.logPosition)
                 && checkpointTime == that.checkpointTime
+                && version == that.version
                 && Objects.equals(storeId, that.storeId)
                 && Objects.equals(reason, that.reason);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(logPosition, checkpointTime, storeId, reason);
+        return Objects.hash(version, logPosition, checkpointTime, storeId, reason);
+    }
+
+    public KernelVersion getVersion() {
+        return version;
     }
 
     public StoreId getStoreId() {
@@ -76,7 +83,11 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry {
 
     @Override
     public String toString() {
-        return "LogEntryDetachedCheckpoint{" + "logPosition=" + logPosition + ", checkpointTime=" + checkpointTime
-                + ", storeId=" + storeId + ", reason='" + reason + '\'' + '}';
+        return "LogEntryDetachedCheckpointV4_2{" + "version="
+                + version + ", logPosition="
+                + logPosition + ", checkpointTime="
+                + checkpointTime + ", storeId="
+                + storeId + ", reason='"
+                + reason + '\'' + '}';
     }
 }

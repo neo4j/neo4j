@@ -68,7 +68,7 @@ class LogEntryParserSetV4_2 extends LogEntryParserSet {
                     CommandReaderFactory commandReaderFactory)
                     throws IOException {
                 StorageCommand command = commandReaderFactory.get(version).read(channel);
-                return command == null ? null : new LogEntryCommand(version, command);
+                return command == null ? null : new LogEntryCommand(command);
             }
         });
         register(new LogEntryParser(LogEntryTypeCodes.TX_COMMIT) {
@@ -82,7 +82,7 @@ class LogEntryParserSetV4_2 extends LogEntryParserSet {
                 long txId = channel.getLong();
                 long timeWritten = channel.getLong();
                 int checksum = channel.endChecksumAndValidate();
-                return new LogEntryCommit(version, txId, timeWritten, checksum);
+                return new LogEntryCommit(txId, timeWritten, checksum);
             }
         });
 

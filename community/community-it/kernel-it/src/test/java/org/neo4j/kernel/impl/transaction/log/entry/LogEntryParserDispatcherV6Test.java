@@ -87,7 +87,7 @@ class LogEntryParserDispatcherV6Test {
         // given
         // The record, it will be used as before and after
         TestCommand testCommand = new TestCommand(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
-        final LogEntryCommand command = new LogEntryCommand(version, testCommand);
+        final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
         testCommand.serialize(channel);
         channel.getCurrentPosition(marker);
