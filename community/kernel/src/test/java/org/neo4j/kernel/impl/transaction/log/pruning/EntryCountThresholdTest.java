@@ -40,7 +40,7 @@ class EntryCountThresholdTest {
     void shouldReportThresholdReachedWhenThresholdIsReached() throws Exception {
         long version = 10L;
 
-        when(info.getFirstEntryId(version + 1)).thenReturn(1L);
+        when(info.getFirstEntryId(version)).thenReturn(1L);
         when(info.getLastEntryId()).thenReturn(2L);
 
         EntryCountThreshold threshold = createThreshold(1);
@@ -54,7 +54,6 @@ class EntryCountThresholdTest {
         long version = 10L;
 
         when(info.getFirstEntryId(version)).thenReturn(1L);
-        when(info.getFirstEntryId(version + 1)).thenReturn(1L);
 
         when(info.getLastEntryId()).thenReturn(1L);
 
@@ -65,7 +64,7 @@ class EntryCountThresholdTest {
 
     @Test
     void shouldProperlyHandleCaseWithOneEntryPerLogFile() throws Exception {
-        // Given 2 files with one entry each
+        // Given 3 files with one entry each
         when(info.getFirstEntryId(1L)).thenReturn(1L);
         when(info.getFirstEntryId(2L)).thenReturn(2L);
         when(info.getFirstEntryId(3L)).thenReturn(3L);
@@ -76,25 +75,8 @@ class EntryCountThresholdTest {
         EntryCountThreshold threshold = createThreshold(1);
 
         // Then the last file should be kept around
-        assertFalse(threshold.reached(file, 2L, info));
-        assertTrue(threshold.reached(file, 1L, info));
-    }
-
-    @Test
-    void shouldWorkWhenCalledMultipleTimesKeeping2Files() throws Exception {
-        when(info.getFirstEntryId(1L)).thenReturn(1L);
-        when(info.getFirstEntryId(2L)).thenReturn(5L);
-        when(info.getFirstEntryId(3L)).thenReturn(15L);
-        when(info.getFirstEntryId(4L)).thenReturn(18L);
-        when(info.getLastEntryId()).thenReturn(18L);
-
-        EntryCountThreshold threshold = createThreshold(8);
-
-        assertTrue(threshold.reached(file, 1L, info));
-
-        assertFalse(threshold.reached(file, 2L, info));
-
         assertFalse(threshold.reached(file, 3L, info));
+        assertTrue(threshold.reached(file, 2L, info));
     }
 
     @Test
@@ -105,17 +87,32 @@ class EntryCountThresholdTest {
         when(info.getFirstEntryId(4L)).thenReturn(18L);
         when(info.getLastEntryId()).thenReturn(18L);
 
-        EntryCountThreshold threshold = createThreshold(15);
+        EntryCountThreshold threshold = createThreshold(8);
 
-        assertFalse(threshold.reached(file, 1L, info));
-
-        assertFalse(threshold.reached(file, 2L, info));
-
+        assertFalse(threshold.reached(file, 4L, info));
         assertFalse(threshold.reached(file, 3L, info));
+        assertTrue(threshold.reached(file, 2L, info));
+        assertTrue(threshold.reached(file, 1L, info));
     }
 
     @Test
-    void shouldWorkWhenCalledMultipleTimesKeeping1FileOnBoundary() throws Exception {
+    void shouldWorkWhenCalledMultipleTimesKeeping4Files() throws Exception {
+        when(info.getFirstEntryId(1L)).thenReturn(1L);
+        when(info.getFirstEntryId(2L)).thenReturn(5L);
+        when(info.getFirstEntryId(3L)).thenReturn(15L);
+        when(info.getFirstEntryId(4L)).thenReturn(18L);
+        when(info.getLastEntryId()).thenReturn(18L);
+
+        EntryCountThreshold threshold = createThreshold(15);
+
+        assertFalse(threshold.reached(file, 4L, info));
+        assertFalse(threshold.reached(file, 3L, info));
+        assertFalse(threshold.reached(file, 2L, info));
+        assertTrue(threshold.reached(file, 1L, info));
+    }
+
+    @Test
+    void shouldWorkWhenCalledMultipleTimesKeeping2FilesOnBoundary() throws Exception {
         when(info.getFirstEntryId(1L)).thenReturn(1L);
         when(info.getFirstEntryId(2L)).thenReturn(5L);
         when(info.getFirstEntryId(3L)).thenReturn(15L);
@@ -124,9 +121,10 @@ class EntryCountThresholdTest {
 
         EntryCountThreshold threshold = createThreshold(3);
 
-        assertTrue(threshold.reached(file, 1L, info));
+        assertFalse(threshold.reached(file, 4L, info));
+        assertTrue(threshold.reached(file, 3L, info));
         assertTrue(threshold.reached(file, 2L, info));
-        assertFalse(threshold.reached(file, 3L, info));
+        assertTrue(threshold.reached(file, 1L, info));
     }
 
     @Test
@@ -144,10 +142,11 @@ class EntryCountThresholdTest {
         // The threshold is 9, which is one more than what version 5 has, which means 2 should be kept
         EntryCountThreshold threshold = createThreshold(9);
 
+        assertFalse(threshold.reached(file, 6L, info));
         assertFalse(threshold.reached(file, 5L, info));
         assertFalse(threshold.reached(file, 4L, info));
         assertFalse(threshold.reached(file, 3L, info));
-        assertFalse(threshold.reached(file, 2L, info));
+        assertTrue(threshold.reached(file, 2L, info));
         assertTrue(threshold.reached(file, 1L, info));
     }
 
@@ -166,7 +165,8 @@ class EntryCountThresholdTest {
         // The threshold is 8, which is exactly what version 5 has, which means 2 should be deleted
         EntryCountThreshold threshold = createThreshold(8);
 
-        assertFalse(threshold.reached(file, 5L, info));
+        assertFalse(threshold.reached(file, 6L, info));
+        assertTrue(threshold.reached(file, 5L, info));
         assertTrue(threshold.reached(file, 4L, info));
         assertTrue(threshold.reached(file, 3L, info));
         assertTrue(threshold.reached(file, 2L, info));
@@ -174,19 +174,19 @@ class EntryCountThresholdTest {
     }
 
     @Test
-    void thresholdNotReachedWhenNextEntryIdNotFound() throws IOException {
-        when(info.getFirstEntryId(2L)).thenReturn(-1L);
+    void thresholdNotReachedWhenEntryIdNotFound() throws IOException {
+        when(info.getFirstEntryId(1L)).thenReturn(-1L);
         EntryCountThreshold threshold = createThreshold(0);
 
         assertFalse(threshold.reached(file, 1, info));
         assertThat(logProvider)
                 .containsMessages(
-                        "Fail to get id of the first entry in the next transaction log file. Requested version: 2");
+                        "Failed to get id of the first entry in the transaction log file. Requested version: 1");
     }
 
     @Test
-    void thresholdNotReachedWhenFailToGetNextEntryId() throws IOException {
-        when(info.getFirstEntryId(2L)).thenThrow(new IOException("Exception."));
+    void thresholdNotReachedWhenFailToGetEntryId() throws IOException {
+        when(info.getFirstEntryId(1L)).thenThrow(new IOException("Exception."));
         EntryCountThreshold threshold = createThreshold(0);
 
         assertFalse(threshold.reached(file, 1, info));

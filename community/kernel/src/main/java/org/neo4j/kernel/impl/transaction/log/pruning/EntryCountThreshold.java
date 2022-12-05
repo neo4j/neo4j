@@ -41,13 +41,11 @@ public final class EntryCountThreshold implements Threshold {
 
     @Override
     public boolean reached(Path ignored, long version, LogFileInformation source) {
-        long nextVersion = version + 1;
         try {
-            // try to ask next version log file which is my last tx
-            long lastTx = source.getFirstEntryId(nextVersion);
+            long lastTx = source.getFirstEntryId(version);
             if (lastTx == -1) {
-                log.warn("Fail to get id of the first entry in the next transaction log file. Requested version: "
-                        + nextVersion);
+                log.warn("Failed to get id of the first entry in the transaction log file. Requested version: "
+                        + version);
                 return false;
             }
 

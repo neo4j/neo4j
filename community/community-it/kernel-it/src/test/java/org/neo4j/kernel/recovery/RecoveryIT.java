@@ -904,7 +904,7 @@ class RecoveryIT {
         assertThat(Arrays.stream(fileSystem.listFiles(layout.getTransactionLogsDirectory()))
                         .filter(path -> path.toString().contains("transaction.db"))
                         .count())
-                .isEqualTo(2);
+                .isEqualTo(1);
     }
 
     @Test

@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 import java.time.Clock;
-import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
@@ -34,9 +33,9 @@ import org.neo4j.util.VisibleForTesting;
 public class LogPruneStrategyFactory {
     static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy() {
         @Override
-        public LongRange findLogVersionsToDelete(long upToLogVersion) {
+        public VersionRange findLogVersionsToDelete(long upToLogVersion) {
             // Never delete anything.
-            return LongRange.EMPTY_RANGE;
+            return LogPruneStrategy.EMPTY_RANGE;
         }
 
         @Override

@@ -107,7 +107,7 @@ class TransactionLogServiceIT {
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
         builder.setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD)
-                .setConfig(GraphDatabaseSettings.keep_logical_logs, "1 files");
+                .setConfig(GraphDatabaseSettings.keep_logical_logs, "2 files");
     }
 
     @Test
@@ -129,8 +129,7 @@ class TransactionLogServiceIT {
 
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
-            // 1 desired, 1 checkpoint  + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2
-            // files)
+            // 2 desired non-empty tx log files + 1 newly rotated empty, 1 checkpoint log
             assertThat(logFiles.logFiles()).hasSize(4);
 
             for (LogChannel logChannel : logFileChannels) {
@@ -157,7 +156,7 @@ class TransactionLogServiceIT {
 
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Test checkpoint"));
 
-            // 1 desired, 1 checkpoint + 2 (see how ThresholdBasedPruneStrategy is working - keeping additional 2 files)
+            // 2 desired non-empty tx log files + 1 newly rotated empty, 1 checkpoint log
             int txLogsAfterCheckpoint = 3;
             // the transaction log service did not return the last (empty) transaction log file
             var visibleTxLogsAfterCheckpoints = txLogsAfterCheckpoint - 1;

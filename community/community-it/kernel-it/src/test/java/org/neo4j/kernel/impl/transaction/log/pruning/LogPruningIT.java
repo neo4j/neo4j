@@ -74,7 +74,7 @@ class LogPruningIT {
         // Checkpoint to make sure strategy is evaluated
         checkPointer.forceCheckPoint(triggerInfo);
 
-        // Make sure file is still there since we have disable pruning. 3 transaction logs and 1 separate checkpoint
+        // Make sure file is still there since we have disable pruning. 2 transaction logs and 1 separate checkpoint
         // file.
         assertThat(countTransactionLogs(logFiles)).isEqualTo(4);
 
@@ -85,7 +85,7 @@ class LogPruningIT {
         checkPointer.forceCheckPoint(triggerInfo);
 
         // Make sure file is removed
-        assertThat(countTransactionLogs(logFiles)).isEqualTo(3);
+        assertThat(countTransactionLogs(logFiles)).isEqualTo(2);
     }
 
     private void writeTransactionsAndRotateTwice() throws IOException {

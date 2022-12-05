@@ -44,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -79,7 +78,7 @@ class LogPruningTest {
     @Test
     void mustDeleteLogFilesThatCanBePruned() throws IOException {
         when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString()))
-                .thenReturn(upTo -> LongRange.range(3, upTo - 1));
+                .thenReturn(upTo -> new LogPruneStrategy.VersionRange(3, upTo));
         LogPruning pruning = new LogPruningImpl(fs, logFiles, logProvider, factory, clock, config, new ReentrantLock());
         pruning.pruneLogs(5);
         InOrder order = inOrder(fs);
@@ -92,7 +91,7 @@ class LogPruningTest {
     @Test
     void mustHaveLogFilesToPruneIfStrategyFindsFiles() {
         when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString()))
-                .thenReturn(upTo -> LongRange.range(3, upTo));
+                .thenReturn(upTo -> new LogPruneStrategy.VersionRange(3, upTo + 1));
         when(logFiles.getLogFile().getHighestLogVersion()).thenReturn(4L);
         LogPruning pruning = new LogPruningImpl(fs, logFiles, logProvider, factory, clock, config, new ReentrantLock());
         assertTrue(pruning.mightHaveLogsToPrune(logFiles.getLogFile().getHighestLogVersion()));
@@ -101,7 +100,7 @@ class LogPruningTest {
     @Test
     void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles() {
         when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString()))
-                .thenReturn(x -> LongRange.EMPTY_RANGE);
+                .thenReturn(x -> LogPruneStrategy.EMPTY_RANGE);
         LogPruning pruning = new LogPruningImpl(fs, logFiles, logProvider, factory, clock, config, new ReentrantLock());
         assertFalse(pruning.mightHaveLogsToPrune(logFiles.getLogFile().getHighestLogVersion()));
     }
@@ -120,7 +119,7 @@ class LogPruningTest {
     void mustLogLatestPreservedCheckpointVersion() throws IOException {
         // given
         when(factory.strategyFromConfigValue(eq(fs), eq(logFiles), eq(logProvider), eq(clock), anyString()))
-                .thenReturn(x -> LongRange.EMPTY_RANGE);
+                .thenReturn(x -> LogPruneStrategy.EMPTY_RANGE);
         int checkpointLogFilesToKeep = config.get(checkpoint_logical_log_keep_threshold);
         CheckpointFile checkpointFile = mock(CheckpointFile.class);
         Path[] checkpointFiles = new Path[checkpointLogFilesToKeep + 2];

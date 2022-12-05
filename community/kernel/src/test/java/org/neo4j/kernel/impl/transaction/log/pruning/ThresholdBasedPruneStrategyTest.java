@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 
 import java.io.IOException;
 import java.nio.file.Path;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -80,8 +81,9 @@ class ThresholdBasedPruneStrategyTest {
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
 
         // When
-        strategy.findLogVersionsToDelete(7L).stream()
-                .forEachOrdered(uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
+        var versionsToDelete = strategy.findLogVersionsToDelete(7L);
+        versionsToDelete.forEachOrdered(
+                uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
 
         // Then
         verify(threshold).init();
@@ -116,14 +118,15 @@ class ThresholdBasedPruneStrategyTest {
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
 
         // When
-        strategy.findLogVersionsToDelete(7L).stream()
-                .forEachOrdered(uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
+        var versionsToDelete = strategy.findLogVersionsToDelete(7L);
+        versionsToDelete.forEachOrdered(
+                uncheckedLongConsumer(v -> fileSystem.deleteFile(logFile.getLogFileForVersion(v))));
 
         // Then
         verify(threshold).init();
         verify(fileSystem).deleteFile(fileName1);
         verify(fileSystem).deleteFile(fileName2);
-        verify(fileSystem).deleteFile(fileName3);
+        verify(fileSystem, never()).deleteFile(fileName3);
         verify(fileSystem, never()).deleteFile(fileName4);
         verify(fileSystem, never()).deleteFile(fileName5);
         verify(fileSystem, never()).deleteFile(fileName6);
@@ -136,7 +139,10 @@ class ThresholdBasedPruneStrategyTest {
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
 
-        assertFalse(strategy.findLogVersionsToDelete(5).stream().findAny().isPresent());
+        var versionsToDelete = strategy.findLogVersionsToDelete(5);
+        var anyFound = new MutableBoolean();
+        versionsToDelete.forEachOrdered(value -> anyFound.setTrue());
+        assertFalse(anyFound.getValue());
     }
 
     @Test
@@ -147,9 +153,9 @@ class ThresholdBasedPruneStrategyTest {
 
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
 
-        assertArrayEquals(
-                new long[] {10, 11, 12, 13},
-                strategy.findLogVersionsToDelete(15).stream().toArray());
+        var versionsToDelete = strategy.findLogVersionsToDelete(15);
+        assertThat(versionsToDelete.fromInclusive()).isEqualTo(10);
+        assertThat(versionsToDelete.toExclusive()).isEqualTo(15);
     }
 
     @Test

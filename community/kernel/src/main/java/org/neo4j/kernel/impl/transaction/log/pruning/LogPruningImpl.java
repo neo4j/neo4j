@@ -30,7 +30,6 @@ import java.time.Clock;
 import java.util.concurrent.locks.Lock;
 import java.util.function.LongConsumer;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -90,9 +89,12 @@ public class LogPruningImpl implements LogPruning {
             LogPruneStrategy strategy = this.pruneStrategy;
 
             CountingDeleter deleter = new CountingDeleter(logFile, fs);
-            LongRange versionsToDelete = strategy.findLogVersionsToDelete(upToVersion);
-            logFile.terminateExternalReaders(versionsToDelete.to());
-            versionsToDelete.stream().forEachOrdered(deleter);
+            LogPruneStrategy.VersionRange versionsToDelete = strategy.findLogVersionsToDelete(upToVersion);
+            // make sure to do the arithmetics only for non-empty ranges
+            if (versionsToDelete.isNotEmpty()) {
+                logFile.terminateExternalReaders(versionsToDelete.toExclusive() - 1);
+                versionsToDelete.forEachOrdered(deleter);
+            }
             log.info(deleter.describeResult(strategy));
 
             cleanupCheckpointLogFiles();
@@ -120,7 +122,8 @@ public class LogPruningImpl implements LogPruning {
 
     @Override
     public boolean mightHaveLogsToPrune(long upToVersion) {
-        return !pruneStrategy.findLogVersionsToDelete(upToVersion).isEmpty();
+        LogPruneStrategy.VersionRange versionsToDelete = pruneStrategy.findLogVersionsToDelete(upToVersion);
+        return versionsToDelete.isNotEmpty();
     }
 
     @Override
