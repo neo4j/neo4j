@@ -28,7 +28,9 @@ public enum MemoryGroup {
     OTHER("Other"),
     RECENT_QUERY_BUFFER("Recent Query Buffer"),
     CENTRAL_BYTE_BUFFER_MANAGER("Central Byte Buffer Manager"),
-    NO_TRACKING("No Tracking");
+    NO_TRACKING("No Tracking"),
+    CLUSTER("Cluster"),
+    BACKUP("Backup");
 
     private final String name;
 

@@ -20,15 +20,23 @@
 package org.neo4j.bolt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.memory.MemoryGroup.OTHER;
 
+import io.netty.buffer.ByteBufAllocatorMetric;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.transport.BoltMemoryPool;
+import org.neo4j.bolt.transport.NettyMemoryPool;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryPools;
 
-class BoltMemoryPoolIT {
+class NettyMemoryPoolIT {
     private final int requestedSize = (int) ByteUnit.kibiBytes(10);
+
+    private static class SomeNettyMemoryPool extends NettyMemoryPool {
+        public SomeNettyMemoryPool(MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric) {
+            super(memoryPools, allocatorMetric, OTHER);
+        }
+    }
 
     @Test
     void reportConsumedHeapMemory() {
@@ -37,7 +45,7 @@ class BoltMemoryPoolIT {
         assertEquals(0, allocatorMetric.usedDirectMemory());
         assertEquals(0, allocatorMetric.usedDirectMemory());
 
-        var memoryTracker = new BoltMemoryPool(new MemoryPools(), allocatorMetric);
+        var memoryTracker = new SomeNettyMemoryPool(new MemoryPools(), allocatorMetric);
         var buffer = bufAllocator.buffer(requestedSize);
         try {
             assertEquals(requestedSize, buffer.capacity());
@@ -58,7 +66,7 @@ class BoltMemoryPoolIT {
         assertEquals(0, allocatorMetric.usedDirectMemory());
         assertEquals(0, allocatorMetric.usedDirectMemory());
 
-        var memoryTracker = new BoltMemoryPool(new MemoryPools(), allocatorMetric);
+        var memoryTracker = new SomeNettyMemoryPool(new MemoryPools(), allocatorMetric);
         var buffer = bufAllocator.buffer(requestedSize);
         try {
             assertEquals(requestedSize, buffer.capacity());

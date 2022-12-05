@@ -66,6 +66,7 @@ import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transport.BoltMemoryPool;
+import org.neo4j.bolt.transport.NettyMemoryPool;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -395,7 +396,7 @@ public class BoltServer extends LifecycleAdapter {
 
     private ByteBufAllocator getBufferAllocator() {
         PooledByteBufAllocator allocator = NETTY_BUF_ALLOCATOR.get();
-        BoltMemoryPool pool = new BoltMemoryPool(memoryPools, allocator.metric());
+        var pool = new BoltMemoryPool(memoryPools, allocator.metric());
         connectorLife.add(new BoltMemoryPoolLifeCycleAdapter(pool));
         memoryPool = pool;
         return allocator;
@@ -515,9 +516,9 @@ public class BoltServer extends LifecycleAdapter {
     }
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter {
-        private final BoltMemoryPool pool;
+        private final NettyMemoryPool pool;
 
-        private BoltMemoryPoolLifeCycleAdapter(BoltMemoryPool pool) {
+        private BoltMemoryPoolLifeCycleAdapter(NettyMemoryPool pool) {
             this.pool = pool;
         }
 

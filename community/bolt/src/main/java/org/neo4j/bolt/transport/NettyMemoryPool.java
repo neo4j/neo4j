@@ -20,11 +20,31 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBufAllocatorMetric;
+import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 
-public class BoltMemoryPool extends NettyMemoryPool {
-    public BoltMemoryPool(MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric) {
-        super(memoryPools, allocatorMetric, MemoryGroup.BOLT);
+public abstract class NettyMemoryPool extends GlobalMemoryGroupTracker {
+    private final ByteBufAllocatorMetric allocatorMetric;
+
+    public NettyMemoryPool(MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric, MemoryGroup group) {
+        super(memoryPools, group, 0, false, true, null);
+        this.allocatorMetric = allocatorMetric;
+        memoryPools.registerPool(this);
+    }
+
+    @Override
+    public long usedHeap() {
+        return allocatorMetric.usedHeapMemory() + super.usedHeap();
+    }
+
+    @Override
+    public long usedNative() {
+        return allocatorMetric.usedDirectMemory() + super.usedNative();
+    }
+
+    @Override
+    public long totalUsed() {
+        return usedHeap() + usedNative();
     }
 }
