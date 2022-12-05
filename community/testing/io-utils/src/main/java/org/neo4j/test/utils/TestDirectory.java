@@ -33,8 +33,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
@@ -81,7 +79,8 @@ public class TestDirectory {
     private Path testClassBaseFolder;
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
-    private final Deque<Path> directory = new ArrayDeque<>();
+    private Path directory;
+    private int additionalRefs;
 
     private TestDirectory(FileSystemAbstraction fileSystem) {
         this.fileSystem = fileSystem;
@@ -126,7 +125,7 @@ public class TestDirectory {
         if (!isInitialised()) {
             throw new IllegalStateException("Not initialized");
         }
-        return directory.peek();
+        return directory;
     }
 
     public Path homePath(String homeDirName) {
@@ -134,7 +133,7 @@ public class TestDirectory {
     }
 
     public boolean isInitialised() {
-        return !directory.isEmpty();
+        return directory != null;
     }
 
     public Path cleanDirectory(String name) throws IOException {
@@ -185,7 +184,7 @@ public class TestDirectory {
 
     @Override
     public String toString() {
-        String testDirectoryName = directory.isEmpty() ? "<uninitialized>" : directory.toString();
+        String testDirectoryName = isInitialised() ? directory.toString() : "<uninitialized>";
         return format("%s[\"%s\"]", getClass().getSimpleName(), testDirectoryName);
     }
 
@@ -195,7 +194,13 @@ public class TestDirectory {
 
     public void complete(boolean success) throws IOException {
         if (isInitialised()) {
-            Path directory = this.directory.pop();
+            if (additionalRefs > 0) {
+                additionalRefs--;
+                return;
+            }
+
+            Path directory = this.directory;
+            this.directory = null;
             if (success && !keepDirectoryAfterSuccessfulTest) {
                 fileSystem.deleteRecursively(directory);
             } else if (!Files.exists(directory)) {
@@ -214,7 +219,7 @@ public class TestDirectory {
     }
 
     public void close() throws IOException {
-        if (!directory.isEmpty()) {
+        if (isInitialised()) {
             return;
         }
         try {
@@ -236,13 +241,18 @@ public class TestDirectory {
     }
 
     public void prepareDirectory(Class<?> testClass, String test) throws IOException {
+        if (isInitialised()) {
+            additionalRefs++;
+            return;
+        }
+
         if (owningTest == null) {
             owningTest = testClass;
         }
         if (test == null) {
             test = "static";
         }
-        directory.push(prepareDirectoryForTest(test));
+        directory = prepareDirectoryForTest(test);
     }
 
     public Path prepareDirectoryForTest(String test) throws IOException {
