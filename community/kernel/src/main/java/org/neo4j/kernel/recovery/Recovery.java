@@ -49,6 +49,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LocalConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
@@ -363,23 +364,28 @@ public final class Recovery {
         Iterable<ExtensionFactory<?>> extensionFactories =
                 context.extensionFactories != null ? context.extensionFactories : loadExtensions();
 
-        return performRecovery(
-                context.fs,
-                context.pageCache,
-                context.tracers,
-                context.config,
-                storageEngineFactory.formatSpecificDatabaseLayout(context.databaseLayout),
-                storageEngineFactory,
-                context.forceRunRecovery,
-                context.logProvider,
-                context.globalMonitors,
-                extensionFactories,
-                context.providedLogTail,
-                context.startupChecker,
-                context.memoryTracker,
-                context.clock,
-                context.ioController,
-                context.recoveryPredicate);
+        var config = new LocalConfig(context.config);
+        try {
+            return performRecovery(
+                    context.fs,
+                    context.pageCache,
+                    context.tracers,
+                    config,
+                    storageEngineFactory.formatSpecificDatabaseLayout(context.databaseLayout),
+                    storageEngineFactory,
+                    context.forceRunRecovery,
+                    context.logProvider,
+                    context.globalMonitors,
+                    extensionFactories,
+                    context.providedLogTail,
+                    context.startupChecker,
+                    context.memoryTracker,
+                    context.clock,
+                    context.ioController,
+                    context.recoveryPredicate);
+        } finally {
+            config.removeAllLocalListeners();
+        }
     }
 
     private static boolean performRecovery(
