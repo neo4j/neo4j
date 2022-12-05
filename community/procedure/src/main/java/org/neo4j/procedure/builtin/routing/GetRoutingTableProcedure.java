@@ -22,13 +22,12 @@ package org.neo4j.procedure.builtin.routing;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -44,10 +43,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseUnavailable;
@@ -75,6 +72,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
+    private final boolean logInfoRoutingTableResult;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseReferenceRepository databaseReferenceRepo,
@@ -99,6 +97,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.defaultRouterSupplier = () -> config.get( GraphDatabaseSettings.routing_default_router );
         this.boltEnabled = () -> config.get( BoltConnector.enabled );
+        this.logInfoRoutingTableResult = config.get( GraphDatabaseInternalSettings.pagecache_warmup_blocking );
         this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
@@ -120,7 +119,14 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         try
         {
             var result = invoke( databaseReference, routingContext );
-            log.debug( "Routing result for database %s and routing context %s is %s", databaseReference, routingContext, result );
+            if ( logInfoRoutingTableResult )
+            {
+                log.info( "Routing result for database %s and routing context %s is %s", databaseReference, routingContext, result );
+            }
+            else
+            {
+                log.debug( "Routing result for database %s and routing context %s is %s", databaseReference, routingContext, result );
+            }
             assertRoutingResultNotEmpty( result, databaseReference );
             return RawIterator.<AnyValue[],ProcedureException>of( RoutingResultFormat.build( result ) );
         }
