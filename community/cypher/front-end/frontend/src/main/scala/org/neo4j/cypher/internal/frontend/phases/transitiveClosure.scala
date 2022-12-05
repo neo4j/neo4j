@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -89,7 +90,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
     })
 
     private def andRewriter(closures: Closures): Rewriter = {
-      val stopOnNotEquals: AnyRef => Boolean = {
+      val stopOnNotEquals: RewriterStopper = {
         case Not(Equals(_, _)) => true
         case _                 => false
       }

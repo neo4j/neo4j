@@ -182,11 +182,19 @@ object inSequence {
     new InSequenceRewriterWithCancel(rewriters, cancellation)
 }
 
+trait RewriterStopper {
+  def shouldStop(a: AnyRef): Boolean
+}
+
+object RewriterStopper {
+  val neverStop: RewriterStopper = _ => false
+}
+
 object topDown {
 
   private class TopDownRewriter(
     rewriter: Rewriter,
-    stopper: AnyRef => Boolean,
+    stopper: RewriterStopper,
     leftToRight: Boolean,
     cancellation: CancellationChecker
   ) extends Rewriter {
@@ -219,7 +227,7 @@ object topDown {
       } else {
         stack.pop() match {
           case (newJob :: jobs, doneJobs) =>
-            if (stopper(newJob)) {
+            if (stopper.shouldStop(newJob)) {
               stack.push((jobs, doneJobs += newJob))
             } else {
               val rewrittenJob = newJob.rewrite(rewriter)
@@ -237,7 +245,7 @@ object topDown {
 
   def apply(
     rewriter: Rewriter,
-    stopper: AnyRef => Boolean = _ => false,
+    stopper: RewriterStopper = RewriterStopper.neverStop,
     leftToRight: Boolean = true,
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =
@@ -251,7 +259,7 @@ object topDownWithParent {
 
   private class TopDownWithParentRewriter(
     rewriter: RewriterWithParent,
-    stopper: AnyRef => Boolean,
+    stopper: RewriterStopper,
     cancellation: CancellationChecker
   ) extends Rewriter {
 
@@ -282,7 +290,7 @@ object topDownWithParent {
       } else {
         stack.pop() match {
           case (newJob :: jobs, doneJobs) =>
-            if (stopper(newJob)) {
+            if (stopper.shouldStop(newJob)) {
               stack.push((jobs, doneJobs += newJob))
             } else {
               val maybeParent = {
@@ -306,7 +314,7 @@ object topDownWithParent {
 
   def apply(
     rewriter: RewriterWithParent,
-    stopper: AnyRef => Boolean = _ => false,
+    stopper: RewriterStopper = RewriterStopper.neverStop,
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =
     new TopDownWithParentRewriter(rewriter, stopper, cancellation)
@@ -314,7 +322,7 @@ object topDownWithParent {
 
 object bottomUp {
 
-  private class BottomUpRewriter(rewriter: Rewriter, stopper: AnyRef => Boolean, cancellation: CancellationChecker)
+  private class BottomUpRewriter(rewriter: Rewriter, stopper: RewriterStopper, cancellation: CancellationChecker)
       extends Rewriter {
 
     override def apply(that: AnyRef): AnyRef = {
@@ -344,7 +352,7 @@ object bottomUp {
         }
       } else {
         val next = currentJobs.head
-        if (stopper(next)) {
+        if (stopper.shouldStop(next)) {
           stack.pop() match {
             case (job :: jobs, doneJobs) => stack.push((jobs, doneJobs += job))
             case _                       => throw new IllegalStateException("No jobs")
@@ -359,7 +367,7 @@ object bottomUp {
 
   def apply(
     rewriter: Rewriter,
-    stopper: AnyRef => Boolean = _ => false,
+    stopper: RewriterStopper = RewriterStopper.neverStop,
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =
     new BottomUpRewriter(rewriter, stopper, cancellation)
@@ -369,7 +377,7 @@ object bottomUpWithRecorder {
 
   private class BottomUpRewriter(
     rewriter: Rewriter,
-    stopper: AnyRef => Boolean,
+    stopper: RewriterStopper,
     recorder: (AnyRef, AnyRef) => Unit,
     cancellation: CancellationChecker
   ) extends Rewriter {
@@ -403,7 +411,7 @@ object bottomUpWithRecorder {
         }
       } else {
         val next = currentJobs.head
-        if (stopper(next)) {
+        if (stopper.shouldStop(next)) {
           stack.pop() match {
             case (job :: jobs, doneJobs) => stack.push((jobs, doneJobs += job))
             case _                       => throw new IllegalStateException("Empty jobs")
@@ -418,7 +426,7 @@ object bottomUpWithRecorder {
 
   def apply(
     rewriter: Rewriter,
-    stopper: AnyRef => Boolean = _ => false,
+    stopper: RewriterStopper = RewriterStopper.neverStop,
     recorder: (AnyRef, AnyRef) => Unit = (_, _) => (),
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =

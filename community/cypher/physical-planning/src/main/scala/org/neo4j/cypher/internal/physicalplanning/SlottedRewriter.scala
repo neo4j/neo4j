@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.ast.RuntimeProperty
 import org.neo4j.cypher.internal.runtime.ast.RuntimeVariable
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -682,7 +683,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     }
   }
 
-  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): AnyRef => Boolean = {
+  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): RewriterStopper = {
     case lp @ (_: LogicalPlan) =>
       lp.id != thisPlan.id
 

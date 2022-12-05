@@ -22,6 +22,7 @@ package org.neo4j.fabric.util
 import org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterStopper
 
 object Rewritten {
 
@@ -29,17 +30,10 @@ object Rewritten {
     def rewritten: Rewritten[T] = Rewritten(that)
   }
 
-  private val never: PartialFunction[AnyRef, Boolean] = {
-    case _ => false
-  }
-
   case class Rewritten[T <: AnyRef](
     that: T,
-    stopper: AnyRef => Boolean = never
+    stopper: RewriterStopper = RewriterStopper.neverStop
   ) {
-
-    def stoppingAt(stop: PartialFunction[AnyRef, Boolean]): Rewritten[T] =
-      copy(stopper = stop.orElse(never))
 
     def bottomUp(pf: PartialFunction[AnyRef, AnyRef]): T =
       that.endoRewrite(util.bottomUp(Rewriter.lift(pf), stopper))
