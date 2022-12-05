@@ -183,6 +183,9 @@ case class IndexDescriptor(
   def unique(setUnique: Boolean = true): IndexDescriptor = copy(isUnique = setUnique)
 }
 
+/**
+ * (TokenIndex and LookupIndex are the same thing.)
+ */
 case class TokenIndexDescriptor(
   entityType: org.neo4j.common.EntityType,
   orderCapability: IndexOrderCapability

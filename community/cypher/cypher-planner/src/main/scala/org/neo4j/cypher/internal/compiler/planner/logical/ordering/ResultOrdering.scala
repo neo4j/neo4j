@@ -192,10 +192,8 @@ object ResultOrdering {
     variable: Variable,
     indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
-  ): ProvidedOrder = {
+  ): ProvidedOrder =
     providedOrderForScan(interestingOrder, variable, indexOrderCapability, providedOrderFactory)
-
-  }
 
   def providedOrderForRelationshipTypeScan(
     interestingOrder: InterestingOrder,
