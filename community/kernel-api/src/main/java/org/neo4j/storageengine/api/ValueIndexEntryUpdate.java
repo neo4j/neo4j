@@ -84,7 +84,7 @@ public class ValueIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     @Override
     public String toString() {
         return "ValueIndexEntryUpdate{" + "entity=" + getEntityId() + ", before=" + Arrays.toString(before)
-                + ", values=" + Arrays.toString(values) + '}';
+                + ", values=" + Arrays.toString(values) + ", updateMode=" + updateMode() + '}';
     }
 
     private static void validateValuesLength(SchemaDescriptorSupplier indexKey, Value[] before, Value[] values) {
