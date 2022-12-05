@@ -369,6 +369,19 @@ class StoreMigratorTest {
                         + userVersionString(PageAlignedTestFormat.WithMinorVersionBump.RECORD_FORMATS));
     }
 
+    @Test
+    void shouldHandleUnknownFormatWithoutCrashing() throws IOException {
+        var participant = mock(StoreMigrationParticipant.class);
+        when(participant.getName()).thenReturn(RecordStorageMigrator.NAME);
+
+        mockParticipantAddition(participant);
+        var storeMigrator = createMigrator();
+
+        assertThatThrownBy(() -> storeMigrator.migrateIfNeeded("foo", false))
+                .isInstanceOf(UnableToMigrateException.class)
+                .hasMessageContaining("to 'foo' not supported");
+    }
+
     private String userVersionString(RecordFormats format) {
         return StoreVersionUserStringProvider.formatVersion(
                 RecordStorageEngineFactory.NAME,

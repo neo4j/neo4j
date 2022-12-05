@@ -295,17 +295,18 @@ public class StoreMigrator {
         StoreVersionCheck storeVersionCheck =
                 storageEngineFactory.versionCheck(fs, databaseLayout, config, pageCache, logService, contextFactory);
         var checkResult = storeVersionCheck.getAndCheckMigrationTargetVersion(formatToMigrateTo, cursorContext);
+        var fromVersion = checkResult.versionToMigrateFrom();
+        var toVersion = checkResult.versionToMigrateTo();
         return switch (checkResult.outcome()) {
-            case MIGRATION_POSSIBLE -> new CheckResult(
-                    false, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
-            case NO_OP -> new CheckResult(true, checkResult.versionToMigrateFrom(), checkResult.versionToMigrateTo());
+            case MIGRATION_POSSIBLE -> new CheckResult(false, fromVersion, toVersion);
+            case NO_OP -> new CheckResult(true, fromVersion, toVersion);
             case STORE_VERSION_RETRIEVAL_FAILURE -> throw new UnableToMigrateException(
                     "Failed to read current store version. This usually indicate a store corruption",
                     checkResult.cause());
             case UNSUPPORTED_MIGRATION_PATH -> throw new UnableToMigrateException(String.format(
                     "Store migration from '%s' to '%s' not supported",
-                    checkResult.versionToMigrateFrom().getStoreVersionUserString(),
-                    checkResult.versionToMigrateTo().getStoreVersionUserString()));
+                    fromVersion.getStoreVersionUserString(),
+                    toVersion != null ? toVersion.getStoreVersionUserString() : formatToMigrateTo));
             case UNSUPPORTED_TARGET_VERSION -> throw new UnableToMigrateException(
                     "The current store version is not supported. " + "Please migrate the store to be able to continue");
         };

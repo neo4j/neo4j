@@ -89,6 +89,10 @@ public class RecordStoreVersionCheck implements StoreVersionCheck {
 
         RecordFormats formatToMigrateTo = RecordFormatSelector.findLatestFormatInFamily(formatFamily, config);
 
+        if (formatToMigrateTo == null) {
+            return new MigrationCheckResult(MigrationOutcome.UNSUPPORTED_MIGRATION_PATH, currentVersion, null, null);
+        }
+
         if (formatToMigrateTo.onlyForMigration()) {
             return new MigrationCheckResult(
                     MigrationOutcome.UNSUPPORTED_TARGET_VERSION,
