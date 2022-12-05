@@ -67,7 +67,6 @@ import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphalgo.BasicEvaluationContext
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
-import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
@@ -129,7 +128,6 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.logging.internal.LogService
 import org.neo4j.memory.MemoryTracker
-import org.neo4j.storageengine.api.RelationshipSelection
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
@@ -151,7 +149,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.util.Using
 import scala.util.control.NonFatal
 
 sealed class TransactionBoundQueryContext(
@@ -989,42 +986,25 @@ private[internal] class TransactionBoundReadQueryContext(
 
   override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.selection(Direction.OUTGOING))
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, Direction.OUTGOING)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.OUTGOING)
     }
   }
 
   override def nodeGetIncomingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.selection(Direction.INCOMING))
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, Direction.INCOMING)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.INCOMING)
     }
   }
 
   override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.ALL_RELATIONSHIPS)
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, Direction.BOTH)
-    }
-  }
-
-  // Surprisingly, benchmarks have shown that this is faster for dense nodes!
-  private def nodeDegreeMaxOne(positionedNodeCursor: NodeCursor, selection: RelationshipSelection): Int = {
-    Using.resource(traversalCursor()) { cursor =>
-      positionedNodeCursor.relationships(cursor, selection)
-      if (cursor.next()) 1 else 0
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, org.neo4j.graphdb.Direction.BOTH)
     }
   }
 
@@ -1053,12 +1033,9 @@ private[internal] class TransactionBoundReadQueryContext(
     nodeCursor: NodeCursor
   ): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.selection(relationship, Direction.OUTGOING))
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, relationship, Direction.OUTGOING)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.OUTGOING)
     }
   }
 
@@ -1069,23 +1046,17 @@ private[internal] class TransactionBoundReadQueryContext(
     nodeCursor: NodeCursor
   ): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.selection(relationship, Direction.INCOMING))
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, relationship, Direction.INCOMING)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.INCOMING)
     }
   }
 
   override def nodeGetTotalDegreeWithMax(maxDegree: Int, node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
     reads().singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) {
-      0
-    } else if (maxDegree == 1 && nodeCursor.supportsFastDegreeLookup()) {
-      nodeDegreeMaxOne(nodeCursor, RelationshipSelection.selection(relationship, Direction.BOTH))
-    } else {
-      Nodes.countWithMax(maxDegree, nodeCursor, relationship, Direction.BOTH)
+    if (!nodeCursor.next()) 0
+    else {
+      Nodes.countWithMax(maxDegree, nodeCursor, relationship, org.neo4j.graphdb.Direction.BOTH)
     }
   }
 
