@@ -240,6 +240,13 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => config.planningPointIndexesEnabled
   }
 
+  val planningIntersectionScansEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic()
+    )
+    () => config.planningIntersectionScansEnabled
+  }
+
   val predicatesAsUnionMaxSize: () => Int = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.predicates_as_union_max_size.dynamic()

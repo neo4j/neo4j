@@ -92,6 +92,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
       .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
+      .enablePlanningIntersectionScans()
 
   case class TestOrder(
     indexOrder: IndexOrder,

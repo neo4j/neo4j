@@ -921,6 +921,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Feature flag to enable/disable planning use of intersection scans.")
+    public static final Setting<Boolean> planning_intersection_scans_enabled = newBuilder(
+                    "internal.cypher.planning_intersection_scans_enabled", BOOL, false)
+            .build();
+
+    @Internal
     @Description(
             "Limits the maximum amount of off-heap memory the consistency checker will allocate. The value is given as a factor between 0.1 .. 1 "
                     + "and will be multiplied with actual available memory to get the effectively available amount of memory taken into consideration")

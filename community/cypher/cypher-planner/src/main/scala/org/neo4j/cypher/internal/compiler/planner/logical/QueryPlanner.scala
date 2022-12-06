@@ -102,6 +102,7 @@ case object QueryPlanner
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled(),
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled(),
       planningPointIndexesEnabled = context.config.planningPointIndexesEnabled(),
+      planningIntersectionScansEnabled = context.config.planningIntersectionScansEnabled(),
       useLegacyShortestPath = context.config.useLegacyShortestPath()
     )
 

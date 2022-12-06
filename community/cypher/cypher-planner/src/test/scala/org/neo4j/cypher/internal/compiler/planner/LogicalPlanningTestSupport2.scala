@@ -181,7 +181,9 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
-  val defaultCypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
+  val defaultCypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.withSettings(
+    Map(GraphDatabaseInternalSettings.planning_intersection_scans_enabled -> java.lang.Boolean.TRUE)
+  )
 
   def defaultParsingConfig(cypherCompilerConfig: CypherPlannerConfiguration): ParsingConfig =
     ParsingConfig(

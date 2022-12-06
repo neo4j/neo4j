@@ -103,6 +103,9 @@ class CypherConfiguration private (val config: Config) {
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
 
+  val planningIntersectionScansEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
+
   val useLPEagerAnalyzer: Boolean = config.get(
     GraphDatabaseInternalSettings.cypher_eager_analysis_implementation
   ) == GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
