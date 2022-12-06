@@ -672,6 +672,23 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test("inserts no eager between label create and label read (Filter) after stable AllNodeScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N", "O"))
+      .filter("n:N")
+      .filter("n:O")
+      .unwind("n.prop AS prop")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
   test("inserts eager between Create and AllNodeScan if read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
@@ -1682,8 +1699,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
-      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(2))))))
       .filter("n:N")
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
       .nodeByIdSeek("n", Set.empty, 1)
       .build())
   }
@@ -1707,8 +1724,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
-      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(2))))))
       .filter("n:N")
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
       .nodeByIdSeek("n", Set.empty, 1, 2, 3)
       .build())
   }
@@ -2198,6 +2215,40 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .expand("(n)-->(m)")
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between label create and label read (Filter) directly after AllNodeScan if cheapest") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N", "O"))
+      .filter("n:N").withCardinality(800)
+      .filter("n:O").withCardinality(900)
+      .unwind("n.prop AS prop").withCardinality(1000)
+      .apply().withCardinality(10)
+      .|.allNodeScan("n").withCardinality(10)
+      .argument().withCardinality(1)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("m", "N", "O"))
+        .filter("n:N")
+        .filter("n:O")
+        .unwind("n.prop AS prop")
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(6)))),
+          LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(6))))
+        ))
+        .apply()
+        .|.allNodeScan("n")
+        .argument()
         .build()
     )
   }

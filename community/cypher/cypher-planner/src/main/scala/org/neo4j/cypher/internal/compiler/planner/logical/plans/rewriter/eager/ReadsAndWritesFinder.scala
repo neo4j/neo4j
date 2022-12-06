@@ -148,7 +148,7 @@ object ReadsAndWritesFinder {
    * @param expression                 an expression of all predicates related to one variable.
    */
   case class FilterExpressions(
-    plansThatIntroduceVariable: Seq[LogicalPlan],
+    plansThatIntroduceVariable: Set[LogicalPlan],
     expression: Expression = Ands(Seq.empty)(InputPosition.NONE)
   ) {
 
@@ -231,13 +231,14 @@ object ReadsAndWritesFinder {
    * @param readProperties a provider to find out which plans read which properties.
    * @param readLabels a provider to find out which plans read which labels.
    * @param filterExpressions for each variable the expressions that filter on that variable.
-   * @param allNodeReadPlans all AllNodesScan plans
+   *                          This also tracks if a variable is introduced by a plan. 
+   *                          If a variable is introduced by a plan, and no predicates are applied on that variable,
+   *                          it is still present as a key in this map.
    */
   private[eager] case class Reads(
     readProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
     readLabels: ReadingPlansProvider[LabelName] = ReadingPlansProvider(),
-    filterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
-    allNodeReadPlans: Seq[LogicalPlan] = Seq.empty
+    filterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty
   ) {
 
     /**
@@ -267,13 +268,21 @@ object ReadsAndWritesFinder {
       copy(readLabels = readLabels.withSymbolRead(label, plan))
     }
 
+    def withIntroducedVariable(
+      variable: LogicalVariable,
+      plan: LogicalPlan
+    ): Reads = {
+      val newExpressions = filterExpressions.getOrElse(variable, FilterExpressions(Set(plan)))
+      copy(filterExpressions = filterExpressions + (variable -> newExpressions))
+    }
+
     def withAddedFilterExpression(
       variable: LogicalVariable,
       plan: LogicalPlan,
       filterExpression: Expression
     ): Reads = {
       val newExpressions =
-        filterExpressions.getOrElse(variable, FilterExpressions(Seq(plan))).withAddedExpression(
+        filterExpressions.getOrElse(variable, FilterExpressions(Set(plan))).withAddedExpression(
           filterExpression
         )
       copy(filterExpressions = filterExpressions + (variable -> newExpressions))
@@ -282,22 +291,23 @@ object ReadsAndWritesFinder {
     def withUnknownLabelsRead(plan: LogicalPlan): Reads =
       copy(readLabels = readLabels.withUnknownSymbolsRead(plan))
 
-    def withAllNodesRead(plan: LogicalPlan): Reads =
-      copy(allNodeReadPlans = allNodeReadPlans :+ plan)
-
     def includePlanReads(plan: LogicalPlan, planReads: PlanReads): Reads = {
       Option(this)
         .map(acc => planReads.readProperties.foldLeft(acc)(_.withPropertyRead(_, plan)))
         .map(acc => planReads.readLabels.foldLeft(acc)(_.withLabelRead(_, plan)))
-        .map(acc =>
+        .map(acc => {
           planReads.filterExpressions.foldLeft(acc) {
             case (acc, (variable, expressions)) =>
-              expressions.foldLeft(acc)(_.withAddedFilterExpression(variable, plan, _))
+              if (expressions.isEmpty) {
+                // The plan introduces the variable but has no filter expressions
+                acc.withIntroducedVariable(variable, plan)
+              } else {
+                expressions.foldLeft(acc)(_.withAddedFilterExpression(variable, plan, _))
+              }
           }
-        )
+        })
         .map(acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc)
         .map(acc => if (planReads.readsUnknownProperties) acc.withUnknownPropertiesRead(plan) else acc)
-        .map(acc => if (planReads.readsAllNodes) acc.withAllNodesRead(plan) else acc)
         .get
     }
 
@@ -315,8 +325,7 @@ object ReadsAndWritesFinder {
       copy(
         readProperties = this.readProperties ++ other.readProperties,
         readLabels = this.readLabels ++ other.readLabels,
-        filterExpressions = this.filterExpressions.fuse(other.filterExpressions)(_ ++ (_, mergePlan)),
-        allNodeReadPlans = this.allNodeReadPlans ++ other.allNodeReadPlans
+        filterExpressions = this.filterExpressions.fuse(other.filterExpressions)(_ ++ (_, mergePlan))
       )
     }
   }
@@ -367,13 +376,11 @@ object ReadsAndWritesFinder {
    *                                   because we need to view the composite label expressions when checking against
    *                                   filterExpressions.
    *                                   This is a Set of a Set because we need to group the writes by which node they happen on.
-   * @param plansThatCreateNodes       all plans that create nodes
    * @param filterExpressionsSnapshots for each plan (that will need to look at that later), a snapshot of the current filterExpressions.
    */
   private[eager] case class Creates(
     writtenProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
     writtenLabels: Map[LogicalPlan, Set[Set[LabelName]]] = Map.empty,
-    plansThatCreateNodes: Seq[LogicalPlan] = Seq.empty,
     filterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
 
@@ -401,9 +408,6 @@ object ReadsAndWritesFinder {
       )
     }
 
-    def withNodesCreated(plan: LogicalPlan): Creates =
-      copy(plansThatCreateNodes = plansThatCreateNodes :+ plan)
-
     def includePlanCreates(
       plan: LogicalPlan,
       planCreates: PlanCreates,
@@ -413,7 +417,6 @@ object ReadsAndWritesFinder {
         .map(acc => planCreates.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)))
         .map(acc => if (planCreates.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc)
         .map(acc => planCreates.writtenLabels.foldLeft(acc)(_.withLabelsWritten(_, plan, filterExpressionsSnapshot)))
-        .map(acc => if (planCreates.createsNodes) acc.withNodesCreated(plan) else acc)
         .get
     }
 
@@ -421,7 +424,6 @@ object ReadsAndWritesFinder {
       copy(
         writtenProperties = this.writtenProperties ++ other.writtenProperties,
         writtenLabels = this.writtenLabels.fuse(other.writtenLabels)(_ ++ _),
-        plansThatCreateNodes = this.plansThatCreateNodes ++ other.plansThatCreateNodes,
         filterExpressionsSnapshots = this.filterExpressionsSnapshots ++ other.filterExpressionsSnapshots
       )
     }

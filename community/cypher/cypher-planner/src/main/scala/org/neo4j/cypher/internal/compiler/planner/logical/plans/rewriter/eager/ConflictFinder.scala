@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByG
 import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -117,17 +118,12 @@ object ConflictFinder {
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      addConflict(writePlan, readPlan, labelSet.map(EagernessReason.LabelReadSetConflict(_, conflict)))
-    }
-
-    // Conflicts between plans that create nodes and AllNodeScans
-    for {
-      writePlan <- readsAndWrites.writes.creates.plansThatCreateNodes
-      readPlan <- readsAndWrites.reads.allNodeReadPlans
-      if isValidConflict(readPlan, writePlan, wholePlan)
-    } {
-      val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      addConflict(writePlan, readPlan, Set(EagernessReason.ReadCreateConflict(conflict)))
+      val emptyFilterExpressions = FilterExpressions(Set.empty)
+      // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
+      val reasons: Set[EagernessReason.Reason] =
+        if (labelSet.isEmpty || expression == emptyFilterExpressions.expression) Set(ReadCreateConflict(conflict))
+        else labelSet.map(EagernessReason.LabelReadSetConflict(_, conflict))
+      addConflict(writePlan, readPlan, reasons)
     }
 
     map.map {

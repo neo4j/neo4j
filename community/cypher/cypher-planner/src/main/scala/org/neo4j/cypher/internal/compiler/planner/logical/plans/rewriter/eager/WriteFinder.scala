@@ -106,17 +106,12 @@ object WriteFinder {
    * Create write operations of a single plan
    * Labels needs to be differentiated based on each create
    * since we can then assume that no other label is on that node since it was just created.
-   *
-   * @param createsNodes `true` if this plan creates nodes
    */
   private[eager] case class PlanCreates(
     override val writtenProperties: Seq[PropertyKeyName] = Seq.empty,
     override val writesUnknownProperties: Boolean = false,
-    writtenLabels: Set[Set[LabelName]] = Set.empty,
-    createsNodes: Boolean = false
+    writtenLabels: Set[Set[LabelName]] = Set.empty
   ) extends PlanWriteOperations {
-
-    def withCreatesNodes: PlanCreates = copy(createsNodes = true)
 
     override def withPropertyWritten(property: PropertyKeyName): PlanCreates =
       copy(writtenProperties = writtenProperties :+ property)
@@ -199,7 +194,6 @@ object WriteFinder {
     nodes.foldLeft(acc) {
       case (acc, CreateNode(_, labels, maybeProperties)) =>
         Option(acc)
-          .map(acc => acc.withCreatesNodes)
           .map(acc => acc.withLabelsWritten(labels))
           .map(acc =>
             maybeProperties match {

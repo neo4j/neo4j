@@ -68,16 +68,17 @@ object ReadFinder {
    * @param readsUnknownProperties `true` if the plan reads unknown properties, e.g. by calling the `properties` function.
    * @param readLabels             the read labels
    * @param filterExpressions      All expressions that filter the rows, in a map with the dependency as key.
+   *                               This also tracks if a variable is introduced by this plan. 
+   *                               If a variable is introduced by this plan, and no predicates are applied on that variable,
+   *                               it is still present as a key in this map with an empty sequence of filter expressions.
    * @param readsUnknownLabels     `true` if the plan reads unknown labels, e.g. by calling the `labels` function.
-   * @param readsAllNodes          `true` if the plan is an [[AllNodesScan]]
    */
   private[eager] case class PlanReads(
     readProperties: Seq[PropertyKeyName] = Seq.empty,
     readsUnknownProperties: Boolean = false,
     readLabels: Seq[LabelName] = Seq.empty,
     filterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
-    readsUnknownLabels: Boolean = false,
-    readsAllNodes: Boolean = false
+    readsUnknownLabels: Boolean = false
   ) {
 
     def withPropertyRead(property: PropertyKeyName): PlanReads = {
@@ -91,6 +92,11 @@ object ReadFinder {
       copy(readLabels = readLabels :+ label)
     }
 
+    def withIntroducedVariable(variable: LogicalVariable): PlanReads = {
+      val newExpressions = filterExpressions.getOrElse(variable, Seq.empty)
+      copy(filterExpressions = filterExpressions + (variable -> newExpressions))
+    }
+
     def withAddedFilterExpression(variable: LogicalVariable, filterExpression: Expression): PlanReads = {
       val newExpressions = filterExpressions.getOrElse(variable, Seq.empty) :+ filterExpression
       copy(filterExpressions = filterExpressions + (variable -> newExpressions))
@@ -98,9 +104,6 @@ object ReadFinder {
 
     def withUnknownLabelsRead(): PlanReads =
       copy(readsUnknownLabels = true)
-
-    def withAllNodesRead: PlanReads =
-      copy(readsAllNodes = true)
   }
 
   /**
@@ -112,26 +115,34 @@ object ReadFinder {
       case p: LogicalLeafPlan =>
         // This extra match is not strictly necessary, but allows us to detect a missing case for new leaf plans easier because it will fail hard.
         p match {
-          case _: AllNodesScan =>
-            PlanReads().withAllNodesRead
+          case AllNodesScan(varName, _) =>
+            val variable = Variable(varName)(InputPosition.NONE)
+            PlanReads()
+              .withIntroducedVariable(variable)
 
           case NodeByLabelScan(varName, labelName, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
             val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
             PlanReads()
               .withLabelRead(labelName)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
 
           case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
-            labelNames.foldLeft(PlanReads()) { (acc, labelName) =>
-              val variable = Variable(varName)(InputPosition.NONE)
+            val variable = Variable(varName)(InputPosition.NONE)
+            val acc = PlanReads()
+              .withIntroducedVariable(variable)
+            labelNames.foldLeft(acc) { (acc, labelName) =>
               val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
               acc.withLabelRead(labelName)
                 .withAddedFilterExpression(variable, hasLabels)
             }
 
           case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
-            labelNames.foldLeft(PlanReads()) { (acc, labelName) =>
+            val variable = Variable(varName)(InputPosition.NONE)
+            val acc = PlanReads()
+              .withIntroducedVariable(variable)
+            labelNames.foldLeft(acc) { (acc, labelName) =>
               val variable = Variable(varName)(InputPosition.NONE)
               val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
               acc.withLabelRead(labelName)
@@ -139,12 +150,12 @@ object ReadFinder {
             }
 
           case NodeCountFromCountStore(varName, labelNames, _) =>
-            val countsAllNodes = labelNames.exists(_.isEmpty)
-            val acc = PlanReads(readsAllNodes = countsAllNodes)
+            // The varName is really for the count variable - we don't have a node variable.
+            // But this is OK?
+            val variable = Variable(varName)(InputPosition.NONE)
+            val acc = PlanReads()
+              .withIntroducedVariable(variable)
             labelNames.flatten.foldLeft(acc) { (acc, labelName) =>
-              // The varName is really for the count variable - we don't have a node variable.
-              // But this is OK?
-              val variable = Variable(varName)(InputPosition.NONE)
               val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
               acc.withLabelRead(labelName)
                 .withAddedFilterExpression(variable, hasLabels)
@@ -157,6 +168,7 @@ object ReadFinder {
 
             val r = PlanReads()
               .withLabelRead(lN)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
 
             properties.foldLeft(r) {
@@ -171,6 +183,7 @@ object ReadFinder {
 
             val r = PlanReads()
               .withLabelRead(lN)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
 
             properties.foldLeft(r) {
@@ -185,6 +198,7 @@ object ReadFinder {
 
             val r = PlanReads()
               .withLabelRead(lN)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
 
             properties.foldLeft(r) {
@@ -207,6 +221,7 @@ object ReadFinder {
 
             PlanReads()
               .withLabelRead(lN)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
@@ -225,14 +240,17 @@ object ReadFinder {
 
             PlanReads()
               .withLabelRead(lN)
+              .withIntroducedVariable(variable)
               .withAddedFilterExpression(variable, hasLabels)
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
-          case _: NodeByIdSeek =>
+          case NodeByIdSeek(varName, _, _) =>
             // We could avoid eagerness when we have IdSeeks with a single ID.
             // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
             // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
+            val variable = Variable(varName)(InputPosition.NONE)
             PlanReads()
+              .withIntroducedVariable(variable)
 
           case _: Argument =>
             PlanReads()
