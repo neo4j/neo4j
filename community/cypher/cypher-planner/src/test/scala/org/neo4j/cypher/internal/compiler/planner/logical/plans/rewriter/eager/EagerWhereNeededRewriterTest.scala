@@ -869,6 +869,99 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts no eager between Create and UnionNodeByLabelScan if no label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "O"))
+      .apply()
+      .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager between Create and UnionNodeByLabelScan if label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "M"))
+      .apply()
+      .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "M"))
+        .eager(ListSet(LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts no eager between Create and IntersectionNodeByLabelScan if no label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "O"))
+      .apply()
+      .|.unionNodeByLabelsScan("n", Seq("N", "M"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager between Create and IntersectionNodeByLabelScan if label overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o", "M", "N"))
+      .apply()
+      .|.intersectionNodeByLabelsScan("n", Seq("N", "M"))
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(createNode("o", "M", "N"))
+        .eager(ListSet(
+          LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.intersectionNodeByLabelsScan("n", Seq("N", "M"))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
     "inserts no eager between Create and NodeByLabelScan if no label overlap with ANDed labels, same label in Filter"
   ) {
     val planBuilder = new LogicalPlanBuilder()

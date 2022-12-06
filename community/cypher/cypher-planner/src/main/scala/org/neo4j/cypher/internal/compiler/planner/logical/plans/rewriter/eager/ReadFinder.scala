@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -130,12 +131,15 @@ object ReadFinder {
 
           case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
+            val predicates = labelNames.map { labelName =>
+              HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+            }
+            val filterExpression = Ors(predicates)(InputPosition.NONE)
             val acc = PlanReads()
               .withIntroducedVariable(variable)
+              .withAddedFilterExpression(variable, filterExpression)
             labelNames.foldLeft(acc) { (acc, labelName) =>
-              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
               acc.withLabelRead(labelName)
-                .withAddedFilterExpression(variable, hasLabels)
             }
 
           case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
