@@ -1188,7 +1188,14 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter(_ == someNode).map(n => Array[Any](n, n.getProperty("prop"), n.getProperty("prop2")))
+    val expectedProp = Values.of(someNode.getProperty("prop"))
+    val expectedProp2 = Values.of(someNode.getProperty("prop2"))
+    val expected = nodes
+      .map(n => (n, Values.of(n.getProperty("prop")), Values.of(n.getProperty("prop2"))))
+      .collect {
+        case (n, prop, prop2) if prop == expectedProp && prop2 == expectedProp2 =>
+          Array[Any](n, prop, prop2)
+      }
     runtimeResult should beColumns("x", "prop", "prop2").withRows(expected)
   }
 
