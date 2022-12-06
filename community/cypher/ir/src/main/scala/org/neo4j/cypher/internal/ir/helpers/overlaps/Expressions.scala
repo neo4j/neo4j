@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir.helpers.overlaps
 
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -73,6 +74,9 @@ object Expressions {
    */
   def extractPropertyExpression(expression: Expression): Option[PropertyKeyName] =
     expression match {
+      // When running this from LP eager analysis, In can have been rewritten back to Equals
+      case Equals(property: Property, _) => Some(property.propertyKey)
+      case Equals(_, property: Property) => Some(property.propertyKey)
       case In(property: Property, _)     => Some(property.propertyKey)
       case IsNotNull(property: Property) => Some(property.propertyKey)
       case _                             => None

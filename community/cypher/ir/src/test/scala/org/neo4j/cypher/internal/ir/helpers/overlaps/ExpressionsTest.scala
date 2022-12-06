@@ -46,6 +46,20 @@ class ExpressionsTest extends AnyFunSuite with Matchers with AstConstructionTest
     Expressions.extractPropertyExpression(inExpression) shouldEqual Some(itemQuantity.propertyKey)
   }
 
+  test("extract property from Equals LHS expression") {
+    val itemQuantity = prop("item", "quantity")
+    val eqExpression = equals(itemQuantity, literalInt(42))
+
+    Expressions.extractPropertyExpression(eqExpression) shouldEqual Some(itemQuantity.propertyKey)
+  }
+
+  test("extract property from Equals RHS expression") {
+    val itemQuantity = prop("item", "quantity")
+    val eqExpression = equals(literalInt(42), itemQuantity)
+
+    Expressions.extractPropertyExpression(eqExpression) shouldEqual Some(itemQuantity.propertyKey)
+  }
+
   test("extract property from IsNotNull expression") {
     val itemQuantity = prop("item", "quantity")
     val isNotNullExpression = isNotNull(itemQuantity)
