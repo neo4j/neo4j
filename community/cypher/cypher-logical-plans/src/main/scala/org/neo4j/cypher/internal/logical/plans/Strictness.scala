@@ -41,3 +41,8 @@ trait SingleFromRightLogicalPlan extends LogicalBinaryPlan {
   final def source: LogicalPlan = left
   final def inner: LogicalPlan = right
 }
+
+/**
+ * A leaf plan that is unaffected by changes the transaction state after yielding the first row.
+ */
+trait StableLeafPlan extends LogicalLeafPlan

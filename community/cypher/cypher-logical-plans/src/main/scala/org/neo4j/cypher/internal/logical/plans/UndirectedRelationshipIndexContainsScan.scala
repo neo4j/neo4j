@@ -44,7 +44,7 @@ case class UndirectedRelationshipIndexContainsScan(
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends RelationshipIndexLeafPlan(idGen) {
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 

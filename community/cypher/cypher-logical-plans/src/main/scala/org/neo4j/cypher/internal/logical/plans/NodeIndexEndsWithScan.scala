@@ -40,7 +40,7 @@ case class NodeIndexEndsWithScan(
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends NodeIndexLeafPlan(idGen) {
+    extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 

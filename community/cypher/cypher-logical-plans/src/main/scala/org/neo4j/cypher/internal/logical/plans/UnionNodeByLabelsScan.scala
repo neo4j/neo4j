@@ -33,7 +33,7 @@ case class UnionNodeByLabelsScan(
   argumentIds: Set[String],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) {
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 

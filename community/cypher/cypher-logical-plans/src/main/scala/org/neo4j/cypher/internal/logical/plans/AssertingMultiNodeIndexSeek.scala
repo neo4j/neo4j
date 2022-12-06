@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * node is guaranteed per seek.
  */
 case class AssertingMultiNodeIndexSeek(node: String, nodeIndexSeeks: Seq[NodeIndexSeekLeafPlan])(implicit idGen: IdGen)
-    extends MultiNodeIndexLeafPlan(idGen) {
+    extends MultiNodeIndexLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] =
     nodeIndexSeeks.flatMap(_.availableSymbols).toSet

@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 /**
  * Produce a single row with the contents of argument
  */
-case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen)
+    with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds
 

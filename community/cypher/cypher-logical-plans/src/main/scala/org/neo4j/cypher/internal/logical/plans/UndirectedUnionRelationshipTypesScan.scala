@@ -35,7 +35,7 @@ case class UndirectedUnionRelationshipTypesScan(
   argumentIds: Set[String],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) {
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 

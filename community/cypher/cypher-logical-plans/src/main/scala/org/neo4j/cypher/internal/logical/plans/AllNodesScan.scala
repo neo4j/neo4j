@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * a node assigned to the variable IdName.
  */
 case class AllNodesScan(idName: String, argumentIds: Set[String])(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) {
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds + idName
 

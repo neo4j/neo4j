@@ -38,7 +38,7 @@ case class DirectedRelationshipTypeScan(
   argumentIds: Set[String],
   indexOrder: IndexOrder
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan {
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 

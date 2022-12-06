@@ -27,10 +27,12 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * Produce a single row with the contents of argument and a new value 'idName'. For each label in 'labelNames' the
  * number of nodes with that label is fetched from the counts store. These counts are multiplied together, and the
  * result is assigned to 'idName'
+ *
+ * Returns only a single row, thus a StableLeafPlan.
  */
 case class NodeCountFromCountStore(idName: String, labelNames: List[Option[LabelName]], argumentIds: Set[String])(
   implicit idGen: IdGen
-) extends LogicalLeafPlan(idGen) {
+) extends LogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols = Set(idName)
 

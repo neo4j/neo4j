@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.util.Ref
 
@@ -137,11 +138,13 @@ object ConflictFinder {
   private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
     // A plan can never conflict with itself
     writePlan != readPlan &&
-    // currently, we consider the leftmost plan to be stable unless we are in a call in transactions
-    (readPlan != wholePlan.leftmostLeaf || isInTransactionalApply(
-      writePlan,
-      wholePlan
-    ))
+    // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
+    (readPlan != wholePlan.leftmostLeaf ||
+      !readPlan.isInstanceOf[StableLeafPlan] ||
+      isInTransactionalApply(
+        writePlan,
+        wholePlan
+      ))
   }
 
   private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {

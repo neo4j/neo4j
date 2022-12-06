@@ -42,7 +42,7 @@ case class UndirectedRelationshipIndexScan(
   indexOrder: IndexOrder,
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends RelationshipIndexLeafPlan(idGen) {
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 

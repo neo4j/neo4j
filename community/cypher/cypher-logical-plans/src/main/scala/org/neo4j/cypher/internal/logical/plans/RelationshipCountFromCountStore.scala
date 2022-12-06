@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *
  * is fetched from the counts store. These counts are summed, and the result is
  * assigned to 'idName'.
+ *
+ * Returns only a single row, thus a StableLeafPlan.
  */
 case class RelationshipCountFromCountStore(
   idName: String,
@@ -40,7 +42,7 @@ case class RelationshipCountFromCountStore(
   endLabel: Option[LabelName],
   argumentIds: Set[String]
 )(implicit idGen: IdGen)
-    extends LogicalLeafPlan(idGen) {
+    extends LogicalLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols = Set(idName)
 
