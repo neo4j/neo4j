@@ -181,9 +181,9 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
         // Make an effort to remove holes
         var j = i
         while (j >= 0 && closeables(j) == null) {
-          highMark -= 1
           j -= 1
         }
+        highMark -= (i - j)
       }
 
       true
