@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 
 import scala.annotation.tailrec
@@ -29,8 +28,8 @@ This rewriter tries to limit rewriters that grow the product AST too much
  */
 case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewritingMonitor) extends Rewriter {
 
-  private def astNodeSize(value: Any): Int = value.folder.treeFold(1) {
-    case _: ASTNode => acc => TraverseChildren(acc + 1)
+  private def astNodeSize(value: Any): Int = value.folder.treeCount {
+    case _: ASTNode => true
   }
 
   final def apply(that: AnyRef): AnyRef = {
