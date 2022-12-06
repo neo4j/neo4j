@@ -611,6 +611,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withSetting(GraphDatabaseInternalSettings.planning_point_indexes_enabled, Boolean.box(enabled))
   }
 
+  def enablePlanningIntersectionScans(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    withSetting(GraphDatabaseInternalSettings.planning_intersection_scans_enabled, Boolean.box(enabled))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>

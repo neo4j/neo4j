@@ -1633,6 +1633,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should work with label scans of label conjunctions only") {
     val cfg = plannerBuilder()
+      .enablePlanningIntersectionScans()
       .setAllNodesCardinality(100)
       .setLabelCardinality("L", 50)
       .setLabelCardinality("P", 50)
@@ -1659,6 +1660,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should work with label scans of label conjunctions only and solve single scan hint") {
     val cfg = plannerBuilder()
+      .enablePlanningIntersectionScans()
       .setAllNodesCardinality(100)
       .setLabelCardinality("L", 50)
       .setLabelCardinality("P", 50)
@@ -1687,6 +1689,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should work with label scans of label conjunctions only and solve two scan hints") {
     val cfg = plannerBuilder()
+      .enablePlanningIntersectionScans()
       .setAllNodesCardinality(100)
       .setLabelCardinality("L", 50)
       .setLabelCardinality("P", 50)

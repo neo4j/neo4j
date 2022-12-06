@@ -134,6 +134,8 @@ object LogicalPlanningContext {
     planningTextIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
     planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
     planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
+    planningIntersectionScansEnabled: Boolean =
+      GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
     useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
   ) {
 
@@ -159,6 +161,7 @@ object LogicalPlanningContext {
           planningTextIndexesEnabled: Boolean,
           planningRangeIndexesEnabled: Boolean,
           planningPointIndexesEnabled: Boolean,
+          planningIntersectionScansEnabled: Boolean,
           useLegacyShortestPath: Boolean
         ) =>
         val builder = Seq.newBuilder[Any]
@@ -191,6 +194,9 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseInternalSettings.planning_point_indexes_enabled.dynamic())
           builder.addOne(planningPointIndexesEnabled)
+
+        if (GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic())
+          builder.addOne(planningIntersectionScansEnabled)
 
         // use_legacy_shortest_path is dynamic, but documented to not affect caching.
         // if (GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic())

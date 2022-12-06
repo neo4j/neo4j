@@ -42,6 +42,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     s"NONE(anon_$unnamedOffset IN $lhs WHERE anon_$unnamedOffset IN $rhs)"
 
   private val planner = plannerBuilder()
+    .enablePlanningIntersectionScans()
     .setAllNodesCardinality(100)
     .setAllRelationshipsCardinality(40)
     .setLabelCardinality("User", 5)
