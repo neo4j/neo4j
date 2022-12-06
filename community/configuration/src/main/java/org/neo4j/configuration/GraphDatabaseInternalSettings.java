@@ -1033,4 +1033,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Long> multi_version_transaction_chunk_size = newBuilder(
                     "internal.db.multiversion.transaction.chunk.size", BYTES, mebiBytes(10))
             .build();
+
+    @Internal
+    @Description("Page Cache Warmer blocks database start until it's completed")
+    public static final Setting<Boolean> pagecache_warmup_blocking = newBuilder(
+                    "internal.db.memory.pagecache.warmup.blocking_enabled", BOOL, false)
+            .build();
 }
