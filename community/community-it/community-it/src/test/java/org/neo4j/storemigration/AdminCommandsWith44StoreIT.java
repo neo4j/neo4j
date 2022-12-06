@@ -69,7 +69,6 @@ class AdminCommandsWith44StoreIT {
         ZippedStoreCommunity.AF430_V44_ALL.unzip(homeDir);
 
         var result = runCommandFromSameJvm(StoreInfoCommand::new, "neo4j");
-        System.out.println(result.err);
         assertEquals(0, result.exitCode());
         assertThat(result.out)
                 .contains("Database name:                neo4j")
@@ -92,7 +91,6 @@ class AdminCommandsWith44StoreIT {
                 "--from-path",
                 neo4jLayout.homeDirectory().toString());
 
-        System.out.println(result.err);
         assertEquals(0, result.exitCode());
     }
 

@@ -21,6 +21,8 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
@@ -105,13 +107,12 @@ public class StoreInfoCommand extends AbstractAdminCommand {
         @Override
         public Boolean convert(String name) {
             String lowerCase = name.toLowerCase(Locale.ROOT);
-            if (PLAIN_FORMAT.equals(lowerCase)) {
-                return false;
-            } else if (JSON_FORMAT.equals(lowerCase)) {
-                return true;
-            }
-            throw new CommandLine.TypeConversionException(
-                    format("Invalid format '%s'. Supported options are 'text' or 'json'", name));
+            return switch (lowerCase) {
+                case PLAIN_FORMAT, FALSE -> false;
+                case JSON_FORMAT, TRUE -> true;
+                default -> throw new CommandLine.TypeConversionException(
+                        format("Invalid format '%s'. Supported options are 'text' or 'json'", name));
+            };
         }
     }
 

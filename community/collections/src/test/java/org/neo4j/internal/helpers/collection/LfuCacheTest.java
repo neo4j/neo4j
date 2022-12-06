@@ -19,12 +19,10 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class LfuCacheTest {
@@ -68,18 +66,18 @@ class LfuCacheTest {
         cache.put(key3, s3);
         cache.get(key2);
 
-        assertEquals(new HashSet<>(Arrays.asList(key1, key2, key3)), cache.keySet());
+        assertThat(cache.keySet()).containsOnly(key1, key2, key3);
 
         cache.put(key4, s4);
 
-        assertEquals(new HashSet<>(Arrays.asList(key2, key3, key4)), cache.keySet());
+        assertThat(cache.keySet()).contains(key4);
 
         cache.put(key5, s5);
 
         int size = cache.size();
 
         assertEquals(3, size);
-        assertEquals(s2, cache.get(key2));
+        assertEquals(s5, cache.get(key5));
 
         cache.clear();
         assertEquals(0, cache.size());
@@ -105,12 +103,12 @@ class LfuCacheTest {
         cache.put(key3, s3);
         cache.get(key2);
 
-        assertEquals(Set.of(new Integer[] {key1, key2, key3}), cache.keySet());
+        assertThat(cache.keySet()).containsOnly(key1, key2, key3);
         assertEquals(cache.maxSize(), cache.size());
 
         cache.put(key4, s4);
 
-        assertEquals(Set.of(new Integer[] {key2, key3, key4}), cache.keySet());
+        assertThat(cache.keySet()).contains(key4);
 
         cache.put(key5, s5);
 
