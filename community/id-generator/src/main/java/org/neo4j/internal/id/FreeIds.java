@@ -20,7 +20,6 @@
 package org.neo4j.internal.id;
 
 import java.io.IOException;
-import java.util.function.LongConsumer;
 
 /**
  * Accessor/stream of free ids, for rebuild purposes.
@@ -34,8 +33,19 @@ public interface FreeIds {
 
     /**
      * @param visitor consumer of the free ids.
-     * @return the highest id visited.
      * @throws IOException on I/O error.
      */
-    long accept(LongConsumer visitor) throws IOException;
+    long accept(IdVisitor visitor) throws IOException;
+
+    default boolean visitsDeletedIds() {
+        return true;
+    }
+
+    interface IdVisitor {
+        void accept(long id, int numberOfIds);
+
+        default void accept(long id) {
+            accept(id, 1);
+        }
+    }
 }

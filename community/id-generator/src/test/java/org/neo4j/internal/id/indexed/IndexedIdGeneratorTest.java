@@ -68,9 +68,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
+import org.eclipse.collections.api.factory.primitive.LongLists;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -479,6 +479,27 @@ class IndexedIdGeneratorTest {
         // then
         assertEquals(0L, idGenerator.nextId(NULL_CONTEXT));
         assertEquals(1L, idGenerator.nextId(NULL_CONTEXT));
+    }
+
+    @Test
+    void shouldRebuildWithVariantThatProvidesUsedIds() throws IOException {
+        // given
+        open();
+        var numberOfUsedIds = random.nextInt(100, 300);
+        var usedIds = new long[numberOfUsedIds];
+        long nextId = random.nextInt(5);
+        for (var i = 0; i < usedIds.length; i++) {
+            usedIds[i] = nextId;
+            nextId += random.nextInt(1, 4);
+        }
+
+        // when
+        idGenerator.start(usedIds(usedIds), NULL_CONTEXT);
+
+        // then
+        var actualFreeIds = asList(idGenerator.freeIdsIterator());
+        var expectedFreeIds = asFreeIds(usedIds);
+        assertThat(actualFreeIds).isEqualTo(expectedFreeIds);
     }
 
     @Test
@@ -1434,7 +1455,11 @@ class IndexedIdGeneratorTest {
     }
 
     private static RecordingFreeIds freeIds(long... freeIds) {
-        return new RecordingFreeIds(freeIds);
+        return new RecordingFreeIds(true, freeIds);
+    }
+
+    private static RecordingFreeIds usedIds(long... usedIds) {
+        return new RecordingFreeIds(false, usedIds);
     }
 
     private Runnable freer(ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse) {
@@ -1557,6 +1582,29 @@ class IndexedIdGeneratorTest {
         }
     }
 
+    private LongList asList(PrimitiveLongResourceIterator iterator) {
+        try (iterator) {
+            var list = LongLists.mutable.empty();
+            while (iterator.hasNext()) {
+                list.add(iterator.next());
+            }
+            return list;
+        }
+    }
+
+    private LongList asFreeIds(long[] usedIds) {
+        var list = LongLists.mutable.empty();
+        var prevUsedId = -1L;
+        for (int i = 0; i < usedIds.length; i++) {
+            assert i == 0 || usedIds[i] > usedIds[i - 1];
+            long usedId = usedIds[i];
+            while (++prevUsedId < usedId) {
+                list.add(prevUsedId);
+            }
+        }
+        return list;
+    }
+
     private class Allocation {
         private final long id;
         private final int size;
@@ -1606,14 +1654,21 @@ class IndexedIdGeneratorTest {
 
     private static class RecordingFreeIds implements FreeIds {
         private boolean wasCalled;
+        private final boolean visitsDeletedIds;
         private final long[] freeIds;
 
-        RecordingFreeIds(long... freeIds) {
+        RecordingFreeIds(boolean visitsDeletedIds, long... freeIds) {
+            this.visitsDeletedIds = visitsDeletedIds;
             this.freeIds = freeIds;
         }
 
         @Override
-        public long accept(LongConsumer visitor) throws IOException {
+        public boolean visitsDeletedIds() {
+            return visitsDeletedIds;
+        }
+
+        @Override
+        public long accept(IdVisitor visitor) throws IOException {
             wasCalled = true;
             for (long freeId : freeIds) {
                 visitor.accept(freeId);

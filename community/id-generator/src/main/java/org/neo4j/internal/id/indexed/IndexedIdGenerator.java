@@ -568,12 +568,17 @@ public class IndexedIdGenerator implements IdGenerator {
             assertNotReadOnly();
             // This id generator was created right now, it needs to be populated with all free ids from its owning store
             // so that it's in sync
-            try (IdRangeMarker idRangeMarker = lockAndInstantiateMarker(false, cursorContext)) {
+            var visitsDeletedIds = freeIdsForRebuild.visitsDeletedIds();
+            try (IdRangeMarker idRangeMarker = lockAndInstantiateMarker(!visitsDeletedIds, cursorContext)) {
                 // We can mark the ids as free right away since this is before started which means we get the very
                 // liberal merger
-                long highestId = freeIdsForRebuild.accept(id -> {
-                    idRangeMarker.markDeleted(id, 1);
-                    idRangeMarker.markFree(id, 1);
+                var highestId = freeIdsForRebuild.accept((id, numberOfIds) -> {
+                    if (visitsDeletedIds) {
+                        idRangeMarker.markDeleted(id, numberOfIds);
+                        idRangeMarker.markFree(id, numberOfIds);
+                    } else {
+                        idRangeMarker.markUsed(id, numberOfIds);
+                    }
                 });
                 highId.set(highestId + 1);
                 highestWrittenId.set(highestId);
