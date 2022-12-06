@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -44,53 +45,58 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
       Set.empty
     } else {
       context.staticComponents.planContext.nodeTokenIndex.toSet[TokenIndexDescriptor].flatMap { nodeTokenIndex =>
-        // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
-        val combined: Map[Variable, Set[LabelName]] = {
-          qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
-            case (acc, current) => current match {
-                case HasLabels(variable @ Variable(varName), labels)
-                  if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
-                  val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
-                  acc + (variable -> newValue)
-                case _ => acc
-              }
-          }
-        }
-
-        // We only create one plan with the intersection of all labels, we could change this to generate all combinations, e.g.
-        // given labels A, B and C
-        // - (A,B,C)
-        // - (A,B)
-        // - (B,C)
-        // - (A, C)
-        // and in that way create more flexibility for the planner to plan things like
-        //
-        //   .nodeHashJoin("x")
-        //  .|.intersectionNodeByLabelsScan("n", Seq("B", "C"))
-        //  .nodeUniqueIndexSeek("n:A(prop = 42)")
-        //
-        // Will leave this as a future potential improvement.
-        combined.collect {
-          case (variable, labels) if labels.size > 1 =>
-            val providedOrder = ResultOrdering.providedOrderForLabelScan(
-              interestingOrderConfig.orderToSolve,
-              variable,
-              nodeTokenIndex.orderCapability,
-              context.providedOrderFactory
-            )
-            val hints = qg.hints.collect {
-              case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
+        // IntersectionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
+        if (nodeTokenIndex.orderCapability == IndexOrderCapability.BOTH) {
+          // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
+          val combined: Map[Variable, Set[LabelName]] = {
+            qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
+              case (acc, current) => current match {
+                  case HasLabels(variable @ Variable(varName), labels)
+                    if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
+                    val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
+                    acc + (variable -> newValue)
+                  case _ => acc
+                }
             }
-            context.staticComponents.logicalPlanProducer.planIntersectNodeByLabelsScan(
-              variable,
-              labels.toSeq,
-              Seq(HasLabels(variable, labels.toSeq)(InputPosition.NONE)),
-              hints.toSeq,
-              qg.argumentIds,
-              providedOrder,
-              context
-            )
-        }.toSet
+          }
+
+          // We only create one plan with the intersection of all labels, we could change this to generate all combinations, e.g.
+          // given labels A, B and C
+          // - (A,B,C)
+          // - (A,B)
+          // - (B,C)
+          // - (A, C)
+          // and in that way create more flexibility for the planner to plan things like
+          //
+          //   .nodeHashJoin("x")
+          //  .|.intersectionNodeByLabelsScan("n", Seq("B", "C"))
+          //  .nodeUniqueIndexSeek("n:A(prop = 42)")
+          //
+          // Will leave this as a future potential improvement.
+          combined.collect {
+            case (variable, labels) if labels.size > 1 =>
+              val providedOrder = ResultOrdering.providedOrderForLabelScan(
+                interestingOrderConfig.orderToSolve,
+                variable,
+                nodeTokenIndex.orderCapability,
+                context.providedOrderFactory
+              )
+              val hints = qg.hints.collect {
+                case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
+              }
+              context.staticComponents.logicalPlanProducer.planIntersectNodeByLabelsScan(
+                variable,
+                labels.toSeq,
+                Seq(HasLabels(variable, labels.toSeq)(InputPosition.NONE)),
+                hints.toSeq,
+                qg.argumentIds,
+                providedOrder,
+                context
+              )
+          }.toSet
+        } else {
+          Set.empty
+        }
       }
     }
   }

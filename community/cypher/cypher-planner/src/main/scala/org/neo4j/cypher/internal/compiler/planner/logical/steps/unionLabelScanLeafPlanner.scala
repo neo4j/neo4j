@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 
 import scala.collection.immutable.ListSet
 
@@ -73,28 +74,34 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
             if !skipIDs.contains(variable.name) &&
               qg.patternNodes(variable.name) &&
               !qg.argumentIds(variable.name) =>
-            context.staticComponents.planContext.nodeTokenIndex.map { nodeTokenIndex =>
-              val hints = qg.hints.toSeq.collect {
-                case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
-                  if labels.map(_.name).contains(labelName) => hint
+            context.staticComponents.planContext.nodeTokenIndex.flatMap { nodeTokenIndex =>
+              // UnionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
+              if (nodeTokenIndex.orderCapability == IndexOrderCapability.BOTH) {
+                val hints = qg.hints.toSeq.collect {
+                  case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
+                    if labels.map(_.name).contains(labelName) => hint
+                }
+
+                val providedOrder = ResultOrdering.providedOrderForLabelScan(
+                  interestingOrderConfig.orderToSolve,
+                  variable,
+                  nodeTokenIndex.orderCapability,
+                  context.providedOrderFactory
+                )
+
+                val plan = context.staticComponents.logicalPlanProducer.planUnionNodeByLabelsScan(
+                  variable,
+                  labels,
+                  Seq(ors),
+                  hints,
+                  qg.argumentIds,
+                  providedOrder,
+                  context
+                )
+                Some(plan)
+              } else {
+                None
               }
-
-              val providedOrder = ResultOrdering.providedOrderForLabelScan(
-                interestingOrderConfig.orderToSolve,
-                variable,
-                nodeTokenIndex.orderCapability,
-                context.providedOrderFactory
-              )
-
-              context.staticComponents.logicalPlanProducer.planUnionNodeByLabelsScan(
-                variable,
-                labels,
-                Seq(ors),
-                hints,
-                qg.argumentIds,
-                providedOrder,
-                context
-              )
             }
         }.flatten
       case _ =>

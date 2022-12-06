@@ -51,23 +51,29 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     queryGraph.patternRelationships.flatMap {
       case relationship @ PatternRelationship(name, (_, _), _, types, SimplePatternLength)
         if types.distinct.length > 1 && !shouldIgnore(relationship) =>
-        context.staticComponents.planContext.relationshipTokenIndex.map { relTokenIndex =>
-          planHiddenSelectionAndRelationshipLeafPlan(
-            queryGraph.argumentIds,
-            relationship,
-            context,
-            planUnionRelationshipTypeScan(
-              name,
-              types,
-              _,
-              _,
-              _,
-              queryGraph,
-              interestingOrderConfig,
-              relTokenIndex.orderCapability,
-              context
+        context.staticComponents.planContext.relationshipTokenIndex.flatMap { relTokenIndex =>
+          // UnionRelationshipTypeScan relies on ordering, so we can only use this plan if the relTokenIndex is ordered.
+          if (relTokenIndex.orderCapability == IndexOrderCapability.BOTH) {
+            val plan = planHiddenSelectionAndRelationshipLeafPlan(
+              queryGraph.argumentIds,
+              relationship,
+              context,
+              planUnionRelationshipTypeScan(
+                name,
+                types,
+                _,
+                _,
+                _,
+                queryGraph,
+                interestingOrderConfig,
+                relTokenIndex.orderCapability,
+                context
+              )
             )
-          )
+            Some(plan)
+          } else {
+            None
+          }
         }
       case _ => None
     }
