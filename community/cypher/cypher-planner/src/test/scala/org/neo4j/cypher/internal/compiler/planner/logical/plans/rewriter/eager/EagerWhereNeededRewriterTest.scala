@@ -1823,6 +1823,56 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .build())
   }
 
+  test(
+    "inserts eager between Create and NodeByElementIdSeek (single ID) with label filter if read through stable iterator"
+  ) {
+    // This plan does actually not need to be Eager.
+    // But since we only eagerize a single row, we accept that the analysis is imperfect here.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .nodeByElementIdSeek("n", Set.empty, 1)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+      .nodeByElementIdSeek("n", Set.empty, 1)
+      .build())
+  }
+
+  test(
+    "inserts eager between Create and NodeByElementIdSeek (multiple IDs) with label filter if read through stable iterator"
+  ) {
+    // This plan looks like we would not need Eagerness, but actually the IDs 2 and 3 do not need to exist yet
+    // and the newly created node could get one of these IDs.
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .nodeByElementIdSeek("n", Set.empty, 1, 2, 3)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m", "N"))
+      .filter("n:N")
+      .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+      .nodeByElementIdSeek("n", Set.empty, 1, 2, 3)
+      .build())
+  }
+
   // Read vs Merge conflicts
 
   test("inserts no eager between Merge and AllNodeScan if read through stable iterator") {

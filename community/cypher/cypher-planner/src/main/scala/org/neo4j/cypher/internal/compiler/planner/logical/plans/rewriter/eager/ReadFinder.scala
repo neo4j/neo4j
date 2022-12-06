@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -249,6 +250,14 @@ object ReadFinder {
               .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
 
           case NodeByIdSeek(varName, _, _) =>
+            // We could avoid eagerness when we have IdSeeks with a single ID.
+            // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
+            // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
+            val variable = Variable(varName)(InputPosition.NONE)
+            PlanReads()
+              .withIntroducedVariable(variable)
+
+          case NodeByElementIdSeek(varName, _, _) =>
             // We could avoid eagerness when we have IdSeeks with a single ID.
             // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
             // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
