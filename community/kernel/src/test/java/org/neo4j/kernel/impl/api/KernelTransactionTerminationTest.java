@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Timeout;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -55,6 +56,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -287,7 +289,9 @@ class KernelTransactionTerminationTest {
                     mock(KernelTransactions.class),
                     TransactionIdGenerator.EMPTY,
                     NullLogProvider.getInstance(),
-                    false);
+                    false,
+                    () -> KernelVersion.LATEST,
+                    mock(DbmsRuntimeRepository.class));
 
             this.monitor = monitor;
         }

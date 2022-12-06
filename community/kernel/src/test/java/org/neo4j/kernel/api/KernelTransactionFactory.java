@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -41,6 +42,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
@@ -130,7 +132,9 @@ public final class KernelTransactionFactory {
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
                 NullLogProvider.getInstance(),
-                storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
+                storageEngine.getOpenOptions().contains(MULTI_VERSIONED),
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
 
         transaction.initialize(
                 0,

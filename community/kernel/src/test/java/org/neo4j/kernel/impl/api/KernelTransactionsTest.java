@@ -69,6 +69,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -80,6 +81,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -789,7 +791,9 @@ class KernelTransactionsTest {
                 mock(TransactionCommitmentFactory.class),
                 new TransactionIdSequence(),
                 TransactionIdGenerator.EMPTY,
-                NullLogProvider.getInstance());
+                NullLogProvider.getInstance(),
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
     }
 
     private static TestKernelTransactions createTestTransactions(
@@ -896,7 +900,9 @@ class KernelTransactionsTest {
                     mock(TransactionCommitmentFactory.class),
                     new TransactionIdSequence(),
                     TransactionIdGenerator.EMPTY,
-                    NullLogProvider.getInstance());
+                    NullLogProvider.getInstance(),
+                    () -> KernelVersion.LATEST,
+                    mock(DbmsRuntimeRepository.class));
         }
 
         @Override

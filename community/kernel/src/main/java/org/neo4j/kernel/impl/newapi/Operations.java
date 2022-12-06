@@ -65,6 +65,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -111,6 +112,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -139,6 +141,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -168,6 +171,8 @@ public class Operations implements Write, SchemaWrite {
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipUniquenessConstraintEnabled;
+    private final KernelVersionRepository kernelVersionRepository;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -187,7 +192,9 @@ public class Operations implements Write, SchemaWrite {
             ConstraintSemantics constraintSemantics,
             IndexingProvidersService indexProviders,
             Config config,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            KernelVersionRepository kernelVersionRepository,
+            DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.storageReader = storageReader;
         this.commandCreationContext = commandCreationContext;
         this.storageLocks = storageLocks;
@@ -202,6 +209,8 @@ public class Operations implements Write, SchemaWrite {
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
+        this.kernelVersionRepository = kernelVersionRepository;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -1568,6 +1577,9 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
+            } else if (KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0)) {
+                assertSupportedInVersion(
+                        "Failed to create Relationship Uniqueness constraint.", KernelVersion.GLORIOUS_FUTURE);
             }
         }
 
@@ -1719,6 +1731,24 @@ public class Operations implements Write, SchemaWrite {
         }
     }
 
+    private void assertSupportedInVersion(String message, KernelVersion minimumVersionForSupport) {
+        KernelVersion currentStoreVersion = kernelVersionRepository.kernelVersion();
+        if (currentStoreVersion.isAtLeast(minimumVersionForSupport)) {
+            // New or upgraded store, good to go
+            return;
+        }
+
+        KernelVersion currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
+        if (currentDbmsVersion.isAtLeast(minimumVersionForSupport)) {
+            // Dbms runtime version is good, current transaction will trigger the upgrade transaction
+            // we will double-check the kernel version during commit
+            return;
+        }
+        throw new UnsupportedOperationException(format(
+                "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
+                message, currentDbmsVersion.name(), minimumVersionForSupport.name()));
+    }
+
     @Override
     public ConstraintDescriptor keyConstraintCreate(IndexPrototype prototype) throws KernelException {
         SchemaDescriptor schema = prototype.schema();
@@ -1726,6 +1756,9 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship key constraints are not supported yet");
+            } else if (KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0)) {
+                assertSupportedInVersion(
+                        "Failed to create Relationship Key constraint.", KernelVersion.GLORIOUS_FUTURE);
             }
         }
 

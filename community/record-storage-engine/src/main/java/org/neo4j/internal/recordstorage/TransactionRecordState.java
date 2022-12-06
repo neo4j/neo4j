@@ -260,6 +260,10 @@ public class TransactionRecordState implements RecordState {
         for (RecordProxy<SchemaRecord, SchemaRule> change : schemaRuleChange) {
             SchemaRecord schemaRecord = change.forReadingLinkage();
             SchemaRule rule = change.getAdditionalData();
+            if (schemaRecord.inUse()) {
+                IntegrityValidator.validateSchemaRule(
+                        rule, neoStores.getMetaDataStore().kernelVersion());
+            }
             Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand(
                     commandSerialization, change.getBefore(), change.forChangingData(), rule);
             schemaChangeByMode

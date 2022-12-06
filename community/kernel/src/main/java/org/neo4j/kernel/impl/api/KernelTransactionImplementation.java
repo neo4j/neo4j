@@ -50,6 +50,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.LocalConfig;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
@@ -144,6 +145,7 @@ import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -287,7 +289,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             KernelTransactions kernelTransactions,
             TransactionIdGenerator transactionIdGenerator,
             LogProvider logProvider,
-            boolean multiVersioned) {
+            boolean multiVersioned,
+            KernelVersionRepository kernelVersionRepository,
+            DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
@@ -365,7 +369,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 constraintSemantics,
                 indexingService,
                 config,
-                memoryTracker);
+                memoryTracker,
+                kernelVersionRepository,
+                dbmsRuntimeRepository);
         traceProvider = getTraceProvider(config);
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();

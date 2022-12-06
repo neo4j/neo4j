@@ -177,6 +177,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -508,6 +509,7 @@ public class Database extends AbstractDatabase {
                 indexingService,
                 databaseSchemaState,
                 storageEngine,
+                metadataProvider,
                 metadataProvider,
                 databaseAvailabilityGuard,
                 clock,
@@ -871,6 +873,7 @@ public class Database extends AbstractDatabase {
             DatabaseSchemaState databaseSchemaState,
             StorageEngine storageEngine,
             TransactionIdStore transactionIdStore,
+            KernelVersionRepository kernelVersionRepository,
             AvailabilityGuard databaseAvailabilityGuard,
             SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
@@ -928,7 +931,9 @@ public class Database extends AbstractDatabase {
                 commitmentFactory,
                 transactionIdSequence,
                 transactionIdGenerator,
-                internalLogProvider));
+                internalLogProvider,
+                kernelVersionRepository,
+                globalDependencies.resolveDependency(DbmsRuntimeRepository.class)));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);
 

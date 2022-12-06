@@ -49,6 +49,7 @@ import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -67,6 +68,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -201,7 +203,9 @@ abstract class OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(GraphDatabaseInternalSettings.rel_unique_constraints, true),
-                INSTANCE);
+                INSTANCE,
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
         operations.initialize(NULL_CONTEXT);
 
         this.order = inOrder(locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks);

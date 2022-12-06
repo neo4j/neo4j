@@ -45,7 +45,12 @@ public enum DbmsRuntimeVersion implements ComponentVersion {
     /**
      * Introduced new transaction log version
      */
-    V5_0(6, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_50, KernelVersion.V5_0);
+    V5_0(6, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_50, KernelVersion.V5_0),
+
+    /**
+     * Relationship uniqueness constraints
+     */
+    GLORIOUS_FUTURE(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_54, KernelVersion.GLORIOUS_FUTURE);
 
     public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_0;
 

@@ -59,6 +59,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -85,6 +86,7 @@ import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -956,7 +958,9 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
 
         // when
         operations.nodeCreate();
@@ -998,7 +1002,9 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
         operations.initialize(NULL_CONTEXT);
 
         // when
@@ -1038,7 +1044,9 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 mock(IndexingProvidersService.class),
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
 
         // when
         operations.relationshipCreate(0, 1, 2);
@@ -1079,7 +1087,9 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
                 Config.defaults(),
-                INSTANCE);
+                INSTANCE,
+                () -> KernelVersion.LATEST,
+                mock(DbmsRuntimeRepository.class));
 
         // when
         operations.indexCreate(IndexPrototype.forSchema(schema).withName("name"));
