@@ -136,13 +136,21 @@ public class DynamicIndexStoreViewIT {
 
     @Test
     void shouldHandleDeletionOfRelationshipTokenIndexBeforeScan() {
-        shouldHandleDeletionOfTokenIndexBeforeScan(this::populateRelationships, this::relationshipStoreScan);
+        shouldHandleDeletionOfTokenIndexBeforeScan(
+                () -> {
+                    long relations = populateRelationships();
+                    long nodes = 2 * relations;
+                    return storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()
+                            ? nodes
+                            : relations;
+                },
+                this::relationshipStoreScan);
     }
 
     private void shouldHandleDeletionOfTokenIndexBeforeScan(
-            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
+            LongSupplier expectedEntitiesScanned, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
         // Given
-        var entities = entitiesCreator.getAsLong();
+        var entities = expectedEntitiesScanned.getAsLong();
         var consumer = new TestTokenScanConsumer();
         dropTokenIndexes(database);
         var storeScan = storeScanSupplier.apply(consumer);
