@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -171,7 +172,7 @@ class KernelTransactionTimeoutMonitorTest {
         // ...and the log message should contain what we expect:
         var expectedTraceMessage = traceLevel == TransactionTracingLevel.DISABLED
                 ? "For a transaction initialization trace, set '%s=ALL'.".formatted(transaction_tracing_level.name())
-                : "Initialization trace:\n" + initializationTrace.getTrace();
+                : "Initialization trace:%n%s".formatted(StringUtils.truncate(initializationTrace.getTrace(), 200));
         var expectedLogMessage =
                 "Transaction %s has been marked for termination for %d seconds; it may have been leaked. %s"
                         .formatted(handle1.toString(), terminationTimeout.toSeconds(), expectedTraceMessage);
