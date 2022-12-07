@@ -931,7 +931,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Feature flag to enable/disable planning use of intersection scans.")
     public static final Setting<Boolean> planning_intersection_scans_enabled = newBuilder(
-                    "internal.cypher.planning_intersection_scans_enabled", BOOL, false)
+                    "internal.cypher.planning_intersection_scans_enabled", BOOL, true)
             .build();
 
     @Internal

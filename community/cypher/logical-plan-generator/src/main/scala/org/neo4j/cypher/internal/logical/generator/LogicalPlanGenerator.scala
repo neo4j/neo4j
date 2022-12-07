@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.STATS
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -82,6 +83,8 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -90,6 +93,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -105,6 +109,25 @@ import scala.language.implicitConversions
 
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
+
+  val STATS = new GraphStatistics {
+    override def nodesAllCardinality(): Cardinality = Cardinality(10000)
+
+    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+      labelId.map(_ => Cardinality(1000)).getOrElse(Cardinality.SINGLE)
+
+    override def patternStepCardinality(
+      fromLabel: Option[LabelId],
+      relTypeId: Option[RelTypeId],
+      toLabel: Option[LabelId]
+    ): Cardinality = Cardinality(50000)
+
+    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
+      Some(Selectivity.of(.02).get ^ index.properties.length)
+
+    override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
+      Some(Selectivity.of(.5).get ^ index.properties.length)
+  }
 
   object State {
 
@@ -258,6 +281,7 @@ class LogicalPlanGenerator(
           state.cardinalities,
           po,
           Set.empty,
+          STATS,
           CostModelMonitor.DEFAULT
         ) <= costLimit
   }

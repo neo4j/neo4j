@@ -75,6 +75,7 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
       context.staticComponents.planningAttributes.cardinalities,
       context.staticComponents.planningAttributes.providedOrders,
       context.plannerState.accessedAndAggregatingProperties,
+      context.statistics,
       CostModelMonitor.DEFAULT
     ).gummyBears
     val hints = context.staticComponents.planningAttributes.solveds.get(plan.id).numHints

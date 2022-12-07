@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
@@ -89,6 +90,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -133,6 +135,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -180,6 +183,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
+import org.neo4j.cypher.internal.compiler.planner.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.DEFAULT_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EXPAND_ALL_COST
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Trai
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -67,6 +69,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
     cardinalities: Cardinalities,
     providedOrders: ProvidedOrders,
     executionModel: ExecutionModel = ExecutionModel.default,
+    statistics: GraphStatistics = HardcodedGraphStatistics,
     propertyAccess: Set[PropertyAccess] = Set.empty
   ): Cost = {
     CardinalityCostModel(executionModel).costFor(
@@ -76,6 +79,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       cardinalities,
       providedOrders,
       propertyAccess,
+      statistics,
       CostModelMonitor.DEFAULT
     )
   }

@@ -81,6 +81,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
@@ -247,6 +248,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           cardinalities: Cardinalities,
           providedOrders: ProvidedOrders,
           propertyAccess: Set[PropertyAccess],
+          statistics: GraphStatistics,
           monitor: CostModelMonitor
         ) =>
           config.costModel(executionModel)((
@@ -256,6 +258,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
             cardinalities,
             providedOrders,
             propertyAccess,
+            statistics,
             monitor
           ))
 

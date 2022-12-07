@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
@@ -90,6 +91,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -127,6 +129,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -163,6 +166,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -201,6 +205,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -237,6 +242,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -276,6 +282,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -317,6 +324,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -372,6 +380,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -434,6 +443,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -484,6 +494,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -534,6 +545,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -581,6 +593,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {
@@ -629,6 +642,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         _: Cardinalities,
         _: ProvidedOrders,
         _: Set[PropertyAccess],
+        _: GraphStatistics,
         _: CostModelMonitor
       ) =>
         plan match {

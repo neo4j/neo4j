@@ -67,6 +67,7 @@ trait LogicalPlanningConfiguration {
       Cardinalities,
       ProvidedOrders,
       Set[PropertyAccess],
+      GraphStatistics,
       CostModelMonitor
     ),
     Cost

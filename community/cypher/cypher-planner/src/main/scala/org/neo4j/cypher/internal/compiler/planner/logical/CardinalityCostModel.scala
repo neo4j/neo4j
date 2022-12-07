@@ -116,6 +116,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -136,6 +137,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     cardinalities: Cardinalities,
     providedOrders: ProvidedOrders,
     propertyAccess: Set[PropertyAccess],
+    statistics: GraphStatistics,
     monitor: CostModelMonitor
   ): Cost = {
     // The plan we use here to select the batch size will obviously not be the final plan for the whole query.
@@ -151,6 +153,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       plan,
       batchSize,
       propertyAccess,
+      statistics,
       monitor
     )
   }
@@ -171,6 +174,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     rootPlan: LogicalPlan,
     batchSize: SelectedBatchSize,
     propertyAccess: Set[PropertyAccess],
+    statistics: GraphStatistics,
     monitor: CostModelMonitor
   ): Cost = {
 
@@ -188,6 +192,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         rootPlan,
         batchSize,
         propertyAccess,
+        statistics,
         monitor
       )
     ) getOrElse Cost.ZERO
@@ -201,6 +206,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         rootPlan,
         batchSize,
         propertyAccess,
+        statistics,
         monitor
       )
     ) getOrElse Cost.ZERO
@@ -214,7 +220,8 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         rhsCost,
         semanticTable,
         effectiveBatchSize,
-        propertyAccess
+        propertyAccess,
+        statistics
       )
 
     monitor.reportPlanCost(rootPlan, plan, cost)
@@ -238,7 +245,8 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     rhsCost: Cost,
     semanticTable: SemanticTable,
     batchSize: SelectedBatchSize,
-    propertyAccess: Set[PropertyAccess]
+    propertyAccess: Set[PropertyAccess],
+    statistics: GraphStatistics
   ): Cost = plan match {
     case _: CartesianProduct =>
       val lhsCardinality = Cardinality.max(Cardinality.SINGLE, effectiveCardinalities.lhs)
@@ -302,6 +310,11 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       // Note: we use the outputCardinality to compute the cost
       val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
+
+    case IntersectionNodeByLabelsScan(_, labels, _, _) =>
+      val rowsToProcess = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l))).min
+      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
+      rowsToProcess * rowCost
 
     case _ =>
       val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)

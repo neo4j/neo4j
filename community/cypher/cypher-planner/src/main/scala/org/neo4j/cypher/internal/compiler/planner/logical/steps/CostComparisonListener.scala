@@ -145,6 +145,7 @@ object SystemOutCostLogger extends CostComparisonListener {
             context.staticComponents.planningAttributes.cardinalities,
             context.staticComponents.planningAttributes.providedOrders,
             context.plannerState.accessedAndAggregatingProperties,
+            context.statistics,
             monitor
           )
           val winner = if (index == 0) green(" [winner]") else ""

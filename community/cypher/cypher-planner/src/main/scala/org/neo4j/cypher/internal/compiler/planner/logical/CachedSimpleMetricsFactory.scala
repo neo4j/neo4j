@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -62,6 +63,7 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
         cardinalities: Ref[Cardinalities],
         providedOrders: Ref[ProvidedOrders],
         propertyAccess: Set[PropertyAccess],
+        statistics: Ref[GraphStatistics],
         monitor: CostModelMonitor
       ) => {
         SimpleMetricsFactory.newCostModel(executionModel).costFor(
@@ -71,6 +73,7 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
           cardinalities.value,
           providedOrders.value,
           propertyAccess,
+          statistics.value,
           monitor
         )
       }
@@ -82,9 +85,19 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
       cardinalities: Cardinalities,
       providedOrders: ProvidedOrders,
       propertyAccess: Set[PropertyAccess],
+      statistics: GraphStatistics,
       monitor: CostModelMonitor
     ) => {
-      cached(plan, input, semanticTable, Ref(cardinalities), Ref(providedOrders), propertyAccess, monitor)
+      cached(
+        plan,
+        input,
+        semanticTable,
+        Ref(cardinalities),
+        Ref(providedOrders),
+        propertyAccess,
+        Ref(statistics),
+        monitor
+      )
     }
   }
 

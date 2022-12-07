@@ -232,11 +232,12 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
       Cardinalities,
       ProvidedOrders,
       Set[PropertyAccess],
+      GraphStatistics,
       CostModelMonitor
     ),
     Cost
   ] = {
-    case (lp, input, semanticTable, cardinalities, providedOrders, propertyAccess, monitor) =>
+    case (lp, input, semanticTable, cardinalities, providedOrders, propertyAccess, statistics, monitor) =>
       // Calling this in any case has the benefit of having the monitor passed down to the real cost model
       val realCost =
         parent.costModel(executionModel)((
@@ -246,6 +247,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
           cardinalities,
           providedOrders,
           propertyAccess,
+          statistics,
           monitor
         ))
       if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {

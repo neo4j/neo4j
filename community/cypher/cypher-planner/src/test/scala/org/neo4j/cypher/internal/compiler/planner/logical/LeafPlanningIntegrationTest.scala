@@ -1717,4 +1717,34 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     ))
   }
 
+  test("should not use intersection scan if there is a better node to start from") {
+    val cfg = plannerBuilder()
+      .enablePlanningIntersectionScans()
+      .setRelationshipCardinality("()-[]->()", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("(:A)-[]->(:B)", 10)
+      .setRelationshipCardinality("(:A)-[]->(:C)", 10)
+      .setRelationshipCardinality("()-[]->(:B)", 100)
+      .setRelationshipCardinality("()-[]->(:C)", 100)
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("A", 1)
+      .setLabelCardinality("B", 50)
+      .setLabelCardinality("C", 50)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (start:A)-[r]->(end:B&C)
+        |RETURN end""".stripMargin
+    )
+
+    plan should (equal(
+      cfg.planBuilder()
+        .produceResults("end")
+        .filter("end:B", "end:C")
+        .expandAll("(start)-[r]->(end)")
+        .nodeByLabelScan("start", "A")
+        .build()
+    ))
+  }
+
 }

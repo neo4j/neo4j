@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -118,8 +119,9 @@ case object QueryPlanner
           v4: Cardinalities,
           v5: ProvidedOrders,
           v6: Set[PropertyAccess],
+          v7: GraphStatistics,
           monitor
-        ) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, v6, monitor)
+        ) => -context.metrics.cost.costFor(v1, v2, v3, v4, v5, v6, v7, monitor)
       )
     } else {
       context.metrics

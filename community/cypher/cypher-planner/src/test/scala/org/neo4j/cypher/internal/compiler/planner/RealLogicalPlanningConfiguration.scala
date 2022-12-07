@@ -60,11 +60,12 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
       Cardinalities,
       ProvidedOrders,
       Set[PropertyAccess],
+      GraphStatistics,
       CostModelMonitor
     ),
     Cost
   ] = {
-    case (plan, input, semanticTable, cardinalities, providedOrders, propertyAccess, monitor) =>
+    case (plan, input, semanticTable, cardinalities, providedOrders, propertyAccess, statistics, monitor) =>
       CardinalityCostModel(executionModel).costFor(
         plan,
         input,
@@ -72,6 +73,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
         cardinalities,
         providedOrders,
         propertyAccess,
+        statistics,
         monitor
       )
   }

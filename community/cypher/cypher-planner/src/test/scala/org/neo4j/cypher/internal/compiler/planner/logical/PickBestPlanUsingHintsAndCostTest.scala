@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -30,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -209,7 +211,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
 
     val staticComponents = StaticComponents(
-      planContext = null,
+      planContext = mock[PlanContext](RETURNS_DEEP_STUBS),
       notificationLogger = devNullLogger,
       planningAttributes = planningAttributes,
       logicalPlanProducer = producer,

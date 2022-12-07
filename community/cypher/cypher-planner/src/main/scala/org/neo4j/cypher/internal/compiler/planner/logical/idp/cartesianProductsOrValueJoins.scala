@@ -255,6 +255,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         context.staticComponents.planningAttributes.cardinalities,
         context.staticComponents.planningAttributes.providedOrders,
         context.plannerState.accessedAndAggregatingProperties,
+        context.statistics,
         CostModelMonitor.DEFAULT
       )
       (cost, cardinality)
