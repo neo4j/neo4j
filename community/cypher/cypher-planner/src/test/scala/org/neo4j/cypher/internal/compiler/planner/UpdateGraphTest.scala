@@ -71,7 +71,7 @@ import scala.collection.immutable.ListSet
 class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   implicit private val semanticTable: SemanticTable = SemanticTable()
 
-  private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => Seq.empty
+  private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => LeafPlansPredicatesResolver.NoLeafPlansFound
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
