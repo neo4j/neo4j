@@ -26,19 +26,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
     private final Database database;
@@ -50,14 +51,17 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
 
     @Override
     public void dump(DiagnosticsLogger logger) {
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
+        final var dependencyResolver = database.getDependencyResolver();
+        final var deviceMapper = dependencyResolver.resolveDependency(DeviceMapper.class);
+        final var kernelVersionProvider = dependencyResolver.resolveDependency(KernelVersionProvider.class);
+        final var txIdStore = dependencyResolver.resolveDependency(TransactionIdStore.class);
+        final var logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        final var fileSystem = dependencyResolver.resolveDependency(FileSystemAbstraction.class);
 
-        LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
-        var deviceMapper = dependencyResolver.resolveDependency(DeviceMapper.class);
         try {
             logger.log("Transaction log files stored on file store: "
                     + deviceMapper.describePath(logFiles.logFilesDirectory()));
+            dumpTransactionLogMetadata(logger, kernelVersionProvider, txIdStore);
             dumpTransactionLogInformation(logger, logFiles.getLogFile(), fileSystem);
             dumpCheckpointLogInformation(logger, logFiles.getCheckpointFile());
         } catch (Exception e) {
@@ -66,10 +70,18 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
         }
     }
 
+    private void dumpTransactionLogMetadata(
+            DiagnosticsLogger logger, KernelVersionProvider kernelVersionProvider, TransactionIdStore txIdStore) {
+        logger.log("Transaction log metadata:");
+        logger.log(" - current kernel version used in transactions: "
+                + kernelVersionProvider.kernelVersion().name());
+        logger.log(" - last committed transaction id: " + txIdStore.getLastCommittedTransactionId());
+    }
+
     private void dumpTransactionLogInformation(
             DiagnosticsLogger logger, LogFile logFile, FileSystemAbstraction fileSystem) throws IOException {
         logger.log("Transaction log files:");
-        logger.log(" - existing transaction log versions " + logFile.getLowestLogVersion() + "-"
+        logger.log(" - existing transaction log versions: " + logFile.getLowestLogVersion() + "-"
                 + logFile.getHighestLogVersion());
         boolean foundTransactions = false;
         for (long logVersion = logFile.getLowestLogVersion();
@@ -102,7 +114,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider {
     private void dumpCheckpointLogInformation(DiagnosticsLogger logger, CheckpointFile checkpointFile)
             throws IOException {
         logger.log("Checkpoint log files:");
-        logger.log(" - existing checkpoint log versions " + checkpointFile.getLowestLogVersion() + "-"
+        logger.log(" - existing checkpoint log versions: " + checkpointFile.getLowestLogVersion() + "-"
                 + checkpointFile.getHighestLogVersion());
         checkpointFile
                 .findLatestCheckpoint(NullLog.getInstance())

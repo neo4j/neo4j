@@ -53,11 +53,14 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -318,14 +321,20 @@ class DbmsDiagnosticsManagerTest {
 
     private Database prepareDatabase(NamedDatabaseId databaseId) throws IOException {
         Database database = mock(Database.class);
+
         Dependencies databaseDependencies = new Dependencies();
         databaseDependencies.satisfyDependency(DbmsInfo.COMMUNITY);
         databaseDependencies.satisfyDependency(storageEngine);
         databaseDependencies.satisfyDependency(storageEngineFactory);
         databaseDependencies.satisfyDependency(new DefaultFileSystemAbstraction());
-        databaseDependencies.satisfyDependency(logFilesBasedOnlyBuilder(directory.homePath(), directory.getFileSystem())
-                .build());
         databaseDependencies.satisfyDependency(DeviceMapper.UNKNOWN_MAPPER);
+        LogFiles logFiles = databaseDependencies.satisfyDependency(
+                logFilesBasedOnlyBuilder(directory.homePath(), directory.getFileSystem())
+                        .build());
+        LogTailMetadata logTailMetadata = databaseDependencies.satisfyDependency(logFiles.getTailMetadata());
+        TransactionIdStore txIdStore = databaseDependencies.satisfyDependency(mock(TransactionIdStore.class));
+        when(txIdStore.getLastClosedTransactionId())
+                .thenReturn(logTailMetadata.getLastCommittedTransaction().transactionId());
         when(database.getDependencyResolver()).thenReturn(databaseDependencies);
         when(database.getNamedDatabaseId()).thenReturn(databaseId);
         when(database.isStarted()).thenReturn(true);

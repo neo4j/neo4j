@@ -21,7 +21,6 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.device.DeviceMapper.UNKNOWN_MAPPER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
@@ -39,6 +38,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -51,6 +51,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -96,7 +97,7 @@ class TransactionRangeDiagnosticsTest {
         // THEN
         assertThat(logProvider)
                 .containsMessages("oldest transaction " + (prevLogLastTxId + 1), "version " + logVersion)
-                .containsMessages("existing transaction log versions ")
+                .containsMessages("existing transaction log versions")
                 .containsMessages("no checkpoints found");
     }
 
@@ -157,9 +158,9 @@ class TransactionRangeDiagnosticsTest {
 
         // THEN
         assertThat(logProvider)
-                .containsMessages("existing transaction log versions " + txLogLowVersion + "-" + txLogHighVersion)
-                .containsMessages(
-                        "existing checkpoint log versions " + checkpointLogLowVersion + "-" + checkpointLogHighVersion);
+                .containsMessages("existing transaction log versions: " + txLogLowVersion + "-" + txLogHighVersion)
+                .containsMessages("existing checkpoint log versions: " + checkpointLogLowVersion + "-"
+                        + checkpointLogHighVersion);
     }
 
     @Test
@@ -176,7 +177,7 @@ class TransactionRangeDiagnosticsTest {
         // THEN
         assertThat(logProvider)
                 .containsMessages("no transactions found")
-                .containsMessages("existing checkpoint log versions 0-0")
+                .containsMessages("existing checkpoint log versions: 0-0")
                 .containsMessages("no checkpoints found");
     }
 
@@ -208,10 +209,15 @@ class TransactionRangeDiagnosticsTest {
     }
 
     private Database databaseWithLogFilesContainingLowestTxId(LogFiles files) {
-        Dependencies dependencies = mock(Dependencies.class);
-        when(dependencies.resolveDependency(LogFiles.class)).thenReturn(files);
-        when(dependencies.resolveDependency(FileSystemAbstraction.class)).thenReturn(fs);
-        when(dependencies.resolveDependency(DeviceMapper.class)).thenReturn(UNKNOWN_MAPPER);
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency(DeviceMapper.UNKNOWN_MAPPER);
+        LogTailMetadata logTailMetadata = dependencies.satisfyDependency(files.getTailMetadata());
+        TransactionIdStore txIdStore = dependencies.satisfyDependency(mock(TransactionIdStore.class));
+        when(txIdStore.getLastClosedTransactionId())
+                .thenReturn(logTailMetadata.getLastCommittedTransaction().transactionId());
+        dependencies.satisfyDependency(files);
+        dependencies.satisfyDependency(fs);
+
         Database database = mock(Database.class);
         when(database.getDependencyResolver()).thenReturn(dependencies);
         return database;
@@ -285,6 +291,7 @@ class TransactionRangeDiagnosticsTest {
 
         CheckpointFile checkpointFiles = mock(CheckpointFile.class);
         when(files.getCheckpointFile()).thenReturn(checkpointFiles);
+        when(files.getTailMetadata()).thenReturn(LogTailMetadata.EMPTY_LOG_TAIL);
         checkpointLogs.accept(checkpointFiles);
         return files;
     }
