@@ -53,7 +53,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   private implicit val semanticTable: SemanticTable = SemanticTable()
 
-  private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => Seq.empty
+  private val noLeafPlanProvider: LeafPlansPredicatesResolver = _ => LeafPlansPredicatesResolver.NoLeafPlansFound
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()

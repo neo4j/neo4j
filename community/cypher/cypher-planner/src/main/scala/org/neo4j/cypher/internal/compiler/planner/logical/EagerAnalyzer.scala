@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.bottomUp
@@ -111,6 +112,9 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
       val solvedPredicates =
         context.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
       SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
+    }.toList match {
+      case head :: tail => LeafPlansPredicatesResolver.LeafPlansFound(NonEmptyList(head, tail: _*))
+      case Nil          => LeafPlansPredicatesResolver.NoLeafPlansFound
     }
   }
 

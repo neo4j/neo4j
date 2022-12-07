@@ -35,10 +35,12 @@ import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
+import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver.LeafPlansWithSolvedPredicates
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.NonEmptyList
 
 import scala.annotation.tailrec
 
@@ -48,11 +50,26 @@ object UpdateGraph {
    * Callback to obtain the predicates solved by the leaf plan(s) that find the
    * entity with the given name. Grouped by leaf plan.
    *
-   * This is not guaranteed to find the leaf pkan(s), so it might return
-   * an empty sequence.
+   * This is not guaranteed to find the leaf plan(s), so it might return
+   * NoLeafPlansFound.
    */
   trait LeafPlansPredicatesResolver {
-    def apply(entityName: String): Seq[SolvedPredicatesOfOneLeafPlan]
+    def apply(entityName: String): LeafPlansWithSolvedPredicates
+  }
+
+  object LeafPlansPredicatesResolver {
+    sealed trait LeafPlansWithSolvedPredicates
+
+    /**
+     * No leaf plans were found
+     */
+    case object NoLeafPlansFound extends LeafPlansWithSolvedPredicates
+
+    /**
+     * Leaf plans were found. Return the solved predicates for each.
+     */
+    case class LeafPlansFound(solvedPredicatesForLeafPlans: NonEmptyList[SolvedPredicatesOfOneLeafPlan])
+        extends LeafPlansWithSolvedPredicates
   }
 
   /**
@@ -580,16 +597,20 @@ trait UpdateGraph {
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections())
     val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode))
 
-    // If readNodePredicates.isEmpty, we could not find the leaf plan(s) that solve the read node.
+    // If readNodePredicates == NoLeafPlansFound, we could not find the leaf plan(s) that solve the read node.
     // This happens for instance when we are on the RHS of an Apply.
     // Since we don't know the predicates, we have to be conservative.
-    readNodePredicates.isEmpty || readNodePredicates.exists {
-      case SolvedPredicatesOfOneLeafPlan(readNodePredicatesForLeafPlan) =>
-        val overlap = DeleteOverlaps.overlap(readNodePredicatesForLeafPlan, deletedNodePredicates)
+    readNodePredicates match {
+      case LeafPlansPredicatesResolver.NoLeafPlansFound => true
+      case LeafPlansPredicatesResolver.LeafPlansFound(solvedPredicatesForLeafPlans) =>
+        solvedPredicatesForLeafPlans.exists[SolvedPredicatesOfOneLeafPlan] {
+          case SolvedPredicatesOfOneLeafPlan(readNodePredicatesForLeafPlan) =>
+            val overlap = DeleteOverlaps.overlap(readNodePredicatesForLeafPlan, deletedNodePredicates)
 
-        overlap match {
-          case DeleteOverlaps.NoLabelOverlap                                 => false
-          case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+            overlap match {
+              case DeleteOverlaps.NoLabelOverlap                                 => false
+              case DeleteOverlaps.Overlap(unprocessedExpressions, labelsOverlap) => true
+            }
         }
     }
   }
