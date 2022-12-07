@@ -221,6 +221,7 @@ public class Database extends AbstractDatabase {
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
     private final HostedOnMode mode;
+    private MetadataCache metadataCache;
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
@@ -414,6 +415,8 @@ public class Database extends AbstractDatabase {
             initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
         }
 
+        metadataCache = databaseDependencies.satisfyDependency(new MetadataCache(tailMetadata));
+
         // Build all modules and their services
         DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState(internalLogProvider);
 
@@ -443,13 +446,12 @@ public class Database extends AbstractDatabase {
                 userLogProvider,
                 recoveryCleanupWorkCollector,
                 tailMetadata,
-                new MetadataCache(tailMetadata),
+                metadataCache,
                 otherDatabaseMemoryTracker,
                 cursorContextFactory,
                 tracers.getPageCacheTracer());
 
-        MetadataProvider metadataProvider = storageEngine.metadataProvider();
-        databaseDependencies.satisfyDependency(metadataProvider);
+        MetadataProvider metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
 
         TransactionIdStore transactionIdStore = metadataProvider;
         initialiseContextFactory(transactionIdStore::getLastClosedTransactionId);
@@ -508,7 +510,6 @@ public class Database extends AbstractDatabase {
         databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);
         life.add(databaseTransactionEventListeners);
-        KernelVersionProvider kernelVersionProvider = metadataProvider;
         final DatabaseKernelModule kernelModule = buildKernel(
                 logFiles,
                 transactionLogModule,
@@ -516,7 +517,7 @@ public class Database extends AbstractDatabase {
                 databaseSchemaState,
                 storageEngine,
                 transactionIdStore,
-                kernelVersionProvider,
+                metadataCache,
                 databaseAvailabilityGuard,
                 clock,
                 indexStatisticsStore,
@@ -615,11 +616,10 @@ public class Database extends AbstractDatabase {
     }
 
     private void registerUpgradeListener() {
-        KernelVersionProvider kernelVersionProvider = storageEngine.metadataProvider();
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
                 storageEngine,
                 globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
-                kernelVersionProvider,
+                metadataCache,
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
                 internalLogProvider);

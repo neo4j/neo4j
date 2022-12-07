@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -31,13 +30,11 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class SimpleMetaDataProvider implements MetadataProvider {
-    private final SimpleKernelVersionRepository kernelVersionRepository;
     private final SimpleTransactionIdStore transactionIdStore;
     private final SimpleLogVersionRepository logVersionRepository;
     private final ExternalStoreId externalStoreId = new ExternalStoreId(UUID.randomUUID());
 
     public SimpleMetaDataProvider() {
-        kernelVersionRepository = new SimpleKernelVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
         logVersionRepository = new SimpleLogVersionRepository();
     }
@@ -137,16 +134,6 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     public void resetLastClosedTransaction(
             long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
         transactionIdStore.resetLastClosedTransaction(transactionId, logVersion, byteOffset, checksum, commitTimestamp);
-    }
-
-    @Override
-    public KernelVersion kernelVersion() {
-        return kernelVersionRepository.kernelVersion();
-    }
-
-    @Override
-    public void setKernelVersion(KernelVersion kernelVersion) {
-        kernelVersionRepository.setKernelVersion(kernelVersion);
     }
 
     @Override

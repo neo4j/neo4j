@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -57,7 +56,6 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
@@ -111,7 +109,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
 
-    private final MetadataCache metadataCache;
     private final AtomicLong logVersion;
     private final AtomicLong checkpointLogVersion;
     private final AtomicLong lastCommittingTx;
@@ -152,7 +149,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
                 databaseName,
                 buildOptions(openOptions));
 
-        metadataCache = new MetadataCache(logTailMetadata);
         checkpointLogVersion = new AtomicLong(logTailMetadata.getCheckpointLogVersion());
         logVersion = new AtomicLong(logTailMetadata.getLogVersion());
         this.storeIdFactory = storeIdFactory;
@@ -193,18 +189,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         Position[] values = Position.values();
         Position lastPosition = values[values.length - 1];
         return lastPosition.firstSlotId + lastPosition.slotCount + 1;
-    }
-
-    @Override
-    public KernelVersion kernelVersion() {
-        assertNotClosed();
-        return metadataCache.kernelVersion();
-    }
-
-    @Override
-    public void setKernelVersion(KernelVersion kernelVersion) {
-        assertNotClosed();
-        metadataCache.set(kernelVersion);
     }
 
     @Override

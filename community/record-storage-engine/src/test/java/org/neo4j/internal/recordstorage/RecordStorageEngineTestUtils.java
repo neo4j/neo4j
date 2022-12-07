@@ -109,7 +109,7 @@ public class RecordStorageEngineTestUtils {
         when(txState.addedAndRemovedRelationships()).thenReturn(LongDiffSets.EMPTY);
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         TransactionIdStore txIdStore = neoStores.getMetaDataStore();
-        KernelVersionProvider kernelVersionProvider = neoStores.getMetaDataStore();
+        KernelVersionProvider kernelVersionProvider = storageEngine.kernelVersionRepository;
         CursorContext cursorContext = NULL_CONTEXT;
         try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
