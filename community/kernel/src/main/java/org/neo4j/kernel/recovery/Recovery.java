@@ -125,6 +125,7 @@ import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -501,6 +502,7 @@ public final class Recovery {
                 logService.getUserLogProvider(),
                 recoveryCleanupCollector,
                 logTailMetadata,
+                new MetadataCache(logTailMetadata),
                 memoryTracker,
                 cursorContextFactory,
                 tracers.getPageCacheTracer());

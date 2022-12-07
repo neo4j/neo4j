@@ -55,6 +55,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -255,6 +256,7 @@ public class RecordStorageEngineSupport {
                     RecoveryCleanupWorkCollector.immediate(),
                     EmptyMemoryTracker.INSTANCE,
                     EMPTY_LOG_TAIL,
+                    new MetadataCache(EMPTY_LOG_TAIL),
                     LockVerificationFactory.NONE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                     PageCacheTracer.NULL);

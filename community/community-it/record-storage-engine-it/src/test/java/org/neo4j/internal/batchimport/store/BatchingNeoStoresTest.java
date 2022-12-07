@@ -105,6 +105,7 @@ import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -540,6 +541,7 @@ class BatchingNeoStoresTest {
                     recoveryCleanupWorkCollector,
                     INSTANCE,
                     EMPTY_LOG_TAIL,
+                    new MetadataCache(EMPTY_LOG_TAIL),
                     LockVerificationFactory.NONE,
                     CONTEXT_FACTORY,
                     PageCacheTracer.NULL));

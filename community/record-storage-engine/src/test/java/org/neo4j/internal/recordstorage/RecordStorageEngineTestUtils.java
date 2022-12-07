@@ -50,6 +50,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -86,6 +87,7 @@ public class RecordStorageEngineTestUtils {
                 immediate(),
                 EmptyMemoryTracker.INSTANCE,
                 EMPTY_LOG_TAIL,
+                new MetadataCache(EMPTY_LOG_TAIL),
                 LockVerificationFactory.NONE,
                 new CursorContextFactory(cacheTracer, EMPTY),
                 cacheTracer);

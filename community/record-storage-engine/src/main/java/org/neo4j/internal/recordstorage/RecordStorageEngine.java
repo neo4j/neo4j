@@ -77,6 +77,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -105,7 +106,6 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -113,6 +113,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -148,6 +149,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final IdGeneratorFactory idGeneratorFactory;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker otherMemoryTracker;
+    final KernelVersionRepository kernelVersionRepository;
     private final LockVerificationFactory lockVerificationFactory;
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
@@ -179,6 +181,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             MemoryTracker otherMemoryTracker,
             LogTailMetadata logTailMetadata,
+            KernelVersionRepository kernelVersionRepository,
             LockVerificationFactory lockVerificationFactory,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer) {
@@ -193,6 +196,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.idGeneratorFactory = idGeneratorFactory;
         this.contextFactory = contextFactory;
         this.otherMemoryTracker = otherMemoryTracker;
+        this.kernelVersionRepository = kernelVersionRepository;
         this.lockVerificationFactory = lockVerificationFactory;
 
         StoreFactory factory = new StoreFactory(
@@ -264,7 +268,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (consistencyCheckApply && mode.needsAuxiliaryStores()) {
             appliers.add(new ConsistencyCheckingApplierFactory(neoStores));
         }
-        appliers.add(new KernelVersionTransactionApplier.Factory(neoStores.getMetaDataStore()));
+        appliers.add(new KernelVersionTransactionApplier.Factory(kernelVersionRepository));
         appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess, lockService(mode)));
         if (mode.needsHighIdTracking()) {
             appliers.add(new HighIdTransactionApplierFactory(neoStores));
@@ -315,7 +319,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
                         @Override
                         public long lastCommittedTxId() {
-                            return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                            TransactionIdStore txIdStore = metadataProvider();
+                            return txIdStore.getLastCommittedTransactionId();
                         }
                     },
                     false,
@@ -470,7 +475,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 versionToUpgradeFrom,
                 versionToUpgradeTo);
 
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        MetaDataStore metaDataStore = metadataProvider();
 
         MetaDataRecord before = metaDataStore.newRecord();
         before.initialize(true, versionToUpgradeFrom.version());
@@ -655,7 +660,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public StoreId retrieveStoreId() {
-        return neoStores.getMetaDataStore().getStoreId();
+        return metadataProvider().getStoreId();
     }
 
     @Override
@@ -683,7 +688,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public MetadataProvider metadataProvider() {
+    public MetaDataStore metadataProvider() {
         return neoStores.getMetaDataStore();
     }
 

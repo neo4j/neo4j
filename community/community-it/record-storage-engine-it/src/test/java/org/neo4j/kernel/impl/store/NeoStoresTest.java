@@ -99,6 +99,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataCache;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -507,6 +508,7 @@ class NeoStoresTest {
                 immediate(),
                 INSTANCE,
                 EMPTY_LOG_TAIL,
+                new MetadataCache(EMPTY_LOG_TAIL),
                 LockVerificationFactory.NONE,
                 CONTEXT_FACTORY,
                 PageCacheTracer.NULL);
