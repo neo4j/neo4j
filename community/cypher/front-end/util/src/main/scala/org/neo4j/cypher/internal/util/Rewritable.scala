@@ -373,6 +373,70 @@ object bottomUp {
     new BottomUpRewriter(rewriter, stopper, cancellation)
 }
 
+object bottomUpWithParent {
+
+  private class BottomUpWithParentRewriter(
+    rewriter: RewriterWithParent,
+    stopper: AnyRef => Boolean,
+    cancellation: CancellationChecker
+  ) extends Rewriter {
+
+    override def apply(that: AnyRef): AnyRef = {
+      val initialStack = mutable.Stack((List(that), new ListBuffer[AnyRef]()))
+      val result = rec(initialStack)
+      assert(result.size == 1)
+      result.head
+    }
+
+    @tailrec
+    private def rec(stack: mutable.Stack[(List[AnyRef], mutable.ListBuffer[AnyRef])]): mutable.ListBuffer[AnyRef] = {
+      cancellation.throwIfCancelled()
+      val (currentJobs, _) = stack.top
+      if (currentJobs.isEmpty) {
+        val (_, newChildren) = stack.pop()
+        if (stack.isEmpty) {
+          newChildren
+        } else {
+          stack.pop() match {
+            case (job :: jobs, doneJobs) =>
+              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              val maybeParent = {
+                if (stack.isEmpty) {
+                  None
+                } else {
+                  val (parentJobs, _) = stack.top
+                  parentJobs.headOption
+                }
+              }
+              val rewrittenDoneJob = doneJob.rewrite(rewriter, maybeParent)
+              stack.push((jobs, doneJobs += rewrittenDoneJob))
+              rec(stack)
+            case _ => throw new IllegalStateException("No jobs")
+          }
+        }
+      } else {
+        val next = currentJobs.head
+        if (stopper(next)) {
+          stack.pop() match {
+            case (job :: jobs, doneJobs) => stack.push((jobs, doneJobs += job))
+            case _                       => throw new IllegalStateException("No jobs")
+          }
+        } else {
+          stack.push((next.treeChildren.toList, new ListBuffer()))
+        }
+        rec(stack)
+      }
+    }
+  }
+
+  def apply(
+    rewriter: RewriterWithParent,
+    stopper: AnyRef => Boolean = _ => false,
+    cancellation: CancellationChecker = CancellationChecker.NeverCancelled
+  ): Rewriter =
+    new BottomUpWithParentRewriter(rewriter, stopper, cancellation)
+}
+
 object bottomUpWithRecorder {
 
   private class BottomUpRewriter(

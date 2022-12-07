@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriterConfig
+
 case class RuntimeTestParameters(
   sleepSubscriber: Option[SleepPerNRows] = None, // Sleep nanoseconds per result row
   busySubscriber: Boolean = false,
   killTransactionAfterRows: Option[Long] = None,
   resultConsumptionController: RuntimeTestResultConsumptionController = ConsumeAllThenCloseResultConsumer,
   printProgress: Option[PrintEveryNRows] = None, // Print record count every n rows, e.g. Some(PrintEveryNRows(1000))
-  printConfig: Boolean = false
+  printConfig: Boolean = false,
+  planCombinationRewriter: Option[TestPlanCombinationRewriterConfig] = None
 )
 
 case class SleepPerNRows(sleepNanos: Int, perNRows: Int)

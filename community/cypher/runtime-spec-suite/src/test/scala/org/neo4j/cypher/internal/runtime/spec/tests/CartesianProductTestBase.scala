@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.graphdb.Direction
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -686,7 +687,13 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val subscriber = TestSubscriber.concurrent
-    val result = execute(logicalQuery, runtime, inputStream, subscriber)
+    val result = execute(
+      logicalQuery,
+      runtime,
+      inputStream,
+      subscriber,
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
+    )
 
     result.request(1)
     result.await() shouldBe true
@@ -738,7 +745,13 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val subscriber = TestSubscriber.concurrent
-    val result = execute(logicalQuery, runtime, inputStream, subscriber)
+    val result = execute(
+      logicalQuery,
+      runtime,
+      inputStream,
+      subscriber,
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
+    )
 
     result.request(1)
     result.await() shouldBe true

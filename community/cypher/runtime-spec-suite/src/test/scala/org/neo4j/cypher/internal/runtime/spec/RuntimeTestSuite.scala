@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryProfile
@@ -78,8 +79,11 @@ import org.neo4j.values.virtual.ListValue
 import org.scalactic.Equality
 import org.scalactic.TolerantNumerics
 import org.scalactic.source.Position
+import org.scalatest.Args
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.Status
+import org.scalatest.SucceededStatus
 import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -101,6 +105,7 @@ import scala.util.Random
 
 object RuntimeTestSuite {
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
+  def isParallel(runtime: CypherRuntime[_]): Boolean = runtime.name.toLowerCase == "parallel"
 }
 
 /**
@@ -114,7 +119,8 @@ object RuntimeTestSuite {
 abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   baseEdition: Edition[CONTEXT],
   val runtime: CypherRuntime[CONTEXT],
-  workloadMode: Boolean = false
+  workloadMode: Boolean = false,
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
 ) extends CypherFunSuite
     with AstConstructionTestSupport
     with RuntimeExecutionSupport[CONTEXT]
@@ -129,7 +135,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
-  val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
+  val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
   protected var edition: Edition[CONTEXT] = baseEdition
@@ -143,10 +149,17 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   private[this] var runtimeTestParameters: RuntimeTestParameters = _
+  private[this] var includeOnlyTestNames: Set[String] = _
 
   def setRuntimeTestParameters(params: RuntimeTestParameters): Unit = {
     require(runtimeTestSupport == null) // We expect this to be called before we construct runtimeTestSupport
     runtimeTestParameters = params
+  }
+
+  def setIncludeOnlyTestNames(includeTestNames: Set[String]): Unit = {
+    if (includeTestNames.nonEmpty) {
+      includeOnlyTestNames = includeTestNames
+    }
   }
 
   protected def restartDB(): Unit = {
@@ -157,21 +170,37 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   protected def createRuntimeTestSupport(): Unit = {
     logProvider.clear()
-    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
+    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, runtime, workloadMode, logProvider)
     if (runtimeTestParameters != null) {
-      runtimeTestSupport.setRuntimeTestParameters(runtimeTestParameters)
+      runtimeTestSupport.setRuntimeTestParameters(augmentedRuntimeTestParameters, isParallel)
     }
     runtimeTestSupport.start()
     runtimeTestSupport.startTx()
   }
 
+  private def augmentedRuntimeTestParameters: RuntimeTestParameters = {
+    val augmented =
+      if (
+        runtimeTestParameters != null && runtimeTestParameters.planCombinationRewriter.isDefined && testPlanCombinationRewriterHints.nonEmpty
+      ) {
+        runtimeTestParameters.copy(planCombinationRewriter =
+          Some(runtimeTestParameters.planCombinationRewriter.get.copy(hints =
+            runtimeTestParameters.planCombinationRewriter.get.hints.union(testPlanCombinationRewriterHints)))
+        )
+      } else {
+        runtimeTestParameters
+      }
+    augmented
+  }
+
   protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
+    runtime: CypherRuntime[CONTEXT],
     workloadMode: Boolean,
     logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions)
   }
 
   protected def shutdownDatabase(): Unit = {
@@ -184,6 +213,14 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
+  }
+
+  override protected def runTest(testName: String, args: Args): Status = {
+    if (includeOnlyTestNames == null || includeOnlyTestNames.contains(testName)) {
+      super.runTest(testName, args)
+    } else {
+      SucceededStatus // Maybe not optimal. If we could filter before run that would be better.
+    }
   }
 
   // HELPERS
@@ -250,8 +287,10 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
     input: InputDataStream,
-    subscriber: QuerySubscriber
-  ): RuntimeResult = runtimeTestSupport.execute(logicalQuery, runtime, input, subscriber)
+    subscriber: QuerySubscriber,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): RuntimeResult =
+    runtimeTestSupport.execute(logicalQuery, runtime, input, subscriber, testPlanCombinationRewriterHints)
 
   override def execute(
     logicalQuery: LogicalQuery,
@@ -278,7 +317,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult =
     runtimeTestSupport.execute(executablePlan, readOnly, implicitTx)
 
-  override def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan =
+  override def buildPlan(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
+  ): ExecutionPlan =
     runtimeTestSupport.buildPlan(logicalQuery, runtime)
 
   override def buildPlanAndContext(
@@ -289,8 +332,14 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   override def profile(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputDataStream: InputDataStream = NoInput
-  ): RecordingRuntimeResult = runtimeTestSupport.profile(logicalQuery.copy(doProfile = true), runtime, inputDataStream)
+    inputDataStream: InputDataStream = NoInput,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+  ): RecordingRuntimeResult = runtimeTestSupport.profile(
+    logicalQuery.copy(doProfile = true),
+    runtime,
+    inputDataStream,
+    testPlanCombinationRewriterHints
+  )
 
   override def profile(
     executablePlan: ExecutionPlan,
@@ -778,8 +827,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
 abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  workloadMode: Boolean = false
-) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode) {
+  workloadMode: Boolean = false,
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode, testPlanCombinationRewriterHints) {
 
   override protected def beforeEach(): Unit = {
     DebugSupport.TIMELINE.beginTime()
@@ -807,8 +857,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
 abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  workloadMode: Boolean = false
-) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
+  workloadMode: Boolean = false,
+  testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode, testPlanCombinationRewriterHints)
     with BeforeAndAfterAll {
 
   def shouldSetup: Boolean

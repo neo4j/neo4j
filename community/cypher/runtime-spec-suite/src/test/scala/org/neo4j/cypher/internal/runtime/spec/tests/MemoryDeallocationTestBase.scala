@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.io.ByteUnit
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -69,7 +70,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       edition.copyWith(
         GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
       ),
-      runtime
+      runtime,
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
     ) with InputStreams[CONTEXT] {
 
   test("should deallocate memory between grouping aggregation - many groups") {

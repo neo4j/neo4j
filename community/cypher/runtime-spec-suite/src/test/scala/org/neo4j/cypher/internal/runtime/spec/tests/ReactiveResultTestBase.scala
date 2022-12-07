@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -257,7 +258,13 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
     val stream = batchedInputValues(1, nodes.map(Array[Any](_)): _*).stream()
 
     // When
-    val result = execute(logicalQuery, runtime, stream, TestSubscriber.concurrent)
+    val result = execute(
+      logicalQuery,
+      runtime,
+      stream,
+      TestSubscriber.concurrent,
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
+    )
 
     // Then
     result.request(1)

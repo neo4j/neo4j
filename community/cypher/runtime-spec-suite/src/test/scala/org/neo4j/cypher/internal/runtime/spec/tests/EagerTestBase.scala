@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRowsProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.ThreadSafeRecordingProbe
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
@@ -42,7 +43,11 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](
+      edition,
+      runtime,
+      testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
+    ) {
 
   test("should exhaust input - single top-level eager") {
     val nBatches = Math.max(sizeHint / 10, 2)

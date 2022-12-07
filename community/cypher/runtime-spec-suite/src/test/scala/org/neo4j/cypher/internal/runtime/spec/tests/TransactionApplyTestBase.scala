@@ -64,12 +64,14 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
+    runtime: CypherRuntime[CONTEXT],
     workloadMode: Boolean,
     logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
     new RuntimeTestSupport[CONTEXT](
       graphDb,
       edition,
+      runtime,
       workloadMode,
       logProvider,
       debugOptions,

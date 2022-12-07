@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputDataStreamTestSupport
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -42,7 +43,11 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
    * Compile a query
    * @return the execution plan
    */
-  def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan
+  def buildPlan(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
+  ): ExecutionPlan
 
   /**
    * Compile a query
@@ -76,8 +81,14 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   /**
    * Execute a Logical query with some input.
    */
-  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], input: InputValues): RecordingRuntimeResult =
-    execute(logicalQuery, runtime, input.stream())
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): RecordingRuntimeResult = {
+    val r = execute(logicalQuery, runtime, input.stream())
+    r
+  }
 
   /**
    * Execute a Logical query with some input stream.
@@ -102,6 +113,19 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
     runtime: CypherRuntime[CONTEXT],
     input: InputDataStream,
     subscriber: QuerySubscriber
+  ): RuntimeResult = {
+    execute(logicalQuery, runtime, input, subscriber, Set.empty[TestPlanCombinationRewriterHint])
+  }
+
+  /**
+   * Execute a Logical query with a custom subscriber and some input and test plan combination rewriter hints.
+   */
+  def execute(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputDataStream,
+    subscriber: QuerySubscriber,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
   ): RuntimeResult
 
   /**
@@ -163,7 +187,8 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def profile(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],
-    inputDataStream: InputDataStream = NoInput
+    inputDataStream: InputDataStream = NoInput,
+    testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint] = Set.empty[TestPlanCombinationRewriterHint]
   ): RecordingRuntimeResult
 
   def profile(executionPlan: ExecutionPlan, inputDataStream: InputDataStream, readOnly: Boolean): RecordingRuntimeResult

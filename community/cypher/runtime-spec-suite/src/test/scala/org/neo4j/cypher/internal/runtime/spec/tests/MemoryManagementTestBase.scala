@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.MORSEL_SIZE
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
@@ -204,7 +205,8 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(6),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(6)
       ),
-      runtime
+      runtime,
+      testPlanCombinationRewriterHints = Set(NoRewrites)
     ) with InputStreams[CONTEXT] {
 
   test("should kill sort query before it runs out of memory") {

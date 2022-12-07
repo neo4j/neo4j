@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.TestPlanCombinationRewriterHint
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.logging.InternalLogProvider
@@ -44,22 +45,28 @@ trait RewritingRuntimeTest[CONTEXT <: RuntimeContext] {
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
+    runtime: CypherRuntime[CONTEXT],
     workloadMode: Boolean,
     logProvider: InternalLogProvider
   ): RuntimeTestSupport[CONTEXT] = {
-    new RewritingRuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions)
+    new RewritingRuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions)
   }
 
   class RewritingRuntimeTestSupport[CONTEXT <: RuntimeContext](
     graphDb: GraphDatabaseService,
     edition: Edition[CONTEXT],
+    runtime: CypherRuntime[CONTEXT],
     workloadMode: Boolean,
     logProvider: InternalLogProvider,
     debugOptions: CypherDebugOptions = CypherDebugOptions.default
-  ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
+  ) extends RuntimeTestSupport[CONTEXT](graphDb, edition, runtime, workloadMode, logProvider, debugOptions) {
 
-    override def buildPlan(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-      super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime)
+    override def buildPlan(
+      logicalQuery: LogicalQuery,
+      runtime: CypherRuntime[CONTEXT],
+      testPlanCombinationRewriterHint: Set[TestPlanCombinationRewriterHint]
+    ): ExecutionPlan = {
+      super.buildPlan(rewriteLogicalQuery(logicalQuery), runtime, testPlanCombinationRewriterHint)
     }
 
     override def buildPlanAndContext(

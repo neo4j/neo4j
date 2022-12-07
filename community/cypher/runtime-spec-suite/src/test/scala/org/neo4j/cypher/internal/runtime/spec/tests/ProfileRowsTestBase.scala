@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
@@ -2283,7 +2284,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
       .allNodeScan("x")
       .build()
 
-    val runtimeResult = profile(logicalQuery, runtime)
+    val runtimeResult = profile(logicalQuery, runtime, testPlanCombinationRewriterHints = Set(NoRewrites))
     consume(runtimeResult)
 
     // then
