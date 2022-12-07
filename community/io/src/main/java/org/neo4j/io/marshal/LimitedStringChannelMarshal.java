@@ -25,15 +25,29 @@ import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 
-public class StringChannelMarshal implements ChannelMarshal<String> {
+public class LimitedStringChannelMarshal implements ChannelMarshal<String> {
     public static final int NULL_STRING_LENGTH = -1;
-    public static final StringChannelMarshal INSTANCE = new StringChannelMarshal();
+    public static final LimitedStringChannelMarshal INSTANCE = new LimitedStringChannelMarshal(10);
+    private final int maxStringSize;
+
+    /**
+     * @param maxStringSize - defines a maximum size of a string in bytes that will be written in the channel or read from it.
+     */
+    public LimitedStringChannelMarshal(int maxStringSize) {
+        if (maxStringSize <= 0) {
+            throw new IllegalArgumentException("maxStringSize should be more than zero");
+        }
+        this.maxStringSize = maxStringSize;
+    }
 
     @Override
     public void marshal(String string, WritableChannel channel) throws IOException {
         if (string == null) {
             channel.putInt(NULL_STRING_LENGTH);
         } else {
+            if (string.length() > maxStringSize) {
+                string = string.substring(0, maxStringSize);
+            }
             byte[] bytes = string.getBytes(UTF_8);
             channel.putInt(bytes.length);
             channel.put(bytes, bytes.length);
@@ -45,6 +59,9 @@ public class StringChannelMarshal implements ChannelMarshal<String> {
         int len = channel.getInt();
         if (len == NULL_STRING_LENGTH) {
             return null;
+        }
+        if (len > maxStringSize) {
+            len = maxStringSize;
         }
 
         byte[] stringBytes = new byte[len];
