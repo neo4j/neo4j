@@ -20,6 +20,7 @@
 package org.neo4j.io.marshal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,12 +38,12 @@ class LimitedStringChannelMarshalTest {
         var writableChannel = new OutputStreamWritableChannel(outputStream);
         var inputString = "ab";
 
-        //when
+        // when
         stringChannelMarshal.marshal(inputString, writableChannel);
         var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
         var unmarshalledString = stringChannelMarshal.unmarshal(readableChannel);
 
-        //then
+        // then
         assertThat(inputString).isEqualTo(unmarshalledString);
     }
 
@@ -53,31 +54,30 @@ class LimitedStringChannelMarshalTest {
         var writableChannel = new OutputStreamWritableChannel(outputStream);
         var inputString = "abc";
 
-        //when
+        // when
         stringChannelMarshal.marshal(inputString, writableChannel);
         var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
         var unmarshalledString = stringChannelMarshal.unmarshal(readableChannel);
 
-        //then
+        // then
         assertThat("ab").isEqualTo(unmarshalledString);
     }
 
     @Test
     void ifWritableChanelExceedMaxSizeThenItShouldBeTruncated() throws IOException {
-        //given
+        // given
         var outputStream = new ByteArrayOutputStream();
         var writableChannel = new OutputStreamWritableChannel(outputStream);
 
-        //serialize input string
+        // serialize input string
         writableChannel.putInt(3);
         writableChannel.put("abc".getBytes(StandardCharsets.UTF_8), 3);
 
-        //when
+        // when
         var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
         var unmarshalledString = new LimitedStringChannelMarshal(2).unmarshal(readableChannel);
 
-        //then
+        // then
         assertThat(unmarshalledString).isEqualTo("ab");
     }
-
 }
