@@ -22,12 +22,17 @@ package org.neo4j.consistency.checking;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
+import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +52,10 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.recordstorage.DirectRecordAccess;
+import org.neo4j.internal.recordstorage.Loaders;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -57,9 +65,11 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
@@ -67,6 +77,8 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -92,6 +104,7 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.values.storable.Value;
 
 public abstract class GraphStoreFixture implements AutoCloseable {
     private DirectStoreAccess directStoreAccess;
@@ -108,6 +121,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     private RecordStorageEngine storageEngine;
     private StoreCursors storeCursors;
     private TransactionCommitmentFactory commitmentFactory;
+    private DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess;
 
     protected GraphStoreFixture(TestDirectory testDirectory) {
         this.testDirectory = testDirectory;
@@ -116,7 +130,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     }
 
     private void startDatabaseAndExtractComponents() {
-        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
+        managementService = createBuilder(testDirectory.homePath())
                 .setFileSystem(testDirectory.getFileSystem())
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
@@ -144,6 +158,17 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 dependencyResolver.resolveDependency(TokenHolders.class),
                 dependencyResolver.resolveDependency(IdGeneratorFactory.class));
         storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT);
+        PropertyStore propertyStore = neoStores.getPropertyStore();
+        this.recordAccess = new DirectRecordAccess<>(
+                propertyStore,
+                Loaders.propertyLoader(propertyStore, storeCursors),
+                NULL_CONTEXT,
+                PROPERTY_CURSOR,
+                storeCursors);
+    }
+
+    protected TestDatabaseManagementServiceBuilder createBuilder(Path homePath) {
+        return new TestDatabaseManagementServiceBuilder(homePath);
     }
 
     @Override
@@ -153,7 +178,11 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
     public void apply(Transaction transaction) throws KernelException {
         CommandBatch representation = transaction.representation(
-                idGenerator(), transactionIdStore.getLastCommittedTransactionId(), neoStores, indexingService);
+                idGenerator(),
+                transactionIdStore.getLastCommittedTransactionId(),
+                neoStores,
+                indexingService,
+                recordAccess);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commitProcess.commit(
@@ -261,6 +290,12 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         };
     }
 
+    public IndexDescriptor getIndexDescriptorByName(String indexName) {
+        try (RecordStorageReader recordStorageReader = storageEngine.newReader()) {
+            return recordStorageReader.indexGetForName(indexName);
+        }
+    }
+
     public NeoStores neoStores() {
         return neoStores;
     }
@@ -318,10 +353,16 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         protected abstract void transactionData(TransactionDataBuilder tx, IdGenerator next) throws KernelException;
 
         public CommandBatch representation(
-                IdGenerator idGenerator, long lastCommittedTx, NeoStores neoStores, IndexingService indexingService)
+                IdGenerator idGenerator,
+                long lastCommittedTx,
+                NeoStores neoStores,
+                IndexingService indexingService,
+                DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess)
                 throws KernelException {
             TransactionWriter writer = new TransactionWriter(neoStores);
-            transactionData(new TransactionDataBuilder(writer, neoStores, idGenerator, indexingService), idGenerator);
+            transactionData(
+                    new TransactionDataBuilder(writer, neoStores, idGenerator, indexingService, recordAccess),
+                    idGenerator);
             idGenerator.updateCorrespondingIdGenerators(neoStores);
             return writer.representation(new byte[0], startTimestamp, lastCommittedTx, currentTimeMillis());
         }
@@ -397,9 +438,17 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         private final AtomicInteger propKeyDynIds;
         private final AtomicInteger labelDynIds;
         private final AtomicInteger relTypeDynIds;
+        private final NeoStores neoStores;
+        private final DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess;
 
         TransactionDataBuilder(
-                TransactionWriter writer, NeoStores neoStores, IdGenerator next, IndexingService indexingService) {
+                TransactionWriter writer,
+                NeoStores neoStores,
+                IdGenerator next,
+                IndexingService indexingService,
+                DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess) {
+            this.neoStores = neoStores;
+            this.recordAccess = recordAccess;
             this.propKeyDynIds = new AtomicInteger(
                     (int) neoStores.getPropertyKeyTokenStore().getNameStore().getHighId());
             this.labelDynIds = new AtomicInteger(
@@ -509,6 +558,61 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         public void delete(NodeRecord node) {
             updateCounts(node, -1);
             writer.delete(node);
+        }
+
+        public NodeRecord newNode(long nodeId, boolean inUse, long... labels) {
+            NodeRecord nodeRecord = new NodeRecord(nodeId);
+            nodeRecord = nodeRecord.initialize(
+                    inUse,
+                    NO_NEXT_PROPERTY.longValue(),
+                    false,
+                    NO_NEXT_RELATIONSHIP.longValue(),
+                    NO_LABELS_FIELD.longValue());
+            if (inUse) {
+                InlineNodeLabels labelFieldWriter = new InlineNodeLabels(nodeRecord);
+                labelFieldWriter.put(labels, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            }
+            return nodeRecord;
+        }
+
+        public RelationshipRecord newRelationship(long relId, boolean inUse, int type) {
+            if (!inUse) {
+                type = -1;
+            }
+            return new RelationshipRecord(relId)
+                    .initialize(
+                            inUse,
+                            NO_NEXT_PROPERTY.longValue(),
+                            0,
+                            0,
+                            type,
+                            NO_NEXT_RELATIONSHIP.longValue(),
+                            NO_NEXT_RELATIONSHIP.longValue(),
+                            NO_NEXT_RELATIONSHIP.longValue(),
+                            NO_NEXT_RELATIONSHIP.longValue(),
+                            true,
+                            false);
+        }
+
+        public PropertyRecord createProperty(long propId, PrimitiveRecord entityRecord, Value value, int propertyKey) {
+            var propertyStore = neoStores.getPropertyStore();
+            var propertyRecord =
+                    recordAccess.create(propId, entityRecord, NULL_CONTEXT).forChangingData();
+            propertyRecord.setInUse(true);
+            propertyRecord.setCreated();
+
+            PropertyBlock propertyBlock = new PropertyBlock();
+            PropertyStore.encodeValue(
+                    propertyBlock,
+                    propertyKey,
+                    value,
+                    propertyStore.getStringStore(),
+                    propertyStore.getArrayStore(),
+                    NULL_CONTEXT,
+                    INSTANCE);
+            propertyRecord.addPropertyBlock(propertyBlock);
+
+            return propertyRecord;
         }
 
         public void create(RelationshipRecord relationship) {

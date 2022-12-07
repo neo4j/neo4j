@@ -120,9 +120,10 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -265,9 +266,7 @@ public class FullCheckIntegrationTest {
         // given
         long nodeId = createOneNode();
         long relId = createOneRelationship();
-        fixture.apply(tx -> {
-            tx.getNodeById(nodeId).setProperty("foo", "bar");
-        });
+        fixture.apply(tx -> tx.getNodeById(nodeId).setProperty("foo", "bar"));
 
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         NodeStore nodeStore = neoStores.getNodeStore();
@@ -830,9 +829,7 @@ public class FullCheckIntegrationTest {
 
     protected long createOneNode() {
         final AtomicLong id = new AtomicLong();
-        fixture.apply(tx -> {
-            id.set(tx.createNode().getId());
-        });
+        fixture.apply(tx -> id.set(tx.createNode().getId()));
         return id.get();
     }
 
@@ -846,14 +843,11 @@ public class FullCheckIntegrationTest {
     }
 
     protected static Value[] values(IndexDescriptor indexRule) {
-        switch (indexRule.schema().getPropertyIds().length) {
-            case 1:
-                return Iterators.array(Values.of(VALUE1));
-            case 2:
-                return Iterators.array(Values.of(VALUE1), Values.of(VALUE2));
-            default:
-                throw new UnsupportedOperationException();
-        }
+        return switch (indexRule.schema().getPropertyIds().length) {
+            case 1 -> Iterators.array(Values.of(VALUE1));
+            case 2 -> Iterators.array(Values.of(VALUE1), Values.of(VALUE2));
+            default -> throw new UnsupportedOperationException();
+        };
     }
 
     @Test
@@ -2115,6 +2109,24 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportDuplicatedRelationshipKeyConstraintRules() throws Exception {
+        // Given
+        int relTypeId = createRelType();
+        int propertyKeyId1 = createPropertyKey("p1");
+        int propertyKeyId2 = createPropertyKey("p2");
+        createRelationshipKeyConstraintRule(relTypeId, propertyKeyId1, propertyKeyId2);
+        createRelationshipKeyConstraintRule(relTypeId, propertyKeyId1, propertyKeyId2);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on(stats)
+                .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
     void shouldNotReportDuplicatedNodeKeyConstraintRulesIfDifferentIndexTypes() throws Exception {
         // Given
         int labelId = createLabel();
@@ -2124,6 +2136,24 @@ public class FullCheckIntegrationTest {
         // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
         // it's fine
         createNodeKeyConstraintRule(IndexType.TEXT, labelId, propertyKeyId1, propertyKeyId2);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldNotReportDuplicatedRelationshipKeyConstraintRulesIfDifferentIndexTypes() throws Exception {
+        // Given
+        int relTypeId = createRelType();
+        int propertyKeyId1 = createPropertyKey("p1");
+        int propertyKeyId2 = createPropertyKey("p2");
+        createRelationshipKeyConstraintRule(IndexType.RANGE, relTypeId, propertyKeyId1, propertyKeyId2);
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
+        // it's fine
+        createRelationshipKeyConstraintRule(IndexType.TEXT, relTypeId, propertyKeyId1, propertyKeyId2);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2259,6 +2289,22 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportInvalidRelationshipTypeIdInRelationshipKeyConstraintRule() throws Exception {
+        // Given
+        int badRelationshipId = fixture.idGenerator().relationshipType();
+        int propertyKeyId = createPropertyKey();
+        createRelationshipKeyConstraintRule(badRelationshipId, propertyKeyId);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on(stats)
+                .verify(RecordType.SCHEMA, 2) // invalid type in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
     void shouldReportInvalidLabelIdInNodePropertyExistenceConstraintRule() throws Exception {
         // Given
         int badLabelId = fixture.idGenerator().label();
@@ -2354,6 +2400,23 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportInvalidSecondPropertyKeyIdInRelationshipKeyConstraintRule() throws Exception {
+        // Given
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createRelationshipKeyConstraintRule(relTypeId, propertyKeyId, badPropertyKeyId);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        on(stats)
+                .verify(RecordType.SCHEMA, 2) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
     void shouldReportInvalidPropertyKeyIdInNodePropertyExistenceConstraintRule() throws Exception {
         // Given
         int labelId = createLabel();
@@ -2405,6 +2468,22 @@ public class FullCheckIntegrationTest {
 
         createNodeKeyConstraintRule(labelId, propertyKeyId);
         createNodePropertyExistenceConstraint(labelId, propertyKeyId);
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldReportNothingForRelationshipKeyAndPropertyExistenceConstraintOnSameTypeAndProperty() throws Exception {
+        // Given
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        createRelationshipKeyConstraintRule(relTypeId, propertyKeyId);
+        createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -3050,7 +3129,7 @@ public class FullCheckIntegrationTest {
     private void createIndexRule(
             EntityType entityType,
             IndexType indexType,
-            IndexProviderDescriptor descriptor,
+            IndexProviderDescriptor providedDescriptor,
             final int entityTokenId,
             final int... propertyKeyIds)
             throws Exception {
@@ -3062,27 +3141,15 @@ public class FullCheckIntegrationTest {
                     throws KernelException {
                 int id = (int) next.schema();
                 String name = "index_" + id;
-                IndexDescriptor index;
-                switch (entityType) {
-                    case RELATIONSHIP:
-                        IndexPrototype indexPrototype1 = forSchema(
-                                        forRelType(entityTokenId, propertyKeyIds), DESCRIPTOR)
-                                .withIndexType(indexType)
-                                .withName(name);
-                        indexPrototype1 =
-                                descriptor != null ? indexPrototype1.withIndexProvider(descriptor) : indexPrototype1;
-                        index = indexPrototype1.materialise(id);
-                        break;
-                    case NODE:
-                    default:
-                        IndexPrototype indexPrototype2 = forSchema(forLabel(entityTokenId, propertyKeyIds), DESCRIPTOR)
-                                .withIndexType(indexType)
-                                .withName(name);
-                        indexPrototype2 =
-                                descriptor != null ? indexPrototype2.withIndexProvider(descriptor) : indexPrototype2;
-                        index = indexPrototype2.materialise(id);
-                        break;
-                }
+                SchemaDescriptor schema =
+                        switch (entityType) {
+                            case RELATIONSHIP -> SchemaDescriptors.forRelType(entityTokenId, propertyKeyIds);
+                            case NODE -> SchemaDescriptors.forLabel(entityTokenId, propertyKeyIds);
+                        };
+                var prototype = forSchema(schema).withIndexType(indexType).withName(name);
+                var descriptor = providedDescriptor != null ? providedDescriptor : DESCRIPTOR;
+                prototype = prototype.withIndexProvider(descriptor);
+                var index = prototype.materialise(id);
                 indexName.set(name);
                 index = tx.completeConfiguration(index);
 
@@ -3145,25 +3212,39 @@ public class FullCheckIntegrationTest {
 
     private void createNodeKeyConstraintRule(IndexType indexType, final int labelId, final int... propertyKeyIds)
             throws KernelException {
+        createEntityKeyConstraintRule(indexType, forLabel(labelId, propertyKeyIds));
+    }
+
+    private void createRelationshipKeyConstraintRule(final int relTypeId, final int... propertyKeyIds)
+            throws KernelException {
+        createRelationshipKeyConstraintRule(IndexType.RANGE, relTypeId, propertyKeyIds);
+    }
+
+    private void createRelationshipKeyConstraintRule(IndexType indexType, final int relId, final int... propertyKeyIds)
+            throws KernelException {
+        createEntityKeyConstraintRule(indexType, forRelType(relId, propertyKeyIds));
+    }
+
+    private void createEntityKeyConstraintRule(IndexType indexType, SchemaDescriptor schemaDescriptor)
+            throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
         long ruleId1 = schemaStore.nextId(NULL_CONTEXT);
         long ruleId2 = schemaStore.nextId(NULL_CONTEXT);
 
         String name = "constraint_" + ruleId2;
-        IndexDescriptor indexRule = uniqueForSchema(forLabel(labelId, propertyKeyIds), DESCRIPTOR)
+        IndexDescriptor indexRule = uniqueForSchema(schemaDescriptor, DESCRIPTOR)
                 .withIndexType(indexType)
                 .withName(name)
                 .materialise(ruleId1)
                 .withOwningConstraintId(ruleId2);
-        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel(
-                        indexType, labelId, propertyKeyIds)
+        ConstraintDescriptor entityKeyRule = ConstraintDescriptorFactory.keyForSchema(schemaDescriptor, indexType)
                 .withId(ruleId2)
                 .withName(name)
                 .withOwnedIndexId(ruleId1);
 
         writeToSchemaStore(schemaStore, indexRule);
-        writeToSchemaStore(schemaStore, nodeKeyRule);
+        writeToSchemaStore(schemaStore, entityKeyRule);
     }
 
     private void createNodePropertyExistenceConstraint(int labelId, int propertyKeyId) throws KernelException {
