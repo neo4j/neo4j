@@ -1144,7 +1144,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
 
     // This first MATCH expands to: (:A) | (:A)-->(:B) | (:A)-->(:B)-->(:B) | etc – all nodes have at least one label
-    val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) OPTIONAL MATCH (x:!%) DELETE x"
+    val query = "MATCH (start:A)((a)-[r]->(b:B))*(end) CREATE (x)"
     val plan = planner.plan(query).stripProduceResults
 
     val `(start)((a)-[r]->(b))*(end)` =
@@ -1165,17 +1165,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
-      .deleteNode("x")
+      .create(createNode("x"))
       // At the time of writing, predicates do not percolate properly to quantified path patterns.
-      // Here we find an overlap between () and (!%) even though we will not match on ().
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("x", None),
-        EagernessReason.ReadDeleteConflict("a", None)
-      ))
-      .apply()
-      .|.optional("r", "start", "b", "a", "end")
-      .|.filter("not x:%")
-      .|.allNodeScan("x")
+      // Here we find an overlap between MATCH () and  CREATE () even though we will not match on ().
+      .eager(ListSet(EagernessReason.Unknown))
       .trail(`(start)((a)-[r]->(b))*(end)`)
       .|.filter("b:B")
       .|.expandAll("(a)-[r]->(b)")
@@ -1233,13 +1226,14 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "shouldn't insert eager when a quantified path pattern and a deleted node don't overlap"
+    "should insert eager when a quantified path pattern and a deleted node overlap"
   ) {
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(40)
       .setLabelCardinality("A", 5)
       .setLabelCardinality("B", 5)
+      .setLabelCardinality("C", 5)
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("()-[]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 10)
@@ -1249,7 +1243,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
-    val query = "MATCH (x:!%) OPTIONAL MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) DELETE x"
+    val query = "MATCH (x:C) OPTIONAL MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) DELETE x"
     val plan = planner.plan(query).stripProduceResults
 
     val `(start)((a)-[r]->(b))*(end)` =
@@ -1271,6 +1265,12 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .deleteNode("x")
+      .eager(ListSet(
+        EagernessReason.ReadDeleteConflict("start", None),
+        EagernessReason.ReadDeleteConflict("end", None),
+        EagernessReason.ReadDeleteConflict("a", None),
+        EagernessReason.ReadDeleteConflict("b", None)
+      ))
       .apply()
       .|.optional("x")
       .|.filter("end:B")
@@ -1280,8 +1280,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .|.|.filter("a:A")
       .|.|.argument("a")
       .|.nodeByLabelScan("start", "A")
-      .filter("not x:%")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "C")
       .build()
   }
 }
