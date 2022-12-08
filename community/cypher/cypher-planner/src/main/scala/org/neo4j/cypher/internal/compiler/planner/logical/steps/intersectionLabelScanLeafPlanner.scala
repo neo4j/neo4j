@@ -31,8 +31,11 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.planner.spi.TokenIndexDescriptor
 import org.neo4j.cypher.internal.util.InputPosition
+
+import scala.collection.mutable
 
 case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
@@ -44,22 +47,20 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
     if (!context.settings.planningIntersectionScansEnabled) {
       Set.empty
     } else {
-      context.staticComponents.planContext.nodeTokenIndex.toSet[TokenIndexDescriptor].flatMap { nodeTokenIndex =>
-        // IntersectionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
-        if (nodeTokenIndex.orderCapability == IndexOrderCapability.BOTH) {
-          // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
-          val combined: Map[Variable, Set[LabelName]] = {
-            qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
-              case (acc, current) => current match {
-                  case HasLabels(variable @ Variable(varName), labels)
-                    if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
-                    val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
-                    acc + (variable -> newValue)
-                  case _ => acc
-                }
+      // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
+      val combined: Map[Variable, Set[LabelName]] = {
+        qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
+          case (acc, current) => current match {
+              case HasLabels(variable @ Variable(varName), labels)
+                if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
+                val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
+                acc + (variable -> newValue)
+              case _ => acc
             }
-          }
-
+        }
+      }
+      context.staticComponents.planContext.nodeTokenIndex match {
+        case Some(nodeTokenIndex) if nodeTokenIndex.orderCapability == BOTH =>
           // We only create one plan with the intersection of all labels, we could change this to generate all combinations, e.g.
           // given labels A, B and C
           // - (A,B,C)
@@ -73,7 +74,8 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
           //  .nodeUniqueIndexSeek("n:A(prop = 42)")
           //
           // Will leave this as a future potential improvement.
-          combined.collect {
+          val results = mutable.HashSet.empty[LogicalPlan]
+          combined.foreach {
             case (variable, labels) if labels.size > 1 =>
               val providedOrder = ResultOrdering.providedOrderForLabelScan(
                 interestingOrderConfig.orderToSolve,
@@ -84,7 +86,7 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
               val hints = qg.hints.collect {
                 case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(name)) if labels.exists(_.name == name) => hint
               }
-              context.staticComponents.logicalPlanProducer.planIntersectNodeByLabelsScan(
+              results += context.staticComponents.logicalPlanProducer.planIntersectNodeByLabelsScan(
                 variable,
                 labels.toSeq,
                 Seq(HasLabels(variable, labels.toSeq)(InputPosition.NONE)),
@@ -93,10 +95,11 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
                 providedOrder,
                 context
               )
-          }.toSet
-        } else {
-          Set.empty
-        }
+            case _ => // do nothing
+          }
+          results.toSet
+
+        case None => Set.empty
       }
     }
   }
