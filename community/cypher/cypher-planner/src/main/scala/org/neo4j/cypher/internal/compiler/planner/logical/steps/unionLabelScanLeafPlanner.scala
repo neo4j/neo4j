@@ -78,7 +78,7 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
               // UnionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
               if (nodeTokenIndex.orderCapability == IndexOrderCapability.BOTH) {
                 val hints = qg.hints.toSeq.collect {
-                  case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
+                  case hint @ UsingScanHint(`variable`, LabelOrRelTypeName(labelName))
                     if labels.map(_.name).contains(labelName) => hint
                 }
 
