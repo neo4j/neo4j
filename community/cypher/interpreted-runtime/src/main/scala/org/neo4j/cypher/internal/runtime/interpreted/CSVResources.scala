@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import inet.ipaddr.IPAddressString
 import org.neo4j.csv.reader.BufferOverflowException
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.csv.reader.CharSeekers
@@ -33,6 +34,7 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
+import org.neo4j.kernel.impl.security.WebURLAccessRule
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
@@ -48,9 +50,9 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object CSVResources {
-  val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
   val DEFAULT_FIELD_TERMINATOR: Char = ','
   val DEFAULT_BUFFER_SIZE: Int = 2 * 1024 * 1024
   val DEFAULT_QUOTE_CHAR: Char = '"'
@@ -78,13 +80,14 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
   def getCsvIterator(
     url: URL,
+    ipBlocklist: List[IPAddressString],
     fieldTerminator: Option[String],
     legacyCsvQuoteEscaping: Boolean,
     bufferSize: Int,
     headers: Boolean = false
   ): LoadCsvIterator = {
 
-    val reader: CharReadable = getReader(url)
+    val reader: CharReadable = getReader(url, ipBlocklist)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false)
     val extractor = new Extractors(delimiter).textValue()
@@ -140,13 +143,13 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     }
   }
 
-  private def getReader(url: URL) =
+  private def getReader(url: URL, ipBlocklist: List[IPAddressString]) =
     try {
       val reader =
         if (url.getProtocol == "file") {
           Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
         } else {
-          val inputStream = openStream(url)
+          val inputStream = openStream(url, ipBlocklist)
           Readables.wrap(
             inputStream,
             url.toString,
@@ -160,26 +163,35 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
     }
 
-  private def openStream(url: URL, connectionTimeout: Int = 2000, readTimeout: Int = 10 * 60 * 1000): InputStream = {
+  private def openStream(
+    url: URL,
+    ipBlocklist: List[IPAddressString],
+    connectionTimeout: Int = 2000,
+    readTimeout: Int = 10 * 60 * 1000
+  ): InputStream = {
     if (url.getProtocol.startsWith("http"))
       TheCookieManager.ensureEnabled()
-    val con = url.openConnection()
-    con.setRequestProperty("User-Agent", s"${CSVResources.NEO_USER_AGENT_PREFIX}${userAgent}")
+
+    val con =
+      if (ipBlocklist.nonEmpty) {
+        WebURLAccessRule.checkUrlIncludingHops(url, ipBlocklist.asJava)
+      } else {
+        url.openConnection()
+      }
+
+    con.setRequestProperty(
+      "User-Agent",
+      s"${WebURLAccessRule.LOAD_CSV_USER_AGENT_PREFIX}${WebURLAccessRule.userAgent()}"
+    )
     con.setConnectTimeout(connectionTimeout)
     con.setReadTimeout(readTimeout)
+
     val stream = con.getInputStream
     con.getContentEncoding match {
       case "gzip"    => new GZIPInputStream(stream)
       case "deflate" => new InflaterInputStream(stream)
       case _         => stream
     }
-  }
-
-  private def userAgent: String = {
-    val version = Runtime.version()
-    val agent = System.getProperty("http.agent")
-    if (agent == null) "Java/" + version
-    else agent + " Java/" + version
   }
 }
 

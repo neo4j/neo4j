@@ -56,6 +56,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
+      List.empty,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -82,9 +83,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
-      _.map(_.asInstanceOf[TextValue].stringValue)
-    ).toList
+    val result =
+      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+        _.map(_.asInstanceOf[TextValue].stringValue)
+      ).toList
 
     // then
     (result zip List(
@@ -107,9 +109,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
-      _.map(_.asInstanceOf[TextValue].stringValue)
-    ).toList
+    val result =
+      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+        _.map(_.asInstanceOf[TextValue].stringValue)
+      ).toList
 
     // then
     (result zip List(
@@ -127,9 +130,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     val url = createCSVTempFileURL(_ => {})
 
     // when
-    val result = resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
-      _.map(_.asInstanceOf[TextValue].stringValue)
-    ).toList
+    val result =
+      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+        _.map(_.asInstanceOf[TextValue].stringValue)
+      ).toList
 
     result should equal(List.empty)
   }
@@ -144,7 +148,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    resources.getCsvIterator(new URL(url), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
+    resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // then
     verify(cleaner).trace(any(classOf[AutoCloseablePlus]))
@@ -163,6 +167,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
+      List.empty,
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -190,6 +195,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
+      List.empty,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -217,6 +223,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val e = intercept[IllegalStateException](resources.getCsvIterator(
       new URL(url),
+      List.empty,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -235,12 +242,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
   test("should handle local missing file") {
     intercept[LoadExternalResourceException](resources.getCsvIterator(
       new URL("file:///this/file/url/probably/doesnt/exist"),
+      List.empty,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
     ).toList)
     intercept[LoadExternalResourceException](resources.getCsvIterator(
       new URL("http://127.0.0.1/url/probably/doesnt/exist"),
+      List.empty,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -260,6 +269,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
+      List.empty,
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
