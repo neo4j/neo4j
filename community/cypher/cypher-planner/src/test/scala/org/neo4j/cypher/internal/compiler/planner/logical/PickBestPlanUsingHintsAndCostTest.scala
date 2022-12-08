@@ -81,7 +81,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
         new StubCardinalities,
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
-        new StubLeveragedOrders
+        new StubLeveragedOrders,
+        new StubLabelAndRelTypeInfos
       ),
       Seq(a, b)
     )(GIVEN_FIXED_COST)
@@ -101,7 +102,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
         new StubCardinalities,
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
-        new StubLeveragedOrders
+        new StubLeveragedOrders,
+        new StubLabelAndRelTypeInfos
       ),
       Seq(a, b)
     )(GIVEN_FIXED_COST)
@@ -124,7 +126,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
         new StubCardinalities,
         new StubEffectiveCardinalities,
         new StubProvidedOrders,
-        new StubLeveragedOrders
+        new StubLeveragedOrders,
+        new StubLabelAndRelTypeInfos
       ),
       Seq(a, b)
     )(GIVEN_FIXED_COST)

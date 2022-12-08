@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -43,6 +45,7 @@ object Selection {
     assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
     Selection(Ands(predicates)(predicates.head.position), source)
   }
+  case class LabelAndRelTypeInfo(labelInfo: Map[String, Set[LabelName]], relTypeInfo: Map[String, RelTypeName])
 }
 
 object SelectionMatcher {

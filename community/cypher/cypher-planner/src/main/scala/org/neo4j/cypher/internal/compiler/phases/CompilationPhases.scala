@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRew
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity
 import org.neo4j.cypher.internal.frontend.phases.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
@@ -99,7 +100,8 @@ object CompilationPhases {
           CardinalityRewriter,
           CompressPlanIDs,
           CheckForUnresolvedTokens,
-          EagerRewriter
+          EagerRewriter,
+          SortPredicatesBySelectivity
         ) ++ CNFNormalizer.steps,
         initialConditions = Set(StatementCondition(containsNoReturnAll), NoNamedPathsInPatternComprehensions)
       )

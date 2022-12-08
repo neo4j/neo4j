@@ -24,17 +24,14 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsEagerIfNeeded
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity.SelectionPredicatesSortedBySelectivity
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.EntityType
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
@@ -55,7 +52,6 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -63,7 +59,6 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
 import scala.collection.mutable
@@ -383,13 +378,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
               indexedProp.copy(getValueFromIndex = DoNotGetValue)
           }
         }
-
-      case s: Selection =>
-        // Since CachedProperties are cheaper than Properties, the previously best predicate evaluation order in a Selection
-        // might not be the best order any more.
-        // We re-order the predicates to find the new best order.
-        val newPredicates = resortSelectionPredicates(from, context, s)
-        s.copy(predicate = Ands(newPredicates)(s.predicate.position))(SameId(s.id))
     })
 
     val plan = propertyRewriter(logicalPlan).asInstanceOf[LogicalPlan]
@@ -397,24 +385,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       if (currentTypes == from.semanticTable().types) from.semanticTable()
       else from.semanticTable().copy(types = currentTypes)
     from.withMaybeLogicalPlan(Some(plan)).withSemanticTable(newSemanticTable)
-  }
-
-  protected[steps] def resortSelectionPredicates(
-    from: LogicalPlanState,
-    context: PlannerContext,
-    s: Selection
-  ): Seq[Expression] = {
-    LogicalPlanProducer.sortPredicatesBySelectivity(
-      s.source,
-      s.predicate.exprs.toSeq,
-      QueryGraphSolverInput.empty,
-      from.semanticTable(),
-      IndexCompatiblePredicatesProviderContext.default,
-      from.planningAttributes.solveds,
-      // These do not include effective cardinalities, which is important since this methods assumes "original" cardinalities.
-      from.planningAttributes.cardinalities,
-      context.metrics.cardinality
-    )
   }
 
   override def name: String = "insertCachedProperties"
@@ -443,7 +413,10 @@ case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineT
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Rewriting logical plans introduces new IDs
-    PlanIDsAreCompressed
+    PlanIDsAreCompressed,
+    // Since CachedProperties are cheaper than Properties, the previously best predicate evaluation order in a Selection
+    // might not be the best order any more.
+    SelectionPredicatesSortedBySelectivity
   )
 
   override def getTransformer(

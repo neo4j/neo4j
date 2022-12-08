@@ -96,7 +96,11 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
       context.staticComponents.planningAttributes.solveds,
       context.staticComponents.planningAttributes.cardinalities,
       context.staticComponents.planningAttributes.providedOrders,
-      Attributes(context.staticComponents.idGen)
+      Attributes(
+        context.staticComponents.idGen,
+        context.staticComponents.planningAttributes.leveragedOrders,
+        context.staticComponents.planningAttributes.labelAndRelTypeInfos
+      )
     )
 
     val unnestedPlans = plans.map(_.endoRewrite(unnest))

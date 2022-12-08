@@ -24,9 +24,11 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeInfos
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -77,11 +79,15 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
 
   class StubLeveragedOrders extends LeveragedOrders with StubAttribute[LogicalPlan, Boolean]
 
+  class StubLabelAndRelTypeInfos extends LabelAndRelTypeInfos
+      with StubAttribute[LogicalPlan, Option[LabelAndRelTypeInfo]]
+
   def newStubbedPlanningAttributes: PlanningAttributes = PlanningAttributes(
     new StubSolveds,
     new StubCardinalities,
     new StubEffectiveCardinalities,
     new StubProvidedOrders,
-    new StubLeveragedOrders
+    new StubLeveragedOrders,
+    new StubLabelAndRelTypeInfos
   )
 }

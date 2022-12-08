@@ -204,6 +204,7 @@ import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
@@ -281,6 +282,7 @@ case class LogicalPlanProducer(
   private val cardinalities = planningAttributes.cardinalities
   private val providedOrders = planningAttributes.providedOrders
   private val leveragedOrders = planningAttributes.leveragedOrders
+  private val labelAndRelTypeInfos = planningAttributes.labelAndRelTypeInfos
 
   /**
    * This object is simply to group methods that are used by the [[SubqueryExpressionSolver]], and thus do not need to update `solveds`
@@ -330,7 +332,7 @@ case class LogicalPlanProducer(
 
   def solvePredicate(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
     // Keep other attributes but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
+    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders, labelAndRelTypeInfos)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
     val solvedPlannerQuery =
       solveds.get(plan.id).asSinglePlannerQuery.amendQueryGraph(_.addPredicates(solvedExpression))
@@ -340,7 +342,7 @@ case class LogicalPlanProducer(
 
   def solvePredicateInHorizon(plan: LogicalPlan, solvedExpression: Expression): LogicalPlan = {
     // Keep other attributes but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, providedOrders)
+    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders, labelAndRelTypeInfos)
     val newPlan = plan.copyPlanWithIdGen(keptAttributes.copy(plan.id))
     val solvedPlannerQuery = solveds.get(plan.id).asSinglePlannerQuery.updateTailOrSelf(_.updateHorizon {
       case horizon: QueryProjection => horizon.addPredicates(solvedExpression)
@@ -1064,7 +1066,8 @@ case class LogicalPlanProducer(
     )
 
     maybeHiddenFilter match {
-      case Some(hiddenFilter) => annotate(
+      case Some(hiddenFilter) =>
+        annotateSelection(
           Selection(Seq(hiddenFilter), trailPlan),
           solved,
           providedOrder,
@@ -1456,9 +1459,8 @@ case class LogicalPlanProducer(
       solveds.get(source.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicates: _*)))
     val (rewrittenPredicates, rewrittenSource) =
       SubqueryExpressionSolver.ForMulti.solve(source, predicates, context)
-    val sortedPredicates = sortPredicatesBySelectivity(source, rewrittenPredicates, context)
-    annotate(
-      Selection(coercePredicatesWithAnds(sortedPredicates), rewrittenSource),
+    annotateSelection(
+      Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource),
       solved,
       providedOrders.get(source.id).fromLeft,
       context
@@ -1486,9 +1488,8 @@ case class LogicalPlanProducer(
       if (unsolvedPredicates.nonEmpty) {
         val (rewrittenPredicates, rewrittenSource) =
           SubqueryExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
-        val sortedPredicates = sortPredicatesBySelectivity(source, rewrittenPredicates, context)
-        annotate(
-          Selection(coercePredicatesWithAnds(sortedPredicates), rewrittenSource),
+        annotateSelection(
+          Selection(coercePredicatesWithAnds(rewrittenPredicates), rewrittenSource),
           solved,
           providedOrders.get(existsPlan.id).fromLeft,
           context
@@ -1510,9 +1511,8 @@ case class LogicalPlanProducer(
     solved: PlannerQuery,
     context: LogicalPlanningContext
   ): Selection = {
-    val sortedPredicates = sortPredicatesBySelectivity(source, predicates, context)
-    annotate(
-      Selection(coercePredicatesWithAnds(sortedPredicates), source),
+    annotateSelection(
+      Selection(coercePredicatesWithAnds(predicates), source),
       solved,
       providedOrders.get(source.id).fromLeft,
       context
@@ -1687,7 +1687,7 @@ case class LogicalPlanProducer(
         _.updateQueryProjection(_.withAddedProjections(reported))
       )
       // Keep some attributes, but change solved
-      val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
+      val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders, labelAndRelTypeInfos)
       val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
       solveds.set(newPlan.id, newSolved)
       newPlan
@@ -1786,9 +1786,12 @@ case class LogicalPlanProducer(
     interestingOrder: InterestingOrder,
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    // Keep some attributes, but change solved
+    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders, labelAndRelTypeInfos)
+    val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
-    annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
+    annotate(newPlan, solved, providedOrder, context)
   }
 
   def planCountStoreNodeAggregation(
@@ -1938,7 +1941,7 @@ case class LogicalPlanProducer(
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
     // Keep some attributes, but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders)
+    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders, labelAndRelTypeInfos)
     val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
     annotate(newPlan, solved, providedOrders.get(inner.id).fromLeft, context)
   }
@@ -2363,7 +2366,7 @@ case class LogicalPlanProducer(
       context.plannerState.indexCompatiblePredicatesProviderContext
     )
     // Change solved and cardinality
-    val keptAttributes = Attributes(idGen, providedOrders, leveragedOrders)
+    val keptAttributes = Attributes(idGen, providedOrders, leveragedOrders, labelAndRelTypeInfos)
     val newPlan = orPlan.copyPlanWithIdGen(keptAttributes.copy(orPlan.id))
     solveds.set(newPlan.id, solved)
     cardinalities.set(newPlan.id, cardinality)
@@ -2845,6 +2848,25 @@ case class LogicalPlanProducer(
   }
 
   /**
+   * Same as [[annotate()]], but in addition also set the labelAndRelTypeInfos attribute.
+   *
+   * @return the same plan
+   */
+  private def annotateSelection(
+    selection: Selection,
+    solved: PlannerQueryPart,
+    providedOrder: ProvidedOrder,
+    context: LogicalPlanningContext
+  ): Selection = {
+    labelAndRelTypeInfos.set(
+      selection.id,
+      Some(LabelAndRelTypeInfo(context.plannerState.input.labelInfo, context.plannerState.input.relTypeInfo))
+    )
+
+    annotate(selection, solved, providedOrder, context)
+  }
+
+  /**
    * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
    */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
@@ -3000,66 +3022,4 @@ case class LogicalPlanProducer(
         )
     }
   }
-
-  private def sortPredicatesBySelectivity(
-    source: LogicalPlan,
-    predicates: Seq[Expression],
-    context: LogicalPlanningContext
-  ): Seq[Expression] =
-    LogicalPlanProducer.sortPredicatesBySelectivity(
-      source,
-      predicates,
-      context.plannerState.input,
-      context.semanticTable,
-      context.plannerState.indexCompatiblePredicatesProviderContext,
-      solveds,
-      cardinalities,
-      cardinalityModel
-    )
-
-}
-
-object LogicalPlanProducer {
-
-  def sortPredicatesBySelectivity(
-    source: LogicalPlan,
-    predicates: Seq[Expression],
-    queryGraphSolverInput: QueryGraphSolverInput,
-    semanticTable: SemanticTable,
-    indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    solveds: Solveds,
-    cardinalities: Cardinalities,
-    cardinalityModel: CardinalityModel
-  ): Seq[Expression] = {
-    if (predicates.size < 2) {
-      predicates
-    } else {
-      val incomingCardinality = cardinalities.get(source.id)
-      val solvedBeforePredicate = solveds.get(source.id) match {
-        case query: SinglePlannerQuery => query
-        case _: UnionQuery             =>
-          // In case we re-order predicates after the plan has already been rewritten,
-          // there is a chance that the source plan solves a UNION query.
-          // In that case we just pretend it solves an Argument with the same available symbols.
-          RegularSinglePlannerQuery(QueryGraph(argumentIds = source.availableSymbols))
-      }
-
-      def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
-        val costPerRow = CardinalityCostModel.costPerRowFor(predicate, semanticTable)
-        val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
-        val cardinality = cardinalityModel(
-          solved,
-          queryGraphSolverInput.labelInfo,
-          queryGraphSolverInput.relTypeInfo,
-          semanticTable,
-          indexPredicateProviderContext
-        )
-        val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
-        (costPerRow, selectivity)
-      }
-
-      predicates.map(p => (p, sortCriteria(p))).sortBy(_._2)(PredicateOrdering).map(_._1)
-    }
-  }
-
 }

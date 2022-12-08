@@ -1250,15 +1250,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .withMaybeLogicalPlan(Some(plan))
       .withNewPlanningAttributes(PlanningAttributes.newAttributes.copy(effectiveCardinalities = effectiveCardinalities))
 
-    val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads) {
-      // Override so that we do not have to provide so many mocks.
-      override protected[steps] def resortSelectionPredicates(
-        from: LogicalPlanState,
-        context: PlannerContext,
-        s: Selection
-      ): Seq[Expression] =
-        s.predicate.exprs.toSeq.sortBy(_.folder.treeCount { case _: Property => true })
-    }
+    val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads)
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)

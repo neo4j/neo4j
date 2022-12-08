@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -106,6 +107,8 @@ object AsPropertySeekable {
   def unapply(v: Any): Option[PropertySeekable] = v match {
     case WithSeekableArgs(prop @ Property(ident: LogicalVariable, _), rhs) if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
+    case WithSeekableArgs(prop @ CachedProperty(_, ident: LogicalVariable, _, _, _), rhs) if !rhs.dependencies(ident) =>
+      Some(PropertySeekable(prop, ident, rhs))
     case _ =>
       None
   }
@@ -115,6 +118,8 @@ object AsExplicitlyPropertyScannable {
 
   def unapply(v: Any): Option[ExplicitlyPropertyScannable] = v match {
     case expr @ IsNotNull(property @ Property(ident: LogicalVariable, _)) =>
+      Some(ExplicitlyPropertyScannable(expr, ident, property))
+    case expr @ IsNotNull(property @ CachedProperty(_, ident: LogicalVariable, _, _, _)) =>
       Some(ExplicitlyPropertyScannable(expr, ident, property))
 
     case _ =>

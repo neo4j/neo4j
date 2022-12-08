@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeInfos
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -40,22 +42,35 @@ object PlanningAttributes {
   class EffectiveCardinalities extends Attribute[LogicalPlan, EffectiveCardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
   class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
+  class LabelAndRelTypeInfos extends PartialAttribute[LogicalPlan, Option[LabelAndRelTypeInfo]](None)
 
   def newAttributes: PlanningAttributes = PlanningAttributes(
     new Solveds,
     new Cardinalities,
     new EffectiveCardinalities,
     new ProvidedOrders,
-    new LeveragedOrders
+    new LeveragedOrders,
+    new LabelAndRelTypeInfos
   )
 }
 
+/**
+ * 
+ * @param solveds the planner query that each plan solves.
+ * @param cardinalities cardinality estimation for each plan.
+ * @param effectiveCardinalities effective cardinality estimation (taking LIMIT into account) for each plan.
+ * @param providedOrders provided order for each plan
+ * @param leveragedOrders a boolean flag if the plan leverages order of rows.
+ * @param labelAndRelTypeInfos label and reltype info that is valid at the location of the plan.
+ *                             Currently this is only set for Selection plans.
+ */
 case class PlanningAttributes(
   solveds: Solveds,
   cardinalities: Cardinalities,
   effectiveCardinalities: EffectiveCardinalities,
   providedOrders: ProvidedOrders,
-  leveragedOrders: LeveragedOrders
+  leveragedOrders: LeveragedOrders,
+  labelAndRelTypeInfos: LabelAndRelTypeInfos
 ) {
   private val attributes = productIterator.asInstanceOf[Iterator[Attribute[LogicalPlan, _]]].toSeq
 
@@ -68,7 +83,8 @@ case class PlanningAttributes(
       cardinalities.clone[Cardinalities],
       effectiveCardinalities.clone[EffectiveCardinalities],
       providedOrders.clone[ProvidedOrders],
-      leveragedOrders.clone[LeveragedOrders]
+      leveragedOrders.clone[LeveragedOrders],
+      labelAndRelTypeInfos.clone[LabelAndRelTypeInfos]
     )
 
   def hasEqualSizeAttributes: Boolean = {

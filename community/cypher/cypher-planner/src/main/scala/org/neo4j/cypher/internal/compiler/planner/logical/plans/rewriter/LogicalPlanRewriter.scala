@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.LogicalPlanContainsIDReferences
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.PlanIDsAreCompressed
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity.SelectionPredicatesSortedBySelectivity
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -107,7 +108,9 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // Rewriting logical plans introduces new IDs
-    PlanIDsAreCompressed
+    PlanIDsAreCompressed,
+    // fuseSelections and simplifySelections can invalidate this condition
+    SelectionPredicatesSortedBySelectivity
   )
 
   override def getTransformer(
@@ -133,7 +136,11 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val idGen = context.logicalPlanIdGen
-    val otherAttributes = Attributes[LogicalPlan](idGen, from.planningAttributes.leveragedOrders)
+    val otherAttributes = Attributes[LogicalPlan](
+      idGen,
+      from.planningAttributes.leveragedOrders,
+      from.planningAttributes.labelAndRelTypeInfos
+    )
     val rewritten = from.logicalPlan.endoRewrite(
       instance(
         context,
