@@ -8,6 +8,7 @@
         <artifactId>parent</artifactId>
         <groupId>org.neo4j</groupId>
         <version>5.4.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>annotations</artifactId>
@@ -15,7 +16,6 @@
 
     <name>Neo4j - Annotation processors</name>
     <description>Annotations and annotation processors used to build Neo4j project.</description>
-    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
