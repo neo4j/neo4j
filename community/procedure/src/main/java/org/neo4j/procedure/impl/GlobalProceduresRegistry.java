@@ -20,12 +20,13 @@
 package org.neo4j.procedure.impl;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -59,17 +60,17 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ProcedureCompiler compiler;
-    private final ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> builtin;
+    private final Supplier<List<CallableProcedure>> builtin;
     private final Path proceduresDirectory;
     private final InternalLog log;
 
     @VisibleForTesting
     public GlobalProceduresRegistry() {
-        this(new SpecialBuiltInProcedures("N/A", "N/A"), null, NullLog.getInstance(), ProcedureConfig.DEFAULT);
+        this(SpecialBuiltInProcedures.from("N/A", "N/A"), null, NullLog.getInstance(), ProcedureConfig.DEFAULT);
     }
 
     public GlobalProceduresRegistry(
-            ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> builtin,
+            Supplier<List<CallableProcedure>> builtin,
             Path proceduresDirectory,
             InternalLog log,
             ProcedureConfig config) {
@@ -349,7 +350,9 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         }
 
         // And register built-in procedures
-        builtin.accept(this);
+        for (var procedure : builtin.get()) {
+            register(procedure);
+        }
     }
 
     @VisibleForTesting

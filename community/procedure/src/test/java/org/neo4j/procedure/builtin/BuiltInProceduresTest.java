@@ -126,7 +126,10 @@ class BuiltInProceduresTest {
         procs.registerType(Relationship.class, NTRelationship);
         procs.registerType(Path.class, NTPath);
 
-        new SpecialBuiltInProcedures("1.3.37", Edition.COMMUNITY.toString()).accept(procs);
+        var builtins = SpecialBuiltInProcedures.from("1.3.37", Edition.COMMUNITY.toString());
+        for (var proc : builtins.get()) {
+            procs.register(proc);
+        }
         procs.registerProcedure(BuiltInProcedures.class);
         procs.registerProcedure(BuiltInDbmsProcedures.class);
 

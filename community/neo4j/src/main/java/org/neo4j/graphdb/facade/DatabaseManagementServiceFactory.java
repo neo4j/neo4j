@@ -316,7 +316,7 @@ public class DatabaseManagementServiceFactory {
             ProcedureConfig procedureConfig = new ProcedureConfig(globalConfig);
             Edition neo4jEdition = globalModule.getDbmsInfo().edition;
             SpecialBuiltInProcedures builtInProcedures =
-                    new SpecialBuiltInProcedures(Version.getNeo4jVersion(), neo4jEdition.toString());
+                    SpecialBuiltInProcedures.from(Version.getNeo4jVersion(), neo4jEdition.toString());
             GlobalProceduresRegistry globalProcedures =
                     new GlobalProceduresRegistry(builtInProcedures, proceduresDirectory, internalLog, procedureConfig);
 

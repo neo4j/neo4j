@@ -22,28 +22,31 @@ package org.neo4j.procedure.builtin;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
 import java.lang.management.ManagementFactory;
-import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.procedure.impl.GlobalProceduresRegistry;
+import java.util.List;
+import java.util.function.Supplier;
+import org.neo4j.kernel.api.procedure.CallableProcedure;
 
 /**
  * This class houses built-in procedures which use a backdoor to inject dependencies.
  * <p>
  * TODO: The dependencies should be made available by a standard mechanism so the backdoor is not needed.
  */
-public class SpecialBuiltInProcedures implements ThrowingConsumer<GlobalProceduresRegistry, ProcedureException> {
-    private final String neo4jVersion;
-    private final String neo4jEdition;
+public class SpecialBuiltInProcedures implements Supplier<List<CallableProcedure>> {
 
-    public SpecialBuiltInProcedures(String neo4jVersion, String neo4jEdition) {
-        this.neo4jVersion = neo4jVersion;
-        this.neo4jEdition = neo4jEdition;
+    private final List<CallableProcedure> builtins;
+
+    private SpecialBuiltInProcedures(List<CallableProcedure> builtins) {
+        this.builtins = builtins;
+    }
+
+    public static SpecialBuiltInProcedures from(String neo4jVersion, String neo4jEdition) {
+        return new SpecialBuiltInProcedures(List.of(
+                new ListComponentsProcedure(procedureName("dbms", "components"), neo4jVersion, neo4jEdition),
+                new JmxQueryProcedure(procedureName("dbms", "queryJmx"), ManagementFactory.getPlatformMBeanServer())));
     }
 
     @Override
-    public void accept(GlobalProceduresRegistry procs) throws ProcedureException {
-        procs.register(new ListComponentsProcedure(procedureName("dbms", "components"), neo4jVersion, neo4jEdition));
-        procs.register(
-                new JmxQueryProcedure(procedureName("dbms", "queryJmx"), ManagementFactory.getPlatformMBeanServer()));
+    public List<CallableProcedure> get() {
+        return builtins;
     }
 }
