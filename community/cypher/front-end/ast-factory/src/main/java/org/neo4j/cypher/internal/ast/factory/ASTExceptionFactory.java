@@ -77,6 +77,9 @@ public interface ASTExceptionFactory {
         }
     }
 
+    String failedToParseFile =
+            "Failed to parse the file expression. Please remember to use quotes for string literals.";
+
     // ---------Helper functions
     private static Function<List<String>, String> joiningLastDelimiter(String delimiter, String lastDelimiter) {
         return list -> {

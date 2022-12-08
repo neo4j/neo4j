@@ -2069,7 +2069,13 @@ CLAUSE LoadCSVClause() throws Exception:
 {
     t=<LOAD> <CSV>
     ( <WITH> <HEADERS> { headers = true; } )?
-    <FROM> source=Expression() <AS> v=Variable()
+    <FROM>
+    try {
+        source=Expression()
+    } catch (Exception e) {
+       throw new ParseException( exceptionFactory.failedToParseFile + " " + e.getMessage() );
+    }
+    <AS> v=Variable()
     ( <FIELDTERMINATOR> ( sep=StringToken() ) )?
     {
         return astFactory.loadCsvClause( pos( t ), headers, source, v, sep == null ? null : sep.image );
