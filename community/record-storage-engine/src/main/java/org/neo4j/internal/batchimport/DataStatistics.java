@@ -140,10 +140,14 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
         private int highestTypeId;
 
         public void increment(int typeId) {
+            increment(typeId, 1);
+        }
+
+        public void increment(int typeId, int delta) {
             if (typeId >= counts.length) {
                 counts = Arrays.copyOf(counts, max(counts.length * 2, typeId + 1));
             }
-            counts[typeId]++;
+            counts[typeId] += delta;
             if (typeId > highestTypeId) {
                 highestTypeId = typeId;
             }

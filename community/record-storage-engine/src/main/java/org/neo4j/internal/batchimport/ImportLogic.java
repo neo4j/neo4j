@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -293,6 +294,22 @@ public class ImportLogic implements Closeable {
 
     public void importRelationships() throws IOException {
         importRelationships(NO_SCHEMA_MONITORING);
+    }
+
+    public void removeViolatingRelationships(LongSet violatingRelationships) throws IOException {
+        if (violatingRelationships.notEmpty()) {
+            // Make sure to keep the typeDistribution up to date
+            DataStatistics state = getState(DataStatistics.class);
+            try (DataStatistics.Client client = state.newClient()) {
+                executeStage(new DeleteViolatingRelationshipsStage(
+                        config,
+                        violatingRelationships.longIterator(),
+                        neoStore.getNeoStores(),
+                        storeUpdateMonitor,
+                        client,
+                        contextFactory));
+            }
+        }
     }
 
     /**

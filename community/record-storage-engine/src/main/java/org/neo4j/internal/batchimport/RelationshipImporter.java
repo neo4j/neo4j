@@ -166,13 +166,15 @@ public class RelationshipImporter extends EntityImporter {
             relationshipRecord.setId(relationshipIds.nextId(cursorContext));
             if (schemaMonitor.endOfEntity(
                     relationshipRecord.getId(),
-                    (entityId, tokens, properties, constraintDescription) -> badCollector.collectBadRelationship(
-                            startId,
-                            startIdGroup,
-                            type,
-                            endId,
-                            endIdGroup,
-                            relationshipRecord.getFirstNode() == IdMapper.ID_NOT_FOUND ? startId : endId))) {
+                    (entityId, tokens, properties, constraintDescription) ->
+                            badCollector.collectRelationshipViolatingConstraint(
+                                    namedProperties(properties),
+                                    constraintDescription,
+                                    startId,
+                                    startIdGroup,
+                                    type,
+                                    endId,
+                                    endIdGroup))) {
                 if (doubleRecordUnits) {
                     // simply reserve one id for this relationship to grow during linking stage
                     relationshipIds.nextId(cursorContext);

@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
@@ -175,8 +176,8 @@ public class NodeImporter extends EntityImporter {
         // Write data to stores
         if (schemaMonitor.endOfEntity(
                 nodeRecord.getId(),
-                (entityId, tokens, properties, constraintDescription) -> badCollector.collectNodeViolatingConstraint(
-                        inputId, entityId, namedProperties(properties), constraintDescription))) {
+                (entityId, tokens, properties, constraintDescription) -> badCollector.collectEntityViolatingConstraint(
+                        inputId, entityId, namedProperties(properties), constraintDescription, EntityType.NODE))) {
             nodeRecord.setNextProp(createAndWritePropertyChain(cursorContext));
             nodeRecord.setInUse(true);
             nodeStore.updateRecord(nodeRecord, IGNORE, nodeUpdateCursor, cursorContext, storeCursors);

@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.util.concurrent.AsyncEvent;
 import org.neo4j.util.concurrent.AsyncEvents;
@@ -129,9 +130,26 @@ public final class BadCollector implements Collector {
     }
 
     @Override
-    public void collectNodeViolatingConstraint(
-            Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
-        collect(new NodeViolatingConstraintReporter(id, actualId, properties, constraintDescription));
+    public void collectEntityViolatingConstraint(
+            Object id,
+            long actualId,
+            Map<String, Object> properties,
+            String constraintDescription,
+            EntityType entityType) {
+        collect(new EntityViolatingConstraintReporter(id, actualId, properties, constraintDescription, entityType));
+    }
+
+    @Override
+    public void collectRelationshipViolatingConstraint(
+            Map<String, Object> properties,
+            String constraintDescription,
+            Object startId,
+            Group startIdGroup,
+            String type,
+            Object endId,
+            Group endIdGroup) {
+        collect(new RelationshipViolatingConstraintReporter(
+                properties, constraintDescription, startId, startIdGroup, type, endId, endIdGroup));
     }
 
     @Override
@@ -292,26 +310,76 @@ public final class BadCollector implements Collector {
         }
     }
 
-    private static class NodeViolatingConstraintReporter extends ProblemReporter {
+    private static class EntityViolatingConstraintReporter extends ProblemReporter {
         private final Object id;
         private final long actualId;
         private final Map<String, Object> properties;
         private final String constraintDescription;
+        private final EntityType entityType;
 
-        NodeViolatingConstraintReporter(
-                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
-            super(VIOLATING_NODES);
+        EntityViolatingConstraintReporter(
+                Object id,
+                long actualId,
+                Map<String, Object> properties,
+                String constraintDescription,
+                EntityType entityType) {
+            super(entityType == EntityType.NODE ? VIOLATING_NODES : BAD_RELATIONSHIPS);
             this.id = id;
             this.actualId = actualId;
             this.properties = properties;
             this.constraintDescription = constraintDescription;
+            this.entityType = entityType;
         }
 
         @Override
         String message() {
             return format(
-                    "Node %s (internal id %d) would have violated constraint:%s with properties:%s",
-                    id, actualId, constraintDescription, properties);
+                    "%s %s (internal id %d) would have violated constraint:%s with properties:%s",
+                    entityType == EntityType.NODE ? "Node" : "Relationship",
+                    id,
+                    actualId,
+                    constraintDescription,
+                    properties);
+        }
+
+        @Override
+        InputException exception() {
+            return new InputException(message());
+        }
+    }
+
+    private static class RelationshipViolatingConstraintReporter extends ProblemReporter {
+        private final Map<String, Object> properties;
+        private final String constraintDescription;
+        private final Object startId;
+        private final Group startIdGroup;
+        private final String type;
+        private final Object endId;
+        private final Group endIdGroup;
+
+        RelationshipViolatingConstraintReporter(
+                Map<String, Object> properties,
+                String constraintDescription,
+                Object startId,
+                Group startIdGroup,
+                String type,
+                Object endId,
+                Group endIdGroup) {
+            super(BAD_RELATIONSHIPS);
+            this.properties = properties;
+            this.constraintDescription = constraintDescription;
+            this.startId = startId;
+            this.startIdGroup = startIdGroup;
+            this.type = type;
+            this.endId = endId;
+            this.endIdGroup = endIdGroup;
+        }
+
+        @Override
+        String message() {
+            return format(
+                    "%s (%s)-[%s]->%s (%s) would have violated constraint:%s with properties:%s",
+                    startId, startIdGroup, type, endId, endIdGroup, constraintDescription, properties);
         }
 
         @Override

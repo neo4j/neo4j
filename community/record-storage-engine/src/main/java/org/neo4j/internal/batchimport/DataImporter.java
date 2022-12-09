@@ -88,6 +88,10 @@ public class DataImporter {
             this.relationships.add(relationships);
         }
 
+        public void relationshipsRemoved(long relationships) {
+            this.relationships.add(-relationships);
+        }
+
         public void propertiesImported(long properties) {
             this.properties.add(properties);
         }
@@ -98,6 +102,10 @@ public class DataImporter {
 
         public long nodesImported() {
             return this.nodes.sum();
+        }
+
+        public long relationshipsImported() {
+            return this.relationships.sum();
         }
 
         public long propertiesImported() {

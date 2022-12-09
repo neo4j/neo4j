@@ -55,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.common.EntityType;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
@@ -852,8 +853,24 @@ public class EncodingIdMapperTest {
         }
 
         @Override
-        public void collectNodeViolatingConstraint(
-                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
+        public void collectEntityViolatingConstraint(
+                Object id,
+                long actualId,
+                Map<String, Object> properties,
+                String constraintDescription,
+                EntityType entityType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void collectRelationshipViolatingConstraint(
+                Map<String, Object> properties,
+                String constraintDescription,
+                Object startId,
+                Group startIdGroup,
+                String type,
+                Object endId,
+                Group endIdGroup) {
             throw new UnsupportedOperationException();
         }
 

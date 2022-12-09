@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.input;
 import static java.lang.String.format;
 
 import java.util.Map;
+import org.neo4j.common.EntityType;
 
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
@@ -33,8 +34,21 @@ public interface Collector extends AutoCloseable {
 
     void collectDuplicateNode(Object id, long actualId, Group group);
 
-    void collectNodeViolatingConstraint(
-            Object id, long actualId, Map<String, Object> properties, String constraintDescription);
+    void collectEntityViolatingConstraint(
+            Object id,
+            long actualId,
+            Map<String, Object> properties,
+            String constraintDescription,
+            EntityType entityType);
+
+    void collectRelationshipViolatingConstraint(
+            Map<String, Object> properties,
+            String constraintDescription,
+            Object startId,
+            Group startIdGroup,
+            String type,
+            Object endId,
+            Group endIdGroup);
 
     void collectExtraColumns(String source, long row, String value);
 
@@ -73,8 +87,22 @@ public interface Collector extends AutoCloseable {
         public void collectDuplicateNode(Object id, long actualId, Group group) {}
 
         @Override
-        public void collectNodeViolatingConstraint(
-                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {}
+        public void collectEntityViolatingConstraint(
+                Object id,
+                long actualId,
+                Map<String, Object> properties,
+                String constraintDescription,
+                EntityType entityType) {}
+
+        @Override
+        public void collectRelationshipViolatingConstraint(
+                Map<String, Object> properties,
+                String constraintDescription,
+                Object startId,
+                Group startIdGroup,
+                String type,
+                Object endId,
+                Group endIdGroup) {}
 
         @Override
         public boolean isCollectingBadRelationships() {
@@ -110,10 +138,29 @@ public interface Collector extends AutoCloseable {
         }
 
         @Override
-        public void collectNodeViolatingConstraint(
-                Object id, long actualId, Map<String, Object> properties, String constraintDescription) {
-            throw new IllegalStateException(
-                    format("Bad node violating constraint %s %s id:%s", properties, constraintDescription, id));
+        public void collectEntityViolatingConstraint(
+                Object id,
+                long actualId,
+                Map<String, Object> properties,
+                String constraintDescription,
+                EntityType entityType) {
+            throw new IllegalStateException(format(
+                    "Bad %s with properties %s violating constraint %s id:%s",
+                    entityType == EntityType.NODE ? "node" : "relationship", properties, constraintDescription, id));
+        }
+
+        @Override
+        public void collectRelationshipViolatingConstraint(
+                Map<String, Object> properties,
+                String constraintDescription,
+                Object startId,
+                Group startIdGroup,
+                String type,
+                Object endId,
+                Group endIdGroup) {
+            throw new IllegalStateException(format(
+                    "Bad relationship (%s:%s)-[%s]->(%s:%s) with properties %s violating constraint %s",
+                    startId, startIdGroup, type, endId, endIdGroup, properties, constraintDescription));
         }
 
         @Override
