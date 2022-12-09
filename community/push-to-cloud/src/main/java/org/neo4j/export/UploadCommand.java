@@ -22,6 +22,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
@@ -171,6 +172,18 @@ public class UploadCommand extends AbstractAdminCommand {
     }
 
     String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
+        UrlMatcher matchers[] = devMode
+                ? new UrlMatcher[] {new DevMatcher(), new ProdMatcher(), new PrivMatcher()}
+                : new UrlMatcher[] {new ProdMatcher(), new PrivMatcher()};
+
+        return Arrays.stream(matchers)
+                .filter(m -> m.match(boltURI))
+                .findFirst()
+                .orElseThrow(() -> new CommandFailedException("Invalid Bolt URI '" + boltURI + "'"))
+                .consoleUrl();
+    }
+
+    abstract class UrlMatcher {
         // A boltURI looks something like this:
         //
         //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
@@ -190,34 +203,97 @@ public class UploadCommand extends AbstractAdminCommand {
         //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
         //   bolt+routing://rogue-myenv.databases.neo4j-myenv.io  -->
         // https://console-myenv.neo4j-myenv.io/v1/databases/rogue
-        Pattern pattern;
-        if (devMode) {
-            pattern = Pattern.compile(
-                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-(.+))?.io$");
-        } else {
-            pattern = Pattern.compile(
+        //
+        // When PrivateLink is enabled, the URL scheme is a little different:
+        //
+        //   bolt+routing://mydbid.myenv-orch-0003.neo4j.io"
+        //                  <─┬──> <─┬─>
+        //                    │      └──────────── environment
+        //                    └─────────────────── database id
+
+        protected Matcher matcher;
+        protected String url;
+
+        protected abstract Pattern pattern();
+
+        public abstract String consoleUrl();
+
+        public boolean match(String url) {
+            this.url = url;
+            matcher = pattern().matcher(url);
+            return matcher.matches();
+        }
+    }
+
+    class ProdMatcher extends UrlMatcher {
+        @Override
+        protected Pattern pattern() {
+            return Pattern.compile(
                     "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
         }
 
-        Matcher matcher = pattern.matcher(boltURI);
-        if (!matcher.matches()) {
-            throw new CommandFailedException("Invalid Bolt URI '" + boltURI + "'");
+        @Override
+        public String consoleUrl() {
+            String databaseId = matcher.group(1);
+            String environment = matcher.group(2);
+
+            return String.format(
+                    "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId);
+        }
+    }
+
+    class DevMatcher extends UrlMatcher {
+        @Override
+        protected Pattern pattern() {
+            return Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-(.+))?.io$");
         }
 
-        String databaseId = matcher.group(1);
-        String environment = matcher.group(2);
-        String domain = "";
+        @Override
+        public String consoleUrl() {
+            String databaseId = matcher.group(1);
+            String environment = matcher.group(2);
+            String domain = "";
 
-        if (devMode && environment == null) {
-            throw new CommandFailedException(
-                    "Expected to find an environment running in dev mode in bolt URI: " + boltURI);
+            if (environment == null) {
+                throw new CommandFailedException(
+                        "Expected to find an environment running in dev mode in bolt URI: " + url);
+            }
+            if (matcher.groupCount() == 5) {
+                domain = matcher.group(4);
+            }
+
+            return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
         }
-        if (matcher.groupCount() == 5 && devMode) {
-            domain = matcher.group(4);
+    }
+
+    class PrivMatcher extends UrlMatcher {
+        @Override
+        protected Pattern pattern() {
+            return Pattern.compile(
+                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([a-zA-Z0-9]+)\\.(\\S+)-orch-(\\d+).neo4j(-\\S+)?.io$");
         }
-        return String.format(
-                "https://console%s.neo4j%s.io/v1/databases/%s",
-                environment == null ? "" : environment, domain, databaseId);
+
+        @Override
+        public String consoleUrl() {
+            String databaseId = matcher.group(1);
+            String environment = matcher.group(2);
+            String domain = "";
+
+            switch (environment) {
+                case "production" -> environment = "";
+                case "staging", "prestaging" -> environment = "-" + environment;
+                default -> {
+                    environment = "-" + environment;
+                    if (matcher.group(4) == null) {
+                        throw new CommandFailedException("Invalid Bolt URI '" + url + "'");
+                    }
+                    domain = matcher.group(4);
+                }
+            }
+
+            return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
+        }
     }
 
     public DumpUploader makeDumpUploader(Path dump, String database) {
