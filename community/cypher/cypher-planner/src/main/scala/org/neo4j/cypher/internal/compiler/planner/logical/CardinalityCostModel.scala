@@ -312,6 +312,11 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
       costForThisPlan + lhsCost + rhsCost
 
     case IntersectionNodeByLabelsScan(_, labels, _, _) =>
+      // We don't use the outgoing cardinality to compute the cost here since the for doing the intersection
+      // scan we will need to exhaust at least the label with the smallest cardinality to find all intersecting nodes.
+      // For example, given (a:A&B) where we have 10 nodes with label A, 100 nodes with label B but only 1 node with A&B.
+      // Using a cardinality of 1 to compute the cost would underestimate the work that is needed since it will at least
+      // need to visit all 10 A nodes to find all the intersecting nodes.
       val rowsToProcess = labels.map(l => statistics.nodesWithLabelCardinality(semanticTable.id(l))).min
       val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable, propertyAccess)
       rowsToProcess * rowCost

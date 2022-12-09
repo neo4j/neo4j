@@ -47,20 +47,20 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
     if (!context.settings.planningIntersectionScansEnabled) {
       Set.empty
     } else {
-      // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
-      val combined: Map[Variable, Set[LabelName]] = {
-        qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
-          case (acc, current) => current match {
-              case HasLabels(variable @ Variable(varName), labels)
-                if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
-                val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
-                acc + (variable -> newValue)
-              case _ => acc
-            }
-        }
-      }
       context.staticComponents.planContext.nodeTokenIndex match {
         case Some(nodeTokenIndex) if nodeTokenIndex.orderCapability == BOTH =>
+          // Combine for example HasLabels(n, Seq(A)), HasLabels(n, Seq(B)) to n -> Set(A, B)
+          val combined: Map[Variable, Set[LabelName]] = {
+            qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
+              case (acc, current) => current match {
+                  case HasLabels(variable @ Variable(varName), labels)
+                    if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
+                    val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
+                    acc + (variable -> newValue)
+                  case _ => acc
+                }
+            }
+          }
           // We only create one plan with the intersection of all labels, we could change this to generate all combinations, e.g.
           // given labels A, B and C
           // - (A,B,C)
@@ -99,7 +99,7 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
           }
           results.toSet
 
-        case None => Set.empty
+        case _ => Set.empty
       }
     }
   }

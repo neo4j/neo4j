@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.STATS
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -281,7 +280,7 @@ class LogicalPlanGenerator(
           state.cardinalities,
           po,
           Set.empty,
-          STATS,
+          planContext.statistics,
           CostModelMonitor.DEFAULT
         ) <= costLimit
   }
