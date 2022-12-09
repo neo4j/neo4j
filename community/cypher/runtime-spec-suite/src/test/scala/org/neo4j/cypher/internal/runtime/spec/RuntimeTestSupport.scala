@@ -705,7 +705,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   // CONTEXTS
 
   def newQueryTransactionalContext(): QueryTransactionalContext = {
-    TransactionalContextWrapper(_txContext, null)
+    TransactionalContextWrapper(_txContext)
   }
 
   protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
@@ -730,14 +730,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   private def newQueryContext(
     txContext: TransactionalContext,
     readOnly: Boolean,
-    maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None
+    maybeExecutionResources: Option[ResourceManagerFactory] = None
   ): QueryContext = {
-    val (threadSafeCursorFactory, resourceManager) = maybeExecutionResources match {
-      case Some((tFactory, rFactory)) => (tFactory, rFactory(ResourceMonitor.NOOP))
-      case None => (null, new ResourceManager(ResourceMonitor.NOOP, txContext.kernelTransaction().memoryTracker()))
+    val resourceManager = maybeExecutionResources match {
+      case Some(resourceManagerFactory) => resourceManagerFactory(ResourceMonitor.NOOP)
+      case None => new ResourceManager(ResourceMonitor.NOOP, txContext.kernelTransaction().memoryTracker())
     }
 
-    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext, threadSafeCursorFactory), resourceManager)(
+    new TransactionBoundQueryContext(TransactionalContextWrapper(txContext), resourceManager)(
       monitors.newMonitor(classOf[IndexSearchMonitor])
     )
   }

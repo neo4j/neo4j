@@ -51,9 +51,6 @@ import org.neo4j.values.ElementIdMapper
 
 import java.net.URL
 
-/**
- * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
- */
 abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
   def kernelTransaction: KernelTransaction
@@ -73,7 +70,7 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
   def validateURLAccess(url: URL): URL
 }
 
-class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null)
+class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
     extends TransactionalContextWrapper {
 
   override def kernelTransaction: KernelTransaction = tc.kernelTransaction()
@@ -86,8 +83,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def kernelQueryContext: QueryContext = tc.kernelTransaction.queryContext
 
-  override def cursors: CursorFactory =
-    if (threadSafeCursors == null) tc.kernelTransaction.cursors() else threadSafeCursors
+  override def cursors: CursorFactory = tc.kernelTransaction.cursors()
 
   override def cursorContext: CursorContext = tc.kernelTransaction.cursorContext
 
@@ -153,20 +149,14 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
   override def rollback(): Unit = tc.rollback()
 
   override def contextWithNewTransaction: TransactionalContextWrapper = {
-    if (threadSafeCursors != null) {
-      throw new UnsupportedOperationException(
-        "Cypher transactions are not designed to work with parallel runtime, yet."
-      )
-    }
     val newTC = tc.contextWithNewTransaction()
-    TransactionalContextWrapper(newTC, threadSafeCursors)
+    TransactionalContextWrapper(newTC)
   }
 
   override def validateSameDB[E <: Entity](entity: E): Unit = tc.transaction().validateSameDB(entity)
 
   override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
-    require(threadSafeCursors != null)
-    val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
+    val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext)
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
       DebugSupport.TRANSACTIONAL_CONTEXT.log(
         "%s.createParallelTransactionalContext(): %s thread=%s",
@@ -191,7 +181,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
 object TransactionalContextWrapper {
 
-  def apply(tc: TransactionalContext, threadSafeCursors: CursorFactory = null): TransactionalContextWrapper = {
-    new SingleThreadedTransactionalContextWrapper(tc, threadSafeCursors)
+  def apply(tc: TransactionalContext): TransactionalContextWrapper = {
+    new SingleThreadedTransactionalContextWrapper(tc)
   }
 }

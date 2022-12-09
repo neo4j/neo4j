@@ -52,8 +52,7 @@ import org.neo4j.values.ElementIdMapper
 import java.net.URL
 
 class ParallelTransactionalContextWrapper(
-  private[this] val tc: TransactionalContext,
-  private[this] val threadSafeCursors: CursorFactory
+  private[this] val tc: TransactionalContext
 ) extends TransactionalContextWrapper {
 
   // TODO: Make parallel transaction use safe.
@@ -117,7 +116,6 @@ class ParallelTransactionalContextWrapper(
     }
     kernelExecutionContext.complete()
     kernelExecutionContext.close()
-    // threadSafeCursors needs to be closed by external owner
   }
 
   override def kernelStatisticProvider: KernelStatisticProvider =
@@ -147,8 +145,7 @@ class ParallelTransactionalContextWrapper(
   }
 
   override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
-    require(threadSafeCursors != null)
-    new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
+    new ParallelTransactionalContextWrapper(kernelTransactionalContext)
   }
 
   override def elementIdMapper(): ElementIdMapper = tc.elementIdMapper()

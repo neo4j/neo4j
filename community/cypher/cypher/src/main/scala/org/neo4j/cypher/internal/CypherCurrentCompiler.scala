@@ -329,12 +329,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       )
 
     private def getQueryContext(transactionalContext: TransactionalContext, taskCloser: TaskCloser) = {
-      val (threadSafeCursorFactory, resourceManager) = executionPlan.threadSafeExecutionResources() match {
-        case Some((tFactory, rFactory)) => (tFactory, rFactory(resourceMonitor))
+      val resourceManager = executionPlan.threadSafeExecutionResources() match {
+        case Some(resourceManagerFactory) => resourceManagerFactory(resourceMonitor)
         case None =>
-          (null, new ResourceManager(resourceMonitor, transactionalContext.kernelTransaction().memoryTracker()))
+          new ResourceManager(resourceMonitor, transactionalContext.kernelTransaction().memoryTracker())
       }
-      val txContextWrapper = TransactionalContextWrapper(transactionalContext, threadSafeCursorFactory)
+      val txContextWrapper = TransactionalContextWrapper(transactionalContext)
       val statement = transactionalContext.statement()
       statement.registerCloseableResource(resourceManager)
       taskCloser.addTask(_ => statement.unregisterCloseableResource(resourceManager))

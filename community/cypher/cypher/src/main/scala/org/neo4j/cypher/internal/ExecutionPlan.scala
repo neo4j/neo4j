@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.ResourceMonitor
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
@@ -49,7 +48,7 @@ abstract class ExecutionPlan {
    * @return if this ExecutionPlan needs a thread safe cursor factory and resource manager factory to be used from the TransactionBoundQueryContext,
    *         then it has to override this method and provide it here.
    */
-  def threadSafeExecutionResources(): Option[(CursorFactory, ResourceManagerFactory)] = None
+  def threadSafeExecutionResources(): Option[ResourceManagerFactory] = None
 
   def runtimeName: RuntimeName
 
