@@ -22,13 +22,13 @@ package org.neo4j.security;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
+import static org.neo4j.dbms.database.ComponentVersion.MULTI_DATABASE_COMPONENT;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
@@ -44,6 +44,7 @@ import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecur
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -95,6 +96,8 @@ class UserSecurityGraphComponentIT {
     private static SystemGraphComponents systemGraphComponents;
     private static UserSecurityGraphComponent userSecurityGraphComponent;
     private static AuthManager authManager;
+    // Synthetic system graph component representing the whole system
+    private static SystemGraphComponent.Name testComponent = new SystemGraphComponent.Name("test-component");
 
     @BeforeAll
     static void setup() {
@@ -154,16 +157,23 @@ class UserSecurityGraphComponentIT {
         userSecurityGraphComponent.initializeSystemGraph(system, true);
         systemGraphComponents.register(userSecurityGraphComponent);
 
-        HashMap<String, SystemGraphComponent.Status> statuses = new HashMap<>();
+        HashMap<SystemGraphComponent.Name, SystemGraphComponent.Status> componentStatuses = new HashMap<>();
+        SystemGraphComponent.Name overallStatus =
+                new SystemGraphComponent.Name("overall-status"); // aggregated status, rather than a real component
         inTx(tx -> {
-            systemGraphComponents.forEach(component -> statuses.put(component.componentName(), component.detect(tx)));
-            statuses.put("dbms-status", systemGraphComponents.detect(tx));
+            systemGraphComponents.forEach(
+                    component -> componentStatuses.put(component.componentName(), component.detect(tx)));
+            componentStatuses.put(overallStatus, systemGraphComponents.detect(tx));
         });
-        assertEquals(statuses.size(), 4, "Expecting four components");
-        assertEquals(CURRENT, statuses.get("multi-database"), "System graph status");
-        assertEquals(CURRENT, statuses.get(SECURITY_USER_COMPONENT), "Users status");
-        assertEquals(CURRENT, statuses.get(COMMUNITY_TOPOLOGY_GRAPH_COMPONENT), "Community topology graph status");
-        assertEquals(CURRENT, statuses.get("dbms-status"), "Overall status");
+
+        var expectedComponents = Set.of(
+                MULTI_DATABASE_COMPONENT, SECURITY_USER_COMPONENT, COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, overallStatus);
+        assertThat(componentStatuses.keySet()).containsExactlyInAnyOrderElementsOf(expectedComponents);
+        for (SystemGraphComponent.Name component : expectedComponents) {
+            assertThat(componentStatuses.get(component))
+                    .as("Component status should all be current")
+                    .isEqualTo(CURRENT);
+        }
     }
 
     @ParameterizedTest
@@ -261,13 +271,13 @@ class UserSecurityGraphComponentIT {
             throws Exception {
         var systemGraphComponents = system.getDependencyResolver().resolveDependency(SystemGraphComponents.class);
         assertStatus(Map.of(
-                "multi-database",
+                MULTI_DATABASE_COMPONENT,
                 CURRENT,
                 SECURITY_USER_COMPONENT,
                 initialState,
                 COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
                 CURRENT,
-                "dbms-status",
+                testComponent,
                 initialState));
 
         // When running dbms.upgrade
@@ -275,25 +285,24 @@ class UserSecurityGraphComponentIT {
 
         // Then when looking at component statuses
         assertStatus(Map.of(
-                "multi-database",
+                MULTI_DATABASE_COMPONENT,
                 CURRENT,
                 SECURITY_USER_COMPONENT,
                 CURRENT,
                 COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
                 CURRENT,
-                "dbms-status",
+                testComponent,
                 CURRENT));
     }
 
-    private static void assertStatus(Map<String, SystemGraphComponent.Status> expected) throws Exception {
-        HashMap<String, SystemGraphComponent.Status> statuses = new HashMap<>();
+    private static void assertStatus(Map<SystemGraphComponent.Name, SystemGraphComponent.Status> expected)
+            throws Exception {
+        HashMap<SystemGraphComponent.Name, SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx(tx -> {
             systemGraphComponents.forEach(component -> statuses.put(component.componentName(), component.detect(tx)));
-            statuses.put("dbms-status", systemGraphComponents.detect(tx));
+            statuses.put(testComponent, systemGraphComponents.detect(tx));
         });
-        for (var entry : expected.entrySet()) {
-            assertEquals(entry.getValue(), statuses.get(entry.getKey()), entry.getKey());
-        }
+        assertThat(statuses).isEqualTo(expected);
     }
 
     private HashMap<String, Object> getUserNamesAndIds() {

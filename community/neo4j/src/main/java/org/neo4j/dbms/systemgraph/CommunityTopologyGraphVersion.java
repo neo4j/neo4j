@@ -22,6 +22,7 @@ package org.neo4j.dbms.systemgraph;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
 import org.neo4j.dbms.database.ComponentVersion;
+import org.neo4j.dbms.database.SystemGraphComponent;
 
 public enum CommunityTopologyGraphVersion implements ComponentVersion {
     /**
@@ -60,7 +61,7 @@ public enum CommunityTopologyGraphVersion implements ComponentVersion {
     }
 
     @Override
-    public String getComponentName() {
+    public SystemGraphComponent.Name getComponentName() {
         return COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
     }
 

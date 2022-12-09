@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
@@ -105,7 +106,8 @@ class BuiltInProceduresTest {
     private final DependencyResolver resolver = mock(DependencyResolver.class);
     private final GraphDatabaseAPI graphDatabaseAPI = mock(GraphDatabaseAPI.class);
     private final IndexingService indexingService = mock(IndexingService.class);
-    private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
+    private final SystemGraphComponents systemGraphComponents =
+            new SystemGraphComponents(NullLogProvider.getInstance());
     private final Log log = mock(InternalLog.class);
 
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
@@ -510,18 +512,21 @@ class BuiltInProceduresTest {
     }
 
     private static SystemGraphComponent makeSystemComponentCurrent(String component) {
-        return new TestSystemGraphComponent(component, SystemGraphComponent.Status.CURRENT, null, null);
+        var componentName = new SystemGraphComponent.Name(component);
+        return new TestSystemGraphComponent(componentName, SystemGraphComponent.Status.CURRENT, null, null);
     }
 
     @SuppressWarnings("SameParameterValue")
     private static SystemGraphComponent makeSystemComponentUpgradeSucceeds(String component) {
-        return new TestSystemGraphComponent(component, SystemGraphComponent.Status.REQUIRES_UPGRADE, null, null);
+        var componentName = new SystemGraphComponent.Name(component);
+        return new TestSystemGraphComponent(componentName, SystemGraphComponent.Status.REQUIRES_UPGRADE, null, null);
     }
 
     @SuppressWarnings("SameParameterValue")
     private static SystemGraphComponent makeSystemComponentUpgradeFails(String component) {
+        var componentName = new SystemGraphComponent.Name(component);
         return new TestSystemGraphComponent(
-                component,
+                componentName,
                 SystemGraphComponent.Status.REQUIRES_UPGRADE,
                 null,
                 new RuntimeException("Upgrade failed because this is a test"));

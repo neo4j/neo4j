@@ -32,13 +32,15 @@ import org.neo4j.util.Preconditions;
  * These components only care about the version number
  */
 public abstract class AbstractVersionComponent<T extends ComponentVersion> extends AbstractSystemGraphComponent {
-    private final String componentName;
+    private final SystemGraphComponent.Name componentName;
     private final T latestVersion;
     protected final Function<Integer, T> convertToVersion;
-    protected volatile T currentVersion;
 
     public AbstractVersionComponent(
-            String componentName, T latestVersion, Config config, Function<Integer, T> convertFunction) {
+            SystemGraphComponent.Name componentName,
+            T latestVersion,
+            Config config,
+            Function<Integer, T> convertFunction) {
         super(config);
         this.componentName = componentName;
         this.latestVersion = latestVersion;
@@ -48,8 +50,13 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     abstract T getFallbackVersion();
 
     @Override
-    public String componentName() {
+    public Name componentName() {
         return componentName;
+    }
+
+    @Override
+    public int getLatestSupportedVersion() {
+        return latestVersion.getVersion();
     }
 
     @Override
@@ -115,7 +122,7 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
         try (var nodes = tx.findNodes(VERSION_LABEL)) {
             var node = nodes.stream().findFirst().orElseGet(() -> tx.createNode(VERSION_LABEL));
 
-            node.setProperty(componentName, latestVersion.getVersion());
+            node.setProperty(componentName.name(), latestVersion.getVersion());
         }
     }
 

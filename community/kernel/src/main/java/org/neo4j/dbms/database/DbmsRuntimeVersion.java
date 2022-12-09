@@ -56,14 +56,15 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION =
             V5_0; // version should be fixed to 5_0, bump is not an option
 
-    DbmsRuntimeVersion(int version, String componentName, String description, KernelVersion kernelVersion) {
+    DbmsRuntimeVersion(
+            int version, SystemGraphComponent.Name componentName, String description, KernelVersion kernelVersion) {
         this.version = version;
         this.componentName = componentName;
         this.description = description;
         this.kernelVersion = kernelVersion;
     }
 
-    private final String componentName;
+    private final SystemGraphComponent.Name componentName;
     private final String description;
     private final KernelVersion kernelVersion;
     private final int version;
@@ -79,7 +80,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     }
 
     @Override
-    public String getComponentName() {
+    public SystemGraphComponent.Name getComponentName() {
         return componentName;
     }
 

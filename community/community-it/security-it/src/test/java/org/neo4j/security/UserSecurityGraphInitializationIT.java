@@ -163,7 +163,7 @@ class UserSecurityGraphInitializationIT {
         Config config = Config.defaults(
                 GraphDatabaseInternalSettings.auth_store_directory, testDirectory.directory("data/dbms"));
 
-        var systemGraphComponents = new SystemGraphComponents();
+        var systemGraphComponents = new SystemGraphComponents(NullLogProvider.getInstance());
         systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC()));
         systemGraphComponents.register(new UserSecurityGraphComponent(
                 initialPassword, config, NullLogProvider.getInstance(), CommunitySecurityLog.NULL_LOG));

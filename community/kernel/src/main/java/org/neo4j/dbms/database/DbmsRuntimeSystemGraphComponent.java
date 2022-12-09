@@ -47,7 +47,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     }
 
     @Override
-    public Integer getVersion(Transaction tx, String componentName) {
+    public Integer getVersion(Transaction tx, Name componentName) {
         Integer result = null;
         try (ResourceIterator<Node> nodes = tx.findNodes(OLD_COMPONENT_LABEL)) {
             if (nodes.hasNext()) {

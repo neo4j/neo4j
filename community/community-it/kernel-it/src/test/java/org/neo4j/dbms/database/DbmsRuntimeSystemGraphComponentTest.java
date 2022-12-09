@@ -35,6 +35,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -50,7 +51,8 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     private GraphDatabaseService fakeSystemDb;
 
-    private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
+    private final SystemGraphComponents systemGraphComponents =
+            new SystemGraphComponents(NullLogProvider.getInstance());
     private DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent;
 
     @BeforeEach
@@ -187,7 +189,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     private static void createVersionNode(GraphDatabaseService database, DbmsRuntimeVersion version) {
         try (var tx = database.beginTx()) {
-            tx.createNode(VERSION_LABEL).setProperty(DBMS_RUNTIME_COMPONENT, version.getVersion());
+            tx.createNode(VERSION_LABEL).setProperty(DBMS_RUNTIME_COMPONENT.name(), version.getVersion());
             tx.commit();
         }
     }

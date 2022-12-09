@@ -20,11 +20,13 @@
 package org.neo4j.dbms.database;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.dbms.database.ComponentVersion.SYSTEM_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -32,7 +34,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Central collection for managing multiple versioned system graph initializers. There could be several components in the DBMS that each have a requirement on
@@ -43,52 +48,72 @@ import org.neo4j.util.Preconditions;
  * upgrade from one version to another.
  */
 public class SystemGraphComponents {
-    private final HashMap<String, SystemGraphComponent> componentMap = new HashMap<>();
-    private final ArrayList<SystemGraphComponent> components = new ArrayList<>();
+    private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap = new LinkedHashMap<>();
+    private final InternalLog log;
 
-    public void register(SystemGraphComponent initializer) {
-        deregister(initializer.componentName());
-        componentMap.put(initializer.componentName(), initializer);
-        components.add(initializer);
+    /**
+     * Latch to indicate that something has started reading the state of this component, implying that any changes
+     * after this point are risky.
+     */
+    private boolean readAccessBegun;
+
+    public SystemGraphComponents(InternalLogProvider logProvider) {
+        this.log = logProvider.getLog(getClass());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public void deregister(String key) {
-        SystemGraphComponent removed = componentMap.remove(key);
-        if (removed != null) {
-            components.remove(removed);
+    public void register(SystemGraphComponent initializer) {
+        if (readAccessBegun) {
+            log.warn(String.format(
+                    "Registering component '%s' after some reads of the component state have occurred",
+                    initializer.componentName()));
         }
+        if (componentMap.containsKey(initializer.componentName())) {
+            throw new IllegalStateException("Component already registered: " + initializer.componentName());
+        }
+        componentMap.put(initializer.componentName(), initializer);
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("WeakerAccess")
+    public void deregister(SystemGraphComponent.Name key) {
+        componentMap.remove(key);
     }
 
     public void forEachThrowing(ThrowingConsumer<SystemGraphComponent, Exception> process) throws Exception {
-        for (SystemGraphComponent component : components) {
+        ensureReadAccessBegun();
+        for (SystemGraphComponent component : componentMap.values()) {
             process.accept(component);
         }
     }
 
     public void forEach(Consumer<SystemGraphComponent> process) {
-        components.forEach(process);
+        ensureReadAccessBegun();
+        componentMap.values().forEach(process);
     }
 
-    public static String component() {
-        return "system-graph";
+    public static SystemGraphComponent.Name component() {
+        return SYSTEM_GRAPH_COMPONENT;
     }
 
     public SystemGraphComponent.Status detect(Transaction tx) {
-        return components.stream()
+        ensureReadAccessBegun();
+        return componentMap.values().stream()
                 .map(c -> c.detect(tx))
                 .reduce(SystemGraphComponent.Status::with)
                 .orElse(SystemGraphComponent.Status.CURRENT);
     }
 
     public SystemGraphComponent.Status detect(GraphDatabaseService system) {
-        return components.stream()
+        ensureReadAccessBegun();
+        return componentMap.values().stream()
                 .map(c -> c.detect(system))
                 .reduce(SystemGraphComponent.Status::with)
                 .orElse(SystemGraphComponent.Status.CURRENT);
     }
 
     public void initializeSystemGraph(GraphDatabaseService system) {
+        ensureReadAccessBegun();
+
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),
                 "Cannot initialize system graph on database '" + system.databaseName() + "'");
@@ -100,7 +125,7 @@ public class SystemGraphComponents {
         }
 
         Exception failure = null;
-        for (SystemGraphComponent component : components) {
+        for (SystemGraphComponent component : componentMap.values()) {
             try {
                 component.initializeSystemGraph(system, newlyCreated);
             } catch (Exception e) {
@@ -115,6 +140,8 @@ public class SystemGraphComponents {
     }
 
     public void upgradeToCurrent(GraphDatabaseService system) throws Exception {
+        ensureReadAccessBegun();
+
         Exception failure = null;
         for (SystemGraphComponent component : componentsToUpgrade(system)) {
             try {
@@ -131,7 +158,7 @@ public class SystemGraphComponents {
 
     private List<SystemGraphComponent> componentsToUpgrade(GraphDatabaseService system) throws Exception {
         List<SystemGraphComponent> componentsToUpgrade = new ArrayList<>();
-        SystemGraphComponent.executeWithFullAccess(system, tx -> components.stream()
+        SystemGraphComponent.executeWithFullAccess(system, tx -> componentMap.values().stream()
                 .filter(c -> {
                     SystemGraphComponent.Status status = c.detect(tx);
                     return status == SystemGraphComponent.Status.UNSUPPORTED_BUT_CAN_UPGRADE
@@ -146,5 +173,9 @@ public class SystemGraphComponents {
                 })
                 .forEach(componentsToUpgrade::add));
         return componentsToUpgrade;
+    }
+
+    private void ensureReadAccessBegun() {
+        readAccessBegun = true;
     }
 }

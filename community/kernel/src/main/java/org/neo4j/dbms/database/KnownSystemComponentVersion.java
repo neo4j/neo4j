@@ -37,14 +37,14 @@ public abstract class KnownSystemComponentVersion {
 
     private final Label versionLabel = Label.label("Version");
     private final ComponentVersion componentVersion;
-    protected final String componentVersionProperty;
+    protected final SystemGraphComponent.Name componentName;
     public final int version;
     public final String description;
     protected final Log debugLog;
 
     protected KnownSystemComponentVersion(ComponentVersion componentVersion, Log debugLog) {
         this.componentVersion = componentVersion;
-        this.componentVersionProperty = componentVersion.getComponentName();
+        this.componentName = componentVersion.getComponentName();
         this.version = componentVersion.getVersion();
         this.description = componentVersion.getDescription();
         this.debugLog = debugLog;
@@ -62,19 +62,29 @@ public abstract class KnownSystemComponentVersion {
         return componentVersion.runtimeSupported();
     }
 
-    protected Integer getVersion(Transaction tx) {
-        return SystemGraphComponent.getVersionNumber(tx, componentVersionProperty);
+    protected Integer getSystemGraphInstalledVersion(Transaction tx) {
+        return SystemGraphComponent.getVersionNumber(tx, componentName);
+    }
+
+    /**
+     * The version associated with this component **in this copy of the Neo4j binaries**.
+     * This may be different to the value returned by {@link #getSystemGraphInstalledVersion(Transaction)}.
+     *
+     * @return the positive integer number associated with this component's version
+     */
+    public int binaryVersion() {
+        return version;
     }
 
     public boolean detected(Transaction tx) {
-        Integer version = getVersion(tx);
+        Integer version = getSystemGraphInstalledVersion(tx);
         return version != null && version == this.version;
     }
 
     public UnsupportedOperationException unsupported() {
         String message = String.format(
                 "System graph version %d for component '%s' in '%s' is not supported",
-                version, componentVersionProperty, description);
+                version, componentName, description);
         debugLog.error(message);
         return new UnsupportedOperationException(message);
     }
@@ -101,14 +111,14 @@ public abstract class KnownSystemComponentVersion {
 
     public void setVersionProperty(Transaction tx, int newVersion) {
         Node versionNode = findOrCreateVersionNode(tx);
-        var oldVersion = versionNode.getProperty(componentVersionProperty, null);
+        var oldVersion = versionNode.getProperty(componentName.name(), null);
         if (oldVersion != null) {
             debugLog.info(String.format(
-                    "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion));
+                    "Upgrading '%s' version property from %s to %d", componentName, oldVersion, newVersion));
         } else {
-            debugLog.info(String.format("Setting version for '%s' to %d", componentVersionProperty, newVersion));
+            debugLog.info(String.format("Setting version for '%s' to %d", componentName, newVersion));
         }
-        versionNode.setProperty(componentVersionProperty, newVersion);
+        versionNode.setProperty(componentName.name(), newVersion);
     }
 
     private Node findOrCreateVersionNode(Transaction tx) {

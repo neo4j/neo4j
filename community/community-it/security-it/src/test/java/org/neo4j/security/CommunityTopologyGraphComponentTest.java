@@ -307,7 +307,7 @@ class CommunityTopologyGraphComponentTest {
     private static void setComponentVersionTo(int n) throws Exception {
         // Set the component version back to a previous version to re-trigger upgrade from this point
         inTx(tx -> Iterators.first(tx.findNodes(Label.label("Version")))
-                .setProperty(COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, n));
+                .setProperty(COMMUNITY_TOPOLOGY_GRAPH_COMPONENT.name(), n));
     }
 
     private static void initializeSystem() throws Exception {

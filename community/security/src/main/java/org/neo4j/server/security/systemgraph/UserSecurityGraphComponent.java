@@ -81,8 +81,13 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
     }
 
     @Override
-    public String componentName() {
+    public Name componentName() {
         return SECURITY_USER_COMPONENT;
+    }
+
+    @Override
+    public int getLatestSupportedVersion() {
+        return knownUserSecurityComponentVersions.latestComponentVersion().binaryVersion();
     }
 
     @Override

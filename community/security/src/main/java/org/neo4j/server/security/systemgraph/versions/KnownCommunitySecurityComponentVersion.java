@@ -54,7 +54,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     }
 
     boolean componentNotInVersionNode(Transaction tx) {
-        return getVersion(tx) == null;
+        return getSystemGraphInstalledVersion(tx) == null;
     }
 
     public abstract void setupUsers(Transaction tx) throws Exception;

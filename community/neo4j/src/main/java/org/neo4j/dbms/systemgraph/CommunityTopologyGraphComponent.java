@@ -21,6 +21,7 @@ package org.neo4j.dbms.systemgraph;
 
 import static org.neo4j.dbms.database.ComponentVersion.COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
+import static org.neo4j.dbms.systemgraph.CommunityTopologyGraphVersion.LATEST_COMMUNITY_TOPOLOGY_VERSION;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
@@ -56,8 +57,13 @@ public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponen
     }
 
     @Override
-    public String componentName() {
+    public Name componentName() {
         return COMMUNITY_TOPOLOGY_GRAPH_COMPONENT;
+    }
+
+    @Override
+    public int getLatestSupportedVersion() {
+        return LATEST_COMMUNITY_TOPOLOGY_VERSION;
     }
 
     @Override

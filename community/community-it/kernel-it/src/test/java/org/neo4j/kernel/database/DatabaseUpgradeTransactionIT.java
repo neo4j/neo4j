@@ -403,7 +403,7 @@ public class DatabaseUpgradeTransactionIT {
         try (var tx = systemDb.beginTx();
                 var nodes = tx.findNodes(VERSION_LABEL).stream()) {
             nodes.forEach(dbmsRuntimeNode ->
-                    dbmsRuntimeNode.setProperty(DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion()));
+                    dbmsRuntimeNode.setProperty(DBMS_RUNTIME_COMPONENT.name(), runtimeVersion.getVersion()));
             tx.commit();
         }
     }

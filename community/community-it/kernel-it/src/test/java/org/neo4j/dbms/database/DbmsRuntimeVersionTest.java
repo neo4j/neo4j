@@ -70,7 +70,7 @@ class DbmsRuntimeVersionTest {
                 ResourceIterator<Node> nodes = tx.findNodes(VERSION_LABEL)) {
             nodes.stream()
                     .forEach(dbmsRuntimeNode -> dbmsRuntimeNode.setProperty(
-                            ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion()));
+                            ComponentVersion.DBMS_RUNTIME_COMPONENT.name(), runtimeVersion.getVersion()));
 
             tx.commit();
         }

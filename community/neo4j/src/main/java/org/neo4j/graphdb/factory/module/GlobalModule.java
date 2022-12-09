@@ -204,7 +204,8 @@ public class GlobalModule {
                 memoryPools.pool(MemoryGroup.RECENT_QUERY_BUFFER, 0, null).getPoolMemoryTracker());
         globalDependencies.satisfyDependency(recentQueryBuffer);
 
-        systemGraphComponents = tryResolveOrCreate(SystemGraphComponents.class, SystemGraphComponents::new);
+        systemGraphComponents = tryResolveOrCreate(
+                SystemGraphComponents.class, () -> new SystemGraphComponents(logService.getInternalLogProvider()));
         globalDependencies.satisfyDependency(systemGraphComponents);
 
         if (globalConfig.get(GraphDatabaseInternalSettings.vm_pause_monitor_enabled)) {

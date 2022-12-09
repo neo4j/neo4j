@@ -24,11 +24,15 @@ package org.neo4j.dbms.database;
  * Also keeps track of the current versions and for which versions runtime and migration are supported.
  */
 public interface ComponentVersion {
-    String SECURITY_USER_COMPONENT = "security-users";
-    String SECURITY_PRIVILEGE_COMPONENT = "security-privileges";
-    String DBMS_RUNTIME_COMPONENT = "dbms-runtime";
-    String TOPOLOGY_GRAPH_COMPONENT = "topology-graph";
-    String COMMUNITY_TOPOLOGY_GRAPH_COMPONENT = "community-topology-graph";
+    SystemGraphComponent.Name SECURITY_USER_COMPONENT = new SystemGraphComponent.Name("security-users");
+    SystemGraphComponent.Name SECURITY_PRIVILEGE_COMPONENT = new SystemGraphComponent.Name("security-privileges");
+    SystemGraphComponent.Name DBMS_RUNTIME_COMPONENT = new SystemGraphComponent.Name("dbms-runtime");
+    SystemGraphComponent.Name TOPOLOGY_GRAPH_COMPONENT = new SystemGraphComponent.Name("topology-graph");
+    SystemGraphComponent.Name COMMUNITY_TOPOLOGY_GRAPH_COMPONENT =
+            new SystemGraphComponent.Name("community-topology-graph");
+    SystemGraphComponent.Name FABRIC_DATABASE_COMPONENT = new SystemGraphComponent.Name("fabric-database");
+    SystemGraphComponent.Name MULTI_DATABASE_COMPONENT = new SystemGraphComponent.Name("multi-database");
+    SystemGraphComponent.Name SYSTEM_GRAPH_COMPONENT = new SystemGraphComponent.Name("system-graph");
 
     /**
      * Get the version of the component. Component versions are expected to be ordered and the oldest version is 0.
@@ -40,7 +44,7 @@ public interface ComponentVersion {
     /**
      * @return Name of the component, will be used as a property on the Version node.
      */
-    String getComponentName();
+    SystemGraphComponent.Name getComponentName();
 
     String getDescription();
 

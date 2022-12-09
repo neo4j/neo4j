@@ -23,13 +23,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
 public class TestSystemGraphComponent implements SystemGraphComponent {
-    final String component;
+    final Name component;
     SystemGraphComponent.Status status;
     Exception onInit;
     Exception onMigrate;
 
     public TestSystemGraphComponent(
-            String component, SystemGraphComponent.Status status, Exception onInit, Exception onMigrate) {
+            Name component, SystemGraphComponent.Status status, Exception onInit, Exception onMigrate) {
         this.component = component;
         this.status = status;
         this.onInit = onInit;
@@ -37,8 +37,13 @@ public class TestSystemGraphComponent implements SystemGraphComponent {
     }
 
     @Override
-    public String componentName() {
+    public Name componentName() {
         return component;
+    }
+
+    @Override
+    public int getLatestSupportedVersion() {
+        return 0;
     }
 
     @Override

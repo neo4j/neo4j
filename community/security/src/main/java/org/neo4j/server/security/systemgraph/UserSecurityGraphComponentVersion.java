@@ -22,6 +22,7 @@ package org.neo4j.server.security.systemgraph;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
 import org.neo4j.dbms.database.ComponentVersion;
+import org.neo4j.dbms.database.SystemGraphComponent;
 
 public enum UserSecurityGraphComponentVersion implements ComponentVersion {
     /**
@@ -50,11 +51,11 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion {
             COMMUNITY_SECURITY_40.getVersion();
     public static final int LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION = COMMUNITY_SECURITY_50.getVersion();
 
-    private final String componentName;
+    private final SystemGraphComponent.Name componentName;
     private final int version;
     private final String description;
 
-    UserSecurityGraphComponentVersion(int version, String componentName, String description) {
+    UserSecurityGraphComponentVersion(int version, SystemGraphComponent.Name componentName, String description) {
         this.version = version;
         this.componentName = componentName;
         this.description = description;
@@ -66,7 +67,7 @@ public enum UserSecurityGraphComponentVersion implements ComponentVersion {
     }
 
     @Override
-    public String getComponentName() {
+    public SystemGraphComponent.Name getComponentName() {
         return componentName;
     }
 

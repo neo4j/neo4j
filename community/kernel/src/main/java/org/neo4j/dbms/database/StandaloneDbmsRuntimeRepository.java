@@ -60,8 +60,10 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
         try (var tx = systemDatabase.beginTx()) {
             nodesWithChangedProperties.stream()
                     .map(tx::getNodeById)
-                    .filter(node -> node.hasLabel(VERSION_LABEL) && node.hasProperty(component.componentName()))
-                    .map(dbmRuntime -> (int) dbmRuntime.getProperty(component.componentName()))
+                    .filter(node -> node.hasLabel(VERSION_LABEL)
+                            && node.hasProperty(component.componentName().name()))
+                    .map(dbmRuntime -> (int)
+                            dbmRuntime.getProperty(component.componentName().name()))
                     .map(DbmsRuntimeVersion::fromVersionNumber)
                     .forEach(this::setVersion);
         }

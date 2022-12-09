@@ -45,13 +45,20 @@ public interface SystemGraphComponent {
     Label VERSION_LABEL = Label.label("Version");
 
     /**
-     * This string should be a unique identifier for the component. It will be used in two places:
+     * This should be a unique identifier for the component. It will be used in two places:
      * <ol>
      *     <li>A key in a map of components for managing upgrades of the entire DBMS</li>
      *     <li>A property key for the <code>Version</code> node used to store versioning information for this component</li>
      * </ol>
      */
-    String componentName();
+    Name componentName();
+
+    /**
+     * Return the latest version of this component which the local instance can support.
+     *
+     * Note: this is not the same as the version of the component which is "installed" in the system database.
+     */
+    int getLatestSupportedVersion();
 
     /**
      * Return the current status of this component. This involves reading the current contents of the system database and detecting whether the sub-graph
@@ -99,7 +106,7 @@ public interface SystemGraphComponent {
         }
     }
 
-    default Integer getVersion(Transaction tx, String componentVersionProperty) {
+    default Integer getVersion(Transaction tx, Name componentVersionProperty) {
         return getVersionNumber(tx, componentVersionProperty);
     }
 
@@ -107,15 +114,15 @@ public interface SystemGraphComponent {
      * Get the version number of a component from the system graph.
      *
      * @param tx an open transaction
-     * @param componentVersionProperty name of the property describing the version for the component
+     * @param componentName name of the property describing the version for the component
      * @return The version of the component or null if there is no stored information.
      */
-    static Integer getVersionNumber(Transaction tx, String componentVersionProperty) {
+    static Integer getVersionNumber(Transaction tx, Name componentName) {
         Integer result = null;
         try (ResourceIterator<Node> nodes = tx.findNodes(VERSION_LABEL)) {
             if (nodes.hasNext()) {
                 Node versionNode = nodes.next();
-                result = (Integer) versionNode.getProperty(componentVersionProperty, null);
+                result = (Integer) versionNode.getProperty(componentName.name(), null);
             }
         }
         return result;
@@ -170,6 +177,13 @@ public interface SystemGraphComponent {
 
         public String resolution() {
             return resolution;
+        }
+    }
+
+    record Name(String name) {
+        @Override
+        public String toString() {
+            return name;
         }
     }
 }
