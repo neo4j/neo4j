@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -28,6 +29,10 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
+
+import scala.util.Using
 
 abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -238,6 +243,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship scan should use ascending index order when provided") {
+    assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
@@ -263,6 +269,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship scan should use descending index order when provided") {
+    assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
@@ -288,6 +295,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship scan should use ascending index order when provided") {
+    assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
@@ -313,6 +321,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship scan should use descending index order when provided") {
+    assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = given {
@@ -370,5 +379,23 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
+  }
+
+  private def RelationshipTypeIndexIsOrdered: Boolean = {
+    Using(graphDb.beginTx) { tx =>
+      {
+        tx.schema.getIndexes.forEach({ id =>
+          {
+            val index = id.asInstanceOf[IndexDefinitionImpl].getIndexReference
+            if (
+              index.schema.isAnyTokenSchemaDescriptor && (index.schema.entityType eq EntityType.RELATIONSHIP) && (index.getIndexType eq IndexType.LOOKUP)
+            ) {
+              return index.getCapability.supportsOrdering()
+            }
+          }
+        })
+      }
+    }
+    fail("Didn't find the relationship type token index")
   }
 }
