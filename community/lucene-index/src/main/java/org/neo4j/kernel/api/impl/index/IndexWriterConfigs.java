@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.configuration.Config;
 
@@ -82,7 +81,7 @@ public final class IndexWriterConfigs {
             // don't use separate lucene threads for merging during population.
             // Population is a background task, and it is probably more important to limit CPU usage
             // than be as fast as possible here.
-            writerConfig.setMergeScheduler(new SerialMergeScheduler());
+            writerConfig.setMergeScheduler(new OnThreadConcurrentMergeScheduler());
         }
         return writerConfig;
     }
