@@ -34,7 +34,6 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
@@ -57,7 +55,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith(RandomExtension.class)
-@ResourceLock(SHARED_RESOURCE)
 abstract class SeekCursorTestBase<KEY, VALUE> {
     private static final int PAGE_SIZE = 256;
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
