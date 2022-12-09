@@ -278,7 +278,9 @@ trait UpdateGraph {
     nodes: NodesToCheckOverlap,
     propertiesToCreate: CreatesPropertyKeys
   ): Boolean = {
-    val selections = qgWithInfo.queryGraph.allSelections
+    val selections =
+      getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections()) ++
+      qgWithInfo.queryGraph.allSelections
 
     val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode)).toList
 
