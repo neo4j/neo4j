@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.ElementIdMapper;
 
 /**
@@ -72,13 +71,6 @@ public interface ExecutionContext extends AutoCloseable, ResourceMonitor {
      * {@link Procedures} implementation used for procedure and function invocation as part of this context
      */
     Procedures procedures();
-
-    /**
-     * Execution context store cursors. They should be used only in the context of current execution context and should not be shared with any other context.
-     *
-     * @return execution context store cursors.
-     */
-    StoreCursors storeCursors();
 
     /**
      * @return the query execution context of this execution context

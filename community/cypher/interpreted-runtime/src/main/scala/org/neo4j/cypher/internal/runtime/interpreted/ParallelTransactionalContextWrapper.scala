@@ -68,8 +68,7 @@ class ParallelTransactionalContextWrapper(
 
   override def kernelQueryContext: QueryContext = kernelExecutionContext.queryContext
 
-  // TODO: We eventually want to use kernelExecutionContext.cursors() when it is supported and then we can remove threadSafeCursors
-  override def cursors: CursorFactory = threadSafeCursors // kernelExecutionContext.cursors()
+  override def cursors: CursorFactory = kernelExecutionContext.cursors()
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 

@@ -182,11 +182,6 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     }
 
     @Override
-    public StoreCursors storeCursors() {
-        return storageCursors;
-    }
-
-    @Override
     public QueryContext queryContext() {
         return allStoreHolder;
     }
