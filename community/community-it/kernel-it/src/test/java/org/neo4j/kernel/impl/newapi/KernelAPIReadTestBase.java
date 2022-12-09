@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.Read;
@@ -54,9 +51,8 @@ import org.neo4j.test.utils.TestDirectory;
 @SuppressWarnings("WeakerAccess")
 @TestDirectoryExtension
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ResourceLock(SHARED_RESOURCE)
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport> {
-    protected static KernelAPIReadTestSupport testSupport;
+    protected KernelAPIReadTestSupport testSupport;
     protected KernelTransaction tx;
     protected Read read;
     protected SchemaRead schemaRead;
@@ -105,7 +101,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     }
 
     @AfterAll
-    public static void tearDown() {
+    public void tearDown() {
         testSupport.tearDown();
     }
 
@@ -118,12 +114,12 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         cursors = new ManagedTestCursors(tx.cursors());
     }
 
-    protected static KernelTransaction beginTransaction() throws TransactionFailureException {
+    protected KernelTransaction beginTransaction() throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
         return beginTransaction(kernel, LoginContext.AUTH_DISABLED);
     }
 
-    protected static KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
+    protected KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
         return beginTransaction(kernel, loginContext);
     }

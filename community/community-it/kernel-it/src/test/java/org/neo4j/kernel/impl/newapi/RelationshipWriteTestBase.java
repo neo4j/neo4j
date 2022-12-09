@@ -684,7 +684,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
     }
 
-    private static long createRelationship(RelationshipType type) {
+    private long createRelationship(RelationshipType type) {
         try (var ctx = graphDb.beginTx()) {
             var relationship = ctx.createNode()
                     .createRelationshipTo(ctx.createNode(), type)
@@ -694,7 +694,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
     }
 
-    private static long createRelationshipWithProperty(RelationshipType type, String key, Object value) {
+    private long createRelationshipWithProperty(RelationshipType type, String key, Object value) {
         try (var ctx = graphDb.beginTx()) {
             var relationship = ctx.createNode().createRelationshipTo(ctx.createNode(), type);
             relationship.setProperty(key, value);

@@ -93,7 +93,7 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
         // GIVEN
         long conflicting, notConflicting;
         addConstraints("FOO", "prop");
-        try (Transaction tx = KernelAPIWriteTestBase.graphDb.beginTx()) {
+        try (Transaction tx = graphDb.beginTx()) {
             Node node = tx.createNode();
             RelationshipType type = RelationshipType.withName("FOO");
             Relationship conflict = node.createRelationshipTo(node, type);
@@ -110,7 +110,7 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
         }
 
         int property;
-        try (KernelTransaction tx = KernelAPIWriteTestBase.beginTransaction()) {
+        try (KernelTransaction tx = beginTransaction()) {
             property = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
 
             // This is ok, since it will satisfy constraint
@@ -122,7 +122,7 @@ public class RelationshipConstraintTest extends ConstraintTestBase<WriteTestSupp
         }
 
         // Verify
-        try (KernelTransaction tx = KernelAPIWriteTestBase.beginTransaction();
+        try (KernelTransaction tx = beginTransaction();
                 RelationshipScanCursor relCursor = tx.cursors().allocateRelationshipScanCursor(tx.cursorContext());
                 PropertyCursor propertyCursor =
                         tx.cursors().allocatePropertyCursor(tx.cursorContext(), tx.memoryTracker())) {

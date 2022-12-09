@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCo
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.Relationship;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.RelationshipTypeScan;
-import static org.neo4j.kernel.impl.newapi.TestUtils.isNodeBased;
 
 import java.util.ArrayList;
 import java.util.Collections;

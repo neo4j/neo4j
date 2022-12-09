@@ -66,7 +66,7 @@ class TransactionTest extends KernelAPIWriteTestBase<WriteTestSupport> {
 
     // HELPERS
 
-    private static void assertNoNode(long nodeId) throws TransactionFailureException {
+    private void assertNoNode(long nodeId) throws TransactionFailureException {
         try (KernelTransaction tx = beginTransaction();
                 NodeCursor cursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT)) {
             tx.dataRead().singleNode(nodeId, cursor);

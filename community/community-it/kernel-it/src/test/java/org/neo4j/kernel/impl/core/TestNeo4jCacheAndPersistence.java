@@ -43,15 +43,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 
-@TestDirectoryExtension
 class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase {
-    @Inject
-    private TestDirectory testDirectory;
-
     private static final String key1 = "key1";
     private static final String key2 = "key2";
     private static final String arrayKey = "arrayKey";
@@ -427,7 +420,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase {
         testLowGrabSize(true);
     }
 
-    private static void testLowGrabSize(boolean includeLoops) {
+    private void testLowGrabSize(boolean includeLoops) {
         Collection<Relationship> outgoingOriginal = new HashSet<>();
         Collection<Relationship> incomingOriginal = new HashSet<>();
         Collection<Relationship> loopsOriginal = new HashSet<>();

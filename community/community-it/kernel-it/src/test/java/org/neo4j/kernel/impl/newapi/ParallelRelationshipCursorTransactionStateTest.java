@@ -360,7 +360,7 @@ class ParallelRelationshipCursorTransactionStateTest extends KernelAPIWriteTestB
         }
     }
 
-    private static MutableLongSet createRelationships(int size) throws KernelException {
+    private MutableLongSet createRelationships(int size) throws KernelException {
         MutableLongSet rels = LongSets.mutable.empty();
         try (KernelTransaction tx = beginTransaction()) {
             Write write = tx.dataWrite();

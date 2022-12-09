@@ -27,27 +27,21 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.eclipse.collections.api.tuple.Pair;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.recordstorage.RecordIdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class TestPropertyBlocks extends AbstractNeo4jTestCase {
-    @AfterEach
-    void tearDown() {
-        stopDb();
-        startDb();
-    }
-
     @Test
     void simpleAddIntegers() {
         long inUseBefore = propertyRecordsInUse();
@@ -112,23 +106,27 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
     void deleteEverythingInMiddleRecord() {
         long inUseBefore = propertyRecordsInUse();
         Node node = createNode();
-        long offset = lastUsedRecordId(propertyStore()) + 1; // expected first record id that will be used for this test
 
+        Map<String, Object> properties = new HashMap<>();
         try (Transaction transaction = getGraphDb().beginTx()) {
             var txNode = transaction.getNodeById(node.getId());
             for (int i = 0; i < 3 * PropertyType.getPayloadSizeLongs(); i++) {
-                txNode.setProperty("shortString" + i, String.valueOf(i));
+                var key = "shortString" + i;
+                var value = String.valueOf(i);
+                txNode.setProperty(key, value);
+                properties.put(key, value);
             }
             transaction.commit();
         }
         assertEquals(inUseBefore + 3, propertyRecordsInUse());
 
-        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromRecord(offset + 1);
+        final List<Pair<String, Object>> middleRecordProps = getPropertiesFromNode(node.getId(), 1);
         try (Transaction transaction = getGraphDb().beginTx()) {
             middleRecordProps.forEach(nameAndValue -> {
                 final String name = nameAndValue.getOne();
                 final Object value = nameAndValue.getTwo();
                 assertEquals(value, transaction.getNodeById(node.getId()).removeProperty(name));
+                properties.remove(name);
             });
             transaction.commit();
         }
@@ -136,22 +134,31 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         assertEquals(inUseBefore + 2, propertyRecordsInUse());
         try (Transaction transaction = getGraphDb().beginTx()) {
             var txNode = transaction.getNodeById(node.getId());
-            middleRecordProps.forEach(nameAndValue -> assertFalse(txNode.hasProperty(nameAndValue.getOne())));
-            getPropertiesFromRecord(offset).forEach(nameAndValue -> {
-                final String name = nameAndValue.getOne();
-                final Object value = nameAndValue.getTwo();
-                assertEquals(value, txNode.removeProperty(name));
-            });
-            getPropertiesFromRecord(offset + 2).forEach(nameAndValue -> {
-                final String name = nameAndValue.getOne();
-                final Object value = nameAndValue.getTwo();
-                assertEquals(value, txNode.removeProperty(name));
-            });
+            for (var key : properties.keySet()) {
+                assertEquals(properties.get(key), txNode.removeProperty(key));
+            }
             transaction.commit();
         }
     }
 
-    private static List<Pair<String, Object>> getPropertiesFromRecord(long recordId) {
+    private List<Pair<String, Object>> getPropertiesFromNode(long nodeId, int recordIndexInChain) {
+        var nodeStore = nodeStore();
+        var propertyStore = propertyStore();
+        try (var cursor = nodeStore.openPageCursorForReading(0, NULL_CONTEXT);
+                var propertyCursor = propertyStore.openPageCursorForReading(0, NULL_CONTEXT)) {
+            var nodeRecord = nodeStore.newRecord();
+            var propertyRecord = propertyStore.newRecord();
+            nodeStore.getRecordByCursor(nodeId, nodeRecord, RecordLoad.NORMAL, cursor);
+            long prop = nodeRecord.getNextProp();
+            for (int i = 0; i < recordIndexInChain; i++) {
+                propertyStore.getRecordByCursor(prop, propertyRecord, RecordLoad.NORMAL, propertyCursor);
+                prop = propertyRecord.getNextProp();
+            }
+            return getPropertiesFromRecord(prop);
+        }
+    }
+
+    private List<Pair<String, Object>> getPropertiesFromRecord(long recordId) {
         final List<Pair<String, Object>> props = new ArrayList<>();
         PropertyStore propertyStore = propertyStore();
         final PropertyRecord record = propertyStore.newRecord();
@@ -683,7 +690,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         testArrayBase(true);
     }
 
-    private static void testArrayBase(boolean withNewTx) {
+    private void testArrayBase(boolean withNewTx) {
         Relationship rel;
         try (Transaction transaction = getGraphDb().beginTx()) {
             rel = transaction
@@ -800,7 +807,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
         }
     }
 
-    private static void testStringBase(boolean withNewTx) {
+    private void testStringBase(boolean withNewTx) {
         Node node = createNode();
 
         long recordsInUseAtStart = propertyRecordsInUse();
@@ -871,7 +878,7 @@ class TestPropertyBlocks extends AbstractNeo4jTestCase {
 
     @Test
     void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord() {
-        final long propcount = getIdGenerator(RecordIdType.PROPERTY).getNumberOfIdsInUse();
+        final long propcount = propertyRecordsInUse();
         Node node = createNode();
         try (Transaction transaction = getGraphDb().beginTx()) {
             var txNode = transaction.getNodeById(node.getId());

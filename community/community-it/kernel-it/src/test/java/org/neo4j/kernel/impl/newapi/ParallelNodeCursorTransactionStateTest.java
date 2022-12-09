@@ -350,7 +350,7 @@ class ParallelNodeCursorTransactionStateTest extends KernelAPIWriteTestBase<Writ
         }
     }
 
-    private static MutableLongSet createNodes(int size)
+    private MutableLongSet createNodes(int size)
             throws TransactionFailureException, InvalidTransactionTypeKernelException {
         MutableLongSet nodes = LongSets.mutable.empty();
         try (KernelTransaction tx = beginTransaction()) {

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.newapi.KernelAPIWriteTestBase.graphDb;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;

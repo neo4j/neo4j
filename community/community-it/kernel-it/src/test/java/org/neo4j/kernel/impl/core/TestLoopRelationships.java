@@ -126,7 +126,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         testAddManyLoopRelationships(5);
     }
 
-    private static void testAddManyLoopRelationships(int count) {
+    private void testAddManyLoopRelationships(int count) {
         for (boolean[] loop : permutations(count)) {
             Relationship[] relationships = new Relationship[count];
             Node root = createNode();
@@ -153,7 +153,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         testAddLoopRelationshipAndOtherRelationships(5);
     }
 
-    private static void testAddLoopRelationshipAndOtherRelationships(int size) {
+    private void testAddLoopRelationshipAndOtherRelationships(int size) {
         for (int i = 0; i < size; i++) {
             Node root = createNode();
             Relationship[] relationships = createRelationships(size, i, root);
@@ -263,7 +263,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         }
     }
 
-    private static void testAddAndRemoveLoopRelationshipAndOtherRelationships(int size) {
+    private void testAddAndRemoveLoopRelationshipAndOtherRelationships(int size) {
         for (boolean[] delete : permutations(size)) {
             for (int i = 0; i < size; i++) {
                 Node root = createNode();
@@ -309,7 +309,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         };
     }
 
-    private static Relationship[] createRelationships(int count, int loop, Node root) {
+    private Relationship[] createRelationships(int count, int loop, Node root) {
         Node[] nodes = new Node[count];
         for (int i = 0; i < count; i++) {
             if (loop == i) {
@@ -330,7 +330,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         return relationships;
     }
 
-    private static void verifyRelationships(String message, Node root, int loop, Relationship... relationships) {
+    private void verifyRelationships(String message, Node root, int loop, Relationship... relationships) {
         boolean[] loops = new boolean[relationships.length];
         for (int i = 0; i < relationships.length; i++) {
             loops[i] = i == loop;
@@ -338,7 +338,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase {
         verifyRelationships(message, root, loops, relationships);
     }
 
-    private static void verifyRelationships(String message, Node node, boolean[] loop, Relationship... relationships) {
+    private void verifyRelationships(String message, Node node, boolean[] loop, Relationship... relationships) {
         try (Transaction transaction = getGraphDb().beginTx()) {
             var root = transaction.getNodeById(node.getId());
             for (Direction dir : Direction.values()) {

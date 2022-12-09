@@ -301,7 +301,7 @@ class ParallelNodeLabelScanTransactionStateTest extends KernelAPIWriteTestBase<W
         }
     }
 
-    private static LongList createNodesWithLabel(int label, int size) throws KernelException {
+    private LongList createNodesWithLabel(int label, int size) throws KernelException {
         LongList ids;
         try (KernelTransaction tx = beginTransaction()) {
             Write write = tx.dataWrite();
@@ -321,7 +321,7 @@ class ParallelNodeLabelScanTransactionStateTest extends KernelAPIWriteTestBase<W
         return ids;
     }
 
-    private static int label(String name) throws KernelException {
+    private int label(String name) throws KernelException {
         int label;
         try (KernelTransaction tx = beginTransaction()) {
             label = tx.tokenWrite().labelGetOrCreateForName(name);

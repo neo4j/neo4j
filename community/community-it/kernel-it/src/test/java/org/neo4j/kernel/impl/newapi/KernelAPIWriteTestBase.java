@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
@@ -30,10 +31,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.Answers;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -42,6 +44,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -67,10 +70,9 @@ import org.neo4j.values.storable.Value;
 @SuppressWarnings("WeakerAccess")
 @TestDirectoryExtension
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@ResourceLock(SHARED_RESOURCE)
 public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport> {
-    protected static KernelAPIWriteTestSupport testSupport;
-    protected static GraphDatabaseService graphDb;
+    protected KernelAPIWriteTestSupport testSupport;
+    protected GraphDatabaseService graphDb;
 
     // the following static fields are needed to create a fake internal transaction
     private static final TokenHolders tokenHolders = mock(TokenHolders.class);
@@ -100,7 +102,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     }
 
     @AfterAll
-    public static void tearDown() {
+    public void tearDown() {
         testSupport.tearDown();
     }
 
@@ -112,11 +114,11 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
      */
     public void createSystemGraph(GraphDatabaseService graphDb) {}
 
-    protected static KernelTransaction beginTransaction() throws TransactionFailureException {
+    protected KernelTransaction beginTransaction() throws TransactionFailureException {
         return beginTransaction(LoginContext.AUTH_DISABLED);
     }
 
-    protected static KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
+    protected KernelTransaction beginTransaction(LoginContext loginContext) throws TransactionFailureException {
         Kernel kernel = testSupport.kernelToTest();
         KernelTransaction kernelTransaction = kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, loginContext);
         new TransactionImpl(
@@ -124,7 +126,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         return kernelTransaction;
     }
 
-    protected static void transaction(ThrowingConsumer<KernelTransaction, Exception> action) throws Exception {
+    protected void transaction(ThrowingConsumer<KernelTransaction, Exception> action) throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
             action.accept(tx);
             tx.commit();
@@ -143,5 +145,24 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
             readProperties.put(propertyCursor.propertyKey(), propertyCursor.propertyValue());
         }
         assertThat(readProperties).isEqualTo(expectedProperties);
+    }
+
+    protected boolean isNodeBased() {
+        try (var tx = beginTransaction()) {
+            return isNodeBased(tx);
+        } catch (KernelException ex) {
+            fail(
+                    "Unable to determine whether the transaction would create a cursor over the relationship type index that is node-based");
+            return false;
+        }
+    }
+
+    protected boolean isNodeBased(Transaction tx) {
+        return isNodeBased(((InternalTransaction) tx).kernelTransaction());
+    }
+
+    protected boolean isNodeBased(KernelTransaction tx) {
+        var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
+        return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
     }
 }

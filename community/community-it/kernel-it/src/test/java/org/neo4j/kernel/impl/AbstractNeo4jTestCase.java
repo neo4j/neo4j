@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.impl;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.TestInstance;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +31,8 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
@@ -43,47 +41,37 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-@ResourceLock(SHARED_RESOURCE)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ImpermanentDbmsExtension(configurationCallback = "configureDb")
 public abstract class AbstractNeo4jTestCase {
-    private static DatabaseManagementService managementService;
-    private static GraphDatabaseAPI graphDb;
+    @Inject
+    private DatabaseManagementService managementService;
 
-    @BeforeAll
-    static void beforeAll() {
-        startDb();
+    @Inject
+    private GraphDatabaseAPI graphDb;
+
+    @ExtensionCallback
+    void configureDb(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
     }
 
-    @AfterAll
-    static void afterAll() {
-        stopDb();
-    }
-
-    protected static void startDb() {
-        managementService = new TestDatabaseManagementServiceBuilder()
-                .setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name())
-                .impermanent()
-                .build();
-        graphDb = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
-    }
-
-    protected static void stopDb() {
-        managementService.shutdown();
-    }
-
-    public static GraphDatabaseService getGraphDb() {
+    protected GraphDatabaseService getGraphDb() {
         return graphDb;
     }
 
-    public static DatabaseManagementService getManagementService() {
+    protected DatabaseManagementService getManagementService() {
         return managementService;
     }
 
-    protected static GraphDatabaseAPI getGraphDbAPI() {
+    protected GraphDatabaseAPI getGraphDbAPI() {
         return graphDb;
     }
 
-    protected static Node createNode() {
+    protected Node createNode() {
         Node node;
         try (Transaction transaction = graphDb.beginTx()) {
             node = transaction.createNode();
@@ -92,13 +80,13 @@ public abstract class AbstractNeo4jTestCase {
         return node;
     }
 
-    protected static IdGenerator getIdGenerator(IdType idType) {
+    protected IdGenerator getIdGenerator(IdType idType) {
         return graphDb.getDependencyResolver()
                 .resolveDependency(IdGeneratorFactory.class)
                 .get(idType);
     }
 
-    protected static long propertyRecordsInUse() {
+    protected long propertyRecordsInUse() {
         return numberOfRecordsInUse(propertyStore());
     }
 
@@ -127,23 +115,30 @@ public abstract class AbstractNeo4jTestCase {
         return 0;
     }
 
-    protected static long dynamicStringRecordsInUse() {
+    protected long dynamicStringRecordsInUse() {
         return numberOfRecordsInUse(propertyStore().getStringStore());
     }
 
-    protected static long dynamicArrayRecordsInUse() {
+    protected long dynamicArrayRecordsInUse() {
         return numberOfRecordsInUse(propertyStore().getArrayStore());
     }
 
-    protected static StoreCursors createStoreCursors() {
+    protected StoreCursors createStoreCursors() {
         var storageEngine = graphDb.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         return storageEngine.createStorageCursors(NULL_CONTEXT);
     }
 
-    protected static PropertyStore propertyStore() {
+    protected NeoStores neoStores() {
         return graphDb.getDependencyResolver()
                 .resolveDependency(RecordStorageEngine.class)
-                .testAccessNeoStores()
-                .getPropertyStore();
+                .testAccessNeoStores();
+    }
+
+    protected PropertyStore propertyStore() {
+        return neoStores().getPropertyStore();
+    }
+
+    protected NodeStore nodeStore() {
+        return neoStores().getNodeStore();
     }
 }

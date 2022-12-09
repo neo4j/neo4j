@@ -361,7 +361,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static String createIndex(String label, String propertyKey) {
+    private String createIndex(String label, String propertyKey) {
         String indexName;
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             indexName = tx.schema()

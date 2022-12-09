@@ -88,7 +88,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         assertEquals(ids[1], mapToken(token -> token.relationshipType("b")));
     }
 
-    private static void assertIllegalToken(ThrowingConsumer<Token, KernelException> f) {
+    private void assertIllegalToken(ThrowingConsumer<Token, KernelException> f) {
         try (KernelTransaction tx = beginTransaction()) {
             f.accept(tx.token());
             fail("Expected IllegalTokenNameException");
@@ -99,7 +99,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         }
     }
 
-    private static int mapToken(ThrowingFunction<Token, Integer, KernelException> f) {
+    private int mapToken(ThrowingFunction<Token, Integer, KernelException> f) {
         try (KernelTransaction tx = beginTransaction()) {
             return f.apply(tx.token());
         } catch (KernelException e) {
@@ -108,7 +108,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
         }
     }
 
-    private static void forToken(ThrowingConsumer<Token, KernelException> f) {
+    private void forToken(ThrowingConsumer<Token, KernelException> f) {
         try (KernelTransaction tx = beginTransaction()) {
             f.accept(tx.token());
         } catch (KernelException e) {

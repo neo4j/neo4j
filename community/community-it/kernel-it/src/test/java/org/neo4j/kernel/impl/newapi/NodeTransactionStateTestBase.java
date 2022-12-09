@@ -945,7 +945,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         assertArrayEquals(expected, labelArray, "labels match expected");
     }
 
-    public static Node createNode(String... labels) throws Exception {
+    public Node createNode(String... labels) throws Exception {
         long node;
         int[] labelIds = new int[labels.length];
         try (KernelTransaction tx = beginTransaction()) {

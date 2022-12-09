@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.newapi.TestUtils.isNodeBased;
 
 import java.util.ArrayList;
 import java.util.Comparator;

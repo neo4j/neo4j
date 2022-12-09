@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.newapi.KernelAPIWriteTestBase.beginTransaction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +35,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.Scan;
@@ -48,7 +43,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 public final class TestUtils {
     private TestUtils() {
@@ -246,24 +240,5 @@ public final class TestUtils {
             count++;
         }
         return count;
-    }
-
-    static boolean isNodeBased() {
-        try (var tx = beginTransaction()) {
-            return isNodeBased(tx);
-        } catch (KernelException ex) {
-            fail(
-                    "Unable to determine whether the transaction would create a cursor over the relationship type index that is node-based");
-            return false;
-        }
-    }
-
-    public static boolean isNodeBased(Transaction tx) {
-        return isNodeBased(((InternalTransaction) tx).kernelTransaction());
-    }
-
-    public static boolean isNodeBased(KernelTransaction tx) {
-        var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
-        return cursor instanceof DefaultNodeBasedRelationshipTypeIndexCursor;
     }
 }

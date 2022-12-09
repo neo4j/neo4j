@@ -1052,7 +1052,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         assertFalse(traversal.next());
     }
 
-    private static void traverse(RelationshipTestSupport.StartNode start, boolean detached) throws Exception {
+    private void traverse(RelationshipTestSupport.StartNode start, boolean detached) throws Exception {
         try (KernelTransaction tx = beginTransaction()) {
             Map<String, Integer> expectedCounts = modifyStartNodeRelationships(start, tx);
 
@@ -1259,8 +1259,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         assertEquals(expectedCount, count);
     }
 
-    private static void assertCount(int count, RelationshipDirection direction, Consumer<Degrees> asserter)
-            throws Exception {
+    private void assertCount(int count, RelationshipDirection direction, Consumer<Degrees> asserter) throws Exception {
         long start;
         int type;
         try (KernelTransaction tx = beginTransaction()) {

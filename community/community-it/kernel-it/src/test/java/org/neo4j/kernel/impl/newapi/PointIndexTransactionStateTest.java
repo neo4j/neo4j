@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -65,7 +66,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             tx.commit();
         }
 
-        ops.createIndex();
+        ops.createIndex(graphDb);
 
         // when
         try (KernelTransaction tx = beginTransaction()) {
@@ -100,7 +101,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             tx.commit();
         }
 
-        ops.createIndex();
+        ops.createIndex(graphDb);
 
         // when
         try (KernelTransaction tx = beginTransaction()) {
@@ -139,7 +140,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             tx.commit();
         }
 
-        ops.createIndex();
+        ops.createIndex(graphDb);
 
         // when
         try (KernelTransaction tx = beginTransaction()) {
@@ -206,7 +207,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             }
 
             @Override
-            void createIndex() {
+            void createIndex(GraphDatabaseService graphDb) {
                 try (Transaction tx = graphDb.beginTx()) {
                     tx.schema()
                             .indexFor(Label.label(DEFAULT_LABEL))
@@ -290,7 +291,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
             }
 
             @Override
-            void createIndex() {
+            void createIndex(GraphDatabaseService graphDb) {
                 try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
                     tx.schema()
                             .indexFor(RelationshipType.withName(DEFAULT_REl_TYPE))
@@ -361,7 +362,7 @@ class PointIndexTransactionStateTest extends KernelAPIWriteTestBase<WriteTestSup
 
         abstract Pair<Long, Value> entityWithProp(KernelTransaction tx, Object value) throws Exception;
 
-        abstract void createIndex();
+        abstract void createIndex(GraphDatabaseService graphDb);
 
         abstract void deleteEntity(KernelTransaction tx, long entity) throws Exception;
 

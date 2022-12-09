@@ -95,7 +95,7 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase {
         makeSureRightAmountOfDynamicRecordsUsed(stringArray, 2, ARRAY_RECORD_COUNTER);
     }
 
-    private static void makeSureRightAmountOfDynamicRecordsUsed(
+    private void makeSureRightAmountOfDynamicRecordsUsed(
             Object value, int expectedAddedDynamicRecords, DynamicRecordCounter recordCounter) {
         long stringRecordsBefore = recordCounter.count();
         try (Transaction transaction = getGraphDb().beginTx()) {

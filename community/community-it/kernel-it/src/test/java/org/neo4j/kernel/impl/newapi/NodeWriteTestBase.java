@@ -1032,7 +1032,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         assertThat(readLabels).isEqualTo(expectedLabels);
     }
 
-    private static long createNode() {
+    private long createNode() {
         long node;
         try (org.neo4j.graphdb.Transaction ctx = graphDb.beginTx()) {
             node = ctx.createNode().getId();
@@ -1041,14 +1041,14 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node;
     }
 
-    private static void deleteNode(long node) {
+    private void deleteNode(long node) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             tx.getNodeById(node).delete();
             tx.commit();
         }
     }
 
-    private static long createNodeWithLabels(String... labelNames) {
+    private long createNodeWithLabels(String... labelNames) {
         long node;
         try (org.neo4j.graphdb.Transaction ctx = graphDb.beginTx()) {
             node = ctx.createNode(stream(labelNames).map(Label::label).toArray(Label[]::new))
@@ -1058,7 +1058,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node;
     }
 
-    private static long createNodeWithProperty(String propertyKey, Object value) {
+    private long createNodeWithProperty(String propertyKey, Object value) {
         Node node;
         try (org.neo4j.graphdb.Transaction ctx = graphDb.beginTx()) {
             node = ctx.createNode();
@@ -1068,25 +1068,25 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         return node.getId();
     }
 
-    private static void assertNoLabels(long nodeId) {
+    private void assertNoLabels(long nodeId) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             assertThat(tx.getNodeById(nodeId).getLabels()).isEqualTo(Iterables.empty());
         }
     }
 
-    private static void assertLabels(long nodeId, String label) {
+    private void assertLabels(long nodeId, String label) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             assertThat(tx.getNodeById(nodeId).getLabels()).contains(label(label));
         }
     }
 
-    private static void assertNoProperty(long node, String propertyKey) {
+    private void assertNoProperty(long node, String propertyKey) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             assertFalse(tx.getNodeById(node).hasProperty(propertyKey));
         }
     }
 
-    private static void assertProperty(long node, String propertyKey, Object value) {
+    private void assertProperty(long node, String propertyKey, Object value) {
         try (org.neo4j.graphdb.Transaction tx = graphDb.beginTx()) {
             assertThat(tx.getNodeById(node).getProperty(propertyKey)).isEqualTo(value);
         }
