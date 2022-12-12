@@ -109,25 +109,6 @@ import scala.language.implicitConversions
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)
 
-  val STATS = new GraphStatistics {
-    override def nodesAllCardinality(): Cardinality = Cardinality(10000)
-
-    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      labelId.map(_ => Cardinality(1000)).getOrElse(Cardinality.SINGLE)
-
-    override def patternStepCardinality(
-      fromLabel: Option[LabelId],
-      relTypeId: Option[RelTypeId],
-      toLabel: Option[LabelId]
-    ): Cardinality = Cardinality(50000)
-
-    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
-      Some(Selectivity.of(.02).get ^ index.properties.length)
-
-    override def indexPropertyIsNotNullSelectivity(index: IndexDescriptor): Option[Selectivity] =
-      Some(Selectivity.of(.5).get ^ index.properties.length)
-  }
-
   object State {
 
     def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {

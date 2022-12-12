@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -48,7 +49,7 @@ object LogicalQueryGenerator {
     costLimit: Cost,
     nodes: Seq[Node],
     rels: Seq[Relationship]
-  ): Gen[WithState[LogicalQuery]] = {
+  ): Gen[WithState[(LogicalQuery, PlanContext)]] = {
     val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {
       override val defaultValue: ProvidedOrder = ProvidedOrder.empty
     }
@@ -57,7 +58,6 @@ object LogicalQueryGenerator {
     val tokenRead = txContext.kernelTransaction().tokenRead()
     val log = NullLog.getInstance()
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(txContext), devNullLogger, log)
-
     val labelMap = tokenRead.labelsGetAllTokens().asScala.map(l => l.name() -> l.id()).toMap
     val relMap = tokenRead.relationshipTypesGetAllTokens().asScala.toVector.map(r => r.name() -> r.id()).toMap
 
@@ -70,18 +70,21 @@ object LogicalQueryGenerator {
       state.cardinalities.iterator.foreach(cp => effectiveCardinalities.set(cp._1, EffectiveCardinality(cp._2.amount)))
 
       WithState(
-        LogicalQuery(
-          logicalPlan,
-          "<<queryText>>",
-          readOnly = true,
-          logicalPlan.availableSymbols.toArray,
-          state.semanticTable,
-          effectiveCardinalities,
-          providedOrders,
-          leveragedOrders,
-          hasLoadCSV = false,
-          state.idGen,
-          doProfile = false
+        (
+          LogicalQuery(
+            logicalPlan,
+            "<<queryText>>",
+            readOnly = true,
+            logicalPlan.availableSymbols.toArray,
+            state.semanticTable,
+            effectiveCardinalities,
+            providedOrders,
+            leveragedOrders,
+            hasLoadCSV = false,
+            state.idGen,
+            doProfile = false
+          ),
+          planContext
         ),
         state
       )
