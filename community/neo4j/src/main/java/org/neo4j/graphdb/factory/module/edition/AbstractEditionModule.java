@@ -36,10 +36,8 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
-import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.SystemGraphComponents;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -128,7 +126,7 @@ public abstract class AbstractEditionModule {
     public abstract <DB extends DatabaseContext> DatabaseContextProvider<DB> createDatabaseContextProvider(
             GlobalModule globalModule);
 
-    public abstract void registerSystemGraphInitializer(GlobalModule globalModule);
+    public abstract void registerDatabaseInitializers(GlobalModule globalModule);
 
     public abstract void registerSystemGraphComponents(
             SystemGraphComponents systemGraphComponents, GlobalModule globalModule);
@@ -233,18 +231,6 @@ public abstract class AbstractEditionModule {
                                 globalModule.getTracers().getPageCacheTracer())
                         .withLogService(globalModule.getLogService())
                         .build());
-    }
-
-    protected static void registerSystemGraphInitializer(
-            GlobalModule globalModule, DependencyResolver globalDependencies) {
-        Supplier<GraphDatabaseService> systemSupplier = CommunityEditionModule.systemSupplier(globalDependencies);
-        var systemGraphComponents = globalModule.getSystemGraphComponents();
-        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
-                SystemGraphInitializer.class,
-                globalModule.getExternalDependencyResolver(),
-                () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
-        globalModule.getGlobalDependencies().satisfyDependency(initializer);
-        globalModule.getGlobalLife().add(initializer);
     }
 
     protected static Supplier<GraphDatabaseService> systemSupplier(DependencyResolver dependencies) {

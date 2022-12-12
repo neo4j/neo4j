@@ -156,7 +156,7 @@ public class DatabaseManagementServiceFactory {
         globalModule.getSystemGraphComponents().register(dbmsRuntimeSystemGraphComponent);
 
         edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
-        edition.registerSystemGraphInitializer(globalModule);
+        edition.registerDatabaseInitializers(globalModule);
 
         edition.createSecurityModule(globalModule);
         SecurityProvider securityProvider = edition.getSecurityProvider();

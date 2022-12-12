@@ -45,9 +45,11 @@ import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
 import org.neo4j.dbms.database.DefaultDatabaseInfoService;
 import org.neo4j.dbms.database.DefaultSystemGraphComponent;
+import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.DetailedDbInfoProvider;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyDatabaseLookupFactory;
@@ -270,9 +272,21 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public void registerSystemGraphInitializer(GlobalModule globalModule) {
-        registerSystemGraphInitializer(globalModule, globalModule.getGlobalDependencies());
+    public void registerDatabaseInitializers(GlobalModule globalModule) {
+        registerSystemGraphInitializer(globalModule);
         registerDefaultDatabaseInitializer(globalModule);
+    }
+
+    private static void registerSystemGraphInitializer(GlobalModule globalModule) {
+        Supplier<GraphDatabaseService> systemSupplier =
+                CommunityEditionModule.systemSupplier(globalModule.getGlobalDependencies());
+        var systemGraphComponents = globalModule.getSystemGraphComponents();
+        SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
+                SystemGraphInitializer.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents));
+        globalModule.getGlobalDependencies().satisfyDependency(initializer);
+        globalModule.getGlobalLife().add(initializer);
     }
 
     protected void registerDefaultDatabaseInitializer(GlobalModule globalModule) {

@@ -99,7 +99,7 @@ public class SystemDbUpgrader {
         globalModule.getSystemGraphComponents().register(dbmsRuntimeSystemGraphComponent);
 
         edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
-        edition.registerSystemGraphInitializer(globalModule);
+        edition.registerDatabaseInitializers(globalModule);
 
         edition.createDefaultDatabaseResolver(globalModule);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
