@@ -32,6 +32,6 @@ class CountCappedLimitedEventFilter implements EventsFilter {
 
     @Override
     public boolean canPublish() {
-        return ++counter % every == 0;
+        return counter++ % every == 0;
     }
 }

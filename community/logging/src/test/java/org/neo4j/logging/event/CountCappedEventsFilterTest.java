@@ -40,13 +40,13 @@ class CountCappedEventsFilterTest {
     void shouldPublishEveryThreeCount() {
         var countCappedMiscEventFilter = new CountCappedLimitedEventFilter(3);
 
-        assertFalse(countCappedMiscEventFilter.canPublish());
-        assertFalse(countCappedMiscEventFilter.canPublish());
         assertTrue(countCappedMiscEventFilter.canPublish());
         assertFalse(countCappedMiscEventFilter.canPublish());
         assertFalse(countCappedMiscEventFilter.canPublish());
         assertTrue(countCappedMiscEventFilter.canPublish());
         assertFalse(countCappedMiscEventFilter.canPublish());
+        assertFalse(countCappedMiscEventFilter.canPublish());
+        assertTrue(countCappedMiscEventFilter.canPublish());
     }
 
     @Test

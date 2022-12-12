@@ -19,17 +19,10 @@
  */
 package org.neo4j.logging.event;
 
-import java.time.Clock;
-import java.time.Duration;
-
 public class EventsFilters {
     private EventsFilters() {}
 
-    public static EventsFilter timeCapped(Clock clock, Duration maximumPublishPeriod) {
-        return new TimeBasedLimitedEventFilter(clock, maximumPublishPeriod);
-    }
-
-    public static EventsFilter afterEvery(int every) {
+    public static EventsFilter every(int every) {
         return new CountCappedLimitedEventFilter(every);
     }
 }
