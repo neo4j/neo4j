@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -59,10 +60,6 @@ final case class ReturnItems(
 
   def aliases: Set[LogicalVariable] = items.flatMap(_.alias).toSet
 
-  def passedThrough: Set[LogicalVariable] = items.collect {
-    case item => item.alias.collect { case ident if ident == item.expression => ident }
-  }.flatten.toSet
-
   def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]): ReturnItems =
     copy(items = f(items))(position)
 
@@ -87,7 +84,7 @@ final case class ReturnItems(
     }
   }
 
-  def explicitReturnVariables: Seq[LogicalVariable] = items.flatMap(_.alias)
+  def returnVariables: ReturnVariables = ReturnVariables(includeExisting, items.flatMap(_.alias))
 
   def containsAggregate: Boolean = items.exists(_.expression.containsAggregate)
 }
@@ -141,6 +138,15 @@ case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(
 
 object ReturnItems {
   private val ExprStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
+
+  case class ReturnVariables(
+    includeExisting: Boolean,
+    explicitVariables: Seq[LogicalVariable]
+  )
+
+  object ReturnVariables {
+    def empty: ReturnVariables = ReturnVariables(includeExisting = false, Seq.empty)
+  }
 
   def checkAmbiguousGrouping(returnItems: ReturnItems, nameOfClause: String): SemanticCheck = (state: SemanticState) => {
     val stateWithNotifications = {

@@ -120,7 +120,7 @@ class FabricFragmenter(
     produced(clauses.last)
 
   private def produced(clause: ast.Clause): Seq[String] = clause match {
-    case r: ast.Return => r.returnColumns.map(_.name)
+    case r: ast.Return => r.returnVariables.explicitVariables.map(_.name)
     case c             => semantics.scope(c).getOrElse(Scope.empty).symbolNames.toSeq
   }
 

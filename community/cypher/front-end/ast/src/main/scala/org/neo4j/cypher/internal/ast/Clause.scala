@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
+import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -94,11 +95,11 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 
-  def returnColumns: List[LogicalVariable] = List.empty
+  def returnVariables: ReturnVariables = ReturnVariables.empty
 }
 
 sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
-  override def returnColumns: List[LogicalVariable] = List.empty
+  override def returnVariables: ReturnVariables = ReturnVariables.empty
 }
 
 case class LoadCSV(
@@ -759,8 +760,6 @@ case class Unwind(
 abstract class CallClause extends Clause {
   override def name = "CALL"
 
-  def returnColumns: List[LogicalVariable]
-
   def containsNoUpdates: Boolean
 
   def yieldAll: Boolean
@@ -776,8 +775,11 @@ case class UnresolvedCall(procedureNamespace: Namespace,
                           override val yieldAll: Boolean = false
                          )(val position: InputPosition) extends CallClause {
 
-  override def returnColumns: List[LogicalVariable] =
-    declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
+  override def returnVariables: ReturnVariables =
+    ReturnVariables(
+      includeExisting = false,
+      declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
+    )
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
@@ -942,7 +944,8 @@ sealed trait ProjectionClause extends HorizonClause {
           val outerScopeSymbolNames = outer.symbolNames
           val outputSymbolNames = result.state.currentScope.scope.symbolNames
           val alreadyDeclaredNames = outputSymbolNames.intersect(outerScopeSymbolNames)
-          val explicitReturnVariablesByName = returnItems.explicitReturnVariables.map(v => v.name -> v).toMap
+          val explicitReturnVariablesByName =
+                returnItems.returnVariables.explicitVariables.map(v => v.name -> v).toMap
           val errors = alreadyDeclaredNames.map { name =>
             val position = explicitReturnVariablesByName.getOrElse(name, returnItems).position
             SemanticError(s"Variable `$name` already declared in outer scope", position)
@@ -1030,7 +1033,7 @@ case class Return(distinct: Boolean,
 
   override def where: Option[Where] = None
 
-  override def returnColumns: List[LogicalVariable] = returnItems.explicitReturnVariables.toList
+  override def returnVariables: ReturnVariables = returnItems.returnVariables
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

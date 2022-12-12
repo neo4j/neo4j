@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
@@ -67,7 +68,8 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 
 sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def containsUpdates: Boolean
-  def returnColumns: List[LogicalVariable]
+  def returnColumns: List[LogicalVariable] = returnVariables.explicitVariables.toList
+  def returnVariables: ReturnVariables
 
   /**
    * Given the root scope for this query part,
@@ -108,7 +110,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case _                => false
     }
 
-  override def returnColumns: List[LogicalVariable] = clauses.last.returnColumns
+  override def returnVariables: ReturnVariables = clauses.last.returnVariables
 
   override def isCorrelated: Boolean = importWith.isDefined
 
@@ -291,7 +293,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case seq => seq.last match {
         case _: UpdateClause | _: Return | _: CommandClause                   => None
         case subquery: SubqueryCall if !subquery.part.isReturning              => None
-        case call: CallClause if call.returnColumns.isEmpty && !call.yieldAll => None
+        case call: CallClause if call.returnVariables.explicitVariables.isEmpty && !call.yieldAll => None
         case call: CallClause                                                 =>
           Some(SemanticError(s"Query cannot conclude with ${call.name} together with YIELD", call.position))
         case clause                                                           =>
@@ -335,7 +337,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
             val resultState = clause match {
               case _: UpdateClause if idx == lastIndex =>
                 checked.state.newSiblingScope
-              case cc: CallClause if cc.returnColumns.isEmpty && !cc.yieldAll && idx == lastIndex =>
+              case cc: CallClause
+                    if cc.returnVariables.explicitVariables.isEmpty && !cc.yieldAll && idx == lastIndex =>
                 checked.state.newSiblingScope
               case _ =>
                 checked.state
@@ -406,7 +409,13 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
 
   def unionMappings: List[UnionMapping]
 
-  def returnColumns: List[LogicalVariable] = unionMappings.map(_.unionVariable)
+  override def returnVariables: ReturnVariables = ReturnVariables(
+    // If either side of the UNION has a RETURN *,
+    // then returnVariables.explicitVariables will not list all variables.
+    // Instead, one has to inspect `finalScope` to find all variables.
+    part.returnVariables.includeExisting || query.returnVariables.includeExisting,
+    unionMappings.map(_.unionVariable)
+  )
 
   def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
@@ -444,13 +453,43 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
     var result = SemanticCheckResult.success(state)
     val scopeFromPart = part.finalScope(state.scope(part).get)
     val scopeFromQuery = query.finalScope(state.scope(query).get)
+
+    case class Mapping(
+      unionVariable: LogicalVariable,
+      variableInPartName: String,
+      variableInQueryName: String
+    )
+
+    val mappings = {
+      // We need a Set since otherwise we would declare variables multiple times,
+      // e.g. if they are listed, but there is also a *,
+      // or if both branches have a *.
+      val builder = Set.newBuilder[Mapping]
+
+      unionMappings.foreach { um =>
+        builder += Mapping(um.unionVariable, um.variableInPart.name, um.variableInQuery.name)
+      }
+      // If there is a RETURN * in at least one of the UNION branches,
+      // we need to find out what extra variables to include here.
+      if (part.returnVariables.includeExisting) {
+        scopeFromPart.symbolNames.foreach { name =>
+          builder += Mapping(Variable(name)(this.position), name, name)
+        }
+      }
+      if (query.returnVariables.includeExisting) {
+        scopeFromQuery.symbolNames.foreach { name =>
+          builder += Mapping(Variable(name)(this.position), name, name)
+        }
+      }
+      builder.result()
+    }
     for {
-      unionMapping <- unionMappings
-      symbolFromPart <- scopeFromPart.symbol(unionMapping.variableInPart.name)
-      symbolFromQuery <- scopeFromQuery.symbol(unionMapping.variableInQuery.name)
+      mapping <- mappings
+      symbolFromPart <- scopeFromPart.symbol(mapping.variableInPartName)
+      symbolFromQuery <- scopeFromQuery.symbol(mapping.variableInQueryName)
     } yield {
       val unionType = symbolFromPart.types.union(symbolFromQuery.types)
-      result = result.state.declareVariable(unionMapping.unionVariable, unionType) match {
+      result = result.state.declareVariable(mapping.unionVariable, unionType) match {
         case Left(err) => SemanticCheckResult(result.state, err +: result.errors)
         case Right(nextState) => SemanticCheckResult(nextState, result.errors)
       }
