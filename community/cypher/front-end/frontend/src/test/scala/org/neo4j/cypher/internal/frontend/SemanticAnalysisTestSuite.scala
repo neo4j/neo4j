@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -78,6 +79,8 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
   def runSemanticAnalysis(query: String): SemanticAnalysisResult =
     runSemanticAnalysisWithSemanticFeatures(Seq.empty, query)
 
+  // ------- Helpers ------------------------------
+
   def expectNoErrorsFrom(
     query: String,
     pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
@@ -90,6 +93,24 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
     pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
   ): Unit =
     runSemanticAnalysisWithPipeline(pipeline, query).errors.toSet shouldEqual expectedErrors
+
+  def expectErrorMessagesFrom(
+    query: String,
+    expectedErrors: Set[String],
+    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+  ): Unit =
+    runSemanticAnalysisWithPipeline(pipeline, query).errorMessages.toSet shouldEqual expectedErrors
+
+  def expectNotificationsFrom(
+    query: String,
+    expectedNotifications: Set[InternalNotification],
+    pipeline: Transformer[BaseContext, BaseState, BaseState] = pipelineWithSemanticFeatures()
+  ): Unit = {
+    val normalisedQuery = normalizeNewLines(query)
+    val result = runSemanticAnalysisWithPipeline(pipeline, normalisedQuery)
+    result.state.semantics().notifications shouldEqual expectedNotifications
+    result.errors shouldBe empty
+  }
 
   final case object ProjectNamedPathsPhase extends Phase[BaseContext, BaseState, BaseState] {
     override def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE

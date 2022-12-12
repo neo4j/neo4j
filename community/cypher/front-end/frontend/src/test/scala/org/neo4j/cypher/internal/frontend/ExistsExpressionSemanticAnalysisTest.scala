@@ -18,13 +18,11 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.TestName
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExistsExpressionSemanticAnalysisTest
-    extends SemanticAnalysisTestSuiteWithDefaultQuery
-    with TestName {
-
-  override def defaultQuery: String = s"$testName"
+    extends CypherFunSuite
+    with NameBasedSemanticAnalysisTestSuite {
 
   test("""MATCH (a)
          |RETURN EXISTS { CREATE (b) }
