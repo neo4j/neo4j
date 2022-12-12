@@ -148,10 +148,10 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().relationshipSetProperty(createdInTx2, propKey, two);
 
             final var expectedReads = Lists.mutable.of(
-                    new RelRead(inStore, null),
-                    new RelRead(inStore2, one),
-                    new RelRead(createdInTx, null),
-                    new RelRead(createdInTx2, two));
+                    new RelPropRead(inStore, null),
+                    new RelPropRead(inStore2, one),
+                    new RelPropRead(createdInTx, null),
+                    new RelPropRead(createdInTx2, two));
             expectedReads.sortThis();
             if (assertOrder == IndexOrder.DESCENDING) {
                 Collections.reverse(expectedReads);
@@ -162,7 +162,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                     var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
                 relationshipTypeScan(tx, typeOne, relCursor, order);
 
-                final var actualReads = Lists.mutable.<RelRead>empty();
+                final var actualReads = Lists.mutable.<RelPropRead>empty();
                 for (final var ignored : expectedReads) {
                     assertThat(relCursor.next()).isTrue();
                     assertThat(relCursor.readFromStore()).isTrue();
@@ -176,7 +176,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         assertThat(propCursor.next()).isFalse();
                     }
 
-                    actualReads.add(new RelRead(reference, propValue));
+                    actualReads.add(new RelPropRead(reference, propValue));
                 }
 
                 assertThat(relCursor.next()).isFalse();
@@ -350,15 +350,15 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
-        final var expectedReads =
-                List.of(new RelRead(rel1, null), new RelRead(rel2, null), new RelRead(rel3, Values.intValue(3)));
+        final var expectedReads = List.of(
+                new RelPropRead(rel1, null), new RelPropRead(rel2, null), new RelPropRead(rel3, Values.intValue(3)));
 
         try (var tx = beginTransaction()) {
             try (var relCursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
                     var propCursor = tx.cursors().allocatePropertyCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE)) {
                 relationshipTypeScan(tx, typeOne, relCursor, IndexOrder.NONE);
 
-                final var actualReads = new ArrayList<RelRead>();
+                final var actualReads = new ArrayList<RelPropRead>();
                 while (relCursor.next() && relCursor.readFromStore()) {
                     final var reference = relCursor.reference();
 
@@ -369,7 +369,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         assertThat(propCursor.next()).isFalse();
                     }
 
-                    actualReads.add(new RelRead(reference, propValue));
+                    actualReads.add(new RelPropRead(reference, propValue));
                 }
 
                 assertThat(expectedReads).containsExactlyInAnyOrderElementsOf(actualReads);
@@ -510,39 +510,59 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
+        final var expectedReads = Lists.mutable.empty();
+        final var actualReads = Lists.mutable.empty();
+
         try (var tx = beginTransaction();
                 var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
                 var scanCursor = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
             var read = tx.dataRead();
+
+            if (isNodeBased(tx)) {
+                read.singleRelationship(first, scanCursor);
+                assertThat(scanCursor.next()).isTrue();
+                expectedReads.add(
+                        new RelRead(first, true, scanCursor.sourceNodeReference(), scanCursor.targetNodeReference()));
+            } else {
+                expectedReads.add(new RelRead(first, false, -1, -1));
+            }
+
             read.singleRelationship(second, scanCursor);
             assertThat(scanCursor.next()).isTrue();
-            var relSourceNode = scanCursor.sourceNodeReference();
-            var relTargetNode = scanCursor.targetNodeReference();
+            expectedReads.add(
+                    new RelRead(second, true, scanCursor.sourceNodeReference(), scanCursor.targetNodeReference()));
+
+            read.singleRelationship(third, scanCursor);
+            assertThat(scanCursor.next()).isTrue();
+            expectedReads.add(
+                    new RelRead(third, true, scanCursor.sourceNodeReference(), scanCursor.targetNodeReference()));
 
             // when
             relationshipTypeScan(tx, typeOne, cursor, IndexOrder.NONE);
-            assertThat(cursor.next()).isTrue();
-            try (var tx2 = beginTransaction()) {
-                tx2.dataWrite().relationshipDelete(first);
-                tx2.commit();
-            }
+            var doneDelete = false;
+            while (cursor.next()) {
+                if (!doneDelete) {
+                    try (var tx2 = beginTransaction()) {
+                        tx2.dataWrite().relationshipDelete(first);
+                        tx2.commit();
+                    }
+                    doneDelete = true;
+                }
 
-            // then
-            if (!isNodeBased()) {
+                // then
+                assertThat(cursor.type()).isEqualTo(typeOne);
+                final var relId = cursor.relationshipReference();
                 // do not run this on node based relationship index
-                assertThat(cursor.readFromStore()).isFalse();
+                if (relId == first && !isNodeBased(tx)) {
+                    actualReads.add(new RelRead(relId, cursor.readFromStore(), -1, -1));
+                } else {
+                    actualReads.add(new RelRead(
+                            relId, cursor.readFromStore(), cursor.sourceNodeReference(), cursor.targetNodeReference()));
+                }
             }
-
-            assertThat(cursor.next()).isTrue();
-            assertThat(cursor.readFromStore()).isTrue();
-            assertThat(cursor.type()).isEqualTo(typeOne);
-            assertThat(cursor.sourceNodeReference()).isEqualTo(relSourceNode);
-            assertThat(cursor.targetNodeReference()).isEqualTo(relTargetNode);
-
-            assertThat(cursor.next()).isTrue();
-            assertThat(cursor.relationshipReference()).isEqualTo(third);
-            assertThat(cursor.next()).isFalse();
         }
+
+        assertThat(actualReads).containsExactlyInAnyOrderElementsOf(expectedReads);
     }
 
     @Test
@@ -606,9 +626,11 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     private record NodeRead(long id, boolean isSource, boolean label1Present, boolean label2Present) {}
 
-    private record RelRead(long id, Value propValue) implements Comparable<RelRead> {
+    private record RelRead(long id, boolean fromStore, long source, long target) {}
+
+    private record RelPropRead(long id, Value propValue) implements Comparable<RelPropRead> {
         @Override
-        public int compareTo(RelRead other) {
+        public int compareTo(RelPropRead other) {
             return Long.compare(id, other.id);
         }
     }
