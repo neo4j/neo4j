@@ -84,7 +84,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
@@ -413,13 +412,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         try (KernelTransactionImplementation transaction = newTransaction(loginContext(isWriteTx))) {
             transaction.initialize(
-                    5L,
-                    KernelVersion.LATEST,
-                    KernelTransaction.Type.IMPLICIT,
-                    SecurityContext.AUTH_DISABLED,
-                    0L,
-                    1L,
-                    EMBEDDED_CONNECTION);
+                    5L, KernelTransaction.Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
             transaction.txState().nodeDoCreate(1L);
             // WHEN committing it at a later point
             clock.forward(5, MILLISECONDS);
@@ -702,13 +695,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         });
         KernelTransactionImplementation transaction = newNotInitializedTransaction(leaseClient);
         transaction.initialize(
-                0,
-                KernelVersion.LATEST,
-                KernelTransaction.Type.IMPLICIT,
-                mock(SecurityContext.class),
-                0,
-                1L,
-                EMBEDDED_CONNECTION);
+                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
         assertEquals("KernelTransaction[lease:" + leaseId + "]", transaction.toString());
     }
 
@@ -728,8 +715,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             }
         });
         var transaction = newNotInitializedTransaction(leaseService);
-        transaction.initialize(
-                0, KernelVersion.LATEST, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         assertThrows(LeaseException.class, transaction::txState);
@@ -744,8 +730,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         var config = Config.defaults(configValues);
 
         var transaction = newNotInitializedTransaction(config, fooDb);
-        transaction.initialize(
-                0, KernelVersion.LATEST, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         var rte = assertThrows(RuntimeException.class, transaction::txState);
@@ -758,8 +743,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         var config = spy(Config.defaults());
 
         var transaction = newNotInitializedTransaction(config);
-        transaction.initialize(
-                0, KernelVersion.LATEST, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
 
         verify(config, times(3)).addListener(any(), any());
 
@@ -781,14 +765,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
             // Increase limit and try again
             config.setDynamic(memory_transaction_max_size, mebiBytes(4), "test");
-            transaction.initialize(
-                    5L,
-                    KernelVersion.LATEST,
-                    Type.IMPLICIT,
-                    SecurityContext.AUTH_DISABLED,
-                    0L,
-                    1L,
-                    EMBEDDED_CONNECTION);
+            transaction.initialize(5L, Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
 
             transaction.memoryTracker().allocateHeap(mebiBytes(3));
         }

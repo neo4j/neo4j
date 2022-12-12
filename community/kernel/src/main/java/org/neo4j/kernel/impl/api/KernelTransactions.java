@@ -249,7 +249,6 @@ public class KernelTransactions extends LifecycleAdapter
                 KernelTransactionImplementation tx = txPool.acquire();
                 tx.initialize(
                         lastCommittedTransaction.transactionId(),
-                        kernelVersionProvider.kernelVersion(),
                         type,
                         securityContext,
                         timeout,

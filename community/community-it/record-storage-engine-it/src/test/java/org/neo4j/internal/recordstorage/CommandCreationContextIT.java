@@ -100,7 +100,7 @@ public class CommandCreationContextIT {
             prepareIdGenerator(storeProvider.apply(neoStores).getIdGenerator());
             try (var creationContext = storageEngine.newCommandCreationContext()) {
                 creationContext.initialize(
-                        kernelVersionProvider.kernelVersion(),
+                        kernelVersionProvider,
                         cursorContext,
                         StoreCursors.NULL,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,
@@ -119,7 +119,7 @@ public class CommandCreationContextIT {
         try (var commandCreationContext = storageEngine.newCommandCreationContext();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
-                    kernelVersionProvider.kernelVersion(),
+                    kernelVersionProvider,
                     NULL_CONTEXT,
                     storeCursors,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

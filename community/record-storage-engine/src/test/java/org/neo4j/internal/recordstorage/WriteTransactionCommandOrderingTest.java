@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -151,7 +151,7 @@ class WriteTransactionCommandOrderingTest {
         when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
 
         return new TransactionRecordState(
-                KernelVersion.LATEST,
+                KernelVersionProvider.LATEST_VERSION,
                 recordChangeSet,
                 neoStores,
                 null,

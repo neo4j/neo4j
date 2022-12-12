@@ -185,6 +185,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LeaseService leaseService;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
+    private final KernelVersionProvider kernelVersionProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final TransactionClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
@@ -306,6 +307,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
+        this.kernelVersionProvider = kernelVersionProvider;
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -386,7 +388,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     public KernelTransactionImplementation initialize(
             long lastCommittedTx,
-            KernelVersion kernelVersion,
             Type type,
             SecurityContext frozenSecurityContext,
             long transactionTimeout,
@@ -420,7 +421,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clientInfo = clientInfo;
         this.statistics.init(currentThread().getId(), cursorContext);
         this.commandCreationContext.initialize(
-                kernelVersion,
+                kernelVersionProvider,
                 cursorContext,
                 transactionalCursors,
                 kernelTransactions::startTimeOfOldestActiveTransaction,

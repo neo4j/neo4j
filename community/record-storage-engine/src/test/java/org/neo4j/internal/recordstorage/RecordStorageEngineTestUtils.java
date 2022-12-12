@@ -114,7 +114,7 @@ public class RecordStorageEngineTestUtils {
         try (RecordStorageCommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
             commandCreationContext.initialize(
-                    kernelVersionProvider.kernelVersion(),
+                    kernelVersionProvider,
                     cursorContext,
                     storeCursors,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

@@ -1862,7 +1862,7 @@ class TransactionRecordStateTest {
                 NULL_CONTEXT,
                 storeCursors);
         return new TransactionRecordState(
-                kernelVersionProvider.kernelVersion(),
+                kernelVersionProvider,
                 recordChangeSet,
                 neoStores,
                 ResourceLocker.IGNORE,

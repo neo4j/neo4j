@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
@@ -49,7 +50,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     private final InternalLogProvider logProvider;
     private final int denseNodeThreshold;
 
-    private KernelVersion kernelVersion;
+    private KernelVersionProvider kernelVersionProvider;
     private PropertyCreator propertyCreator;
     private PropertyDeleter propertyDeleter;
     private RelationshipGroupGetter relationshipGroupGetter;
@@ -74,13 +75,13 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
 
     @Override
     public void initialize(
-            KernelVersion kernelVersion,
+            KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Supplier<Long> startTimeOfOldestActiveTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer) {
-        this.kernelVersion = kernelVersion;
+        this.kernelVersionProvider = kernelVersionProvider;
         this.cursorContext = cursorContext;
         this.loaders = new Loaders(neoStores, storeCursors);
         this.storeCursors = storeCursors;
@@ -158,7 +159,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         RelationshipModifier relationshipModifier = new RelationshipModifier(
                 relationshipGroupGetter, propertyDeleter, denseNodeThreshold, cursorContext, memoryTracker);
         return new TransactionRecordState(
-                kernelVersion,
+                kernelVersionProvider,
                 recordChangeSet,
                 neoStores,
                 locks,
@@ -174,6 +175,6 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
 
     @Override
     public KernelVersion kernelVersion() {
-        return kernelVersion;
+        return kernelVersionProvider.kernelVersion();
     }
 }

@@ -103,7 +103,7 @@ public class CommitProcessTracingIT {
             try (CommandCreationContext context = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 context.initialize(
-                        kernelVersionProvider.kernelVersion(),
+                        kernelVersionProvider,
                         cursorContext,
                         storeCursors,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

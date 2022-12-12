@@ -56,7 +56,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -310,7 +309,7 @@ class KernelTransactionTerminationTest {
         }
 
         TestKernelTransaction initialize() {
-            initialize(42, KernelVersion.LATEST, Type.IMPLICIT, AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
+            initialize(42, Type.IMPLICIT, AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
             monitor.reset();
             return this;
         }

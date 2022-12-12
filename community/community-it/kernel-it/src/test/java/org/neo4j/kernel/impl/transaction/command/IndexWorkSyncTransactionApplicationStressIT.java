@@ -52,7 +52,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -208,7 +208,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
                     CommandCreationContext creationContext = storageEngine.newCommandCreationContext();
                     var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
                 creationContext.initialize(
-                        KernelVersion.LATEST,
+                        KernelVersionProvider.LATEST_VERSION,
                         NULL_CONTEXT,
                         storeCursors,
                         CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

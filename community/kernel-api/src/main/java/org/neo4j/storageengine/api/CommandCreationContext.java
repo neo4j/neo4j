@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -94,7 +93,7 @@ public interface CommandCreationContext extends KernelVersionProvider, AutoClose
 
     /**
      * Initialise command creation context for specific transactional cursor context
-     * @param kernelVersion kernel version for which the commands should be created
+     * @param kernelVersionProvider provider of the kernel version for which the commands should be created
      * @param cursorContext transaction cursor context
      * @param storeCursors store cursors
      * @param startTimeOfOldestActiveTransaction supplier to retrieve timestamp of oldest currently active transaction
@@ -102,7 +101,7 @@ public interface CommandCreationContext extends KernelVersionProvider, AutoClose
      * @param lockTracer Lock tracer to use if locks are taken
      */
     void initialize(
-            KernelVersion kernelVersion,
+            KernelVersionProvider kernelVersionProvider,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Supplier<Long> startTimeOfOldestActiveTransaction,
