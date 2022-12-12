@@ -422,11 +422,9 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         }
 
         void updateCorrespondingIdGenerators(NeoStores neoStores) {
-            neoStores.getNodeStore().setHighestPossibleIdInUse(highIds[StoreType.NODE.ordinal()]);
-            neoStores.getRelationshipStore().setHighestPossibleIdInUse(highIds[StoreType.RELATIONSHIP.ordinal()]);
-            neoStores
-                    .getRelationshipGroupStore()
-                    .setHighestPossibleIdInUse(highIds[StoreType.RELATIONSHIP_GROUP.ordinal()]);
+            neoStores.getNodeStore().setHighId(highIds[StoreType.NODE.ordinal()]);
+            neoStores.getRelationshipStore().setHighId(highIds[StoreType.RELATIONSHIP.ordinal()]);
+            neoStores.getRelationshipGroupStore().setHighId(highIds[StoreType.RELATIONSHIP_GROUP.ordinal()]);
         }
     }
 
