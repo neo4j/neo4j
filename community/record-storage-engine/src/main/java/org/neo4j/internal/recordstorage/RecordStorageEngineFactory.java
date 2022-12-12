@@ -161,10 +161,16 @@ import org.neo4j.token.api.TokensLoader;
 @ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory {
     public static final String NAME = "record";
+    public static final byte ID = 1;
 
     @Override
     public String name() {
         return NAME;
+    }
+
+    @Override
+    public byte id() {
+        return ID;
     }
 
     @Override

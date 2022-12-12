@@ -92,6 +92,11 @@ public interface StorageEngineFactory {
     String name();
 
     /**
+     * @return the unique id of this storage engine which can be used in e.g. storage engine selection
+     */
+    byte id();
+
+    /**
      * Retrieves the store ID of the store represented by the submitted layout.
      */
     StoreId retrieveStoreId(
@@ -509,6 +514,21 @@ public interface StorageEngineFactory {
         return selectStorageEngine(fs, databaseLayout)
                 .orElseGet(() ->
                         configuration != null ? findEngineForFormatOrThrow(configuration) : defaultStorageEngine());
+    }
+
+    /**
+     * @return the {@link StorageEngineFactory} with the corresponding ID
+     * @throws IllegalArgumentException if no storage engine matching the id was found.
+     */
+    static StorageEngineFactory selectStorageEngine(byte id) {
+        return allAvailableStorageEngines().stream()
+                .filter(engine -> engine.id() == id)
+                .findAny()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No storage engine factory with id " + id + ". Available engines are: "
+                                + allAvailableStorageEngines().stream()
+                                        .map(e -> e.name() + ":" + e.id())
+                                        .collect(Collectors.joining(", "))));
     }
 
     private static StorageEngineFactory findEngineForFormatOrThrow(Configuration configuration) {
