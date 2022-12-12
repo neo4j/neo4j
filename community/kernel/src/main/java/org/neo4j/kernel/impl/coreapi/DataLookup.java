@@ -30,6 +30,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.firstOrDefault;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
+import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -45,6 +46,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.internal.kernel.api.CloseListener;
@@ -59,6 +62,9 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -74,9 +80,11 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
+import org.neo4j.kernel.impl.coreapi.internal.RelationshipTypePropertyIterator;
 import org.neo4j.kernel.impl.coreapi.internal.TrackedCursorIterator;
 import org.neo4j.kernel.impl.newapi.CursorPredicates;
 import org.neo4j.kernel.impl.newapi.FilteringNodeCursorWrapper;
+import org.neo4j.kernel.impl.newapi.FilteringRelationshipScanCursorWrapper;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Values;
@@ -84,15 +92,11 @@ import org.neo4j.values.storable.Values;
 public abstract class DataLookup {
 
     public Node getNodeById(long id) {
-        if (id < 0) {
+        if (id < 0 || !dataRead().nodeExists(id)) {
             throw new NotFoundException(
                     format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
         }
 
-        if (!dataRead().nodeExists(id)) {
-            throw new NotFoundException(
-                    format("Node %d not found", id), new EntityNotFoundException(EntityType.NODE, valueOf(id)));
-        }
         return newNodeEntity(id);
     }
 
@@ -202,6 +206,179 @@ public abstract class DataLookup {
                 PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
                 PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)),
                 PropertyIndexQuery.exact(tokenRead.propertyKey(key3), Values.of(value3, false)));
+    }
+
+    public Relationship getRelationshipById(long id) {
+        if (id < 0) {
+            throw new NotFoundException(
+                    format("Relationship with %d not found", id),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
+        }
+
+        if (!dataRead().relationshipExists(id)) {
+            throw new NotFoundException(
+                    format("Relationship with %d not found", id),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
+        }
+        return newRelationshipEntity(id);
+    }
+
+    public Relationship getRelationshipByElementId(String elementId) {
+        long relationshipId = elementIdMapper().relationshipId(elementId);
+        if (!dataRead().relationshipExists(relationshipId)) {
+            throw new NotFoundException(
+                    format("Relationship %s not found.", elementId),
+                    new EntityNotFoundException(EntityType.RELATIONSHIP, elementId));
+        }
+        return newRelationshipEntity(relationshipId);
+    }
+
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key, String template, StringSearchMode searchMode) {
+        checkRelationshipType(relationshipType);
+        checkPropertyKey(key);
+        checkArgument(template != null, "Template must not be null");
+        TokenRead tokenRead = tokenRead();
+        int typeId = tokenRead.relationshipType(relationshipType.name());
+        int propertyId = tokenRead.propertyKey(key);
+        if (invalidTokens(typeId, propertyId)) {
+            return emptyResourceIterator();
+        }
+        PropertyIndexQuery query = getIndexQuery(template, searchMode, propertyId);
+        IndexDescriptor index =
+                findUsableMatchingIndex(SchemaDescriptors.forRelType(typeId, propertyId), IndexType.TEXT, query);
+
+        // We didn't find an index, but we might be able to used RANGE and filtering - let's see
+        if (index == IndexDescriptor.NO_INDEX
+                && (searchMode == StringSearchMode.SUFFIX || searchMode == StringSearchMode.CONTAINS)) {
+            PropertyIndexQuery.RangePredicate<?> allStringQuery =
+                    PropertyIndexQuery.range(propertyId, (String) null, false, null, false);
+            index = findUsableMatchingIndex(SchemaDescriptors.forRelType(typeId, propertyId), allStringQuery);
+            if (index != IndexDescriptor.NO_INDEX && index.getCapability().supportsReturningValues()) {
+                return relationshipsByTypeAndPropertyWithFiltering(typeId, allStringQuery, index, query);
+            }
+        }
+
+        return relationshipsByTypeAndProperty(typeId, query, index);
+    }
+
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, Map<String, Object> propertyValues) {
+        checkRelationshipType(relationshipType);
+        checkArgument(propertyValues != null, "Property values can not be null");
+        TokenRead tokenRead = tokenRead();
+        int typeId = tokenRead.relationshipType(relationshipType.name());
+        PropertyIndexQuery.ExactPredicate[] queries = convertToQueries(propertyValues, tokenRead);
+        return relationshipsByTypeAndProperties(typeId, queries);
+    }
+
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType,
+            String key1,
+            Object value1,
+            String key2,
+            Object value2,
+            String key3,
+            Object value3) {
+        checkRelationshipType(relationshipType);
+        checkPropertyKey(key1);
+        checkPropertyKey(key2);
+        checkPropertyKey(key3);
+        TokenRead tokenRead = tokenRead();
+        int typeId = tokenRead.relationshipType(relationshipType.name());
+        return relationshipsByTypeAndProperties(
+                typeId,
+                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
+                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)),
+                PropertyIndexQuery.exact(tokenRead.propertyKey(key3), Values.of(value3, false)));
+    }
+
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key1, Object value1, String key2, Object value2) {
+        checkRelationshipType(relationshipType);
+        checkPropertyKey(key1);
+        checkPropertyKey(key2);
+        TokenRead tokenRead = tokenRead();
+        int typeId = tokenRead.relationshipType(relationshipType.name());
+        return relationshipsByTypeAndProperties(
+                typeId,
+                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
+                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)));
+    }
+
+    public Relationship findRelationship(RelationshipType relationshipType, String key, Object value) {
+        try (var iterator = findRelationships(relationshipType, key, value)) {
+            if (!iterator.hasNext()) {
+                return null;
+            }
+            var rel = iterator.next();
+            if (iterator.hasNext()) {
+                throw new MultipleFoundException(format(
+                        "Found multiple relationships with type: '%s', property name: '%s' and property "
+                                + "value: '%s' while only one was expected.",
+                        relationshipType, key, value));
+            }
+            return rel;
+        }
+    }
+
+    public ResourceIterator<Relationship> findRelationships(
+            RelationshipType relationshipType, String key, Object value) {
+        checkRelationshipType(relationshipType);
+        checkPropertyKey(key);
+        TokenRead tokenRead = tokenRead();
+        int typeId = tokenRead.relationshipType(relationshipType.name());
+        int propertyId = tokenRead.propertyKey(key);
+        if (invalidTokens(typeId, propertyId)) {
+            return emptyResourceIterator();
+        }
+        PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(propertyId, Values.of(value, false));
+        IndexDescriptor index = findUsableMatchingIndex(SchemaDescriptors.forRelType(typeId, propertyId), query);
+        return relationshipsByTypeAndProperty(typeId, query, index);
+    }
+
+    public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
+        checkRelationshipType(relationshipType);
+        return allRelationshipsWithType(relationshipType);
+    }
+
+    private ResourceIterator<Relationship> allRelationshipsWithType(final RelationshipType type) {
+        int typeId = tokenRead().relationshipType(type.name());
+        if (typeId == TokenRead.NO_TOKEN) {
+            return emptyResourceIterator();
+        }
+
+        TokenPredicate query = new TokenPredicate(typeId);
+        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), query);
+
+        if (index != IndexDescriptor.NO_INDEX) {
+            try {
+                var session = dataRead().tokenReadSession(index);
+                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext());
+                dataRead().relationshipTypeScan(session, cursor, unconstrained(), query, cursorContext());
+                return new TrackedCursorIterator<>(
+                        cursor,
+                        RelationshipIndexCursor::relationshipReference,
+                        c -> newRelationshipEntity(c.relationshipReference()),
+                        resourceMonitor());
+            } catch (KernelException e) {
+                // ignore, fallback to all node scan
+            }
+        }
+
+        return allRelationshipsByTypeWithoutIndex(typeId);
+    }
+
+    private ResourceIterator<Relationship> allRelationshipsByTypeWithoutIndex(int typeId) {
+        var cursor = cursors().allocateRelationshipScanCursor(cursorContext());
+        dataRead().allRelationshipsScan(cursor);
+        var filteredCursor = new FilteringRelationshipScanCursorWrapper(cursor, CursorPredicates.hasType(typeId));
+        return new TrackedCursorIterator<>(
+                filteredCursor,
+                RelationshipScanCursor::relationshipReference,
+                c -> newRelationshipEntity(
+                        c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference()),
+                resourceMonitor());
     }
 
     private ResourceIterator<Node> allNodesWithLabel(Label myLabel) {
@@ -423,6 +600,138 @@ public abstract class DataLookup {
         return IndexDescriptor.NO_INDEX;
     }
 
+    private ResourceIterator<Relationship> relationshipsByTypeAndPropertyWithFiltering(
+            int typeId, PropertyIndexQuery query, IndexDescriptor index, PropertyIndexQuery originalQuery) {
+        Read read = dataRead();
+        try {
+
+            var cursor = cursors().allocateRelationshipValueIndexCursor(cursorContext(), memoryTracker());
+            IndexReadSession indexSession = read.indexReadSession(index);
+            read.relationshipIndexSeek(queryContext(), indexSession, cursor, unorderedValues(), query);
+
+            return new TrackedCursorIterator<>(
+                    new FilteringCursor<>(cursor, originalQuery),
+                    value -> cursor.relationshipReference(),
+                    c -> newRelationshipEntity(cursor.relationshipReference()),
+                    resourceMonitor());
+        } catch (KernelException e) {
+            // weird at this point but ignore and fallback to a type scan
+        }
+
+        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(typeId, query);
+    }
+
+    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex(
+            int typeId, PropertyIndexQuery... queries) {
+        TokenPredicate tokenQuery = new TokenPredicate(typeId);
+        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), tokenQuery);
+
+        if (index != IndexDescriptor.NO_INDEX) {
+            try {
+                var session = dataRead().tokenReadSession(index);
+                var cursor = cursors().allocateRelationshipTypeIndexCursor(cursorContext());
+                dataRead().relationshipTypeScan(session, cursor, unconstrained(), tokenQuery, cursorContext());
+
+                var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext());
+                var propertyCursor = cursors().allocatePropertyCursor(cursorContext(), memoryTracker());
+
+                return new RelationshipTypePropertyIterator(
+                        dataRead(),
+                        cursor,
+                        relationshipScanCursor,
+                        propertyCursor,
+                        c -> newRelationshipEntity(c.relationshipReference()),
+                        resourceMonitor(),
+                        queries);
+            } catch (KernelException e) {
+                // ignore, fallback to all node scan
+            }
+        }
+
+        return getRelationshipsByTypeAndPropertyViaAllRelsScan(typeId, queries);
+    }
+
+    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyViaAllRelsScan(
+            int typeId, PropertyIndexQuery[] queries) {
+        var relationshipScanCursor = cursors().allocateRelationshipScanCursor(cursorContext());
+        var typeFiltered =
+                new FilteringRelationshipScanCursorWrapper(relationshipScanCursor, CursorPredicates.hasType(typeId));
+
+        var propertyCursor = cursors().allocatePropertyCursor(cursorContext(), memoryTracker());
+        var propertyFilteredCursor = new FilteringRelationshipScanCursorWrapper(
+                typeFiltered, relationshipMatchProperties(queries, propertyCursor), List.of(propertyCursor));
+
+        dataRead().allRelationshipsScan(relationshipScanCursor);
+        return new TrackedCursorIterator<>(
+                propertyFilteredCursor,
+                RelationshipScanCursor::relationshipReference,
+                c -> newRelationshipEntity(
+                        c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference()),
+                resourceMonitor());
+    }
+
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperty(
+            int typeId, PropertyIndexQuery query, IndexDescriptor index) {
+        Read read = dataRead();
+
+        if (index != IndexDescriptor.NO_INDEX) {
+            // Ha! We found an index - let's use it to find matching relationships
+            try {
+                var cursor = cursors().allocateRelationshipValueIndexCursor(cursorContext(), memoryTracker());
+                IndexReadSession indexSession = read.indexReadSession(index);
+                read.relationshipIndexSeek(queryContext(), indexSession, cursor, unconstrained(), query);
+
+                return new TrackedCursorIterator<>(
+                        cursor,
+                        RelationshipIndexCursor::relationshipReference,
+                        c -> newRelationshipEntity(c.relationshipReference()),
+                        resourceMonitor());
+            } catch (KernelException e) {
+                // weird at this point but ignore and fallback to a type scan
+            }
+        }
+
+        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(typeId, query);
+    }
+
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperties(
+            int typeId, PropertyIndexQuery.ExactPredicate... queries) {
+        Read read = dataRead();
+
+        if (isInvalidQuery(typeId, queries)) {
+            return emptyResourceIterator();
+        }
+
+        int[] propertyIds = getPropertyIds(queries);
+        IndexDescriptor index = findUsableMatchingCompositeIndex(
+                SchemaDescriptors.forRelType(typeId, propertyIds),
+                propertyIds,
+                () -> schemaRead().indexesGetForRelationshipType(typeId),
+                queries);
+
+        if (index != IndexDescriptor.NO_INDEX) {
+            try {
+                RelationshipValueIndexCursor cursor =
+                        cursors().allocateRelationshipValueIndexCursor(cursorContext(), memoryTracker());
+                IndexReadSession indexSession = read.indexReadSession(index);
+                read.relationshipIndexSeek(
+                        queryContext(),
+                        indexSession,
+                        cursor,
+                        unconstrained(),
+                        getReorderedIndexQueries(index.schema().getPropertyIds(), queries));
+                return new TrackedCursorIterator<>(
+                        cursor,
+                        RelationshipIndexCursor::relationshipReference,
+                        c -> newRelationshipEntity(c.relationshipReference()),
+                        resourceMonitor());
+            } catch (KernelException e) {
+                // weird at this point but ignore and fallback to a label scan
+            }
+        }
+        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(typeId, queries);
+    }
+
     /**
      * @return True if the index is online. False if the index was not found or in other state.
      */
@@ -526,6 +835,10 @@ public abstract class DataLookup {
         return orderedQueries;
     }
 
+    private static void checkRelationshipType(RelationshipType type) {
+        checkArgument(type != null, "Relationship type can not be null");
+    }
+
     protected abstract TokenRead tokenRead();
 
     protected abstract SchemaRead schemaRead();
@@ -535,6 +848,10 @@ public abstract class DataLookup {
     protected abstract ResourceMonitor resourceMonitor();
 
     protected abstract Node newNodeEntity(long nodeId);
+
+    protected abstract Relationship newRelationshipEntity(long relationshipId);
+
+    protected abstract Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId);
 
     protected abstract CursorFactory cursors();
 

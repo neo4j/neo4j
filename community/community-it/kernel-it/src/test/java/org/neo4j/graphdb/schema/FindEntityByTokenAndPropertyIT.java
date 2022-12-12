@@ -495,8 +495,14 @@ public class FindEntityByTokenAndPropertyIT {
             arguments.add(Arguments.of(EntityCreator.NODE, FindMethod.multipleNodesMap, index));
             arguments.add(Arguments.of(EntityCreator.NODE, FindMethod.multipleNodesFromExecutionContextMap, index));
             arguments.add(Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.singleRelationship, index));
+            arguments.add(
+                    Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.singleRelationshipFromExecutionContext, index));
             arguments.add(Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.multipleRelationships, index));
+            arguments.add(Arguments.of(
+                    EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsFromExecutionContext, index));
             arguments.add(Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsMap, index));
+            arguments.add(Arguments.of(
+                    EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsFromExecutionContextMap, index));
         }
         return arguments.stream();
     }
@@ -522,9 +528,24 @@ public class FindEntityByTokenAndPropertyIT {
                     arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.singleRelationship, firstIndex, secondIndex));
                     arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.singleRelationshipFromExecutionContext,
+                            firstIndex,
+                            secondIndex));
+                    arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.multipleRelationships, firstIndex, secondIndex));
                     arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContext,
+                            firstIndex,
+                            secondIndex));
+                    arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsMap, firstIndex, secondIndex));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContextMap,
+                            firstIndex,
+                            secondIndex));
                 }
             }
         }
@@ -544,7 +565,15 @@ public class FindEntityByTokenAndPropertyIT {
                             Arguments.of(EntityCreator.NODE, FindMethod.multipleNodesFromExecutionContextMap, index));
                     arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsComposite2, index));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContextComposite2,
+                            index));
                     arguments.add(Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsMap, index));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContextMap,
+                            index));
                 });
         return arguments.stream();
     }
@@ -581,7 +610,17 @@ public class FindEntityByTokenAndPropertyIT {
                                         secondIndex));
                                 arguments.add(Arguments.of(
                                         EntityCreator.RELATIONSHIP,
+                                        FindMethod.multipleRelationshipsFromExecutionContextComposite2,
+                                        firstIndex,
+                                        secondIndex));
+                                arguments.add(Arguments.of(
+                                        EntityCreator.RELATIONSHIP,
                                         FindMethod.multipleRelationshipsMap,
+                                        firstIndex,
+                                        secondIndex));
+                                arguments.add(Arguments.of(
+                                        EntityCreator.RELATIONSHIP,
+                                        FindMethod.multipleRelationshipsFromExecutionContextMap,
                                         firstIndex,
                                         secondIndex));
                             }
@@ -602,7 +641,15 @@ public class FindEntityByTokenAndPropertyIT {
                             Arguments.of(EntityCreator.NODE, FindMethod.multipleNodesFromExecutionContextMap, index));
                     arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsComposite3, index));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContextComposite3,
+                            index));
                     arguments.add(Arguments.of(EntityCreator.RELATIONSHIP, FindMethod.multipleRelationshipsMap, index));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.multipleRelationshipsFromExecutionContextMap,
+                            index));
                 });
         return arguments.stream();
     }
@@ -639,7 +686,17 @@ public class FindEntityByTokenAndPropertyIT {
                                         secondIndex));
                                 arguments.add(Arguments.of(
                                         EntityCreator.RELATIONSHIP,
+                                        FindMethod.multipleRelationshipsFromExecutionContextComposite3,
+                                        firstIndex,
+                                        secondIndex));
+                                arguments.add(Arguments.of(
+                                        EntityCreator.RELATIONSHIP,
                                         FindMethod.multipleRelationshipsMap,
+                                        firstIndex,
+                                        secondIndex));
+                                arguments.add(Arguments.of(
+                                        EntityCreator.RELATIONSHIP,
+                                        FindMethod.multipleRelationshipsFromExecutionContextMap,
                                         firstIndex,
                                         secondIndex));
                             }
@@ -653,9 +710,14 @@ public class FindEntityByTokenAndPropertyIT {
                 .forEach(index -> stream(SearchMode.values()).forEach(searchMode -> {
                     arguments.add(Arguments.of(EntityCreator.NODE, FindMethod.stringSearchNodes, index, searchMode));
                     arguments.add(Arguments.of(
-                            EntityCreator.NODE, FindMethod.stringSearchNodesFromExecution, index, searchMode));
+                            EntityCreator.NODE, FindMethod.stringSearchNodesFromExecutionContext, index, searchMode));
                     arguments.add(Arguments.of(
                             EntityCreator.RELATIONSHIP, FindMethod.stringSearchRelationships, index, searchMode));
+                    arguments.add(Arguments.of(
+                            EntityCreator.RELATIONSHIP,
+                            FindMethod.stringSearchRelationshipsFromExecutionContext,
+                            index,
+                            searchMode));
                 }));
         return arguments.stream();
     }
@@ -674,13 +736,19 @@ public class FindEntityByTokenAndPropertyIT {
                                     searchMode));
                             arguments.add(Arguments.of(
                                     EntityCreator.NODE,
-                                    FindMethod.stringSearchNodesFromExecution,
+                                    FindMethod.stringSearchNodesFromExecutionContext,
                                     firstIndex,
                                     secondIndex,
                                     searchMode));
                             arguments.add(Arguments.of(
                                     EntityCreator.RELATIONSHIP,
                                     FindMethod.stringSearchRelationships,
+                                    firstIndex,
+                                    secondIndex,
+                                    searchMode));
+                            arguments.add(Arguments.of(
+                                    EntityCreator.RELATIONSHIP,
+                                    FindMethod.stringSearchRelationshipsFromExecutionContext,
                                     firstIndex,
                                     secondIndex,
                                     searchMode));
@@ -899,7 +967,7 @@ public class FindEntityByTokenAndPropertyIT {
             }
         },
 
-        stringSearchNodesFromExecution {
+        stringSearchNodesFromExecutionContext {
             @Override
             ResourceIterator<? extends Entity> find(
                     Transaction tx, String token, String propertyKey, String template, StringSearchMode searchMode) {
@@ -916,11 +984,29 @@ public class FindEntityByTokenAndPropertyIT {
             }
         },
 
+        singleRelationshipFromExecutionContext {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx, String token, String propertyKey, Object propertyValue) {
+                return Iterators.asResourceIterator(singletonList(executionContextTransaction(tx)
+                        .findRelationship(RelationshipType.withName(token), propertyKey, propertyValue)));
+            }
+        },
+
         multipleRelationships {
             @Override
             ResourceIterator<? extends Entity> find(
                     Transaction tx, String token, String propertyKey, Object propertyValue) {
                 return tx.findRelationships(RelationshipType.withName(token), propertyKey, propertyValue);
+            }
+        },
+
+        multipleRelationshipsFromExecutionContext {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx, String token, String propertyKey, Object propertyValue) {
+                return executionContextTransaction(tx)
+                        .findRelationships(RelationshipType.withName(token), propertyKey, propertyValue);
             }
         },
 
@@ -935,6 +1021,25 @@ public class FindEntityByTokenAndPropertyIT {
                     Object propertyValue2) {
                 return tx.findRelationships(
                         RelationshipType.withName(token), propertyKey1, propertyValue1, propertyKey2, propertyValue2);
+            }
+        },
+
+        multipleRelationshipsFromExecutionContextComposite2 {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx,
+                    String token,
+                    String propertyKey1,
+                    Object propertyValue1,
+                    String propertyKey2,
+                    Object propertyValue2) {
+                return executionContextTransaction(tx)
+                        .findRelationships(
+                                RelationshipType.withName(token),
+                                propertyKey1,
+                                propertyValue1,
+                                propertyKey2,
+                                propertyValue2);
             }
         },
 
@@ -957,6 +1062,29 @@ public class FindEntityByTokenAndPropertyIT {
                         propertyValue2,
                         propertyKey3,
                         propertyValue3);
+            }
+        },
+
+        multipleRelationshipsFromExecutionContextComposite3 {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx,
+                    String token,
+                    String propertyKey1,
+                    Object propertyValue1,
+                    String propertyKey2,
+                    Object propertyValue2,
+                    String propertyKey3,
+                    Object propertyValue3) {
+                return executionContextTransaction(tx)
+                        .findRelationships(
+                                RelationshipType.withName(token),
+                                propertyKey1,
+                                propertyValue1,
+                                propertyKey2,
+                                propertyValue2,
+                                propertyKey3,
+                                propertyValue3);
             }
         },
 
@@ -1002,11 +1130,65 @@ public class FindEntityByTokenAndPropertyIT {
             }
         },
 
+        multipleRelationshipsFromExecutionContextMap {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx, String token, String propertyKey, Object propertyValue) {
+                return executionContextTransaction(tx)
+                        .findRelationships(RelationshipType.withName(token), Map.of(propertyKey, propertyValue));
+            }
+
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx,
+                    String token,
+                    String propertyKey1,
+                    Object propertyValue1,
+                    String propertyKey2,
+                    Object propertyValue2) {
+                return executionContextTransaction(tx)
+                        .findRelationships(
+                                RelationshipType.withName(token),
+                                Map.of(propertyKey1, propertyValue1, propertyKey2, propertyValue2));
+            }
+
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx,
+                    String token,
+                    String propertyKey1,
+                    Object propertyValue1,
+                    String propertyKey2,
+                    Object propertyValue2,
+                    String propertyKey3,
+                    Object propertyValue3) {
+                return executionContextTransaction(tx)
+                        .findRelationships(
+                                RelationshipType.withName(token),
+                                Map.of(
+                                        propertyKey1,
+                                        propertyValue1,
+                                        propertyKey2,
+                                        propertyValue2,
+                                        propertyKey3,
+                                        propertyValue3));
+            }
+        },
+
         stringSearchRelationships {
             @Override
             ResourceIterator<? extends Entity> find(
                     Transaction tx, String token, String propertyKey, String template, StringSearchMode searchMode) {
                 return tx.findRelationships(RelationshipType.withName(token), propertyKey, template, searchMode);
+            }
+        },
+
+        stringSearchRelationshipsFromExecutionContext {
+            @Override
+            ResourceIterator<? extends Entity> find(
+                    Transaction tx, String token, String propertyKey, String template, StringSearchMode searchMode) {
+                return executionContextTransaction(tx)
+                        .findRelationships(RelationshipType.withName(token), propertyKey, template, searchMode);
             }
         };
 

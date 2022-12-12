@@ -30,7 +30,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -40,6 +39,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -66,16 +66,6 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     @Override
     public Node createNode(Label... labels) {
         throw new UnsupportedOperationException("Write operations are unsupported during parallel execution");
-    }
-
-    @Override
-    public Relationship getRelationshipById(long id) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Relationship getRelationshipByElementId(String elementId) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -145,54 +135,27 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     }
 
     @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key, String template, StringSearchMode searchMode) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, Map<String, Object> propertyValues) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType,
-            String key1,
-            Object value1,
-            String key2,
-            Object value2,
-            String key3,
-            Object value3) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key1, Object value1, String key2, Object value2) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Relationship findRelationship(RelationshipType relationshipType, String key, Object value) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key, Object value) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public ResourceIterable<Relationship> getAllRelationships() {
-        throw new UnsupportedOperationException("Not implemented yet");
+        var result = new AbstractResourceIterable<Relationship>() {
+
+            @Override
+            protected ResourceIterator<Relationship> newIterator() {
+                RelationshipScanCursor cursor = cursors().allocateRelationshipScanCursor(cursorContext());
+                dataRead().allRelationshipsScan(cursor);
+                return new CursorIterator<>(
+                        cursor,
+                        RelationshipScanCursor::relationshipReference,
+                        c -> newRelationshipEntity(c.relationshipReference()));
+            }
+
+            @Override
+            protected void onClosed() {
+                executionContext.unregisterCloseableResource(this);
+            }
+        };
+
+        executionContext.registerCloseableResource(result);
+        return result;
     }
 
     // Explicit locking could be easily supported, but it would give the users
@@ -260,6 +223,16 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     @Override
     protected Node newNodeEntity(long nodeId) {
         return new ExecutionContextNode(nodeId, executionContext);
+    }
+
+    @Override
+    protected Relationship newRelationshipEntity(long relationshipId) {
+        return new ExecutionContextRelationship(relationshipId, executionContext);
+    }
+
+    @Override
+    protected Relationship newRelationshipEntity(long id, long startNodeId, int typeId, long endNodeId) {
+        return newRelationshipEntity(id);
     }
 
     @Override

@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 import java.util.Map;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -205,5 +208,30 @@ public class ExecutionContextRelationship extends AbstractEntity implements Rela
     @Override
     protected TokenRead tokenRead() {
         return executionContext.tokenRead();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) ((getId() >>> 32) ^ getId());
+    }
+
+    @Override
+    public String toString() {
+        try {
+            var relType = getType().name();
+            return format(
+                    "(%d)-[%s,%d]->(%d)",
+                    getStartNode().getId(), relType, getId(), getEndNode().getId());
+        } catch (NotInTransactionException | DatabaseShutdownException e) {
+            // We don't keep the rel-name lookup if the database is shut down. Source ID and target ID also requires
+            // database access in a transaction. However, failing on toString would be uncomfortably evil, so we fall
+            // back to noting the relationship id.
+        }
+        return format("(?)-[%d]->(?)", getId());
     }
 }

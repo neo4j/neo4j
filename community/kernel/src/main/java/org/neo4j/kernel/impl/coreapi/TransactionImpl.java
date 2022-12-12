@@ -19,42 +19,21 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import static java.lang.String.format;
-import static java.lang.String.valueOf;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
-import static org.neo4j.internal.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.helpers.collection.Iterators.firstOrDefault;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
-import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
-import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
-import static org.neo4j.util.Preconditions.checkArgument;
-import static org.neo4j.values.storable.Values.utf8Value;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
@@ -62,48 +41,27 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
-import org.neo4j.internal.kernel.api.CloseListener;
-import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeIndexCursor;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexQuery;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceMonitor;
@@ -116,13 +74,7 @@ import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.CursorIterator;
-import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
-import org.neo4j.kernel.impl.coreapi.internal.RelationshipTypePropertyIterator;
-import org.neo4j.kernel.impl.coreapi.internal.TrackedCursorIterator;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.newapi.CursorPredicates;
-import org.neo4j.kernel.impl.newapi.FilteringNodeCursorWrapper;
-import org.neo4j.kernel.impl.newapi.FilteringRelationshipScanCursorWrapper;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -134,7 +86,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -289,36 +240,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     }
 
     @Override
-    public Relationship getRelationshipById(long id) {
-        if (id < 0) {
-            throw new NotFoundException(
-                    format("Relationship with %d not found", id),
-                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
-        }
-
-        KernelTransaction ktx = kernelTransaction();
-
-        if (!ktx.dataRead().relationshipExists(id)) {
-            throw new NotFoundException(
-                    format("Relationship with %d not found", id),
-                    new EntityNotFoundException(EntityType.RELATIONSHIP, valueOf(id)));
-        }
-        return newRelationshipEntity(id);
-    }
-
-    @Override
-    public Relationship getRelationshipByElementId(String elementId) {
-        Read read = kernelTransaction().dataRead();
-        long relationshipId = elementIdMapper.relationshipId(elementId);
-        if (!read.relationshipExists(relationshipId)) {
-            throw new NotFoundException(
-                    format("Relationship %s not found.", elementId),
-                    new EntityNotFoundException(EntityType.RELATIONSHIP, elementId));
-        }
-        return newRelationshipEntity(relationshipId);
-    }
-
-    @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription() {
         checkInTransaction();
         return new BidirectionalTraversalDescriptionImpl();
@@ -355,15 +276,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         return all(TokenAccess.PROPERTY_KEYS);
     }
 
-    private static PropertyIndexQuery getIndexQuery(String value, StringSearchMode searchMode, int propertyId) {
-        return switch (searchMode) {
-            case EXACT -> PropertyIndexQuery.exact(propertyId, utf8Value(value.getBytes(UTF_8)));
-            case PREFIX -> PropertyIndexQuery.stringPrefix(propertyId, utf8Value(value.getBytes(UTF_8)));
-            case SUFFIX -> PropertyIndexQuery.stringSuffix(propertyId, utf8Value(value.getBytes(UTF_8)));
-            case CONTAINS -> PropertyIndexQuery.stringContains(propertyId, utf8Value(value.getBytes(UTF_8)));
-        };
-    }
-
     @Override
     public ResourceIterable<Node> getAllNodes() {
         checkInTransaction();
@@ -374,131 +286,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     public ResourceIterable<Relationship> getAllRelationships() {
         checkInTransaction();
         return new TrackingResourceIterable<>(this, new RelationshipsProvider());
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key, String template, StringSearchMode searchMode) {
-        checkRelationshipType(relationshipType);
-        checkPropertyKey(key);
-        checkArgument(template != null, "Template must not be null");
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int typeId = tokenRead.relationshipType(relationshipType.name());
-        int propertyId = tokenRead.propertyKey(key);
-        if (invalidTokens(typeId, propertyId)) {
-            return emptyResourceIterator();
-        }
-        PropertyIndexQuery query = getIndexQuery(template, searchMode, propertyId);
-        IndexDescriptor index = findUsableMatchingIndex(
-                transaction, SchemaDescriptors.forRelType(typeId, propertyId), IndexType.TEXT, query);
-
-        // We didn't find an index, but we might be able to used RANGE and filtering - let's see
-        if (index == IndexDescriptor.NO_INDEX
-                && (searchMode == StringSearchMode.SUFFIX || searchMode == StringSearchMode.CONTAINS)) {
-            PropertyIndexQuery.RangePredicate<?> allStringQuery =
-                    PropertyIndexQuery.range(propertyId, (String) null, false, null, false);
-            index = findUsableMatchingIndex(
-                    transaction, SchemaDescriptors.forRelType(typeId, propertyId), allStringQuery);
-            if (index != IndexDescriptor.NO_INDEX && index.getCapability().supportsReturningValues()) {
-                return relationshipsByTypeAndPropertyWithFiltering(transaction, typeId, allStringQuery, index, query);
-            }
-        }
-
-        return relationshipsByTypeAndProperty(transaction, typeId, query, index);
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, Map<String, Object> propertyValues) {
-        checkRelationshipType(relationshipType);
-        checkArgument(propertyValues != null, "Property values can not be null");
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int typeId = tokenRead.relationshipType(relationshipType.name());
-        PropertyIndexQuery.ExactPredicate[] queries = convertToQueries(propertyValues, tokenRead);
-        return relationshipsByTypeAndProperties(transaction, typeId, queries);
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType,
-            String key1,
-            Object value1,
-            String key2,
-            Object value2,
-            String key3,
-            Object value3) {
-        checkRelationshipType(relationshipType);
-        checkPropertyKey(key1);
-        checkPropertyKey(key2);
-        checkPropertyKey(key3);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int typeId = tokenRead.relationshipType(relationshipType.name());
-        return relationshipsByTypeAndProperties(
-                transaction,
-                typeId,
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key3), Values.of(value3, false)));
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key1, Object value1, String key2, Object value2) {
-        checkRelationshipType(relationshipType);
-        checkPropertyKey(key1);
-        checkPropertyKey(key2);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int typeId = tokenRead.relationshipType(relationshipType.name());
-        return relationshipsByTypeAndProperties(
-                transaction,
-                typeId,
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key1), Values.of(value1, false)),
-                PropertyIndexQuery.exact(tokenRead.propertyKey(key2), Values.of(value2, false)));
-    }
-
-    @Override
-    public Relationship findRelationship(RelationshipType relationshipType, String key, Object value) {
-        try (var iterator = findRelationships(relationshipType, key, value)) {
-            if (!iterator.hasNext()) {
-                return null;
-            }
-            var rel = iterator.next();
-            if (iterator.hasNext()) {
-                throw new MultipleFoundException(format(
-                        "Found multiple relationships with type: '%s', property name: '%s' and property "
-                                + "value: '%s' while only one was expected.",
-                        relationshipType, key, value));
-            }
-            return rel;
-        }
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(
-            RelationshipType relationshipType, String key, Object value) {
-        checkRelationshipType(relationshipType);
-        checkPropertyKey(key);
-        KernelTransaction transaction = kernelTransaction();
-        TokenRead tokenRead = transaction.tokenRead();
-        int typeId = tokenRead.relationshipType(relationshipType.name());
-        int propertyId = tokenRead.propertyKey(key);
-        if (invalidTokens(typeId, propertyId)) {
-            return emptyResourceIterator();
-        }
-        PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(propertyId, Values.of(value, false));
-        IndexDescriptor index =
-                findUsableMatchingIndex(transaction, SchemaDescriptors.forRelType(typeId, propertyId), query);
-        return relationshipsByTypeAndProperty(transaction, typeId, query, index);
-    }
-
-    @Override
-    public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
-        checkRelationshipType(relationshipType);
-        return allRelationshipsWithType(relationshipType);
     }
 
     @Override
@@ -734,59 +521,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         return entity;
     }
 
-    private ResourceIterator<Relationship> relationshipsByTypeAndProperty(
-            KernelTransaction transaction, int typeId, PropertyIndexQuery query, IndexDescriptor index) {
-        Read read = transaction.dataRead();
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            // Ha! We found an index - let's use it to find matching relationships
-            try {
-                var cursor = transaction
-                        .cursors()
-                        .allocateRelationshipValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
-                IndexReadSession indexSession = read.indexReadSession(index);
-                read.relationshipIndexSeek(transaction.queryContext(), indexSession, cursor, unconstrained(), query);
-
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        RelationshipIndexCursor::relationshipReference,
-                        c -> newRelationshipEntity(c.relationshipReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // weird at this point but ignore and fallback to a type scan
-            }
-        }
-
-        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(transaction, typeId, query);
-    }
-
-    private ResourceIterator<Relationship> relationshipsByTypeAndPropertyWithFiltering(
-            KernelTransaction transaction,
-            int typeId,
-            PropertyIndexQuery query,
-            IndexDescriptor index,
-            PropertyIndexQuery originalQuery) {
-        Read read = transaction.dataRead();
-        try {
-
-            var cursor = transaction
-                    .cursors()
-                    .allocateRelationshipValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
-            IndexReadSession indexSession = read.indexReadSession(index);
-            read.relationshipIndexSeek(transaction.queryContext(), indexSession, cursor, unorderedValues(), query);
-
-            return new TrackedCursorIterator<>(
-                    new FilteringCursor<>(cursor, originalQuery),
-                    value -> cursor.relationshipReference(),
-                    c -> newRelationshipEntity(cursor.relationshipReference()),
-                    coreApiResourceTracker);
-        } catch (KernelException e) {
-            // weird at this point but ignore and fallback to a type scan
-        }
-
-        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(transaction, typeId, query);
-    }
-
     @Override
     public void checkInTransaction() {
         if (closed) {
@@ -806,236 +540,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     @Override
     public ElementIdMapper elementIdMapper() {
         return elementIdMapper;
-    }
-
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex(
-            KernelTransaction ktx, int labelId, PropertyIndexQuery... queries) {
-        TokenPredicate tokenQuery = new TokenPredicate(labelId);
-        var index = findUsableMatchingIndex(ktx, SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), tokenQuery);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                var session = ktx.dataRead().tokenReadSession(index);
-                var cursor = ktx.cursors().allocateNodeLabelIndexCursor(ktx.cursorContext());
-                ktx.dataRead().nodeLabelScan(session, cursor, unconstrained(), tokenQuery, ktx.cursorContext());
-
-                var nodeCursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext());
-                var propertyCursor = ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-
-                return new NodeLabelPropertyIterator(
-                        ktx.dataRead(),
-                        cursor,
-                        nodeCursor,
-                        propertyCursor,
-                        c -> newNodeEntity(c.nodeReference()),
-                        coreApiResourceTracker,
-                        queries);
-            } catch (KernelException e) {
-                // ignore, fallback to all node scan
-            }
-        }
-        return getNodesByLabelAndPropertyViaAllNodesScan(ktx, labelId, queries);
-    }
-
-    private TrackedCursorIterator<FilteringNodeCursorWrapper, Node> getNodesByLabelAndPropertyViaAllNodesScan(
-            KernelTransaction ktx, int labelId, PropertyIndexQuery[] queries) {
-        var nodeCursor = ktx.cursors().allocateNodeCursor(ktx.cursorContext());
-        var labelFilteredCursor = new FilteringNodeCursorWrapper(nodeCursor, CursorPredicates.hasLabel(labelId));
-
-        var propertyCursor = ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-        var propertyFilteredCursor = new FilteringNodeCursorWrapper(
-                labelFilteredCursor, nodeMatchProperties(queries, propertyCursor), List.of(propertyCursor));
-
-        ktx.dataRead().allNodesScan(nodeCursor);
-        return new TrackedCursorIterator<>(
-                propertyFilteredCursor,
-                NodeCursor::nodeReference,
-                c -> newNodeEntity(c.nodeReference()),
-                coreApiResourceTracker);
-    }
-
-    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex(
-            KernelTransaction ktx, int typeId, PropertyIndexQuery... queries) {
-        TokenPredicate tokenQuery = new TokenPredicate(typeId);
-        var index =
-                findUsableMatchingIndex(ktx, SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), tokenQuery);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                var session = ktx.dataRead().tokenReadSession(index);
-                var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor(ktx.cursorContext());
-                ktx.dataRead().relationshipTypeScan(session, cursor, unconstrained(), tokenQuery, ktx.cursorContext());
-
-                var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext());
-                var propertyCursor = ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-
-                return new RelationshipTypePropertyIterator(
-                        ktx.dataRead(),
-                        cursor,
-                        relationshipScanCursor,
-                        propertyCursor,
-                        c -> newRelationshipEntity(c.relationshipReference()),
-                        coreApiResourceTracker,
-                        queries);
-            } catch (KernelException e) {
-                // ignore, fallback to all node scan
-            }
-        }
-
-        return getRelationshipsByTypeAndPropertyViaAllRelsScan(ktx, typeId, queries);
-    }
-
-    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyViaAllRelsScan(
-            KernelTransaction ktx, int typeId, PropertyIndexQuery[] queries) {
-        var relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext());
-        var typeFiltered =
-                new FilteringRelationshipScanCursorWrapper(relationshipScanCursor, CursorPredicates.hasType(typeId));
-
-        var propertyCursor = ktx.cursors().allocatePropertyCursor(ktx.cursorContext(), ktx.memoryTracker());
-        var propertyFilteredCursor = new FilteringRelationshipScanCursorWrapper(
-                typeFiltered, relationshipMatchProperties(queries, propertyCursor), List.of(propertyCursor));
-
-        ktx.dataRead().allRelationshipsScan(relationshipScanCursor);
-        return new TrackedCursorIterator<>(
-                propertyFilteredCursor,
-                RelationshipScanCursor::relationshipReference,
-                c -> newRelationshipEntity(
-                        c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference()),
-                coreApiResourceTracker);
-    }
-
-    private ResourceIterator<Node> nodesByLabelAndProperties(
-            KernelTransaction transaction, int labelId, PropertyIndexQuery.ExactPredicate... queries) {
-        Read read = transaction.dataRead();
-
-        if (isInvalidQuery(labelId, queries)) {
-            return emptyResourceIterator();
-        }
-
-        int[] propertyIds = getPropertyIds(queries);
-        IndexDescriptor index = findUsableMatchingCompositeIndex(
-                transaction,
-                SchemaDescriptors.forLabel(labelId, propertyIds),
-                propertyIds,
-                () -> transaction.schemaRead().indexesGetForLabel(labelId),
-                queries);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                NodeValueIndexCursor cursor = transaction
-                        .cursors()
-                        .allocateNodeValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker());
-                IndexReadSession indexSession = read.indexReadSession(index);
-                read.nodeIndexSeek(
-                        transaction.queryContext(),
-                        indexSession,
-                        cursor,
-                        unconstrained(),
-                        getReorderedIndexQueries(index.schema().getPropertyIds(), queries));
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        NodeIndexCursor::nodeReference,
-                        c -> newNodeEntity(c.nodeReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // weird at this point but ignore and fallback to a label scan
-            }
-        }
-        return getNodesByLabelAndPropertyWithoutPropertyIndex(transaction, labelId, queries);
-    }
-
-    private static PropertyIndexQuery[] getReorderedIndexQueries(int[] indexPropertyIds, PropertyIndexQuery[] queries) {
-        PropertyIndexQuery[] orderedQueries = new PropertyIndexQuery[queries.length];
-        for (int i = 0; i < indexPropertyIds.length; i++) {
-            int propertyKeyId = indexPropertyIds[i];
-            for (PropertyIndexQuery query : queries) {
-                if (query.propertyKeyId() == propertyKeyId) {
-                    orderedQueries[i] = query;
-                    break;
-                }
-            }
-        }
-        return orderedQueries;
-    }
-
-    private ResourceIterator<Relationship> allRelationshipsWithType(final RelationshipType type) {
-        KernelTransaction ktx = kernelTransaction();
-
-        int typeId = ktx.tokenRead().relationshipType(type.name());
-        if (typeId == TokenRead.NO_TOKEN) {
-            return emptyResourceIterator();
-        }
-
-        TokenPredicate query = new TokenPredicate(typeId);
-        var index = findUsableMatchingIndex(ktx, SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), query);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                var session = ktx.dataRead().tokenReadSession(index);
-                var cursor = ktx.cursors().allocateRelationshipTypeIndexCursor(ktx.cursorContext());
-                ktx.dataRead().relationshipTypeScan(session, cursor, unconstrained(), query, ktx.cursorContext());
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        RelationshipIndexCursor::relationshipReference,
-                        c -> newRelationshipEntity(c.relationshipReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // ignore, fallback to all node scan
-            }
-        }
-
-        return allRelationshipsByTypeWithoutIndex(ktx, typeId);
-    }
-
-    private ResourceIterator<Relationship> allRelationshipsByTypeWithoutIndex(KernelTransaction ktx, int typeId) {
-        var cursor = ktx.cursors().allocateRelationshipScanCursor(ktx.cursorContext());
-        ktx.dataRead().allRelationshipsScan(cursor);
-        var filteredCursor = new FilteringRelationshipScanCursorWrapper(cursor, CursorPredicates.hasType(typeId));
-        return new TrackedCursorIterator<>(
-                filteredCursor,
-                RelationshipScanCursor::relationshipReference,
-                c -> newRelationshipEntity(
-                        c.relationshipReference(), c.sourceNodeReference(), c.type(), c.targetNodeReference()),
-                coreApiResourceTracker);
-    }
-
-    private ResourceIterator<Relationship> relationshipsByTypeAndProperties(
-            KernelTransaction tx, int typeId, PropertyIndexQuery.ExactPredicate... queries) {
-        Read read = tx.dataRead();
-
-        if (isInvalidQuery(typeId, queries)) {
-            return emptyResourceIterator();
-        }
-
-        int[] propertyIds = getPropertyIds(queries);
-        IndexDescriptor index = findUsableMatchingCompositeIndex(
-                tx,
-                SchemaDescriptors.forRelType(typeId, propertyIds),
-                propertyIds,
-                () -> tx.schemaRead().indexesGetForRelationshipType(typeId),
-                queries);
-
-        if (index != IndexDescriptor.NO_INDEX) {
-            try {
-                RelationshipValueIndexCursor cursor =
-                        tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker());
-                IndexReadSession indexSession = read.indexReadSession(index);
-                read.relationshipIndexSeek(
-                        transaction.queryContext(),
-                        indexSession,
-                        cursor,
-                        unconstrained(),
-                        getReorderedIndexQueries(index.schema().getPropertyIds(), queries));
-                return new TrackedCursorIterator<>(
-                        cursor,
-                        RelationshipIndexCursor::relationshipReference,
-                        c -> newRelationshipEntity(c.relationshipReference()),
-                        coreApiResourceTracker);
-            } catch (KernelException e) {
-                // weird at this point but ignore and fallback to a label scan
-            }
-        }
-        return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(tx, typeId, queries);
     }
 
     private static class NodesProvider implements Function<TransactionImpl, ResourceIterator<Node>> {
@@ -1083,142 +587,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         }
     }
 
-    private static PropertyIndexQuery.ExactPredicate[] convertToQueries(
-            Map<String, Object> propertyValues, TokenRead tokenRead) {
-        PropertyIndexQuery.ExactPredicate[] queries = new PropertyIndexQuery.ExactPredicate[propertyValues.size()];
-        int i = 0;
-        for (Map.Entry<String, Object> entry : propertyValues.entrySet()) {
-            queries[i++] =
-                    PropertyIndexQuery.exact(tokenRead.propertyKey(entry.getKey()), Values.of(entry.getValue(), false));
-        }
-        return queries;
-    }
-
-    /**
-     * Find an ONLINE index that matches the schema.
-     */
-    private static IndexDescriptor findUsableMatchingCompositeIndex(
-            KernelTransaction transaction,
-            SchemaDescriptor schemaDescriptor,
-            int[] propertyIds,
-            Supplier<Iterator<IndexDescriptor>> indexesSupplier,
-            IndexQuery... query) {
-        // Try a direct schema match first.
-        var directMatch = findUsableMatchingIndex(transaction, schemaDescriptor, query);
-        if (directMatch != IndexDescriptor.NO_INDEX) {
-            return directMatch;
-        }
-
-        // Attempt to find matching index with different property order
-        Arrays.sort(propertyIds);
-        assertNoDuplicates(propertyIds, transaction.tokenRead());
-
-        int[] workingCopy = new int[propertyIds.length];
-
-        Iterator<IndexDescriptor> indexes = indexesSupplier.get();
-        while (indexes.hasNext()) {
-            IndexDescriptor index = indexes.next();
-            int[] original = index.schema().getPropertyIds();
-            if (hasSamePropertyIds(original, workingCopy, propertyIds)
-                    && indexIsOnline(transaction.schemaRead(), index)
-                    && indexSupportQuery(index, query)) {
-                // Ha! We found an index with the same properties in another order
-                return index;
-            }
-        }
-
-        // No dice.
-        return IndexDescriptor.NO_INDEX;
-    }
-
-    /**
-     * Find an ONLINE index that matches the schema.
-     */
-    private static IndexDescriptor findUsableMatchingIndex(
-            KernelTransaction transaction, SchemaDescriptor schemaDescriptor, IndexQuery... query) {
-        return firstOrDefault(getMatchingOnlineIndexes(transaction, schemaDescriptor, query), IndexDescriptor.NO_INDEX);
-    }
-
-    private static IndexDescriptor findUsableMatchingIndex(
-            KernelTransaction transaction,
-            SchemaDescriptor schemaDescriptor,
-            IndexType preference,
-            IndexQuery... query) {
-        List<IndexDescriptor> indexes = asList(getMatchingOnlineIndexes(transaction, schemaDescriptor, query));
-        Optional<IndexDescriptor> preferred = indexes.stream()
-                .filter(index -> index.getIndexType() == preference)
-                .findAny();
-        return preferred.orElse(firstOrDefault(indexes.iterator(), IndexDescriptor.NO_INDEX));
-    }
-
-    private static Iterator<IndexDescriptor> getMatchingOnlineIndexes(
-            KernelTransaction transaction, SchemaDescriptor schemaDescriptor, IndexQuery... query) {
-        SchemaRead schemaRead = transaction.schemaRead();
-        Iterator<IndexDescriptor> iterator = schemaRead.index(schemaDescriptor);
-        return filter(index -> indexIsOnline(schemaRead, index) && indexSupportQuery(index, query), iterator);
-    }
-
-    private static boolean indexSupportQuery(IndexDescriptor index, IndexQuery[] query) {
-        return stream(query).allMatch(q -> index.getCapability().isQuerySupported(q.type(), q.valueCategory()));
-    }
-
-    private static boolean invalidTokens(int... tokens) {
-        return stream(tokens).anyMatch(token -> token == Token.NO_TOKEN);
-    }
-
-    /**
-     * @return True if the index is online. False if the index was not found or in other state.
-     */
-    private static boolean indexIsOnline(SchemaRead schemaRead, IndexDescriptor index) {
-        InternalIndexState state = InternalIndexState.FAILED;
-        try {
-            state = schemaRead.indexGetState(index);
-        } catch (IndexNotFoundKernelException e) {
-            // Well the index should always exist here, but if we didn't find it while checking the state,
-            // then we obviously don't want to use it.
-        }
-        return state == InternalIndexState.ONLINE;
-    }
-
-    private static void assertNoDuplicates(int[] propertyIds, TokenRead tokenRead) {
-        int prev = propertyIds[0];
-        for (int i = 1; i < propertyIds.length; i++) {
-            int curr = propertyIds[i];
-            if (curr == prev) {
-                throw new IllegalArgumentException(format(
-                        "Provided two queries for property %s. Only one query per property key can be performed",
-                        tokenRead.propertyKeyGetName(curr)));
-            }
-            prev = curr;
-        }
-    }
-
-    private static boolean hasSamePropertyIds(int[] original, int[] workingCopy, int[] propertyIds) {
-        if (original.length == propertyIds.length) {
-            System.arraycopy(original, 0, workingCopy, 0, original.length);
-            Arrays.sort(workingCopy);
-            return Arrays.equals(propertyIds, workingCopy);
-        }
-        return false;
-    }
-
-    private static int[] getPropertyIds(PropertyIndexQuery[] queries) {
-        int[] propertyIds = new int[queries.length];
-        for (int i = 0; i < queries.length; i++) {
-            propertyIds[i] = queries[i].propertyKeyId();
-        }
-        return propertyIds;
-    }
-
-    private static boolean isInvalidQuery(int tokenId, PropertyIndexQuery[] queries) {
-        if (tokenId == TokenRead.NO_TOKEN) {
-            return true;
-        }
-        return stream(queries)
-                .mapToInt(PropertyIndexQuery::propertyKeyId)
-                .anyMatch(propertyKeyId -> propertyKeyId == TokenRead.NO_TOKEN);
-    }
-
     private <T> Iterable<T> allInUse(final TokenAccess<T> tokens) {
         var transaction = kernelTransaction();
         return () -> tokens.inUse(transaction);
@@ -1232,77 +600,5 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     @FunctionalInterface
     private interface TransactionalOperation {
         void perform(KernelTransaction transaction) throws Exception;
-    }
-
-    private static void checkPropertyKey(String key) {
-        checkArgument(key != null, "Property key can not be null");
-    }
-
-    private static void checkRelationshipType(RelationshipType type) {
-        checkArgument(type != null, "Relationship type can not be null");
-    }
-
-    private static class FilteringCursor<CURSOR extends Cursor & ValueIndexCursor> implements Cursor {
-
-        private final CURSOR originalCursor;
-        private final PropertyIndexQuery filteringQuery;
-
-        public FilteringCursor(CURSOR originalCursor, PropertyIndexQuery filteringQuery) {
-            this.originalCursor = originalCursor;
-            this.filteringQuery = filteringQuery;
-        }
-
-        @Override
-        public void close() {
-            originalCursor.close();
-        }
-
-        @Override
-        public void closeInternal() {
-            originalCursor.closeInternal();
-        }
-
-        @Override
-        public boolean isClosed() {
-            return originalCursor.isClosed();
-        }
-
-        @Override
-        public void setCloseListener(CloseListener closeListener) {
-            originalCursor.setCloseListener(closeListener);
-        }
-
-        @Override
-        public void setToken(int token) {
-            originalCursor.setToken(token);
-        }
-
-        @Override
-        public int getToken() {
-            return originalCursor.getToken();
-        }
-
-        @Override
-        public boolean next() {
-            boolean next;
-            boolean acceptsValue;
-
-            do {
-                next = originalCursor.next();
-                acceptsValue = next && filteringQuery.acceptsValue(originalCursor.propertyValue(0));
-            } while (next && !acceptsValue);
-
-            return next;
-        }
-
-        @Override
-        public void setTracer(KernelReadTracer tracer) {
-            originalCursor.setTracer(tracer);
-        }
-
-        @Override
-        public void removeTracer() {
-            originalCursor.removeTracer();
-        }
     }
 }

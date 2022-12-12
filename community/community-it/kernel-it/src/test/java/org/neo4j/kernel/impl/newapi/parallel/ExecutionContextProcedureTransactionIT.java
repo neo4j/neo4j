@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi.parallel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.RelationshipType.withName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,26 @@ class ExecutionContextProcedureTransactionIT {
                     .map(Entity::getElementId)
                     .collect(Collectors.toList());
             assertThat(retrievedIds).containsExactlyInAnyOrderElementsOf(nodeIds);
+        }
+    }
+
+    @Test
+    void testGettingAllRelationships() {
+        List<String> relIds = new ArrayList<>();
+
+        try (var tx = db.beginTx()) {
+            var node = tx.createNode();
+            relIds.add(node.createRelationshipTo(node, withName("T1")).getElementId());
+            relIds.add(node.createRelationshipTo(node, withName("T2")).getElementId());
+            relIds.add(node.createRelationshipTo(node, withName("T3")).getElementId());
+            tx.commit();
+        }
+
+        try (var tx = db.beginTx()) {
+            var retrievedIds = executionContextTransaction(tx).getAllRelationships().stream()
+                    .map(Entity::getElementId)
+                    .collect(Collectors.toList());
+            assertThat(retrievedIds).containsExactlyInAnyOrderElementsOf(relIds);
         }
     }
 

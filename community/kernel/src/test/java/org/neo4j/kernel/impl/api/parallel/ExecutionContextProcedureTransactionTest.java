@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.kernel.api.ExecutionContext;
 
@@ -48,5 +49,21 @@ public class ExecutionContextProcedureTransactionTest {
         nodes.close();
         verify(executionContext, never()).registerCloseableResource(eq(nodes));
         verify(executionContext, times(1)).unregisterCloseableResource(eq(nodes));
+    }
+
+    @Test
+    void getAllRelationshipsShouldRegisterAndUnregisterAsResource() {
+        ExecutionContext executionContext = mock(ExecutionContext.class);
+        var tx = new ExecutionContextProcedureTransaction(executionContext);
+        ResourceIterable<Relationship> relationships = tx.getAllRelationships();
+
+        verify(executionContext, times(1)).registerCloseableResource(eq(relationships));
+        verify(executionContext, never()).unregisterCloseableResource(any());
+
+        clearInvocations(executionContext);
+
+        relationships.close();
+        verify(executionContext, never()).registerCloseableResource(eq(relationships));
+        verify(executionContext, times(1)).unregisterCloseableResource(eq(relationships));
     }
 }
