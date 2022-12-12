@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -53,6 +54,7 @@ object SlottedPipelineBreakingPolicy extends PipelineBreakingPolicy {
         _: VarExpand |
         _: PruningVarExpand |
         _: BFSPruningVarExpand |
+        _: FindShortestPaths |
         _: UnwindCollection |
         _: Eager
         // _: ProjectEndpoints | This is cardinality increasing (if undirected) but doesn't break currently

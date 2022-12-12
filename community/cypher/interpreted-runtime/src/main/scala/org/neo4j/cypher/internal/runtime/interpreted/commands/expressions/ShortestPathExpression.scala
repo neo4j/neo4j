@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.helpers.BiDirectionalBFS
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.PathReference
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -93,7 +92,7 @@ case class ShortestPathExpression(
       LongPredicates.alwaysTrue(),
       (_: RelationshipTraversalCursor) => true
     )
-    val shortestPathIterator = biDirectionalBFS.shortestPathIterator((_: PathReference) => true)
+    val shortestPathIterator = biDirectionalBFS.shortestPathIterator()
 
     val matches =
       if (shortestPathPattern.single) {

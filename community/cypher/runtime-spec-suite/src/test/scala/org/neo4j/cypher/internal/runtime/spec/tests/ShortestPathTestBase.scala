@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Pred
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.TestPath
 import org.neo4j.graphdb.Direction.INCOMING
 import org.neo4j.graphdb.Direction.OUTGOING
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables.single
 
 import java.util
@@ -297,4 +299,175 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should filter on node predicat - don't fully fuse") {
+    // given
+    val (start, end, forbidden, rels) = given {
+      val g = sineGraph()
+      val r2 = single(g.ec1.getRelationships(INCOMING))
+      val r3 = single(g.ec2.getRelationships(INCOMING))
+      val r4 = single(g.ec3.getRelationships(INCOMING))
+      val r5 = single(g.ec3.getRelationships(OUTGOING))
+      (g.start, g.end, g.ea1, Seq(g.startMiddle, r2, r3, r4, r5))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y", "path")
+      .nonFuseable()
+      .filter("true")
+      .shortestPath(
+        "(x)-[r:A*]->(y)",
+        Some("path"),
+        nodePredicates = Seq(Predicate("n", s"id(n) <> ${forbidden.getId}"))
+      )
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "r", "y", "path").withRows(Array(
+      Array(start, util.Arrays.asList(rels.toSeq: _*), end, TestPath(start, rels))
+    ))
+  }
+
+  test("should filter on relationship predicate - don't fully fuse") {
+    // given
+    val (start, end, forbidden, rels) = given {
+      val g = sineGraph()
+      val r1 = single(g.sa1.getRelationships(INCOMING))
+      val r2 = single(g.sa1.getRelationships(OUTGOING))
+      val r3 = single(g.ea1.getRelationships(INCOMING))
+      val r4 = single(g.ea1.getRelationships(OUTGOING))
+      (g.start, g.end, g.startMiddle, Seq(r1, r2, r3, r4))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y", "path")
+      .nonFuseable()
+      .filter("true")
+      .shortestPath(
+        "(x)-[r:A*]->(y)",
+        Some("path"),
+        relationshipPredicates = Seq(Predicate("rel", s"id(rel) <> ${forbidden.getId}"))
+      ) // OBS: r != rel
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "END", IndexOrderNone)
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "r", "y", "path").withRows(Array(
+      Array(start, util.Arrays.asList(rels.toSeq: _*), end, TestPath(start, rels))
+    ))
+  }
+
+  test("should handle var expand + predicate on cached property") {
+    // given
+    val n = sizeHint / 6
+    val paths = given {
+      val ps = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+      // set incrementing node property values along chain
+      for {
+        p <- ps
+        i <- 0 until p.length()
+        n = p.nodeAt(i)
+      } n.setProperty("prop", i)
+      // set property of last node to lowest value, so VarLength predicate fails
+      for {
+        p <- ps
+        n = p.nodeAt(p.length())
+      } n.setProperty("prop", -1)
+      ps
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b", "c")
+      .expand("(b)-[*]->(c)", nodePredicates = Seq(Predicate("n", "n.prop > cache[a.prop]")))
+      .expandAll("(a)-[:TO]->(b)")
+      .nodeByLabelScan("a", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 3
+        p = path.slice(1, 1 + length)
+      } yield Array(p.startNode, p.endNode())
+
+    runtimeResult should beColumns("b", "c").withRows(expected)
+  }
+
+  test("should handle types missing on compile") {
+    given {
+      1 to sizeHint foreach { _ =>
+        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
+      }
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .shortestPath("(x)-[rs:R|S|T]->(y)", Some("p"))
+      .filter("y <> x")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
+
+    // CREATE S
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
+
+    // CREATE R
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
+
+    // CREATE T
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
+  }
+
+  test("cached plan should adapt to new relationship types") {
+    given {
+      1 to sizeHint foreach { _ =>
+        tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
+      }
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .shortestPath("(x)-[rs:R|S|T]->(y)", Some("p"))
+      .filter("y <> x")
+      .cartesianProduct()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+
+    execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
+
+    // CREATE S
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
+
+    // CREATE R
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
+
+    // CREATE T
+    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
+  }
 }

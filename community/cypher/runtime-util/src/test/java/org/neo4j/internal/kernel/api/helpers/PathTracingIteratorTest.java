@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -44,8 +43,7 @@ class PathTracingIteratorTest {
 
         LongIterator intersection = longIterator(10);
 
-        PathTracingIterator pti =
-                new PathTracingIterator(intersection, 0, 0, emptyPathTraceData, emptyPathTraceData, p -> true);
+        PathTracingIterator pti = new PathTracingIterator(intersection, 0, 0, emptyPathTraceData, emptyPathTraceData);
 
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next()).isEqualTo(VirtualValues.pathReference(new long[] {10}, new long[] {}));
@@ -91,31 +89,6 @@ class PathTracingIteratorTest {
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next())
                 .isEqualTo(VirtualValues.pathReference(longRange(totalLength + 1), longRange(totalLength)));
-        assertThat(pti.hasNext()).isFalse();
-    }
-
-    @Test
-    void shouldOnlyGiveOneLongerPathSatisfyPredicate() {
-        int sourceLength = 10;
-        int targetLength = 5;
-        int totalLength = sourceLength + targetLength;
-
-        PathTracingIterator pti = singlePath(sourceLength, targetLength, p -> p.size() > totalLength - 1);
-
-        assertThat(pti.hasNext()).isTrue();
-        assertThat(pti.next())
-                .isEqualTo(VirtualValues.pathReference(longRange(totalLength + 1), longRange(totalLength)));
-        assertThat(pti.hasNext()).isFalse();
-    }
-
-    @Test
-    void shouldNotGiveAnyPathDontSatisfyPredicate() {
-        int sourceLength = 10;
-        int targetLength = 5;
-        int totalLength = sourceLength + targetLength;
-
-        PathTracingIterator pti = singlePath(sourceLength, targetLength, p -> p.size() > totalLength + 1);
-
         assertThat(pti.hasNext()).isFalse();
     }
 
@@ -246,10 +219,6 @@ class PathTracingIteratorTest {
     }
 
     private PathTracingIterator singlePath(int sourceLength, int targetLength) {
-        return singlePath(sourceLength, targetLength, p -> true);
-    }
-
-    private PathTracingIterator singlePath(int sourceLength, int targetLength, Predicate<PathReference> pathFilter) {
         int totalLength = sourceLength + targetLength;
 
         MemoryTracker mt = new LocalMemoryTracker();
@@ -274,17 +243,12 @@ class PathTracingIteratorTest {
             targetPathTraceData.put(i, targetStep);
         }
 
-        PathTracingIterator pti = new PathTracingIterator(
-                single, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData, pathFilter);
+        PathTracingIterator pti =
+                new PathTracingIterator(single, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData);
         return pti;
     }
 
     private PathTracingIterator rectangularPathSet(int sourceLength, int targetLength, int width, int degree) {
-        return rectangularPathSet(sourceLength, targetLength, width, degree, p -> true);
-    }
-
-    private PathTracingIterator rectangularPathSet(
-            int sourceLength, int targetLength, int width, int degree, Predicate<PathReference> pathFilter) {
         MemoryTracker mt = new LocalMemoryTracker();
 
         HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> sourcePathTraceData =
@@ -375,7 +339,7 @@ class PathTracingIteratorTest {
 
         LongIterator intersectionIterator = longIterator(currentLevel);
         return new PathTracingIterator(
-                intersectionIterator, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData, pathFilter);
+                intersectionIterator, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData);
     }
 
     private int expectedCardinalityOfRectangularPathSet(int sourceLength, int targetLength, int width, int degree) {

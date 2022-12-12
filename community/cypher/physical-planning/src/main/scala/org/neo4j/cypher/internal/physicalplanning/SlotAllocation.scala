@@ -424,12 +424,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         acc: Accumulator =>
           SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given lp
 
-      case FindShortestPaths(_, shortestPathPattern, _, _, _, _, _) =>
-        acc: Accumulator => {
-          allocateShortestPathPattern(shortestPathPattern, slots, nullable, anonymousVariableNameGenerator)
-          TraverseChildren(acc)
-        }
-
       case LegacyFindShortestPaths(_, shortestPathPattern, _, _, _) =>
         acc: Accumulator => {
           allocateShortestPathPattern(shortestPathPattern, slots, nullable, anonymousVariableNameGenerator)
@@ -802,11 +796,25 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: Merge =>
         recordArgument(lp)
 
-      case _: LegacyFindShortestPaths =>
-      case _: FindShortestPaths       =>
+      case sp: FindShortestPaths =>
+        val patternRelationship = sp.shortestPath.rel
+        val rel = sp.shortestPath.expr.element match {
+          case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
+            relationshipPattern
+          case _ =>
+            throw new IllegalStateException("This should be caught during semantic checking")
+        }
+
+        val pathName = sp.shortestPath.name.get // Should always be given anonymous name
+        val relsName = rel.variable.get.name // Should always be given anonymous name
+
+        slots.newReference(pathName, nullable, CTPath)
+        slots.newReference(relsName, nullable, CTList(CTRelationship))
+
       // Because of the way the interpreted pipe works, we already have to do the necessary allocations in allocateExpressions(), before the pipeline breaking.
       // Legacy interpreted pipes write directly to the incoming context, so to support pipeline breaking, the slots have to be allocated
       // on the source slot configuration.
+      case _: LegacyFindShortestPaths =>
 
       case Foreach(_, variableName, listExpression, mutations) =>
         mutations.foreach {

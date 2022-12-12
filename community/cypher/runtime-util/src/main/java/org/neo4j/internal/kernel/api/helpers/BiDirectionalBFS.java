@@ -25,12 +25,14 @@ import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
 import org.neo4j.cypher.internal.expressions.SemanticDirection;
 import org.neo4j.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -227,6 +229,16 @@ public class BiDirectionalBFS implements AutoCloseable {
                 types, direction, maxDepth, stopAsapAtIntersect, read, nodeCursor, relCursor, memoryTracker);
     }
 
+    public static BiDirectionalBFS newEmptyBiDirectionalBFS(
+            int[] types,
+            SemanticDirection direction,
+            int maxDepth,
+            boolean stopAsapAtIntersect,
+            Read read,
+            MemoryTracker memoryTracker) {
+        return new BiDirectionalBFS(types, direction, maxDepth, stopAsapAtIntersect, read, null, null, memoryTracker);
+    }
+
     /**
      * Reset the BiDirectionalBFS in preparation of computing the shortest path(s) between
      * a new source and target node pair. Compared to creating a new BiDirectionalBFS object,
@@ -243,6 +255,18 @@ public class BiDirectionalBFS implements AutoCloseable {
         algorithmState = State.CAN_SEARCH_FOR_INTERSECTION;
     }
 
+    public void resetForNewRow(
+            long sourceNodeId,
+            long targetNodeId,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor relCursor,
+            LongPredicate nodeFilter,
+            Predicate<RelationshipTraversalCursor> relFilter) {
+        sourceBFS.resetWithStartNode(sourceNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+        targetBFS.resetWithStartNode(targetNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+        algorithmState = State.CAN_SEARCH_FOR_INTERSECTION;
+    }
+
     /**
      * Computes the shortest paths between the source and target node, and returns an iterator over them.
      * An empty iterator is returned when the source and target nodes are disconnected, and when
@@ -250,8 +274,17 @@ public class BiDirectionalBFS implements AutoCloseable {
      *
      * @return an iterator over the set of shortest paths between the source and target nodes specified at instantiation.
      */
-    public Iterator<PathReference> shortestPathIterator(Predicate<PathReference> pathFilter) {
+    public Iterator<PathReference> shortestPathIterator() {
         assert (algorithmState == State.CAN_SEARCH_FOR_INTERSECTION);
+
+        if (sourceBFS.startNodeId == targetBFS.startNodeId) {
+            return new PathTracingIterator(
+                    PrimitiveLongCollections.single(sourceBFS.startNodeId),
+                    sourceBFS.currentDepth,
+                    targetBFS.currentDepth,
+                    sourceBFS.pathTraceData,
+                    targetBFS.pathTraceData);
+        }
 
         BFS bfsToAdvance = null;
 
@@ -274,8 +307,7 @@ public class BiDirectionalBFS implements AutoCloseable {
                 sourceBFS.currentDepth,
                 targetBFS.currentDepth,
                 sourceBFS.pathTraceData,
-                targetBFS.pathTraceData,
-                pathFilter);
+                targetBFS.pathTraceData);
     }
 
     private static BFS pickBFSWithSmallestCurrentLevelSet(BFS bfs1, BFS bfs2) {
@@ -283,9 +315,14 @@ public class BiDirectionalBFS implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         sourceBFS.close();
         targetBFS.close();
+    }
+
+    public void setTracer(KernelReadTracer tracer) {
+        sourceBFS.setTracer(tracer);
+        targetBFS.setTracer(tracer);
     }
 
     private abstract static class BFS implements AutoCloseable {
@@ -299,8 +336,8 @@ public class BiDirectionalBFS implements AutoCloseable {
         protected int currentDepth;
         protected final int[] types;
         protected final Read read;
-        protected final NodeCursor nodeCursor;
-        protected final RelationshipTraversalCursor relCursor;
+        protected NodeCursor nodeCursor;
+        protected RelationshipTraversalCursor relCursor;
         RelationshipTraversalCursor selectionCursor;
         protected final MemoryTracker memoryTracker;
         protected LongPredicate nodeFilter;
@@ -412,12 +449,23 @@ public class BiDirectionalBFS implements AutoCloseable {
             this.availableArrayListsEnd = this.availableArrayLists.size();
         }
 
+        public void resetWithStartNode(
+                long startNodeId,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor relCursor,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter) {
+            this.nodeCursor = nodeCursor;
+            this.relCursor = relCursor;
+            resetWithStartNode(startNodeId, nodeFilter, relFilter);
+        }
+
         public void setOther(BFS other) {
             this.other = other;
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             assert (!closed);
             availableArrayLists.forEach(HeapTrackingArrayList::close);
             availableArrayLists.close();
@@ -429,6 +477,18 @@ public class BiDirectionalBFS implements AutoCloseable {
                 selectionCursor = null;
             }
             closed = true;
+        }
+
+        public void setTracer(KernelReadTracer tracer) {
+            if (nodeCursor != null) {
+                nodeCursor.setTracer(tracer);
+            }
+            if (relCursor != null) {
+                relCursor.setTracer(tracer);
+            }
+            if (selectionCursor != null) {
+                selectionCursor.setTracer(tracer);
+            }
         }
     }
 

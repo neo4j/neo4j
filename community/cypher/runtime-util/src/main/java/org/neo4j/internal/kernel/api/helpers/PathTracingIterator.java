@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import java.util.function.Predicate;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
@@ -52,8 +51,6 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
 
     private final int intersectionNodeIndex;
     private final LongIterator intersectionIterator;
-    private final Predicate<PathReference> pathFilter;
-
     private final PathIteratorPart innerLoopPathPart;
     private final PathIteratorPart outerLoopPathPart;
     private final long[] internalNodes;
@@ -67,10 +64,8 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             int sourceBFSDepth,
             int targetBFSDepth,
             HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> sourcePathTraceData,
-            HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> targetPathTraceData,
-            Predicate<PathReference> pathFilter) {
+            HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> targetPathTraceData) {
         this.intersectionIterator = intersectionIterator;
-        this.pathFilter = pathFilter;
         this.pathLength = sourceBFSDepth + targetBFSDepth;
         this.intersectionNodeIndex = sourceBFSDepth;
         this.internalNodes = new long[pathLength + 1];
@@ -94,10 +89,8 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
 
     @Override
     protected PathReference fetchNextOrNull() {
-        while (viewNextPath()) {
-            if (pathFilter.test(VirtualValues.pathReference(internalNodes, internalRels))) {
-                return currentPath();
-            }
+        if (viewNextPath()) {
+            return currentPath();
         }
         return null;
     }

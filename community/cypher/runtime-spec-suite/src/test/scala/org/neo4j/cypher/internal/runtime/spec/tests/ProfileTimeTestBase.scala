@@ -333,9 +333,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(0).time() should be > 0L // produce results
-    queryProfile.operatorProfile(1).time() should be(
-      OperatorProfile.NO_DATA
-    ) // shortest path (OperatorProfile.NO_DATA as long as we use slotted fallback)
+    queryProfile.operatorProfile(1).time() should be > 0L // shortest path
     queryProfile.operatorProfile(2).time() should be > 0L // cartesian product
     queryProfile.operatorProfile(3).time() should be > 0L // nodeByLabelScan
     queryProfile.operatorProfile(4).time() should be > 0L // nodeByLabelScan

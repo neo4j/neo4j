@@ -79,6 +79,12 @@ object extractPredicates {
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 
+      // MATCH (a)-[rs*]-(b) WHERE NONE(r IN rs WHERE r.prop=4)
+      case ((n, e, s), p @ NoRelationships(variable, `originalRelationshipName`, innerPredicate))
+        if targetNodeIsBound || !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
+        val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
+        (n, e + predicate, s + p)
+
       // MATCH p = (a)-[x*]->(b) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
           (n, e, s),
@@ -121,6 +127,18 @@ object extractPredicates {
     def unapply(v: Any): Option[(LogicalVariable, String, Expression)] =
       v match {
         case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
+          if variable == relId || !innerPredicate.dependencies(relId) =>
+          Some((variable, name, innerPredicate))
+
+        case _ => None
+      }
+  }
+
+  object NoRelationships {
+
+    def unapply(v: Any): Option[(LogicalVariable, String, Expression)] =
+      v match {
+        case NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
           if variable == relId || !innerPredicate.dependencies(relId) =>
           Some((variable, name, innerPredicate))
 
@@ -271,6 +289,11 @@ object extractShortestPathPredicates {
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 
+      // MATCH p=shortestPath((a)-[rs*]-(b)) WHERE NONE(r IN rs WHERE r.prop = 2)
+      case ((n, e, s), p @ NoRelationshipsUnnamedPath(variable, `relsName`, innerPredicate)) =>
+        val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
+        (n, e + predicate, s + p)
+
       // MATCH p = shortestPath((a)-[x*]->(b)) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
           (n, e, s),
@@ -308,6 +331,18 @@ object extractShortestPathPredicates {
     def unapply(v: Any): Option[(LogicalVariable, Option[String], Expression)] =
       v match {
         case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
+          if variable == relId || !innerPredicate.dependencies(relId) =>
+          Some((variable, Some(name), innerPredicate))
+
+        case _ => None
+      }
+  }
+
+  object NoRelationshipsUnnamedPath {
+
+    def unapply(v: Any): Option[(LogicalVariable, Option[String], Expression)] =
+      v match {
+        case NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
           if variable == relId || !innerPredicate.dependencies(relId) =>
           Some((variable, Some(name), innerPredicate))
 
