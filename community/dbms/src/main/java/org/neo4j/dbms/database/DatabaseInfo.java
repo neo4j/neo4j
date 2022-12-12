@@ -33,9 +33,24 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 public class DatabaseInfo {
     public static final String ROLE_PRIMARY = "primary";
     public static final String ROLE_SECONDARY = "secondary";
-    public static final String ROLE_UNKNOWN = "unknown";
     public static final String STATUS_UNKNOWN = "unknown";
     public static final String STATUS_UNKNOWN_MESSAGE = "Server is unavailable";
+
+    public enum DatabaseType {
+        SYSTEM("system"),
+        STANDARD("standard"),
+        COMPOSITE("composite");
+
+        private final String databaseType;
+
+        DatabaseType(String databaseType) {
+            this.databaseType = databaseType;
+        }
+
+        public String databaseType() {
+            return databaseType;
+        }
+    }
 
     final NamedDatabaseId namedDatabaseId;
     final ServerId serverId;
@@ -46,6 +61,7 @@ public class DatabaseInfo {
     final boolean writer;
     final String status;
     final String statusMessage;
+    final DatabaseType databaseType;
 
     public DatabaseInfo(
             NamedDatabaseId namedDatabaseId,
@@ -56,7 +72,8 @@ public class DatabaseInfo {
             String role,
             boolean writer,
             String status,
-            String statusMessage) {
+            String statusMessage,
+            DatabaseType databaseType) {
         this.namedDatabaseId = namedDatabaseId;
         this.serverId = serverId;
         this.access = access;
@@ -66,10 +83,26 @@ public class DatabaseInfo {
         this.writer = writer;
         this.status = status;
         this.statusMessage = statusMessage;
+        this.databaseType = databaseType;
     }
 
-    public DatabaseInfo(NamedDatabaseId namedDatabaseId, ServerId serverId, DatabaseAccess access, String role) {
-        this(namedDatabaseId, serverId, access, null, null, role, false, STATUS_UNKNOWN, STATUS_UNKNOWN_MESSAGE);
+    public DatabaseInfo(
+            NamedDatabaseId namedDatabaseId,
+            ServerId serverId,
+            DatabaseAccess access,
+            String role,
+            DatabaseType databaseType) {
+        this(
+                namedDatabaseId,
+                serverId,
+                access,
+                null,
+                null,
+                role,
+                false,
+                STATUS_UNKNOWN,
+                STATUS_UNKNOWN_MESSAGE,
+                databaseType);
     }
 
     public ExtendedDatabaseInfo extendWith(DetailedDatabaseInfo detailedDatabaseInfo) {
@@ -93,6 +126,7 @@ public class DatabaseInfo {
                 writer,
                 status,
                 statusMessage,
+                databaseType,
                 lastCommittedTxId,
                 lastCommittedTxId - maxCommittedTxId,
                 storeId,
@@ -131,13 +165,22 @@ public class DatabaseInfo {
         return Optional.ofNullable(catchupAddress);
     }
 
-    public String role() {
-        return role;
+    public Optional<String> role() {
+        return Optional.ofNullable(role);
     }
 
     public DatabaseInfo updateRole(String role) {
         return new DatabaseInfo(
-                namedDatabaseId, serverId, access, boltAddress, catchupAddress, role, writer, status, statusMessage);
+                namedDatabaseId,
+                serverId,
+                access,
+                boltAddress,
+                catchupAddress,
+                role,
+                writer,
+                status,
+                statusMessage,
+                databaseType);
     }
 
     public boolean writer() {
@@ -150,6 +193,10 @@ public class DatabaseInfo {
 
     public String statusMessage() {
         return statusMessage;
+    }
+
+    public String databaseType() {
+        return databaseType.databaseType();
     }
 
     @Override

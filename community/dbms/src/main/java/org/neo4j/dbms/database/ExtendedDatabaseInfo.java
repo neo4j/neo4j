@@ -61,6 +61,7 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
             boolean writer,
             String status,
             String statusMessage,
+            DatabaseType databaseType,
             long lastCommittedTxId,
             long txCommitLag,
             StoreId storeId,
@@ -76,7 +77,8 @@ public class ExtendedDatabaseInfo extends DatabaseInfo {
                 role,
                 writer,
                 status,
-                statusMessage);
+                statusMessage,
+                databaseType);
         this.committedTxIdNotAvailable = lastCommittedTxId == COMMITTED_TX_ID_NOT_AVAILABLE;
         this.lastCommittedTxId = committedTxIdNotAvailable ? 0 : lastCommittedTxId;
         this.txCommitLag = committedTxIdNotAvailable ? 0 : txCommitLag;

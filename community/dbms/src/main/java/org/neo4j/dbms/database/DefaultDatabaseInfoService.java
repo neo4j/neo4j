@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.dbms.database.DatabaseInfo.ROLE_PRIMARY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
 
@@ -84,15 +85,19 @@ public class DefaultDatabaseInfoService implements DatabaseInfoService {
                 .map(Throwable::getMessage)
                 .orElse("");
         var access = readOnlyDatabases.isReadOnly(namedDatabaseId.databaseId()) ? READ_ONLY : READ_WRITE;
+        var databaseType = namedDatabaseId.isSystemDatabase()
+                ? DatabaseInfo.DatabaseType.SYSTEM
+                : DatabaseInfo.DatabaseType.STANDARD;
         return new DatabaseInfo(
                 namedDatabaseId,
                 serverId,
                 access,
                 address,
                 null,
-                DatabaseInfo.ROLE_PRIMARY,
+                ROLE_PRIMARY,
                 true,
                 status,
-                statusMessage);
+                statusMessage,
+                databaseType);
     }
 }

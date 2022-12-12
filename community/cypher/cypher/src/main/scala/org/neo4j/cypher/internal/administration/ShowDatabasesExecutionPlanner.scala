@@ -84,7 +84,6 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
@@ -340,8 +339,8 @@ case class ShowDatabasesExecutionPlanner(
 
     val accessibleDatabases =
       transaction.findNodes(DATABASE_NAME_LABEL, PRIMARY_PROPERTY, true).asScala
-        .foldLeft[Map[NamedDatabaseId, DatabaseType]](
-          Map.empty
+        .foldLeft[Set[NamedDatabaseId]](
+          Set.empty
         ) { (acc, dbNameNode) =>
           val dbName = dbNameNode.getProperty(DATABASE_NAME_PROPERTY).toString
           val dbNode = Iterables.first(dbNameNode.getRelationships(TARGETS_RELATIONSHIP)).getEndNode
@@ -352,13 +351,13 @@ case class ShowDatabasesExecutionPlanner(
             else Standard
           val isDefault = dbName.equals(defaultDatabaseName)
           if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
-            acc + (dbId -> System)
+            acc + dbId
           } else if (allowsAllDatabaseManagement) {
-            acc + (dbId -> dbType)
+            acc + dbId
           } else if (allowsStandardDatabaseManagement && dbType == Standard) {
-            acc + (dbId -> dbType)
+            acc + dbId
           } else if (allowsCompositeDatabaseManagement && dbType == Composite) {
-            acc + (dbId -> dbType)
+            acc + dbId
           } else {
             (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
               // denied
@@ -367,9 +366,9 @@ case class ShowDatabasesExecutionPlanner(
               case (_, _, Some(false), true) => acc
 
               // granted
-              case (Some(true), _, _, _)    => acc + (dbId -> dbType)
-              case (_, Some(true), _, _)    => acc + (dbId -> dbType)
-              case (_, _, Some(true), true) => acc + (dbId -> dbType)
+              case (Some(true), _, _, _)    => acc + dbId
+              case (_, Some(true), _, _)    => acc + dbId
+              case (_, _, Some(true), true) => acc + dbId
 
               // no privilege
               case _ => acc
@@ -413,17 +412,17 @@ case class ShowDatabasesExecutionPlanner(
   }
 
   private def lookupCachedInfo(
-    typeMap: Map[NamedDatabaseId, DatabaseType],
+    databaseIds: Set[NamedDatabaseId],
     transaction: Transaction
   ): List[AnyValue] = {
-    val dbInfos = infoService.lookupCachedInfo(typeMap.keys.toSet.asJava, transaction).asScala
-    dbInfos.map(info => BaseDatabaseInfoMapper.toMapValue(dbms, info, typeMap)).toList
+    val dbInfos = infoService.lookupCachedInfo(databaseIds.asJava, transaction).asScala
+    dbInfos.map(info => BaseDatabaseInfoMapper.toMapValue(dbms, info)).toList
   }
 
-  private def requestDetailedInfo(typeMap: Map[NamedDatabaseId, DatabaseType], transaction: Transaction)(implicit
+  private def requestDetailedInfo(databaseIds: Set[NamedDatabaseId], transaction: Transaction)(implicit
   mapper: DatabaseInfoMapper[ExtendedDatabaseInfo]): List[AnyValue] = {
-    val dbInfos = infoService.requestDetailedInfo(typeMap.keys.toSet.asJava, transaction).asScala
-    dbInfos.map(info => mapper.toMapValue(dbms, info, typeMap)).toList
+    val dbInfos = infoService.requestDetailedInfo(databaseIds.asJava, transaction).asScala
+    dbInfos.map(info => mapper.toMapValue(dbms, info)).toList
   }
 }
 
@@ -431,8 +430,7 @@ trait DatabaseInfoMapper[T <: DatabaseInfo] {
 
   def toMapValue(
     databaseManagementService: DatabaseManagementService,
-    extendedDatabaseInfo: T,
-    typeMap: Map[NamedDatabaseId, DatabaseType]
+    extendedDatabaseInfo: T
   ): MapValue
 }
 
@@ -440,14 +438,8 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
 
   override def toMapValue(
     databaseManagementService: DatabaseManagementService,
-    extendedDatabaseInfo: DatabaseInfo,
-    typeMap: Map[NamedDatabaseId, DatabaseType]
+    extendedDatabaseInfo: DatabaseInfo
   ): MapValue = {
-    val databaseType = typeMap(extendedDatabaseInfo.namedDatabaseId())
-    val (access, role) =
-      if (databaseType == Composite) (DatabaseAccess.READ_ONLY.getStringRepr, Values.NO_VALUE)
-      else (extendedDatabaseInfo.access().getStringRepr, Values.stringValue(extendedDatabaseInfo.role()))
-
     VirtualValues.map(
       Array(
         NAME_COL,
@@ -463,10 +455,10 @@ object BaseDatabaseInfoMapper extends DatabaseInfoMapper[DatabaseInfo] {
       ),
       Array(
         Values.stringValue(extendedDatabaseInfo.namedDatabaseId().name()),
-        Values.stringValue(databaseType.toString),
-        Values.stringValue(access),
+        Values.stringValue(extendedDatabaseInfo.databaseType()),
+        Values.stringValue(extendedDatabaseInfo.access().getStringRepr),
         extendedDatabaseInfo.boltAddress().map[AnyValue](s => Values.stringValue(s.toString)).orElse(Values.NO_VALUE),
-        role,
+        extendedDatabaseInfo.role().map[AnyValue](s => Values.stringValue(s)).orElse(Values.NO_VALUE),
         Values.booleanValue(extendedDatabaseInfo.writer()),
         Values.stringValue(extendedDatabaseInfo.status()),
         Values.stringValue(extendedDatabaseInfo.statusMessage()),
@@ -487,10 +479,9 @@ object CommunityExtendedDatabaseInfoMapper extends DatabaseInfoMapper[ExtendedDa
 
   override def toMapValue(
     databaseManagementService: DatabaseManagementService,
-    extendedDatabaseInfo: ExtendedDatabaseInfo,
-    typeMap: Map[NamedDatabaseId, DatabaseType]
+    extendedDatabaseInfo: ExtendedDatabaseInfo
   ): MapValue =
-    BaseDatabaseInfoMapper.toMapValue(databaseManagementService, extendedDatabaseInfo, typeMap).updatedWith(
+    BaseDatabaseInfoMapper.toMapValue(databaseManagementService, extendedDatabaseInfo).updatedWith(
       VirtualValues.map(
         Array(
           CURRENT_PRIMARIES_COUNT_COL,

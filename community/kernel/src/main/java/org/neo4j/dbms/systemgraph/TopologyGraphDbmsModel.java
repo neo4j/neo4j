@@ -20,6 +20,9 @@
 package org.neo4j.dbms.systemgraph;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.NONE;
+import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
+import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.SECONDARY;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -34,17 +37,19 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
     enum HostedOnMode {
-        RAFT(1, "raft"),
-        REPLICA(2, "replica"),
-        SINGLE(0, "single"),
-        VIRTUAL(3, "virtual");
+        RAFT(1, "raft", Set.of(PRIMARY, NONE)),
+        REPLICA(2, "replica", Set.of(SECONDARY, NONE)),
+        SINGLE(0, "single", Set.of(PRIMARY, NONE)),
+        VIRTUAL(3, "virtual", Set.of());
 
         private final String modeName;
         private final byte code;
+        private final Set<InstanceModeConstraint> constraints;
 
-        HostedOnMode(int code, String modeName) {
+        HostedOnMode(int code, String modeName, Set<InstanceModeConstraint> constraints) {
             this.code = (byte) code;
             this.modeName = modeName;
+            this.constraints = constraints;
         }
 
         public String modeName() {
@@ -53,6 +58,10 @@ public interface TopologyGraphDbmsModel {
 
         public byte code() {
             return code;
+        }
+
+        public boolean isAllowedForConstraint(InstanceModeConstraint constraint) {
+            return constraints.contains(constraint);
         }
 
         public static HostedOnMode from(String modeName) {
