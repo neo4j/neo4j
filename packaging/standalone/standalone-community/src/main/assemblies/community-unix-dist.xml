@@ -54,6 +54,13 @@
       </excludes>
       <filtered>true</filtered>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/completion</directory>
+      <outputDirectory>bin/completion</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <filtered>true</filtered>
+    </fileSet>
     <!-- filter and chmod 755 cypher-shell -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/cypher-shell/bin</directory>
