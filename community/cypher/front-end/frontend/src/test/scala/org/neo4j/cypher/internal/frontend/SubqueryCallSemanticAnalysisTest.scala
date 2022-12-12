@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.InputPosition
@@ -307,5 +308,127 @@ class SubqueryCallSemanticAnalysisTest
         )
       )
     )
+  }
+
+  // Utilities for the following tests
+  private val returnStarNMCombinations = Seq(
+    "n",
+    "m",
+    "n, m",
+    "*",
+    "*, n",
+    "*, m",
+    "*, n, m"
+  )
+
+  private def containedVariables(returnStarNMCombination: String): Set[String] = {
+    val strings = returnStarNMCombination.split(',').map(_.trim)
+    if (strings.contains("*")) {
+      Set("n", "m")
+    } else {
+      strings.toSet
+    }
+  }
+
+  test("RETURN * in a CALL should export variables") {
+    for {
+      subqueryReturn <- returnStarNMCombinations
+      suqbueryReturnVars = containedVariables(subqueryReturn)
+      finalReturn <- returnStarNMCombinations
+      finalReturnVars = containedVariables(finalReturn)
+      if finalReturnVars.forall(suqbueryReturnVars.contains)
+    } {
+      val query =
+        s"""
+           |CALL {
+           |  MATCH (n), (m)
+           |  RETURN $subqueryReturn
+           |}
+           |RETURN $finalReturn
+           |""".stripMargin
+      withClue(query) {
+        val result = runSemanticAnalysis(query)
+        result.errors should be(empty)
+
+        val statement = result.state.statement().asInstanceOf[SingleQuery]
+        val semanticState = result.state.semantics()
+        val finalVariables = semanticState.scope(statement.clauses.last).get.symbolNames
+        finalVariables should equal(finalReturnVars)
+      }
+    }
+  }
+
+  test("RETURN * in UNION in a CALL should export variables") {
+    for {
+      firstSubqueryReturn <- returnStarNMCombinations
+      firstSuqbueryReturnVars = containedVariables(firstSubqueryReturn)
+      secondSubqueryReturn <- returnStarNMCombinations
+      secondSuqbueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSuqbueryReturnVars == firstSuqbueryReturnVars
+      finalReturn <- returnStarNMCombinations
+      finalReturnVars = containedVariables(finalReturn)
+      if finalReturnVars.forall(firstSuqbueryReturnVars.contains)
+    } {
+      val query =
+        s"""
+           |CALL {
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $secondSubqueryReturn
+           |}
+           |RETURN $finalReturn
+           |""".stripMargin
+      withClue(query) {
+        val result = runSemanticAnalysis(query)
+        result.errors should be(empty)
+
+        val statement = result.state.statement().asInstanceOf[SingleQuery]
+        val semanticState = result.state.semantics()
+        val finalVariables = semanticState.scope(statement.clauses.last).get.symbolNames
+        finalVariables should equal(finalReturnVars)
+      }
+    }
+  }
+
+  test("RETURN * in 3-way-UNION in a CALL should export variables") {
+    for {
+      firstSubqueryReturn <- returnStarNMCombinations
+      firstSuqbueryReturnVars = containedVariables(firstSubqueryReturn)
+      secondSubqueryReturn <- returnStarNMCombinations
+      secondSuqbueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSuqbueryReturnVars == firstSuqbueryReturnVars
+      thirdSubqueryReturn <- returnStarNMCombinations
+      thirdSuqbueryReturnVars = containedVariables(thirdSubqueryReturn)
+      if thirdSuqbueryReturnVars == firstSuqbueryReturnVars
+      finalReturn <- returnStarNMCombinations
+      finalReturnVars = containedVariables(finalReturn)
+      if finalReturnVars.forall(firstSuqbueryReturnVars.contains)
+    } {
+      val query =
+        s"""
+           |CALL {
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $firstSubqueryReturn
+           |    UNION
+           |  MATCH (n), (m)
+           |  RETURN $thirdSubqueryReturn
+           |}
+           |RETURN $finalReturn
+           |""".stripMargin
+      withClue(query) {
+        val result = runSemanticAnalysis(query)
+        result.errors should be(empty)
+
+        val statement = result.state.statement().asInstanceOf[SingleQuery]
+        val semanticState = result.state.semantics()
+        val finalVariables = semanticState.scope(statement.clauses.last).get.symbolNames
+        finalVariables should equal(finalReturnVars)
+      }
+    }
   }
 }

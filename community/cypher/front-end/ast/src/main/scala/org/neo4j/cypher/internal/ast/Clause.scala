@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
 import org.neo4j.cypher.internal.ast.Match.hintPrettifier
+import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -80,7 +81,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
@@ -113,7 +113,7 @@ import scala.annotation.tailrec
 sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def name: String
 
-  def returnColumns: List[LogicalVariable] = List.empty
+  def returnVariables: ReturnVariables = ReturnVariables.empty
 
   case class LabelExpressionsPartition(
     legacy: Set[LabelExpression] = Set.empty,
@@ -215,7 +215,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 }
 
 sealed trait UpdateClause extends Clause {
-  override def returnColumns: List[LogicalVariable] = List.empty
+  override def returnVariables: ReturnVariables = ReturnVariables.empty
 }
 
 case class LoadCSV(
@@ -1281,8 +1281,6 @@ case class Unwind(
 abstract class CallClause extends Clause {
   override def name = "CALL"
 
-  def returnColumns: List[LogicalVariable]
-
   def containsNoUpdates: Boolean
 
   def yieldAll: Boolean
@@ -1299,8 +1297,11 @@ case class UnresolvedCall(
   override val yieldAll: Boolean = false
 )(val position: InputPosition) extends CallClause {
 
-  override def returnColumns: List[LogicalVariable] =
-    declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
+  override def returnVariables: ReturnVariables =
+    ReturnVariables(
+      includeExisting = false,
+      declaredResult.map(_.items.map(_.variable).toList).getOrElse(List.empty)
+    )
 
   override def clauseSpecificSemanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
@@ -1497,7 +1498,8 @@ sealed trait ProjectionClause extends HorizonClause {
               val outerScopeSymbolNames = outer.symbolNames
               val outputSymbolNames = result.state.currentScope.scope.symbolNames
               val alreadyDeclaredNames = outputSymbolNames.intersect(outerScopeSymbolNames)
-              val explicitReturnVariablesByName = returnItems.explicitReturnVariables.map(v => v.name -> v).toMap
+              val explicitReturnVariablesByName =
+                returnItems.returnVariables.explicitVariables.map(v => v.name -> v).toMap
               val errors = alreadyDeclaredNames.map { name =>
                 val position = explicitReturnVariablesByName.getOrElse(name, returnItems).position
                 SemanticError(s"Variable `$name` already declared in outer scope", position)
@@ -1599,7 +1601,7 @@ case class Return(
 
   override def where: Option[Where] = None
 
-  override def returnColumns: List[LogicalVariable] = returnItems.explicitReturnVariables.toList
+  override def returnVariables: ReturnVariables = returnItems.returnVariables
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     super.clauseSpecificSemanticCheck chain

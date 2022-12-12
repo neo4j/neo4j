@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
@@ -135,8 +136,8 @@ case class ResolvedCall(
     copy(callArguments = coercedArguments)(position)
   }
 
-  override def returnColumns: List[LogicalVariable] =
-    callResults.map(_.variable).toList
+  override def returnVariables: ReturnVariables =
+    ReturnVariables(includeExisting = false, callResults.map(_.variable).toList)
 
   def callResultIndices: IndexedSeq[(Int, (String, String))] = { // pos, newName, oldName
     val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs =>
