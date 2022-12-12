@@ -19,19 +19,27 @@
  */
 package org.neo4j.kernel.impl.security;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+
 import inet.ipaddr.IPAddressString;
 import org.junit.jupiter.api.Test;
 
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.util.List;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WebURLAccessRuleTest
 {
@@ -111,5 +119,111 @@ class WebURLAccessRuleTest
 
         //assert that the validation fails
         assertThat( error.getMessage() ).contains( "Unable to verify access to always.invalid" );
+    }
+
+    @Test
+    void shouldFailForRedirectedInvalidIps() throws Exception
+    {
+        final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.1" );
+
+        // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
+        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
+        when(connection.getResponseCode()).thenReturn(302);
+        when(connection.getHeaderField("Location" )).thenReturn("http://127.0.0.1" );
+
+        URLStreamHandler urlStreamHandler = new URLStreamHandler()
+        {
+            @Override
+            protected URLConnection openConnection( URL u )
+            {
+                return connection;
+            }
+        };
+
+        URL url = new URL( "http", "127.0.0.0", 8000, "", urlStreamHandler );
+
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+
+        // execute the query
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
+
+        // assert that the validation fails
+        assertThat(error.getMessage())
+                .contains(
+                        "access to /127.0.0.1 is blocked via the configuration property unsupported.dbms.cypher_ip_blocklist");
+    }
+
+    @Test
+    void shouldNotFollowChangeInProtocols() throws Exception
+    {
+        final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
+
+        // Mock a redirect (response code 306) from a valid URL (127.0.0.0) to another URL
+        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
+        when(connection.getResponseCode()).thenReturn(306);
+        when(connection.getHeaderField("Location")).thenReturn("http://127.0.0.1");
+
+        URLStreamHandler urlStreamHandler = new URLStreamHandler()
+        {
+            @Override
+            protected URLConnection openConnection( URL u )
+            {
+                return connection;
+            }
+        };
+
+        URL url = new URL( "https", "127.0.0.0", 8000, "", urlStreamHandler );
+
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+
+        // execute the query
+        final var validatedURL = URLAccessRules.webAccess().validate(config, url);
+
+        // assert that the url is the same, as the redirect was a change in protocol and shouldn't be followed
+        assertEquals(url, validatedURL);
+    }
+
+    @Test
+    void shouldFailForExceedingRedirectLimit() throws Exception
+    {
+        final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
+
+        // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
+        HttpURLConnection connectionA = Mockito.mock(HttpURLConnection.class);
+        when(connectionA.getResponseCode()).thenReturn(302);
+        when(connectionA.getHeaderField("Location" )).thenReturn("/b");
+
+        HttpURLConnection connectionB = Mockito.mock(HttpURLConnection.class);
+        when(connectionB.getResponseCode()).thenReturn(302);
+        when(connectionB.getHeaderField("Location" )).thenReturn("/a");
+
+        MutableInt counter = new MutableInt( 0 );
+        URLStreamHandler urlStreamHandler = new URLStreamHandler()
+        {
+            @Override
+            protected URLConnection openConnection( URL u )
+            {
+                return counter.getAndIncrement() % 2 == 0 ? connectionA : connectionB;
+            }
+        };
+
+        URL urlA = new URL( "http", "127.0.0.0", 8000, "/a", urlStreamHandler );
+        URL urlB = new URL( "http", "127.0.0.0", 8000, "/b", urlStreamHandler );
+        when(connectionA.getURL()).thenReturn(urlA);
+        when(connectionB.getURL()).thenReturn(urlB);
+
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+
+        // assert that the validation fails
+        assertThatThrownBy(() -> URLAccessRules.webAccess().validate(config, urlA))
+                .isInstanceOf(URLAccessValidationError.class)
+                .hasMessageContaining("Redirect limit exceeded");
     }
 }

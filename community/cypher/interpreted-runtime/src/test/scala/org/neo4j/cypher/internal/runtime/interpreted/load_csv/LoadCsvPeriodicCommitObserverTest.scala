@@ -48,12 +48,12 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("should not trigger tx restart until after first batch has been processed") {
     // Given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(getIterator(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), ArgumentMatchers.eq(List.empty), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(getIterator(Iterator(
       Array("Row1"),
       Array("Row2"))))
 
     // When
-    val iterator = resourceUnderTest.getCsvIterator(url, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
+    val iterator = resourceUnderTest.getCsvIterator(url, List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // Then
     iterator.next() should equal(Array[Value](Values.stringValue("Row1")))
@@ -64,14 +64,14 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("headers should not count") {
     // given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), ArgumentMatchers.eq(true))).thenReturn(getIterator(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), ArgumentMatchers.eq(List.empty), any(), anyBoolean(), anyInt(), ArgumentMatchers.eq(true))).thenReturn(getIterator(Iterator(
       Array("header"),
       Array("Row1"),
       Array("Row2"),
       Array("Row3"))))
 
     // when
-    val iterator = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+    val iterator = resourceUnderTest.getCsvIterator(url, List.empty, fieldTerminator = None, legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE, headers = true)
     verify(transactionalContext, never()).commitAndRestartTx()
 
@@ -90,12 +90,12 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), ArgumentMatchers.eq(List.empty), any(), anyBoolean(), anyInt(), anyBoolean())).
       thenReturn(getIterator(Iterator(Array("outer1"),Array("outer2")))).
       thenReturn(getIterator(Iterator(Array("inner1"),Array("inner2"),Array("inner3"),Array("inner4"))))
-    val iterator1 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+    val iterator1 = resourceUnderTest.getCsvIterator(url, List.empty, fieldTerminator = None, legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE)
-    val iterator2 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
+    val iterator2 = resourceUnderTest.getCsvIterator(url, List.empty, fieldTerminator = None, legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE)
 
     // When
@@ -112,10 +112,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("if a custom separator is specified it should be passed to the wrapped resource") {
     // Given
-    resourceUnderTest.getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,  DEFAULT_BUFFER_SIZE)
+    resourceUnderTest.getCsvIterator(url, List.empty, Some(";"), legacyCsvQuoteEscaping = false,  DEFAULT_BUFFER_SIZE)
 
     // When
-    verify(resource).getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,
+    verify(resource).getCsvIterator(url, List.empty, Some(";"), legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE, false)
   }
 

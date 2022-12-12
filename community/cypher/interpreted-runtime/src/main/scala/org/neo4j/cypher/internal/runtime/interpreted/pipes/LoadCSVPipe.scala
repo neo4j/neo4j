@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -41,15 +42,18 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-case class LoadCSVPipe(source: Pipe,
-                       format: CSVFormat,
-                       urlExpression: Expression,
-                       variable: String,
-                       fieldTerminator: Option[String],
-                       legacyCsvQuoteEscaping: Boolean,
-                       bufferSize: Int)
-                      (val id: Id = Id.INVALID_ID)
-  extends AbstractLoadCSVPipe(source, format, urlExpression, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) {
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
+case class LoadCSVPipe(
+  source: Pipe,
+  format: CSVFormat,
+  urlExpression: Expression,
+  variable: String,
+  fieldTerminator: Option[String],
+  legacyCsvQuoteEscaping: Boolean,
+  bufferSize: Int
+)(val id: Id = Id.INVALID_ID)
+    extends AbstractLoadCSVPipe(source, format, urlExpression, fieldTerminator, legacyCsvQuoteEscaping, bufferSize) {
 
   override final def writeRow(filename: String, linenumber: Long, last: Boolean, argumentRow: CypherRow, value: AnyValue): CypherRow = {
     val newRow = rowFactory.copyWith(argumentRow, variable, value)
@@ -143,8 +147,10 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
   }
 
   private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator ={
+    val ipBlocklist = state.query.getConfig.get(GraphDatabaseInternalSettings.cypher_ip_blocklist)
+    val ipBlocklistAsScala = if (ipBlocklist != null) ipBlocklist.asScala.toList else List.empty
     state.resources.getCsvIterator(
-      url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
+      url,ipBlocklistAsScala, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
     )
   }
 

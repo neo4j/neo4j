@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
+import inet.ipaddr.IPAddressString
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ResourceManagedCursorPool
@@ -36,9 +37,21 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   val updateCounter = new UpdateCounter
   var outerLoadCSVIterator: Option[LoadCsvIteratorWithPeriodicCommit] = None
 
-  override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                              headers: Boolean = false): LoadCsvIterator = {
-    val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers)
+  override def getCsvIterator(url: URL,
+                              ipBlocklist: List[IPAddressString],
+                              fieldTerminator: Option[String],
+                              legacyCsvQuoteEscaping: Boolean,
+                              bufferSize: Int,
+                              headers: Boolean = false): LoadCsvIterator =
+  {
+    val innerIterator = resources.getCsvIterator(
+      url,
+      ipBlocklist,
+      fieldTerminator,
+      legacyCsvQuoteEscaping,
+      bufferSize,
+      headers
+    )
     if (outerLoadCSVIterator.isEmpty) {
       if (headers)
         updateCounter.offsetForHeaders()
