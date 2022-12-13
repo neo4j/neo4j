@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.util.Preconditions;
 
 /**
  * Convenience for making tracing assertions for {@link PageCacheTracer}/{@link PageCursorTracer}.
@@ -88,11 +89,19 @@ public class PageCacheTracerAssertions {
 
     public static class PerStorageEngine {
         private final long pins;
+        private long upperBoundPins;
         private boolean overlookUnpins;
         private Long faults;
 
         private PerStorageEngine(long pins) {
             this.pins = pins;
+            atMost(pins);
+        }
+
+        public PerStorageEngine atMost(long upperBoundPins) {
+            this.upperBoundPins = upperBoundPins;
+            Preconditions.checkState(upperBoundPins >= pins, "Should be larger than pins");
+            return this;
         }
 
         public PerStorageEngine skipUnpins() {
@@ -120,13 +129,13 @@ public class PageCacheTracerAssertions {
 
         private void assertMatches(long tracedPins, long tracedUnpins, long tracedHits, long tracedFaults) {
             SoftAssertions softly = new SoftAssertions();
-            softly.assertThat(pins).as("pins").isEqualTo(tracedPins);
+            softly.assertThat(tracedPins).as("pins").isBetween(pins, upperBoundPins);
             if (!overlookUnpins) {
-                softly.assertThat(pins).as("unpins").isEqualTo(tracedUnpins);
+                softly.assertThat(tracedUnpins).as("unpins").isBetween(pins, upperBoundPins);
             }
             if (faults != null) {
-                softly.assertThat(faults).as("faults").isEqualTo(tracedFaults);
-                softly.assertThat(pins - faults).as("hits").isEqualTo(tracedHits);
+                softly.assertThat(tracedFaults).as("faults").isEqualTo(faults);
+                softly.assertThat(tracedHits).as("hits").isBetween(pins - faults, upperBoundPins - faults);
             }
             softly.assertAll();
         }
