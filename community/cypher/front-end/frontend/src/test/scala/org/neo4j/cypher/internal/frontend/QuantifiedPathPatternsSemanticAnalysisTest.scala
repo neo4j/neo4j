@@ -45,8 +45,7 @@ class QuantifiedPathPatternsInCreateClausesSemanticAnalysisTest
 class QuantifiedPathPatternsInMergeClausesSemanticAnalysisTest
     extends QuantifiedPathPatternsInDifferentClausesSemanticAnalysisTest(Statement.MERGE)
 
-class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
-    with NameBasedSemanticAnalysisTestSuite {
+class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
 
   test("MATCH ((a)-->(b))+ RETURN count(*)") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(

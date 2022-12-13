@@ -18,12 +18,10 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class ExistsExpressionSemanticAnalysisTest
-    extends CypherFunSuite
-    with SemanticAnalysisTestSuiteWithDefaultQuery
+    extends SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
 
   override def defaultQuery: String = s"$testName"

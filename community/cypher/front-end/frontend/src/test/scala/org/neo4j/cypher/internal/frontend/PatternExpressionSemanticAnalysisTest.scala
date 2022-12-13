@@ -16,10 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-
-class PatternExpressionSemanticAnalysisTest extends CypherFunSuite
-    with NameBasedSemanticAnalysisTestSuite {
+class PatternExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
 
   // Pattern comprehensions
   test("MATCH (n) WITH [ p = (n)--(m) | p ] as paths RETURN count(*)") {

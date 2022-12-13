@@ -18,12 +18,10 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: Statement)
-    extends CypherFunSuite
-    with SemanticAnalysisTestSuiteWithDefaultQuery
+    extends SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
 
   override def defaultQuery: String = s"$statement $testName"
@@ -85,9 +83,7 @@ class LabelExpressionInCreateSemanticAnalysisTestSuite
 class LabelExpressionInMergeSemanticAnalysisTestSuite
     extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.MERGE)
 
-class OtherLabelExpressionSemanticAnalysisTest
-    extends CypherFunSuite
-    with NameBasedSemanticAnalysisTestSuite {
+class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
 
   // Node Pattern
   test("MATCH (n) RETURN count(*)") {
