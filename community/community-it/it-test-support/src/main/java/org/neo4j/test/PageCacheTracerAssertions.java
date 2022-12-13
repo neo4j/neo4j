@@ -120,13 +120,13 @@ public class PageCacheTracerAssertions {
 
         private void assertMatches(long tracedPins, long tracedUnpins, long tracedHits, long tracedFaults) {
             SoftAssertions softly = new SoftAssertions();
-            softly.assertThat(tracedPins).as("pins").isEqualTo(pins);
+            softly.assertThat(pins).as("pins").isEqualTo(tracedPins);
             if (!overlookUnpins) {
-                softly.assertThat(tracedUnpins).as("unpins").isEqualTo(pins);
+                softly.assertThat(pins).as("unpins").isEqualTo(tracedUnpins);
             }
             if (faults != null) {
-                softly.assertThat(tracedFaults).as("faults").isEqualTo(faults);
-                softly.assertThat(tracedHits).as("hits").isEqualTo(pins - faults);
+                softly.assertThat(faults).as("faults").isEqualTo(tracedFaults);
+                softly.assertThat(pins - faults).as("hits").isEqualTo(tracedHits);
             }
             softly.assertAll();
         }

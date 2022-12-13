@@ -122,7 +122,7 @@ class TransactionTracingIT {
 
             assertThatTracing(database)
                     .record(pins(5).noFaults())
-                    .freki(pins(64).noFaults().skipUnpins())
+                    .freki(pins(32).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }
     }
@@ -176,7 +176,7 @@ class TransactionTracingIT {
 
             assertThatTracing(database)
                     .record(pins(1).noFaults())
-                    .freki(pins(65).noFaults().skipUnpins())
+                    .freki(pins(33).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }
     }
@@ -202,7 +202,7 @@ class TransactionTracingIT {
 
             assertThatTracing(database)
                     .record(pins(5).noFaults().skipUnpins())
-                    .freki(pins(4).noFaults().skipUnpins())
+                    .freki(pins(1).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }
     }
