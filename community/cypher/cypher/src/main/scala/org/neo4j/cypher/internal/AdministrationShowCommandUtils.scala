@@ -100,7 +100,7 @@ object AdministrationShowCommandUtils {
       case (Some(y @ Yield(returnItems, orderBy, skip, limit, Some(where))), None) =>
         Seq(
           With(distinct = false, returnItems, orderBy, skip, limit, Some(where))(y.position),
-          Return(distinct = false, returnItems, orderBy, skip, limit)(y.position)
+          Return(distinct = false, generateReturnItemsFromAliases(returnItems), orderBy, skip, limit)(y.position)
         )
       // YIELD with no WHERE so convert YIELD to RETURN
       case (Some(y @ Yield(returnItems, orderBy, skip, limit, None)), None) =>
@@ -118,6 +118,16 @@ object AdministrationShowCommandUtils {
         )(InputPosition.NONE))
     }
     clauses.map(prettifier.asString).mkString(" ")
+  }
+
+  private def generateReturnItemsFromAliases(ri: ReturnItems): ReturnItems = {
+    // If variables are renamed in YIELD, we need to reflect those renamings in RETURN
+    ri.mapItems(items =>
+      items.map {
+        case aliasedReturnItem: AliasedReturnItem     => AliasedReturnItem(aliasedReturnItem.alias.get)
+        case unAliasedReturnItem: UnaliasedReturnItem => unAliasedReturnItem
+      }
+    )
   }
 
 }
