@@ -28,7 +28,6 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.util.Preconditions;
 
 /**
  * Used to specify a selection of relationships to get from a node.
@@ -64,15 +63,21 @@ public abstract class RelationshipSelection {
     public abstract boolean test(int type, RelationshipDirection direction);
 
     /**
-     * @return the number of criteria in this selection. One {@link Criterion} is a type and {@link Direction}.
+     * @return the number of criteria in this selection. One criterion is a type and {@link Direction}.
      */
     public abstract int numberOfCriteria();
 
     /**
-     * @param index which {@link Criterion} to access.
-     * @return the {@link Criterion} for the given index, must be between 0 and {@link #numberOfCriteria()}.
+     * @param index which criterion to access.
+     * @return the type for the given index, must be between 0 and {@link #numberOfCriteria()}.
      */
-    public abstract Criterion criterion(int index);
+    public abstract int criterionType(int index);
+
+    /**
+     * @param index which criterion to access.
+     * @return the {@link Direction} for the given index, must be between 0 and {@link #numberOfCriteria()}.
+     */
+    public abstract Direction criterionDirection(int index);
 
     /**
      * @return {@code true} if this selection is limited on type, i.e. if number of criteria matches number of selected types,
@@ -134,7 +139,7 @@ public abstract class RelationshipSelection {
         }
     }
 
-    private abstract static class DirectionalSingleCriterion extends Directional implements Criterion {
+    private abstract static class DirectionalSingleCriterion extends Directional {
         protected final int type;
 
         DirectionalSingleCriterion(int type, Direction direction) {
@@ -153,13 +158,14 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Criterion criterion(int index) {
-            Preconditions.checkArgument(index == 0, "Unknown criterion index %d", index);
-            return this;
+        public Direction criterionDirection(int index) {
+            assert index == 0;
+            return direction;
         }
 
         @Override
-        public int type() {
+        public int criterionType(int index) {
+            assert index == 0;
             return type;
         }
 
@@ -234,9 +240,15 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Criterion criterion(int index) {
-            Preconditions.checkArgument(index < types.length, "Unknown criterion index %d", index);
-            return new CriterionImpl(types[index], direction);
+        public Direction criterionDirection(int index) {
+            assert index < types.length;
+            return direction;
+        }
+
+        @Override
+        public int criterionType(int index) {
+            assert index < types.length;
+            return types[index];
         }
 
         @Override
@@ -312,35 +324,7 @@ public abstract class RelationshipSelection {
         }
     }
 
-    public interface Criterion {
-        int type();
-
-        Direction direction();
-    }
-
-    public static class CriterionImpl implements Criterion {
-        private final int type;
-        private final Direction direction;
-
-        CriterionImpl(int type, Direction direction) {
-            this.type = type;
-            this.direction = direction;
-        }
-
-        @Override
-        public int type() {
-            return type;
-        }
-
-        @Override
-        public Direction direction() {
-            return direction;
-        }
-    }
-
     public static final RelationshipSelection ALL_RELATIONSHIPS = new RelationshipSelection() {
-        private final Criterion ALL_CRITERIA = new CriterionImpl(ANY_RELATIONSHIP_TYPE, Direction.BOTH);
-
         @Override
         public boolean test(int type) {
             return true;
@@ -372,9 +356,15 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Criterion criterion(int index) {
-            Preconditions.checkArgument(index == 0, "Unknown criterion index %d", index);
-            return ALL_CRITERIA;
+        public Direction criterionDirection(int index) {
+            assert index == 0;
+            return Direction.BOTH;
+        }
+
+        @Override
+        public int criterionType(int index) {
+            assert index == 0;
+            return ANY_RELATIONSHIP_TYPE;
         }
 
         @Override
@@ -425,7 +415,12 @@ public abstract class RelationshipSelection {
         }
 
         @Override
-        public Criterion criterion(int index) {
+        public Direction criterionDirection(int index) {
+            throw new IllegalArgumentException("Unknown criterion index " + index);
+        }
+
+        @Override
+        public int criterionType(int index) {
             throw new IllegalArgumentException("Unknown criterion index " + index);
         }
 
