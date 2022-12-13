@@ -39,7 +39,6 @@ public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> impl
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
     private final Path transactionsFolder;
-    private final IndexDescriptor descriptor;
 
     FulltextIndex(
             PartitionedIndexStorage storage,
@@ -50,7 +49,6 @@ public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> impl
             Analyzer analyzer,
             String[] propertyNames) {
         super(storage, partitionFactory, descriptor, config);
-        this.descriptor = descriptor;
         this.config = config;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
@@ -69,11 +67,6 @@ public class FulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> impl
     public void close() throws IOException {
         super.close();
         indexStorage.cleanupFolder(transactionsFolder);
-    }
-
-    @Override
-    public IndexDescriptor getDescriptor() {
-        return descriptor;
     }
 
     @Override

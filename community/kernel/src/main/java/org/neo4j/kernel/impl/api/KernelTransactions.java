@@ -333,6 +333,7 @@ public class KernelTransactions extends LifecycleAdapter
         txPool.close();
     }
 
+    @Override
     public void terminateTransactions() {
         markAllTransactionsAsTerminated();
     }
@@ -344,6 +345,7 @@ public class KernelTransactions extends LifecycleAdapter
         allTransactions.forEach(tx -> tx.markForTermination(Status.General.DatabaseUnavailable));
     }
 
+    @Override
     public boolean haveClosingTransaction() {
         return allTransactions.stream().anyMatch(KernelTransactionImplementation::isClosing);
     }

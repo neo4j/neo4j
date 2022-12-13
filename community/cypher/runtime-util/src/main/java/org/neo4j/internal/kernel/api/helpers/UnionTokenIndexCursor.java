@@ -45,6 +45,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
 
     abstract long extremeValue();
 
+    @Override
     public final boolean next() {
         if (currentCursorIndex == UNINITIALIZED) {
             return initialize();
@@ -107,6 +108,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         return currentReference != extremeValue();
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         for (CURSOR cursor : cursors) {
             if (cursor != null) {
@@ -115,6 +117,7 @@ public abstract class UnionTokenIndexCursor<CURSOR extends Cursor> extends Defau
         }
     }
 
+    @Override
     public void removeTracer() {
         for (CURSOR cursor : cursors) {
             if (cursor != null) {

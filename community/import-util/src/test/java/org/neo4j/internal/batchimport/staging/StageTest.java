@@ -64,49 +64,49 @@ class StageTest {
                 return 10;
             }
         };
-        Stage stage = new Stage("Test stage", null, config, Step.ORDER_SEND_DOWNSTREAM);
-        long batches = 1000;
-        final long items = batches * config.batchSize();
-        stage.add(new PullingProducerStep<>(stage.control(), config) {
-            private final Object theObject = new Object();
-            private long i;
+        try (Stage stage = new Stage("Test stage", null, config, Step.ORDER_SEND_DOWNSTREAM)) {
+            long batches = 1000;
+            final long items = batches * config.batchSize();
+            stage.add(new PullingProducerStep<>(stage.control(), config) {
+                private final Object theObject = new Object();
+                private long i;
 
-            @Override
-            protected Object nextBatchOrNull(long ticket, int batchSize, ProcessContext processContext) {
-                if (i >= items) {
-                    return null;
+                @Override
+                protected Object nextBatchOrNull(long ticket, int batchSize, ProcessContext processContext) {
+                    if (i >= items) {
+                        return null;
+                    }
+
+                    Object[] batch = new Object[batchSize];
+                    Arrays.fill(batch, theObject);
+                    i += batchSize;
+                    return batch;
                 }
 
-                Object[] batch = new Object[batchSize];
-                Arrays.fill(batch, theObject);
-                i += batchSize;
-                return batch;
+                @Override
+                protected long position() {
+                    return 0;
+                }
+            });
+
+            for (int i = 0; i < 3; i++) {
+                stage.add(new ReceiveOrderAssertingStep(stage.control(), "Step" + i, config, i, false));
             }
+            stage.add(new ReceiveOrderAssertingStep(stage.control(), "Final step", config, 0, true));
 
-            @Override
-            protected long position() {
-                return 0;
+            // WHEN
+            StageExecution execution = stage.execute();
+            for (Step<?> step : execution.steps()) {
+                // we start off with two in each step
+                step.processors(1);
             }
-        });
+            new ExecutionSupervisor(INVISIBLE).supervise(execution);
 
-        for (int i = 0; i < 3; i++) {
-            stage.add(new ReceiveOrderAssertingStep(stage.control(), "Step" + i, config, i, false));
+            // THEN
+            for (Step<?> step : execution.steps()) {
+                assertEquals(batches, step.stats().stat(Keys.done_batches).asLong(), "For " + step);
+            }
         }
-        stage.add(new ReceiveOrderAssertingStep(stage.control(), "Final step", config, 0, true));
-
-        // WHEN
-        StageExecution execution = stage.execute();
-        for (Step<?> step : execution.steps()) {
-            // we start off with two in each step
-            step.processors(1);
-        }
-        new ExecutionSupervisor(INVISIBLE).supervise(execution);
-
-        // THEN
-        for (Step<?> step : execution.steps()) {
-            assertEquals(batches, step.stats().stat(Keys.done_batches).asLong(), "For " + step);
-        }
-        stage.close();
     }
 
     @Test
@@ -179,72 +179,13 @@ class StageTest {
         // a producer, a processor, a forked processor and a final step
         Configuration configuration = DEFAULT;
         TrackingPanicMonitor panicMonitor = new TrackingPanicMonitor();
-        Stage stage =
-                new Stage(
-                        "test close on panic",
-                        null,
-                        configuration,
-                        random.nextBoolean() ? Step.ORDER_SEND_DOWNSTREAM : 0,
-                        ProcessorScheduler.SPAWN_THREAD,
-                        panicMonitor) {
-                    {
-                        // Producer
-                        add(new PullingProducerStep<>(control(), configuration) {
-                            private volatile long ticket;
-                            private final ChaosMonkey chaosMonkey = new ChaosMonkey();
+        try (Stage stage = new CloseOnPanicStage(configuration, panicMonitor); ) {
 
-                            @Override
-                            protected Object nextBatchOrNull(
-                                    long ticket, int batchSize, ProcessContext processContext) {
-                                chaosMonkey.makeChaos();
-                                this.ticket = ticket;
-                                return new int[batchSize];
-                            }
-
-                            @Override
-                            protected long position() {
-                                return ticket;
-                            }
-                        });
-
-                        // Processor
-                        add(new ProcessorStep<>(control(), "processor", configuration, 2, CONTEXT_FACTORY) {
-                            private final ChaosMonkey chaosMonkey = new ChaosMonkey();
-
-                            @Override
-                            protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
-                                chaosMonkey.makeChaos();
-                                sender.send(batch);
-                            }
-                        });
-
-                        // Forked processor
-                        add(new ForkedProcessorStep<>(control(), "forked processor", configuration) {
-                            private final ChaosMonkey chaosMonkey = new ChaosMonkey();
-
-                            @Override
-                            protected void forkedProcess(int id, int processors, Object batch) {
-                                chaosMonkey.makeChaos();
-                            }
-                        });
-
-                        // Final consumer
-                        add(new ProcessorStep<>(control(), "consumer", configuration, 1, CONTEXT_FACTORY) {
-                            private final ChaosMonkey chaosMonkey = new ChaosMonkey();
-
-                            @Override
-                            protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
-                                chaosMonkey.makeChaos();
-                                // don't pass the batch further, i.e. end of the line
-                            }
-                        });
-                    }
-                };
-
-        // when/then
-        assertThrows(RuntimeException.class, () -> superviseDynamicExecution(stage));
-        assertTrue(panicMonitor.hasReceivedPanic());
-        assertTrue(panicMonitor.getReceivedPanic().getMessage().contains("Chaos monkey"));
+            // when/then
+            assertThrows(RuntimeException.class, () -> superviseDynamicExecution(stage));
+            assertTrue(panicMonitor.hasReceivedPanic());
+            assertTrue(panicMonitor.getReceivedPanic().getMessage().contains("Chaos monkey"));
+        }
     }
 
     private static class ReceiveOrderAssertingStep extends ProcessorStep<Object> {
@@ -279,7 +220,7 @@ class StageTest {
         }
     }
 
-    private class ChaosMonkey {
+    private static class ChaosMonkey {
         void makeChaos() {
             try {
                 Thread.sleep(ThreadLocalRandom.current().nextInt(0, 10));
@@ -310,6 +251,67 @@ class StageTest {
             // report local counter to global accumulator
             globalCounterAccumulator.getAndAdd(counter);
             processedBatches.countDown();
+        }
+    }
+
+    private class CloseOnPanicStage extends Stage {
+        public CloseOnPanicStage(Configuration configuration, TrackingPanicMonitor panicMonitor) {
+            super(
+                    "test close on panic",
+                    null,
+                    configuration,
+                    StageTest.this.random.nextBoolean() ? Step.ORDER_SEND_DOWNSTREAM : 0,
+                    ProcessorScheduler.SPAWN_THREAD,
+                    panicMonitor);
+            // Producer
+            add(new PullingProducerStep<>(control(), configuration) {
+                private volatile long ticket;
+                private final ChaosMonkey chaosMonkey = new ChaosMonkey();
+
+                @Override
+                protected Object nextBatchOrNull(long ticket, int batchSize, ProcessContext processContext) {
+                    chaosMonkey.makeChaos();
+                    this.ticket = ticket;
+                    return new int[batchSize];
+                }
+
+                @Override
+                protected long position() {
+                    return ticket;
+                }
+            });
+
+            // Processor
+            add(new ProcessorStep<>(control(), "processor", configuration, 2, CONTEXT_FACTORY) {
+                private final ChaosMonkey chaosMonkey = new ChaosMonkey();
+
+                @Override
+                protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
+                    chaosMonkey.makeChaos();
+                    sender.send(batch);
+                }
+            });
+
+            // Forked processor
+            add(new ForkedProcessorStep<>(control(), "forked processor", configuration) {
+                private final ChaosMonkey chaosMonkey = new ChaosMonkey();
+
+                @Override
+                protected void forkedProcess(int id, int processors, Object batch) {
+                    chaosMonkey.makeChaos();
+                }
+            });
+
+            // Final consumer
+            add(new ProcessorStep<>(control(), "consumer", configuration, 1, CONTEXT_FACTORY) {
+                private final ChaosMonkey chaosMonkey = new ChaosMonkey();
+
+                @Override
+                protected void process(Object batch, BatchSender sender, CursorContext cursorContext) {
+                    chaosMonkey.makeChaos();
+                    // don't pass the batch further, i.e. end of the line
+                }
+            });
         }
     }
 }

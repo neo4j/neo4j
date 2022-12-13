@@ -74,7 +74,7 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating {
         }
     }
 
-    private class IndexUpdateWork implements Work<IndexUpdateApply, IndexUpdateWork> {
+    private static class IndexUpdateWork implements Work<IndexUpdateApply, IndexUpdateWork> {
 
         record OneWork(Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext) {}
 

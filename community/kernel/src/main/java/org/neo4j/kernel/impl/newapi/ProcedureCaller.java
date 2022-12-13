@@ -247,6 +247,7 @@ public abstract class ProcedureCaller {
             return ktx.internalTransaction();
         }
 
+        @Override
         public RawIterator<AnyValue[], ProcedureException> callProcedure(
                 int id,
                 AnyValue[] input,

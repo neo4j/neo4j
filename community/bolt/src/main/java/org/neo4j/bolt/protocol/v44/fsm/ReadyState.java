@@ -108,7 +108,6 @@ public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
      *
      * @param context  the state machine context.
      * @param username the desired target user.
-     * @return a substitute login context.
      */
     private void authenticateImpersonation(StateMachineContext context, String username)
             throws AuthenticationException {

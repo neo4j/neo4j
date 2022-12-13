@@ -183,7 +183,7 @@ public class UploadCommand extends AbstractAdminCommand {
                 .consoleUrl();
     }
 
-    abstract class UrlMatcher {
+    abstract static class UrlMatcher {
         // A boltURI looks something like this:
         //
         //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
@@ -242,7 +242,7 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    class DevMatcher extends UrlMatcher {
+    static class DevMatcher extends UrlMatcher {
         @Override
         protected Pattern pattern() {
             return Pattern.compile(
@@ -267,7 +267,7 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    class PrivMatcher extends UrlMatcher {
+    static class PrivMatcher extends UrlMatcher {
         @Override
         protected Pattern pattern() {
             return Pattern.compile(

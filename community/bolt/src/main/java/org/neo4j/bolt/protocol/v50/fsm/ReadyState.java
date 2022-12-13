@@ -27,6 +27,7 @@ public class ReadyState extends org.neo4j.bolt.protocol.v44.fsm.ReadyState {
         super(routingTableGetter);
     }
 
+    @Override
     protected String getTxType(org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage beginMessage) {
         var message = (BeginMessage) beginMessage;
         return message.txType();

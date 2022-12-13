@@ -116,6 +116,7 @@ public class LinkedQueuePool<R> implements Pool<R> {
         return factory.newInstance();
     }
 
+    @Override
     public void dispose(R resource) {
         monitor.disposed(resource);
         allocated.decrementAndGet();

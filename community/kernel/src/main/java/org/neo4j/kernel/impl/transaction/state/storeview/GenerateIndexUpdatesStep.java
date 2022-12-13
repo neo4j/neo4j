@@ -174,7 +174,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     static boolean containsAnyEntityToken(long[] entityTokenFilter, long... entityTokens) {
         for (long candidate : entityTokens) {
-            if (ArrayUtils.contains(entityTokenFilter, Math.toIntExact(candidate))) {
+            if (ArrayUtils.contains(entityTokenFilter, candidate)) {
                 return true;
             }
         }

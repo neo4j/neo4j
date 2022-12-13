@@ -177,7 +177,5 @@ public abstract class AbstractNodeEntity extends AbstractEntity implements Node 
         }
     }
 
-    protected abstract TokenRead tokenRead();
-
     protected abstract void singleNode(NodeCursor nodes);
 }

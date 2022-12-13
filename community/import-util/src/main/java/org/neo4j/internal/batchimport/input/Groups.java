@@ -70,6 +70,7 @@ public class Groups implements ReadableGroups {
         return group;
     }
 
+    @Override
     public synchronized Group get(String name) {
         Group group = byName.get(name);
         if (group == null) {

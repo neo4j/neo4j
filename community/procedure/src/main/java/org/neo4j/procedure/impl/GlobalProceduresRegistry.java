@@ -356,6 +356,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     @VisibleForTesting
+    @Override
     public void unregister(QualifiedName name) {
         registry.unregister(name);
     }

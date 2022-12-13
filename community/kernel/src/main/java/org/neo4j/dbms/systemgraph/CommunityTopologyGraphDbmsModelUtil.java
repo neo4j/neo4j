@@ -180,45 +180,43 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                         driverSettingsNode,
                         TopologyGraphDbmsModel.SSL_ENFORCED,
                         Boolean.class)
-                .map(builder::withSslEnforced);
+                .ifPresent(builder::withSslEnforced);
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         TopologyGraphDbmsModel.CONNECTION_TIMEOUT,
                         DurationValue.class)
-                .map(builder::withConnectionTimeout);
+                .ifPresent(builder::withConnectionTimeout);
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         TopologyGraphDbmsModel.CONNECTION_MAX_LIFETIME,
                         DurationValue.class)
-                .map(builder::withConnectionMaxLifeTime);
+                .ifPresent(builder::withConnectionMaxLifeTime);
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         CONNECTION_POOL_ACQUISITION_TIMEOUT.toString(),
                         DurationValue.class)
-                .map(builder::withConnectionPoolAcquisitionTimeout);
+                .ifPresent(builder::withConnectionPoolAcquisitionTimeout);
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         TopologyGraphDbmsModel.CONNECTION_POOL_IDLE_TEST,
                         DurationValue.class)
-                .map(builder::withConnectionPoolIdleTest);
+                .ifPresent(builder::withConnectionPoolIdleTest);
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         TopologyGraphDbmsModel.CONNECTION_POOL_MAX_SIZE,
                         Number.class)
-                .map(Number::intValue)
-                .map(builder::withConnectionPoolMaxSize);
+                .ifPresent(value -> builder.withConnectionPoolMaxSize(value.intValue()));
         getOptionalPropertyOnNode(
                         TopologyGraphDbmsModel.DRIVER_SETTINGS,
                         driverSettingsNode,
                         TopologyGraphDbmsModel.LOGGING_LEVEL,
                         String.class)
-                .map(Level::valueOf)
-                .map(builder::withLoggingLevel);
+                .ifPresent(level -> builder.withLoggingLevel(Level.valueOf(level)));
 
         return builder.build();
     }

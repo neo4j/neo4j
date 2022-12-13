@@ -124,6 +124,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         }
     }
 
+    @Override
     public void setTracer(KernelReadTracer tracer) {
         for (NodeLabelIndexCursor cursor : cursors) {
             if (cursor != null) {
@@ -132,6 +133,7 @@ public abstract class IntersectionNodeLabelIndexCursor extends DefaultCloseListe
         }
     }
 
+    @Override
     public void removeTracer() {
         for (NodeLabelIndexCursor cursor : cursors) {
             if (cursor != null) {

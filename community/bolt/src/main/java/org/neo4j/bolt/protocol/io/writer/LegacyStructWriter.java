@@ -121,6 +121,7 @@ public final class LegacyStructWriter implements StructWriter {
      * @param type       a type string.
      * @param properties a set of properties.
      */
+    @Override
     public void writeUnboundRelationship(
             WriterContext ctx, String elementId, long relId, String type, MapValue properties) {
         UNBOUND_RELATIONSHIP.writeLegacyHeader(ctx);

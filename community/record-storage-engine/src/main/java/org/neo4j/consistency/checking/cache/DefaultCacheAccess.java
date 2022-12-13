@@ -102,9 +102,9 @@ public class DefaultCacheAccess implements CacheAccess {
     }
 
     @Override
-    public void prepareForProcessingOfSingleStore(long recordsPerCpu) {
+    public void prepareForProcessingOfSingleStore(long recordsPerCPU) {
         clients.resetId();
-        this.recordsPerCPU = recordsPerCpu;
+        this.recordsPerCPU = recordsPerCPU;
     }
 
     private class DefaultClient implements Client {

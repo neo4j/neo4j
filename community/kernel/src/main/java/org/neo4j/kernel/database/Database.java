@@ -1024,14 +1024,17 @@ public class Database extends AbstractDatabase {
         return kernelModule.kernelTransactions();
     }
 
+    @Override
     public Config getConfig() {
         return databaseConfig;
     }
 
+    @Override
     public DatabaseLogService getLogService() {
         return databaseLogService;
     }
 
+    @Override
     public DatabaseLogProvider getInternalLogProvider() {
         return internalLogProvider;
     }
