@@ -59,7 +59,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,7 +67,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
@@ -860,21 +858,67 @@ class FulltextIndexConsistencyCheckIT {
 
     @Test
     void mustDiscoverRelationshipInIndexWithMissingPropertyInStore() throws Exception {
-        GraphDatabaseService db = createDatabase();
-        try (Transaction tx = db.beginTx()) {
+        var db = createDatabase();
+        try (var tx = db.beginTx()) {
             tx.execute(format(FULLTEXT_CREATE, "rels", asRelationshipTypeStr("REL"), asPropertiesStrList("prop")))
                     .close();
             tx.commit();
         }
 
+        String relId;
+        try (var tx = db.beginTx()) {
+            final var node = tx.createNode();
+            final var rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
+            relId = rel.getElementId();
+            tx.commit();
+        }
+
         managementService.shutdown();
-        Path copyRoot = testDirectory.directory("cpy");
+        final var copyRoot = testDirectory.directory("cpy");
         copyStoreFiles(copyRoot);
+
         db = createDatabase();
-        try (Transaction tx = db.beginTx()) {
+        try (var tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
-            Node node = tx.createNode();
-            Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
+
+            tx.getRelationshipByElementId(relId).setProperty("prop", "value");
+            tx.commit();
+        }
+        managementService.shutdown();
+
+        restoreStoreFiles(copyRoot);
+
+        final var result = checkConsistency();
+        assertThat(result.isSuccessful()).isFalse();
+        assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
+    }
+
+    @Test
+    void mustDiscoverRelationshipInIndexWithMissingRelationshipInStore() throws Exception {
+        var db = createDatabase();
+        try (var tx = db.beginTx()) {
+            tx.execute(format(FULLTEXT_CREATE, "rels", asRelationshipTypeStr("REL"), asPropertiesStrList("prop")))
+                    .close();
+            tx.commit();
+        }
+
+        String nodeId;
+        try (var tx = db.beginTx()) {
+            final var node = tx.createNode();
+            nodeId = node.getElementId();
+            tx.commit();
+        }
+
+        managementService.shutdown();
+        final var copyRoot = testDirectory.directory("cpy");
+        copyStoreFiles(copyRoot);
+
+        db = createDatabase();
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
+
+            final var node = tx.getNodeByElementId(nodeId);
+            final var rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
             rel.setProperty("prop", "value");
             tx.commit();
         }
@@ -882,8 +926,8 @@ class FulltextIndexConsistencyCheckIT {
 
         restoreStoreFiles(copyRoot);
 
-        ConsistencyCheckService.Result result = checkConsistency();
-        assertFalse(result.isSuccessful());
+        final var result = checkConsistency();
+        assertThat(result.isSuccessful()).isFalse();
         assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
     }
 
@@ -920,23 +964,15 @@ class FulltextIndexConsistencyCheckIT {
     }
 
     private static IndexDescriptor getIndexDescriptor(IndexDefinition definition) {
-        IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) definition;
-        return indexDefinition.getIndexReference();
+        return ((IndexDefinitionImpl) definition).getIndexReference();
     }
 
     private static IndexingService getIndexingService(GraphDatabaseService db) {
-        DependencyResolver dependencyResolver = getDependencyResolver(db);
-        return dependencyResolver.resolveDependency(IndexingService.class);
-    }
-
-    private static NeoStores getNeoStores(GraphDatabaseService db) {
-        DependencyResolver dependencyResolver = getDependencyResolver(db);
-        return dependencyResolver.resolveDependency(RecordStorageEngine.class).testAccessNeoStores();
+        return getDependencyResolver(db).resolveDependency(IndexingService.class);
     }
 
     private static DependencyResolver getDependencyResolver(GraphDatabaseService db) {
-        GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-        return api.getDependencyResolver();
+        return ((GraphDatabaseAPI) db).getDependencyResolver();
     }
 
     private static void assertIsConsistent(ConsistencyCheckService.Result result) throws IOException {
