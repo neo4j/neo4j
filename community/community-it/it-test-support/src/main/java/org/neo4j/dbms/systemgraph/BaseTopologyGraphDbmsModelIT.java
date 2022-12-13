@@ -55,6 +55,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DRIVER_SETTINGS_
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseStatus.OFFLINE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_BOOTSTRAPPER_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RAFT_MEMBER_ID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HOSTED_ON_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_DISCOVERED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_LABEL;
@@ -94,6 +95,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.identity.ServerId;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -169,6 +171,10 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             relationship.setProperty(HOSTED_ON_MODE_PROPERTY, mode.modeName());
             if (bootstrapper) {
                 relationship.setProperty(HOSTED_ON_BOOTSTRAPPER_PROPERTY, true);
+            }
+            if (mode == HostedOnMode.RAFT) {
+                relationship.setProperty(
+                        HOSTED_ON_RAFT_MEMBER_ID_PROPERTY, UUID.randomUUID().toString());
             }
             tx.commit();
         }

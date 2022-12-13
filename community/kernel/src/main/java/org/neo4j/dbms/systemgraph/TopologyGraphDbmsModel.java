@@ -255,6 +255,7 @@ public interface TopologyGraphDbmsModel {
     RelationshipType WAS_HOSTED_ON_RELATIONSHIP = RelationshipType.withName("WAS_HOSTED_ON");
     String HOSTED_ON_INSTALLED_AT_PROPERTY = "installed_at";
     String HOSTED_ON_BOOTSTRAPPER_PROPERTY = "bootstrapper";
+    String HOSTED_ON_RAFT_MEMBER_ID_PROPERTY = "raftMemberId";
     String HOSTED_ON_MODE_PROPERTY = "mode";
     String WAS_HOSTED_ON_REMOVED_AT_PROPERTY = "removed_at";
 
