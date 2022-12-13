@@ -2043,8 +2043,8 @@ public class FullCheckIntegrationTest {
         // Given
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
-        createUniquenessConstraintRule(labelId, propertyKeyId);
-        createUniquenessConstraintRule(labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2056,14 +2056,26 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportDuplicatedRelUniquenessConstraintRules() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId);
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId);
+
+        on(check())
+                .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
     void shouldNotReportDuplicatedUniquenessConstraintRulesIfDifferentIndexTypes() throws Exception {
         // Given
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
         // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
         // it's fine
-        createUniquenessConstraintRule(IndexType.TEXT, labelId, propertyKeyId);
-        createUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(IndexType.TEXT, labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2073,19 +2085,44 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldNotReportDuplicatedRelUniquenessConstraintRulesIfDifferentIndexTypes() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
+        // it's fine
+        createRelUniquenessConstraintRule(IndexType.TEXT, relTypeId, propertyKeyId);
+        createRelUniquenessConstraintRule(IndexType.RANGE, relTypeId, propertyKeyId);
+
+        assertTrue(check().isConsistent());
+    }
+
+    @Test
     void shouldReportDuplicatedCompositeUniquenessConstraintRules() throws Exception {
         // Given
         int labelId = createLabel();
         int propertyKeyId1 = createPropertyKey("p1");
         int propertyKeyId2 = createPropertyKey("p2");
-        createUniquenessConstraintRule(labelId, propertyKeyId1, propertyKeyId2);
-        createUniquenessConstraintRule(labelId, propertyKeyId1, propertyKeyId2);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId1, propertyKeyId2);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId1, propertyKeyId2);
 
         // When
         ConsistencySummaryStatistics stats = check();
 
         // Then
         on(stats)
+                .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportDuplicatedCompositeRelUniquenessConstraintRules() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId1 = createPropertyKey("p1");
+        int propertyKeyId2 = createPropertyKey("p2");
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId1, propertyKeyId2);
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId1, propertyKeyId2);
+
+        on(check())
                 .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
                 .andThatsAllFolks();
     }
@@ -2169,13 +2206,26 @@ public class FullCheckIntegrationTest {
         int propertyKeyId = createPropertyKey();
 
         createNodeKeyConstraintRule(labelId, propertyKeyId);
-        createUniquenessConstraintRule(labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
 
         // Then
         on(stats)
+                .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportRelKeyAndRelUniquenessConstraintOnSameTypeAndProperty() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        createRelationshipKeyConstraintRule(relTypeId, propertyKeyId);
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId);
+
+        on(check())
                 .verify(RecordType.SCHEMA, 2) // pair of duplicated indexes & pair of duplicated constraints
                 .andThatsAllFolks();
     }
@@ -2189,13 +2239,26 @@ public class FullCheckIntegrationTest {
         // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
         // it's fine
         createNodeKeyConstraintRule(IndexType.TEXT, labelId, propertyKeyId);
-        createUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
 
         // Then
         assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldNotReportRelKeyAndRelUniquenessConstraintOnSameTypeAndPropertyIfDifferentIndexTypes() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here
+        // it's fine
+        createRelationshipKeyConstraintRule(IndexType.TEXT, relTypeId, propertyKeyId);
+        createRelUniquenessConstraintRule(IndexType.RANGE, relTypeId, propertyKeyId);
+
+        assertTrue(check().isConsistent());
     }
 
     @Test
@@ -2261,7 +2324,7 @@ public class FullCheckIntegrationTest {
         // Given
         int badLabelId = fixture.idGenerator().label();
         int propertyKeyId = createPropertyKey();
-        createUniquenessConstraintRule(badLabelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(badLabelId, propertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2269,6 +2332,17 @@ public class FullCheckIntegrationTest {
         // Then
         on(stats)
                 .verify(RecordType.SCHEMA, 2) // invalid label in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportInvalidTypeIdInRelUniquenessConstraintRule() throws Exception {
+        int badTypeId = fixture.idGenerator().relationshipType();
+        int propertyKeyId = createPropertyKey();
+        createRelUniquenessConstraintRule(badTypeId, propertyKeyId);
+
+        on(check())
+                .verify(RecordType.SCHEMA, 2) // invalid type in both index & owning constraint
                 .andThatsAllFolks();
     }
 
@@ -2354,7 +2428,7 @@ public class FullCheckIntegrationTest {
         // Given
         int labelId = createLabel();
         int badPropertyKeyId = fixture.idGenerator().propertyKey();
-        createUniquenessConstraintRule(labelId, badPropertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, badPropertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2366,18 +2440,41 @@ public class FullCheckIntegrationTest {
     }
 
     @Test
+    void shouldReportInvalidPropertyKeyIdInRelUniquenessConstraintRule() throws Exception {
+        int relTypeId = createRelType();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createRelUniquenessConstraintRule(relTypeId, badPropertyKeyId);
+
+        on(check())
+                .verify(RecordType.SCHEMA, 2) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
     void shouldReportInvalidSecondPropertyKeyIdInUniquenessConstraintRule() throws Exception {
         // Given
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
         int badPropertyKeyId = fixture.idGenerator().propertyKey();
-        createUniquenessConstraintRule(labelId, propertyKeyId, badPropertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId, badPropertyKeyId);
 
         // When
         ConsistencySummaryStatistics stats = check();
 
         // Then
         on(stats)
+                .verify(RecordType.SCHEMA, 2) // invalid property key in both index & owning constraint
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldReportInvalidSecondPropertyKeyIdInRelUniquenessConstraintRule() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+        int badPropertyKeyId = fixture.idGenerator().propertyKey();
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId, badPropertyKeyId);
+
+        on(check())
                 .verify(RecordType.SCHEMA, 2) // invalid property key in both index & owning constraint
                 .andThatsAllFolks();
     }
@@ -2450,7 +2547,7 @@ public class FullCheckIntegrationTest {
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
 
-        createUniquenessConstraintRule(labelId, propertyKeyId);
+        createNodeUniquenessConstraintRule(labelId, propertyKeyId);
         createNodePropertyExistenceConstraint(labelId, propertyKeyId);
 
         // When
@@ -2458,6 +2555,17 @@ public class FullCheckIntegrationTest {
 
         // Then
         assertTrue(stats.isConsistent());
+    }
+
+    @Test
+    void shouldReportNothingForRelUniquenessAndPropertyExistenceConstraintOnSameTypeAndProperty() throws Exception {
+        int relTypeId = createRelType();
+        int propertyKeyId = createPropertyKey();
+
+        createRelUniquenessConstraintRule(relTypeId, propertyKeyId);
+        createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId);
+
+        assertTrue(check().isConsistent());
     }
 
     @Test
@@ -3180,11 +3288,27 @@ public class FullCheckIntegrationTest {
         }
     }
 
-    private void createUniquenessConstraintRule(final int labelId, final int... propertyKeyIds) throws KernelException {
-        createUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyIds);
+    private void createNodeUniquenessConstraintRule(final int labelId, final int... propertyKeyIds)
+            throws KernelException {
+        createNodeUniquenessConstraintRule(IndexType.RANGE, labelId, propertyKeyIds);
     }
 
-    private void createUniquenessConstraintRule(IndexType indexType, final int labelId, final int... propertyKeyIds)
+    private void createNodeUniquenessConstraintRule(IndexType indexType, final int labelId, final int... propertyKeyIds)
+            throws KernelException {
+        createUniquenessConstraintRule(indexType, forLabel(labelId, propertyKeyIds));
+    }
+
+    private void createRelUniquenessConstraintRule(final int typeId, final int... propertyKeyIds)
+            throws KernelException {
+        createRelUniquenessConstraintRule(IndexType.RANGE, typeId, propertyKeyIds);
+    }
+
+    private void createRelUniquenessConstraintRule(IndexType indexType, final int typeId, final int... propertyKeyIds)
+            throws KernelException {
+        createUniquenessConstraintRule(indexType, forRelType(typeId, propertyKeyIds));
+    }
+
+    private void createUniquenessConstraintRule(IndexType indexType, SchemaDescriptor schemaDescriptor)
             throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -3192,12 +3316,12 @@ public class FullCheckIntegrationTest {
         long ruleId2 = schemaStore.nextId(NULL_CONTEXT);
 
         String name = "constraint_" + ruleId2;
-        IndexDescriptor indexRule = uniqueForSchema(forLabel(labelId, propertyKeyIds), DESCRIPTOR)
+        IndexDescriptor indexRule = uniqueForSchema(schemaDescriptor, DESCRIPTOR)
                 .withIndexType(indexType)
                 .withName(name)
                 .materialise(ruleId1)
                 .withOwningConstraintId(ruleId2);
-        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel(indexType, labelId, propertyKeyIds)
+        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForSchema(schemaDescriptor, indexType)
                 .withId(ruleId2)
                 .withName(name)
                 .withOwnedIndexId(ruleId1);
