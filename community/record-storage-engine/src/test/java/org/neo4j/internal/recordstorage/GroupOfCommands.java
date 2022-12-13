@@ -57,6 +57,11 @@ public class GroupOfCommands implements CommandBatchToApply {
     }
 
     @Override
+    public long chunkId() {
+        return 0;
+    }
+
+    @Override
     public Subject subject() {
         return Subject.SYSTEM;
     }

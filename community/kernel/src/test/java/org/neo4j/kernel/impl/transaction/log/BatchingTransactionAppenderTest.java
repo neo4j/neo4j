@@ -156,9 +156,9 @@ class BatchingTransactionAppenderTest {
         appender.append(batch, logAppendEvent);
 
         // THEN
-        verify(logWriterSpy).append(eq(batch1), eq(2L), anyInt());
-        verify(logWriterSpy).append(eq(batch2), eq(3L), anyInt());
-        verify(logWriterSpy).append(eq(batch3), eq(4L), anyInt());
+        verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyInt());
+        verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyInt());
+        verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyInt());
     }
 
     @Test
@@ -357,7 +357,7 @@ class BatchingTransactionAppenderTest {
                 new LogEntryCommit(11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
-        var e = assertThrows(
+        assertThrows(
                 TransactionFailureException.class,
                 () -> commitProcess.commit(batch, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL));
     }

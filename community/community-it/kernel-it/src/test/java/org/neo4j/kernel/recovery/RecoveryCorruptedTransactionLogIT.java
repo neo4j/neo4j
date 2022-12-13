@@ -28,6 +28,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_l
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -1096,7 +1097,7 @@ class RecoveryCorruptedTransactionLogIT {
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction =
                     new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
-            writer.append(transaction, 1000, BASE_TX_CHECKSUM);
+            writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         }
     }
 

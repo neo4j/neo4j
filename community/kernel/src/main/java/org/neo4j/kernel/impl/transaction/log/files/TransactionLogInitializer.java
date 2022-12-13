@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
+import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -129,7 +130,8 @@ public class TransactionLogInitializer {
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId);
-        int checksum = transactionLogWriter.append(emptyTx, upgradeTransactionId, BASE_TX_CHECKSUM);
+        int checksum =
+                transactionLogWriter.append(emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(logFiles, reason, position, new TransactionId(upgradeTransactionId, checksum, timestamp));

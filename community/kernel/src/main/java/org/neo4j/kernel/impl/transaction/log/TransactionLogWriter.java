@@ -42,7 +42,7 @@ public class TransactionLogWriter {
      * Append a transaction to the transaction log file
      * @return checksum of the transaction
      */
-    public int append(CommandBatch batch, long transactionId, int previousChecksum) throws IOException {
+    public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
         var writer = logEntryWriterFactory.createEntryWriter(channel, batch.version());
         if (batch.isFirst()) {
             writer.writeStartEntry(

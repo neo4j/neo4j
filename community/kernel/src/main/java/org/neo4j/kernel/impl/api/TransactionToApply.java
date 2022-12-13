@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  */
 public class TransactionToApply implements CommandBatchToApply {
     public static final long TRANSACTION_ID_NOT_SPECIFIED = 0;
+    public static final int NOT_SPECIFIED_CHUNK_ID = 0;
 
     // These fields are provided by user
     private final CommandBatch commandBatch;
@@ -109,6 +110,11 @@ public class TransactionToApply implements CommandBatchToApply {
         transactionId = transactionIdGenerator.nextId(transactionId);
         idGenerated = true;
         return transactionId;
+    }
+
+    @Override
+    public long chunkId() {
+        return NOT_SPECIFIED_CHUNK_ID;
     }
 
     @Override

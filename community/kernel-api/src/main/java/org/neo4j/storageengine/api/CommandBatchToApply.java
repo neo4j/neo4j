@@ -35,6 +35,11 @@ public interface CommandBatchToApply extends CommandStream, AutoCloseable {
     long transactionId();
 
     /**
+     * @return chunk id representing this group of commands
+     */
+    long chunkId();
+
+    /**
      * Subject that triggered the commands.
      * <p>
      * This is used for monitoring purposes, so a unit of work can be linked to its initiator.

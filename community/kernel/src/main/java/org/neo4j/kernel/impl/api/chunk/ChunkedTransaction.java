@@ -85,6 +85,11 @@ public class ChunkedTransaction implements CommandBatchToApply, CommandBatch {
     }
 
     @Override
+    public long chunkId() {
+        return chunk.chunkMetadata().chunkId();
+    }
+
+    @Override
     public byte[] additionalHeader() {
         return EMPTY_BYTE_ARRAY;
     }

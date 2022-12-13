@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -234,7 +235,8 @@ class ReversedMultiFileTransactionCursorTest {
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
         for (int i = 0; i < count; i++) {
-            previousChecksum = writer.append(tx(random.intBetween(1, 5)), ++txId, previousChecksum);
+            previousChecksum =
+                    writer.append(tx(random.intBetween(1, 5)), ++txId, NOT_SPECIFIED_CHUNK_ID, previousChecksum);
         }
         channel.prepareForFlush().flush();
         return writer.getCurrentPosition();
