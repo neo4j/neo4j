@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.Bound
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -195,6 +196,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -2176,6 +2178,30 @@ case class LogicalPlan2PlanDescription(
           "Repeat(Trail)",
           children,
           Seq(Details(PrettyString(repString))),
+          variables,
+          withRawCardinalities
+        )
+
+      case BidirectionalRepeatTrail(_, _, repetition, _, _, _, _, _, _, _, _, _, _) =>
+        val repString = repetition match {
+          case Repetition(min, Limited(n)) => s"{$min, $n}"
+          case Repetition(min, Unlimited)  => s"{$min, *}"
+        }
+        PlanDescriptionImpl(
+          id = plan.id,
+          "BidirectionalRepeat(Trail)",
+          children,
+          Seq(Details(PrettyString(repString))),
+          variables,
+          withRawCardinalities
+        )
+
+      case RepeatOptions(_, _) =>
+        PlanDescriptionImpl(
+          id = plan.id,
+          "RepeatOptions",
+          children,
+          Seq.empty,
           variables,
           withRawCardinalities
         )

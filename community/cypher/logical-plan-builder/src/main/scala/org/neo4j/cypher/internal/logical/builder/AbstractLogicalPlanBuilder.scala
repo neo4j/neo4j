@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
@@ -177,6 +178,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -2014,6 +2016,42 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         trailParameters.previouslyBoundRelationshipGroups,
         trailParameters.reverseGroupVariableProjections
       )(_)
+    ))
+  }
+
+  def bidirectionalRepeatTrail(
+    trailParameters: TrailParameters
+  ): IMPL = {
+    // These come in as arguments, so we need to declare them as nodes here
+    newNode(varFor(trailParameters.innerStart))
+    newNode(varFor(trailParameters.innerEnd))
+
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      rhs match {
+        case repeatOptions: RepeatOptions =>
+          BidirectionalRepeatTrail(
+            lhs,
+            repeatOptions,
+            Repetition(trailParameters.min, trailParameters.max),
+            trailParameters.start,
+            trailParameters.end,
+            trailParameters.innerStart,
+            trailParameters.innerEnd,
+            trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(inner, outer) },
+            trailParameters.groupRelationships.map { case (inner, outer) => VariableGrouping(inner, outer) },
+            trailParameters.innerRelationships,
+            trailParameters.previouslyBoundRelationships,
+            trailParameters.previouslyBoundRelationshipGroups,
+            trailParameters.reverseGroupVariableProjections
+          )(_)
+        case _ => throw new IllegalArgumentException("BidirectionalRepeatTrail must have RepeatOptions as its RHS.")
+      }
+    ))
+  }
+
+  def repeatOptions(): IMPL = {
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      RepeatOptions(lhs, rhs)(_)
     ))
   }
 

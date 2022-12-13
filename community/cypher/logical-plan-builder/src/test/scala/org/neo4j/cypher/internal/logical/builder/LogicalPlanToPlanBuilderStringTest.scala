@@ -1974,6 +1974,35 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .build()
   )
 
+  testPlan(
+    "bidirectionalRepeatTrail",
+    new TestPlanBuilder()
+      .produceResults("me", "you", "a", "b", "r")
+      .bidirectionalRepeatTrail(TrailParameters(
+        min = 0,
+        max = Limited(2),
+        start = "me",
+        end = "you",
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+        groupRelationships = Set(("r_inner", "r")),
+        innerRelationships = Set("r_inner"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set("r_group"),
+        reverseGroupVariableProjections = true
+      ))
+      .|.repeatOptions()
+      .|.|.expandAll("(b_inner)<-[r_inner]-(a_inner)")
+      .|.|.argument("you", "b_inner")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .cartesianProduct()
+      .|.nodeByLabelScan("you", "END", IndexOrderNone)
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+  )
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
@@ -2061,7 +2090,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       "pointBoundingBoxRelationshipIndexSeekExpr",
       "shortestPathExpr",
       "undirectedRelationshipByIdSeekExpr",
-      "directedRelationshipByIdSeekExpr"
+      "directedRelationshipByIdSeekExpr",
+      "repeatOptions"
     )
     withClue("tests missing for these operators:") {
       val methods = classOf[AbstractLogicalPlanBuilder[_, _]].getDeclaredMethods.filter { m =>

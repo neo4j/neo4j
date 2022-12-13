@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.mutable
@@ -546,20 +547,47 @@ object LogicalPlanToPlanBuilderString {
           previouslyBoundRelationshipGroups,
           reverseGroupVariableProjections
         ) =>
-        def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
-          groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
-            ", "
-          )
-
-        val trailParameters =
-          s"""${repetition.min}, ${repetition.max}, "$start", "$end", "$innerStart", "$innerEnd", """ +
-            s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(innerRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationships)}), " +
-            s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)}), " +
-            reverseGroupVariableProjections
-
-        s"TrailParameters($trailParameters)"
+        trailParametersString(
+          repetition,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
+        )
+      case BidirectionalRepeatTrail(
+          _,
+          _,
+          repetition,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
+        ) =>
+        trailParametersString(
+          repetition,
+          start,
+          end,
+          innerStart,
+          innerEnd,
+          groupNodes,
+          groupRelationships,
+          innerRelationships,
+          previouslyBoundRelationships,
+          previouslyBoundRelationshipGroups,
+          reverseGroupVariableProjections
+        )
 
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
@@ -1033,6 +1061,35 @@ object LogicalPlanToPlanBuilderString {
         indexSeekLeafPlans.map(p => s"_.nodeIndexSeek(${plansWithContent(p)})").mkString(", ")
     }
     plansWithContent.orElse(plansWithContent2).applyOrElse(logicalPlan, (_: LogicalPlan) => "")
+  }
+
+  private def trailParametersString(
+    repetition: Repetition,
+    start: String,
+    end: String,
+    innerStart: String,
+    innerEnd: String,
+    groupNodes: Set[VariableGrouping],
+    groupRelationships: Set[VariableGrouping],
+    innerRelationships: Set[String],
+    previouslyBoundRelationships: Set[String],
+    previouslyBoundRelationshipGroups: Set[String],
+    reverseGroupVariableProjections: Boolean
+  ) = {
+    def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
+      groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
+        ", "
+      )
+
+    val trailParameters =
+      s"""${repetition.min}, ${repetition.max}, "$start", "$end", "$innerStart", "$innerEnd", """ +
+        s"Set(${groupEntitiesString(groupNodes)}), Set(${groupEntitiesString(groupRelationships)}), " +
+        s"Set(${wrapInQuotationsAndMkString(innerRelationships)}), " +
+        s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationships)}), " +
+        s"Set(${wrapInQuotationsAndMkString(previouslyBoundRelationshipGroups)}), " +
+        reverseGroupVariableProjections
+
+    s"TrailParameters($trailParameters)"
   }
 
   private def setPropertiesParam(entity: String, items: Seq[(PropertyKeyName, Expression)]): String = {
