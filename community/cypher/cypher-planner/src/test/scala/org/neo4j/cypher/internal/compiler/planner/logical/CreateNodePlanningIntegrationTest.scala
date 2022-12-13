@@ -22,7 +22,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+
+import scala.collection.immutable.ListSet
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -117,5 +122,18 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .create(CreateNode("b", Set.empty, None))
       .allNodeScan("a")
       .build()
+  }
+
+  test("when inside a FOREACH, a create with subquery should be planned with a foreach apply") {
+    val cfg = plannerBuilder().setAllNodesCardinality(0).build()
+    val plan = cfg.plan("FOREACH (i IN [1, 2] | CREATE (a {prop: EXISTS { MATCH () }}))").stripProduceResults
+
+    val plannedCreateWithForeachApply = plan.folder.treeExists {
+      case _: ForeachApply => true
+    }
+
+    withClue(plan) {
+      plannedCreateWithForeachApply should be(true)
+    }
   }
 }

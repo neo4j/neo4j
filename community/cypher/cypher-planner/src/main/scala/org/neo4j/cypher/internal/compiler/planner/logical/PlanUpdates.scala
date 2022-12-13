@@ -49,7 +49,9 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.exceptions.InternalException
 
 /*
@@ -129,12 +131,14 @@ case object PlanUpdates extends UpdatesPlanner {
       }._1
     }
 
+    def containsIrExpression(a: Any): Boolean = a.folder.treeExists { case _: IRExpression => true}
+
     pattern match {
       // FOREACH
       case foreach: ForeachPattern =>
         val allPatterns = foreach.innerUpdates.allPlannerQueries.flatMap(_.queryGraph.mutatingPatterns)
         val sideEffects = allPatterns.collect {
-          case s: SimpleMutatingPattern => s
+          case s: SimpleMutatingPattern if !containsIrExpression(s) => s
         }
         if (allPatterns.length == sideEffects.length) {
           context.staticComponents.logicalPlanProducer.planForeach(
