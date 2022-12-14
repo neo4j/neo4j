@@ -5624,7 +5624,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("LetSemiApply") {
     assertGood(
       attach(LetSemiApply(lhsLP, rhsLP, "x"), 2345.0),
-      planDescription(id, "LetSemiApply", TwoChildren(lhsPD, rhsPD), Seq.empty, Set("a", "x"))
+      planDescription(id, "LetSemiApply", TwoChildren(lhsPD, rhsPD), Seq(details("x")), Set("a", "x"))
     )
   }
 
