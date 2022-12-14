@@ -341,7 +341,7 @@ class FabricStitcherTest
         )
 
         e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
         )
       }
 
@@ -364,7 +364,7 @@ class FabricStitcherTest
         )
 
         e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
         )
       }
 
@@ -389,7 +389,7 @@ class FabricStitcherTest
         )
 
         e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
         )
       }
 
@@ -402,7 +402,7 @@ class FabricStitcherTest
         )
 
         e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database.")
+          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
         )
       }
     }
