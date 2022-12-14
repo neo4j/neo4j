@@ -112,8 +112,6 @@ Feature: CallInTransactionsErrorHandling
       | +labels     |  1 |
     Examples:
       | onErrorBehaviour  |
-      |                   |
-      | ON ERROR FAIL     |
       | ON ERROR CONTINUE |
       | ON ERROR BREAK    |
 
@@ -145,20 +143,12 @@ Feature: CallInTransactionsErrorHandling
       | +labels     |  1 |
     Examples:
       | rows | onErrorBehaviour    | is                                                 |
-      |  1   |                   | [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]] |
-      |  1   | ON ERROR FAIL     | [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]] |
       |  1   | ON ERROR CONTINUE | [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]] |
       |  1   | ON ERROR BREAK    | [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]] |
-      |  3   |                   | [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]             |
-      |  3   | ON ERROR FAIL     | [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]             |
       |  3   | ON ERROR CONTINUE | [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]             |
       |  3   | ON ERROR BREAK    | [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]             |
-      |  5   |                   | [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]                 |
-      |  5   | ON ERROR FAIL     | [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]                 |
       |  5   | ON ERROR CONTINUE | [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]                 |
       |  5   | ON ERROR BREAK    | [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9]]                 |
-      | 13   |                   | [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]                   |
-      | 13   | ON ERROR FAIL     | [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]                   |
       | 13   | ON ERROR CONTINUE | [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]                   |
       | 13   | ON ERROR BREAK    | [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]                   |
 

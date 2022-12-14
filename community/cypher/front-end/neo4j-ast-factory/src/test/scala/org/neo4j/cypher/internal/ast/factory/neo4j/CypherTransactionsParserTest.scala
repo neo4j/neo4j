@@ -170,6 +170,7 @@ class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with 
   }
 
   // For each error behaviour, allow all possible orders of OF ROWS, ON ERROR and REPORT STATUS
+  // The combination FAIL and REPORT STATUS should parse but will be disallowed in semantic checking
   Seq(
     ("BREAK", OnErrorBreak),
     ("FAIL", OnErrorFail),

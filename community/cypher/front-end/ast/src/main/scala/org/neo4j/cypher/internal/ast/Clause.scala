@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
 import org.neo4j.cypher.internal.ast.Match.hintPrettifier
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.connectedComponents.RichConnectedComponent
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
@@ -1680,7 +1681,25 @@ object SubqueryCall {
           SemanticCheck.success
       }
 
-      checkBatchParams chain checkErrorParams chain checkReportParams
+      val checkErrorReportCombination: SemanticCheck = (errorParams, reportParams) match {
+        case (None, Some(reportParams)) =>
+          whenState(_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
+            error(
+              "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+              reportParams.position
+            )
+          }
+        case (Some(InTransactionsErrorParameters(OnErrorFail)), Some(reportParams)) =>
+          whenState(_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
+            error(
+              "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+              reportParams.position
+            )
+          }
+        case _ => SemanticCheck.success
+      }
+
+      checkBatchParams chain checkErrorParams chain checkReportParams chain checkErrorReportCombination
     }
   }
 

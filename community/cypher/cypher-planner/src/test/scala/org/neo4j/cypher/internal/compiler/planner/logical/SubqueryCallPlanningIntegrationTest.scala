@@ -1004,14 +1004,14 @@ class SubqueryCallPlanningIntegrationTest
         |  CREATE (b)
         |  RETURN b
         |} IN TRANSACTIONS OF 400 ROWS
-        |  ON ERROR FAIL
+        |  ON ERROR CONTINUE
         |  REPORT STATUS AS s
         |RETURN a, b, s
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply(400, OnErrorFail, Some("s"))
+      .transactionApply(400, OnErrorContinue, Some("s"))
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1019,7 +1019,7 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call returning subquery in transactions with specified batch size and status report") {
+  test("call returning subquery in transactions with specified batch size and on error behavior") {
     val cfg = plannerCfgBuilder.build()
 
     val query =
@@ -1029,13 +1029,13 @@ class SubqueryCallPlanningIntegrationTest
         |  CREATE (b)
         |  RETURN b
         |} IN TRANSACTIONS OF 400 ROWS
-        |  REPORT STATUS AS s
-        |RETURN a, b, s
+        |  ON ERROR FAIL
+        |RETURN a, b
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply(400, maybeReportAs = Some("s"))
+      .transactionApply(400, OnErrorFail)
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1043,7 +1043,7 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call returning subquery in transactions with status report") {
+  test("call returning subquery in transactions with specified error behavior and status report") {
     val cfg = plannerCfgBuilder.build()
 
     val query =
@@ -1053,13 +1053,14 @@ class SubqueryCallPlanningIntegrationTest
         |  CREATE (b)
         |  RETURN b
         |} IN TRANSACTIONS
+        |  ON ERROR BREAK
         |  REPORT STATUS AS s
         |RETURN a, b, s
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionApply(maybeReportAs = Some("s"))
+      .transactionApply(onErrorBehaviour = OnErrorBreak, maybeReportAs = Some("s"))
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1067,7 +1068,7 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call returning subquery in transactions with on error break") {
+  test("call returning subquery in transactions with on error behaviour") {
     val cfg = plannerCfgBuilder.build()
 
     val query =
@@ -1076,7 +1077,8 @@ class SubqueryCallPlanningIntegrationTest
         |CALL {
         |  CREATE (b)
         |  RETURN b
-        |} IN TRANSACTIONS ON ERROR BREAK
+        |} IN TRANSACTIONS
+        |  ON ERROR BREAK
         |RETURN a, b
         |""".stripMargin
 
@@ -1101,14 +1103,14 @@ class SubqueryCallPlanningIntegrationTest
         |CALL {
         |  CREATE (b)
         |} IN TRANSACTIONS OF 400 ROWS
-        |  ON ERROR FAIL
+        |  ON ERROR BREAK
         |  REPORT STATUS AS s
         |RETURN a, s
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach(400, OnErrorFail, Some("s"))
+      .transactionForeach(400, OnErrorBreak, Some("s"))
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1116,7 +1118,7 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call with non-returning subquery in transactions with specified batch size and status report") {
+  test("call with non-returning subquery in transactions with specified batch size and on error behaviour") {
     val cfg = plannerCfgBuilder.build()
 
     val query =
@@ -1125,13 +1127,13 @@ class SubqueryCallPlanningIntegrationTest
         |CALL {
         |  CREATE (b)
         |} IN TRANSACTIONS OF 400 ROWS
-        |  REPORT STATUS AS s
-        |RETURN a, s
+        |  ON ERROR CONTINUE
+        |RETURN a
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach(400, maybeReportAs = Some("s"))
+      .transactionForeach(400, OnErrorContinue)
       .|.create(createNode("b"))
       .|.argument()
       .eager()
@@ -1139,7 +1141,7 @@ class SubqueryCallPlanningIntegrationTest
       .build()
   }
 
-  test("call with non-returning subquery in transactions with status report") {
+  test("call with non-returning subquery in transactions with specified on error behaviour and status report") {
     val cfg = plannerCfgBuilder.build()
 
     val query =
@@ -1148,13 +1150,37 @@ class SubqueryCallPlanningIntegrationTest
         |CALL {
         |  CREATE (b)
         |} IN TRANSACTIONS
+        |  ON ERROR CONTINUE
         |  REPORT STATUS AS s
         |RETURN a, s
         |""".stripMargin
 
     val plan = cfg.plan(query).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .transactionForeach(maybeReportAs = Some("s"))
+      .transactionForeach(onErrorBehaviour = OnErrorContinue, maybeReportAs = Some("s"))
+      .|.create(createNode("b"))
+      .|.argument()
+      .eager()
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("call with non-returning subquery in transactions with on error behaviour") {
+    val cfg = plannerCfgBuilder.build()
+
+    val query =
+      """
+        |MATCH (a)
+        |CALL {
+        |  CREATE (b)
+        |} IN TRANSACTIONS
+        |  ON ERROR FAIL
+        |RETURN a
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .transactionForeach(onErrorBehaviour = OnErrorFail)
       .|.create(createNode("b"))
       .|.argument()
       .eager()

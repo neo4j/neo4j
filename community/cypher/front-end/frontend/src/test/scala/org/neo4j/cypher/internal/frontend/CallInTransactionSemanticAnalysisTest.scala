@@ -331,43 +331,6 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
-  test("CALL IN TRANSACTIONS REPORT STATUS without outer RETURN should fail semantic check") {
-    val query =
-      """CALL {
-        |  CREATE ()
-        |} IN TRANSACTIONS REPORT STATUS AS status
-        |""".stripMargin
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Query cannot conclude with CALL (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
-          InputPosition(0, 1, 1)
-        )
-      ),
-      pipelineWithCallInTxsEnhancements
-    )
-  }
-
-  test("CALL IN TRANSACTIONS REPORT STATUS AS <v> should fail semantic check if <v> has already been scoped") {
-    val query =
-      """WITH {} AS v
-        |CALL {
-        |  CREATE ()
-        |} IN TRANSACTIONS REPORT STATUS AS v RETURN v
-        |""".stripMargin
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError(
-          "Variable `v` already declared",
-          InputPosition(67, 4, 36)
-        )
-      ),
-      pipelineWithCallInTxsEnhancements
-    )
-  }
-
   test("CALL IN TRANSACTIONS ON ERROR BREAK should pass semantic check") {
     val query =
       """CALL {
@@ -420,16 +383,96 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
   }
 
-  test("CALL IN TRANSACTIONS ON ERROR FAIL REPORT STATUS AS status should pass semantic check") {
+  test("CALL IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS without outer RETURN should fail semantic check") {
+    val query =
+      """CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS AS status
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Query cannot conclude with CALL (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
+          InputPosition(0, 1, 1)
+        )
+      ),
+      pipelineWithCallInTxsEnhancements
+    )
+  }
+
+  test(
+    "CALL IN TRANSACTIONS  ON ERROR CONTINUE REPORT STATUS AS <v> should fail semantic check if <v> has already been scoped"
+  ) {
+    val query =
+      """WITH {} AS v
+        |CALL {
+        |  CREATE ()
+        |} IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS AS v RETURN v
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "Variable `v` already declared",
+          InputPosition(85, 4, 54)
+        )
+      ),
+      pipelineWithCallInTxsEnhancements
+    )
+  }
+
+  test("CALL IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status should pass semantic check") {
     val query =
       """CALL {
         |  RETURN 1 AS v
         |} IN TRANSACTIONS 
-        |  ON ERROR FAIL 
+        |  ON ERROR BREAK
         |  REPORT STATUS AS status
         |  RETURN v, status
         |""".stripMargin
     expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
+  }
+
+  test("CALL IN TRANSACTIONS REPORT STATUS should fail semantic check") {
+    val query =
+      """CALL {
+        |  RETURN 1 AS v
+        |} IN TRANSACTIONS
+        |  REPORT STATUS AS status
+        |  RETURN v, status
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+          InputPosition(43, 4, 3)
+        )
+      ),
+      pipelineWithCallInTxsEnhancements
+    )
+  }
+
+  test("CALL IN TRANSACTIONS ON ERROR FAIL REPORT STATUS should fail semantic check") {
+    val query =
+      """CALL {
+        |  RETURN 1 AS v
+        |} IN TRANSACTIONS
+        |  ON ERROR FAIL
+        |  REPORT STATUS AS status
+        |  RETURN v, status
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+          InputPosition(59, 5, 3)
+        )
+      ),
+      pipelineWithCallInTxsEnhancements
+    )
   }
 
   test("CALL IN TRANSACTIONS ON ERROR <behaviour> should be a disabled feature") {
