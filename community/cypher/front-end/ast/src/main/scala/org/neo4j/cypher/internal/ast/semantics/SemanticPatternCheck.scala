@@ -497,14 +497,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def declareVariables(
     ctx: SemanticContext,
-    element: PatternElement,
-    quantified: Option[QuantifiedPath] = None
+    element: PatternElement
   ): SemanticCheck =
     element match {
       case x: RelationshipChain =>
-        declareVariables(ctx, x.element, quantified) chain
-          declareVariables(ctx, x.relationship, quantified) chain
-          declareVariables(ctx, x.rightNode, quantified)
+        declareVariables(ctx, x.element) chain
+          declareVariables(ctx, x.relationship) chain
+          declareVariables(ctx, x.rightNode)
 
       case x: NodePattern =>
         x.variable.foldSemanticCheck {
@@ -514,15 +513,15 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                 ensureDefined(variable) chain
                   expectType(CTNode.covariant, variable)
               case _ =>
-                implicitVariable(variable, CTNode, quantified)
+                implicitVariable(variable, CTNode)
             }
         }
       case PathConcatenation(factors) =>
-        factors.map(declareVariables(ctx, _, quantified)).reduce(_ chain _)
+        factors.map(declareVariables(ctx, _)).reduce(_ chain _)
 
       case q @ QuantifiedPath(pattern, _, _, entityBindings) =>
         withScopedState {
-          declareVariables(ctx, pattern.element, Some(q)) chain
+          declareVariables(ctx, pattern.element) chain
             ensureNoPathVariable(pattern) ifOkChain
             entityBindings.foldSemanticCheck { entityBinding =>
               ensureDefined(entityBinding.singleton)
@@ -533,13 +532,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         }
 
       case ParenthesizedPath(pattern) =>
-        declareVariables(ctx, pattern.element, quantified) chain
-          declarePathVariable(pattern, quantified)
+        declareVariables(ctx, pattern.element) chain
+          declarePathVariable(pattern)
     }
 
-  private def declarePathVariable(pattern: PatternPart, quantified: Option[QuantifiedPath]): SemanticCheck =
+  private def declarePathVariable(pattern: PatternPart): SemanticCheck =
     pattern match {
-      case n: NamedPatternPart => implicitVariable(n.variable, CTPath, quantified)
+      case n: NamedPatternPart => implicitVariable(n.variable, CTPath)
       case _                   => SemanticCheck.success
     }
 
@@ -552,8 +551,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def declareVariables(
     ctx: SemanticContext,
-    x: RelationshipPattern,
-    quantified: Option[QuantifiedPath]
+    x: RelationshipPattern
   ): SemanticCheck =
     x.variable.foldSemanticCheck {
       variable =>
@@ -561,7 +559,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
         ctx match {
           case SemanticContext.Match =>
-            implicitVariable(variable, possibleType, quantified)
+            implicitVariable(variable, possibleType)
           case SemanticContext.Expression =>
             ensureDefined(variable) chain
               expectType(possibleType.covariant, variable)

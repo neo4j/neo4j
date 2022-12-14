@@ -68,6 +68,8 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -78,6 +80,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -102,6 +105,8 @@ import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
+
+import scala.annotation.tailrec
 
 sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def name: String
@@ -391,12 +396,86 @@ case class Match(
   override def name = "MATCH"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
+    noImplicitJoinsInQuantifiedPathPatterns chain
+      SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
       hints.semanticCheck chain
       uniqueHints chain
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts
+
+  /**
+   * Ensure that the node and relationship variables defined inside the quantified path patterns contained in this MATCH clause do not form any implicit joins.
+   * It must run before checking the pattern itself – as it relies on variables defined in previous clauses to pre-empt some of the errors.
+   * It checks for three scenarios:
+   *   - a variable is defined in two or more quantified path patterns inside this MATCH clause
+   *   - a variable is defined in a quantified path pattern and in a non-quantified node or relationship pattern inside this MATCH clause
+   *   - a variable is defined in a quantified path pattern inside this MATCH clause and also appears in a previous MATCH clause
+   */
+  private def noImplicitJoinsInQuantifiedPathPatterns: SemanticCheck =
+    SemanticCheck.fromState { state =>
+      val (quantifiedPaths, simplePatterns) = partitionPatternElements(pattern.patternParts.map(_.element).toList)
+
+      val allVariablesInQuantifiedPaths: List[(LogicalVariable, QuantifiedPath)] =
+        for {
+          quantifiedPath <- quantifiedPaths
+          variable <- quantifiedPath.allVariables
+        } yield variable -> quantifiedPath
+
+      val quantifiedPathsPerVariable: Map[LogicalVariable, List[QuantifiedPath]] =
+        allVariablesInQuantifiedPaths.groupMap(_._1)(_._2)
+
+      val allVariablesInSimplePatterns: Set[LogicalVariable] =
+        simplePatterns.flatMap(_.allVariables).toSet
+
+      val semanticErrors =
+        quantifiedPathsPerVariable.flatMap { case (variable, paths) =>
+          List(
+            Option.when(paths.size > 1) {
+              s"The variable `${variable.name}` occurs in multiple quantified path patterns and needs to be renamed."
+            },
+            Option.when(allVariablesInSimplePatterns.contains(variable)) {
+              s"The variable `${variable.name}` occurs both inside and outside a quantified path pattern and needs to be renamed."
+            },
+            Option.when(state.symbol(variable.name).isDefined) {
+              // Because one cannot refer to a variable defined in a subsequent clause, if the variable exists in the semantic state, then it must have been defined in a previous clause.
+              s"The variable `${variable.name}` is already defined in a previous clause, it cannot be referenced as a node or as a relationship variable inside of a quantified path pattern."
+            }
+          ).flatten.map { errorMessage =>
+            SemanticError(errorMessage, variable.position)
+          }
+        }
+
+      SemanticCheck.error(semanticErrors)
+    }
+
+  /**
+   * Recursively partition sub-elements into quantified paths and "simple" patterns (nodes and relationships).
+   * @param patternElements the list of elements to break down and partition
+   * @param quantifiedPaths accumulator for quantified paths
+   * @param simplePatterns accumulator for simple patterns
+   * @return the list of quantified paths and the list of simple patterns
+   */
+  @tailrec
+  private def partitionPatternElements(
+    patternElements: List[PatternElement],
+    quantifiedPaths: List[QuantifiedPath] = Nil,
+    simplePatterns: List[SimplePattern] = Nil
+  ): (List[QuantifiedPath], List[SimplePattern]) =
+    patternElements match {
+      case Nil => (quantifiedPaths.reverse, simplePatterns.reverse)
+      case element :: otherElements =>
+        element match {
+          case PathConcatenation(factors) =>
+            partitionPatternElements(factors.toList ++ otherElements, quantifiedPaths, simplePatterns)
+          case ParenthesizedPath(part) =>
+            partitionPatternElements(part.element :: otherElements, quantifiedPaths, simplePatterns)
+          case quantifiedPath: QuantifiedPath =>
+            partitionPatternElements(otherElements, quantifiedPath :: quantifiedPaths, simplePatterns)
+          case simplePattern: SimplePattern =>
+            partitionPatternElements(otherElements, quantifiedPaths, simplePattern :: simplePatterns)
+        }
+    }
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.collect {

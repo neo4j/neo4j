@@ -71,6 +71,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   test("MATCH (p = (a)--(b))+ (p = (c)--(d))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "The variable `p` occurs in multiple quantified path patterns and needs to be renamed.",
       "Assigning a path in a quantified path pattern is not yet supported.",
       "Assigning a path in a quantified path pattern is not yet supported.",
       "Variable `p` already declared"
@@ -88,6 +89,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH (p = (a)--(b))+ MATCH (p = (c)--(d))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
+      "The variable `p` is already defined in a previous clause, it cannot be referenced as a node or as a relationship variable inside of a quantified path pattern.",
       "Assigning a path in a quantified path pattern is not yet supported.",
       "Variable `p` already declared"
     )
@@ -259,6 +261,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH ((a)-->(b))+ ((b)-->(c))+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `b` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Type mismatch: b defined with conflicting type List<Node> (expected Node)",
       "Variable `b` already declared"
     )
   }
@@ -266,6 +269,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH (()-[r]->())+ (()-[r]->())+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Type mismatch: r defined with conflicting type List<Relationship> (expected Relationship)",
       "Variable `r` already declared",
       "Cannot use the same relationship variable 'r' for multiple relationships"
     )
@@ -273,22 +277,24 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   test("MATCH ((a)-[b]->(c))* (d)-[e]->(a) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed."
-      // There is no "already declared" error, because the QPP variable `a` is defined first
+      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "Type mismatch: a defined with conflicting type List<Node> (expected Node)"
     )
   }
 
   test("MATCH (a)-[e]->(d) ((a)-[b]->(c))*  RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-      // There is an "already declared" error, because the non-QPP variable `a` is defined first, and group variables are not implicit variables like nodes.
-      "Variable `a` already declared"
+      "Variable `a` already declared",
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, a is defined in the same `MATCH` clause as ((a)-[b]->(c))*.""".stripMargin
     )
   }
 
   test("MATCH (()-[r]->())* ()-[r]->() RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "Type mismatch: r defined with conflicting type List<Relationship> (expected Relationship)",
       "Cannot use the same relationship variable 'r' for multiple relationships"
     )
   }
@@ -297,6 +303,8 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
       "Variable `r` already declared",
+      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+        |In this case, r is defined in the same `MATCH` clause as (()-[r]->())*.""".stripMargin,
       "Cannot use the same relationship variable 'r' for multiple relationships"
     )
   }
@@ -304,6 +312,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH ((a)-[b]->(c))* (d)-[e]->()((a)-[f]->(g)){2,} RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Type mismatch: a defined with conflicting type List<Node> (expected Node)",
       "Variable `a` already declared"
     )
   }
@@ -311,6 +320,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   test("MATCH ((a)-[b]->(c))* (d)-[b]->+(f) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `b` occurs in multiple quantified path patterns and needs to be renamed.",
+      "Type mismatch: b defined with conflicting type List<Relationship> (expected Relationship)",
       "Variable `b` already declared",
       "Cannot use the same relationship variable 'b' for multiple relationships"
     )
@@ -318,14 +328,15 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
 
   test("MATCH (a)-->(b) MATCH (x)--(y) ((a)-->(t)){1,5} ()-->(z) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
+      "The variable `a` is already defined in a previous clause, it cannot be referenced as a node or as a relationship variable inside of a quantified path pattern.",
       "Variable `a` already declared"
     )
   }
 
   test("MATCH ((a)-->(b))+ MATCH (x)--(y) ((a)-->(t)){1,5} ()-->(z) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "The variable `a` occurs in multiple quantified path patterns and needs to be renamed.",
+      "The variable `a` is already defined in a previous clause, it cannot be referenced as a node or as a relationship variable inside of a quantified path pattern.",
+      "Type mismatch: a defined with conflicting type List<Node> (expected Node)",
       "Variable `a` already declared"
     )
   }
@@ -388,6 +399,18 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   }
 
   test("MATCH ((a)-->(b) WHERE a.prop < b.prop)+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH ((a)-[:R]->(b) WHERE (a)-[:S]->(b))+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH ((a)-[:R]->(b) WHERE EXISTS { MATCH (a)-[:S]->(b) })+ RETURN count(*)") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+  }
+
+  test("MATCH ((a)-[:R]->(b) WHERE COUNT { MATCH (a)-[:S]->(b) } > 1)+ RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
   }
 
@@ -483,8 +506,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends CypherFunSuite
   // access group variables without aggregation
   test("MATCH (x)-->(y)((a)-[e]->(b))+(s)-->(u) WHERE e.weight < 4 RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Type mismatch: expected Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was List<Relationship>
-        |A group variable cannot be used in a non-aggregating operation.""".stripMargin
+      "Type mismatch: expected Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was List<Relationship>"
     )
   }
 

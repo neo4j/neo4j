@@ -22,10 +22,8 @@ import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.TreeElem
@@ -276,9 +274,7 @@ case class SemanticState(
   recordedScopes: ASTAnnotationMap[ASTNode, ScopeLocation],
   notifications: Set[InternalNotification] = Set.empty,
   features: Set[SemanticFeature] = Set.empty,
-  declareVariablesToSuppressDuplicateErrors: Boolean = true,
-  // we only store the input position of a qpp to decrease the size allocated for the map
-  variablesInQpp: Map[LogicalVariable, InputPosition] = Map.empty
+  declareVariablesToSuppressDuplicateErrors: Boolean = true
 ) {
 
   def scopeTree: Scope = currentScope.rootScope
@@ -329,33 +325,12 @@ case class SemanticState(
 
   def implicitVariable(
     variable: LogicalVariable,
-    possibleTypes: TypeSpec,
-    quantification: Option[QuantifiedPath] = None
+    possibleTypes: TypeSpec
   ): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None =>
-        Right(updateVariable(variable, possibleTypes, SymbolUse(variable), Set.empty, quantification))
-      case Some(_)
-        // `variable` is quantified and the previous instance was used in a different QPP.
-        if quantification.exists(qpp => variablesInQpp.get(variable).exists(_ != qpp.position)) =>
-        Left(SemanticError(
-          s"The variable `${variable.name}` occurs in multiple quantified path patterns and needs to be renamed.",
-          variable.position
-        ))
-      case Some(_)
-        // `variable` is quantified and the previous instance was used outside a QPP.
-        if quantification.isDefined && !variablesInQpp.contains(variable) =>
-        Left(SemanticError(
-          s"The variable `${variable.name}` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-          variable.position
-        ))
-      case Some(_)
-        // `variable` is not quantified and the previous instance was used inside a QPP.
-        if quantification.isEmpty && variablesInQpp.contains(variable) =>
-        Left(SemanticError(
-          s"The variable `${variable.name}` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-          variable.position
-        ))
+        Right(updateVariable(variable, possibleTypes, SymbolUse(variable), Set.empty))
+
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
@@ -402,13 +377,11 @@ case class SemanticState(
     variable: LogicalVariable,
     types: TypeSpec,
     definition: SymbolUse,
-    uses: Set[SymbolUse],
-    quantified: Option[QuantifiedPath] = None
-  ) =
+    uses: Set[SymbolUse]
+  ): SemanticState =
     copy(
       currentScope = currentScope.updateVariable(variable.name, types, definition, uses),
-      typeTable = typeTable.updated(variable, ExpressionTypeInfo(types)),
-      variablesInQpp = quantified.map(qpp => variablesInQpp.updated(variable, qpp.position)).getOrElse(variablesInQpp)
+      typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))
     )
 
   def recordCurrentScope(astNode: ASTNode): SemanticState =

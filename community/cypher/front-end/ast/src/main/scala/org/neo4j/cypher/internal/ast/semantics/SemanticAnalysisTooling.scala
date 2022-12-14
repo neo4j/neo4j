@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.TypeSignature
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -141,16 +140,10 @@ trait SemanticAnalysisTooling {
               )
             )
           case _ =>
-            val errorHint = expression match {
-              case variable: LogicalVariable if ss.variablesInQpp.contains(variable) =>
-                "\nA group variable cannot be used in a non-aggregating operation."
-              case _ =>
-                ""
-            }
             SemanticCheckResult.error(
               ss,
               SemanticError(
-                "Type mismatch: " + messageGen(expectedTypesString, existingTypesString) + errorHint,
+                "Type mismatch: " + messageGen(expectedTypesString, existingTypesString),
                 expression.position
               )
             )
@@ -272,10 +265,9 @@ trait SemanticAnalysisTooling {
 
   def implicitVariable(
     v: LogicalVariable,
-    possibleType: CypherType,
-    quantification: Option[QuantifiedPath]
+    possibleType: CypherType
   ): SemanticState => Either[SemanticError, SemanticState] =
-    (_: SemanticState).implicitVariable(v, possibleType, quantification)
+    (_: SemanticState).implicitVariable(v, possibleType)
 
   def declareVariables(symbols: Iterable[Symbol]): SemanticCheck =
     symbols.foldSemanticCheck(symbol => declareVariable(symbol.definition.asVariable, symbol.types))
