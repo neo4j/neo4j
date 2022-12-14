@@ -109,7 +109,6 @@ public class WebURLAccessRule implements URLAccessRule
                     newUrl = new URL( location );
                     if ( !newUrl.getProtocol().equalsIgnoreCase(result.getProtocol()) )
                     {
-                        con.disconnect();
                         return con;
                     }
                 }
@@ -120,8 +119,6 @@ public class WebURLAccessRule implements URLAccessRule
                 }
                 result = newUrl;
             }
-
-            con.disconnect();
         }
         while ( isRedirect );
 
@@ -142,7 +139,8 @@ public class WebURLAccessRule implements URLAccessRule
         {
             try
             {
-                checkUrlIncludingHops( url, blockedIpRanges );
+                HttpURLConnection con = checkUrlIncludingHops( url, blockedIpRanges );
+                con.disconnect();
             }
             catch ( Exception e )
             {

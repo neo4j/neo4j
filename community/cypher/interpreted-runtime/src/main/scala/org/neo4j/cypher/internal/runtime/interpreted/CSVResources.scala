@@ -162,13 +162,14 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
       if (ipBlocklist.nonEmpty) {
         WebURLAccessRule.checkUrlIncludingHops(url, ipBlocklist.asJava)
       } else {
-        url.openConnection()
+        val newCon = url.openConnection()
+        newCon.setRequestProperty(
+          "User-Agent",
+          s"${WebURLAccessRule.LOAD_CSV_USER_AGENT_PREFIX}${WebURLAccessRule.userAgent()}"
+        )
+        newCon
       }
 
-    con.setRequestProperty(
-      "User-Agent",
-      s"${WebURLAccessRule.LOAD_CSV_USER_AGENT_PREFIX}${WebURLAccessRule.userAgent()}"
-    )
     con.setConnectTimeout(connectionTimeout)
     con.setReadTimeout(readTimeout)
 
