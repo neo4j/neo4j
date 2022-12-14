@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.util.ASTNode
 trait Statement extends ASTNode {
   def semanticCheck: SemanticCheck
 
+  /**
+   * All variables that are explicitly listed to be returned from this statement.
+   */
   def returnColumns: List[LogicalVariable]
 
   /**
