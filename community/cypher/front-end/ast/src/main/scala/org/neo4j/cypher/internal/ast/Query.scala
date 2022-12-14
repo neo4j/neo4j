@@ -69,6 +69,11 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def containsUpdates: Boolean
   def returnColumns: List[LogicalVariable] = returnVariables.explicitVariables.toList
+
+  /**
+   * All variables that are explicitly listed to be returned from this statement.
+   * This also includes the information whether other existing variables in scope are also returned.
+   */
   def returnVariables: ReturnVariables
 
   /**
