@@ -131,7 +131,7 @@ case object PlanUpdates extends UpdatesPlanner {
       }._1
     }
 
-    def containsIrExpression(a: Any): Boolean = a.folder.treeExists { case _: IRExpression => true}
+    def containsIrExpression(a: Any): Boolean = a.folder.treeExists { case _: IRExpression => true }
 
     pattern match {
       // FOREACH

@@ -1181,12 +1181,13 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 
   private def checkNoSubqueryInMerge: SemanticCheck = {
     val hasSubqueryExpression = Seq(pattern, actions).folder.treeCollect {
-      case e: CountExpression => e
+      case e: CountExpression  => e
       case e: ExistsExpression => e
     }
 
     hasSubqueryExpression match {
-      case subquery :: _ => SemanticCheck.error(SemanticError("Subquery expressions are not allowed in a MERGE clause.", subquery.position))
+      case subquery :: _ =>
+        SemanticCheck.error(SemanticError("Subquery expressions are not allowed in a MERGE clause.", subquery.position))
       case _ => success
     }
   }

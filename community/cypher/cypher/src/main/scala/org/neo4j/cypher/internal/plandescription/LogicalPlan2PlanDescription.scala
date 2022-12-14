@@ -2074,7 +2074,14 @@ case class LogicalPlan2PlanDescription(
         )
 
       case LetSemiApply(_, _, idName) =>
-        PlanDescriptionImpl(id, "LetSemiApply", children, Seq(Details(asPrettyString(idName))), variables, withRawCardinalities)
+        PlanDescriptionImpl(
+          id,
+          "LetSemiApply",
+          children,
+          Seq(Details(asPrettyString(idName))),
+          variables,
+          withRawCardinalities
+        )
 
       case _: LetAntiSemiApply =>
         PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables, withRawCardinalities)
