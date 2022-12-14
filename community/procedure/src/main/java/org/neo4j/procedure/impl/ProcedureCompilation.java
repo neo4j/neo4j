@@ -978,10 +978,11 @@ public final class ProcedureCompilation {
         } else if (type.equals(NODE)) {
             Expression internalTransaction = invoke(
                     context, methodReference(Context.class, InternalTransaction.class, "internalTransactionOrNull"));
-            Expression getNode = invoke(
+            Expression dbValidation = invoke(
                     internalTransaction,
                     methodReference(InternalTransaction.class, Entity.class, "validateSameDB", Entity.class),
                     expression);
+            Expression getNode = ternary(equal(internalTransaction, constant(null)), expression, dbValidation);
             return nullCheck(
                     expression,
                     invoke(
@@ -991,10 +992,11 @@ public final class ProcedureCompilation {
         } else if (type.equals(RELATIONSHIP)) {
             Expression internalTransaction = invoke(
                     context, methodReference(Context.class, InternalTransaction.class, "internalTransactionOrNull"));
-            Expression getRelationship = invoke(
+            Expression dbValidation = invoke(
                     internalTransaction,
                     methodReference(InternalTransaction.class, Entity.class, "validateSameDB", Entity.class),
                     expression);
+            Expression getRelationship = ternary(equal(internalTransaction, constant(null)), expression, dbValidation);
             return nullCheck(
                     expression,
                     invoke(

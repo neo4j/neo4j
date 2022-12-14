@@ -1123,6 +1123,20 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException(
+                    "Invoking procedure with WRITE access mode is not allowed during parallel execution.");
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
+                int id, AnyValue[] arguments, ProcedureCallContext context) {
+            throw new UnsupportedOperationException(
+                    "Invoking procedure with SCHEMA access mode is not allowed during parallel execution.");
+        }
+
+        @Override
         public TransactionState txState() {
             throw new UnsupportedOperationException(
                     "Accessing transaction state is not allowed during parallel execution");

@@ -155,6 +155,51 @@ public abstract class ProcedureCaller {
                 .context();
     }
 
+    public RawIterator<AnyValue[], ProcedureException> callProcedure(
+            int id, AnyValue[] input, AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
+            throws ProcedureException {
+        performCheckBeforeOperation();
+
+        SecurityContext securityContext = securityContext();
+        AccessMode mode = securityContext.mode();
+        if (!mode.allowsExecuteProcedure(id).allowsAccess()) {
+            String message = format("Executing procedure is not allowed for %s.", securityContext.description());
+            throw securityAuthorizationHandler().logAndGetAuthorizationException(securityContext, message);
+        }
+
+        SecurityContext procedureSecurityContext = mode.shouldBoostProcedure(id).allowsAccess()
+                ? securityContext
+                        .withMode(new OverriddenAccessMode(mode, procedureMode))
+                        .withMode(AdminAccessMode.FULL)
+                : securityContext.withMode(new RestrictedAccessMode(mode, procedureMode));
+
+        RawIterator<AnyValue[], ProcedureException> procedureCall;
+        try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
+            procedureCall = doCallProcedure(prepareContext(procedureSecurityContext, procedureCallContext), id, input);
+        }
+
+        return createIterator(procedureSecurityContext, procedureCall);
+    }
+
+    private RawIterator<AnyValue[], ProcedureException> createIterator(
+            SecurityContext procedureSecurityContext, RawIterator<AnyValue[], ProcedureException> procedureCall) {
+        return new RawIterator<>() {
+            @Override
+            public boolean hasNext() throws ProcedureException {
+                try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
+                    return procedureCall.hasNext();
+                }
+            }
+
+            @Override
+            public AnyValue[] next() throws ProcedureException {
+                try (var ignore = overrideSecurityContext(procedureSecurityContext)) {
+                    return procedureCall.next();
+                }
+            }
+        };
+    }
+
     abstract SecurityContext securityContext();
 
     abstract OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context);
@@ -171,8 +216,7 @@ public abstract class ProcedureCaller {
 
     public abstract UserAggregationReducer createAggregationFunction(int id) throws ProcedureException;
 
-    public abstract RawIterator<AnyValue[], ProcedureException> callProcedure(
-            int id, AnyValue[] input, final AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
+    abstract RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
             throws ProcedureException;
 
     public static class ForTransactionScope extends ProcedureCaller {
@@ -232,6 +276,14 @@ public abstract class ProcedureCaller {
         }
 
         @Override
+        RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
+                throws ProcedureException {
+            try (Statement statement = ktx.acquireStatement()) {
+                return globalProcedures.callProcedure(ctx, id, input, statement);
+            }
+        }
+
+        @Override
         SecurityContext securityContext() {
             return ktx.securityContext();
         }
@@ -245,59 +297,6 @@ public abstract class ProcedureCaller {
         @Override
         InternalTransaction maybeInternalTransaction() {
             return ktx.internalTransaction();
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> callProcedure(
-                int id,
-                AnyValue[] input,
-                final AccessMode.Static procedureMode,
-                ProcedureCallContext procedureCallContext)
-                throws ProcedureException {
-            ktx.assertOpen();
-
-            AccessMode mode = ktx.securityContext().mode();
-            if (!mode.allowsExecuteProcedure(id).allowsAccess()) {
-                String message = format(
-                        "Executing procedure is not allowed for %s.",
-                        ktx.securityContext().description());
-                throw ktx.securityAuthorizationHandler()
-                        .logAndGetAuthorizationException(ktx.securityContext(), message);
-            }
-
-            final SecurityContext procedureSecurityContext =
-                    mode.shouldBoostProcedure(id).allowsAccess()
-                            ? ktx.securityContext()
-                                    .withMode(new OverriddenAccessMode(mode, procedureMode))
-                                    .withMode(AdminAccessMode.FULL)
-                            : ktx.securityContext().withMode(new RestrictedAccessMode(mode, procedureMode));
-
-            final RawIterator<AnyValue[], ProcedureException> procedureCall;
-            try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext);
-                    Statement statement = ktx.acquireStatement()) {
-                procedureCall = globalProcedures.callProcedure(
-                        prepareContext(procedureSecurityContext, procedureCallContext), id, input, statement);
-            }
-            return createIterator(procedureSecurityContext, procedureCall);
-        }
-
-        private RawIterator<AnyValue[], ProcedureException> createIterator(
-                SecurityContext procedureSecurityContext, RawIterator<AnyValue[], ProcedureException> procedureCall) {
-            return new RawIterator<>() {
-                @Override
-                public boolean hasNext() throws ProcedureException {
-                    try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext)) {
-                        return procedureCall.hasNext();
-                    }
-                }
-
-                @Override
-                public AnyValue[] next() throws ProcedureException {
-                    try (KernelTransaction.Revertable ignore = ktx.overrideWith(procedureSecurityContext)) {
-                        return procedureCall.next();
-                    }
-                }
-            };
         }
     }
 
@@ -347,6 +346,12 @@ public abstract class ProcedureCaller {
         }
 
         @Override
+        RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
+                throws ProcedureException {
+            return globalProcedures.callProcedure(ctx, id, input, executionContext);
+        }
+
+        @Override
         SecurityContext securityContext() {
             return overridableSecurityContext.currentSecurityContext();
         }
@@ -379,13 +384,6 @@ public abstract class ProcedureCaller {
         @Override
         ValueMapper<Object> createValueMapper() {
             return new ExecutionContextValueMapper(executionContext);
-        }
-
-        @Override
-        public RawIterator<AnyValue[], ProcedureException> callProcedure(
-                int id, AnyValue[] input, AccessMode.Static procedureMode, ProcedureCallContext procedureCallContext)
-                throws ProcedureException {
-            throw new UnsupportedOperationException("Invoking a procedure is not allowed during parallel execution");
         }
     }
 }
