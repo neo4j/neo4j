@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
@@ -1178,10 +1179,23 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 
   override def name = "MERGE"
 
+  private def checkNoSubqueryInMerge: SemanticCheck = {
+    val hasSubqueryExpression = Seq(pattern, actions).folder.treeCollect {
+      case e: CountExpression => e
+      case e: ExistsExpression => e
+    }
+
+    hasSubqueryExpression match {
+      case subquery :: _ => SemanticCheck.error(SemanticError("Subquery expressions are not allowed in a MERGE clause.", subquery.position))
+      case _ => success
+    }
+  }
+
   override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern(Seq(pattern))(pattern.position)) chain
       actions.semanticCheck chain
-      checkRelTypes(pattern)
+      checkRelTypes(pattern) chain
+      checkNoSubqueryInMerge
 }
 
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause with SingleRelTypeCheck {

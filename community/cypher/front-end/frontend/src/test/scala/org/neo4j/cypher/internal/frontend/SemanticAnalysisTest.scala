@@ -1721,6 +1721,33 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
+  test("should not allow subquery expressions in MERGE ON CREATE") {
+    val query = "MERGE (n) ON CREATE SET n.prop = EXISTS { MATCH () } RETURN 1"
+
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Subquery expressions are not allowed in a MERGE clause.", InputPosition(33, 1, 34)))
+    )
+  }
+
+  test("should not allow subquery expressions in MERGE") {
+    val query = "MERGE (n {prop: EXISTS {MATCH ()}}) RETURN n.prop"
+
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Subquery expressions are not allowed in a MERGE clause.", InputPosition(16, 1, 17)))
+    )
+  }
+
+  test("should not allow subquery expressions in MERGE ON SET") {
+    val query = "MERGE (n) ON CREATE SET n.prop = COUNT { MATCH () } RETURN 1"
+
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Subquery expressions are not allowed in a MERGE clause.", InputPosition(33, 1, 34)))
+    )
+  }
+
   // ------- Helpers ------------------------------
 
   private def expectErrorMessagesFrom(
