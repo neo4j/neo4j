@@ -95,7 +95,6 @@ public class WebURLAccessRule implements URLAccessRule {
                 try {
                     newUrl = new URL(location);
                     if (!newUrl.getProtocol().equalsIgnoreCase(result.getProtocol())) {
-                        con.disconnect();
                         return con;
                     }
                 } catch (MalformedURLException e) {
@@ -104,8 +103,6 @@ public class WebURLAccessRule implements URLAccessRule {
                 }
                 result = newUrl;
             }
-
-            con.disconnect();
         } while (isRedirect);
 
         return con;
@@ -121,7 +118,8 @@ public class WebURLAccessRule implements URLAccessRule {
         String host = url.getHost();
         if (!blockedIpRanges.isEmpty() && host != null && !host.isEmpty()) {
             try {
-                checkUrlIncludingHops(url, blockedIpRanges);
+                HttpURLConnection con = checkUrlIncludingHops(url, blockedIpRanges);
+                con.disconnect();
             } catch (Exception e) {
                 throw new URLAccessValidationError("Unable to verify access to " + host + ". Cause: " + e.getMessage());
             }
