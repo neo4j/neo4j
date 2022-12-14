@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
-
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -1173,6 +1173,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
+
+  override def getConfig: Config =
+    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[Config])
 
   override def assertShowIndexAllowed(): Unit = {
     val ktx = transactionalContext.kernelTransaction

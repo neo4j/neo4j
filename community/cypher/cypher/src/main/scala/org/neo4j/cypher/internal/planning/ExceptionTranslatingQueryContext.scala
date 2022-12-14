@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.planning
 
 import java.net.URL
-
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
@@ -395,6 +395,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(tokenNameLookup, inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = translateException(tokenNameLookup, inner.assertSchemaWritesAllowed())
+
+  override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
 
   override def assertShowIndexAllowed(): Unit = translateException(tokenNameLookup, inner.assertShowIndexAllowed())
 

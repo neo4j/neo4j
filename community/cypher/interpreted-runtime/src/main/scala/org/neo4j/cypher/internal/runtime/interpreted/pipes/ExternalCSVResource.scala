@@ -21,18 +21,21 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
+import inet.ipaddr.IPAddressString
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 
 trait ExternalCSVResource {
   def getCsvIterator(url: URL,
-                     fieldTerminator: Option[String],
+                     ipBlocklist: List[IPAddressString],fieldTerminator: Option[String],
                      legacyCsvQuoteEscaping: Boolean,
                      bufferSize: Int,
                      headers: Boolean = false): LoadCsvIterator
 }
 
 object ExternalCSVResource {
-  def empty: ExternalCSVResource = (_: URL, _: Option[String], _: Boolean,
+
+  def empty: ExternalCSVResource =
+    (_: URL, _: List[IPAddressString], _: Option[String], _: Boolean,
                                     _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 

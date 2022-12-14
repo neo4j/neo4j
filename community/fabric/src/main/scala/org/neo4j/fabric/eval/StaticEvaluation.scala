@@ -22,9 +22,9 @@ package org.neo4j.fabric.eval
 import java.net.URL
 import java.time.Clock
 import java.util.function.Supplier
-
 import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.evaluator.EvaluationException
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
@@ -308,6 +308,8 @@ object StaticEvaluation {
     override def detachDeleteNode(id: Long): Int = notAvailable()
 
     override def assertSchemaWritesAllowed(): Unit = notAvailable()
+
+    override def getConfig: Config = notAvailable()
 
     override def assertShowIndexAllowed(): Unit = notAvailable()
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
-
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -37,6 +37,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
@@ -124,8 +126,10 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator ={
+    val ipBlocklist = state.query.getConfig.get(GraphDatabaseInternalSettings.cypher_ip_blocklist)
+    val ipBlocklistAsScala = if (ipBlocklist != null) ipBlocklist.asScala.toList else List.empty
     state.resources.getCsvIterator(
-      url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
+      url,ipBlocklistAsScala, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
     )
   }
 

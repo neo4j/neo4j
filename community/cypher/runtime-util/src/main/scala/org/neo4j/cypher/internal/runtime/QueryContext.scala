@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime
 
 import java.net.URL
 import java.util.Optional
-
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
@@ -278,6 +278,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def detachDeleteNode(id: Long): Int
 
   def assertSchemaWritesAllowed(): Unit
+
+  def getConfig: Config
 
   def assertShowIndexAllowed(): Unit
 

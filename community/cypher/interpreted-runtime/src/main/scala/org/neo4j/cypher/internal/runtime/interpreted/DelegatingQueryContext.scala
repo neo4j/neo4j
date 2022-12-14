@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
-
 import org.neo4j.common.EntityType
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
@@ -379,6 +379,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   }
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
+
+  override def getConfig: Config = inner.getConfig
 
   override def assertShowIndexAllowed(): Unit = inner.assertShowIndexAllowed()
 
