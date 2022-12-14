@@ -73,7 +73,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure {
     @Override
     public RawIterator<AnyValue[], ProcedureException> apply(
             Context ctx, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-        String query = ((TextValue) input[0]).stringValue();
+        String query = getParameter(0, TextValue.class, "query", input).stringValue();
         try {
             // Find all beans that match the query name pattern
             Iterator<ObjectName> names =

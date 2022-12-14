@@ -44,7 +44,7 @@ public class Id {
         return Objects.equals(shortName(), prefix);
     }
 
-    protected String shortName() {
+    public String shortName() {
         if (shortName == null) {
             shortName = uuid.toString().substring(0, 8);
         }
