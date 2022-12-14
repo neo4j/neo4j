@@ -128,7 +128,7 @@ class PushToCloudCommandTest
                 assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", devMode));
 
         // then
-        assertEquals(exception.getMessage(), "Invalid Bolt URI 'hello.local'");
+        assertEquals("Invalid Bolt URI 'hello.local'", exception.getMessage());
     }
 
     @Test
@@ -145,10 +145,10 @@ class PushToCloudCommandTest
         // when
         CommandFailedException exception = assertThrows(
                 CommandFailedException.class,
-                () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode));
+                () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-abc.io", devMode));
 
         // then
-        assertEquals(exception.getMessage(), "Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-env.io'");
+        assertEquals("Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-abc.io'", exception.getMessage());
     }
 
     @Test
@@ -166,7 +166,7 @@ class PushToCloudCommandTest
         String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.databases.neo4j.io", devMode);
 
         // then
-        assertEquals(consoleUrl, "https://console.neo4j.io/v1/databases/rogue");
+        assertEquals("https://console.neo4j.io/v1/databases/rogue", consoleUrl);
     }
 
     @Test
@@ -181,10 +181,66 @@ class PushToCloudCommandTest
                 .build();
 
         // when
-        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-env.io", devMode);
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-abc.io", devMode);
 
         // then
-        assertEquals(consoleUrl, "https://console-env.neo4j-env.io/v1/databases/rogue");
+        assertEquals("https://console-env.neo4j-abc.io/v1/databases/rogue", consoleUrl);
+    }
+
+    @Test
+    public void testBuildValidConsoleURInPrivMode() throws IOException
+    {
+        // given
+        boolean devMode = false;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.production-orch-0001.neo4j.io", devMode);
+
+        // then
+        assertEquals("https://console.neo4j.io/v1/databases/rogue", consoleUrl);
+    }
+
+    @Test
+    public void testBuildValidConsoleURInPrivModeInNonProd() throws IOException
+    {
+        // given
+        boolean devMode = false;
+        Copier targetCommunicator = mockedTargetCommunicator();
+        PushToCloudCommand command = command()
+                .copier(targetCommunicator)
+                .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
+                .build();
+
+        // when
+        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.env-orch-0001.neo4j-abc.io", devMode);
+
+        // then
+        assertEquals("https://console-env.neo4j-abc.io/v1/databases/rogue", consoleUrl);
+
+        // when
+        consoleUrl = command.buildConsoleURI("neo4j+s://rogue.staging-orch-0001.neo4j.io", devMode);
+
+        // then
+        assertEquals("https://console-staging.neo4j.io/v1/databases/rogue", consoleUrl);
+
+        // when
+        consoleUrl = command.buildConsoleURI("neo4j+s://rogue.prestaging-orch-0001.neo4j.io", devMode);
+
+        // then
+        assertEquals("https://console-prestaging.neo4j.io/v1/databases/rogue", consoleUrl);
+
+        // when
+        CommandFailedException exception = assertThrows(
+                CommandFailedException.class,
+                () -> command.buildConsoleURI("neo4j+s://rogue.env-orch-0001.neo4j.io", devMode));
+
+        // then
+        assertEquals("Invalid Bolt URI 'neo4j+s://rogue.env-orch-0001.neo4j.io'", exception.getMessage());
     }
 
     @Test
