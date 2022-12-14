@@ -667,7 +667,7 @@ class FabricFragmenterTest
                 call(
                   Seq("my", "ns"),
                   "myProcedure2",
-                  Some(Seq(coerceTo(literal(1), ct.any))),
+                  Some(Seq(literal(1))),
                   Some(Seq(varFor("a"), varFor("b")))
                 )
               ),
@@ -727,7 +727,7 @@ class FabricFragmenterTest
           .leaf(
             Seq(
               return_(
-                resolved(function(Seq("my", "ns"), "const0", coerceTo(literal(1), ct.any))).as("x")
+                resolved(function(Seq("my", "ns"), "const0", literal(1))).as("x")
               )
             ),
             Seq("x")

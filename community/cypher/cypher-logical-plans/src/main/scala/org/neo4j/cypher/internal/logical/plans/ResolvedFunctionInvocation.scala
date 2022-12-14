@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols
 
 object ResolvedFunctionInvocation {
 
@@ -70,7 +71,8 @@ case class ResolvedFunctionInvocation(
           .zip(optInputFields)
           .map {
             case (arg, optField) =>
-              optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
+              //If type is CTAny we don't need any coercion
+            optField.map { field => if (field.typ == symbols.CTAny) arg else CoerceTo(arg, field.typ) }.getOrElse(arg)
           }
       copy(callArguments = coercedArguments)(position)
 

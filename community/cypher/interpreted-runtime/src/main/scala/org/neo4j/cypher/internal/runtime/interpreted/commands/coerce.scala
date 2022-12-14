@@ -64,48 +64,59 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object coerce {
 
-  def apply(value: AnyValue, state: QueryState, typ: CypherType): AnyValue = {
+  type Coercer = (AnyValue, QueryState) => AnyValue
+
+  def apply(value: AnyValue, state: QueryState, coercer: Coercer, typ: CypherType): AnyValue = {
     val result =
-      if (value eq Values.NO_VALUE) Values.NO_VALUE
-      else
+      if (value eq Values.NO_VALUE) {
+        Values.NO_VALUE
+      } else {
         try {
-          typ match {
-            case CTAny          => value
-            case CTString       => value.asInstanceOf[TextValue]
-            case CTNode         => value.asInstanceOf[VirtualNodeValue]
-            case CTRelationship => value.asInstanceOf[VirtualRelationshipValue]
-            case CTPath         => value.asInstanceOf[VirtualPathValue]
-            case CTInteger      => Values.longValue(value.asInstanceOf[NumberValue].longValue())
-            case CTFloat        => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
-            case CTMap => value match {
-                case IsMap(m) => m(state)
-                case _        => throw cantCoerce(value, typ)
-              }
-            case t: ListType => value match {
-                case _: VirtualPathValue if t.innerType == CTNode         => throw cantCoerce(value, typ)
-                case _: VirtualPathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-                case p: VirtualPathValue                                  => p.asList
-                case IsList(coll) if t.innerType == CTAny                 => coll
-                case IsList(coll) =>
-                  VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray: _*)
-                case _ => throw cantCoerce(value, typ)
-              }
-            case CTBoolean       => value.asInstanceOf[BooleanValue]
-            case CTNumber        => value.asInstanceOf[NumberValue]
-            case CTPoint         => value.asInstanceOf[PointValue]
-            case CTGeometry      => value.asInstanceOf[PointValue]
-            case CTDate          => value.asInstanceOf[DateValue]
-            case CTLocalTime     => value.asInstanceOf[LocalTimeValue]
-            case CTTime          => value.asInstanceOf[TimeValue]
-            case CTLocalDateTime => value.asInstanceOf[LocalDateTimeValue]
-            case CTDateTime      => value.asInstanceOf[DateTimeValue]
-            case CTDuration      => value.asInstanceOf[DurationValue]
-            case _               => throw cantCoerce(value, typ)
-          }
+          coercer(value, state)
         } catch {
           case e: ClassCastException => throw cantCoerce(value, typ, Some(e))
         }
+      }
     result
+  }
+
+  def coercer(typ: CypherType): Coercer = {
+    typ match {
+      case CTAny          => (value, _) => value
+      case CTString       => (value, _) => value.asInstanceOf[TextValue]
+      case CTNode         => (value, _) => value.asInstanceOf[VirtualNodeValue]
+      case CTRelationship => (value, _) => value.asInstanceOf[VirtualRelationshipValue]
+      case CTPath         => (value, _) => value.asInstanceOf[VirtualPathValue]
+      case CTInteger      => (value, _) => Values.longValue(value.asInstanceOf[NumberValue].longValue())
+      case CTFloat        => (value, _) => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
+      case CTMap => (value, state) =>
+          value match {
+            case IsMap(m) => m(state)
+            case _        => throw cantCoerce(value, typ)
+          }
+      case t: ListType => (value, state) =>
+          value match {
+            case _: VirtualPathValue if t.innerType == CTNode         => throw cantCoerce(value, typ)
+            case _: VirtualPathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+            case p: VirtualPathValue                                  => p.asList
+            case IsList(coll) if t.innerType == CTAny                 => coll
+            case IsList(coll) =>
+              val innerCoercer = coercer(t.innerType)
+              VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, innerCoercer, t.innerType)).toArray: _*)
+            case _ => throw cantCoerce(value, typ)
+          }
+      case CTBoolean       => (value, _) => value.asInstanceOf[BooleanValue]
+      case CTNumber        => (value, _) => value.asInstanceOf[NumberValue]
+      case CTPoint         => (value, _) => value.asInstanceOf[PointValue]
+      case CTGeometry      => (value, _) => value.asInstanceOf[PointValue]
+      case CTDate          => (value, _) => value.asInstanceOf[DateValue]
+      case CTLocalTime     => (value, _) => value.asInstanceOf[LocalTimeValue]
+      case CTTime          => (value, _) => value.asInstanceOf[TimeValue]
+      case CTLocalDateTime => (value, _) => value.asInstanceOf[LocalDateTimeValue]
+      case CTDateTime      => (value, _) => value.asInstanceOf[DateTimeValue]
+      case CTDuration      => (value, _) => value.asInstanceOf[DurationValue]
+      case _               => (value, _) => throw cantCoerce(value, typ)
+    }
   }
 
   private def cantCoerce(value: Any, typ: CypherType, cause: Option[Throwable] = None) =
