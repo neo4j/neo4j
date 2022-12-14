@@ -129,7 +129,7 @@ case class ResolvedCall(
         .zip(optInputFields)
         .map {
           case (arg, optField) =>
-            //If type is CTAny we don't need any coercion
+            // If type is CTAny we don't need any coercion
             optField.map { field => if (field.typ == symbols.CTAny) arg else CoerceTo(arg, field.typ) }.getOrElse(arg)
         }
     copy(callArguments = coercedArguments)(position)
