@@ -1054,11 +1054,15 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckProperty
   self: RuntimeTestSuite[CONTEXT] =>
 
   test("expand into should handle random graphs") {
+    // Plan that tries to stress the expand into caches
     def expandIntoPlan(relPattern: String) = {
       new LogicalQueryBuilder(this)
         .produceResults("from", "to", "rel")
         .projection("elementId(a) AS from", "elementId(b) AS to", "elementId(r) AS rel")
         .expandInto(s"(a)$relPattern(b)")
+        .sort(Seq(Ascending("rand")))
+        .projection("rand() as rand")
+        .unwind("[0,1] as x")
         .cartesianProduct()
         .|.allNodeScan("b")
         .allNodeScan("a")
@@ -1083,11 +1087,13 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckProperty
       def expected(relTypePredicate: String => Boolean) = relationships
         .filter(r => relTypePredicate(r.relType))
         .map(r => Array(r.from, r.to, r.id))
+        .flatMap(r => Seq(r, r)) // The unwind
 
       execute(aLikesBPlan, runtime) should beColumns("from", "to", "rel")
         .withRows(inAnyOrder(expected(_ == "LIKES")))
-
-      val expectedReversed = relationships.filter(_.relType == "LIKES").map(r => Array(r.to, r.from, r.id))
+      val expectedReversed = relationships.filter(_.relType == "LIKES")
+        .map(r => Array(r.to, r.from, r.id))
+        .flatMap(r => Seq(r, r)) // The unwind
       execute(bLikesAPlan, runtime) should beColumns("from", "to", "rel")
         .withRows(inAnyOrder(expectedReversed))
 
@@ -1097,6 +1103,7 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckProperty
           case r if r.from == r.to => Seq(Array(r.from, r.to, r.id))
           case r                   => Seq(Array(r.from, r.to, r.id), Array(r.to, r.from, r.id))
         }
+        .flatMap(r => Seq(r, r)) // The unwind
       execute(aLikesBOrBLikesAPlan, runtime) should beColumns("from", "to", "rel")
         .withRows(inAnyOrder(expectedBoth))
 
