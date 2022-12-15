@@ -24,6 +24,7 @@ import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -44,6 +45,11 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
 
     static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(set.trackedCapacity));
+        return new HeapTrackingLongHashSet(memoryTracker, set);
+    }
+
+    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, LongSet set) {
+        memoryTracker.allocateHeap(SHALLOW_SIZE);
         return new HeapTrackingLongHashSet(memoryTracker, set);
     }
 
@@ -68,6 +74,11 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         super(set);
         this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = set.trackedCapacity;
+    }
+
+    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, LongSet set) {
+        super(set);
+        this.memoryTracker = requireNonNull(memoryTracker);
     }
 
     private static int smallestPowerOfTwoGreaterThan(int n) {
