@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
@@ -114,8 +115,8 @@ class InternalTransactionCommitProcessTest {
         StorageEngine storageEngine = mock(StorageEngine.class);
 
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
-        CompleteTransaction noCommandTx =
-                new CompleteTransaction(Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, ANONYMOUS);
+        CompleteTransaction noCommandTx = new CompleteTransaction(
+                Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
 
         // WHEN
 

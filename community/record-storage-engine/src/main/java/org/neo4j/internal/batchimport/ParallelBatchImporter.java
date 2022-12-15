@@ -30,6 +30,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -136,7 +137,11 @@ public class ParallelBatchImporter implements BatchImporter {
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logFilesInitializer.initializeLogFiles(
-                    databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT);
+                    databaseLayout,
+                    store.getNeoStores().getMetaDataStore(),
+                    new MetadataCache(logTailMetadata),
+                    fileSystem,
+                    BATCH_IMPORTER_CHECKPOINT);
             logic.buildAuxiliaryStores();
             logic.success();
         }

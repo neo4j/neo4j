@@ -46,7 +46,6 @@ public class ChunkedTransaction implements CommandBatchToApply, CommandBatch {
     private final TransactionIdGenerator transactionIdGenerator;
     private boolean idGenerated;
     private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
-    private KernelVersion version;
     private CommandBatchToApply next;
 
     public ChunkedTransaction(
@@ -121,10 +120,7 @@ public class ChunkedTransaction implements CommandBatchToApply, CommandBatch {
 
     @Override
     public KernelVersion kernelVersion() {
-        if (version == null) {
-            version = chunk.commands().get(0).kernelVersion();
-        }
-        return version;
+        return chunk.chunkMetadata().kernelVersion();
     }
 
     @Override

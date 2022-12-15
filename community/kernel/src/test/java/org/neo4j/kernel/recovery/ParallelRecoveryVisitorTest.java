@@ -235,7 +235,8 @@ class ParallelRecoveryVisitorTest {
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
         LogEntryStart startEntry = new LogEntryStart(0, 0, 0, new byte[0], UNSPECIFIED);
-        CommandBatch txRepresentation = new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, AUTH_DISABLED);
+        CommandBatch txRepresentation =
+                new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, AUTH_DISABLED);
         LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }

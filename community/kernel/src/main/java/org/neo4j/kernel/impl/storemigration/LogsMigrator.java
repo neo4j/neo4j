@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -110,8 +111,9 @@ class LogsMigrator {
 
         MigrationTransactionIds migrate() {
             try (MetadataProvider store = getMetaDataStore()) {
+                MetadataCache metadataCache = new MetadataCache(logTailSupplier.get());
                 TransactionLogInitializer logInitializer =
-                        new TransactionLogInitializer(fs, store, storageEngineFactory);
+                        new TransactionLogInitializer(fs, store, storageEngineFactory, metadataCache);
                 Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
 
                 if (logsMissing) {
@@ -143,8 +145,9 @@ class LogsMigrator {
             // we were told to not think of this as an error condition,
             // so we instead initialize an empty log file.
             try (MetadataProvider store = getMetaDataStore()) {
+                MetadataCache metadataCache = new MetadataCache(logTailSupplier.get());
                 TransactionLogInitializer logInitializer =
-                        new TransactionLogInitializer(fs, store, storageEngineFactory);
+                        new TransactionLogInitializer(fs, store, storageEngineFactory, metadataCache);
                 Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
                 return new MigrationTransactionIds(
                         TransactionIdStore.BASE_TX_ID,

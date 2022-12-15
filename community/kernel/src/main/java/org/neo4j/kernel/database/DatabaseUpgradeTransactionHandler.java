@@ -114,6 +114,7 @@ class DatabaseUpgradeTransactionHandler {
             if (dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
                 try {
                     try (Lock lock = locker.acquireWriteLock(tx)) {
+
                         KernelVersion kernelVersionToUpgradeTo =
                                 dbmsRuntimeRepository.getVersion().kernelVersion();
                         KernelVersion currentKernelVersion = kernelVersionProvider.kernelVersion();

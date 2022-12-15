@@ -52,6 +52,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -160,7 +161,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
             TransactionCommitmentFactory commitmentFactory,
             TransactionIdGenerator transactionIdGenerator) {
         CompleteTransaction txRepresentation =
-                new CompleteTransaction(commands, new byte[0], -1, -1, -1, -1, ANONYMOUS);
+                new CompleteTransaction(commands, new byte[0], -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
         TransactionToApply tx = new TransactionToApply(
                 txRepresentation,
                 NULL_CONTEXT,

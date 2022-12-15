@@ -68,6 +68,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.Locker;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -226,7 +227,7 @@ class DumpCommandIT {
                 .build();
         try (Lifespan ignored = new Lifespan(logFiles)) {
             LogFile logFile = logFiles.getLogFile();
-            LogEntryWriter writer = logFile.getTransactionLogWriter().getWriter();
+            LogEntryWriter writer = logFile.getTransactionLogWriter().getWriter(KernelVersion.LATEST);
             writer.writeStartEntry(
                     0x123456789ABCDEFL,
                     logFile.getLogFileInformation().getLastEntryId() + 1,

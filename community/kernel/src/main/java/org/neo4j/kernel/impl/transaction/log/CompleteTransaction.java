@@ -36,6 +36,7 @@ public class CompleteTransaction implements CommandBatch {
     private final long timeStarted;
     private final long latestCommittedTxWhenStarted;
     private final long timeCommitted;
+    private final KernelVersion kernelVersion;
     private final Subject subject;
     /**
      * This is a bit of a smell since it's only used for coordinating transactions in a cluster.
@@ -52,6 +53,7 @@ public class CompleteTransaction implements CommandBatch {
             long latestCommittedTxWhenStarted,
             long timeCommitted,
             int leaseId,
+            KernelVersion kernelVersion,
             Subject subject) {
         this.commands = commands;
         this.additionalHeader = additionalHeader;
@@ -59,6 +61,7 @@ public class CompleteTransaction implements CommandBatch {
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
         this.leaseId = leaseId;
+        this.kernelVersion = kernelVersion;
         this.subject = subject;
     }
 
@@ -108,7 +111,7 @@ public class CompleteTransaction implements CommandBatch {
 
     @Override
     public KernelVersion kernelVersion() {
-        return commands.isEmpty() ? null : commands.get(0).kernelVersion();
+        return kernelVersion;
     }
 
     @Override

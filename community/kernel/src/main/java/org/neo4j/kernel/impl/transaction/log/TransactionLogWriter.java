@@ -23,6 +23,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -74,8 +75,8 @@ public class TransactionLogWriter {
     }
 
     @VisibleForTesting
-    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter() {
-        return logEntryWriterFactory.createEntryWriter(channel);
+    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(KernelVersion version) {
+        return logEntryWriterFactory.createEntryWriter(channel, version);
     }
 
     public void append(ByteBuffer byteBuffer) throws IOException {

@@ -635,6 +635,7 @@ public class Database extends AbstractDatabase {
                     transactionIdStore.getLastClosedTransactionId(),
                     time,
                     leaseClient.leaseId(),
+                    metadataCache.kernelVersion(),
                     Subject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply = new TransactionToApply(

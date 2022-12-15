@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
+import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -527,7 +528,7 @@ class DetachedLogTailScannerTest {
                 int previousChecksum = BASE_TX_CHECKSUM;
                 try {
                     TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
-                    LogEntryWriter writer = logWriter.getWriter();
+                    LogEntryWriter writer = logWriter.getWriter(LATEST);
                     for (Entry entry : entries) {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);

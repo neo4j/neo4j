@@ -28,11 +28,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
  * complete transaction in the log but should be able to be upgraded without a restart. Therefore createEntryWriter should be used to get a new LogEntryWriter
  * for each transaction.
  */
-@FunctionalInterface
-public interface LogEntryWriterFactory {
-    <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel);
-
-    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel, KernelVersion version) {
-        return version == null ? createEntryWriter(channel) : new LogEntryWriter<>(channel, version);
+public class LogEntryWriterFactory {
+    public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel, KernelVersion version) {
+        return new LogEntryWriter<>(channel, version);
     }
 }

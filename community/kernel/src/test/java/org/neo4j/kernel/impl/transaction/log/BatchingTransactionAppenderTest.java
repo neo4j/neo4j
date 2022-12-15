@@ -57,7 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
+import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -111,7 +111,7 @@ class BatchingTransactionAppenderTest {
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST)));
+                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -141,7 +141,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
-        TransactionLogWriter logWriter = new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST));
+        TransactionLogWriter logWriter = new TransactionLogWriter(channel, new LogEntryWriterFactory());
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -165,7 +165,7 @@ class BatchingTransactionAppenderTest {
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST)));
+                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -186,6 +186,7 @@ class BatchingTransactionAppenderTest {
                 latestCommittedTxWhenStarted,
                 timeCommitted,
                 -1,
+                LATEST,
                 ANONYMOUS);
 
         LogEntryStart start = new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED);
@@ -219,7 +220,7 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST)));
+                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -235,6 +236,7 @@ class BatchingTransactionAppenderTest {
                 latestCommittedTxWhenStarted,
                 timeCommitted,
                 -1,
+                LATEST,
                 ANONYMOUS);
 
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
@@ -268,7 +270,7 @@ class BatchingTransactionAppenderTest {
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST)));
+                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -281,6 +283,7 @@ class BatchingTransactionAppenderTest {
         when(transaction.additionalHeader()).thenReturn(new byte[0]);
         when(transaction.isFirst()).thenReturn(true);
         when(transaction.isLast()).thenReturn(true);
+        when(transaction.kernelVersion()).thenReturn(LATEST);
 
         var e = assertThrows(
                 IOException.class,
@@ -314,7 +317,7 @@ class BatchingTransactionAppenderTest {
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new DbmsLogEntryWriterFactory(() -> LATEST)));
+                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -327,6 +330,7 @@ class BatchingTransactionAppenderTest {
         // WHEN
         CommandBatch transaction = mock(CommandBatch.class);
         when(transaction.additionalHeader()).thenReturn(new byte[0]);
+        when(transaction.kernelVersion()).thenReturn(LATEST);
 
         var e = assertThrows(
                 IOException.class,
@@ -373,7 +377,14 @@ class BatchingTransactionAppenderTest {
             long latestCommittedTxWhenStarted,
             long timeCommitted) {
         return new CompleteTransaction(
-                commands, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, -1, ANONYMOUS);
+                commands,
+                additionalHeader,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                timeCommitted,
+                -1,
+                LATEST,
+                ANONYMOUS);
     }
 
     private static List<StorageCommand> singleTestCommand() {

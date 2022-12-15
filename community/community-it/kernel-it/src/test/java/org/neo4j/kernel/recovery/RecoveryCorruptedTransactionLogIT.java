@@ -1086,7 +1086,7 @@ class RecoveryCorruptedTransactionLogIT {
         try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
             LogEntryWriter<FlushablePositionAwareChecksumChannel> realLogEntryWriter =
-                    transactionLogFile.getTransactionLogWriter().getWriter();
+                    transactionLogFile.getTransactionLogWriter().getWriter(KernelVersion.LATEST);
             LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
             StaticLogEntryWriterFactory<FlushablePositionAwareChecksumChannel> factory =
@@ -1096,7 +1096,7 @@ class RecoveryCorruptedTransactionLogIT {
             commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction =
-                    new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+                    new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
             writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         }
     }
@@ -1211,17 +1211,11 @@ class RecoveryCorruptedTransactionLogIT {
         <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter);
     }
 
-    private static class StaticLogEntryWriterFactory<T extends WritableChecksumChannel>
-            implements LogEntryWriterFactory {
+    private static class StaticLogEntryWriterFactory<T extends WritableChecksumChannel> extends LogEntryWriterFactory {
         private final LogEntryWriter<T> logEntryWriter;
 
         StaticLogEntryWriterFactory(LogEntryWriter<T> logEntryWriter) {
             this.logEntryWriter = logEntryWriter;
-        }
-
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel) {
-            return (LogEntryWriter<T>) logEntryWriter;
         }
 
         @Override

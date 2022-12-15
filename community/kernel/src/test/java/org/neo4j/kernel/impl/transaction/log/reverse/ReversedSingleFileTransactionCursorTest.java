@@ -259,14 +259,10 @@ class ReversedSingleFileTransactionCursorTest {
             // The type of command doesn't matter here
             commands.add(new TestCommand());
         }
-        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
     }
 
-    private static class CorruptedLogEntryWriterFactory implements LogEntryWriterFactory {
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(T channel) {
-            return new CorruptedLogEntryWriter<>(channel, KernelVersion.LATEST);
-        }
+    private static class CorruptedLogEntryWriterFactory extends LogEntryWriterFactory {
 
         @Override
         public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(

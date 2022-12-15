@@ -34,6 +34,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -106,7 +107,14 @@ class PhysicalTransactionCursorTest {
 
         // then
         CompleteTransaction txRepresentation = new CompleteTransaction(
-                singletonList(A_COMMAND_ENTRY.getCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, AUTH_DISABLED);
+                singletonList(A_COMMAND_ENTRY.getCommand()),
+                EMPTY_BYTE_ARRAY,
+                0,
+                0,
+                0,
+                0,
+                KernelVersion.LATEST,
+                AUTH_DISABLED);
         assertEquals(
                 new CommittedTransactionRepresentation(A_START_ENTRY, txRepresentation, A_COMMIT_ENTRY), cursor.get());
     }

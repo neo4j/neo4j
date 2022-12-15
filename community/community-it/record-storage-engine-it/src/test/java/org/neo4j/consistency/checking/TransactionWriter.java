@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -62,7 +63,14 @@ public class TransactionWriter {
             byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
         return new CompleteTransaction(
-                allCommands(), additionalHeader, startTime, lastCommittedTx, committedTime, -1, ANONYMOUS);
+                allCommands(),
+                additionalHeader,
+                startTime,
+                lastCommittedTx,
+                committedTime,
+                -1,
+                KernelVersion.LATEST,
+                ANONYMOUS);
     }
 
     public void propertyKey(int id, String key, boolean internal, int... dynamicIds) {

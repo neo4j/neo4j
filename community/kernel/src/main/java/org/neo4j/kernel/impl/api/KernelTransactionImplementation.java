@@ -88,6 +88,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -969,6 +970,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         lastTransactionIdWhenStarted,
                         timeCommitted,
                         leaseClient.leaseId(),
+                        kernelVersionProvider.kernelVersion(),
                         overridableSecurityContext
                                 .currentSecurityContext()
                                 .subject()
@@ -990,6 +992,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private class ChunkCommitter implements TransactionCommitter {
         private int batchNumber;
+        private KernelVersion kernelVersion;
         private ChunkedTransaction transactionPayload;
         private final TransactionCommitmentFactory commitmentFactory;
 
@@ -1003,6 +1006,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
             if (!extractedCommands.isEmpty() || commit) {
                 batchNumber++;
+                if (kernelVersion == null) {
+                    kernelVersion = kernelVersionProvider.kernelVersion();
+                }
+                // kernel version can be updated by upgrade listener and for now we only fail to commit such
+                // transactions.
+                if (commit && kernelVersion != kernelVersionProvider.kernelVersion()) {
+                    throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
+                }
                 var chunkMetadata = new ChunkMetadata(
                         batchNumber == 1,
                         commit,
@@ -1012,6 +1023,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         lastTransactionIdWhenStarted,
                         timeCommitted,
                         leaseClient.leaseId(),
+                        kernelVersion,
                         securityContext().subject().userSubject());
                 if (transactionPayload == null) {
                     transactionPayload = new ChunkedTransaction(
@@ -1030,6 +1042,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         @Override
         public void reset() {
             batchNumber = 0;
+            kernelVersion = null;
             transactionPayload = null;
         }
     }

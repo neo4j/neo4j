@@ -68,6 +68,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.MetadataCache;
@@ -524,6 +525,7 @@ class BatchingNeoStoresTest {
                     new DelegatingTokenHolder(relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
             IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
+            MetadataCache versionRepository = new MetadataCache(EMPTY_LOG_TAIL);
             RecordStorageEngine storageEngine = life.add(new RecordStorageEngine(
                     databaseLayout,
                     Config.defaults(),
@@ -541,7 +543,7 @@ class BatchingNeoStoresTest {
                     recoveryCleanupWorkCollector,
                     INSTANCE,
                     EMPTY_LOG_TAIL,
-                    new MetadataCache(EMPTY_LOG_TAIL),
+                    versionRepository,
                     LockVerificationFactory.NONE,
                     CONTEXT_FACTORY,
                     PageCacheTracer.NULL));
@@ -580,7 +582,8 @@ class BatchingNeoStoresTest {
             }
 
             TransactionLogInitializer.getLogFilesInitializer()
-                    .initializeLogFiles(databaseLayout, neoStores.getMetaDataStore(), fileSystem, "testing");
+                    .initializeLogFiles(
+                            databaseLayout, neoStores.getMetaDataStore(), versionRepository, fileSystem, "testing");
         }
     }
 
@@ -602,7 +605,7 @@ class BatchingNeoStoresTest {
                     storeCursors,
                     INSTANCE);
             CommandBatchToApply apply = new TransactionToApply(
-                    new CompleteTransaction(commands, new byte[0], 0, 0, 0, 0, ANONYMOUS),
+                    new CompleteTransaction(commands, new byte[0], 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS),
                     NULL_CONTEXT,
                     storeCursors,
                     NO_COMMITMENT,

@@ -27,6 +27,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
@@ -46,6 +47,7 @@ class TransactionRepresentationFactory {
                 txId,
                 currentTimeMillis(),
                 42,
+                KernelVersion.LATEST,
                 ANONYMOUS);
         return new TransactionToApply(
                 representation,

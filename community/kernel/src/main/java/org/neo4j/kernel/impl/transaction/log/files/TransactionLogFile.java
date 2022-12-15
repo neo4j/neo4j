@@ -51,7 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
+import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -142,8 +142,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
-        transactionLogWriter =
-                new TransactionLogWriter(writer, new DbmsLogEntryWriterFactory(context.getKernelVersionProvider()));
+        transactionLogWriter = new TransactionLogWriter(writer, new LogEntryWriterFactory());
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

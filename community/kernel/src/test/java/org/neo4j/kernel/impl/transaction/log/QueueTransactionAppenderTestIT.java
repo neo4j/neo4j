@@ -42,6 +42,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -238,8 +239,8 @@ class QueueTransactionAppenderTestIT {
     }
 
     private TransactionToApply createTransaction() {
-        CompleteTransaction tx =
-                new CompleteTransaction(List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, ANONYMOUS);
+        CompleteTransaction tx = new CompleteTransaction(
+                List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, KernelVersion.LATEST, ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
         return new TransactionToApply(
                 tx,

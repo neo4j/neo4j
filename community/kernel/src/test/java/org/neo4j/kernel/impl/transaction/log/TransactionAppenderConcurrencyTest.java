@@ -60,6 +60,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -268,8 +269,8 @@ public class TransactionAppenderConcurrencyTest {
     }
 
     protected static TransactionToApply tx() {
-        CompleteTransaction tx =
-                new CompleteTransaction(singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS);
+        CompleteTransaction tx = new CompleteTransaction(
+                singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
         return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, EMPTY);
     }
 

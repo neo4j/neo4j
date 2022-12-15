@@ -32,6 +32,8 @@ import java.util.Collections;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -55,16 +57,17 @@ public class TransactionLogInitializer {
     private final FileSystemAbstraction fs;
     private final MetadataProvider store;
     private final StorageEngineFactory storageEngineFactory;
+    private final MetadataCache metadataCache;
 
     /**
      * Get a {@link LogFilesInitializer} implementation, suitable for e.g. passing to a batch importer.
      * @return A {@link LogFilesInitializer} instance.
      */
     public static LogFilesInitializer getLogFilesInitializer() {
-        return (databaseLayout, store, fileSystem, checkpointReason) -> {
+        return (databaseLayout, store, metadataCache, fileSystem, checkpointReason) -> {
             try {
-                TransactionLogInitializer initializer =
-                        new TransactionLogInitializer(fileSystem, store, StorageEngineFactory.defaultStorageEngine());
+                TransactionLogInitializer initializer = new TransactionLogInitializer(
+                        fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
                 initializer.initializeEmptyLogFile(
                         databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
             } catch (IOException e) {
@@ -74,10 +77,14 @@ public class TransactionLogInitializer {
     }
 
     public TransactionLogInitializer(
-            FileSystemAbstraction fs, MetadataProvider store, StorageEngineFactory storageEngineFactory) {
+            FileSystemAbstraction fs,
+            MetadataProvider store,
+            StorageEngineFactory storageEngineFactory,
+            MetadataCache metadataCache) {
         this.fs = fs;
         this.store = store;
         this.storageEngineFactory = storageEngineFactory;
+        this.metadataCache = metadataCache;
     }
 
     /**
@@ -127,9 +134,10 @@ public class TransactionLogInitializer {
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
         long upgradeTransactionId = store.nextCommittingTransactionId();
+        KernelVersion kernelVersion = metadataCache.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId);
+        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion);
         int checksum =
                 transactionLogWriter.append(emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
@@ -139,9 +147,16 @@ public class TransactionLogInitializer {
         return upgradeTransactionId;
     }
 
-    private static CompleteTransaction emptyTransaction(long timestamp, long txId) {
+    private static CompleteTransaction emptyTransaction(long timestamp, long txId, KernelVersion kernelVersion) {
         return new CompleteTransaction(
-                Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, txId, timestamp, NO_LEASE, ANONYMOUS);
+                Collections.emptyList(),
+                EMPTY_BYTE_ARRAY,
+                timestamp,
+                txId,
+                timestamp,
+                NO_LEASE,
+                kernelVersion,
+                ANONYMOUS);
     }
 
     private static void appendCheckpoint(

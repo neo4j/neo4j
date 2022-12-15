@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.chunk;
 
 import org.neo4j.common.Subject;
+import org.neo4j.kernel.KernelVersion;
 
 public record ChunkMetadata(
         boolean first,
@@ -30,4 +31,5 @@ public record ChunkMetadata(
         long lastTransactionIdWhenStarted,
         long chunkCommitTime,
         int leaseId,
+        KernelVersion kernelVersion,
         Subject subject) {}

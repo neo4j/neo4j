@@ -90,6 +90,7 @@ public class PhysicalTransactionCursor implements TransactionCursor {
                     startEntry.getLastCommittedTxWhenTransactionStarted(),
                     commitEntry.getTimeWritten(),
                     -1,
+                    startEntry.kernelVersion(),
                     ANONYMOUS);
             current = new CommittedTransactionRepresentation(startEntry, transaction, commitEntry);
             channel.getCurrentPosition(lastGoodPositionMarker);

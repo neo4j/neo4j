@@ -21,12 +21,13 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.database.MetadataCache;
 
 public interface LogFilesInitializer {
     /**
      * A LogFilesInitializer instance that doesn't do anything.
      */
-    LogFilesInitializer NULL = (databaseLayout, store, fileSystem, checkpointReason) -> {};
+    LogFilesInitializer NULL = (databaseLayout, store, metadataCache, fileSystem, checkpointReason) -> {};
 
     /**
      * Initialize the transaction log files in the given database layout.
@@ -35,6 +36,7 @@ public interface LogFilesInitializer {
     void initializeLogFiles(
             DatabaseLayout databaseLayout,
             MetadataProvider store,
+            MetadataCache metadataCache,
             FileSystemAbstraction fileSystem,
             String checkpointReason);
 }
