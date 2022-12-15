@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -106,7 +105,7 @@ class ProcedureCompiler {
         this.restrictions = restrictions;
     }
 
-    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin) throws KernelException {
+    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin) throws ProcedureException {
         try {
             List<Method> functionMethods = Arrays.stream(fcnDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(UserFunction.class))
@@ -132,7 +131,7 @@ class ProcedureCompiler {
             }
             out.sort(Comparator.comparing(a -> a.signature().name().toString()));
             return out;
-        } catch (KernelException e) {
+        } catch (ProcedureException e) {
             throw e;
         } catch (Exception e) {
             throw new ProcedureException(
@@ -144,7 +143,7 @@ class ProcedureCompiler {
         }
     }
 
-    List<CallableUserAggregationFunction> compileAggregationFunction(Class<?> fcnDefinition) throws KernelException {
+    List<CallableUserAggregationFunction> compileAggregationFunction(Class<?> fcnDefinition) throws ProcedureException {
         try {
             List<Method> methods = Arrays.stream(fcnDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(UserAggregationFunction.class))
@@ -172,7 +171,7 @@ class ProcedureCompiler {
             }
             out.sort(Comparator.comparing(a -> a.signature().name().toString()));
             return out;
-        } catch (KernelException e) {
+        } catch (ProcedureException e) {
             throw e;
         } catch (Exception e) {
             throw new ProcedureException(
@@ -185,7 +184,7 @@ class ProcedureCompiler {
     }
 
     List<CallableProcedure> compileProcedure(Class<?> procDefinition, String warning, boolean fullAccess)
-            throws KernelException {
+            throws ProcedureException {
         try {
             List<Method> procedureMethods = Arrays.stream(procDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(Procedure.class))
@@ -211,7 +210,7 @@ class ProcedureCompiler {
             }
             out.sort(Comparator.comparing(a -> a.signature().name().toString()));
             return out;
-        } catch (KernelException e) {
+        } catch (ProcedureException e) {
             throw e;
         } catch (Exception e) {
             throw new ProcedureException(

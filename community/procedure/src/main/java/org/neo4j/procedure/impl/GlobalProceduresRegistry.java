@@ -26,7 +26,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -151,7 +150,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param proc the procedure class
      */
     @Override
-    public void registerProcedure(Class<?> proc) throws KernelException {
+    public void registerProcedure(Class<?> proc) throws ProcedureException {
         registerProcedure(proc, false);
     }
 
@@ -161,7 +160,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      */
     @Override
-    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws KernelException {
+    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException {
         registerProcedure(proc, overrideCurrentImplementation, null);
     }
 
@@ -173,7 +172,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
-            throws KernelException {
+            throws ProcedureException {
         for (CallableProcedure procedure : compiler.compileProcedure(proc, warning, true)) {
             register(procedure, overrideCurrentImplementation);
         }
@@ -184,7 +183,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerBuiltInFunctions(Class<?> func) throws KernelException {
+    public void registerBuiltInFunctions(Class<?> func) throws ProcedureException {
         for (CallableUserFunction function :
                 compiler.withoutNamingRestrictions().compileFunction(func, true)) {
             register(function, false);
@@ -196,7 +195,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerFunction(Class<?> func) throws KernelException {
+    public void registerFunction(Class<?> func) throws ProcedureException {
         registerFunction(func, false);
     }
 
@@ -206,7 +205,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation)
-            throws KernelException {
+            throws ProcedureException {
         for (CallableUserAggregationFunction function : compiler.compileAggregationFunction(func)) {
             register(function, overrideCurrentImplementation);
         }
@@ -217,7 +216,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerAggregationFunction(Class<?> func) throws KernelException {
+    public void registerAggregationFunction(Class<?> func) throws ProcedureException {
         registerAggregationFunction(func, false);
     }
 
@@ -226,7 +225,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      * @param func the function class
      */
     @Override
-    public void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException {
+    public void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException {
         for (CallableUserFunction function : compiler.compileFunction(func, false)) {
             register(function, overrideCurrentImplementation);
         }

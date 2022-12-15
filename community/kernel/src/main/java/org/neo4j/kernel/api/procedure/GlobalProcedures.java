@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.procedure;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -42,21 +41,22 @@ public interface GlobalProcedures extends ProcedureView {
 
     void register(CallableProcedure proc, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerProcedure(Class<?> proc) throws KernelException;
+    void registerProcedure(Class<?> proc) throws ProcedureException;
 
-    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws KernelException;
+    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning) throws KernelException;
+    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
+            throws ProcedureException;
 
-    void registerBuiltInFunctions(Class<?> func) throws KernelException;
+    void registerBuiltInFunctions(Class<?> func) throws ProcedureException;
 
-    void registerFunction(Class<?> func) throws KernelException;
+    void registerFunction(Class<?> func) throws ProcedureException;
 
-    void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException;
+    void registerAggregationFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerAggregationFunction(Class<?> func) throws KernelException;
+    void registerAggregationFunction(Class<?> func) throws ProcedureException;
 
-    void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws KernelException;
+    void registerFunction(Class<?> func, boolean overrideCurrentImplementation) throws ProcedureException;
 
     void registerType(Class<?> javaClass, Neo4jTypes.AnyType type);
 
