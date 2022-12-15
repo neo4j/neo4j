@@ -117,13 +117,6 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     }
 
     @Override
-    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
-            throws ProcedureException {
-        init();
-        globalProcedures.registerProcedure(proc, overrideCurrentImplementation, warning);
-    }
-
-    @Override
     public void registerBuiltInFunctions(Class<?> func) throws ProcedureException {
         init();
         globalProcedures.registerBuiltInFunctions(func);

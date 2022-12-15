@@ -45,9 +45,6 @@ public interface GlobalProcedures extends ProcedureView {
 
     void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException;
 
-    void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
-            throws ProcedureException;
-
     void registerBuiltInFunctions(Class<?> func) throws ProcedureException;
 
     void registerFunction(Class<?> func) throws ProcedureException;

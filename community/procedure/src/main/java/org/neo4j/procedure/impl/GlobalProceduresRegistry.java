@@ -161,19 +161,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException {
-        registerProcedure(proc, overrideCurrentImplementation, null);
-    }
-
-    /**
-     * Register a new internal procedure defined with annotations on a java class.
-     * @param proc the procedure class
-     * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
-     * @param warning the warning the procedure should generate when called
-     */
-    @Override
-    public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation, String warning)
-            throws ProcedureException {
-        for (CallableProcedure procedure : compiler.compileProcedure(proc, warning, true)) {
+        for (CallableProcedure procedure : compiler.compileProcedure(proc, null, true)) {
             register(procedure, overrideCurrentImplementation);
         }
     }
