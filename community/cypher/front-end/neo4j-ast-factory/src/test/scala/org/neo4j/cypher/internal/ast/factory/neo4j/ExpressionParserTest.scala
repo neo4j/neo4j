@@ -32,6 +32,30 @@ class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
 
   implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
 
+  test("[true IN [1, 2]]") {
+    gives(listComprehension(varFor("true"), listOf(literalInt(1), literalInt(2)), None, None))
+  }
+
+  test("[(true IN [1, 2])]") {
+    gives(listOf(in(trueLiteral, listOf(literalInt(1), literalInt(2)))))
+  }
+
+  test("[create IN [1, 2]]") {
+    gives(listComprehension(varFor("create"), listOf(literalInt(1), literalInt(2)), None, None))
+  }
+
+  test("[not IN [1, 2]]") {
+    gives(listComprehension(varFor("not"), listOf(literalInt(1), literalInt(2)), None, None))
+  }
+
+  test("[starts IN [1, 2]]") {
+    gives(listComprehension(varFor("starts"), listOf(literalInt(1), literalInt(2)), None, None))
+  }
+
+  test("[true IN [ true, false ], false]") {
+    gives(listOf(in(trueLiteral, listOf(trueLiteral, falseLiteral)), falseLiteral))
+  }
+
   test("thing CONTAINS 'a' + 'b'") {
     gives(contains(varFor("thing"), add(literalString("a"), literalString("b"))))
   }
