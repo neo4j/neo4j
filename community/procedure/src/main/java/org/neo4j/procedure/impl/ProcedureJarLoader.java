@@ -105,7 +105,7 @@ class ProcedureJarLoader {
         RawIterator<Class<?>, IOException> classes = listClassesIn(jar, loader);
         while (classes.hasNext()) {
             Class<?> next = classes.next();
-            target.addAllProcedures(compiler.compileProcedure(next, null, false));
+            target.addAllProcedures(compiler.compileProcedure(next, false));
             target.addAllFunctions(compiler.compileFunction(next, false));
             target.addAllAggregationFunctions(compiler.compileAggregationFunction(next));
         }

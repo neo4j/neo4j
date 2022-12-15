@@ -161,7 +161,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public void registerProcedure(Class<?> proc, boolean overrideCurrentImplementation) throws ProcedureException {
-        for (CallableProcedure procedure : compiler.compileProcedure(proc, null, true)) {
+        for (CallableProcedure procedure : compiler.compileProcedure(proc, true)) {
             register(procedure, overrideCurrentImplementation);
         }
     }

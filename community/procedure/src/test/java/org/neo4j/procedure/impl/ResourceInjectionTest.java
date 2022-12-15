@@ -78,8 +78,8 @@ public class ResourceInjectionTest {
     @Test
     void shouldCompileAndRunProcedure() throws Throwable {
         // Given
-        CallableProcedure proc = compiler.compileProcedure(ProcedureWithInjectedAPI.class, null, true)
-                .get(0);
+        CallableProcedure proc =
+                compiler.compileProcedure(ProcedureWithInjectedAPI.class, true).get(0);
 
         // Then
         List<AnyValue[]> out = Iterators.asList(proc.apply(prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER));
@@ -92,7 +92,7 @@ public class ResourceInjectionTest {
     @Test
     void shouldFailNicelyWhenUnknownAPI() {
         ProcedureException exception = assertThrows(
-                ProcedureException.class, () -> compiler.compileProcedure(ProcedureWithUnknownAPI.class, null, true));
+                ProcedureException.class, () -> compiler.compileProcedure(ProcedureWithUnknownAPI.class, true));
         assertThat(exception.getMessage())
                 .isEqualTo("Unable to set up injection for procedure `ProcedureWithUnknownAPI`, "
                         + "the field `api` has type `class org.neo4j.procedure.impl.ResourceInjectionTest$UnknownAPI` "
@@ -102,8 +102,8 @@ public class ResourceInjectionTest {
     @Test
     void shouldCompileAndRunUnsafeProcedureUnsafeMode() throws Throwable {
         // Given
-        CallableProcedure proc = compiler.compileProcedure(ProcedureWithUnsafeAPI.class, null, true)
-                .get(0);
+        CallableProcedure proc =
+                compiler.compileProcedure(ProcedureWithUnsafeAPI.class, true).get(0);
 
         // Then
         List<AnyValue[]> out = Iterators.asList(proc.apply(prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER));
@@ -118,7 +118,7 @@ public class ResourceInjectionTest {
     @Test
     void shouldFailNicelyWhenUnsafeAPISafeMode() throws Throwable {
         // When
-        List<CallableProcedure> procList = compiler.compileProcedure(ProcedureWithUnsafeAPI.class, null, false);
+        List<CallableProcedure> procList = compiler.compileProcedure(ProcedureWithUnsafeAPI.class, false);
         assertThat(logProvider)
                 .forClass(getClass())
                 .forLevel(WARN)
@@ -219,7 +219,7 @@ public class ResourceInjectionTest {
     void shouldFailNicelyWhenAllUsesUnsafeAPI() throws Throwable {
         // When
         compiler.compileFunction(FunctionsAndProcedureUnsafe.class, false);
-        compiler.compileProcedure(FunctionsAndProcedureUnsafe.class, null, false);
+        compiler.compileProcedure(FunctionsAndProcedureUnsafe.class, false);
         compiler.compileAggregationFunction(FunctionsAndProcedureUnsafe.class);
         // Then
         assertThat(logProvider)

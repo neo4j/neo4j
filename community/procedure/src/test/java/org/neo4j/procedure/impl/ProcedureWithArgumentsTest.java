@@ -214,6 +214,6 @@ public class ProcedureWithArgumentsTest {
                         new ComponentRegistry(),
                         NullLog.getInstance(),
                         ProcedureConfig.DEFAULT)
-                .compileProcedure(clazz, null, true);
+                .compileProcedure(clazz, true);
     }
 }

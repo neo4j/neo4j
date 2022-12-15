@@ -83,9 +83,8 @@ public class ProcedureTest {
         // Given
         InternalLog log = spy(InternalLog.class);
         components.register(InternalLog.class, ctx -> log);
-        CallableProcedure procedure = procedureCompiler
-                .compileProcedure(LoggingProcedure.class, null, true)
-                .get(0);
+        CallableProcedure procedure =
+                procedureCompiler.compileProcedure(LoggingProcedure.class, true).get(0);
 
         // When
         procedure.apply(prepareContext(), new AnyValue[0], EMPTY_RESOURCE_TRACKER);
@@ -284,7 +283,7 @@ public class ProcedureTest {
                 new ProcedureCompiler(new TypeCheckers(), components, components, log, ProcedureConfig.DEFAULT);
 
         // When
-        List<CallableProcedure> procs = procedureCompiler.compileProcedure(ProcedureWithDeprecation.class, null, true);
+        List<CallableProcedure> procs = procedureCompiler.compileProcedure(ProcedureWithDeprecation.class, true);
 
         // Then
         verify(log).warn("Use of @Procedure(deprecatedBy) without @Deprecated in badProc");
@@ -319,7 +318,7 @@ public class ProcedureTest {
 
         // When
         CallableProcedure proc = procedureCompiler
-                .compileProcedure(SingleReadOnlyProcedure.class, null, false)
+                .compileProcedure(SingleReadOnlyProcedure.class, false)
                 .get(0);
         // When
         RawIterator<AnyValue[], ProcedureException> result =
@@ -340,7 +339,7 @@ public class ProcedureTest {
                 new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
 
         // When
-        List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, null, false);
+        List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, false);
         // Then
         verify(log)
                 .warn(
@@ -358,7 +357,7 @@ public class ProcedureTest {
 
         // When
         CallableProcedure proc = procedureCompiler
-                .compileProcedure(SingleReadOnlyProcedure.class, null, true)
+                .compileProcedure(SingleReadOnlyProcedure.class, true)
                 .get(0);
         // Then
         RawIterator<AnyValue[], ProcedureException> result =
@@ -375,7 +374,7 @@ public class ProcedureTest {
                 new ProcedureCompiler(new TypeCheckers(), components, components, log, config);
 
         // When
-        List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, null, false);
+        List<CallableProcedure> proc = procedureCompiler.compileProcedure(SingleReadOnlyProcedure.class, false);
         // Then
         verify(log)
                 .warn(
@@ -564,7 +563,7 @@ public class ProcedureTest {
     public record InternalTypeRecord(LongValue longValue, TextValue textValue, BooleanValue booleanValue) {}
 
     private List<CallableProcedure> compile(Class<?> clazz) throws KernelException {
-        return procedureCompiler.compileProcedure(clazz, null, true);
+        return procedureCompiler.compileProcedure(clazz, true);
     }
 
     private static class ExceptionDuringClose extends RuntimeException {}

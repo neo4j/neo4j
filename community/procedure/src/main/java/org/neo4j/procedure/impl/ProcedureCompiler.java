@@ -183,8 +183,7 @@ class ProcedureCompiler {
         }
     }
 
-    List<CallableProcedure> compileProcedure(Class<?> procDefinition, String warning, boolean fullAccess)
-            throws ProcedureException {
+    List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess) throws ProcedureException {
         try {
             List<Method> procedureMethods = Arrays.stream(procDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(Procedure.class))
@@ -202,7 +201,7 @@ class ProcedureCompiler {
                 QualifiedName procName = extractName(procDefinition, method, valueName, definedName);
 
                 if (fullAccess || config.isWhitelisted(procName.toString())) {
-                    out.add(compileProcedure(procDefinition, method, warning, fullAccess, procName));
+                    out.add(compileProcedure(procDefinition, method, fullAccess, procName));
                 } else {
                     log.warn(
                             String.format("The procedure '%s' is not on the allowlist and won't be loaded.", procName));
@@ -223,7 +222,7 @@ class ProcedureCompiler {
     }
 
     private CallableProcedure compileProcedure(
-            Class<?> procDefinition, Method method, String warning, boolean fullAccess, QualifiedName procName)
+            Class<?> procDefinition, Method method, boolean fullAccess, QualifiedName procName)
             throws ProcedureException {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(method);
         List<FieldSignature> outputSignature = outputSignatureCompiler.fieldSignatures(method);
@@ -253,7 +252,7 @@ class ProcedureCompiler {
                         admin,
                         null,
                         description,
-                        warning,
+                        null,
                         procedure.eager(),
                         false,
                         systemProcedure,
@@ -271,7 +270,7 @@ class ProcedureCompiler {
                 admin,
                 deprecated,
                 description,
-                warning,
+                null,
                 procedure.eager(),
                 false,
                 systemProcedure,
