@@ -4448,7 +4448,7 @@ ADMINISTRATION_COMMAND EnableServerCommand() throws Exception:
 }
 {
     start=<ENABLE> <SERVER> serverName=StringOrParameter()
-    (<OPTIONS> options=MapOrParameter())?
+    ( options=Options() )?
     {
         return astFactory.enableServer( pos( start ), serverName, options );
     }
@@ -4460,7 +4460,7 @@ ADMINISTRATION_COMMAND AlterServer( Token start ) throws Exception:
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    <SERVER> serverName=StringOrParameter() <SET> <OPTIONS> options=MapOrParameter()
+    <SERVER> serverName=StringOrParameter() <SET> options=Options()
     {
         return astFactory.alterServer( pos( start ), serverName, options );
     }

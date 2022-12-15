@@ -246,13 +246,6 @@ case class Prettifier(
 
   def backtick(s: String): String = expr.backtick(s)
 
-  def optionsToString(options: Map[String, Expression]): String =
-    if (options.nonEmpty)
-      s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}"
-    else {
-      " OPTIONS {}"
-    }
-
   def propertiesMapToString(name: String, properties: Option[Either[Map[String, Expression], Parameter]]): String =
     properties match {
       case Some(Left(props)) =>
@@ -804,11 +797,7 @@ case class Prettifier(
           case Left(s)          => expr.quote(s)
           case Right(parameter) => expr(parameter)
         }
-        val optionString = options match {
-          case OptionsMap(optionsMap)  => optionsToString(optionsMap)
-          case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
-          case NoOptions               => ""
-        }
+        val optionString = asString(options)
         s"${x.name} $name$optionString"
 
       case x @ AlterServer(serverName, options) =>
@@ -816,10 +805,7 @@ case class Prettifier(
           case Left(s)          => expr.quote(s)
           case Right(parameter) => expr(parameter)
         }
-        val optionString = options match {
-          case OptionsMap(optionsMap)  => optionsToString(optionsMap)
-          case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
-        }
+        val optionString = asString(options)
         s"${x.name} $name SET$optionString"
 
       case x @ RenameServer(serverName, newName) =>
@@ -869,6 +855,13 @@ case class Prettifier(
     case OptionsParam(parameter) => s" OPTIONS ${expr(parameter)}"
     case OptionsMap(map)         => optionsToString(map)
   }
+
+  private def optionsToString(options: Map[String, Expression]): String =
+    if (options.nonEmpty)
+      s" OPTIONS ${options.map({ case (s, e) => s"${backtick(s)}: ${expr(e)}" }).mkString("{", ", ", "}")}"
+    else {
+      " OPTIONS {}"
+    }
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
     def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)

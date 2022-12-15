@@ -132,6 +132,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
     assertAst(ast.EnableServer(literal("name"), optionsMap)(defaultPos))
   }
 
+  test("ENABLE SERVER 'name' OPTIONS $op") {
+    val optionsParam = OptionsParam(parameter("op", CTMap))
+    assertAst(ast.EnableServer(literal("name"), optionsParam)(defaultPos))
+  }
+
   test("ENABLE SERVER name") {
     assertFailsWithMessageStart(testName, """Invalid input 'name': expected "\"", "\'" or a parameter""")
   }
