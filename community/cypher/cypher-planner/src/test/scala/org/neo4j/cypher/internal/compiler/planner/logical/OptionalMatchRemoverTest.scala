@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
@@ -664,6 +666,54 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     )
   }
 
+  test(
+    """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*]->(b:B))
+      |RETURN DISTINCT a AS a
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*]->(b:B))
+      |RETURN DISTINCT p AS p
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*]->(b:B))
+      |RETURN collect(DISTINCT a) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*]->(b:B))
+      |RETURN collect(DISTINCT p) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a:A) ((n)-[r:REL]->(m)){1, 10} (b:B)
+      |RETURN DISTINCT a AS a
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a:A) ((n)-[r:REL]->(m)){1, 10} (b:B)
+      |RETURN collect(DISTINCT a) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"
@@ -846,7 +896,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val ast = ast_0.endoRewrite(computeDependenciesForExpressions(SemanticChecker.check(ast_0).state))
     val exceptionFactory = Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
-    val result = SemanticChecker.check(ast)
+    val result = SemanticChecker.check(ast, SemanticState.clean.withFeature(SemanticFeature.QuantifiedPathPatterns))
     onError(result.errors)
     val table = SemanticTable(
       types = result.state.typeTable,

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.apache.commons.io.FileUtils
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.graphcounts.GraphCountsJson
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestO
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -55,6 +57,7 @@ import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Inside
@@ -1028,6 +1031,76 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .optional()
         .allRelationshipsScan("(n0)-[r1]->(n1)")
         .build()
+  }
+
+  test("should solve OPTIONAL MATCH containing shortestPath, followed by DISTINCT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 200)
+      .setLabelCardinality("B", 500)
+      .build()
+
+    val query =
+      """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*1..10]->(b:B))
+        |RETURN DISTINCT p
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val planAB = planner.subPlanBuilder()
+      .distinct("p AS p")
+      .optional()
+      .shortestPath("(a)-[r:REL*1..10]->(b)", pathName = Some("p"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val planBA = planner.subPlanBuilder()
+      .distinct("p AS p")
+      .optional()
+      .shortestPath("(a)-[r:REL*1..10]->(b)", pathName = Some("p"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .nodeByLabelScan("b", "B")
+      .build()
+
+    plan should (equal(planAB) or equal(planBA))
+  }
+
+  test("should solve OPTIONAL MATCH containing QPP, followed by DISTINCT") {
+    val planner = plannerBuilder()
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(40)
+      .build()
+
+    val query = "OPTIONAL MATCH (u)((n)-[]->(m))* RETURN DISTINCT u"
+    val plan = planner.plan(query).stripProduceResults
+    plan.printLogicalPlanBuilderString()
+    val `(u)((n)-[]-(m))*` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "u",
+      end = "anon_1",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("anon_3", "anon_7")),
+      innerRelationships = Set("anon_3"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .distinct("u AS u")
+      .optional()
+      .trail(`(u)((n)-[]-(m))*`)
+      .|.expand("(n)-[anon_3]->(m)")
+      .|.argument("n")
+      .allNodeScan("u")
+      .build()
   }
 
   def containsOuterHashJoin(plan: LogicalPlan): Boolean = {
