@@ -73,8 +73,7 @@ public class CommunitySecurityModule extends SecurityModule {
         registerProcedure(
                 globalDependencies.resolveDependency(GlobalProcedures.class),
                 debugLogProvider.getLog(getClass()),
-                AuthProcedures.class,
-                null);
+                AuthProcedures.class);
     }
 
     @Override
