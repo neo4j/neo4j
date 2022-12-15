@@ -502,6 +502,38 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     )
   }
 
+  test(
+    """OPTIONAL MATCH p=shortestPath((a)-[r:REL*]->(b))
+      |RETURN DISTINCT a AS a
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a)-[r:REL*]->(b))
+      |RETURN DISTINCT p AS p
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a)-[r:REL*]->(b))
+      |RETURN collect(DISTINCT a) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH p=shortestPath((a)-[r:REL*]->(b))
+      |RETURN collect(DISTINCT p) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"

@@ -864,6 +864,41 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         .build()
   }
 
+  test("should solve OPTIONAL MATCH containing shortestPath, followed by DISTINCT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 200)
+      .setLabelCardinality("B", 500)
+      .build()
+
+    val query =
+      """OPTIONAL MATCH p=shortestPath((a:A)-[r:REL*1..10]->(b:B))
+        |RETURN DISTINCT p
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val planAB = planner.subPlanBuilder()
+      .distinct("p AS p")
+      .optional()
+      .shortestPath("(a)-[r:REL*1..10]->(b)", pathName = Some("p"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val planBA = planner.subPlanBuilder()
+      .distinct("p AS p")
+      .optional()
+      .shortestPath("(a)-[r:REL*1..10]->(b)", pathName = Some("p"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("a", "A")
+      .nodeByLabelScan("b", "B")
+      .build()
+
+    plan should (equal(planAB) or equal(planBA))
+  }
+
   def containsOuterHashJoin(plan: LogicalPlan): Boolean = {
     plan.folder.treeExists {
       case _: RightOuterHashJoin => true
