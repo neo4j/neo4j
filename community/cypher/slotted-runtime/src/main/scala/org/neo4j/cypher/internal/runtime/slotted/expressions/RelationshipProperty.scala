@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -63,8 +64,8 @@ case class RelationshipPropertyLate(offset: Int, propKey: String) extends Expres
 
 case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    Some(state.query.relationshipReadOps.hasProperty(
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    IsMatchResult(state.query.relationshipReadOps.hasProperty(
       ctx.getLongAt(offset),
       token,
       state.cursors.relationshipScanCursor,
@@ -79,7 +80,7 @@ case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate
 
 case class RelationshipPropertyExistsLate(offset: Int, propKey: String) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
     val result =
       if (maybeToken.isEmpty)
@@ -91,7 +92,7 @@ case class RelationshipPropertyExistsLate(offset: Int, propKey: String) extends 
           state.cursors.relationshipScanCursor,
           state.cursors.propertyCursor
         )
-    Some(result)
+    IsMatchResult(result)
   }
 
   override def containsIsNull = false

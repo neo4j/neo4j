@@ -34,22 +34,22 @@ This class is used for making the common <exp> IN <constant-expression> fast
  */
 case class CachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val listValue = list(ctx, state)
     if (listValue eq Values.NO_VALUE) {
-      None
+      IsUnknown
     } else {
       val input = makeTraversable(listValue)
       if (input.isEmpty) {
-        Some(false)
+        IsFalse
       } else {
         state.cachedIn.check(
           value(ctx, state),
           input,
           state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
         ) match {
-          case IsNoValue()     => None
-          case b: BooleanValue => Some(b.booleanValue())
+          case IsNoValue()     => IsUnknown
+          case b: BooleanValue => IsMatchResult(b.booleanValue())
           case v               => throw new IllegalStateException(s"$v is not a supported value for a predicate")
         }
       }

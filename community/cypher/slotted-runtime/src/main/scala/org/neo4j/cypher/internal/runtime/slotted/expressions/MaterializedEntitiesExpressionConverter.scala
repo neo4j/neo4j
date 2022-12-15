@@ -39,6 +39,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NullInNullOutExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsTrue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
@@ -166,10 +170,10 @@ case class MaterializedEntityProperty(mapExpr: commands.expressions.Expression, 
 
 case class MaterializedEntityHasLabel(entity: commands.expressions.Expression, label: KeyToken) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val node = CastSupport.castOrFail[NodeValue](value)
@@ -177,13 +181,13 @@ case class MaterializedEntityHasLabel(entity: commands.expressions.Expression, l
       var i = 0
       while (i < node.labels().length()) {
         if (node.labels().stringValue(i).equals(label.name)) {
-          return Some(true)
+          return IsTrue
         }
 
         i += 1
       }
 
-      Some(false)
+      IsFalse
   }
 
   override def toString = s"$entity:${label.name}"
@@ -201,14 +205,14 @@ case class MaterializedEntityHasLabel(entity: commands.expressions.Expression, l
 
 case class MaterializedEntityHasType(entity: commands.expressions.Expression, typeToken: KeyToken) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val relationship = CastSupport.castOrFail[RelationshipValue](value)
-      Some(relationship.`type`().equals(typeToken.name))
+      IsMatchResult(relationship.`type`().equals(typeToken.name))
   }
 
   override def toString = s"$entity:${typeToken.name}"
@@ -227,25 +231,25 @@ case class MaterializedEntityHasType(entity: commands.expressions.Expression, ty
 case class MaterializedEntityHasLabelOrType(entity: commands.expressions.Expression, labelOrType: String)
     extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case node: NodeValue =>
       var i = 0
       while (i < node.labels().length()) {
         if (node.labels().stringValue(i).equals(labelOrType)) {
-          return Some(true)
+          return IsTrue
         }
 
         i += 1
       }
 
-      Some(false)
+      IsFalse
 
     case relationship: RelationshipValue =>
-      Some(relationship.`type`().equals(labelOrType))
+      IsMatchResult(relationship.`type`().equals(labelOrType))
   }
 
   override def toString = s"$entity:$labelOrType"

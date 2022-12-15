@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variab
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  override def shouldExitWhen = false
+  override def shouldExitWhen = IsFalse
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
   override def rewrite(f: Expression => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
 
@@ -69,7 +69,7 @@ case class AndedPropertyComparablePredicates(
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])
     ))
 
-  override def shouldExitWhen: Boolean = false
+  override def shouldExitWhen: IsMatchResult = IsFalse
 
   override def children: Seq[AstNode[_]] = Seq(ident, prop) ++ predicates.toIndexedSeq
 }

@@ -54,14 +54,59 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
+sealed trait IsMatchResult {
+  def negate: IsMatchResult
+  def ^(other: IsMatchResult): IsMatchResult
+  def isKnown: Boolean
+  def asBoolean: Boolean
+}
+
+object IsMatchResult {
+  def apply(boolean: Boolean): IsMatchResult = if (boolean) IsTrue else IsFalse
+}
+
+case object IsTrue extends IsMatchResult {
+  override def negate: IsMatchResult = IsFalse
+
+  override def ^(other: IsMatchResult): IsMatchResult = other.negate
+
+  override def isKnown: Boolean = true
+
+  override def asBoolean: Boolean = true
+}
+
+case object IsFalse extends IsMatchResult {
+  override def negate: IsMatchResult = IsTrue
+
+  override def ^(other: IsMatchResult): IsMatchResult = other
+
+  override def isKnown: Boolean = true
+
+  override def asBoolean: Boolean = false
+}
+
+case object IsUnknown extends IsMatchResult {
+  override def negate: IsMatchResult = IsUnknown
+
+  override def ^(other: IsMatchResult): IsMatchResult = IsUnknown
+
+  override def isKnown: Boolean = false
+
+  override def asBoolean: Boolean = throw new IllegalStateException("Unknown value cannot be turned into a boolean")
+}
+
 abstract class Predicate extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): Value =
-    isMatch(row, state).map(Values.booleanValue).getOrElse(Values.NO_VALUE)
+    isMatch(row, state) match {
+      case IsTrue    => Values.TRUE
+      case IsFalse   => Values.FALSE
+      case IsUnknown => Values.NO_VALUE
+    }
 
-  def isTrue(ctx: ReadableRow, state: QueryState): Boolean = isMatch(ctx, state).getOrElse(false)
+  def isTrue(ctx: ReadableRow, state: QueryState): Boolean = isMatch(ctx, state) eq IsTrue
   def andWith(other: Predicate): Predicate = Ands(this, other)
-  def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean]
+  def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult
   def containsIsNull: Boolean
 
   def andWith(preds: Predicate*): Predicate =
@@ -76,7 +121,7 @@ abstract class CompositeBooleanPredicate extends Predicate {
 
   def predicates: NonEmptyList[Predicate]
 
-  def shouldExitWhen: Boolean
+  def shouldExitWhen: IsMatchResult
 
   override def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
@@ -87,17 +132,17 @@ abstract class CompositeBooleanPredicate extends Predicate {
    * exceptions). Any exception thrown is held until the end (or until the exit state) so that it is
    * superceded by exit predicates (false for AND and true for OR).
    */
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    predicates.foldLeft[Try[Option[Boolean]]](Success(Some(!shouldExitWhen))) { (previousValue, predicate) =>
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    predicates.foldLeft[Try[IsMatchResult]](Success(shouldExitWhen.negate)) { (previousValue, predicate) =>
       previousValue match {
         // if a previous evaluation was true (false) the OR (AND) result is determined
-        case Success(Some(result)) if result == shouldExitWhen => previousValue
+        case Success(result) if result == shouldExitWhen => previousValue
         case _ =>
           Try(predicate.isMatch(ctx, state)) match {
-            // If we get the exit case (false for AND and true for OR) ignore any error cases
-            case Success(Some(result)) if result == shouldExitWhen => Success(Some(shouldExitWhen))
             // Handle null only for non error cases
-            case Success(None) if previousValue.isSuccess => Success(None)
+            case Success(IsUnknown) if previousValue.isSuccess => Success(IsUnknown)
+            // If we get the exit case (false for AND and true for OR) ignore any error cases
+            case Success(result) if result == shouldExitWhen => Success(shouldExitWhen)
             // errors or non-exit cases propagate as normal
             case Failure(e) if previousValue.isSuccess => Failure(e)
             case _                                     => previousValue
@@ -114,10 +159,7 @@ abstract class CompositeBooleanPredicate extends Predicate {
 
 case class Not(a: Predicate) extends Predicate {
 
-  def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = a.isMatch(ctx, state) match {
-    case Some(x) => Some(!x)
-    case None    => None
-  }
+  def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = a.isMatch(ctx, state).negate
   override def toString: String = "NOT(" + a + ")"
   override def containsIsNull: Boolean = a.containsIsNull
   override def rewrite(f: Expression => Expression): Expression = f(Not(a.rewriteAsPredicate(f)))
@@ -127,12 +169,7 @@ case class Not(a: Predicate) extends Predicate {
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
-  def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] =
-    (a.isMatch(ctx, state), b.isMatch(ctx, state)) match {
-      case (None, _)          => None
-      case (_, None)          => None
-      case (Some(l), Some(r)) => Some(l ^ r)
-    }
+  def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = a.isMatch(ctx, state) ^ b.isMatch(ctx, state)
 
   override def toString: String = "(" + a + " XOR " + b + ")"
   override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
@@ -147,9 +184,9 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
 case class IsNull(expression: Expression) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = expression(ctx, state) match {
-    case IsNoValue() => Some(true)
-    case _           => Some(false)
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = expression(ctx, state) match {
+    case IsNoValue() => IsTrue
+    case _           => IsFalse
   }
 
   override def toString: String = expression + " IS NULL"
@@ -160,7 +197,7 @@ case class IsNull(expression: Expression) extends Predicate {
 }
 
 case class True() extends Predicate {
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = Some(true)
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = IsTrue
   override def toString: String = "true"
   override def containsIsNull = false
   override def rewrite(f: Expression => Expression): Expression = f(this)
@@ -179,15 +216,14 @@ abstract class CachedNodePropertyExists(cp: AbstractCachedProperty) extends Pred
     propertyCursor: PropertyCursor
   ): Boolean
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val nodeId = cp.getId(ctx)
     if (nodeId == StatementConstants.NO_SUCH_NODE) {
-      None
+      IsUnknown
     } else {
       val query = state.query
       cp.getPropertyKey(query) match {
-        case StatementConstants.NO_SUCH_PROPERTY_KEY =>
-          Some(false)
+        case StatementConstants.NO_SUCH_PROPERTY_KEY => IsFalse
         case propId =>
           query.nodeReadOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
             case None => // no change in TX state
@@ -195,14 +231,21 @@ abstract class CachedNodePropertyExists(cp: AbstractCachedProperty) extends Pred
                 case null =>
                   // the cached node property has been invalidated
                   val cursors = state.cursors
-                  Some(readFromStoreAndCache(nodeId, propId, ctx, query, cursors.nodeCursor, cursors.propertyCursor))
+                  IsMatchResult(readFromStoreAndCache(
+                    nodeId,
+                    propId,
+                    ctx,
+                    query,
+                    cursors.nodeCursor,
+                    cursors.propertyCursor
+                  ))
                 case IsNoValue() =>
-                  Some(false)
+                  IsFalse
                 case _ =>
-                  Some(true)
+                  IsTrue
               }
-            case changedInTXState =>
-              changedInTXState
+            case Some(true)  => IsTrue
+            case Some(false) => IsFalse
           }
       }
     }
@@ -277,15 +320,15 @@ abstract class CachedRelationshipPropertyExists(cp: AbstractCachedProperty) exte
     propertyCursor: PropertyCursor
   ): Boolean
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val relId = cp.getId(ctx)
     if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
-      None
+      IsUnknown
     } else {
       val query = state.query
       cp.getPropertyKey(query) match {
         case StatementConstants.NO_SUCH_PROPERTY_KEY =>
-          Some(false)
+          IsFalse
         case propId =>
           query.relationshipReadOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
             case None => // no change in TX state
@@ -293,7 +336,7 @@ abstract class CachedRelationshipPropertyExists(cp: AbstractCachedProperty) exte
                 case null =>
                   // the cached rel property has been invalidated
                   val cursors = state.cursors
-                  Some(readFromStoreAndCache(
+                  IsMatchResult(readFromStoreAndCache(
                     relId,
                     propId,
                     ctx,
@@ -302,12 +345,12 @@ abstract class CachedRelationshipPropertyExists(cp: AbstractCachedProperty) exte
                     cursors.propertyCursor
                   ))
                 case IsNoValue() =>
-                  Some(false)
+                  IsFalse
                 case _ =>
-                  Some(true)
+                  IsTrue
               }
-            case changedInTXState =>
-              changedInTXState
+            case Some(true)  => IsTrue
+            case Some(false) => IsFalse
           }
       }
     }
@@ -374,9 +417,9 @@ case class CachedRelationshipPropertyExistsWithoutValue(cachedRelProperty: Abstr
 trait StringOperator {
   self: Predicate =>
 
-  override def isMatch(m: ReadableRow, state: QueryState): Option[Boolean] = (lhs(m, state), rhs(m, state)) match {
-    case (l: TextValue, r: TextValue) => Some(compare(l, r))
-    case (_, _)                       => None
+  override def isMatch(m: ReadableRow, state: QueryState): IsMatchResult = (lhs(m, state), rhs(m, state)) match {
+    case (l: TextValue, r: TextValue) => IsMatchResult(compare(l, r))
+    case (_, _)                       => IsUnknown
   }
 
   def lhs: Expression
@@ -414,10 +457,10 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(imp
 converter: TextValue => TextValue = identity) extends Predicate {
   lazy val pattern: Pattern = converter(regexExpr.value.asInstanceOf[TextValue]).stringValue().r.pattern
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] =
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult =
     lhsExpr(ctx, state) match {
-      case s: TextValue => Some(pattern.matcher(s.stringValue()).matches())
-      case _            => None
+      case s: TextValue => IsMatchResult(pattern.matcher(s.stringValue()).matches())
+      case _            => IsUnknown
     }
 
   override def containsIsNull = false
@@ -436,14 +479,14 @@ converter: TextValue => TextValue = identity) extends Predicate {
 case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implicit converter: TextValue => TextValue =
   identity) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val lValue = lhsExpr(ctx, state)
     val rValue = regexExpr(ctx, state)
     (lValue, rValue) match {
       case (lhs: TextValue, rhs) if !(rhs eq Values.NO_VALUE) =>
         val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
-        Some(CypherBoolean.regex(lhs, rhsAsRegexString).booleanValue())
-      case _ => None
+        IsMatchResult(CypherBoolean.regex(lhs, rhsAsRegexString).booleanValue())
+      case _ => IsUnknown
     }
   }
 
@@ -463,10 +506,10 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
 
 case class NonEmpty(collection: Expression) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     collection(ctx, state) match {
-      case IsList(x)   => Some(x.nonEmpty)
-      case IsNoValue() => None
+      case IsList(x)   => IsMatchResult(x.nonEmpty)
+      case IsNoValue() => IsUnknown
       case x           => throw new CypherTypeException(s"Expected a collection, got `$x`")
     }
   }
@@ -484,16 +527,16 @@ case class NonEmpty(collection: Expression) extends Predicate {
 
 case class HasALabel(entity: Expression) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val node = CastSupport.castOrFail[VirtualNodeValue](value)
       val nodeId = node.id
       val queryCtx = state.query
-      Some(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
+      IsMatchResult(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
   }
 
   override def toString = s"$entity:%"
@@ -509,18 +552,18 @@ case class HasALabel(entity: Expression) extends Predicate {
 
 case class HasALabelOrType(entity: Expression) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case node: VirtualNodeValue =>
       val nodeId = node.id
       val queryCtx = state.query
-      Some(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
+      IsMatchResult(queryCtx.isALabelSetOnNode(nodeId, state.cursors.nodeCursor))
 
     case _: VirtualRelationshipValue =>
-      Some(true)
+      IsTrue
 
     case value =>
       throw new CypherTypeException(
@@ -541,24 +584,24 @@ case class HasALabelOrType(entity: Expression) extends Predicate {
 
 case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case node: VirtualNodeValue =>
       val nodeId = node.id
       val queryCtx = state.query
       val token = state.query.nodeLabel(labelOrType)
-      if (token == StatementConstants.NO_SUCH_LABEL) Some(false)
-      else Some(queryCtx.isLabelSetOnNode(token, nodeId, state.cursors.nodeCursor))
+      if (token == StatementConstants.NO_SUCH_LABEL) IsFalse
+      else IsMatchResult(queryCtx.isLabelSetOnNode(token, nodeId, state.cursors.nodeCursor))
 
     case relationship: VirtualRelationshipValue =>
       val relId = relationship.id
       val queryCtx = state.query
       val token = state.query.relationshipType(labelOrType)
-      if (token == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE) Some(false)
-      else Some(queryCtx.isTypeSetOnRelationship(token, relId, state.cursors.relationshipScanCursor))
+      if (token == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE) IsFalse
+      else IsMatchResult(queryCtx.isTypeSetOnRelationship(token, relId, state.cursors.relationshipScanCursor))
 
     case value =>
       throw new CypherTypeException(
@@ -579,10 +622,10 @@ case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predi
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val node = CastSupport.castOrFail[VirtualNodeValue](value)
@@ -591,9 +634,9 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
       label.getOptId(state.query) match {
         case None =>
-          Some(false)
+          IsFalse
         case Some(labelId) =>
-          Some(queryCtx.isLabelSetOnNode(labelId, nodeId, state.cursors.nodeCursor))
+          IsMatchResult(queryCtx.isLabelSetOnNode(labelId, nodeId, state.cursors.nodeCursor))
       }
   }
 
@@ -611,14 +654,14 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
 case class HasAnyLabel(entity: Expression, labels: Seq[KeyToken]) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val tokens = labels.flatMap(_.getOptId(state.query)).toArray
-      Some(state.query.isAnyLabelSetOnNode(tokens, nodeId, state.cursors.nodeCursor))
+      IsMatchResult(state.query.isAnyLabelSetOnNode(tokens, nodeId, state.cursors.nodeCursor))
   }
 
   override def toString = s"$entity:${labels.mkString("|")}"
@@ -635,10 +678,10 @@ case class HasAnyLabel(entity: Expression, labels: Seq[KeyToken]) extends Predic
 
 case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = entity(ctx, state) match {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = entity(ctx, state) match {
 
     case IsNoValue() =>
-      None
+      IsUnknown
 
     case value =>
       val relationship = CastSupport.castOrFail[VirtualRelationshipValue](value)
@@ -647,9 +690,13 @@ case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
 
       typ.getOptId(state.query) match {
         case None =>
-          Some(false)
+          IsFalse
         case Some(relTypeId) =>
-          Some(queryCtx.isTypeSetOnRelationship(relTypeId, relationshipId, state.cursors.relationshipScanCursor))
+          IsMatchResult(queryCtx.isTypeSetOnRelationship(
+            relTypeId,
+            relationshipId,
+            state.cursors.relationshipScanCursor
+          ))
       }
   }
 
@@ -670,10 +717,10 @@ case class CoercedPredicate(inner: Expression) extends Predicate {
 
   override def children: Seq[AstNode[_]] = Seq(inner)
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = inner(ctx, state) match {
-    case x: BooleanValue => Some(x.booleanValue())
-    case IsNoValue()     => None
-    case IsList(coll)    => Some(coll.nonEmpty)
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = inner(ctx, state) match {
+    case x: BooleanValue => IsMatchResult(x.booleanValue())
+    case IsNoValue()     => IsUnknown
+    case IsList(coll)    => IsMatchResult(coll.nonEmpty)
     case x               => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }
 

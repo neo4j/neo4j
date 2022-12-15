@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class HasTypeFromSlot(offset: Int, resolvedTypeToken: Int) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    Some(state.query.isTypeSetOnRelationship(
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    IsMatchResult(state.query.isTypeSetOnRelationship(
       resolvedTypeToken,
       ctx.getLongAt(offset),
       state.cursors.relationshipScanCursor
@@ -41,7 +42,7 @@ case class HasTypeFromSlot(offset: Int, resolvedTypeToken: Int) extends Predicat
 
 case class HasTypeFromSlotLate(offset: Int, typeName: String) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val maybeToken = state.query.getOptRelTypeId(typeName)
     val result =
       if (maybeToken.isEmpty)
@@ -49,7 +50,7 @@ case class HasTypeFromSlotLate(offset: Int, typeName: String) extends Predicate 
       else
         state.query.isTypeSetOnRelationship(maybeToken.get, ctx.getLongAt(offset), state.cursors.relationshipScanCursor)
 
-    Some(result)
+    IsMatchResult(result)
   }
 
   override def containsIsNull: Boolean = false

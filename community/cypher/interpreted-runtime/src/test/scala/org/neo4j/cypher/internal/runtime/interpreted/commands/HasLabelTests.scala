@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabel
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -39,6 +40,6 @@ class HasLabelTests extends CypherFunSuite {
     val state = QueryStateHelper.empty
 
     // then
-    predicate.isMatch(ctx, state) should equal(None)
+    predicate.isMatch(ctx, state) should equal(IsUnknown)
   }
 }

@@ -23,6 +23,9 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsTrue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ors
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -35,26 +38,26 @@ class OrsTest extends CypherFunSuite {
   private val ctx = CypherRow.empty
 
   private val nullPredicate = mock[Predicate]
-  when(nullPredicate.isMatch(ctx, state)).thenReturn(None)
+  when(nullPredicate.isMatch(ctx, state)).thenReturn(IsUnknown)
   when(nullPredicate.children).thenReturn(Seq.empty)
   private val explodingPredicate = mock[Predicate]
   when(explodingPredicate.isMatch(any(), any())).thenThrow(new IllegalStateException("there is something wrong"))
   when(explodingPredicate.children).thenReturn(Seq.empty)
 
   test("should return null if there are no true values and one or more nulls") {
-    ors(F, nullPredicate).isMatch(ctx, state) should equal(None)
+    ors(F, nullPredicate).isMatch(ctx, state) should equal(IsUnknown)
   }
 
   test("should quit early when finding a true value") {
-    ors(T, explodingPredicate).isMatch(ctx, state) should equal(Some(true))
+    ors(T, explodingPredicate).isMatch(ctx, state) should equal(IsTrue)
   }
 
   test("should return false if all predicates evaluate to false") {
-    ors(F, F).isMatch(ctx, state) should equal(Some(false))
+    ors(F, F).isMatch(ctx, state) should equal(IsFalse)
   }
 
   test("should return true instead of null") {
-    ors(nullPredicate, T).isMatch(ctx, state) should equal(Some(true))
+    ors(nullPredicate, T).isMatch(ctx, state) should equal(IsTrue)
   }
 
   private def ors(predicate: Predicate, predicates: Predicate*) = Ors(NonEmptyList(predicate, predicates: _*))

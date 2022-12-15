@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions.containerIndexExists
@@ -32,14 +34,14 @@ case class ContainerIndexExists(expression: Expression, index: Expression) exten
 
   override def children: Seq[AstNode[_]] = Seq(expression, index)
 
-  override def isMatch(row: ReadableRow, state: QueryState): Option[Boolean] = expression(row, state) match {
-    case IsNoValue() => None
+  override def isMatch(row: ReadableRow, state: QueryState): IsMatchResult = expression(row, state) match {
+    case IsNoValue() => IsUnknown
     case value =>
       val idx = index(row, state)
       if (idx eq NO_VALUE) {
-        None
+        IsUnknown
       } else {
-        Some(
+        IsMatchResult(
           containerIndexExists(
             value,
             idx,

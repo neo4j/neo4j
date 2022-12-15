@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 case class HasLabelFromSlot(offset: Int, resolvedLabelToken: Int) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    Some(state.query.isLabelSetOnNode(resolvedLabelToken, ctx.getLongAt(offset), state.cursors.nodeCursor))
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    IsMatchResult(state.query.isLabelSetOnNode(resolvedLabelToken, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
   override def containsIsNull: Boolean = false
@@ -37,7 +38,7 @@ case class HasLabelFromSlot(offset: Int, resolvedLabelToken: Int) extends Predic
 
 case class HasLabelFromSlotLate(offset: Int, labelName: String) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val maybeToken = state.query.getOptLabelId(labelName)
     val result =
       if (maybeToken.isEmpty)
@@ -45,7 +46,7 @@ case class HasLabelFromSlotLate(offset: Int, labelName: String) extends Predicat
       else
         state.query.isLabelSetOnNode(maybeToken.get, ctx.getLongAt(offset), state.cursors.nodeCursor)
 
-    Some(result)
+    IsMatchResult(result)
   }
 
   override def containsIsNull: Boolean = false
@@ -55,8 +56,8 @@ case class HasLabelFromSlotLate(offset: Int, labelName: String) extends Predicat
 
 case class HasAnyLabelFromSlot(offset: Int, resolvedLabelTokens: Array[Int]) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    Some(state.query.isAnyLabelSetOnNode(resolvedLabelTokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    IsMatchResult(state.query.isAnyLabelSetOnNode(resolvedLabelTokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
   override def containsIsNull: Boolean = false
@@ -66,9 +67,9 @@ case class HasAnyLabelFromSlot(offset: Int, resolvedLabelTokens: Array[Int]) ext
 
 case class HasAnyLabelFromSlotLate(offset: Int, labelNames: Seq[String]) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val tokens = labelNames.flatMap(state.query.getOptLabelId).toArray
-    Some(state.query.isAnyLabelSetOnNode(tokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
+    IsMatchResult(state.query.isAnyLabelSetOnNode(tokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
   override def containsIsNull: Boolean = false
@@ -78,8 +79,8 @@ case class HasAnyLabelFromSlotLate(offset: Int, labelNames: Seq[String]) extends
 
 case class HasALabelFromSlot(offset: Int) extends Predicate with SlottedExpression {
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    Some(state.query.isALabelSetOnNode(ctx.getLongAt(offset), state.cursors.nodeCursor))
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    IsMatchResult(state.query.isALabelSetOnNode(ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
   override def containsIsNull: Boolean = false

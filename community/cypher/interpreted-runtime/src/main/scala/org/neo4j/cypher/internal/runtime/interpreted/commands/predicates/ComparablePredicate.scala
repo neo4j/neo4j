@@ -38,13 +38,13 @@ sealed abstract class ComparablePredicate(val left: Expression, val right: Expre
 
   def comparator: (AnyValue, AnyValue) => Value
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val l = left(ctx, state)
     val r = right(ctx, state)
     comparator(l, r) match {
-      case IsTrueValue()  => Some(true)
-      case IsFalseValue() => Some(false)
-      case IsNoValue()    => None
+      case IsTrueValue()  => IsTrue
+      case IsFalseValue() => IsFalse
+      case IsNoValue()    => IsUnknown
     }
   }
 
@@ -73,14 +73,14 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
     else None
   }
 
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     val l = a(ctx, state)
     val r = b(ctx, state)
 
     l.ternaryEquals(r) match {
-      case Equality.UNDEFINED => None
-      case Equality.FALSE     => Some(false)
-      case Equality.TRUE      => Some(true)
+      case Equality.UNDEFINED => IsUnknown
+      case Equality.FALSE     => IsFalse
+      case Equality.TRUE      => IsTrue
     }
   }
 

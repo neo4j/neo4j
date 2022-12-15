@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  override def shouldExitWhen = true
+  override def shouldExitWhen = IsTrue
   override def rewrite(f: Expression => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
   override def children: Seq[AstNode[_]] = predicates.toIndexedSeq
 }

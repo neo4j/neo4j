@@ -47,14 +47,14 @@ class CachedInTest extends CypherFunSuite {
     val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsFalse)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsFalse)
   }
 
   test("check with a collection containing null") {
@@ -67,14 +67,14 @@ class CachedInTest extends CypherFunSuite {
     val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(None)
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsUnknown)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(None)
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsUnknown)
   }
 
   test("check with a collection that is null") {
@@ -88,14 +88,14 @@ class CachedInTest extends CypherFunSuite {
     val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1, state) should equal(None)
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(None)
+    predicate.isMatch(v1, state) should equal(IsUnknown)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsUnknown)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1, state) should equal(None)
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(None)
+    predicate.isMatch(v1, state) should equal(IsUnknown)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsUnknown)
   }
 
   test("check lists") {
@@ -113,13 +113,13 @@ class CachedInTest extends CypherFunSuite {
     val v14 = CypherRow.empty.copyWith("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsFalse)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1, state) should equal(Some(true))
-    predicate.isMatch(vNull, state) should equal(None)
-    predicate.isMatch(v14, state) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(IsTrue)
+    predicate.isMatch(vNull, state) should equal(IsUnknown)
+    predicate.isMatch(v14, state) should equal(IsFalse)
   }
 }

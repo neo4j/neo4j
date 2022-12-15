@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsFalse
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsMatchResult
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsTrue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsUnknown
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
@@ -35,14 +39,14 @@ abstract class InList(collection: Expression, innerVariableName: String, innerVa
     extends Predicate
     with ListSupport {
 
-  type CollectionPredicate = (AnyValue => Option[Boolean]) => Option[Boolean]
+  type CollectionPredicate = (AnyValue => IsMatchResult) => IsMatchResult
 
   def seqMethod(f: ListValue): CollectionPredicate
 
-  def isMatch(row: ReadableRow, state: QueryState): Option[Boolean] = {
+  def isMatch(row: ReadableRow, state: QueryState): IsMatchResult = {
     val list = collection(row, state)
 
-    if (list eq Values.NO_VALUE) None
+    if (list eq Values.NO_VALUE) IsUnknown
     else {
       val seq = makeTraversable(list)
       seqMethod(seq) { item =>
@@ -67,15 +71,15 @@ abstract class InList(collection: Expression, innerVariableName: String, innerVa
 case class AllInList(collection: Expression, innerVariableName: String, innerVariableOffset: Int, inner: Predicate)
     extends InList(collection, innerVariableName, innerVariableOffset, inner) {
 
-  private def forAll(collectionValue: ListValue)(predicate: AnyValue => Option[Boolean]): Option[Boolean] = {
-    var result: Option[Boolean] = Some(true)
+  private def forAll(collectionValue: ListValue)(predicate: AnyValue => IsMatchResult): IsMatchResult = {
+    var result: IsMatchResult = IsTrue
 
     val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {
-        case Some(false) => return Some(false)
-        case None        => result = None
-        case _           =>
+        case IsFalse   => return IsFalse
+        case IsUnknown => result = IsUnknown
+        case _         =>
       }
     }
     result
@@ -91,14 +95,14 @@ case class AllInList(collection: Expression, innerVariableName: String, innerVar
 case class AnyInList(collection: Expression, innerVariableName: String, innerVariableOffset: Int, inner: Predicate)
     extends InList(collection, innerVariableName, innerVariableOffset, inner) {
 
-  private def exists(collectionValue: ListValue)(predicate: AnyValue => Option[Boolean]): Option[Boolean] = {
-    var result: Option[Boolean] = Some(false)
+  private def exists(collectionValue: ListValue)(predicate: AnyValue => IsMatchResult): IsMatchResult = {
+    var result: IsMatchResult = IsFalse
     val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {
-        case Some(true) => return Some(true)
-        case None       => result = None
-        case _          =>
+        case IsTrue    => return IsTrue
+        case IsUnknown => result = IsUnknown
+        case _         =>
       }
     }
     result
@@ -115,15 +119,15 @@ case class AnyInList(collection: Expression, innerVariableName: String, innerVar
 case class NoneInList(collection: Expression, innerVariableName: String, innerVariableOffset: Int, inner: Predicate)
     extends InList(collection, innerVariableName, innerVariableOffset, inner) {
 
-  private def none(collectionValue: ListValue)(predicate: AnyValue => Option[Boolean]): Option[Boolean] = {
-    var result: Option[Boolean] = Some(true)
+  private def none(collectionValue: ListValue)(predicate: AnyValue => IsMatchResult): IsMatchResult = {
+    var result: IsMatchResult = IsTrue
 
     val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {
-        case Some(true) => return Some(false)
-        case None       => result = None
-        case _          =>
+        case IsTrue    => return IsFalse
+        case IsUnknown => result = IsUnknown
+        case _         =>
       }
     }
 
@@ -141,23 +145,23 @@ case class NoneInList(collection: Expression, innerVariableName: String, innerVa
 case class SingleInList(collection: Expression, innerVariableName: String, innerVariableOffset: Int, inner: Predicate)
     extends InList(collection, innerVariableName, innerVariableOffset, inner) {
 
-  private def single(collectionValue: ListValue)(predicate: AnyValue => Option[Boolean]): Option[Boolean] = {
+  private def single(collectionValue: ListValue)(predicate: AnyValue => IsMatchResult): IsMatchResult = {
     var matched = false
     var atLeastOneNull = false
     val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {
-        case Some(true) if matched => return Some(false)
-        case Some(true)            => matched = true
-        case None                  => atLeastOneNull = true
-        case _                     =>
+        case IsTrue if matched => return IsFalse
+        case IsTrue            => matched = true
+        case IsUnknown         => atLeastOneNull = true
+        case _                 =>
       }
     }
 
     if (atLeastOneNull)
-      None
+      IsUnknown
     else
-      Some(matched)
+      IsMatchResult(matched)
   }
 
   def seqMethod(value: ListValue): CollectionPredicate = single(value)

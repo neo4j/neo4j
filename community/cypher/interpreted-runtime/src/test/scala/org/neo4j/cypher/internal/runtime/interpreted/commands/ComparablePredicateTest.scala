@@ -118,15 +118,15 @@ class ComparablePredicateTest extends CypherFunSuite {
       val actual = predicate.isMatch(CypherRow.empty, QueryStateHelper.empty)
 
       if (isIncomparable(left, right))
-        buildResult(actual.isEmpty, "null", actual)
+        buildResult(!actual.isKnown, "null", actual)
       else {
-        assert(actual.isDefined, s"$left $operator $right")
+        assert(actual.isKnown, s"$left $operator $right")
         val expected = AnyValues.COMPARATOR.compare(Values.of(left), Values.of(right))
         val result = operator match {
-          case "<"  => (expected < 0) == actual.get
-          case "<=" => (expected <= 0) == actual.get
-          case ">=" => (expected >= 0) == actual.get
-          case ">"  => (expected > 0) == actual.get
+          case "<"  => (expected < 0) == actual.asBoolean
+          case "<=" => (expected <= 0) == actual.asBoolean
+          case ">=" => (expected >= 0) == actual.asBoolean
+          case ">"  => (expected > 0) == actual.asBoolean
         }
         buildResult(result, expected, actual)
       }
