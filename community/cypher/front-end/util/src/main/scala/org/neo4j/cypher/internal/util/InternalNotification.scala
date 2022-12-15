@@ -49,3 +49,6 @@ case class DeprecatedRuntimeNotification(msg: String)
     extends InternalNotification
 
 case class DeprecatedTextIndexProvider(position: InputPosition) extends InternalNotification
+
+case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labelExpression: String)
+    extends InternalNotification

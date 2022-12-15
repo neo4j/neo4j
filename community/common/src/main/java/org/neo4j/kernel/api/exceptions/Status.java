@@ -213,6 +213,8 @@ public interface Status {
         UnsupportedOperationError(
                 ClientError, "This query preformed an operation that is not supported in this context."),
         ExternalResourceFailed(ClientError, "Access to an external resource failed"),
+        UnsatisfiableRelationshipTypeExpression(
+                ClientNotification, "The query contains a relationship type expression that cannot be satisfied."),
 
         // database errors
         ExecutionFailed(DatabaseError, "The database was unable to execute the statement."),

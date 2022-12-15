@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.ir.helpers.overlaps
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 
 import scala.annotation.tailrec
 
@@ -45,7 +47,7 @@ object DeleteOverlaps {
     // We can't possibly handles all possible expressions here, though the exact specification may evolve over time, we need to draw a line somewhere.
     val (unsupportedExpressions, labelExpressions) = extractLabelExpressions(predicatesOnRead ++ predicatesOnDelete)
 
-    LabelExpression.allSolutions(labelExpressions).headOption match {
+    SolvableLabelExpression.allSolutions(labelExpressions).headOption match {
       case None           => NoLabelOverlap
       case Some(solution) => Overlap(unsupportedExpressions, solution)
     }
@@ -72,16 +74,16 @@ object DeleteOverlaps {
    *
    * @return A tuple containing expressions that couldn't be processed and the extracted label expressions
    */
-  private def extractLabelExpressions(expressions: Seq[Expression]): (Seq[Expression], Seq[LabelExpression]) =
+  private def extractLabelExpressions(expressions: Seq[Expression]): (Seq[Expression], Seq[SolvableLabelExpression]) =
     extractLabelExpressionsRec(expressions.flatMap(Expressions.splitExpression).toList, Nil, Nil, Set.empty)
 
   @tailrec
   private def extractLabelExpressionsRec(
     expressions: List[Expression],
     invalid: List[Expression],
-    labelExpressions: List[LabelExpression],
+    labelExpressions: List[SolvableLabelExpression],
     allLabels: Set[String]
-  ): (List[Expression], List[LabelExpression]) =
+  ): (List[Expression], List[SolvableLabelExpression]) =
     expressions match {
       case Nil          => (invalid.reverse, labelExpressions.reverse)
       case head :: tail =>

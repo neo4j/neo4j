@@ -33,7 +33,8 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Xor
-import org.neo4j.cypher.internal.ir.helpers.TailRecOption
+import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
+import org.neo4j.cypher.internal.util.tailrec.TailRecOption
 
 import scala.annotation.tailrec
 
@@ -93,15 +94,15 @@ object Expressions {
    * }}}
    * Note how in this last example, (:Item) could have been evaluated independently, consider using [[splitExpression]] before calling this function.
    */
-  def extractLabelExpression(expression: Expression): Option[LabelExpression] =
+  def extractLabelExpression(expression: Expression): Option[SolvableLabelExpression] =
     extractLabelExpressionRec(expression).result
 
-  private def extractLabelExpressionRec(expression: Expression): TailRecOption[LabelExpression] =
+  private def extractLabelExpressionRec(expression: Expression): TailRecOption[SolvableLabelExpression] =
     expression match {
       case HasALabel(_) =>
-        TailRecOption.some(LabelExpression.wildcard)
+        TailRecOption.some(SolvableLabelExpression.wildcard)
       case HasLabels(_, Seq(label)) =>
-        TailRecOption.some(LabelExpression.label(label.name))
+        TailRecOption.some(SolvableLabelExpression.label(label.name))
       case Not(not) =>
         TailRecOption.tailcall(extractLabelExpressionRec(not)).map(_.not)
       case And(lhs, rhs) =>

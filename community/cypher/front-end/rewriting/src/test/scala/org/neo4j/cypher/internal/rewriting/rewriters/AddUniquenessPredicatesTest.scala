@@ -18,17 +18,17 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
-import org.neo4j.cypher.internal.expressions.LabelExpression
-import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunctions
-import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunctions
-import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
-import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
-import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.label_expressions.LabelExpression
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Conjunctions
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.rewriting.RewriteTest
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.evaluate
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider

@@ -2,32 +2,29 @@
  * Copyright (c) "Neo4j"
  * Neo4j Sweden AB [http://neo4j.com]
  *
- * This file is part of Neo4j.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package org.neo4j.cypher.internal.ir.helpers.overlaps
+package org.neo4j.cypher.internal.label_expressions
 
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.KnownLabels
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.SomeUnknownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.SomeUnknownLabels
 import org.scalatest.Inspectors
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class LabelExpressionTest extends AnyFunSuite with Matchers with ScalaCheckPropertyChecks
-    with LabelExpressionGenerators {
+class SolvableLabelExpressionTest extends AnyFunSuite with Matchers with ScalaCheckPropertyChecks
+    with SolvableLabelExpressionGenerators {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = 100)
@@ -183,7 +180,9 @@ class LabelExpressionTest extends AnyFunSuite with Matchers with ScalaCheckPrope
 
   test("Evaluating multiple label expressions is like evaluating the conjunction of all the expressions") {
     forAll(genListOfLabelExpressions) { expressions =>
-      LabelExpression.allSolutions(expressions).toSet should ===(expressions.foldLeft(one)(_.and(_)).solutions)
+      SolvableLabelExpression.allSolutions(expressions).toSet should ===(
+        expressions.foldLeft(one)(_.and(_)).solutions
+      )
     }
   }
 

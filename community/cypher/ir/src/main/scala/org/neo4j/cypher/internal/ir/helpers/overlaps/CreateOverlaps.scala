@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.KnownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
+import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 
 object CreateOverlaps {
 
@@ -103,7 +105,7 @@ object CreateOverlaps {
    * @param properties Name of the properties that must exist on the node.
    */
   private case class NodePredicates(
-    labelExpressions: Seq[LabelExpression],
+    labelExpressions: Seq[SolvableLabelExpression],
     properties: Set[PropertyKeyName]
   ) {
 
@@ -122,7 +124,7 @@ object CreateOverlaps {
     def fold(nodePredicates: Seq[NodePredicates]): NodePredicates =
       nodePredicates.reduceLeftOption(_.combine(_)).getOrElse(empty)
 
-    def withLabelExpression(labelExpression: LabelExpression): NodePredicates =
+    def withLabelExpression(labelExpression: SolvableLabelExpression): NodePredicates =
       empty.copy(labelExpressions = Vector(labelExpression))
 
     def withProperty(propertyKeyName: PropertyKeyName): NodePredicates =

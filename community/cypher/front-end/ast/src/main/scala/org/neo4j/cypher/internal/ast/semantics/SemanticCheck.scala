@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 
 sealed trait SemanticCheck {
@@ -109,6 +110,9 @@ object SemanticCheck {
   /** Creates a check which doesn't change state but produces errors `errors`. */
   def error(errors: IterableOnce[SemanticErrorDef]): SemanticCheck = fromFunction(SemanticCheckResult.error(_, errors))
 
+  /** Creates a check which doesn't change state but produces a warning from `notification` */
+  def warn(notification: InternalNotification): SemanticCheck = fromFunction(SemanticCheckResult.warn(_, notification))
+
   /** Creates a check from function. */
   def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
 
@@ -174,6 +178,11 @@ object SemanticCheckResult {
 
   def error(state: SemanticState, error: IterableOnce[SemanticErrorDef]): SemanticCheckResult =
     SemanticCheckResult(state, error.iterator.toSeq)
+
+  def warn(state: SemanticState, notification: InternalNotification): SemanticCheckResult = {
+    val newState = state.addNotification(notification)
+    SemanticCheckResult(newState, Seq.empty)
+  }
 }
 
 trait SemanticCheckContext {

@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.impl.notification.NotificationDetail
@@ -227,6 +228,12 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_RUNTIME_OPTION.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Deprecated runtime option", msg)
+      )
+
+    case UnsatisfiableRelationshipTypeExpression(position, relTypeExpression) =>
+      NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
+        position.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.unsatisfiableRelTypeExpression(relTypeExpression)
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

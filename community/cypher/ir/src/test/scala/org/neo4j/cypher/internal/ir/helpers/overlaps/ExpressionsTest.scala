@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir.helpers.overlaps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 import org.scalatest.OptionValues
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -82,53 +83,53 @@ class ExpressionsTest extends AnyFunSuite with Matchers with AstConstructionTest
   }
 
   test("extract wildcard label expression") {
-    expectLabelExpression(hasALabel("item"), LabelExpression.wildcard)
+    expectLabelExpression(hasALabel("item"), SolvableLabelExpression.wildcard)
   }
 
   test("extract single label expression") {
-    expectLabelExpression(hasLabels("item", "Item"), LabelExpression.label("Item"))
+    expectLabelExpression(hasLabels("item", "Item"), SolvableLabelExpression.label("Item"))
   }
 
   test("extract not label expression") {
-    expectLabelExpression(not(hasLabels("item", "Item")), LabelExpression.label("Item").not)
+    expectLabelExpression(not(hasLabels("item", "Item")), SolvableLabelExpression.label("Item").not)
   }
 
   test("extract and label expression") {
     expectLabelExpression(
       and(hasLabels("item", "Item"), hasALabel("item")),
-      LabelExpression.label("Item").and(LabelExpression.wildcard)
+      SolvableLabelExpression.label("Item").and(SolvableLabelExpression.wildcard)
     )
   }
 
   test("extract ands label expression") {
     expectLabelExpression(
       ands(hasLabels("item", "Item"), hasALabel("item"), not(hasLabels("item", "Deleted"))),
-      LabelExpression.label("Item")
-        .and(LabelExpression.wildcard)
-        .and(LabelExpression.label("Deleted").not)
+      SolvableLabelExpression.label("Item")
+        .and(SolvableLabelExpression.wildcard)
+        .and(SolvableLabelExpression.label("Deleted").not)
     )
   }
 
   test("extract or label expression") {
     expectLabelExpression(
       or(hasLabels("item", "Item"), hasALabel("item")),
-      LabelExpression.label("Item").or(LabelExpression.wildcard)
+      SolvableLabelExpression.label("Item").or(SolvableLabelExpression.wildcard)
     )
   }
 
   test("extract ors label expression") {
     expectLabelExpression(
       ors(hasLabels("item", "Item"), hasALabel("item"), not(hasLabels("item", "Deleted"))),
-      LabelExpression.label("Item")
-        .or(LabelExpression.wildcard)
-        .or(LabelExpression.label("Deleted").not)
+      SolvableLabelExpression.label("Item")
+        .or(SolvableLabelExpression.wildcard)
+        .or(SolvableLabelExpression.label("Deleted").not)
     )
   }
 
   test("extract xor label expression") {
     expectLabelExpression(
       xor(hasLabels("item", "Item"), hasALabel("item")),
-      LabelExpression.label("Item").xor(LabelExpression.wildcard)
+      SolvableLabelExpression.label("Item").xor(SolvableLabelExpression.wildcard)
     )
   }
 
@@ -145,7 +146,7 @@ class ExpressionsTest extends AnyFunSuite with Matchers with AstConstructionTest
     Expressions.extractLabelExpression(expression) shouldBe empty
   }
 
-  def expectLabelExpression(expression: Expression, expected: LabelExpression): Unit = {
+  def expectLabelExpression(expression: Expression, expected: SolvableLabelExpression): Unit = {
     val labelExpression = Expressions.extractLabelExpression(expression).value
     labelExpression.allLabels shouldEqual expected.allLabels
     labelExpression.solutions shouldEqual expected.solutions

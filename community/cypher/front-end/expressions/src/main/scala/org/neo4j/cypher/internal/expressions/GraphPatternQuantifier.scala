@@ -37,7 +37,7 @@ case class StarQuantifier()(val position: InputPosition) extends GraphPatternQua
 case class IntervalQuantifier(lower: Option[UnsignedIntegerLiteral], upper: Option[UnsignedIntegerLiteral])(
   val position: InputPosition
 ) extends GraphPatternQuantifier {
-  override def canBeEmpty: Boolean = lower.map(_.value).getOrElse(0) == 0
+  override def canBeEmpty: Boolean = lower.map(_.value.longValue()).getOrElse(0L) == 0
 }
 
 /**

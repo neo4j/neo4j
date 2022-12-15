@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.KnownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 

@@ -209,7 +209,12 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. Names containing `.` should be escaped.",
-            NotificationCategory.DEPRECATION);
+            NotificationCategory.DEPRECATION),
+    UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION(
+            SeverityLevel.WARNING,
+            Status.Statement.UnsatisfiableRelationshipTypeExpression,
+            "Relationship type expression cannot possibly be satisfied.",
+            NotificationCategory.GENERIC);
 
     private final Status status;
     private final String description;

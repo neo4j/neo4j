@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
-import org.neo4j.cypher.internal.expressions.LabelExpression
-import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -58,6 +56,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.label_expressions.LabelExpression
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
+import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
@@ -65,6 +66,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -454,6 +456,15 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       }
     }
 
+    def unsatisfiableRelTypeExpression(labelExpression: LabelExpression): SemanticCheck = {
+      val allowsForOneRelationship = SolvableLabelExpression.from(labelExpression).containsSolutionsForRelationship
+      when(!allowsForOneRelationship) {
+        warn(UnsatisfiableRelationshipTypeExpression(
+          labelExpression.position,
+          stringifier.stringifyLabelExpression(labelExpression)
+        ))
+      }
+    }
     def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression]): SemanticCheck =
       labelExpression.foldSemanticCheck { labelExpression =>
         when(ctx != SemanticContext.Match && labelExpression.containsGpmSpecificRelTypeExpression) {
@@ -462,6 +473,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             labelExpression.position
           )
         } chain
+          unsatisfiableRelTypeExpression(labelExpression) chain
           SemanticExpressionCheck.checkLabelExpression(Some(RELATIONSHIP_TYPE), labelExpression)
       }
 

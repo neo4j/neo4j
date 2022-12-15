@@ -309,5 +309,26 @@ public interface NotificationDetail {
                 }
             };
         }
+
+        public static NotificationDetail unsatisfiableRelTypeExpression(String expression) {
+            return new NotificationDetail() {
+                @Override
+                public String name() {
+                    return expression;
+                }
+
+                @Override
+                public String value() {
+                    return null;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format(
+                            "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.",
+                            expression);
+                }
+            };
+        }
     }
 }

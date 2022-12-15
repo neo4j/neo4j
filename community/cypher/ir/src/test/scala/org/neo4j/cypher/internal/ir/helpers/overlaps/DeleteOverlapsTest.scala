@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.ir.helpers.overlaps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.KnownLabels
-import org.neo4j.cypher.internal.ir.helpers.overlaps.NodeLabels.SomeUnknownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
+import org.neo4j.cypher.internal.label_expressions.NodeLabels.SomeUnknownLabels
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 

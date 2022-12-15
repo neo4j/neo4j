@@ -39,6 +39,15 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- scala -->
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+        </dependency>
+
+        <!-- scala test dependencies -->
+
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
@@ -51,6 +60,13 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.scalatestplus</groupId>
+            <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
+        </dependency>
+
+        <!-- test dependencies -->
+
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-test-util</artifactId>

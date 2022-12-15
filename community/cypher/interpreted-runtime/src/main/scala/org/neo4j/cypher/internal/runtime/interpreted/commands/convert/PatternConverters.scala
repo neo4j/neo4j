@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.expressions.LabelExpression.containsGpmSpecificRelType
-import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.containsGpmSpecificRelType
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
