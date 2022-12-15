@@ -147,6 +147,10 @@ case class AliasedReturnItem(expression: Expression, variable: LogicalVariable)(
 
 object ReturnItems {
 
+  /**
+   * This is a subset of the information of [[ReturnItems]].
+   * It only tracks the returned variables, but not aliases and other things.
+   */
   case class ReturnVariables(
     includeExisting: Boolean,
     explicitVariables: Seq[LogicalVariable]

@@ -42,7 +42,7 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
 
   /**
    * All variables that are explicitly listed to be returned from this statement.
-   * This also includes the information whether other existing variables in scope are also returned.
+   * This also includes the information whether all other potentially existing variables in scope are also returned.
    */
   def returnVariables: ReturnVariables
 
@@ -511,6 +511,10 @@ sealed trait Union extends Query {
     val scopeFromLhs = lhs.finalScope(state.scope(lhs).get)
     val scopeFromRhs = rhs.finalScope(state.scope(rhs).get)
 
+    /**
+     * Derived from UnionMapping, but only has the names of the variables in LHS and RHS,
+     * since that is also the information we need here.
+     */
     case class Mapping(
       unionVariable: LogicalVariable,
       variableInLhsName: String,

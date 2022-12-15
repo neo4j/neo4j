@@ -333,10 +333,10 @@ class SubqueryCallSemanticAnalysisTest
   test("RETURN * in a CALL should export variables") {
     for {
       subqueryReturn <- returnStarNMCombinations
-      suqbueryReturnVars = containedVariables(subqueryReturn)
+      subqueryReturnVars = containedVariables(subqueryReturn)
       finalReturn <- returnStarNMCombinations
       finalReturnVars = containedVariables(finalReturn)
-      if finalReturnVars.forall(suqbueryReturnVars.contains)
+      if finalReturnVars.subsetOf(subqueryReturnVars)
     } {
       val query =
         s"""
@@ -361,13 +361,13 @@ class SubqueryCallSemanticAnalysisTest
   test("RETURN * in UNION in a CALL should export variables") {
     for {
       firstSubqueryReturn <- returnStarNMCombinations
-      firstSuqbueryReturnVars = containedVariables(firstSubqueryReturn)
+      firstSubqueryReturnVars = containedVariables(firstSubqueryReturn)
       secondSubqueryReturn <- returnStarNMCombinations
-      secondSuqbueryReturnVars = containedVariables(secondSubqueryReturn)
-      if secondSuqbueryReturnVars == firstSuqbueryReturnVars
+      secondSubqueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSubqueryReturnVars == firstSubqueryReturnVars
       finalReturn <- returnStarNMCombinations
       finalReturnVars = containedVariables(finalReturn)
-      if finalReturnVars.forall(firstSuqbueryReturnVars.contains)
+      if finalReturnVars.subsetOf(firstSubqueryReturnVars)
     } {
       val query =
         s"""
@@ -395,16 +395,16 @@ class SubqueryCallSemanticAnalysisTest
   test("RETURN * in 3-way-UNION in a CALL should export variables") {
     for {
       firstSubqueryReturn <- returnStarNMCombinations
-      firstSuqbueryReturnVars = containedVariables(firstSubqueryReturn)
+      firstSubqueryReturnVars = containedVariables(firstSubqueryReturn)
       secondSubqueryReturn <- returnStarNMCombinations
-      secondSuqbueryReturnVars = containedVariables(secondSubqueryReturn)
-      if secondSuqbueryReturnVars == firstSuqbueryReturnVars
+      secondSubqueryReturnVars = containedVariables(secondSubqueryReturn)
+      if secondSubqueryReturnVars == firstSubqueryReturnVars
       thirdSubqueryReturn <- returnStarNMCombinations
-      thirdSuqbueryReturnVars = containedVariables(thirdSubqueryReturn)
-      if thirdSuqbueryReturnVars == firstSuqbueryReturnVars
+      thirdSubqueryReturnVars = containedVariables(thirdSubqueryReturn)
+      if thirdSubqueryReturnVars == firstSubqueryReturnVars
       finalReturn <- returnStarNMCombinations
       finalReturnVars = containedVariables(finalReturn)
-      if finalReturnVars.forall(firstSuqbueryReturnVars.contains)
+      if finalReturnVars.subsetOf(firstSubqueryReturnVars)
     } {
       val query =
         s"""
