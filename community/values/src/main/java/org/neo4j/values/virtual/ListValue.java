@@ -505,10 +505,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public static final class AppendList extends ListValue {
         private final ListValue base;
         private final AnyValue appended;
+        private volatile long memoizedEstimatedHeapUsage;
+        private static final long NOT_MEMOIZED = -1;
 
         AppendList(ListValue base, AnyValue appended) {
             this.base = base;
             this.appended = appended;
+            this.memoizedEstimatedHeapUsage = NOT_MEMOIZED;
         }
 
         @Override
@@ -563,11 +566,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public long estimatedHeapUsage() {
-            return APPEND_LIST_SHALLOW_SIZE + base.estimatedHeapUsage() + appended.estimatedHeapUsage();
-        }
-
-        public long estimatedAppendedHeapUsage() {
-            return APPEND_LIST_SHALLOW_SIZE + appended.estimatedHeapUsage();
+            long tmp = memoizedEstimatedHeapUsage;
+            if (tmp == NOT_MEMOIZED) {
+                tmp = APPEND_LIST_SHALLOW_SIZE + base.estimatedHeapUsage() + appended.estimatedHeapUsage();
+                memoizedEstimatedHeapUsage = tmp;
+            }
+            return tmp;
         }
 
         @Override
