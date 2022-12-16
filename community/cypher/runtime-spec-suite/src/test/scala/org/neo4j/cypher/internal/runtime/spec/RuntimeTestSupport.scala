@@ -308,19 +308,26 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtime: CypherRuntime[CONTEXT],
     testPlanCombinationRewriterHints: Set[TestPlanCombinationRewriterHint]
   ): ExecutionPlan = {
-    compileWithTx(
-      logicalQuery,
-      runtime,
-      newQueryContext(_txContext, logicalQuery.readOnly),
-      testPlanCombinationRewriterHints
-    )._1
+    val queryContext = newQueryContext(_txContext, logicalQuery.readOnly)
+    try {
+      compileWithTx(
+        logicalQuery,
+        runtime,
+        queryContext,
+        testPlanCombinationRewriterHints
+      )._1
+    } finally {
+      queryContext.resources.close()
+    }
   }
 
   override def buildPlanAndContext(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT]
-  ): (ExecutionPlan, CONTEXT) =
-    compileWithTx(logicalQuery, runtime, newQueryContext(_txContext, logicalQuery.readOnly))
+  ): (ExecutionPlan, CONTEXT) = {
+    val queryContext = newQueryContext(_txContext, logicalQuery.readOnly)
+    compileWithTx(logicalQuery, runtime, queryContext)
+  }
 
   override def execute(
     executablePlan: ExecutionPlan,
@@ -578,6 +585,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         txContext
       )
     } finally {
+      queryContext.resources.close()
       txContext.close()
       tx.close()
     }
@@ -609,6 +617,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
         txContext
       )
     } finally {
+      queryContext.resources.close()
       tx.rollback()
       txContext.close()
       tx.close()
@@ -660,7 +669,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       } else () => ()
     resultMapper(
       runtimeContext,
-      new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased)
+      new ClosingRuntimeTestResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased)
     )
   }
 

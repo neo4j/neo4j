@@ -79,7 +79,7 @@ class ResourceManager(
 
   override def closeInternal(): Unit = resources.closeAll()
 
-  override def isClosed: Boolean = false // resources.closeAll() is idempotent
+  override def isClosed: Boolean = resources.isClosed
 }
 
 class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {
@@ -137,6 +137,7 @@ trait ResourcePool {
   def all(): Iterator[AutoCloseablePlus]
   def closeAll(): Unit
   override def toString: String = all().toList.toString()
+  def isClosed: Boolean
 }
 
 /**
@@ -147,9 +148,11 @@ trait ResourcePool {
  */
 class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memoryTracker: MemoryTracker)
     extends ResourcePool {
-  private var highMark: Int = 0
-  private var closeables: Array[AutoCloseablePlus] = new Array[AutoCloseablePlus](capacity)
-  private var trackedSize = shallowSizeOfObjectArray(capacity)
+  private[this] var highMark: Int = 0
+  private[this] var closeables: Array[AutoCloseablePlus] = new Array[AutoCloseablePlus](capacity)
+  private[this] var trackedSize: Long = shallowSizeOfObjectArray(capacity)
+  private[this] var _isClosed: Boolean = false
+
   memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize)
 
   def add(resource: AutoCloseablePlus): Unit = {
@@ -214,37 +217,40 @@ class SingleThreadedResourcePool(capacity: Int, monitor: ResourceMonitor, memory
   }
 
   private def clear(): Unit = {
-    if (highMark > 0) {
-      highMark = 0
-      memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE)
-    }
+    highMark = 0
   }
 
   @VisibleForTesting
   def allIncludingNullValues: Seq[AutoCloseablePlus] = closeables.toSeq
 
   def closeAll(): Unit = {
-    var error: Throwable = null
-    var i = 0
-    while (i < highMark) {
-      try {
-        val resource = closeables(i)
-        if (resource != null) {
-          monitor.close(resource)
-          resource.setToken(UNTRACKED)
-          resource.setCloseListener(null) // We don't want a call to onClosed any longer
-          resource.close()
+    if (!_isClosed) {
+      var error: Throwable = null
+      var i = 0
+      while (i < highMark) {
+        try {
+          val resource = closeables(i)
+          if (resource != null) {
+            monitor.close(resource)
+            resource.setToken(UNTRACKED)
+            resource.setCloseListener(null) // We don't want a call to onClosed any longer
+            resource.close()
+          }
+        } catch {
+          case t: Throwable => error = Exceptions.chain(error, t)
         }
-      } catch {
-        case t: Throwable => error = Exceptions.chain(error, t)
+        i += 1
       }
-      i += 1
-    }
-    if (error != null) throw error
-    else {
-      clear()
+      if (error != null) throw error
+      else {
+        clear()
+      }
+      memoryTracker.releaseHeap(trackedSize + SHALLOW_SIZE)
+      _isClosed = true
     }
   }
+
+  override def isClosed: Boolean = _isClosed
 
   private def ensureCapacity(): Unit = {
     if (closeables.length <= highMark) {
@@ -311,4 +317,6 @@ class ThreadSafeResourcePool(monitor: ResourceMonitor) extends ResourcePool {
       resources.clear()
     }
   }
+
+  override def isClosed: Boolean = false // closeAll() is idempotent
 }

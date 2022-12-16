@@ -905,8 +905,8 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](
 trait RuntimeTestResult {
   def runtimeResult: RuntimeResult
   def resultConsumptionController: RuntimeTestResultConsumptionController
-  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
-  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheHits
+  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheMisses
 }
 
 trait RuntimeTestResultConsumptionController {
@@ -982,8 +982,8 @@ case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscri
     testSubscriber.allSeen.map(_.toArray).toArray.asInstanceOf[IndexedSeq[Array[AnyValue]]]
   }
 
-  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
-  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheHits
+  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeTestResult].pageCacheMisses
 }
 
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
