@@ -34,12 +34,12 @@ class GlobalAvailabilityGuardControllerTest {
     @Test
     void doNotAbortOnRunning() {
         when(guard.isShutdown()).thenReturn(false);
-        assertFalse(guardController.shouldAbort());
+        assertFalse(guardController.shouldAbortStartup());
     }
 
     @Test
     void abortOnShutdown() {
         when(guard.isShutdown()).thenReturn(true);
-        assertTrue(guardController.shouldAbort());
+        assertTrue(guardController.shouldAbortStartup());
     }
 }

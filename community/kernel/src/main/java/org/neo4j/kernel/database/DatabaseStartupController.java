@@ -26,5 +26,5 @@ package org.neo4j.kernel.database;
 public interface DatabaseStartupController {
     DatabaseStartupController NEVER_ABORT = () -> false;
 
-    boolean shouldAbort();
+    boolean shouldAbortStartup();
 }

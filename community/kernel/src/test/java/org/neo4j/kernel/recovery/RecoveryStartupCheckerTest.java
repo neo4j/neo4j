@@ -42,7 +42,7 @@ class RecoveryStartupCheckerTest {
 
         assertDoesNotThrow(recoveryStartupChecker::checkIfCanceled);
 
-        when(startupController.shouldAbort()).thenReturn(true);
+        when(startupController.shouldAbortStartup()).thenReturn(true);
         assertThrows(DatabaseStartAbortedException.class, recoveryStartupChecker::checkIfCanceled);
     }
 }

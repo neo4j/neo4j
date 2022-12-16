@@ -580,7 +580,7 @@ class TransactionLogsRecoveryTest {
         RecoveryMonitor monitor = mock(RecoveryMonitor.class);
         var startupController = mock(DatabaseStartupController.class);
         var databaseId = from("db", randomUUID());
-        when(startupController.shouldAbort()).thenReturn(false, true);
+        when(startupController.shouldAbortStartup()).thenReturn(false, true);
         var recoveryStartupChecker = new RecoveryStartupChecker(startupController, databaseId);
         var logsTruncator = mock(CorruptedLogsTruncator.class);
 
