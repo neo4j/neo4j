@@ -54,6 +54,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
@@ -157,8 +158,15 @@ class RecoveryWithTokenIndexesIT {
 
     private void recoverDatabase(DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache) throws Exception {
         assertTrue(Recovery.isRecoveryRequired(fs, layout, config, INSTANCE));
-        performRecovery(
-                Recovery.context(fs, cache, DatabaseTracers.EMPTY, config, layout, INSTANCE, IOController.DISABLED));
+        performRecovery(Recovery.context(
+                fs,
+                cache,
+                DatabaseTracers.EMPTY,
+                config,
+                layout,
+                INSTANCE,
+                IOController.DISABLED,
+                NullLogProvider.getInstance()));
         assertFalse(Recovery.isRecoveryRequired(fs, layout, config, INSTANCE));
     }
 

@@ -138,7 +138,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.facade.RecoveryCriteria;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -874,8 +873,8 @@ class RecoveryIT {
         fileSystem.deleteFileOrThrow(idFile);
         assertTrue(isRecoveryRequired(layout));
 
-        performRecovery(
-                Recovery.context(fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE, IOController.DISABLED));
+        performRecovery(Recovery.context(
+                fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE, IOController.DISABLED, logProvider));
         assertFalse(isRecoveryRequired(layout));
 
         assertTrue(fileSystem.fileExists(idFile));
@@ -899,8 +898,8 @@ class RecoveryIT {
         assertTrue(isRecoveryRequired(layout));
 
         Config config = defaults(Map.of(GraphDatabaseSettings.keep_logical_logs, "keep_none"));
-        performRecovery(
-                Recovery.context(fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED));
+        performRecovery(Recovery.context(
+                fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED, logProvider));
         assertThat(Arrays.stream(fileSystem.listFiles(layout.getTransactionLogsDirectory()))
                         .filter(path -> path.toString().contains("transaction.db"))
                         .count())
@@ -1082,15 +1081,14 @@ class RecoveryIT {
         monitors.addMonitorListener(monitor);
         Config config = Config.defaults();
 
-        Recovery.performRecovery(
-                Recovery.context(fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED)
-                        .log(NullLogProvider.getInstance())
-                        .recoveryPredicate(RecoveryPredicate.ALL)
-                        .monitors(monitors)
-                        .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
-                        .startupChecker(null)
-                        .clock(Clock.systemUTC())
-                        .force());
+        Recovery.performRecovery(Recovery.context(
+                        fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED, logProvider)
+                .recoveryPredicate(RecoveryPredicate.ALL)
+                .monitors(monitors)
+                .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
+                .startupChecker(null)
+                .clock(Clock.systemUTC())
+                .force());
 
         // then
         assertFalse(idGeneratorIsDirty(idFile, openOptions));
@@ -1421,8 +1419,8 @@ class RecoveryIT {
                         Config.defaults(),
                         databaseLayout,
                         INSTANCE,
-                        IOController.DISABLED)
-                .log(logProvider)
+                        IOController.DISABLED,
+                        logProvider)
                 .logTail(spiedLogTail)
                 .clock(fakeClock));
         verify(spiedLogTail, times(1)).getLastTransactionLogPosition();
@@ -1507,8 +1505,14 @@ class RecoveryIT {
         assertTrue(isRecoveryRequired(databaseLayout, config, logFiles, databaseTracers));
 
         Recovery.performRecovery(Recovery.context(
-                        fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE, IOController.DISABLED)
-                .log(logProvider)
+                        fileSystem,
+                        pageCache,
+                        databaseTracers,
+                        config,
+                        databaseLayout,
+                        INSTANCE,
+                        IOController.DISABLED,
+                        logProvider)
                 .logTail(logFiles.getTailMetadata())
                 .recoveryPredicate(recoveryCriteria.toPredicate())
                 .monitors(monitors)

@@ -115,7 +115,6 @@ import org.neo4j.kernel.recovery.facade.DatabaseRecoveryFacade;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryPools;
@@ -239,8 +238,9 @@ public final class Recovery {
             Config config,
             DatabaseLayout databaseLayout,
             MemoryTracker memoryTracker,
-            IOController ioController) {
-        return new Context(fs, pageCache, databaseLayout, config, memoryTracker, tracers, ioController);
+            IOController ioController,
+            InternalLogProvider logProvider) {
+        return new Context(fs, pageCache, databaseLayout, config, memoryTracker, tracers, ioController, logProvider);
     }
 
     /**
@@ -254,8 +254,8 @@ public final class Recovery {
         private final PageCache pageCache;
         private final Config config;
         private final DatabaseTracers tracers;
+        private final InternalLogProvider logProvider;
         private boolean forceRunRecovery;
-        private InternalLogProvider logProvider = NullLogProvider.getInstance();
         private Monitors globalMonitors = new Monitors();
         private Iterable<ExtensionFactory<?>> extensionFactories;
         private Optional<LogTailMetadata> providedLogTail = Optional.empty();
@@ -271,7 +271,8 @@ public final class Recovery {
                 Config config,
                 MemoryTracker memoryTracker,
                 DatabaseTracers tracers,
-                IOController ioController) {
+                IOController ioController,
+                InternalLogProvider logProvider) {
             requireNonNull(pageCache);
             requireNonNull(fileSystemAbstraction);
             requireNonNull(databaseLayout);
@@ -283,6 +284,7 @@ public final class Recovery {
             this.memoryTracker = memoryTracker;
             this.tracers = tracers;
             this.ioController = ioController;
+            this.logProvider = requireNonNull(logProvider);
         }
 
         /**
@@ -316,14 +318,6 @@ public final class Recovery {
          */
         public Context force() {
             this.forceRunRecovery = true;
-            return this;
-        }
-
-        /**
-         * @param logProvider log provider
-         */
-        public Context log(InternalLogProvider logProvider) {
-            this.logProvider = logProvider;
             return this;
         }
 

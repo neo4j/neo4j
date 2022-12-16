@@ -70,10 +70,16 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
             throws IOException {
         monitor.recoveryStarted();
-        Recovery.performRecovery(
-                Recovery.context(fs, pageCache, tracers, config, databaseLayout, memoryTracker, IOController.DISABLED)
-                        .log(logProvider)
-                        .recoveryPredicate(recoveryCriteria.toPredicate()));
+        Recovery.performRecovery(Recovery.context(
+                        fs,
+                        pageCache,
+                        tracers,
+                        config,
+                        databaseLayout,
+                        memoryTracker,
+                        IOController.DISABLED,
+                        logProvider)
+                .recoveryPredicate(recoveryCriteria.toPredicate()));
         monitor.recoveryCompleted();
     }
 }

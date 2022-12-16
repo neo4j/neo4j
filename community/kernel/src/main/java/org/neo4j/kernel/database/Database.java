@@ -400,8 +400,8 @@ public class Database extends AbstractDatabase {
                         databaseConfig,
                         databaseLayout,
                         otherDatabaseMemoryTracker,
-                        ioController)
-                .log(internalLogProvider)
+                        ioController,
+                        internalLogProvider)
                 .recoveryPredicate(RecoveryPredicate.ALL)
                 .monitors(databaseMonitors)
                 .extensionFactories(extensionFactories)
