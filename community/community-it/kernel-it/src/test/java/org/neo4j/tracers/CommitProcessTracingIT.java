@@ -102,7 +102,7 @@ public class CommitProcessTracingIT {
                 var reader = storageEngine.newReader()) {
             assertZeroCursor(cursorContext);
             try (CommandCreationContext context = storageEngine.newCommandCreationContext();
-                    var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
+                    var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
                 context.initialize(
                         kernelVersionProvider,
                         cursorContext,

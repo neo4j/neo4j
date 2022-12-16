@@ -199,9 +199,8 @@ class TransactionTracingIT {
             assertZeroCursor(cursorContext);
 
             transaction.kernelTransaction().dataWrite().nodeDetachDelete(sourceId);
-
             assertThatTracing(database)
-                    .record(pins(5).noFaults().skipUnpins())
+                    .record(pins(2).noFaults().skipUnpins())
                     .freki(pins(1).noFaults().skipUnpins())
                     .matches(cursorContext.getCursorTracer());
         }

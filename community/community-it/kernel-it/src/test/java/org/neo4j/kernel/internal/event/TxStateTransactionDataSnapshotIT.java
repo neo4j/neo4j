@@ -264,12 +264,15 @@ class TxStateTransactionDataSnapshotIT {
             var cursorContext = kernelTransaction.cursorContext();
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
+            kernelTransaction.storeCursors().reset(cursorContext);
             cursorTracer.reportEvents();
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
                     transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
                 // no work for snapshot
             }
+            kernelTransaction.storeCursors().reset(cursorContext);
+
             assertThat(cursorTracer.pins()).isGreaterThan(0);
             assertThat(cursorTracer.hits()).isEqualTo(cursorTracer.pins());
             assertThat(cursorTracer.unpins()).isEqualTo(cursorTracer.pins());

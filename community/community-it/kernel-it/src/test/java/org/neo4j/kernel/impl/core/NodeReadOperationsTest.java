@@ -249,7 +249,7 @@ abstract class NodeReadOperationsTest {
             source.getDegree(Direction.INCOMING);
 
             assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
+                    .record(pins(2).atMost(3).noFaults().skipUnpins())
                     .freki(pins(1).atMost(2).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }
@@ -273,7 +273,7 @@ abstract class NodeReadOperationsTest {
             source.getDegree(relationshipType, Direction.INCOMING);
 
             assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
+                    .record(pins(2).atMost(3).noFaults().skipUnpins())
                     .freki(pins(1).atMost(2).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }
@@ -300,7 +300,7 @@ abstract class NodeReadOperationsTest {
                     .isGreaterThan(0);
 
             assertThatTracing(db)
-                    .record(pins(3).noFaults().skipUnpins())
+                    .record(pins(2).atMost(3).noFaults().skipUnpins())
                     .freki(pins(1).atMost(2).noFaults().skipUnpins())
                     .matches(cursorTracer);
         }

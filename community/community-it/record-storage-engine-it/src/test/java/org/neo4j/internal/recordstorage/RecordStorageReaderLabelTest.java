@@ -31,7 +31,6 @@ import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import org.junit.jupiter.api.Test;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Test read access to committed label data.
@@ -46,7 +45,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
         int labelId2 = labelId(label2);
 
         // THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
         assertEquals(newSetWith(labelId1, labelId2), newSetWith(nodeCursor.labels()));
@@ -59,9 +58,9 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
         int namePropertyKeyId = propertyKeyId("name");
 
         // WHEN THEN
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
         StoragePropertyCursor propertyCursor =
-                storageReader.allocatePropertyCursor(NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                storageReader.allocatePropertyCursor(NULL_CONTEXT, storageCursors, INSTANCE);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
         nodeCursor.properties(propertyCursor, ALL_PROPERTIES);

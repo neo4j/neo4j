@@ -89,12 +89,14 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Health;
@@ -113,7 +115,6 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -149,6 +150,7 @@ class NeoStoresTest {
     private RecordStorageEngine storageEngine;
     private LifeSupport life;
     private IdStoreTransactionIdGenerator transactionIdGenerator;
+    private CachedStoreCursors storeCursors;
 
     @BeforeEach
     void setUpNeoStores() {
@@ -519,6 +521,8 @@ class NeoStoresTest {
         life.start();
 
         NeoStores neoStores = storageEngine.testAccessNeoStores();
+        storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
+        life.add(LifecycleAdapter.onShutdown(storeCursors::close));
         transactionIdGenerator = new IdStoreTransactionIdGenerator(storageEngine.metadataProvider());
         storageReader = storageEngine.newReader();
     }
@@ -578,13 +582,13 @@ class NeoStoresTest {
 
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor(StorageNodeCursor node) {
         StorageRelationshipTraversalCursor relationships =
-                storageReader.allocateRelationshipTraversalCursor(NULL_CONTEXT, StoreCursors.NULL);
+                storageReader.allocateRelationshipTraversalCursor(NULL_CONTEXT, storeCursors);
         node.relationships(relationships, ALL_RELATIONSHIPS);
         return relationships;
     }
 
     private StorageNodeCursor allocateNodeCursor(long nodeId) {
-        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors);
         nodeCursor.single(nodeId);
         return nodeCursor;
     }
@@ -605,7 +609,7 @@ class NeoStoresTest {
                 transactionState.relationshipDoDelete(relId, type, startNode, endNode);
         if (!transactionState.relationshipVisit(id, visitor)) {
             try (StorageRelationshipScanCursor cursor =
-                    storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+                    storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, storeCursors)) {
                 cursor.single(id);
                 if (!cursor.next()) {
                     throw new RuntimeException("Relationship " + id + " not found");
@@ -628,7 +632,7 @@ class NeoStoresTest {
     private StorageProperty nodeAddProperty(long nodeId, int key, Object value) {
         StorageProperty property = new PropertyKeyValue(key, Values.of(value));
         StorageProperty oldProperty = null;
-        try (StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storeCursors)) {
             nodeCursor.single(nodeId);
             if (nodeCursor.next()) {
                 StorageProperty fetched = getProperty(key, nodeCursor.propertiesReference());
@@ -648,7 +652,7 @@ class NeoStoresTest {
 
     private StorageProperty getProperty(int key, Reference propertyReference) {
         try (StoragePropertyCursor propertyCursor =
-                storageReader.allocatePropertyCursor(NULL_CONTEXT, StoreCursors.NULL, INSTANCE)) {
+                storageReader.allocatePropertyCursor(NULL_CONTEXT, storeCursors, INSTANCE)) {
             propertyCursor.initNodeProperties(propertyReference, ALL_PROPERTIES);
             if (propertyCursor.next()) {
                 Value oldValue = propertyCursor.propertyValue();

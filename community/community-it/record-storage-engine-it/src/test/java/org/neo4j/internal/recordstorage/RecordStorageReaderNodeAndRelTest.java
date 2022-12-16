@@ -28,7 +28,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import org.junit.jupiter.api.Test;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Test reading committed node and relationships from disk.
@@ -66,7 +65,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase {
     }
 
     private boolean nodeExists(long id) {
-        try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors)) {
             node.single(id);
             return node.next();
         }
@@ -74,7 +73,7 @@ class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase {
 
     private boolean relationshipExists(long id) {
         try (StorageRelationshipScanCursor relationship =
-                storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+                storageReader.allocateRelationshipScanCursor(NULL_CONTEXT, storageCursors)) {
             relationship.single(id);
             return relationship.next();
         }

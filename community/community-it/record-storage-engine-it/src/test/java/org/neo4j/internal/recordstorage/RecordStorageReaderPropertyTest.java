@@ -30,7 +30,6 @@ import java.lang.reflect.Array;
 import org.junit.jupiter.api.Test;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -88,12 +87,12 @@ class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase {
             long nodeId = createNode(singletonMap("prop", value), label1);
 
             // when
-            try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+            try (StorageNodeCursor node = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors)) {
                 node.single(nodeId);
                 assertTrue(node.next());
 
                 try (StoragePropertyCursor props =
-                        storageReader.allocatePropertyCursor(NULL_CONTEXT, StoreCursors.NULL, INSTANCE)) {
+                        storageReader.allocatePropertyCursor(NULL_CONTEXT, storageCursors, INSTANCE)) {
                     node.properties(props, ALL_PROPERTIES);
                     if (props.next()) {
                         Value propVal = props.propertyValue();
