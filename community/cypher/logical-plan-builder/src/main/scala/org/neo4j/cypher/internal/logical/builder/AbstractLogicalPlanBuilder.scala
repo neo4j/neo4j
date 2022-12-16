@@ -328,7 +328,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         case o: UnaryOperator =>
           o.planConstructor(left.get.build())
         case o: BinaryOperator =>
-          o.planConstructor(left.get.build(), right.get.build())
+          (left, right) match {
+            case (Some(leftVal), Some(rightVal)) => o.planConstructor(leftVal.build(), rightVal.build())
+            case (None, _) =>
+              val fakePlan = o.planConstructor(Argument()(idGen), Argument()(idGen)).productPrefix
+              throw new IllegalStateException(s"Tried building plan '$fakePlan' but left operator is missing.")
+            case (_, None) =>
+              val fakePlan = o.planConstructor(Argument()(idGen), Argument()(idGen)).productPrefix
+              throw new IllegalStateException(s"Tried building plan '$fakePlan' but right operator is missing.")
+          }
       }
     }
   }
