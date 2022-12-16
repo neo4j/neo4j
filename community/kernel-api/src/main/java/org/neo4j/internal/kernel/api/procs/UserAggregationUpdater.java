@@ -63,7 +63,9 @@ import org.neo4j.values.AnyValue;
 public interface UserAggregationUpdater {
 
     /**
-     * Will be called multiple times but only from a single thread at-a-time
+     * Will be called multiple times but only from a single thread at-a-time.
+     * <p>
+     * Note: the input array can be mutated at later stages so implementers need to do defensive copying if they need to keep a reference to old values.
      * @param input the input to the aggregation function
      */
     void update(AnyValue[] input) throws ProcedureException;

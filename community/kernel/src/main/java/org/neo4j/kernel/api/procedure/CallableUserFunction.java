@@ -26,6 +26,14 @@ import org.neo4j.values.AnyValue;
 public interface CallableUserFunction {
     UserFunctionSignature signature();
 
+    /**
+     * Call the user function
+     *
+     * @param ctx the context used for the call
+     * @param input the input arguments, note that the array may be mutated at a later stage so defensive cppying must be applied if you need to keep old inputs.
+     * @return the result of the function
+     * @throws ProcedureException
+     */
     AnyValue apply(Context ctx, AnyValue[] input) throws ProcedureException;
 
     abstract class BasicUserFunction implements CallableUserFunction {

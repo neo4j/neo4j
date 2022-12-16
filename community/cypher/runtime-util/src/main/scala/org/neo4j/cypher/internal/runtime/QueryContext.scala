@@ -683,11 +683,6 @@ trait Expander {
   def relFilters: Seq[KernelPredicate[Entity]]
 }
 
-trait UserDefinedAggregator {
-  def update(args: Array[AnyValue]): Unit
-  def result: AnyValue
-}
-
 trait CloseableResource extends AutoCloseable {
   def close(): Unit
 }

@@ -22,7 +22,17 @@ package org.neo4j.internal.kernel.api.procs;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.values.AnyValue;
 
+/**
+ * Use {@link UserAggregationReducer} instead
+ */
+@Deprecated
 public interface UserAggregator {
+
+    /**
+     * Note: the input array can be mutated at later stages so implementers need to do defensive copying if
+     * they need to keep a reference to old values.
+     * @param input the input to the aggregation function
+     */
     void update(AnyValue[] input) throws ProcedureException;
 
     AnyValue result() throws ProcedureException;
