@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction
+import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction
 import org.neo4j.storageengine.api.RelationshipVisitor
 
 object PrimitiveLongHelper {
 
-  def map[T](in: ClosingLongIterator, f: Long => T): ClosingIterator[T] = new ClosingIterator[T] {
+  def map[T](in: ClosingLongIterator, f: LongToObjectFunction[T]): ClosingIterator[T] = new ClosingIterator[T] {
     override def innerHasNext: Boolean = in.hasNext
 
-    override def next(): T = f(in.next())
+    override def next(): T = f.apply(in.next())
 
     override protected[this] def closeMore(): Unit = in.close()
   }
 
-  def mapPrimitive(in: ClosingLongIterator, f: Long => Long): ClosingLongIterator = new ClosingLongIterator {
+  def mapPrimitive(in: ClosingLongIterator, f: LongToLongFunction): ClosingLongIterator = new ClosingLongIterator {
     override def innerHasNext: Boolean = in.hasNext
 
-    override def next(): Long = f(in.next())
+    override def next(): Long = f.applyAsLong(in.next())
 
     override def close(): Unit = in.close()
   }
