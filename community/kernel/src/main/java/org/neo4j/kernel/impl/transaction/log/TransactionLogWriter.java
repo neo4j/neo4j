@@ -32,6 +32,8 @@ import org.neo4j.util.VisibleForTesting;
 public class TransactionLogWriter {
     private final FlushablePositionAwareChecksumChannel channel;
     private final LogEntryWriterFactory logEntryWriterFactory;
+    private KernelVersion writerVersion;
+    private LogEntryWriter<FlushablePositionAwareChecksumChannel> cachedWriter;
 
     public TransactionLogWriter(
             FlushablePositionAwareChecksumChannel channel, LogEntryWriterFactory logEntryWriterFactory) {
@@ -44,7 +46,7 @@ public class TransactionLogWriter {
      * @return checksum of the transaction
      */
     public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
-        var writer = logEntryWriterFactory.createEntryWriter(channel, batch.kernelVersion());
+        var writer = getWriter(batch);
         if (batch.isFirst()) {
             writer.writeStartEntry(
                     batch.getTimeStarted(),
@@ -81,5 +83,14 @@ public class TransactionLogWriter {
 
     public void append(ByteBuffer byteBuffer) throws IOException {
         channel.write(byteBuffer);
+    }
+
+    private LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(CommandBatch batch) {
+        KernelVersion kernelVersion = batch.kernelVersion();
+        if (writerVersion != kernelVersion) {
+            writerVersion = kernelVersion;
+            cachedWriter = logEntryWriterFactory.createEntryWriter(channel, kernelVersion);
+        }
+        return cachedWriter;
     }
 }
