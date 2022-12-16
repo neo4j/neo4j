@@ -62,6 +62,7 @@ public class SketchingCommandBatchCursor implements CommandBatchCursor {
                     return true;
                 }
             }
+            break;
         }
 
         return false;
