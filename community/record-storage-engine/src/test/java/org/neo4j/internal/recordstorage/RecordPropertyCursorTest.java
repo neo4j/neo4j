@@ -263,7 +263,7 @@ public class RecordPropertyCursorTest {
     }
 
     protected RecordPropertyCursor createCursor() {
-        return new RecordPropertyCursor(neoStores.getPropertyStore(), NULL_CONTEXT, INSTANCE);
+        return new RecordPropertyCursor(neoStores.getPropertyStore(), NULL_CONTEXT, storeCursors, INSTANCE);
     }
 
     protected void assertPropertyChain(Value[] values, long firstPropertyId, RecordPropertyCursor cursor) {

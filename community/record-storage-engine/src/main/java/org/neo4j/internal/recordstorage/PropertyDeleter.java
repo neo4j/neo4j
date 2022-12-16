@@ -143,7 +143,7 @@ public class PropertyDeleter {
         StringBuilder message = new StringBuilder(
                 format("Deleted inconsistent property chain with %s for %s", causeMessage, primitive));
         try (RecordPropertyCursor propertyCursor =
-                new RecordPropertyCursor(neoStores.getPropertyStore(), cursorContext, memoryTracker)) {
+                new RecordPropertyCursor(neoStores.getPropertyStore(), cursorContext, storeCursors, memoryTracker)) {
             if (primitive instanceof NodeRecord node) {
                 message.append(" with labels: ");
                 long[] labelIds = NodeLabelsField.parseLabelsField(node).get(neoStores.getNodeStore(), storeCursors);

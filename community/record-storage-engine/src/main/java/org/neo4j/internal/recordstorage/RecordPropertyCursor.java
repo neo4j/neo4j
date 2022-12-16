@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.LongReference;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -68,6 +69,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     private final PropertyStore propertyStore;
     private final CursorContext cursorContext;
+    private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
     private long next;
     private int block;
@@ -87,10 +89,15 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private PropertySelection selection;
     private int propertyKey;
 
-    RecordPropertyCursor(PropertyStore propertyStore, CursorContext cursorContext, MemoryTracker memoryTracker) {
+    RecordPropertyCursor(
+            PropertyStore propertyStore,
+            CursorContext cursorContext,
+            StoreCursors storeCursors,
+            MemoryTracker memoryTracker) {
         super(NO_ID);
         this.propertyStore = propertyStore;
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
         this.memoryTracker = memoryTracker;
         loadMode = RecordLoadOverride.none();
     }
@@ -123,7 +130,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         this.ownerEntityType = ownerEntityType;
         if (referenceId != NO_ID) {
             if (page == null) {
-                page = propertyPage(referenceId);
+                page = storeCursors.readCursor(RecordCursorTypes.PROPERTY_CURSOR);
             }
         }
 
@@ -370,19 +377,11 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             arrayPage.close();
             arrayPage = null;
         }
-        if (page != null) {
-            page.close();
-            page = null;
-        }
         if (scopedBuffer != null) {
             scopedBuffer.close();
             scopedBuffer = null;
             buffer = null;
         }
-    }
-
-    private PageCursor propertyPage(long reference) {
-        return propertyStore.openPageCursorForReading(reference, cursorContext);
     }
 
     private PageCursor stringPage(long reference) {

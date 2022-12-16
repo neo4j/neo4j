@@ -335,6 +335,6 @@ public class RecordStorageReader implements StorageReader {
     @Override
     public StoragePropertyCursor allocatePropertyCursor(
             CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker) {
-        return new RecordPropertyCursor(propertyStore, cursorContext, memoryTracker);
+        return new RecordPropertyCursor(propertyStore, cursorContext, storeCursors, memoryTracker);
     }
 }
