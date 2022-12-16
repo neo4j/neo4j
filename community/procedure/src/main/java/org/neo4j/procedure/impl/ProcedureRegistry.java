@@ -74,19 +74,14 @@ public class ProcedureRegistry {
                     "Procedures with zero output fields must be declared as VOID");
         }
 
-        CallableProcedure oldImplementation = procedures.get(name);
-        if (oldImplementation == null) {
-            procedures.put(name, proc, signature.caseInsensitive());
-        } else {
-            if (overrideCurrentImplementation) {
-                procedures.put(name, proc, signature.caseInsensitive());
-            } else {
-                throw new ProcedureException(
-                        Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register procedure, because the name `%s` is already in use.",
-                        name);
-            }
+        if (procedures.contains(name) && !overrideCurrentImplementation) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register procedure, because the name `%s` is already in use.",
+                    name);
         }
+
+        procedures.put(name, proc, signature.caseInsensitive());
     }
 
     /**
@@ -99,25 +94,21 @@ public class ProcedureRegistry {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        if (aggregationFunctions.get(name) != null) {
+        if (aggregationFunctions.contains(name)) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register function, because the name `%s` is already in use as an aggregation function.",
                     name);
         }
-        CallableUserFunction oldImplementation = functions.get(name);
-        if (oldImplementation == null) {
-            functions.put(name, function, signature.caseInsensitive());
-        } else {
-            if (overrideCurrentImplementation) {
-                functions.put(name, function, signature.caseInsensitive());
-            } else {
-                throw new ProcedureException(
-                        Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register function, because the name `%s` is already in use.",
-                        name);
-            }
+
+        if (functions.contains(name) && !overrideCurrentImplementation) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register function, because the name `%s` is already in use.",
+                    name);
         }
+
+        functions.put(name, function, signature.caseInsensitive());
     }
 
     /**
@@ -131,25 +122,21 @@ public class ProcedureRegistry {
         UserFunctionSignature signature = function.signature();
         QualifiedName name = signature.name();
 
-        if (functions.get(name) != null) {
+        if (functions.contains(name)) {
             throw new ProcedureException(
                     Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register aggregation function, because the name `%s` is already in use as a function.",
                     name);
         }
-        CallableUserAggregationFunction oldImplementation = aggregationFunctions.get(name);
-        if (oldImplementation == null) {
-            aggregationFunctions.put(name, function, signature.caseInsensitive());
-        } else {
-            if (overrideCurrentImplementation) {
-                aggregationFunctions.put(name, function, signature.caseInsensitive());
-            } else {
-                throw new ProcedureException(
-                        Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to register aggregation function, because the name `%s` is already in use.",
-                        name);
-            }
+
+        if (aggregationFunctions.contains(name) && !overrideCurrentImplementation) {
+            throw new ProcedureException(
+                    Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to register aggregation function, because the name `%s` is already in use.",
+                    name);
         }
+
+        aggregationFunctions.put(name, function, signature.caseInsensitive());
     }
 
     private void validateSignature(String descriptiveName, List<FieldSignature> fields, String fieldType)

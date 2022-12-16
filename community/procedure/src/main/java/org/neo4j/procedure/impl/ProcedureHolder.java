@@ -73,6 +73,10 @@ class ProcedureHolder<T> {
         return store;
     }
 
+    boolean contains(QualifiedName name) {
+        return get(name) != null;
+    }
+
     private Integer name2Id(QualifiedName name) {
         Integer id = nameToId.get(name);
         if (id == null) { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
