@@ -30,6 +30,7 @@ import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor {
+    private final CursorContext cursorContext;
     private long next;
     private long highMark;
     private long nextStoreReference;
@@ -39,6 +40,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     RecordRelationshipScanCursor(RelationshipStore relationshipStore, CursorContext cursorContext) {
         super(relationshipStore, cursorContext);
+        this.cursorContext = cursorContext;
     }
 
     @Override
@@ -180,5 +182,9 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     private void relationshipAdvance(RelationshipRecord record, PageCursor pageCursor) {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationshipStore.nextRecordByCursor(record, loadMode.orElse(CHECK).lenient(), pageCursor);
+    }
+
+    PageCursor relationshipPage(long reference) {
+        return relationshipStore.openPageCursorForReading(reference, cursorContext);
     }
 }

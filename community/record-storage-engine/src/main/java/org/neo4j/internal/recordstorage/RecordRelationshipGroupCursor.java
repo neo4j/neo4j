@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Degrees;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements AutoCloseable {
     private final RelationshipStore relationshipStore;
@@ -48,19 +49,22 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     private PageCursor edgePage;
     private boolean open;
     RecordLoadOverride loadMode;
+    private final StoreCursors storeCursors;
 
     RecordRelationshipGroupCursor(
             RelationshipStore relationshipStore,
             RelationshipGroupStore groupStore,
             RelationshipGroupDegreesStore groupDegreesStore,
             RecordLoadOverride loadMode,
-            CursorContext cursorContext) {
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         super(NO_ID);
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
         this.groupDegreesStore = groupDegreesStore;
         this.cursorContext = cursorContext;
         this.loadMode = loadMode;
+        this.storeCursors = storeCursors;
     }
 
     void init(long nodeReference, long reference, boolean nodeIsDense) {
@@ -81,9 +85,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         clear();
         setOwningNode(nodeReference);
         setNext(reference);
-        if (page == null) {
-            page = groupPage(reference);
-        }
+        ensureCursor();
     }
 
     boolean next() {
@@ -128,7 +130,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
             count = Numbers.safeCastLongToInt(groupDegreesStore.degree(getId(), direction, cursorContext));
         } else {
             if (edgePage == null) {
-                edgePage = relationshipStore.openPageCursorForReading(reference, cursorContext);
+                edgePage = storeCursors.readCursor(RecordCursorTypes.RELATIONSHIP_CURSOR);
             }
             relationshipStore.getRecordByCursor(reference, edge, loadMode.orElse(ALWAYS), edgePage);
             count = (int) edge.getPrevRel(getOwningNode());
@@ -181,20 +183,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     @Override
-    public void close() {
-        if (edgePage != null) {
-            edgePage.close();
-            edgePage = null;
-        }
+    public void close() {}
 
-        if (page != null) {
-            page.close();
-            page = null;
+    private void ensureCursor() {
+        if (page == null) {
+            page = storeCursors.readCursor(RecordCursorTypes.GROUP_CURSOR);
         }
-    }
-
-    private PageCursor groupPage(long reference) {
-        return groupStore.openPageCursorForReading(reference, cursorContext);
     }
 
     private void group(RelationshipGroupRecord record, long reference, PageCursor page) {

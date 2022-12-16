@@ -209,7 +209,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
         } else {
             if (groupCursor == null) {
                 groupCursor = new RecordRelationshipGroupCursor(
-                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
+                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext, storeCursors);
             }
             groupCursor.init(entityReference(), getNextRel(), true);
             while (groupCursor.next()) {
@@ -222,7 +222,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     private void ensureRelationshipTraversalCursorInitialized() {
         if (relationshipCursor == null) {
             relationshipCursor = new RecordRelationshipTraversalCursor(
-                    relationshipStore, groupStore, groupDegreesStore, cursorContext);
+                    relationshipStore, groupStore, groupDegreesStore, cursorContext, storeCursors);
         }
     }
 
@@ -272,7 +272,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
         } else {
             if (groupCursor == null) {
                 groupCursor = new RecordRelationshipGroupCursor(
-                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
+                        relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext, storeCursors);
             }
             groupCursor.init(entityReference(), getNextRel(), isDense());
             int criteriaMet = 0;

@@ -93,10 +93,6 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
         loadMode = RecordLoadOverride.none();
     }
 
-    PageCursor relationshipPage(long reference) {
-        return relationshipStore.openPageCursorForReading(reference, cursorContext);
-    }
-
     void relationship(RelationshipRecord record, long reference, PageCursor pageCursor) {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationshipStore.getRecordByCursor(

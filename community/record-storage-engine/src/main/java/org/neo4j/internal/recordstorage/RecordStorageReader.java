@@ -313,7 +313,7 @@ public class RecordStorageReader implements StorageReader {
     public RecordRelationshipTraversalCursor allocateRelationshipTraversalCursor(
             CursorContext cursorContext, StoreCursors storeCursors) {
         return new RecordRelationshipTraversalCursor(
-                relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext);
+                relationshipStore, relationshipGroupStore, groupDegreesStore, cursorContext, storeCursors);
     }
 
     @Override

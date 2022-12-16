@@ -32,8 +32,10 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor {
+    private final StoreCursors storeCursors;
     private ReadTracer tracer;
 
     private enum GroupState {
@@ -55,10 +57,12 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             RelationshipStore relationshipStore,
             RelationshipGroupStore groupStore,
             RelationshipGroupDegreesStore groupDegreesStore,
-            CursorContext cursorContext) {
+            CursorContext cursorContext,
+            StoreCursors storeCursors) {
         super(relationshipStore, cursorContext);
+        this.storeCursors = storeCursors;
         this.group = new RecordRelationshipGroupCursor(
-                relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext);
+                relationshipStore, groupStore, groupDegreesStore, loadMode, cursorContext, storeCursors);
     }
 
     void init(RecordNodeCursor nodeCursor, RelationshipSelection selection) {
@@ -99,9 +103,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
      * Normal traversal. Traversal returns mixed types and directions.
      */
     private void chain(long nodeReference, long reference) {
-        if (pageCursor == null) {
-            pageCursor = relationshipPage(reference);
-        }
+        ensureCursor();
         setId(NO_ID);
         this.groupState = GroupState.NONE;
         this.originNodeReference = nodeReference;
@@ -213,14 +215,14 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
                     if (selection.test(group.getType(), INCOMING)) {
                         next = group.incomingRawId();
-                        initializePageCursor();
+                        ensureCursor();
                     }
                     groupState = GroupState.OUTGOING;
                     break;
 
                 case OUTGOING:
                     if (selection.test(group.getType(), OUTGOING)) {
-                        initializePageCursor();
+                        ensureCursor();
                         next = group.outgoingRawId();
                     }
                     groupState = GroupState.LOOP;
@@ -228,7 +230,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
                 case LOOP:
                     if (selection.test(group.getType(), LOOP)) {
-                        initializePageCursor();
+                        ensureCursor();
                         next = group.loopsRawId();
                     }
                     groupState = GroupState.INCOMING;
@@ -240,9 +242,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         }
     }
 
-    private void initializePageCursor() {
+    private void ensureCursor() {
         if (pageCursor == null) {
-            pageCursor = relationshipPage(Math.max(next, 0L));
+            pageCursor = storeCursors.readCursor(RecordCursorTypes.RELATIONSHIP_CURSOR);
         }
     }
 
@@ -299,11 +301,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
     @Override
     public void close() {
-        if (pageCursor != null) {
-            pageCursor.close();
-            pageCursor = null;
-        }
-
         group.close();
     }
 
