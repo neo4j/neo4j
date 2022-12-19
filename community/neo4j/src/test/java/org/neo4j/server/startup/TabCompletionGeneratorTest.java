@@ -36,7 +36,7 @@ class TabCompletionGeneratorTest {
 
     @Test
     void shouldGenerateCompletionFile() throws Exception {
-        TabCompletionGenerator.exec(dir.homePath().toString());
+        TabCompletionGenerator.main(new String[] {dir.homePath().toString()});
         assertCompletionScriptExists("neo4j");
         assertCompletionScriptExists("neo4j-admin");
     }

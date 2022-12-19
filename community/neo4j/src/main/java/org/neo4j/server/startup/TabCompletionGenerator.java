@@ -62,10 +62,8 @@ public class TabCompletionGenerator implements Callable<Integer> {
     }
 
     public static void main(String[] args) {
-        System.exit(exec(args));
-    }
-
-    static int exec(String... args) {
-        return new CommandLine(new TabCompletionGenerator()).execute(args);
+        // No use of System.exit() as this is called by generate-completion-script using exec-maven-plugin from
+        // packaging and may terminate the whole build
+        new CommandLine(new TabCompletionGenerator()).execute(args);
     }
 }

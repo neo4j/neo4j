@@ -99,16 +99,13 @@
                         <id>generate-completion-script</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>exec</goal>
+                            <goal>java</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>java</executable>
+                    <mainClass>org.neo4j.server.startup.TabCompletionGenerator</mainClass>
                     <arguments>
-                        <argument>-cp</argument>
-                        <classpath/>
-                        <argument>org.neo4j.server.startup.TabCompletionGenerator</argument>
                         <argument>${project.build.directory}/completion</argument>
                     </arguments>
                 </configuration>
