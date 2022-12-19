@@ -125,6 +125,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunct
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
@@ -147,6 +148,7 @@ object ClauseConverters {
     clause: Clause,
     nextClause: Option[Clause],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
     nonTerminating: Boolean
   ): PlannerQueryBuilder = clause match {
     case c: Return          => addReturnToLogicalPlanInput(acc, c, nonTerminating)
@@ -160,11 +162,12 @@ object ClauseConverters {
     case c: Remove          => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge           => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV         => addLoadCSVToLogicalPlanInput(acc, c)
-    case c: Foreach         => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+    case c: Foreach         => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
-    case c: SubqueryCall    => addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
-    case c: CommandClause   => addCommandClauseToLogicalPlanInput(acc, c)
-    case c: Yield           => addYieldToLogicalPlanInput(acc, c)
+    case c: SubqueryCall =>
+      addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
+    case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
+    case c: Yield         => addYieldToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -535,7 +538,8 @@ object ClauseConverters {
   private def addCallSubqueryToLogicalPlanInput(
     acc: PlannerQueryBuilder,
     clause: SubqueryCall,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
     val subquery = clause.innerQuery
     val callSubquery =
@@ -543,6 +547,7 @@ object ClauseConverters {
         subquery,
         acc.semanticTable,
         anonymousVariableNameGenerator,
+        cancellationChecker,
         rewrite = false,
         nonTerminating = true
       )
@@ -836,7 +841,8 @@ object ClauseConverters {
   private def addForeachToLogicalPlanInput(
     builder: PlannerQueryBuilder,
     clause: Foreach,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
@@ -850,6 +856,7 @@ object ClauseConverters {
       clause.updates,
       innerBuilder,
       anonymousVariableNameGenerator,
+      cancellationChecker,
       nonTerminating = false
     ).build()
 

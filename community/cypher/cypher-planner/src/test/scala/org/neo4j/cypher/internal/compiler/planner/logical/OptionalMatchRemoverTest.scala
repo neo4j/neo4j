@@ -902,7 +902,12 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       types = result.state.typeTable,
       recordedScopes = result.state.recordedScopes.view.mapValues(_.scope).toMap
     )
-    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, anonymousVariableNameGenerator)
+    StatementConverters.toPlannerQuery(
+      ast.asInstanceOf[Query],
+      table,
+      anonymousVariableNameGenerator,
+      CancellationChecker.NeverCancelled
+    )
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(

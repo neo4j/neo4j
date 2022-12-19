@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -116,7 +117,12 @@ trait QueryGraphProducer {
 
     val semanticTable = output.semanticTable()
     val plannerQuery =
-      toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)
+      toPlannerQuery(
+        output.statement().asInstanceOf[Query],
+        semanticTable,
+        anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled
+      )
     (plannerQuery.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }

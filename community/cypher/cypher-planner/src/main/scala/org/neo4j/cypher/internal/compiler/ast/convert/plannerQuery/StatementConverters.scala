@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
@@ -57,6 +58,7 @@ object StatementConverters {
     q: SingleQuery,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
     importedVariables: Set[String],
     nonTerminating: Boolean
   ): SinglePlannerQuery = {
@@ -65,7 +67,13 @@ object StatementConverters {
     ).getOrElse(Set.empty)
 
     val builder = PlannerQueryBuilder(semanticTable, allImportedVars)
-    addClausesToPlannerQueryBuilder(q.clauses, builder, anonymousVariableNameGenerator, nonTerminating).build()
+    addClausesToPlannerQueryBuilder(
+      q.clauses,
+      builder,
+      anonymousVariableNameGenerator,
+      cancellationChecker,
+      nonTerminating
+    ).build()
   }
 
   /**
@@ -75,6 +83,7 @@ object StatementConverters {
     clauses: Seq[Clause],
     builder: PlannerQueryBuilder,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
     nonTerminating: Boolean
   ): PlannerQueryBuilder = {
     @tailrec
@@ -82,11 +91,19 @@ object StatementConverters {
       if (clauses.isEmpty)
         builder
       else {
+        cancellationChecker.throwIfCancelled()
         val clause = clauses.head
         val nextClauses = clauses.tail
         val nextClause = nextClauses.headOption
         val newBuilder =
-          addToLogicalPlanInput(builder, clause, nextClause, anonymousVariableNameGenerator, nonTerminating)
+          addToLogicalPlanInput(
+            builder,
+            clause,
+            nextClause,
+            anonymousVariableNameGenerator,
+            cancellationChecker,
+            nonTerminating
+          )
         addClausesToPlannerQueryBuilderRec(nextClauses, newBuilder)
       }
 
@@ -112,6 +129,7 @@ object StatementConverters {
     query: Query,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
     importedVariables: Set[String] = Set.empty,
     rewrite: Boolean = true,
     nonTerminating: Boolean = false
@@ -127,6 +145,7 @@ object StatementConverters {
           singleQuery,
           semanticTable,
           anonymousVariableNameGenerator,
+          cancellationChecker,
           importedVariables,
           nonTerminating
         )
@@ -137,12 +156,20 @@ object StatementConverters {
             unionQuery.lhs,
             semanticTable,
             anonymousVariableNameGenerator,
+            cancellationChecker,
             importedVariables,
             rewrite = false,
             nonTerminating = true
           )
         val rhs: SinglePlannerQuery =
-          toSinglePlannerQuery(unionQuery.rhs, semanticTable, anonymousVariableNameGenerator, importedVariables, true)
+          toSinglePlannerQuery(
+            unionQuery.rhs,
+            semanticTable,
+            anonymousVariableNameGenerator,
+            cancellationChecker,
+            importedVariables,
+            nonTerminating = true
+          )
 
         val distinct = unionQuery match {
           case _: ProjectingUnionAll      => false

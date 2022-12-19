@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
@@ -161,6 +162,7 @@ case class CreateIrExpressions(
         q,
         semanticTable,
         anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled,
         existsExpression.scopeDependencies.map(_.name)
       )
       ExistsIRExpression(plannerQuery, existsVariableName, stringifier(existsExpression))(
@@ -222,6 +224,7 @@ case class CreateIrExpressions(
         q,
         semanticTable,
         anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled,
         arguments
       )
 

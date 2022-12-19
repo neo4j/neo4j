@@ -832,6 +832,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def disjoint(lhs: Expression, rhs: Expression): Disjoint =
     Disjoint(lhs, rhs)(pos)
 
+  def foreach(variable: String, listExpr: Expression, updates: Clause*): Foreach =
+    Foreach(varFor(variable), listExpr, updates)(pos)
+
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
 
