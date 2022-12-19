@@ -747,14 +747,25 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // ALTER DATABASE foo [IF EXISTS] [SET ACCESS {READ ONLY | READ WRITE}] [SET TOPOLOGY n PRIMARY [m SECONDARY]]
       case c @ AlterDatabase(dbName, ifExists, access, topology) =>
         val assertAllowed = (access, topology) match {
+          // ALTER ... SET ACCESS SET TOPOLOGY requires both SetDatabaseAccess privileges and AlterDatabase privileges
+          case (Some(_), Some(_)) => plans.AssertAllowedDbmsActions(
+              Some(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction)),
+              Seq(SetDatabaseAccessAction, AlterDatabaseAction)
+            )
+          // ALTER ... SET ACCESS without topology requires only SetDatabaseAccess privilege
           case (Some(_), None) => plans.AssertAllowedDbmsActions(
               plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
               SetDatabaseAccessAction
             )
-          // Don't have any individual privilege for ALTER TOPOLOGY, included in ALTER DATABASE
-          case _ => plans.AssertAllowedDbmsActions(
+          // ALTER ... SET TOPOLOGY without access requires only AlterDatabasePrivileges
+          case (None, Some(_)) => plans.AssertAllowedDbmsActions(
               plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
               AlterDatabaseAction
+            )
+          // Likely unreachable, default to the most restrictive privileges
+          case _ => plans.AssertAllowedDbmsActions(
+              Some(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction)),
+              Seq(SetDatabaseAccessAction, AlterDatabaseAction)
             )
         }
         val source =
