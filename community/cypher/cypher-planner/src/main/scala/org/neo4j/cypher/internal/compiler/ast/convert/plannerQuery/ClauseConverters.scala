@@ -121,6 +121,8 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -136,7 +138,13 @@ object ClauseConverters {
    * @param nextClause the next clause, if there is any
    * @return the updated PlannerQueryBuilder
    */
-  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause, nextClause: Option[Clause], anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = clause match {
+  def addToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: Clause,
+    nextClause: Option[Clause],
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
+  ): PlannerQueryBuilder = clause match {
     case c: Return => addReturnToLogicalPlanInput(acc, c)
     case c: Match => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: With => addWithToLogicalPlanInput(acc, c, nextClause)
@@ -148,9 +156,10 @@ object ClauseConverters {
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
-    case c: Foreach => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+    case c: Foreach => addForeachToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
-    case c: SubqueryCall    => addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
+    case c: SubqueryCall =>
+      addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
     case c: CommandClause   => addCommandClauseToLogicalPlanInput(acc, c)
     case c: Yield => addYieldToLogicalPlanInput(acc, c)
 
@@ -443,9 +452,20 @@ object ClauseConverters {
     }
   }
 
-  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubqueryCall, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addCallSubqueryToLogicalPlanInput(
+    acc: PlannerQueryBuilder,
+    clause: SubqueryCall,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
+  ): PlannerQueryBuilder = {
     val subquery = clause.part
-    val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, anonymousVariableNameGenerator)
+    val callSubquery =
+      StatementConverters.toPlannerQueryPart(
+        subquery,
+        acc.semanticTable,
+        anonymousVariableNameGenerator,
+        cancellationChecker
+      )
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
 
@@ -710,7 +730,12 @@ object ClauseConverters {
       .withTail(SinglePlannerQuery.empty)
   }
 
-  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
+  private def addForeachToLogicalPlanInput(
+    builder: PlannerQueryBuilder,
+    clause: Foreach,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
+  ): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
     val foreachVariable = clause.variable
@@ -719,7 +744,8 @@ object ClauseConverters {
       .amendQueryGraph(_.addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(PassthroughAllHorizon())
 
-    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder, anonymousVariableNameGenerator).build()
+    val innerPlannerQuery =
+      StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder, anonymousVariableNameGenerator, cancellationChecker).build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,

@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -102,7 +103,12 @@ trait QueryGraphProducer extends MockitoSugar {
       ).transform(state, context)
 
     val semanticTable = output.semanticTable()
-    val plannerQuery = toPlannerQuery(output.statement().asInstanceOf[Query], semanticTable, anonymousVariableNameGenerator)
+    val plannerQuery = toPlannerQuery(
+        output.statement().asInstanceOf[Query],
+        semanticTable,
+        anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled
+      )
     (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
   }
 }

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.ast.ProjectingUnionAll
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -63,6 +65,8 @@ import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -1314,5 +1318,101 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Set("a", "b") -> Selections(),
       Set("a", "b", "c") ->  Selections.from(assertIsNode("a"))
     )
+  }
+
+  test("should not cancel processing when clause count is below the limit") {
+    val clauses = for (i <- 1 to 5) yield merge(nodePat(s"n$i"))
+    val query = singleQuery(clauses: _*)
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    noException shouldBe thrownBy {
+      StatementConverters.toPlannerQueryPart(
+        query,
+        SemanticTable(),
+        new AnonymousVariableNameGenerator,
+        cancellationChecker
+      )
+    }
+  }
+
+  test("should cancel processing when clause count is above the limit") {
+    val clauses =
+      (for (i <- 1 to 10) yield merge(nodePat(s"n$i"))) :+
+        null // should cancel before processing this bad clause
+
+    val query = singleQuery(clauses: _*)
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val ex = the[RuntimeException] thrownBy {
+      StatementConverters.toPlannerQueryPart(
+        query,
+        SemanticTable(),
+        new AnonymousVariableNameGenerator,
+        cancellationChecker
+      )
+    }
+    ex should have message cancellationChecker.message
+  }
+
+  test("should cancel processing when clause count in FOREACH is above the limit") {
+    val clauses =
+      (for (i <- 1 to 10) yield merge(nodePat(s"n$i"))) :+
+        null // should cancel before processing this bad clause
+
+    val query = singleQuery(foreach("i", varFor("list"), clauses: _*))
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val ex = the[RuntimeException] thrownBy {
+      StatementConverters.toPlannerQueryPart(
+        query,
+        SemanticTable(),
+        new AnonymousVariableNameGenerator,
+        cancellationChecker
+      )
+    }
+    ex should have message cancellationChecker.message
+  }
+
+  test("should cancel processing when clause count in a subquery is above the limit") {
+    val clauses =
+      (for (i <- 1 to 10) yield merge(nodePat(s"n$i"))) :+
+        null // should cancel before processing this bad clause
+
+    val query = singleQuery(subqueryCall(clauses: _*))
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val ex = the[RuntimeException] thrownBy {
+      StatementConverters.toPlannerQueryPart(
+        query,
+        SemanticTable(),
+        new AnonymousVariableNameGenerator,
+        cancellationChecker
+      )
+    }
+    ex should have message cancellationChecker.message
+  }
+
+  test("should cancel processing when clause count in a union query is above the limit") {
+    val clauses =
+      (for (i <- 1 to 10) yield merge(nodePat(s"n$i"))) :+
+        null // should cancel before processing this bad clause
+
+    val single = singleQuery(subqueryCall(clauses: _*))
+    val unionQuery = ProjectingUnionAll(single, single, List.empty)(pos)
+    val cancellationChecker = new TestCountdownCancellationChecker(10)
+    val ex = the[RuntimeException] thrownBy {
+      StatementConverters.toPlannerQueryPart(
+        unionQuery,
+        SemanticTable(),
+        new AnonymousVariableNameGenerator,
+        cancellationChecker
+      )
+    }
+    ex should have message cancellationChecker.message
+  }
+
+  private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {
+    val message = "my exception"
+
+    override def throwIfCancelled(): Unit = {
+      count -= 1
+      if (count <= 0) throw new RuntimeException(message)
+    }
   }
 }

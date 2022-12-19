@@ -681,7 +681,12 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes.mapValues(_.scope))
-    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, anonymousVariableNameGenerator)
+    StatementConverters.toPlannerQuery(
+      ast.asInstanceOf[Query],
+      table,
+      anonymousVariableNameGenerator,
+      CancellationChecker.NeverCancelled
+    )
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None), new AnonymousVariableNameGenerator)

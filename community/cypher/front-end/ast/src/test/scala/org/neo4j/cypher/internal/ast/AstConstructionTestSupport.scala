@@ -519,6 +519,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
 
+  def foreach(variable: String, listExpr: Expression, updates: Clause*): Foreach =
+    Foreach(varFor(variable), listExpr, updates)(pos)
+
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)
 
