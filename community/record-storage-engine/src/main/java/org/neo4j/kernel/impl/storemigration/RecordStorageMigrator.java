@@ -29,7 +29,6 @@ import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -331,42 +330,39 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             AdditionalInitialIds additionalInitialIds = readAdditionalIds(
                     lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset, lastCheckpointLogVersion);
 
-            try (var storeCursors = new CachedStoreCursors(legacyStore, NULL_CONTEXT)) {
-                // We have to make sure to keep the token ids if we're migrating properties/labels
-                BatchImporter importer = batchImporterFactory.instantiate(
-                        migrationDirectoryStructure,
-                        fileSystem,
-                        pageCacheTracer,
-                        importConfig,
-                        logService,
-                        migrationBatchImporterMonitor(legacyStore, progressReporter, importConfig),
-                        additionalInitialIds,
-                        EMPTY_LOG_TAIL,
-                        config,
-                        Monitor.NO_MONITOR,
-                        jobScheduler,
-                        Collector.STRICT,
-                        LogFilesInitializer.NULL,
-                        indexImporterFactory,
-                        memoryTracker,
-                        contextFactory);
-                InputIterable nodes = () -> legacyNodesAsInput(
-                        legacyStore, requiresPropertyMigration, memoryTracker, storeCursors, contextFactory);
-                InputIterable relationships = () -> legacyRelationshipsAsInput(
-                        legacyStore, requiresPropertyMigration, contextFactory, memoryTracker, storeCursors);
-                long propertyStoreSize = storeSize(legacyStore.getPropertyStore()) / 2
-                        + storeSize(legacyStore.getPropertyStore().getStringStore()) / 2
-                        + storeSize(legacyStore.getPropertyStore().getArrayStore()) / 2;
-                Estimates estimates = Input.knownEstimates(
-                        legacyStore.getNodeStore().getNumberOfIdsInUse(),
-                        legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
-                        legacyStore.getPropertyStore().getNumberOfIdsInUse(),
-                        legacyStore.getPropertyStore().getNumberOfIdsInUse(),
-                        propertyStoreSize / 2,
-                        propertyStoreSize / 2,
-                        0 /*node labels left as 0 for now*/);
-                importer.doImport(Input.input(nodes, relationships, IdType.ACTUAL, estimates, ReadableGroups.EMPTY));
-            }
+            // We have to make sure to keep the token ids if we're migrating properties/labels
+            BatchImporter importer = batchImporterFactory.instantiate(
+                    migrationDirectoryStructure,
+                    fileSystem,
+                    pageCacheTracer,
+                    importConfig,
+                    logService,
+                    migrationBatchImporterMonitor(legacyStore, progressReporter, importConfig),
+                    additionalInitialIds,
+                    EMPTY_LOG_TAIL,
+                    config,
+                    Monitor.NO_MONITOR,
+                    jobScheduler,
+                    Collector.STRICT,
+                    LogFilesInitializer.NULL,
+                    indexImporterFactory,
+                    memoryTracker,
+                    contextFactory);
+            InputIterable nodes = () -> legacyNodesAsInput(legacyStore, requiresPropertyMigration, contextFactory);
+            InputIterable relationships =
+                    () -> legacyRelationshipsAsInput(legacyStore, requiresPropertyMigration, contextFactory);
+            long propertyStoreSize = storeSize(legacyStore.getPropertyStore()) / 2
+                    + storeSize(legacyStore.getPropertyStore().getStringStore()) / 2
+                    + storeSize(legacyStore.getPropertyStore().getArrayStore()) / 2;
+            Estimates estimates = Input.knownEstimates(
+                    legacyStore.getNodeStore().getNumberOfIdsInUse(),
+                    legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
+                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                    propertyStoreSize / 2,
+                    propertyStoreSize / 2,
+                    0 /*node labels left as 0 for now*/);
+            importer.doImport(Input.input(nodes, relationships, IdType.ACTUAL, estimates, ReadableGroups.EMPTY));
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -570,15 +566,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static InputIterator legacyRelationshipsAsInput(
-            NeoStores legacyStore,
-            boolean requiresPropertyMigration,
-            CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker,
-            StoreCursors storeCursors) {
+            NeoStores legacyStore, boolean requiresPropertyMigration, CursorContextFactory contextFactory) {
         return new StoreScanAsInputIterator<>(legacyStore.getRelationshipStore()) {
             @Override
             public InputChunk newChunk() {
                 var cursorContext = contextFactory.create(RELATIONSHIP_CHUNK_MIGRATION_TAG);
+                // Using empty memory tracker since we don't have any threadsafe memory tracker implementation
+                // It's only used for some property reading and we don't want to risk false-positive OOM exceptions
+                // because of incorrect synchronization
+                var memoryTracker = EmptyMemoryTracker.INSTANCE;
+                var storeCursors = new CachedStoreCursors(legacyStore, cursorContext);
                 return new RelationshipRecordChunk(
                         new RecordStorageReader(legacyStore),
                         requiresPropertyMigration,
@@ -590,15 +587,16 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static InputIterator legacyNodesAsInput(
-            NeoStores legacyStore,
-            boolean requiresPropertyMigration,
-            MemoryTracker memoryTracker,
-            StoreCursors storeCursors,
-            CursorContextFactory contextFactory) {
+            NeoStores legacyStore, boolean requiresPropertyMigration, CursorContextFactory contextFactory) {
         return new StoreScanAsInputIterator<>(legacyStore.getNodeStore()) {
             @Override
             public InputChunk newChunk() {
                 var cursorContext = contextFactory.create(NODE_CHUNK_MIGRATION_TAG);
+                // Using empty memory tracker since we don't have any threadsafe memory tracker implementation
+                // It's only used for some property reading and we don't want to risk false-positive OOM exceptions
+                // because of incorrect synchronization
+                var memoryTracker = EmptyMemoryTracker.INSTANCE;
+                var storeCursors = new CachedStoreCursors(legacyStore, cursorContext);
                 return new NodeRecordChunk(
                         new RecordStorageReader(legacyStore),
                         requiresPropertyMigration,
@@ -805,6 +803,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor> {
+        private final StoreCursors storeCursors;
+
         NodeRecordChunk(
                 RecordStorageReader storageReader,
                 boolean requiresPropertyMigration,
@@ -818,6 +818,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     cursorContext,
                     storeCursors,
                     memoryTracker);
+            this.storeCursors = storeCursors;
         }
 
         @Override
@@ -831,9 +832,17 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             visitor.labelField(record.getLabelField());
             visitProperties(record, visitor);
         }
+
+        @Override
+        public void close() {
+            super.close();
+            storeCursors.close();
+        }
     }
 
     private static class RelationshipRecordChunk extends StoreScanChunk<StorageRelationshipScanCursor> {
+        private final StoreCursors storeCursors;
+
         RelationshipRecordChunk(
                 RecordStorageReader storageReader,
                 boolean requiresPropertyMigration,
@@ -847,6 +856,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     cursorContext,
                     storeCursors,
                     memoryTracker);
+            this.storeCursors = storeCursors;
         }
 
         @Override
@@ -860,6 +870,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             visitor.endId(record.targetNodeReference());
             visitor.type(record.type());
             visitProperties(record, visitor);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            storeCursors.close();
         }
     }
 
