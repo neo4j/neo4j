@@ -43,6 +43,7 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
@@ -59,6 +60,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -133,6 +136,7 @@ import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.Stopwatch;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
@@ -263,6 +267,7 @@ public final class Recovery {
         private Clock clock = systemClock();
         private final IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
+        private long awaitIndexesOnlineMillis;
 
         private Context(
                 FileSystemAbstraction fileSystemAbstraction,
@@ -345,6 +350,11 @@ public final class Recovery {
             this.recoveryPredicate = recoveryPredicate;
             return this;
         }
+
+        public Context awaitIndexesOnline(long time, TimeUnit unit) {
+            this.awaitIndexesOnlineMillis = unit.toMillis(time);
+            return this;
+        }
     }
 
     /**
@@ -377,7 +387,8 @@ public final class Recovery {
                     context.memoryTracker,
                     context.clock,
                     context.ioController,
-                    context.recoveryPredicate);
+                    context.recoveryPredicate,
+                    context.awaitIndexesOnlineMillis);
         } finally {
             config.removeAllLocalListeners();
         }
@@ -399,7 +410,8 @@ public final class Recovery {
             MemoryTracker memoryTracker,
             Clock clock,
             IOController ioController,
-            RecoveryPredicate recoveryPredicate)
+            RecoveryPredicate recoveryPredicate,
+            long awaitIndexesOnlineMillis)
             throws IOException {
         InternalLog recoveryLog = logProvider.getLog(Recovery.class);
         if (!forceRunRecovery
@@ -634,6 +646,9 @@ public final class Recovery {
                 if (logTailMetadata.hasUnreadableBytesInCheckpointLogs()) {
                     logFiles.getCheckpointFile().rotate();
                 }
+                if (awaitIndexesOnlineMillis > 0) {
+                    awaitIndexesOnline(indexingService, awaitIndexesOnlineMillis);
+                }
                 String recoveryMessage =
                         logTailMetadata.logsMissing() ? "Recovery with missing logs completed." : "Recovery completed.";
                 checkPointer.forceCheckPoint(new SimpleTriggerInfo(recoveryMessage));
@@ -642,6 +657,26 @@ public final class Recovery {
             recoveryLife.shutdown();
         }
         return true;
+    }
+
+    private static void awaitIndexesOnline(IndexingService indexingService, long awaitIndexesOnlineMillis) {
+        var stopWatch = Stopwatch.start();
+        var indexIdIterator = indexingService.getIndexIds().longIterator();
+        while (indexIdIterator.hasNext()) {
+            var indexId = indexIdIterator.next();
+            try {
+                var indexProxy = indexingService.getIndexProxy(indexId);
+                while (stopWatch.hasTimedOut(awaitIndexesOnlineMillis, TimeUnit.MILLISECONDS)
+                        && indexProxy.getState() == InternalIndexState.POPULATING) {
+                    Thread.sleep(10);
+                }
+            } catch (IndexNotFoundKernelException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
 
     private static LogTailMetadata loadLogTail(
