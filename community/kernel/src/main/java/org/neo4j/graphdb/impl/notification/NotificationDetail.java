@@ -149,7 +149,7 @@ public interface NotificationDetail {
         }
 
         public static NotificationDetail procedureWarning(final String procedure, final String warning) {
-            return createProcedureWarningNotificationDetail(procedure, warning);
+            return createWarningNotificationDetail(procedure, warning);
         }
 
         public static NotificationDetail propertyName(final String name) {
@@ -310,44 +310,33 @@ public interface NotificationDetail {
             };
         }
 
-        private static NotificationDetail createProcedureWarningNotificationDetail(String procedure, String warning) {
+        private static NotificationDetail createWarningNotificationDetail(String value, String warningPattern) {
             return new NotificationDetail() {
                 @Override
                 public String name() {
-                    return procedure;
+                    return value;
                 }
 
                 @Override
                 public String value() {
-                    return warning;
+                    return warningPattern;
                 }
 
                 @Override
                 public String toString() {
-                    return String.format(warning, procedure);
+                    return String.format(warningPattern, value);
                 }
             };
         }
 
         public static NotificationDetail unsatisfiableRelTypeExpression(String expression) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return expression;
-                }
+            return createWarningNotificationDetail(
+                    expression,
+                    "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.");
+        }
 
-                @Override
-                public String value() {
-                    return null;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format(
-                            "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.",
-                            expression);
-                }
-            };
+        public static NotificationDetail repeatedRelationship(String relationshipName) {
+            return createWarningNotificationDetail(relationshipName, "Relationship `%s` was repeated");
         }
     }
 }

@@ -215,6 +215,8 @@ public interface Status {
         ExternalResourceFailed(ClientError, "Access to an external resource failed"),
         UnsatisfiableRelationshipTypeExpression(
                 ClientNotification, "The query contains a relationship type expression that cannot be satisfied."),
+        RepeatedRelationshipReference(
+                ClientNotification, "The query returns no results due to repeated references to a relationship."),
 
         // database errors
         ExecutionFailed(DatabaseError, "The database was unable to execute the statement."),

@@ -43,12 +43,16 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_PARAM
 import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_PROPERTY_NAME;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_REL_TYPE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.PROCEDURE_WARNING;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.REPEATED_RELATIONSHIP_REFERENCE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_EXPERIMENTAL;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBQUERY_VARIABLE_SHADOWING;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -557,6 +561,34 @@ class NotificationCodeTest {
                 "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
                         + "Names containing `.` should be escaped.",
                 NotificationCategory.DEPRECATION);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION() {
+        Notification notification = UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
+                InputPosition.empty, unsatisfiableRelTypeExpression("!%"));
+
+        verifyNotification(
+                notification,
+                "The query contains a relationship type expression that cannot be satisfied.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.UnsatisfiableRelationshipTypeExpression",
+                "Relationship type expression cannot possibly be satisfied. (`!%` can never be satisfied by any relationship. Relationships must have exactly one relationship type.)",
+                NotificationCategory.GENERIC);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_REPEATED_RELATIONSHIP_REFERENCE() {
+        Notification notification =
+                REPEATED_RELATIONSHIP_REFERENCE.notification(InputPosition.empty, repeatedRelationship("r"));
+
+        verifyNotification(
+                notification,
+                "The query returns no results due to repeated references to a relationship.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
+                "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
+                NotificationCategory.GENERIC);
     }
 
     private void verifyNotification(

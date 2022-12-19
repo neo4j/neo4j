@@ -4,3 +4,6 @@ Feature "List11 - Create a list from a range": Scenario "Create list from `range
 
 // Timezone update 2022b changed the expected result, exclude until all the JVMs have been upgraded
 ?Feature "Temporal2 - Create Temporal Values from a String": Scenario "Should parse date time with named time zone from string": Example "4"
+
+// We now allow re-using relationships while openCypher disallows this
+Feature "Match3 - Match fixed length patterns": Scenario "Fail when re-using a relationship in the same pattern"

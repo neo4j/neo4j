@@ -214,6 +214,11 @@ public enum NotificationCode {
             SeverityLevel.WARNING,
             Status.Statement.UnsatisfiableRelationshipTypeExpression,
             "Relationship type expression cannot possibly be satisfied.",
+            NotificationCategory.GENERIC),
+    REPEATED_RELATIONSHIP_REFERENCE(
+            SeverityLevel.WARNING,
+            Status.Statement.RepeatedRelationshipReference,
+            "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result.",
             NotificationCategory.GENERIC);
 
     private final Status status;

@@ -53,3 +53,5 @@ case class DeprecatedTextIndexProvider(position: InputPosition) extends Internal
 
 case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labelExpression: String)
     extends InternalNotification
+
+case class RepeatedRelationshipReference(position: InputPosition, relName: String) extends InternalNotification

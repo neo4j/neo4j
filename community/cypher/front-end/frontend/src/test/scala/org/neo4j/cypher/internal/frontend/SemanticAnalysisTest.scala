@@ -20,7 +20,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 
 class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
@@ -1181,66 +1183,74 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
-  test("Should not allow repeating rel variable in pattern") {
+  test("Should allow repeating rel variable in pattern") {
     val query = "MATCH ()-[r]-()-[r]-() RETURN r AS r"
-    expectErrorsFrom(
+    expectNotificationsFrom(
       query,
       Set(
-        SemanticError(
-          "Cannot use the same relationship variable 'r' for multiple relationships",
-          InputPosition(10, 1, 11)
+        RepeatedRelationshipReference(
+          InputPosition(10, 1, 11),
+          "r"
         )
       )
     )
   }
 
-  test("Should not allow repeating rel variable in comma separated patterns") {
+  test("Should allow repeating rel variable in comma separated patterns") {
     val query = "MATCH ()-[r]-(), ()-[r]-() RETURN r AS r"
-    expectErrorsFrom(
+    expectNotificationsFrom(
       query,
       Set(
-        SemanticError(
-          "Cannot use the same relationship variable 'r' for multiple relationships",
-          InputPosition(10, 1, 11)
+        RepeatedRelationshipReference(
+          InputPosition(10, 1, 11),
+          "r"
+        ),
+        CartesianProductNotification(
+          InputPosition(0, 1, 1),
+          Set.empty
         )
       )
     )
   }
 
-  test("Should not allow repeating rel variable in comma separated paths") {
+  test("Should allow repeating rel variable in comma separated paths") {
     val query = "MATCH p = ()-[r]-(), q = ()-[r]-() RETURN p, q"
-    expectErrorsFrom(
+    expectNotificationsFrom(
       query,
       Set(
-        SemanticError(
-          "Cannot use the same relationship variable 'r' for multiple relationships",
-          InputPosition(14, 1, 15)
+        RepeatedRelationshipReference(
+          InputPosition(14, 1, 15),
+          "r"
+        ),
+        CartesianProductNotification(
+          InputPosition(0, 1, 1),
+          Set.empty
         )
       )
     )
   }
 
-  test("Should not allow repeated rel variable in pattern expression") {
+  test("Should allow repeated rel variable in pattern expression") {
     val query = normalizeNewLines("MATCH ()-[r]-() RETURN size( ()-[r]-()-[r]-() ) AS size")
-    expectErrorsFrom(
+    expectNotificationsFrom(
       query,
       Set(
-        SemanticError(
-          "Cannot use the same relationship variable 'r' for multiple relationships",
-          InputPosition(33, 1, 34)
+        RepeatedRelationshipReference(
+          InputPosition(33, 1, 34),
+          "r"
         )
       )
     )
   }
 
-  test("Should not allow repeated rel variable in pattern comprehension") {
+  test("Should allow repeated rel variable in pattern comprehension") {
     val query = "MATCH ()-[r]-() RETURN [ ()-[r]-()-[r]-() | r ] AS rs"
-    expectErrorsFrom(
+    expectNotificationsFrom(
       query,
       Set(
-        SemanticError(
-          "Cannot use the same relationship variable 'r' for multiple relationships",
-          InputPosition(29, 1, 30)
+        RepeatedRelationshipReference(
+          InputPosition(29, 1, 30),
+          "r"
         )
       )
     )

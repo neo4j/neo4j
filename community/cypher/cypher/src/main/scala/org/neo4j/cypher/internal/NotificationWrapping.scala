@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
@@ -237,6 +238,12 @@ object NotificationWrapping {
       NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.unsatisfiableRelTypeExpression(relTypeExpression)
+      )
+
+    case RepeatedRelationshipReference(position, relName) =>
+      NotificationCode.REPEATED_RELATIONSHIP_REFERENCE.notification(
+        position.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.repeatedRelationship(relName)
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

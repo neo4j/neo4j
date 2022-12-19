@@ -145,6 +145,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::ParameterMissing org.neo4j.ker
 org.neo4j.kernel.api.exceptions.Status.Statement::ParameterNotProvided org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::PropertyNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RemoteExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::RepeatedRelationshipReference org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeExperimental org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::RuntimeUnsupportedWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final

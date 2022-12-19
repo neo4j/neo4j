@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
@@ -615,17 +616,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   }
 
   /**
-   * Traverse the sub-tree at astNode. Fail if any repeated relationships are found in that sub-tree.
+   * Traverse the sub-tree at astNode. If any repeated relationships are found in that sub-tree, warn on the first occurrence.
    *
    * @param astNode the sub-tree to traverse.
    */
   private def ensureNoRepeatedRelationships(astNode: ASTNode): SemanticCheck = {
     findRepeatedRelationships(astNode, varLength = false).foldSemanticCheck {
       repeated =>
-        SemanticError(
-          s"Cannot use the same relationship variable '${repeated.name}' for multiple relationships",
-          repeated.position
-        )
+        warn(RepeatedRelationshipReference(repeated.position, repeated.name))
     }
   }
 
@@ -634,18 +632,10 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    *
    * @param astNode the sub-tree to traverse.
    */
-  private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck = {
-    findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck {
-      repeated => (state: SemanticState) =>
-        {
-          val newState = state.addNotification(DeprecatedRepeatedVarLengthRelationshipNotification(
-            repeated.position,
-            repeated.name
-          ))
-          SemanticCheckResult(newState, Seq.empty)
-        }
+  private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck =
+    findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck { repeated =>
+      warn(DeprecatedRepeatedVarLengthRelationshipNotification(repeated.position, repeated.name))
     }
-  }
 
   /**
    * This method will traverse into any ASTNode and find repeated relationship variables inside of RelationshipChains.
