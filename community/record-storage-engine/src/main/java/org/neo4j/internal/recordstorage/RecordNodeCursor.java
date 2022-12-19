@@ -56,7 +56,9 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     private final StoreCursors storeCursors;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore groupStore;
-    private PageCursor pageCursor;
+    private PageCursor singleCursor;
+    private PageCursor scanCursor;
+    private PageCursor currentCursor;
     private long next;
     private long highMark;
     private long nextStoreReference;
@@ -89,9 +91,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
         if (getId() != NO_ID) {
             resetState();
         }
-        if (pageCursor == null) {
-            pageCursor = nodePage(0);
-        }
+        selectScanCursor();
         this.next = 0;
         this.highMark = nodeHighMark();
         this.nextStoreReference = NO_ID;
@@ -104,9 +104,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
         if (getId() != NO_ID) {
             resetState();
         }
-        if (pageCursor == null) {
-            pageCursor = nodePage(reference);
-        }
+        selectSingleCursor();
         this.next = reference >= 0 ? reference : NO_ID;
         // This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
@@ -137,9 +135,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
             reset();
             return true;
         }
-        if (pageCursor == null) {
-            pageCursor = nodePage(start);
-        }
+        selectScanCursor();
         next = start;
         highMark = min(stop, max);
         return true;
@@ -328,11 +324,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
         do {
             if (nextStoreReference == next) {
-                nodeAdvance(this, pageCursor);
+                nodeAdvance(this, currentCursor);
                 next++;
                 nextStoreReference++;
             } else {
-                node(this, next++, pageCursor);
+                node(this, next++, currentCursor);
                 nextStoreReference = next;
             }
 
@@ -397,10 +393,11 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     @Override
     public void close() {
-        if (pageCursor != null) {
-            pageCursor.close();
-            pageCursor = null;
+        if (scanCursor != null) {
+            scanCursor.close();
+            scanCursor = null;
         }
+        currentCursor = null;
         if (groupCursor != null) {
             groupCursor.close();
             groupCursor = null;
@@ -415,8 +412,19 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
         }
     }
 
-    private PageCursor nodePage(long reference) {
-        return read.openPageCursorForReading(reference, cursorContext);
+    private void selectScanCursor() {
+        // For node scans we used a local cursor to skip the overhead of positioning it on every node
+        if (scanCursor == null) {
+            scanCursor = read.openPageCursorForReading(0, cursorContext);
+        }
+        currentCursor = scanCursor;
+    }
+
+    private void selectSingleCursor() {
+        if (singleCursor == null) {
+            singleCursor = storeCursors.readCursor(RecordCursorTypes.NODE_CURSOR);
+        }
+        currentCursor = singleCursor;
     }
 
     private long nodeHighMark() {
