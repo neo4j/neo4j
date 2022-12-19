@@ -228,7 +228,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
 
     private void ensureRelationshipScanCursorInitialized() {
         if (relationshipScanCursor == null) {
-            relationshipScanCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext);
+            relationshipScanCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
         }
     }
 

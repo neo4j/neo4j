@@ -28,19 +28,25 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor {
+    private final StoreCursors storeCursors;
     private final CursorContext cursorContext;
     private long next;
     private long highMark;
     private long nextStoreReference;
-    private PageCursor pageCursor;
+    private PageCursor currentCursor;
+    private PageCursor singleCursor;
+    private PageCursor scanCursor;
     private boolean open;
     private boolean batched;
 
-    RecordRelationshipScanCursor(RelationshipStore relationshipStore, CursorContext cursorContext) {
+    RecordRelationshipScanCursor(
+            RelationshipStore relationshipStore, CursorContext cursorContext, StoreCursors storeCursors) {
         super(relationshipStore, cursorContext);
         this.cursorContext = cursorContext;
+        this.storeCursors = storeCursors;
     }
 
     @Override
@@ -48,9 +54,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         if (getId() != NO_ID) {
             resetState();
         }
-        if (pageCursor == null) {
-            pageCursor = relationshipPage(0);
-        }
+        selectScanCursor();
         this.next = 0;
         this.highMark = relationshipHighMark();
         this.nextStoreReference = NO_ID;
@@ -62,9 +66,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         if (getId() != NO_ID) {
             resetState();
         }
-        if (pageCursor == null) {
-            pageCursor = relationshipPage(reference);
-        }
+        selectSingleCursor();
         this.next = reference >= 0 ? reference : NO_ID;
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
@@ -98,9 +100,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
             reset();
             return true;
         }
-        if (pageCursor == null) {
-            pageCursor = relationshipPage(start);
-        }
+        selectScanCursor();
         next = start;
         highMark = min(stop, max);
         return true;
@@ -115,11 +115,11 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
         do {
             if (nextStoreReference == next) {
-                relationshipAdvance(this, pageCursor);
+                relationshipAdvance(this, currentCursor);
                 next++;
                 nextStoreReference++;
             } else {
-                relationship(this, next++, pageCursor);
+                relationship(this, next++, currentCursor);
                 nextStoreReference = next;
             }
 
@@ -173,18 +173,30 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
 
     @Override
     public void close() {
-        if (pageCursor != null) {
-            pageCursor.close();
-            pageCursor = null;
+        if (scanCursor != null) {
+            scanCursor.close();
+            scanCursor = null;
         }
+        currentCursor = null;
+    }
+
+    private void selectScanCursor() {
+        // For node scans we used a local cursor to skip the overhead of positioning it on every node
+        if (scanCursor == null) {
+            scanCursor = relationshipStore.openPageCursorForReading(0, cursorContext);
+        }
+        currentCursor = scanCursor;
+    }
+
+    private void selectSingleCursor() {
+        if (singleCursor == null) {
+            singleCursor = storeCursors.readCursor(RecordCursorTypes.RELATIONSHIP_CURSOR);
+        }
+        currentCursor = singleCursor;
     }
 
     private void relationshipAdvance(RelationshipRecord record, PageCursor pageCursor) {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationshipStore.nextRecordByCursor(record, loadMode.orElse(CHECK).lenient(), pageCursor);
-    }
-
-    PageCursor relationshipPage(long reference) {
-        return relationshipStore.openPageCursorForReading(reference, cursorContext);
     }
 }

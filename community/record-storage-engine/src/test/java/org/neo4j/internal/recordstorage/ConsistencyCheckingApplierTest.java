@@ -42,7 +42,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -93,9 +92,8 @@ class ConsistencyCheckingApplierTest {
                         false,
                         EMPTY_LOG_TAIL)
                 .openAllNeoStores();
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
-        checker = new ConsistencyCheckingApplier(relationshipStore, CursorContext.NULL_CONTEXT);
+        checker = new ConsistencyCheckingApplier(neoStores, CursorContext.NULL_CONTEXT);
         BatchContext batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
         applier = new NeoStoreTransactionApplier(

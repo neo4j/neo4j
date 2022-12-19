@@ -319,7 +319,7 @@ public class RecordStorageReader implements StorageReader {
     @Override
     public RecordRelationshipScanCursor allocateRelationshipScanCursor(
             CursorContext cursorContext, StoreCursors storeCursors) {
-        return new RecordRelationshipScanCursor(relationshipStore, cursorContext);
+        return new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
     }
 
     @Override

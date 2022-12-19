@@ -24,9 +24,11 @@ import static org.neo4j.util.Preconditions.checkState;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 
@@ -37,25 +39,28 @@ import org.neo4j.storageengine.api.CommandBatchToApply;
  * Currently only relationship chain checking is checked.
  */
 class ConsistencyCheckingApplierFactory implements TransactionApplierFactory {
-    private final RelationshipStore relationshipStore;
+    private final NeoStores neoStores;
 
     ConsistencyCheckingApplierFactory(NeoStores neoStores) {
-        this.relationshipStore = neoStores.getRelationshipStore();
+        this.neoStores = neoStores;
     }
 
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
-        return new ConsistencyCheckingApplier(relationshipStore, transaction.cursorContext());
+        return new ConsistencyCheckingApplier(neoStores, transaction.cursorContext());
     }
 
     static class ConsistencyCheckingApplier extends TransactionApplier.Adapter {
         private final MutableLongSet touchedRelationshipIds = LongSets.mutable.empty();
         private final RecordRelationshipScanCursor cursor;
         private final RecordRelationshipScanCursor otherCursor;
+        private final CachedStoreCursors storeCursors;
 
-        ConsistencyCheckingApplier(RelationshipStore relationshipStore, CursorContext cursorContext) {
-            cursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext);
-            otherCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext);
+        ConsistencyCheckingApplier(NeoStores neoStores, CursorContext cursorContext) {
+            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            storeCursors = new CachedStoreCursors(neoStores, cursorContext);
+            cursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
+            otherCursor = new RecordRelationshipScanCursor(relationshipStore, cursorContext, storeCursors);
         }
 
         @Override
@@ -71,8 +76,7 @@ class ConsistencyCheckingApplierFactory implements TransactionApplierFactory {
                 long id = ids.next();
                 checkRelationship(id);
             }
-            cursor.close();
-            otherCursor.close();
+            IOUtils.closeAll(cursor, otherCursor, storeCursors);
         }
 
         private void checkRelationship(long id) {
