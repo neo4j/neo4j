@@ -19,10 +19,8 @@
  */
 package org.neo4j.consistency.report;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.consistency.report.ConsistencyReporter.ProxyFactory.create;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -286,37 +284,20 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter {
     }
 
     public static class ProxyFactory<T> {
-        private final Constructor<? extends T> constructor;
         private final Class<T> type;
 
-        @SuppressWarnings("unchecked")
-        ProxyFactory(Class<T> type) throws LinkageError {
+        ProxyFactory(Class<T> type) {
             this.type = type;
-            try {
-                this.constructor =
-                        (Constructor<? extends T>) Proxy.getProxyClass(ConsistencyReporter.class.getClassLoader(), type)
-                                .getConstructor(InvocationHandler.class);
-            } catch (NoSuchMethodException e) {
-                throw new LinkageError("Cannot access Proxy constructor for " + type.getName(), e);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName()
-                    + asList(constructor.getDeclaringClass().getInterfaces());
         }
 
         Class<?> type() {
             return type;
         }
 
+        @SuppressWarnings("unchecked")
         public T create(InvocationHandler handler) {
-            try {
-                return constructor.newInstance(handler);
-            } catch (Exception e) {
-                throw new LinkageError("Failed to create proxy instance", e);
-            }
+            return (T)
+                    Proxy.newProxyInstance(ConsistencyReporter.class.getClassLoader(), new Class<?>[] {type}, handler);
         }
 
         public static <T> ProxyFactory<T> create(Class<T> type) {
