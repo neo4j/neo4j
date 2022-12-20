@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
-import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -174,7 +173,6 @@ object ParallelTransactionBoundQueryContext {
     override def detachDeleteNode(id: Long): Int = unsupported()
     override def assertSchemaWritesAllowed(): Unit = unsupported()
     override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] = unsupported()
-    override def getConfig: Config = unsupported()
 
     override def nodeApplyChanges(
       node: Long,

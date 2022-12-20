@@ -446,9 +446,6 @@ sealed class TransactionBoundQueryContext(
     ]
   }
 
-  override def getConfig: Config =
-    transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[Config])
-
   override def nodeApplyChanges(
     node: Long,
     addedLabels: IntSet,
@@ -1499,6 +1496,10 @@ private[internal] class TransactionBoundReadQueryContext(
   override def providedLanguageFunctions: Seq[FunctionInformation] = {
     val dependencyResolver = transactionalContext.graph.getDependencyResolver
     dependencyResolver.resolveDependency(classOf[QueryExecutionEngine]).getProvidedLanguageFunctions.asScala.toSeq
+  }
+
+  override def getConfig: Config = {
+    transactionalContext.config
   }
 
   override def contextWithNewTransaction(): TransactionBoundQueryContext = {

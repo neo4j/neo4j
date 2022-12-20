@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
@@ -176,6 +177,10 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def userTransactionId: String = {
     TransactionId(tc.databaseId().name(), tc.kernelTransaction().getTransactionSequenceNumber).toString
+  }
+
+  override def config: Config = {
+    tc.graph().getDependencyResolver.resolveDependency(classOf[Config])
   }
 }
 

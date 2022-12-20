@@ -296,6 +296,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def providedLanguageFunctions: Seq[FunctionInformation]
 
+  def getConfig: Config
+
   def entityTransformer: EntityTransformer
 
   override def nodeById(id: Long): VirtualNodeValue = nodeReadOps.getById(id)
@@ -531,8 +533,6 @@ trait WriteQueryContext {
 
   def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext]
 
-  def getConfig: Config
-
   def nodeApplyChanges(node: Long, addedLabels: IntSet, removedLabels: IntSet, properties: IntObjectMap[Value]): Unit
 
   def relationshipApplyChanges(relationship: Long, properties: IntObjectMap[Value]): Unit
@@ -670,6 +670,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def elementIdMapper(): ElementIdMapper
 
   def userTransactionId: String
+
+  def config: Config
 }
 
 trait KernelPredicate[T] {

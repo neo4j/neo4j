@@ -729,4 +729,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def elementIdMapper(): ElementIdMapper = inner.elementIdMapper()
 
   override def userTransactionId: String = inner.userTransactionId
+
+  override def config: Config = inner.config
 }

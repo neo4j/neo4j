@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -155,4 +156,8 @@ class ParallelTransactionalContextWrapper(
   override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
 
   override def userTransactionId: String = unsupported()
+
+  override def config: Config = {
+    tc.graph().getDependencyResolver.resolveDependency(classOf[Config])
+  }
 }

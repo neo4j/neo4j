@@ -457,6 +457,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   override def providedLanguageFunctions: Seq[FunctionInformation] =
     translateException(tokenNameLookup, inner.providedLanguageFunctions)
 
+  override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
+
   override def entityTransformer: EntityTransformer = translateException(tokenNameLookup, inner.entityTransformer)
 
   override def close(): Unit = inner.close()
@@ -683,8 +685,6 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
 
   override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] =
     translateException(tokenNameLookup, inner.getDatabaseContextProvider)
-
-  override def getConfig: Config = translateException(tokenNameLookup, inner.getConfig)
 
   override def nodeApplyChanges(
     id: Long,
