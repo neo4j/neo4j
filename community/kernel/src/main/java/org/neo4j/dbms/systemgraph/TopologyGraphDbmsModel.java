@@ -249,6 +249,7 @@ public interface TopologyGraphDbmsModel {
     String INSTANCE_ALLOWED_DATABASES_PROPERTY = "allowedDatabases";
     String INSTANCE_DENIED_DATABASES_PROPERTY = "deniedDatabases";
     String INSTANCE_MODE_CONSTRAINT_PROPERTY = "modeConstraint";
+    String INSTANCE_TAGS_PROPERTY = "tags";
     String REMOVED_INSTANCE_REMOVED_AT_PROPERTY = "removed_at";
 
     RelationshipType HOSTED_ON_RELATIONSHIP = RelationshipType.withName("HOSTED_ON");

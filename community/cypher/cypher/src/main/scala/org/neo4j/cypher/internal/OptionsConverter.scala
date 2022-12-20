@@ -99,13 +99,14 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
   private val ALLOWED_DATABASES = "allowedDatabases"
   private val DENIED_DATABASES = "deniedDatabases"
   private val MODE_CONSTRAINT = "modeConstraint"
+  private val TAGS = "tags"
 
   val VISIBLE_PERMITTED_OPTIONS = s"'$ALLOWED_DATABASES', '$DENIED_DATABASES', '$MODE_CONSTRAINT'"
 
   override def operation: String = "enable server"
 
   override def convert(map: MapValue): ServerOptions = {
-    map.foldLeft(ServerOptions(None, None, None)) {
+    map.foldLeft(ServerOptions(None, None, None, None)) {
       case (ops, (key, value)) =>
         if (key.equalsIgnoreCase(ALLOWED_DATABASES)) {
           value match {
@@ -157,6 +158,23 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
             case value: AnyValue =>
               throw new InvalidArgumentsException(
                 s"$MODE_CONSTRAINT expects 'NONE', 'PRIMARY' or 'SECONDARY' but got '$value'."
+              )
+          }
+        } else if (key.equalsIgnoreCase(TAGS)) {
+          value match {
+            case list: ListValue =>
+              val tags: Set[String] = list.iterator().asScala.map {
+                case t: TextValue => t.stringValue()
+                case _ => throw new InvalidArgumentsException(
+                    s"$TAGS expects a list of tags but got '$list'."
+                  )
+              }.toSet
+              ops.copy(tags = Some(tags))
+            case t: TextValue =>
+              ops.copy(tags = Some(Set(t.stringValue())))
+            case value: AnyValue =>
+              throw new InvalidArgumentsException(
+                s"$TAGS expects a list of tags names but got '$value'."
               )
           }
         } else {
@@ -584,5 +602,6 @@ case class CreateDatabaseOptions(
 case class ServerOptions(
   allowed: Option[Set[NormalizedDatabaseName]],
   denied: Option[Set[NormalizedDatabaseName]],
-  mode: Option[InstanceModeConstraint]
+  mode: Option[InstanceModeConstraint],
+  tags: Option[Set[String]]
 )
