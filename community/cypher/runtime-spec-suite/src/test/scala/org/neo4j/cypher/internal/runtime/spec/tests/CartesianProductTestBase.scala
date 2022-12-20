@@ -774,4 +774,44 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = RecordingRuntimeResult(result, subscriber)
     runtimeResult should beColumns("a", "b", "c", "d").withRows(expectedResultRows)
   }
+
+  test("should handle argument cancellation") {
+    // given
+    val lhsLimit = 3
+    val rhsLimit = 3
+
+    val prepareInput = for {
+      downstreamRangeTo <- Range.inclusive(0, 2)
+      lhsRangeTo <- Range.inclusive(0, lhsLimit * 2)
+      rhsRangeTo <- Range.inclusive(0, rhsLimit * 2)
+    } yield {
+      Array(downstreamRangeTo, lhsRangeTo, rhsRangeTo)
+    }
+    val input = prepareInput ++ prepareInput ++ prepareInput ++ prepareInput
+
+    val downstreamLimit = input.size / 2
+    val upstreamLimit1 = (lhsLimit * rhsLimit) / 2
+    val upstreamLimit2 = (0.75 * input.size).toInt
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z", "a", "b", "c")
+      .limit(upstreamLimit2)
+      .apply()
+      .|.limit(upstreamLimit1)
+      .|.cartesianProduct()
+      .|.|.limit(rhsLimit)
+      .|.|.unwind("range(0, z-1) as c")
+      .|.|.argument()
+      .|.limit(lhsLimit)
+      .|.unwind("range(0, y-1) as b")
+      .|.argument()
+      .limit(downstreamLimit)
+      .unwind("range(0, x-1) as a")
+      .input(variables = Seq("x", "y", "z"))
+      .build(readOnly = false)
+
+    val result = execute(logicalQuery, runtime, inputValues(input.map(_.toArray[Any]): _*))
+    result.awaitAll()
+  }
 }
