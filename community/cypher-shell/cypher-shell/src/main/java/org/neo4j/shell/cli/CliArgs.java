@@ -21,8 +21,8 @@ package org.neo4j.shell.cli;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
-import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Handler;
@@ -54,7 +54,7 @@ public class CliArgs {
     private String inputFilename;
     private List<RawParameter> parameters;
     private boolean changePassword;
-    private File historyFile = Historian.defaultHistoryFile();
+    private Path historyFile = Historian.defaultHistoryFile();
     private Handler logHandler;
 
     /**
@@ -219,11 +219,11 @@ public class CliArgs {
                 getUri(), getUsername(), getPassword(), getEncryption(), getDatabase(), impersonatedUser);
     }
 
-    public File getHistoryFile() {
+    public Path getHistoryFile() {
         return historyFile;
     }
 
-    public void setHistoryFile(File historyFile) {
+    public void setHistoryFile(Path historyFile) {
         this.historyFile = historyFile;
     }
 

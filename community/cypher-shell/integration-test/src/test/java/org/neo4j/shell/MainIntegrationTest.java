@@ -653,7 +653,7 @@ class MainIntegrationTest {
 
         // Build up some history
         buildTest()
-                .historyFile(history.toFile())
+                .historyFile(history)
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
                 .userInputLines("return 1;", "return 2;", ":exit")
                 .run()
@@ -681,7 +681,7 @@ class MainIntegrationTest {
 
         // Build up more history and clear
         buildTest()
-                .historyFile(history.toFile())
+                .historyFile(history)
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
                 .userInputLines("return 3;", ":history", ":history clear", ":history", ":exit")
                 .run()

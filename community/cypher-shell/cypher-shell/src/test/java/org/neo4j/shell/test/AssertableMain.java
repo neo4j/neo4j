@@ -35,11 +35,11 @@ import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilde
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -151,7 +151,7 @@ public class AssertableMain {
         public ShellRunner.Factory runnerFactory;
         public final ByteArrayOutputStream out = new ByteArrayOutputStream();
         public final ByteArrayOutputStream err = new ByteArrayOutputStream();
-        public File historyFile;
+        public Path historyFile;
         public ParameterService parameters;
         private final Map<String, String> envMap = new HashMap<>();
         private final Environment environment = new Environment(envMap);
@@ -191,7 +191,7 @@ public class AssertableMain {
             return this;
         }
 
-        public AssertableMainBuilder historyFile(File file) {
+        public AssertableMainBuilder historyFile(Path file) {
             this.historyFile = file;
             return this;
         }
@@ -235,9 +235,7 @@ public class AssertableMain {
 
         protected CliArgs parseArgs() throws ArgumentParserException, IOException {
             var parsedArgs = new CliArgHelper(environment).parseAndThrow(args.toArray(String[]::new));
-            var history = historyFile != null
-                    ? historyFile
-                    : Files.createTempFile("temp-history", null).toFile();
+            var history = historyFile != null ? historyFile : Files.createTempFile("temp-history", null);
             parsedArgs.setHistoryFile(history);
             return parsedArgs;
         }

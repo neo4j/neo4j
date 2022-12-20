@@ -45,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -86,7 +87,7 @@ class InteractiveShellRunnerTest {
 
     private Printer printer;
     private StatementExecuter cmdExecuter;
-    private File historyFile;
+    private Path historyFile;
     private TransactionHandler txHandler;
     private DatabaseManager databaseManager;
     private ClientException badLineError;
@@ -101,7 +102,7 @@ class InteractiveShellRunnerTest {
         cmdExecuter = mock(StatementExecuter.class);
         txHandler = mock(TransactionHandler.class);
         databaseManager = mock(DatabaseManager.class);
-        historyFile = new File(temp, "test");
+        historyFile = new File(temp, "test").toPath();
         badLineError = new ClientException("Found a bad line");
         connector = mock(Connector.class);
         when(connector.isConnected()).thenReturn(true);
@@ -183,7 +184,7 @@ class InteractiveShellRunnerTest {
         Historian historian = runner.getHistorian();
         historian.flushHistory();
 
-        List<String> history = Files.readAllLines(historyFile.toPath());
+        List<String> history = Files.readAllLines(historyFile);
 
         assertThat(history).zipSatisfy(Arrays.asList(commands), (entry, cmd) -> assertThat(entry)
                 .endsWith(":" + cmd));

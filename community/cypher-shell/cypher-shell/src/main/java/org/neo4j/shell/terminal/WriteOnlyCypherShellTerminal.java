@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell.terminal;
 
-import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import org.neo4j.shell.Historian;
 
 /**
@@ -61,7 +61,7 @@ public class WriteOnlyCypherShellTerminal implements CypherShellTerminal {
     }
 
     @Override
-    public void setHistoryFile(File file) {
+    public void setHistoryFile(Path file) {
         throw new UnsupportedOperationException();
     }
 

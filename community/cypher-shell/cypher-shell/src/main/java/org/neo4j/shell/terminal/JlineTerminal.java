@@ -22,8 +22,8 @@ package org.neo4j.shell.terminal;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
 import org.jline.reader.Expander;
@@ -98,7 +98,7 @@ public class JlineTerminal implements CypherShellTerminal {
     }
 
     @Override
-    public void setHistoryFile(File file) {
+    public void setHistoryFile(Path file) {
         if (!file.equals(jLineReader.getVariable(LineReader.HISTORY_FILE))) {
             jLineReader.setVariable(LineReader.HISTORY_FILE, file);
             // the load here makes sure that history will work right from the start

@@ -23,8 +23,9 @@ import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.DATABASE_UNAVAILABLE_ERROR_CODE;
 import static org.neo4j.shell.terminal.CypherShellTerminal.PROMPT_MAX_LENGTH;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.shell.Connector;
@@ -77,7 +78,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             Printer printer,
             CypherShellTerminal terminal,
             UserMessagesHandler userMessagesHandler,
-            File historyFile) {
+            Path historyFile) {
         this.userMessagesHandler = userMessagesHandler;
         this.currentlyExecuting = new AtomicBoolean(false);
         this.executer = executer;
@@ -211,13 +212,12 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         return errorPromptSuffix;
     }
 
-    private void setupHistory(File historyFile) {
-        var dir = historyFile.getParentFile();
-
-        if (!dir.isDirectory() && !dir.mkdir()) {
-            printer.printError("Could not load history file. Falling back to session-based history.\n");
-        } else {
+    private void setupHistory(Path historyFile) {
+        var dir = historyFile.getParent();
+        if (Files.exists(dir) && Files.isDirectory(dir)) {
             terminal.setHistoryFile(historyFile);
+        } else {
+            printer.printError("Could not load history file. Falling back to session-based history.\n");
         }
     }
 

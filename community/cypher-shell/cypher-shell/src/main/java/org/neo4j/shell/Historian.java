@@ -21,10 +21,16 @@ package org.neo4j.shell;
 
 import static java.lang.System.getProperty;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import org.neo4j.shell.exception.CypherShellIOException;
 
 /**
  * An object which keeps a record of past commands
@@ -44,10 +50,22 @@ public interface Historian {
 
     void clear() throws IOException;
 
-    static File defaultHistoryFile() {
+    static Path defaultHistoryFile() {
         // Storing in same directory as driver uses
-        File dir = new File(getProperty("user.home"), ".neo4j");
-        return new File(dir, ".cypher_shell_history");
+        var path = Path.of(getProperty("user.home"), ".neo4j", ".cypher_shell_history");
+
+        Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rw-------");
+        FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
+        try {
+            if (Files.exists(path)) {
+                Files.setPosixFilePermissions(path, ownerWritable);
+                return path;
+            } else {
+                return Files.createFile(path, permissions);
+            }
+        } catch (IOException e) {
+            throw new CypherShellIOException(e);
+        }
     }
 
     class EmptyHistory implements Historian {

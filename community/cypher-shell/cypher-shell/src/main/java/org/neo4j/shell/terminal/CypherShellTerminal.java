@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.terminal;
 
-import java.io.File;
+import java.nio.file.Path;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
@@ -52,7 +52,7 @@ public interface CypherShellTerminal {
     Historian getHistory();
 
     /** If set history will be saved to the specified file */
-    void setHistoryFile(File file);
+    void setHistoryFile(Path file);
 
     void bindUserInterruptHandler(UserInterruptHandler handler);
 
