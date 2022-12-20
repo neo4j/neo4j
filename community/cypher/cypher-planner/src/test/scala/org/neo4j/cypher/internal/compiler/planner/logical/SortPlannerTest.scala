@@ -614,7 +614,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
       } catch {
         // Then
-        case e: AssertionError => assert(e.getMessage == "Expected a sorted plan")
+        case e: AssertionError => assert(e.getMessage.startsWith("Expected a sorted plan but got"))
       }
     }
   }

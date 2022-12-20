@@ -151,6 +151,7 @@ case object QueryPlanner
     CompilationContains[PlannerQuery],
     UnnecessaryOptionalMatchesRemoved,
     ExpressionsRewrittenToGetDegree,
+    UnfulfillableQueryGraphsRemoved,
     TokensResolved
   )
 

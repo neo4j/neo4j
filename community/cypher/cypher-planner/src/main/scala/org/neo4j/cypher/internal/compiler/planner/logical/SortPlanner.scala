@@ -107,7 +107,7 @@ object SortPlanner {
         )
         else sortedPlan
       case _ if interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty =>
-        throw new AssertionError("Expected a sorted plan")
+        throw new AssertionError(s"Expected a sorted plan but got\n$plan")
       case _ => plan
     }
 

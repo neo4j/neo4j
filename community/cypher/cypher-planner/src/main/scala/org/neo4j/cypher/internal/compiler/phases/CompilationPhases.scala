@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.UnfulfillableQueryRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerRewriter
@@ -96,6 +97,7 @@ object CompilationPhases {
           CreatePlannerQuery,
           OptionalMatchRemover,
           GetDegreeRewriterStep,
+          UnfulfillableQueryRewriter,
           QueryPlanner,
           PlanRewriter,
           InsertCachedProperties,

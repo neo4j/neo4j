@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -27,7 +28,9 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -45,6 +48,67 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     plan shouldEqual cfg.subPlanBuilder()
       .allRelationshipsScan("(a)-[r]->(b)")
       .build()
+  }
+
+  test("should take shortcut for plans returning no results without getting lost in IDP loop") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .withSetting(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold, Int.box(16))
+      .build()
+
+    val query =
+      """
+        |MATCH
+        |  (a)-[r*]->(b)-[q*]->(c),
+        |  (x)-[r*]->(y)-[q*]->(z),
+        |  (d)-[r*]->(e)-[q*]->(f)
+        |RETURN *
+        |""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "c", "d", "e", "f", "q", "r", "x", "y", "z")
+        .projection(
+          "NULL AS e",
+          "NULL AS x",
+          "NULL AS y",
+          "NULL AS f",
+          "NULL AS a",
+          "NULL AS c",
+          "NULL AS r",
+          "NULL AS q",
+          "NULL AS b",
+          "NULL AS z",
+          "NULL AS d"
+        )
+        .limit(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test("should take shortcut for plans returning no results because of duplicate relationships") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .build()
+
+    val query =
+      """
+        |MATCH
+        |  (a)-[r]->(b)-[r]->(c)
+        |RETURN *
+        |""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "c", "r")
+        .projection("NULL AS a", "NULL AS b", "NULL AS c", "NULL AS r")
+        .limit(0)
+        .argument()
+        .build()
+    )
   }
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
@@ -237,7 +301,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .build()
   }
 
-  test("should plan var-length expand with always-false predicate") {
+  test("should be able to plan var-length expand with always-false predicate") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[]->()", 100)
@@ -245,18 +309,360 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     val plan = planner.plan("MATCH (a)-[r*]->(b) WHERE false RETURN r").stripProduceResults
 
-    plan should (equal(
+    plan should equal(
       planner.subPlanBuilder()
-        .expand("(a)-[r*]->(b)")
+        .projection("NULL AS a", "NULL AS b", "NULL AS r")
         .limit(0)
-        .allNodeScan("a")
+        .argument()
         .build()
-    ) or equal(
-      planner.subPlanBuilder()
-        .expand("(b)<-[r*]-(a)")
+    )
+  }
+
+  test(
+    "should plan limit 0 + projection for query with multiple references to same relationship followed by projections"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query = """MATCH (a)-[r]->()<-[r]-(b) WITH a, r, b, 1 AS dummy RETURN *, 2 as dummy2;"""
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "dummy", "r", "dummy2")
+        .projection("2 AS dummy2")
+        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
-        .allNodeScan("b")
+        .argument()
         .build()
-    ))
+    )
+  }
+
+  test("should be able to plan query with multiple references to same relationship followed by aggregation") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query = """MATCH (a)-[r]->()<-[r]-(b) WITH a, r, b, 1 AS dummy RETURN count(*) AS count;"""
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("count")
+        .aggregation(Seq(), Seq("count(*) AS count"))
+        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
+        .limit(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "should plan limit 0 + projection for query with multiple references to same relationship on one side of union"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """
+        |  MATCH (a)-[r]->()<-[r]-(b) RETURN a, r, b, 1 AS dummy
+        |UNION
+        |  MATCH (a)-[r]->(b) RETURN a, r, b, 1 AS dummy;""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "r", "b", "dummy")
+        .distinct("b AS b", "dummy AS dummy", "a AS a", "r AS r")
+        // we could improve and recognise that the LHS will never return a row and therefore simplify to the RHS
+        .union()
+        .|.projection("a AS a", "r AS r", "b AS b", "dummy AS dummy")
+        .|.projection("1 AS dummy")
+        .|.allRelationshipsScan("(a)-[r]->(b)")
+        .projection("a AS a", "r AS r", "b AS b", "dummy AS dummy")
+        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
+        .limit(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection for query with multiple references to same relationship in subquery") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (c)-->(d)
+        |CALL {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |  WITH a, r, b, 1 AS dummy
+        |  RETURN *, 2 as dummy2
+        |}
+        |RETURN *""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "c", "d", "dummy", "dummy2", "r")
+        // we could improve on this to recognise that the RHS will be empty and therefore the cartesian product will be empty as well
+        .cartesianProduct(fromSubquery = true)
+        .|.projection("2 AS dummy2")
+        .|.projection("1 AS dummy")
+        .|.projection("NULL AS a", "NULL AS anon_1", "NULL AS b", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(c)-[anon_0]->(d)")
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection for query with multiple references to same relationship in complex EXISTS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |WHERE EXISTS {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |  RETURN a, b, r
+        |}
+        |RETURN *""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        // we could improve and simplify the RHS to WHERE false and then convert this to limit 0 again
+        .semiApply()
+        .|.projection("a AS a", "b AS b")
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection for query with multiple references to same relationship in EXISTS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |WHERE EXISTS {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |  WITH a, r, b, 1 AS dummy
+        |  RETURN a, b, r, dummy, 2 as dummy2
+        |}
+        |RETURN *""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        // we could improve and simplify the RHS to WHERE false and then convert this to limit 0 again
+        .semiApply()
+        .|.projection("2 AS dummy2")
+        .|.projection("a AS a", "b AS b", "1 AS dummy")
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection for query with multiple references to same relationship in simple EXISTS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |WHERE EXISTS {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |}
+        |RETURN *""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b")
+        // we could improve and simplify the RHS to WHERE false and then convert this to limit 0 again
+        .semiApply()
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should be able to plan query with multiple references to same relationship in complex COUNT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN COUNT {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |  RETURN a, b, r
+        |} AS count""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("count")
+        // we could improve and simplify the RHS to `WITH 0 AS count`
+        .apply()
+        .|.aggregation(Seq(), Seq("count(*) AS count"))
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should be able to plan query with multiple references to same relationship in COUNT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN COUNT {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |  WITH a, r, b, 1 AS dummy
+        |  RETURN a, b, r, dummy, 2 as dummy2
+        |} AS count""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("count")
+        // we could improve and simplify the RHS to `WITH 0 AS count`
+        .apply()
+        .|.aggregation(Seq(), Seq("count(*) AS count"))
+        .|.projection("a AS a", "b AS b", "1 AS dummy")
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should be able to plan query with multiple references to same relationship in simple COUNT") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |RETURN COUNT {
+        |  MATCH (a)-[r]->()<-[r]-(b)
+        |} AS count""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("count")
+        // we could improve and simplify the RHS to `WITH 0 AS count`
+        .apply()
+        .|.aggregation(Seq(), Seq("count(*) AS count"))
+        .|.projection("NULL AS anon_1", "NULL AS r")
+        .|.limit(0)
+        .|.argument()
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection for query with multiple references to same relationship in 2nd query part") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-->(b)
+        |WITH *, 1 as dummy
+        |MATCH (a)-[r]->()<-[r]-(b)
+        |RETURN *""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "dummy", "r")
+        .projection(project = Seq("a AS a", "b AS b", "dummy AS dummy"), discard = Set("anon_1"))
+        .projection(project = Seq("NULL AS anon_1", "NULL AS r"), discard = Set("a", "b", "dummy"))
+        .limit(0)
+        .projection(project = Seq("1 AS dummy"), discard = Set("anon_0"))
+        .allRelationshipsScan("(a)-[anon_0]->(b)")
+        .build()
+    )
+  }
+
+  test("should plan limit 0 + projection + sort if sorted") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query =
+      """MATCH (a)-[r]->()<-[r]-(b)
+        |RETURN * ORDER BY a""".stripMargin
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "r")
+        .sort(Seq(Ascending("a")))
+        .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
+        .limit(0)
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "should plan limit 0 + projection for query with multiple references to same relationship with path assignment"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[]->()", 100)
+      .build()
+
+    val query = """MATCH p = (a)-[r]->()<-[r]-(b) RETURN *;"""
+
+    val path = PathExpression(
+      NodePathStep(
+        varFor("a"),
+        SingleRelationshipPathStep(
+          varFor("r"),
+          OUTGOING,
+          Some(varFor("anon_0")),
+          SingleRelationshipPathStep(varFor("r"), INCOMING, Some(varFor("b")), NilPathStep()(pos))(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    planner.plan(query) should equal(
+      planner.planBuilder()
+        .produceResults("a", "b", "p", "r")
+        .projection(project = Map("p" -> path), discard = Set("anon_0"))
+        .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
+        .limit(0)
+        .argument()
+        .build()
+    )
   }
 }
