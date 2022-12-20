@@ -82,26 +82,21 @@ case object TestPlanCombinationRewriter {
       anonymousVariableNameGenerator,
       query.idGen
     )
-    val rewriters = config.middleSteps.flatMap { step =>
-      val clazz = step.rewriter
-      if (step.config.repetitions >= 1) {
-        Seq.fill(step.config.repetitions)(clazz.getDeclaredConstructor(
-          classOf[PlanRewriterContext],
-          classOf[PlanRewriterStepConfig]
-        ).newInstance(planRewriterContext, step.config))
-      } else {
-        Seq.empty[Rewriter]
-      }
-    }
+    val toRewriterConverter: PlanRewriterStep => Seq[Rewriter] = planRewriterStepToRewriter(planRewriterContext)
 
-    val rewriterSeq =
+    val preRewriters = config.preSteps.flatMap(toRewriterConverter)
+    val middleRewriters = config.middleSteps.flatMap(toRewriterConverter)
+    val postRewriters = config.postSteps.flatMap(toRewriterConverter)
+
+    val orderedMiddleRewriters =
       if (config.randomizeMiddleStepOrdering) {
-        Random.shuffle(rewriters)
+        Random.shuffle(middleRewriters)
       } else {
-        rewriters
+        middleRewriters
       }
 
-    val rewrittenPlan = inputPlan.endoRewrite(inSequence(rewriterSeq: _*))
+    val orderedRewriters = preRewriters ++ orderedMiddleRewriters ++ postRewriters
+    val rewrittenPlan = inputPlan.endoRewrite(inSequence(orderedRewriters: _*))
 
     if (VERBOSE) {
       println(
@@ -115,6 +110,18 @@ case object TestPlanCombinationRewriter {
     }
 
     query.copy(logicalPlan = rewrittenPlan)
+  }
+
+  private def planRewriterStepToRewriter(planRewriterContext: PlanRewriterContext)(step: PlanRewriterStep): Seq[Rewriter] = {
+    val clazz = step.rewriter
+    if (step.config.repetitions >= 1) {
+      Seq.fill(step.config.repetitions)(clazz.getDeclaredConstructor(
+        classOf[PlanRewriterContext],
+        classOf[PlanRewriterStepConfig]
+      ).newInstance(planRewriterContext, step.config))
+    } else {
+      Seq.empty[Rewriter]
+    }
   }
 
   sealed trait TestPlanCombinationRewriterHint
