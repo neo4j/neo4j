@@ -92,6 +92,13 @@ case class QueryGraph(
       patternRelationships = patternRelationships + rel
     )
 
+  def addNodeConnection(connection: NodeConnection): QueryGraph = {
+    connection match {
+      case patternRelationship: PatternRelationship => addPatternRelationship(patternRelationship)
+      case qpp: QuantifiedPathPattern               => addQuantifiedPathPattern(qpp)
+    }
+  }
+
   def addPatternRelationships(rels: Set[PatternRelationship]): QueryGraph =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRelationship(rel))
 

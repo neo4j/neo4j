@@ -171,7 +171,15 @@ case object planLegacyShortestPaths {
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsVarExpand =
-      expandSolverStep.produceLogicalPlan(queryGraph, pattern, rhsArgument, from, rhsArgument.availableSymbols, context)
+      expandSolverStep.produceExpandLogicalPlan(
+        queryGraph,
+        pattern,
+        pattern.name,
+        rhsArgument,
+        from,
+        rhsArgument.availableSymbols,
+        context
+      )
 
     // Projection with path
     val map = Map(pathName -> createPathExpression(shortestPath.expr.element))

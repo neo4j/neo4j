@@ -213,9 +213,10 @@ case object planShortestPaths {
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
     val rhsVarExpand =
-      expandSolverStep.produceLogicalPlan(
+      expandSolverStep.produceExpandLogicalPlan(
         rewrittenQg,
         pattern,
+        pattern.name,
         rhsArgument,
         from,
         rhsArgument.availableSymbols,

@@ -162,4 +162,16 @@ final case class QuantifiedPathPattern(
   val dependencies: Set[String] = pattern.dependencies
 
   val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
+
+  /**
+   * A "simple" quantified path pattern is defined as a pattern that could be rewritten to a [[PatternRelationship]] without a loss of information.
+   * @return true if this qpp is "simple"
+   */
+  def isSimple: Boolean = {
+    this.nodeVariableGroupings.isEmpty &&
+    this.pattern.patternRelationships.size == 1 &&
+    this.pattern.selections.predicates.isEmpty &&
+    this.pattern.quantifiedPathPatterns.isEmpty
+  }
+
 }

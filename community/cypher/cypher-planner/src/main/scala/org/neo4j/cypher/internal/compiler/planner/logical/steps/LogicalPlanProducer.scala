@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
+import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -251,6 +252,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
@@ -922,58 +924,87 @@ case class LogicalPlanProducer(
   def planSimpleExpand(
     left: LogicalPlan,
     from: String,
-    dir: SemanticDirection,
     to: String,
     pattern: PatternRelationship,
     mode: ExpansionMode,
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    val dir = pattern.directionRelativeTo(from)
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.addPatternRelationship(pattern))
     val providedOrder = providedOrders.get(left.id).fromLeft
     annotate(Expand(left, from, dir, pattern.types, to, pattern.name, mode), solved, providedOrder, context)
   }
 
+  /**
+   * Assumes that qpp.isSimple is true
+   * @param qpp A simple QuantifiedPathPattern
+   * @return a PatternRelationship that represents the qpp
+   */
+  def simpleQuantifiedPathPatternToPatternRelationship(qpp: QuantifiedPathPattern): PatternRelationship = {
+    val max = qpp.repetition.max match {
+      case UpperBound.Unlimited  => None
+      case UpperBound.Limited(n) => Some(n.toInt)
+    }
+
+    qpp.pattern.patternRelationships.head.copy(
+      nodes = (qpp.leftBinding.outer, qpp.rightBinding.outer),
+      name = qpp.relationshipVariableGroupings.head.groupName,
+      length = VarPatternLength(qpp.repetition.min.toInt, max)
+    )
+  }
+
   def planVarExpand(
     source: LogicalPlan,
     from: String,
-    dir: SemanticDirection,
     to: String,
-    pattern: PatternRelationship,
+    nodeConnection: NodeConnection,
     relationshipPredicates: ListSet[VariablePredicate],
     nodePredicates: ListSet[VariablePredicate],
     solvedPredicates: ListSet[Expression],
     mode: ExpansionMode,
     context: LogicalPlanningContext
-  ): LogicalPlan = pattern.length match {
-    case l: VarPatternLength =>
-      val projectedDir = projectedDirection(pattern, from, dir)
+  ): LogicalPlan = {
 
-      val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-        .addPatternRelationship(pattern)
-        .addPredicates(solvedPredicates.toSeq: _*))
+    val pattern = nodeConnection match {
+      case qpp: QuantifiedPathPattern =>
+        if (qpp.isSimple) simpleQuantifiedPathPatternToPatternRelationship(qpp)
+        else throw new InternalException("Tried to solve a non-simple quantified path pattern with a varExpand")
+      case pr: PatternRelationship => pr
+    }
 
-      val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
-        solveSubqueryExpressionsForExtractedPredicates(source, nodePredicates, relationshipPredicates, context)
-      annotate(
-        VarExpand(
-          source = rewrittenSource,
-          from = from,
-          dir = dir,
-          projectedDir = projectedDir,
-          types = pattern.types,
-          to = to,
-          relName = pattern.name,
-          length = l,
-          mode = mode,
-          nodePredicates = rewrittenNodePredicates.toSeq,
-          relationshipPredicates = rewrittenRelationshipPredicates.toSeq
-        ),
-        solved,
-        providedOrders.get(source.id).fromLeft,
-        context
-      )
+    val dir = pattern.directionRelativeTo(from)
 
-    case _ => throw new InternalException("Expected a varlength path to be here")
+    pattern.length match {
+      case l: VarPatternLength =>
+        val projectedDir = projectedDirection(pattern, from, dir)
+
+        val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
+          .addNodeConnection(nodeConnection)
+          .addPredicates(solvedPredicates.toSeq: _*))
+
+        val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
+          solveSubqueryExpressionsForExtractedPredicates(source, nodePredicates, relationshipPredicates, context)
+        annotate(
+          VarExpand(
+            source = rewrittenSource,
+            from = from,
+            dir = dir,
+            projectedDir = projectedDir,
+            types = pattern.types,
+            to = to,
+            relName = pattern.name,
+            length = l,
+            mode = mode,
+            nodePredicates = rewrittenNodePredicates.toSeq,
+            relationshipPredicates = rewrittenRelationshipPredicates.toSeq
+          ),
+          solved,
+          providedOrders.get(source.id).fromLeft,
+          context
+        )
+
+      case _ => throw new InternalException("Expected a varlength path to be here")
+    }
   }
 
   /**

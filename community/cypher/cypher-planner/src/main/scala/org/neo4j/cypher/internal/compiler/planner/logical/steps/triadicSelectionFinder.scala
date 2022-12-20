@@ -187,7 +187,6 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           argument,
           exp2.from,
-          exp2.dir,
           exp2.to,
           expand2PR,
           ExpandAll,

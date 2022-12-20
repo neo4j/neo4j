@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -150,7 +149,7 @@ object expandSolverStep {
    * We currently don't have a trail into operator. Instead we need to create a new variable for the end node of the quantified path pattern, to not override
    * the existing variable for the end node.
    *
-   * In `produceLogicalPlan` we add a predicate to make sure the quantified path pattern ends on the correct node.
+   * In `produceTrailLogicalPlan` we add a predicate to make sure the quantified path pattern ends on the correct node.
    */
   private def updateQppForTrailInto(
     qpp: QuantifiedPathPattern,
@@ -246,17 +245,22 @@ object expandSolverStep {
   ): LogicalPlan = {
     patternRel match {
       case rel: PatternRelationship =>
-        produceLogicalPlan(qg, rel, sourcePlan, nodeId, availableSymbols, context)
+        produceExpandLogicalPlan(qg, rel, rel.name, sourcePlan, nodeId, availableSymbols, context)
       case qpp: QuantifiedPathPattern =>
-        produceLogicalPlan(
-          qpp,
-          sourcePlan,
-          nodeId,
-          availableSymbols,
-          context,
-          qppInnerPlans,
-          qg.selections.flatPredicates
-        )
+        if (qpp.isSimple) {
+          val name = qpp.relationshipVariableGroupings.head.groupName
+          produceExpandLogicalPlan(qg, qpp, name, sourcePlan, nodeId, availableSymbols, context)
+        } else {
+          produceTrailLogicalPlan(
+            qpp,
+            sourcePlan,
+            nodeId,
+            availableSymbols,
+            context,
+            qppInnerPlans,
+            qg.selections.flatPredicates
+          )
+        }
     }
   }
 
@@ -268,34 +272,32 @@ object expandSolverStep {
    * @param sourcePlan     the plan to plan on top of
    * @param nodeId         the node to start the expansion from.
    */
-  def produceLogicalPlan(
+  def produceExpandLogicalPlan(
     qg: QueryGraph,
-    patternRel: PatternRelationship,
+    nodeConnection: NodeConnection,
+    patternName: String,
     sourcePlan: LogicalPlan,
     nodeId: String,
     availableSymbols: Set[String],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val dir = patternRel.directionRelativeTo(nodeId)
-    val otherSide = patternRel.otherSide(nodeId)
+    val otherSide = nodeConnection.otherSide(nodeId)
     val overlapping = availableSymbols.contains(otherSide)
     val mode = if (overlapping) ExpandInto else ExpandAll
 
-    patternRel.length match {
-      case SimplePatternLength =>
+    nodeConnection match {
+      case pr: PatternRelationship if pr.length == SimplePatternLength =>
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           sourcePlan,
           nodeId,
-          dir,
           otherSide,
-          patternRel,
+          pr,
           mode,
           context
         )
-
-      case _: VarPatternLength =>
+      case _ =>
         val availablePredicates: collection.Seq[Expression] =
-          qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
+          qg.selections.predicatesGiven(availableSymbols + patternName + otherSide)
         val (
           nodePredicates: ListSet[VariablePredicate],
           relationshipPredicates: ListSet[VariablePredicate],
@@ -303,7 +305,7 @@ object expandSolverStep {
         ) =
           extractPredicates(
             availablePredicates,
-            originalRelationshipName = patternRel.name,
+            originalRelationshipName = patternName,
             originalNodeName = nodeId,
             targetNodeName = otherSide,
             targetNodeIsBound = mode.equals(ExpandInto)
@@ -312,9 +314,8 @@ object expandSolverStep {
         context.staticComponents.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
           from = nodeId,
-          dir = dir,
           to = otherSide,
-          pattern = patternRel,
+          nodeConnection = nodeConnection,
           nodePredicates = nodePredicates,
           relationshipPredicates = relationshipPredicates,
           solvedPredicates = solvedPredicates,
@@ -333,7 +334,7 @@ object expandSolverStep {
     }
   }
 
-  private def produceLogicalPlan(
+  private def produceTrailLogicalPlan(
     quantifiedPathPattern: QuantifiedPathPattern,
     sourcePlan: LogicalPlan,
     startNode: String,
