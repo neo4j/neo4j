@@ -406,7 +406,7 @@ object HeapTrackingLongImmutableSet {
 
     def newSharedSet(memoryTracker: MemoryTracker, data: HeapTrackingLongImmutableSet, elem: Long): SharedHashSet = {
       memoryTracker.allocateHeap(SHALLOW_SIZE_SHARED_SET)
-      val newSet = HeapTrackingCollections.newLongSet(memoryTracker)
+      val newSet = HeapTrackingCollections.newLongSet(memoryTracker, data.size + 1)
       data.addTo(newSet)
       newSet.add(elem)
       new SharedHashSet(memoryTracker, newSet)
