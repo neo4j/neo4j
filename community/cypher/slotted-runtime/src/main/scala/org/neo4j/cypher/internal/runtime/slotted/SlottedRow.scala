@@ -499,7 +499,7 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
    * In slotted this is before a "break", where rows are copied 
    * (see [[SlottedPipelineBreakingPolicy]]).
    */
-  // Node, consider adding a test case in SlottedPipelineBreakingPolicyTest
+  // Note, consider adding a test case in SlottedPipelineBreakingPolicyTest
   // if you add calls to this method
   override def compact(): Unit = {
     if (refs.length > 0 && slots.discardedRefSlotOffsets().nonEmpty) {
