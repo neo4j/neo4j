@@ -214,7 +214,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
     private void setupHistory(Path historyFile) {
         var dir = historyFile.getParent();
-        if (Files.exists(dir) && Files.isDirectory(dir)) {
+        if (Files.isDirectory(dir)) {
             terminal.setHistoryFile(historyFile);
         } else {
             printer.printError("Could not load history file. Falling back to session-based history.\n");
