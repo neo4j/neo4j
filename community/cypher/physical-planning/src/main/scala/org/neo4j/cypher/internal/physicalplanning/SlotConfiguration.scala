@@ -586,11 +586,12 @@ class SlotConfiguration private (
    * Marks that a slot can be discarded in next copy.
    */
   def markDiscarded(key: String): Unit = {
-    // We only discard ref slots that are not an alias or has aliases
+    // We only discard ref slots that are not an alias and has ano liases
     if (slotAliases.get(key).exists(_.isEmpty)) {
-      get(key)
-        .collect { case RefSlot(offset, _, _) => offset }
-        .foreach(offset => markedDiscarded += offset)
+      get(key) match {
+        case Some(RefSlot(offset, _, _)) => markedDiscarded += offset
+        case _                           =>
+      }
     }
   }
 
