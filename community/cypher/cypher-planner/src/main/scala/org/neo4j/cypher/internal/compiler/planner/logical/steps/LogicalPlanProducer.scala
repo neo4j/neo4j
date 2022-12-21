@@ -965,11 +965,28 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val pattern = nodeConnection match {
+    val (pattern, solvedConnection) = nodeConnection match {
+      case qpp: QuantifiedPathPattern if qpp.isSimple =>
+        val innerPatternRelationship = qpp.pattern.patternRelationships.head
+        val innerNodes = Set(innerPatternRelationship.nodes._1, innerPatternRelationship.nodes._2)
+
+        // It should be safe to mark 'qpp' as solved at this point.
+        // However, given how much information that could actually be contained in a QuantifiedPathPattern, it's safer to construct a "solved" by consciously
+        // extracting the specific elements that we _know_ is solved by the VarExpand.
+        val solvedQpp = QuantifiedPathPattern(
+          leftBinding = qpp.leftBinding,
+          rightBinding = qpp.rightBinding,
+          repetition = qpp.repetition,
+          pattern = QueryGraph(patternNodes = innerNodes, patternRelationships = Set(innerPatternRelationship)),
+          nodeVariableGroupings = Set.empty,
+          relationshipVariableGroupings = qpp.relationshipVariableGroupings
+        )
+
+        (simpleQuantifiedPathPatternToPatternRelationship(qpp), solvedQpp)
+
       case qpp: QuantifiedPathPattern =>
-        if (qpp.isSimple) simpleQuantifiedPathPatternToPatternRelationship(qpp)
-        else throw new InternalException("Tried to solve a non-simple quantified path pattern with a varExpand")
-      case pr: PatternRelationship => pr
+        throw new InternalException("Tried to solve a non-simple quantified path pattern with a VarExpand")
+      case pr: PatternRelationship => (pr, pr)
     }
 
     val dir = pattern.directionRelativeTo(from)
@@ -979,7 +996,7 @@ case class LogicalPlanProducer(
         val projectedDir = projectedDirection(pattern, from, dir)
 
         val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-          .addNodeConnection(nodeConnection)
+          .addNodeConnection(solvedConnection)
           .addPredicates(solvedPredicates.toSeq: _*))
 
         val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
