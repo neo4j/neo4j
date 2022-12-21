@@ -49,8 +49,7 @@ class IntegrityValidator {
      */
     static void validateSchemaRule(SchemaRule schemaRule, KernelVersion kernelVersion)
             throws TransactionFailureException {
-        if (false
-                && kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)
+        if (kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)
                 && schemaRule instanceof ConstraintDescriptor constraint) {
             if (constraint.isRelationshipKeyConstraint() || constraint.isRelationshipUniquenessConstraint()) {
                 throw new TransactionFailureException(

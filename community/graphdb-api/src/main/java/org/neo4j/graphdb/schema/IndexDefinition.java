@@ -44,7 +44,7 @@ public interface IndexDefinition {
      * Return the set of relationship types (in no particular order) that this index applies to. This method works for both
      * {@link #isMultiTokenIndex() mult-token} indexes, and "single-token" indexes.
      * <p>
-     * Note that this assumes that this is a relationship index (that {@link #isRelationshipIndex()} returns {@code true}). If thisk is not the case, then an
+     * Note that this assumes that this is a relationship index (that {@link #isRelationshipIndex()} returns {@code true}). If this is not the case, then an
      * {@link IllegalStateException} is thrown.
      *
      * @return the set of {@link RelationshipType relationship types} this index definition is associated with.
@@ -74,7 +74,7 @@ public interface IndexDefinition {
     void drop();
 
     /**
-     * @return {@code true} if this index is used to power a uniqueness constraint.
+     * @return {@code true} if this index is used to power a uniqueness or key constraint.
      */
     boolean isConstraintIndex();
 

@@ -558,6 +558,7 @@ public final class Recovery {
                 .withConfig(config)
                 .withDatabaseTracers(tracers)
                 .withExternalLogTailMetadata(logTailMetadata)
+                .withKernelVersionProvider(logTailMetadata)
                 .withDependencies(dependencies)
                 .withMemoryTracker(memoryTracker)
                 .build();

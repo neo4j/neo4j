@@ -22,9 +22,7 @@ package org.neo4j.kernel.database;
 import static java.lang.Integer.max;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
-import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.test.Race.throwing;
@@ -58,11 +56,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.Command;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.KernelVersionRepository;
+import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -92,8 +89,8 @@ class DatabaseUpgradeTransactionIT {
 
     @BeforeEach
     void setUp() throws IOException {
-        assumeThat(KernelVersion.V5_0).isLessThan(KernelVersion.LATEST);
-        restartDbms();
+        ZippedStoreCommunity.REC_AF11_V50_EMPTY.unzip(testDirectory.homePath());
+        startDbms();
     }
 
     @AfterEach
@@ -106,9 +103,6 @@ class DatabaseUpgradeTransactionIT {
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransaction() throws Exception {
         // Given
-        set(KernelVersion.V5_0);
-        set(DbmsRuntimeVersion.V5_0);
-        restartDbms();
         long startTransaction = db.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getLastCommittedTransactionId();
@@ -134,9 +128,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction() throws Exception {
-        set(KernelVersion.V5_0);
-        set(DbmsRuntimeVersion.V5_0);
-        restartDbms();
         long startTransaction = db.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getLastCommittedTransactionId();
@@ -144,7 +135,7 @@ class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
-        set(DbmsRuntimeVersion.V5_0);
+        set(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
 
         // When
         createReadTransaction();
@@ -156,15 +147,12 @@ class DatabaseUpgradeTransactionIT {
         createWriteTransaction();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.V5_0, startTransaction);
+        assertThat(kernelVersion()).isEqualTo(KernelVersion.LATEST);
+        assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.LATEST, startTransaction);
     }
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransactionStressTest() throws Throwable {
-        set(KernelVersion.V5_0);
-        set(DbmsRuntimeVersion.V5_0);
-        restartDbms();
         long startTransaction = db.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getLastCommittedTransactionId();
@@ -195,9 +183,6 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable {
-        set(KernelVersion.V5_0);
-        set(DbmsRuntimeVersion.V5_0);
-        restartDbms();
         long startTransaction = db.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getLastCommittedTransactionId();
@@ -261,13 +246,7 @@ class DatabaseUpgradeTransactionIT {
     }
 
     @Test
-    void shouldNotUpgradePastDbmsRuntime() throws IOException {
-        // Given
-        set(KernelVersion.V5_0);
-        restartDbms();
-
-        set(DbmsRuntimeVersion.V5_0);
-
+    void shouldNotUpgradePastDbmsRuntime() {
         // When
         createWriteTransaction();
 
@@ -289,9 +268,6 @@ class DatabaseUpgradeTransactionIT {
         // This tests the latter, as the first is not interesting from an upgrade perspective
 
         // Given
-        set(KernelVersion.V5_0);
-        set(DbmsRuntimeVersion.V5_0);
-        restartDbms();
         String lockNode1 = createWriteTransaction();
         String lockNode2 = createWriteTransaction();
         BinaryLatch l1 = new BinaryLatch();
@@ -380,21 +356,9 @@ class DatabaseUpgradeTransactionIT {
         }
     }
 
-    private void restartDbms() throws IOException {
-        boolean restart = db != null;
-        DatabaseLayout databaseLayout = null;
-        if (restart) {
-            databaseLayout = db.databaseLayout();
-        }
-        if (dbms != null) {
-            dbms.shutdown();
-        }
-        if (restart) {
-            testDirectory.getFileSystem().delete(databaseLayout.getTransactionLogsDirectory());
-        }
+    private void startDbms() {
         dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setConfig(allow_single_automatic_upgrade, false)
-                .setConfig(fail_on_missing_files, false)
                 .setInternalLogProvider(logProvider)
                 .build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
@@ -404,12 +368,6 @@ class DatabaseUpgradeTransactionIT {
         return db.getDependencyResolver()
                 .resolveDependency(KernelVersionProvider.class)
                 .kernelVersion();
-    }
-
-    private void set(KernelVersion version) {
-        db.getDependencyResolver()
-                .resolveDependency(KernelVersionRepository.class)
-                .setKernelVersion(version);
     }
 
     private DbmsRuntimeVersion dbmsRuntimeVersion() {

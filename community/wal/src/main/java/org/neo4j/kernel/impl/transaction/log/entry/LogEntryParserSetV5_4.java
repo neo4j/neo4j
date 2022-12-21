@@ -19,23 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0;
 
-public class LogEntryParserSetV5_0 extends LogEntryParserSetV4_4 {
-    LogEntryParserSetV5_0() {
-        super(KernelVersion.V5_0);
-        register(new DetachedCheckpointLogEntryParserV5_0());
-    }
-
-    public LogEntryParserSetV5_0(KernelVersion version) {
-        super(version);
-        register(new DetachedCheckpointLogEntryParserV5_0());
-    }
-
-    @Override
-    public ReadableChecksumChannel wrap(ReadableChecksumChannel channel) {
-        return channel;
+public class LogEntryParserSetV5_4 extends LogEntryParserSetV5_0 {
+    LogEntryParserSetV5_4() {
+        super(KernelVersion.V5_4);
     }
 }

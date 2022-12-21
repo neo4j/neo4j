@@ -236,8 +236,8 @@ class DatabaseUpgradeTransactionHandlerTest {
                 databaseTransactionEventListeners,
                 lock,
                 logProvider);
-        handler.registerUpgradeListener(
-                commands -> setKernelVersion(commands.iterator().next().kernelVersion()));
+        handler.registerUpgradeListener((commands, version) ->
+                setKernelVersion(commands.iterator().next().kernelVersion()));
     }
 
     private synchronized void setKernelVersion(KernelVersion newKernelVersion) {

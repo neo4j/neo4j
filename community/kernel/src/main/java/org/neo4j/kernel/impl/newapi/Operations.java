@@ -1577,9 +1577,8 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
-            } else if (KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0)) {
-                assertSupportedInVersion(
-                        "Failed to create Relationship Uniqueness constraint.", KernelVersion.GLORIOUS_FUTURE);
+            } else {
+                assertSupportedInVersion("Failed to create Relationship Uniqueness constraint.", KernelVersion.V5_4);
             }
         }
 
@@ -1756,9 +1755,8 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship key constraints are not supported yet");
-            } else if (KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0)) {
-                assertSupportedInVersion(
-                        "Failed to create Relationship Key constraint.", KernelVersion.GLORIOUS_FUTURE);
+            } else {
+                assertSupportedInVersion("Failed to create Relationship Key constraint.", KernelVersion.V5_4);
             }
         }
 

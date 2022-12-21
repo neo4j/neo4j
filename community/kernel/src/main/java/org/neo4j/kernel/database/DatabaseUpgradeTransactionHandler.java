@@ -80,7 +80,7 @@ class DatabaseUpgradeTransactionHandler {
     }
 
     interface InternalTransactionCommitHandler {
-        void commit(List<StorageCommand> commands) throws TransactionFailureException;
+        void commit(List<StorageCommand> commands, KernelVersion version) throws TransactionFailureException;
     }
 
     /**
@@ -122,8 +122,9 @@ class DatabaseUpgradeTransactionHandler {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
-                            internalTransactionCommitHandler.commit(storageEngine.createUpgradeCommands(
-                                    currentKernelVersion, kernelVersionToUpgradeTo));
+                            internalTransactionCommitHandler.commit(
+                                    storageEngine.createUpgradeCommands(currentKernelVersion, kernelVersionToUpgradeTo),
+                                    kernelVersionToUpgradeTo);
                             log.info(
                                     "Upgrade transaction from %s to %s completed",
                                     currentKernelVersion, kernelVersionToUpgradeTo);

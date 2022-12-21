@@ -26,6 +26,6 @@ class LogCommandSerializationV5_4 extends LogCommandSerializationV5_0 {
 
     @Override
     public KernelVersion kernelVersion() {
-        return KernelVersion.GLORIOUS_FUTURE;
+        return KernelVersion.V5_4;
     }
 }

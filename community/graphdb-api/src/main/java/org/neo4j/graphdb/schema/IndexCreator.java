@@ -24,11 +24,13 @@ import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * A builder for entering details about an index to create. After all details have been entered
  * {@link #create()} must be called for the index to actually be created. An index creator knows
- * which {@link Label label} it is to be created for.
+ * which {@link Label label} or {@link RelationshipType relationship type} it is to be created for.
  * <p>
  * All methods except {@link #create()} will return an {@link IndexCreator} which should be
  * used for further interaction.
@@ -38,10 +40,13 @@ import org.neo4j.graphdb.Node;
 @PublicApi
 public interface IndexCreator {
     /**
-     * Includes the given {@code propertyKey} in this index, such that {@link Node nodes} with
-     * the assigned {@link Label label} and this property key will have its values indexed.
-     * <p>
-     * NOTE: currently only a single property key per index is supported.
+     * Includes the given {@code propertyKey} in this index, such that for a
+     * <ul>
+     *     <li>node index: {@link Node nodes} with the assigned {@link Label label} and this property
+     *     key will have its values indexed.</li>
+     *     <li>relationship index: {@link Relationship realtionships} with the assigned
+     *     {@link RelationshipType relationship type} and this property key will have its values indexed.</li>
+     * </ul>
      *
      * @param propertyKey the property key to include in this index to be created.
      * @return an {@link IndexCreator} instance to be used for further interaction.

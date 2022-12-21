@@ -383,6 +383,7 @@ org.neo4j.graphdb.schema.AnyTokens::values() org.neo4j.graphdb.schema.AnyTokens[
 org.neo4j.graphdb.schema.ConstraintCreator public abstract interface
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyExists(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsNodeKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsRelationshipKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsUnique(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::create() org.neo4j.graphdb.schema.ConstraintDefinition public abstract throws org.neo4j.graphdb.ConstraintViolationException
 org.neo4j.graphdb.schema.ConstraintCreator::withIndexConfiguration(java.util.Map<org.neo4j.graphdb.schema.IndexSetting,java.lang.Object>) org.neo4j.graphdb.schema.ConstraintCreator public abstract

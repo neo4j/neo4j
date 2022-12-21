@@ -51,9 +51,9 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     /**
      * Relationship uniqueness constraints
      */
-    GLORIOUS_FUTURE(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_54, KernelVersion.GLORIOUS_FUTURE);
+    V5_4(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_54, KernelVersion.V5_4);
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_0;
+    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V5_4;
 
     DbmsRuntimeVersion(int version, String componentName, String description, KernelVersion kernelVersion) {
         this.version = version;

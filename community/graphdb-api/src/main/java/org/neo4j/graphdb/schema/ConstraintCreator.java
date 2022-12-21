@@ -26,7 +26,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 /**
  * A builder for entering details about a constraint to create. After all details have been entered
  * {@link #create()} must be called for the constraint to actually be created. A constraint creator knows
- * which {@link org.neo4j.graphdb.Label label} it is to be created for.
+ * which {@link org.neo4j.graphdb.Label label} or {@link org.neo4j.graphdb.RelationshipType} it is to be created for.
  *
  * All methods except {@link #create()} will return an {@link ConstraintCreator} which should be
  * used for further interaction.
@@ -41,7 +41,11 @@ import org.neo4j.graphdb.ConstraintViolationException;
 public interface ConstraintCreator {
     /**
      * Imposes a uniqueness constraint for the given property.
-     * This means that there can be at most one node, having the given label, for any set value of that property key.
+     * This means that if it refers to :
+     * <ul>
+     *  <li>nodes: there can be at most one node, having the given label, for any set value of that property key.</li>
+     *  <li>relationships : there can be at most one relationship, having the given relationship type, for any set value of that property key.</li>
+     * </ul>
      * Multiple calls to this method will result in compound uniqueness constraint.
      *
      * @param propertyKey property to impose the uniqueness constraint for.
@@ -51,10 +55,14 @@ public interface ConstraintCreator {
 
     /**
      * Imposes an existence constraint for the given property.
-     * This means that all nodes with the given label must have a value for this property.
+     * This means that for a
+     * <ul>
+     *     <li>node constraint: all nodes with the given label must have a value for this property.</li>
+     *     <li>relationship constraint: all relationships with the given relationship type must have a value for this property.</li>
+     * </ul>
      *
      * @param propertyKey property to impose the existence constraint for.
-     * @return a {@link ConstraintCreator}  instance to be used for further interaction.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator assertPropertyExists(String propertyKey);
 
@@ -67,6 +75,16 @@ public interface ConstraintCreator {
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator assertPropertyIsNodeKey(String propertyKey);
+
+    /**
+     * Imposes both a uniqueness constraint, and a property existence constraint, for the given property.
+     * This means that all relationships with the given relationship type must have this property, and they must all have different values for the property.
+     * Multiple calls to this method will result in compound relationship key constraint.
+     *
+     * @param propertyKey property to use as the relationship key.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey);
 
     /**
      * Assign a name to the constraint, which will then be returned from {@link ConstraintDefinition#getName()}, and can be used for finding the constraint

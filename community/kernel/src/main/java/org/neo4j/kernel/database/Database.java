@@ -623,7 +623,7 @@ public class Database extends AbstractDatabase {
                 UpgradeLocker.DEFAULT,
                 internalLogProvider);
 
-        handler.registerUpgradeListener(commands -> {
+        handler.registerUpgradeListener((commands, version) -> {
             long time = clock.millis();
             LeaseClient leaseClient = leaseService.newClient();
             leaseClient.ensureValid();
@@ -635,7 +635,7 @@ public class Database extends AbstractDatabase {
                     transactionIdStore.getLastClosedTransactionId(),
                     time,
                     leaseClient.leaseId(),
-                    metadataCache.kernelVersion(),
+                    version,
                     Subject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply = new TransactionToApply(

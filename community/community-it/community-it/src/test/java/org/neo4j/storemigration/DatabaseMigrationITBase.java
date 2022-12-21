@@ -96,7 +96,8 @@ public abstract class DatabaseMigrationITBase {
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
     }
 
-    protected void doShouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
+    protected void doShouldMigrateDatabase(
+            ZippedStore zippedStore, String toRecordFormat, KernelVersion expectedKernelVersion)
             throws IOException, ConsistencyCheckIncompleteException {
         // given
         Path homeDir = layout.homeDirectory();
@@ -117,7 +118,7 @@ public abstract class DatabaseMigrationITBase {
             verifyContents(db, zippedStore.statistics());
             verifyStoreFormat(db, expectedFormat(db, toRecordFormat));
             verifyTokenIndexes(db);
-            verifyKernelVersion(db);
+            verifyKernelVersion(db, expectedKernelVersion);
             verifyRemovedIndexProviders(db);
             verifyFulltextIndexes(db, zippedStore.statistics().kernelVersion());
         } finally {
@@ -289,11 +290,18 @@ public abstract class DatabaseMigrationITBase {
         }
     }
 
+    protected static void verifyKernelVersion(GraphDatabaseService db, KernelVersion expectedVersion) {
+        final var database = (GraphDatabaseAPI) db;
+        final var kernelVersionProvider =
+                database.getDependencyResolver().resolveDependency(KernelVersionProvider.class);
+        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(expectedVersion);
+    }
+
     protected static void verifyKernelVersion(GraphDatabaseService db) {
         final var database = (GraphDatabaseAPI) db;
         final var kernelVersionProvider =
                 database.getDependencyResolver().resolveDependency(KernelVersionProvider.class);
-        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(KernelVersion.LATEST);
     }
 
     protected void verifyRemovedIndexProviders(GraphDatabaseService db) {

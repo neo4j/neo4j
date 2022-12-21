@@ -25,8 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
- * Interface for managing the schema of your graph database. This currently includes
- * the indexing support added in Neo4j 2.0. Please see the Neo4j manual for details.
+ * Interface for managing the schema of your graph database. Please see the Neo4j manual for details.
  *
  * Compatibility note: New methods may be added to this interface without notice,
  * backwards compatibility is only guaranteed for clients of this interface, not for
@@ -117,7 +116,7 @@ public interface Schema {
      *
      * Creating an index enables indexing for relationships with any of the specified relationship types.
      * The index will have the details supplied to the {@link IndexCreator returned index creator}.
-     * All existing and all future relationships matching the index definition will be indexes,
+     * All existing and all future relationships matching the index definition will be indexed,
      * speeding up future read operations.
      *
      * This behaves similar to the {@link #indexFor(RelationshipType)} method, with the exception that
@@ -142,12 +141,12 @@ public interface Schema {
      *
      * Creating such index enables indexing for labeled nodes or relationships. The index will
      * have the details supplied to the {@link IndexCreator returned index creator}.
-     * All existing and all future label nodes or relationships will be indexed,
+     * All existing and all future labeled nodes or relationships will be indexed,
      * speeding up future read operations.
      *
      * @param tokens kind of tokens to be indexed.
      * @return an {@link IndexCreator} capable of providing details for, as well as creating
-     * an index for the given {@link Label label}.
+     * an index for the given {@link AnyTokens token type}.
      */
     IndexCreator indexFor(AnyTokens tokens);
 
