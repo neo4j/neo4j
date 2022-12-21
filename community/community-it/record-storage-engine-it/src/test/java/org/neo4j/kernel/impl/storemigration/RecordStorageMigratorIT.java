@@ -349,7 +349,7 @@ class RecordStorageMigratorIT {
         MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
 
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
-        LogService logService = new SimpleLogService(logProvider, logProvider);
+        LogService logService = new SimpleLogService(logProvider);
 
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 
@@ -453,7 +453,7 @@ class RecordStorageMigratorIT {
         MigrationTestUtils.prepareSampleLegacyDatabase(format, fs, databaseLayout, prepare);
 
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
-        LogService logService = new SimpleLogService(logProvider, logProvider);
+        LogService logService = new SimpleLogService(logProvider);
 
         RecordStoreVersionCheck check = getVersionCheck(pageCache, databaseLayout);
 

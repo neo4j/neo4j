@@ -19,8 +19,10 @@
  */
 package org.neo4j.logging;
 
+import java.util.List;
 import org.neo4j.io.IOUtils;
 import org.neo4j.logging.log4j.LoggerTarget;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A {@link InternalLogProvider} implementation that duplicates all messages to other LogProvider instances
@@ -52,5 +54,10 @@ public class DuplicatingLogProvider implements InternalLogProvider {
     @Override
     public void close() {
         IOUtils.closeAllUnchecked(logProvider1, logProvider2);
+    }
+
+    @VisibleForTesting
+    public List<InternalLogProvider> getTargetLogProviders() {
+        return List.of(logProvider1, logProvider2);
     }
 }

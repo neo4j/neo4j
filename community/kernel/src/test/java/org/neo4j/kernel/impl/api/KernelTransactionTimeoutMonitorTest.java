@@ -65,7 +65,7 @@ class KernelTransactionTimeoutMonitorTest {
         kernelTransactions = mock(KernelTransactions.class);
         fakeClock = Clocks.fakeClock();
         logProvider = new AssertableLogProvider();
-        logService = new SimpleLogService(logProvider, logProvider);
+        logService = new SimpleLogService(logProvider);
     }
 
     @Test

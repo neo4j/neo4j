@@ -30,7 +30,7 @@ public class ExecutorBoltSchedulerWithQueueTest {
     //    private final CountDownLatch afterExecuteBarrier = new CountDownLatch(threadPoolSize);
     //
     //    private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    //    private final LogService logService = new SimpleLogService(logProvider, logProvider);
+    //    private final LogService logService = new SimpleLogService(logProvider);
     //    private final ExecutorFactory executorFactory = new NotifyingThreadPoolWithBlockingQueueFactory();
     //    private final JobScheduler jobScheduler = mock(JobScheduler.class);
     //    private final ExecutorBoltScheduler boltSchedulerWithQueue = new ExecutorBoltScheduler(

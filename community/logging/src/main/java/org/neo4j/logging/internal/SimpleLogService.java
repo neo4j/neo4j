@@ -36,19 +36,25 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle {
      * @param commonLogProvider log provider
      */
     public SimpleLogService(InternalLogProvider commonLogProvider) {
-        this.userLogProvider = commonLogProvider;
-        this.internalLogProvider = commonLogProvider;
+        this(commonLogProvider, commonLogProvider, false);
+    }
+
+    public SimpleLogService(InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider) {
+        this(userLogProvider, internalLogProvider, false);
     }
 
     /**
-     * Create log service with different user and internal log providers. User logs will be duplicated to internal logs as well. Should be used when user and
+     * Create log service with different user and internal log providers. User logs may be duplicated to internal logs as well. Should be used when user and
      * internal are backed by different log providers.
      *
      * @param userLogProvider     user log provider
      * @param internalLogProvider internal log provider
+     * @param duplicate           whether to duplicate user log messages to internal log
      */
-    public SimpleLogService(InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider) {
-        this.userLogProvider = new DuplicatingLogProvider(userLogProvider, internalLogProvider);
+    public SimpleLogService(
+            InternalLogProvider userLogProvider, InternalLogProvider internalLogProvider, boolean duplicate) {
+        this.userLogProvider =
+                duplicate ? new DuplicatingLogProvider(userLogProvider, internalLogProvider) : userLogProvider;
         this.internalLogProvider = internalLogProvider;
     }
 
@@ -78,7 +84,7 @@ public class SimpleLogService extends AbstractLogService implements Lifecycle {
     @Override
     public void shutdown() {
         if (internalLogProvider instanceof Log4jLogProvider) {
-            ((Log4jLogProvider) internalLogProvider).close();
+            internalLogProvider.close();
         }
     }
 }

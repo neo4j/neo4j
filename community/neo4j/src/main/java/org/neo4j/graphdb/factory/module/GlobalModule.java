@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.factory.module;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.data_collector_max_recent_query_count;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.duplication_user_messages;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import static org.neo4j.configuration.GraphDatabaseSettings.filewatcher_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
@@ -354,7 +355,8 @@ public class GlobalModule {
             internalLogProvider = new Log4jLogProvider(loggerContext);
         }
 
-        SimpleLogService logService = new SimpleLogService(userLogProvider, internalLogProvider);
+        SimpleLogService logService =
+                new SimpleLogService(userLogProvider, internalLogProvider, globalConfig.get(duplication_user_messages));
 
         return globalLife.add(logService);
     }

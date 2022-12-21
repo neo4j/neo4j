@@ -21,6 +21,7 @@ package org.neo4j.importer;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.duplication_user_messages;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_temporal_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
@@ -199,7 +200,8 @@ class CsvImporter implements Importer {
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
             var logService = new SimpleLogService(
                     NullLogProvider.getInstance(),
-                    new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()));
+                    new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()),
+                    databaseConfig.get(duplication_user_messages));
             if (incremental) {
                 try (Lifespan life = new Lifespan()) {
                     var indexProviders = life.add(new DefaultIndexProvidersAccess(

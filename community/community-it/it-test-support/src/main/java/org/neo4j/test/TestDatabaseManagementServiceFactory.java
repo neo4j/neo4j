@@ -87,7 +87,10 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
                 }
                 internalLogProvider = NullLogProvider.getInstance();
             }
-            return new SimpleLogService(userLogProvider, internalLogProvider);
+
+            // Some tests appear to (inadvertently?) depend on log user log messages being duplicated to the debug log
+            // because they assert on the debug log.
+            return new SimpleLogService(userLogProvider, internalLogProvider, true);
         }
 
         @Override

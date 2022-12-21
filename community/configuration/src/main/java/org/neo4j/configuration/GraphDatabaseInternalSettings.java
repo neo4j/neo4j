@@ -74,6 +74,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Enable duplication of user log messages to debug log.")
+    public static final Setting<Boolean> duplication_user_messages = newBuilder(
+                    "internal.server.logs.user.duplication_to_debug", BOOL, true)
+            .immutable()
+            .build();
+
+    @Internal
     @Description(
             "Configure lucene partition size. This is mainly used to test partitioning behaviour without having to create "
                     + "Integer.MAX_VALUE indexed entities.")
