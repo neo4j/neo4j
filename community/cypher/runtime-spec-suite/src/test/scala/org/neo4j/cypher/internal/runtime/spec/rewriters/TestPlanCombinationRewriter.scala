@@ -112,7 +112,8 @@ case object TestPlanCombinationRewriter {
     query.copy(logicalPlan = rewrittenPlan)
   }
 
-  private def planRewriterStepToRewriter(planRewriterContext: PlanRewriterContext)(step: PlanRewriterStep): Seq[Rewriter] = {
+  private def planRewriterStepToRewriter(planRewriterContext: PlanRewriterContext)(step: PlanRewriterStep)
+    : Seq[Rewriter] = {
     val clazz = step.rewriter
     if (step.config.repetitions >= 1) {
       Seq.fill(step.config.repetitions)(clazz.getDeclaredConstructor(
