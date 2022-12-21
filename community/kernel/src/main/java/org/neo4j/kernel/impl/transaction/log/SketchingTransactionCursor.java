@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 import java.io.IOException;
@@ -49,12 +48,6 @@ public class SketchingTransactionCursor implements TransactionCursor {
     public boolean next() throws IOException {
         while (hasEntries()) {
             LogEntry entry = logEntryCursor.get();
-
-            if (isCheckPoint(entry)) {
-                channel.getCurrentPosition(lastGoodPositionMarker);
-                continue;
-            }
-
             assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
 
             // Read till commit entry
@@ -73,10 +66,6 @@ public class SketchingTransactionCursor implements TransactionCursor {
 
     private boolean hasEntries() throws IOException {
         return logEntryCursor.next();
-    }
-
-    private boolean isCheckPoint(LogEntry entry) {
-        return entry.getType() == DETACHED_CHECK_POINT;
     }
 
     private boolean isCommit(LogEntry entry) {
