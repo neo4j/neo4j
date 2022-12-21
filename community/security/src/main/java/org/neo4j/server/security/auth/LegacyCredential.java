@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.security.auth;
 
+import static org.neo4j.internal.helpers.Format.hexString;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.neo4j.kernel.impl.security.Credential;
-import org.neo4j.string.HexString;
 import org.neo4j.string.UTF8;
 
 /**
@@ -78,8 +79,8 @@ public class LegacyCredential implements Credential {
 
     @Override
     public String serialize() {
-        String encodedSalt = HexString.encodeHexString(this.salt());
-        String encodedPassword = HexString.encodeHexString(this.passwordHash());
+        String encodedSalt = hexString(this.salt());
+        String encodedPassword = hexString(this.passwordHash());
         return String.join(
                 CREDENTIAL_SEPARATOR,
                 LegacyCredential.DIGEST_ALGO,
@@ -143,9 +144,7 @@ public class LegacyCredential implements Credential {
 
     @Override
     public String toString() {
-        return "Credential{" + "salt=0x"
-                + HexString.encodeHexString(salt) + ", passwordHash=0x"
-                + HexString.encodeHexString(passwordHash) + '}';
+        return "Credential{" + "salt=0x" + hexString(salt) + ", passwordHash=0x" + hexString(passwordHash) + '}';
     }
 
     private static byte[] hash(byte[] salt, byte[] password) {

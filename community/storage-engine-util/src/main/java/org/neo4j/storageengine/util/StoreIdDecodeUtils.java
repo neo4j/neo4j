@@ -19,11 +19,12 @@
  */
 package org.neo4j.storageengine.util;
 
+import static org.neo4j.internal.helpers.Format.hexString;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
-import org.neo4j.string.HexString;
 
 public class StoreIdDecodeUtils {
     private static final String DEFAULT_ALGORITHM = "SHA-256";
@@ -38,6 +39,6 @@ public class StoreIdDecodeUtils {
         var storeIdString = externalStoreId.getId().toString();
         var messageDigest = MessageDigest.getInstance(DEFAULT_ALGORITHM);
         messageDigest.update(storeIdString.getBytes());
-        return HexString.encodeHexString(messageDigest.digest());
+        return hexString(messageDigest.digest());
     }
 }

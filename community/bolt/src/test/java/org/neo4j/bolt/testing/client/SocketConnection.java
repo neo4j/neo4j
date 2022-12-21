@@ -21,6 +21,7 @@ package org.neo4j.bolt.testing.client;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.neo4j.internal.helpers.Format.hexString;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,7 +32,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
-import org.neo4j.common.HexPrinter;
 import org.neo4j.internal.helpers.HostnamePort;
 
 public class SocketConnection extends AbstractTransportConnection {
@@ -136,12 +136,12 @@ public class SocketConnection extends AbstractTransportConnection {
             }
         } catch (SocketTimeoutException e) {
             throw new SocketTimeoutException(
-                    "Reading data timed out, missing " + left + " bytes. Buffer: " + HexPrinter.hex(bytes));
+                    "Reading data timed out, missing " + left + " bytes. Buffer: " + hexString(bytes));
         }
         // all the bytes could not be read, fail
         if (left != 0) {
-            throw new IOException("Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: "
-                    + HexPrinter.hex(bytes));
+            throw new IOException(
+                    "Failed to read " + length + " bytes, missing " + left + " bytes. Buffer: " + hexString(bytes));
         }
 
         return Unpooled.wrappedBuffer(bytes);

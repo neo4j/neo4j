@@ -21,26 +21,27 @@ package org.neo4j.string;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.Format.hexString;
+import static org.neo4j.internal.helpers.Format.parseHexString;
 
 import org.junit.jupiter.api.Test;
 
 class HexStringTest {
     @Test
     void shouldEncodeBytesToString() {
-        String result =
-                HexString.encodeHexString(new byte[] {(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D});
+        String result = hexString(new byte[] {(byte) 0xFF, (byte) 0x94, (byte) 0x5C, (byte) 0x00, (byte) 0x3D});
         assertEquals("FF945C003D", result);
     }
 
     @Test
     void shouldEncodeEmptyBytesToEmptyString() {
-        String result = HexString.encodeHexString(new byte[] {});
+        String result = hexString(new byte[] {});
         assertEquals("", result);
     }
 
     @Test
     void shouldDecodeStringToBytes() {
-        byte[] result = HexString.decodeHexString("00f34CEFFF3e02");
+        byte[] result = parseHexString("00f34CEFFF3e02");
         byte[] expected =
                 new byte[] {(byte) 0x00, (byte) 0xF3, (byte) 0x4C, (byte) 0xEF, (byte) 0xFF, (byte) 0x3E, (byte) 0x02};
         assertArrayEquals(expected, result);
@@ -48,7 +49,7 @@ class HexStringTest {
 
     @Test
     void shouldDecodeEmptyStringToEmptyBytes() {
-        byte[] result = HexString.decodeHexString("");
+        byte[] result = parseHexString("");
         assertArrayEquals(new byte[] {}, result);
     }
 }

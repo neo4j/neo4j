@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.internal.helpers.Format.date;
+import static org.neo4j.internal.helpers.Format.hexString;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.LongConsumer;
-import org.neo4j.common.HexPrinter;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -175,7 +175,7 @@ public class TransactionToApply implements CommandBatchToApply {
                 + countCommands() + " commands in this transaction" + ", lease "
                 + tr.getLeaseId() + ", latest committed transaction id when started was "
                 + tr.getLatestCommittedTxWhenStarted() + ", additional header bytes: "
-                + HexPrinter.hex(tr.additionalHeader(), Integer.MAX_VALUE, "") + "}";
+                + hexString(tr.additionalHeader()) + "}";
     }
 
     private String countCommands() {

@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Format.parseHexString;
 import static org.neo4j.kernel.impl.security.Credential.CREDENTIAL_SEPARATOR;
 
 import org.neo4j.cypher.internal.security.FormatException;
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.string.HexString;
 
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.
@@ -88,8 +88,8 @@ public class UserSerialization extends FileRepositorySerializer<User> {
         }
 
         if (hasherVersion.equals("0")) {
-            byte[] decodedPassword = HexString.decodeHexString(split[1]);
-            byte[] decodedSalt = HexString.decodeHexString(split[2]);
+            byte[] decodedPassword = parseHexString(split[1]);
+            byte[] decodedSalt = parseHexString(split[2]);
             return new LegacyCredential(decodedSalt, decodedPassword);
         } else {
             return SystemGraphCredential.deserialize(part, new SecureHasher(hasherVersion));

@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -50,6 +51,7 @@ public final class Format {
             DateTimeFormatter.ofPattern(DATE_FORMAT).withZone(ZoneOffset.systemDefault());
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern(TIME_FORMAT).withZone(DEFAULT_TIME_ZONE);
+    private static final HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
 
     public static String localDate() {
         return LOCAL_DATE_FORMATTER.format(Instant.now());
@@ -69,6 +71,14 @@ public final class Format {
 
     public static String date(Instant instant) {
         return DATE_FORMATTER.format(instant);
+    }
+
+    public static String hexString(byte[] bytes) {
+        return HEX_FORMAT.formatHex(bytes);
+    }
+
+    public static byte[] parseHexString(String hexString) {
+        return HEX_FORMAT.parseHex(hexString);
     }
 
     public static String time() {
