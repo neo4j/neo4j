@@ -69,6 +69,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
+    private final AssertOpen assertOpen;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -106,6 +107,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
         this.securityAuthorizationHandler = securityAuthorizationHandler;
         this.otherResources = otherResources;
         this.elementIdMapper = elementIdMapper;
+        this.assertOpen = assertOpen;
         this.allStoreHolder = new AllStoreHolder.ForThreadExecutionContextScope(
                 this,
                 storageReader,
@@ -179,6 +181,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public ElementIdMapper elementIdMapper() {
         return elementIdMapper;
+    }
+
+    @Override
+    public void performCheckBeforeOperation() {
+        assertOpen.assertOpen();
     }
 
     @Override

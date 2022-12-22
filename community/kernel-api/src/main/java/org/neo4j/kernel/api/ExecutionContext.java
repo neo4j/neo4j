@@ -101,6 +101,12 @@ public interface ExecutionContext extends AutoCloseable, ResourceMonitor {
     ElementIdMapper elementIdMapper();
 
     /**
+     * Performs checks that should be done before each major operation.
+     * For example, the implementation might check that the owning transaction is still open.
+     */
+    void performCheckBeforeOperation();
+
+    /**
      * Close execution context and merge back any data to the owning transaction if such exists.
      * Should be called by transaction thread.
      */

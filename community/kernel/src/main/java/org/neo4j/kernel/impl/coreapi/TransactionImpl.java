@@ -70,7 +70,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.api.CloseableResourceManager;
-import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.CursorIterator;
@@ -249,31 +248,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     public TraversalDescription traversalDescription() {
         checkInTransaction();
         return new MonoDirectionalTraversalDescription();
-    }
-
-    @Override
-    public Iterable<Label> getAllLabelsInUse() {
-        return allInUse(TokenAccess.LABELS);
-    }
-
-    @Override
-    public Iterable<RelationshipType> getAllRelationshipTypesInUse() {
-        return allInUse(TokenAccess.RELATIONSHIP_TYPES);
-    }
-
-    @Override
-    public Iterable<Label> getAllLabels() {
-        return all(TokenAccess.LABELS);
-    }
-
-    @Override
-    public Iterable<RelationshipType> getAllRelationshipTypes() {
-        return all(TokenAccess.RELATIONSHIP_TYPES);
-    }
-
-    @Override
-    public Iterable<String> getAllPropertyKeys() {
-        return all(TokenAccess.PROPERTY_KEYS);
     }
 
     @Override
@@ -542,6 +516,11 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         return elementIdMapper;
     }
 
+    @Override
+    protected void performCheckBeforeOperation() {
+        checkInTransaction();
+    }
+
     private static class NodesProvider implements Function<TransactionImpl, ResourceIterator<Node>> {
         @Override
         public ResourceIterator<Node> apply(TransactionImpl tx) {
@@ -585,16 +564,6 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         protected void onClosed() {
             transaction.unregisterCloseableResource(this);
         }
-    }
-
-    private <T> Iterable<T> allInUse(final TokenAccess<T> tokens) {
-        var transaction = kernelTransaction();
-        return () -> tokens.inUse(transaction);
-    }
-
-    private <T> Iterable<T> all(final TokenAccess<T> tokens) {
-        var transaction = kernelTransaction();
-        return () -> tokens.all(transaction);
     }
 
     @FunctionalInterface

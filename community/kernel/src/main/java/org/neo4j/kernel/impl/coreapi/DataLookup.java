@@ -79,6 +79,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ResourceMonitor;
+import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.coreapi.internal.RelationshipTypePropertyIterator;
 import org.neo4j.kernel.impl.coreapi.internal.TrackedCursorIterator;
@@ -340,6 +341,31 @@ public abstract class DataLookup {
     public ResourceIterator<Relationship> findRelationships(RelationshipType relationshipType) {
         checkRelationshipType(relationshipType);
         return allRelationshipsWithType(relationshipType);
+    }
+
+    public Iterable<Label> getAllLabelsInUse() {
+        performCheckBeforeOperation();
+        return allInUse(TokenAccess.LABELS);
+    }
+
+    public Iterable<RelationshipType> getAllRelationshipTypesInUse() {
+        performCheckBeforeOperation();
+        return allInUse(TokenAccess.RELATIONSHIP_TYPES);
+    }
+
+    public Iterable<Label> getAllLabels() {
+        performCheckBeforeOperation();
+        return all(TokenAccess.LABELS);
+    }
+
+    public Iterable<RelationshipType> getAllRelationshipTypes() {
+        performCheckBeforeOperation();
+        return all(TokenAccess.RELATIONSHIP_TYPES);
+    }
+
+    public Iterable<String> getAllPropertyKeys() {
+        performCheckBeforeOperation();
+        return all(TokenAccess.PROPERTY_KEYS);
     }
 
     private ResourceIterator<Relationship> allRelationshipsWithType(final RelationshipType type) {
@@ -732,6 +758,14 @@ public abstract class DataLookup {
         return getRelationshipsByTypeAndPropertyWithoutPropertyIndex(typeId, queries);
     }
 
+    private <T> Iterable<T> allInUse(TokenAccess<T> tokens) {
+        return () -> tokens.inUse(dataRead(), schemaRead(), tokenRead());
+    }
+
+    private <T> Iterable<T> all(TokenAccess<T> tokens) {
+        return () -> tokens.all(tokenRead());
+    }
+
     /**
      * @return True if the index is online. False if the index was not found or in other state.
      */
@@ -862,6 +896,8 @@ public abstract class DataLookup {
     protected abstract QueryContext queryContext();
 
     protected abstract ElementIdMapper elementIdMapper();
+
+    protected abstract void performCheckBeforeOperation();
 
     private static class FilteringCursor<CURSOR extends Cursor & ValueIndexCursor> implements Cursor {
 

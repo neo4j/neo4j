@@ -71,7 +71,11 @@ public class SchemaProcedure {
             List<LabelNameId> labelNamesAndIds = new ArrayList<>();
 
             // Get all labels that are in use as seen by a super user
-            List<Label> labelsInUse = stream(LABELS.inUse(kernelTransaction)).toList();
+            List<Label> labelsInUse = stream(LABELS.inUse(
+                            kernelTransaction.dataRead(),
+                            kernelTransaction.schemaRead(),
+                            kernelTransaction.tokenRead()))
+                    .toList();
 
             for (Label label : labelsInUse) {
                 String labelName = label.name();
@@ -109,8 +113,11 @@ public class SchemaProcedure {
             }
 
             // Get all relTypes that are in use as seen by a super user
-            List<RelationshipType> relTypesInUse =
-                    stream(RELATIONSHIP_TYPES.inUse(kernelTransaction)).toList();
+            List<RelationshipType> relTypesInUse = stream(RELATIONSHIP_TYPES.inUse(
+                            kernelTransaction.dataRead(),
+                            kernelTransaction.schemaRead(),
+                            kernelTransaction.tokenRead()))
+                    .toList();
 
             for (RelationshipType relationshipType : relTypesInUse) {
                 String relationshipTypeGetName = relationshipType.name();

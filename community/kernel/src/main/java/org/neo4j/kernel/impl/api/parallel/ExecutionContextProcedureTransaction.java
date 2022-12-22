@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -86,31 +85,6 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     @Override
     public Result execute(String query, Map<String, Object> parameters) throws QueryExecutionException {
         throw new UnsupportedOperationException("Execution of other queries is unsupported during parallel execution");
-    }
-
-    @Override
-    public Iterable<Label> getAllLabelsInUse() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterable<RelationshipType> getAllRelationshipTypesInUse() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterable<Label> getAllLabels() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterable<RelationshipType> getAllRelationshipTypes() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Iterable<String> getAllPropertyKeys() {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -258,5 +232,10 @@ public class ExecutionContextProcedureTransaction extends DataLookup implements 
     @Override
     protected ElementIdMapper elementIdMapper() {
         return executionContext.elementIdMapper();
+    }
+
+    @Override
+    protected void performCheckBeforeOperation() {
+        executionContext.performCheckBeforeOperation();
     }
 }

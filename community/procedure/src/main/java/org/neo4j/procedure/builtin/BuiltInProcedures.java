@@ -105,7 +105,10 @@ public class BuiltInProcedures {
         List<LabelResult> labelsInUse;
         try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             // Get all labels that are in use as seen by a super user
-            labelsInUse = stream(LABELS.inUse(kernelTransaction))
+            labelsInUse = stream(LABELS.inUse(
+                            kernelTransaction.dataRead(),
+                            kernelTransaction.schemaRead(),
+                            kernelTransaction.tokenRead()))
                     // filter out labels that are denied or aren't explicitly allowed
                     .filter(label -> mode.allowsTraverseNode(tokenRead.nodeLabel(label.name())))
                     .map(LabelResult::new)
@@ -122,7 +125,7 @@ public class BuiltInProcedures {
             return Stream.empty();
         }
 
-        List<PropertyKeyResult> propertyKeys = stream(PROPERTY_KEYS.all(kernelTransaction))
+        List<PropertyKeyResult> propertyKeys = stream(PROPERTY_KEYS.all(kernelTransaction.tokenRead()))
                 .map(PropertyKeyResult::new)
                 .toList();
         return propertyKeys.stream();
@@ -141,7 +144,10 @@ public class BuiltInProcedures {
         List<RelationshipTypeResult> relTypesInUse;
         try (KernelTransaction.Revertable ignore = kernelTransaction.overrideWith(SecurityContext.AUTH_DISABLED)) {
             // Get all relTypes that are in use as seen by a super user
-            relTypesInUse = stream(RELATIONSHIP_TYPES.inUse(kernelTransaction))
+            relTypesInUse = stream(RELATIONSHIP_TYPES.inUse(
+                            kernelTransaction.dataRead(),
+                            kernelTransaction.schemaRead(),
+                            kernelTransaction.tokenRead()))
                     // filter out relTypes that are denied or aren't explicitly allowed
                     .filter(type -> mode.allowsTraverseRelType(tokenRead.relationshipType(type.name())))
                     .map(RelationshipTypeResult::new)
