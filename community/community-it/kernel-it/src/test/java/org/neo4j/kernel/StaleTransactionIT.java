@@ -92,11 +92,11 @@ public class StaleTransactionIT {
         });
 
         try {
-            var kernelTx = kernelTxRef.get();
             assertThat(staleTransactionStartLatch.await(1, TimeUnit.MINUTES))
                     .as("other thread should have started transaction")
                     .isTrue();
             assertThat(kernelTxRef).doesNotHaveValue(null);
+            var kernelTx = kernelTxRef.get();
 
             // We mark that transaction for termination...
             kernelTx.markForTermination(Status.Transaction.TransactionMarkedAsFailed);
