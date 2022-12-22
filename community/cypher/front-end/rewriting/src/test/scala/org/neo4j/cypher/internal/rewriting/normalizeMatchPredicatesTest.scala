@@ -243,4 +243,23 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
     assertRewrite("MATCH (a WHERE EXISTS {(:A)}) RETURN *",
       s"MATCH (a) WHERE EXISTS {($node:A)} RETURN *")
   }
+
+  test("should not move label expression in EXISTS clause with relationship pattern") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite("MATCH (n WHERE EXISTS {MATCH (:A)-[]->(b:B)}) RETURN *",
+      s"MATCH (n) WHERE EXISTS {MATCH ($node:A)-[$rel]->(b:B)} RETURN *")
+  }
+
+  test("should not move label expression in exists() to a separate WHERE clause") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite("MATCH (n WHERE exists( (:Label)--() )) RETURN *",
+      s"MATCH (n) WHERE exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
+  }
 }
