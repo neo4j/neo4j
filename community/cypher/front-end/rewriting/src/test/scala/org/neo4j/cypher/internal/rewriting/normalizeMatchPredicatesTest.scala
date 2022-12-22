@@ -22,10 +22,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
-import org.neo4j.cypher.internal.rewriting.rewriters.NodePatternPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -39,10 +36,14 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
-  def rewriter(semanticState: SemanticState): Rewriter = inSequence(
-    normalizeHasLabelsAndHasType(semanticState),
-    normalizeMatchPredicates.getRewriter(semanticState, Map.empty, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator),
-  )
+  def rewriter(semanticState: SemanticState): Rewriter = {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    inSequence(
+      nameAllPatternElements(anonVarNameGen),
+      normalizeHasLabelsAndHasType(semanticState),
+      normalizeMatchPredicates.getRewriter(semanticState, Map.empty, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator),
+    )
+  }
 
   def parseForRewriting(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator)
 
@@ -53,7 +54,7 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
     val expected = parseForRewriting(expectedQuery)
     //For the test sake we need to rewrite away HasLabelsOrTypes to HasLabels alse on the expected
     val expectedResult = expected.endoRewrite(normalizeHasLabelsAndHasType(SemanticChecker.check(expected).state))
-    assert(result === expectedResult, s"\n$originalQuery\nshould be rewritten to:\n$expectedQuery\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
+    assert(result === expectedResult, s"\n$originalQuery\nshould be rewritten to:\n${prettifier.asString(expectedResult)}\nbut was rewritten to:${prettifier.asString(result.asInstanceOf[Statement])}")
   }
 
   test("move single predicate from node to WHERE") {
@@ -63,9 +64,12 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
   }
 
   test("move single predicates from rel to WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n)-[r:Foo {foo: 1}]->() RETURN n",
-      "MATCH (n)-[r:Foo]->() WHERE r.foo = 1 RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) WHERE r.foo = 1 RETURN n")
   }
 
   test("move multiple predicates from nodes to WHERE") {
@@ -75,15 +79,21 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
   }
 
   test("move multiple predicates from rels to WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n)-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN n",
-      "MATCH (n)-[r:Foo]->() WHERE r.foo = 1 AND r.bar = 'baz' RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) WHERE r.foo = 1 AND r.bar = 'baz' RETURN n")
   }
 
   test("move multiple predicates to WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN n",
-      "MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN n")
   }
 
   test("remove empty predicate from node") {
@@ -93,39 +103,59 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
   }
 
   test("remove empty predicate from rel") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n)-[r:Foo { }]->() RETURN n",
-      "MATCH (n)-[r:Foo]->() RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) RETURN n")
   }
 
   test("remove empty predicates") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n { })-[r:Foo { }]->() RETURN n",
-      "MATCH (n)-[r:Foo]->() RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) RETURN n")
   }
 
   test("remove empty predicates and keep existing WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n { })-[r:Foo { }]->() WHERE n.baz = true OR r.baz = false RETURN n",
-      "MATCH (n)-[r:Foo]->() WHERE n.baz = true OR r.baz = false RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) WHERE n.baz = true OR r.baz = false RETURN n")
   }
 
   test("prepend predicates to existing WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n {foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() WHERE n.baz = true OR r.baz = false RETURN n",
-      "MATCH (n)-[r:Foo]->() WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' AND (n.baz = true OR r.baz = false) RETURN n")
+      s"MATCH (n)-[r:Foo]->($node) WHERE n.foo = 'bar' AND n.bar = 4 AND r.foo = 1 AND r.bar = 'baz' AND (n.baz = true OR r.baz = false) RETURN n")
   }
 
-  test("ignore unnamed node pattern elements") {
+  test("move internally named node pattern elements") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH ({foo: 'bar', bar: 4})-[r:Foo {foo: 1, bar: 'baz'}]->() RETURN r",
-      "MATCH ({foo: 'bar', bar: 4})-[r:Foo]->() WHERE r.foo = 1 AND r.bar = 'baz' RETURN r")
+      s"MATCH ($node1)-[r:Foo]->($node2) WHERE $node1.foo = 'bar' AND $node1.bar = 4 AND r.foo = 1 AND r.bar = 'baz' RETURN r")
   }
 
-  test("ignore unnamed rel pattern elements") {
+  test("move internally named rel pattern elements") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n {foo: 'bar', bar: 4})-[:Foo {foo: 1, bar: 'baz'}]->() RETURN n",
-      "MATCH (n)-[:Foo {foo: 1, bar: 'baz'}]->() WHERE n.foo = 'bar' AND n.bar = 4 RETURN n")
+      s"MATCH (n)-[$rel:Foo]->($node) WHERE n.foo = 'bar' AND n.bar = 4 AND $rel.foo = 1 AND $rel.bar = 'baz' RETURN n")
   }
 
   test("move single label from nodes to WHERE") {
@@ -189,14 +219,20 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
   }
 
   test("move multiple node pattern predicates from node to WHERE") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val rel = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') RETURN n",
-      "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') RETURN n")
+      s"MATCH (n)-[$rel]->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') RETURN n")
   }
 
   test("add multiple node pattern predicates from node to existing WHERE predicate") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val rel = s"`${anonVarNameGen.nextName}`"
+
     assertRewrite(
       "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n",
-      "MATCH (n)-->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
+      s"MATCH (n)-[$rel]->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
   }
 }
