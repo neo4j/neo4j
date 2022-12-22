@@ -35,6 +35,7 @@ public class DatabaseInfo {
     public static final String ROLE_SECONDARY = "secondary";
     public static final String STATUS_UNKNOWN = "unknown";
     public static final String STATUS_UNKNOWN_MESSAGE = "Server is unavailable";
+    public static final String STATUS_ORPHANED_MESSAGE = "Database not currently allocated to any servers";
 
     public enum DatabaseType {
         SYSTEM("system"),
