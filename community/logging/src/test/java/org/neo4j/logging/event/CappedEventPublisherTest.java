@@ -41,8 +41,8 @@ class CappedEventPublisherTest {
         publisher.publish(Type.Warn, "second");
         publisher.publish(Type.Error, "third");
 
-        verify(log).info("%s - %s", "first", Parameters.EMPTY);
-        verify(log).error("%s - %s", "third", Parameters.EMPTY);
+        verify(log).info("%s %s", "first", Parameters.EMPTY);
+        verify(log).error("%s %s", "third", Parameters.EMPTY);
         verifyNoMoreInteractions(log);
     }
 }

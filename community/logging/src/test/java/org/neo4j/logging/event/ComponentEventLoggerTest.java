@@ -58,6 +58,6 @@ class ComponentEventLoggerTest {
 
         verify(logProvider, times(2)).getLog(TEST_NAMESPACE.toString());
 
-        verify(log, times(2)).info("[Event] %s - %s", "hello", Parameters.of("param", TEST_NAMESPACE));
+        verify(log, times(2)).info("[Event] %s %s", "hello", Parameters.of("param", TEST_NAMESPACE));
     }
 }

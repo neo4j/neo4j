@@ -40,9 +40,9 @@ class LoggingEventPublisher implements EventPublisher {
     public void publish(Type type, String message, Parameters parameters) {
         switch (type) {
             case Begin, Finish -> log.info("%s - %s %s", type, message, parameters);
-            case Info -> log.info("%s - %s", message, parameters);
-            case Warn -> log.warn("%s - %s", message, parameters);
-            case Error -> log.error("%s - %s", message, parameters);
+            case Info -> log.info("%s %s", message, parameters);
+            case Warn -> log.warn("%s %s", message, parameters);
+            case Error -> log.error("%s %s", message, parameters);
         }
     }
 

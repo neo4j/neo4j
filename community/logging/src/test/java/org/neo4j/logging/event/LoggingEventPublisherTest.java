@@ -37,9 +37,9 @@ class LoggingEventPublisherTest {
         publisher.publish(type, "hello");
         switch (type) {
             case Begin, Finish -> verify(log).info("%s - %s %s", type, "hello", Parameters.EMPTY);
-            case Info -> verify(log).info("%s - %s", "hello", Parameters.EMPTY);
-            case Warn -> verify(log).warn("%s - %s", "hello", Parameters.EMPTY);
-            case Error -> verify(log).error("%s - %s", "hello", Parameters.EMPTY);
+            case Info -> verify(log).info("%s %s", "hello", Parameters.EMPTY);
+            case Warn -> verify(log).warn("%s %s", "hello", Parameters.EMPTY);
+            case Error -> verify(log).error("%s %s", "hello", Parameters.EMPTY);
         }
     }
 
@@ -51,9 +51,9 @@ class LoggingEventPublisherTest {
         publisher.publish(type, "hello", parameters);
         switch (type) {
             case Begin, Finish -> verify(log).info("%s - %s %s", type, "hello", parameters);
-            case Info -> verify(log).info("%s - %s", "hello", parameters);
-            case Warn -> verify(log).warn("%s - %s", "hello", parameters);
-            case Error -> verify(log).error("%s - %s", "hello", parameters);
+            case Info -> verify(log).info("%s %s", "hello", parameters);
+            case Warn -> verify(log).warn("%s %s", "hello", parameters);
+            case Error -> verify(log).error("%s %s", "hello", parameters);
         }
     }
 }
