@@ -67,11 +67,11 @@ trait PredicateNormalizer {
 object PredicateNormalizer {
 
   /**
-   * Normalizer that moves inlined node/relationship WHERE predicates into separate WHERE clauses.
-   * This needs to be the first predicate normalizer runs, because of scoping.
+   * Normalizer that moves inlined node/relationship WHERE predicates to the outside WHERE clause.
+   * This needs to be the first predicate normalizer that runs, because of scoping.
    * For example, when a node pattern has an inlined node predicate that introduces new variables, e.g. `(n WHERE EXISTS {(:A)})`, we need to avoid extracting
    * the `:A` predicate to the outermost scope.
- *
+   *
    * @note Needs to run before [[normalizeLabelAndPropertyPredicates]].
    */
   def normalizeInlinedWhereClauses: PredicateNormalizer = PredicateNormalizerChain(
@@ -80,10 +80,9 @@ object PredicateNormalizer {
   )
 
   /**
-   * Normalizer that moves inlined node/relationship WHERE predicates into separate WHERE clauses.
-   * Because of scoping, this needs to be the first predicate normalizer runs.
- *
-   * @note [[normalizeInlinedWhereClauses]] needs to correctly handle scoping of nested WHERE clauses.
+   * Normalizer that moves inlined node/relationship property predicates and label expression predicates to the outside WHERE clause.
+   *
+   * @note [[normalizeInlinedWhereClauses]] needs to run before this normalizer, to correctly handle scoping of nested WHERE clauses.
    */
   def normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator: AnonymousVariableNameGenerator)
     : PredicateNormalizer =
