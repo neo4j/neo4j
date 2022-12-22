@@ -29,6 +29,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_REPEATED_
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_TEXT_INDEX_PROVIDER
 import org.neo4j.graphdb.impl.notification.NotificationDetail
+import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.deprecationNotificationDetail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.scalatest.BeforeAndAfterAll
@@ -65,7 +66,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a)-[:A|:B|:C]-() RETURN a"
     )
 
-    assertNotification(queries, true, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
+    assertNotification(queries, true, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR, deprecationNotificationDetail(":A|B|C"))
 
     // clear caches of the rewritten queries to not keep notifications around
     dbms.clearQueryCaches()

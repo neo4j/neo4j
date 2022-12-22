@@ -152,8 +152,11 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecatedField(procedure, field)
       )
-    case DeprecatedRelTypeSeparatorNotification(pos) =>
-      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedRelTypeSeparatorNotification(pos, rewrittenExpression) =>
+      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.deprecationNotificationDetail(rewrittenExpression)
+      )
     case DeprecatedRepeatedVarLengthRelationshipNotification(pos, relName) =>
       NotificationCode.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP.notification(
         pos.withOffset(offset).asInputPosition,

@@ -291,6 +291,25 @@ public interface NotificationDetail {
             };
         }
 
+        public static NotificationDetail deprecationNotificationDetail(final String replacement) {
+            return new NotificationDetail() {
+                @Override
+                public String name() {
+                    return replacement;
+                }
+
+                @Override
+                public String value() {
+                    return null;
+                }
+
+                @Override
+                public String toString() {
+                    return String.format("Please use '%s' instead", replacement);
+                }
+            };
+        }
+
         private static NotificationDetail createProcedureWarningNotificationDetail(String procedure, String warning) {
             return new NotificationDetail() {
                 @Override

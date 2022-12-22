@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -51,6 +52,8 @@ object Deprecations {
 
   case object syntacticallyDeprecatedFeatures extends SyntacticDeprecations {
 
+    val stringifier: ExpressionStringifier = ExpressionStringifier()
+
     override val find: PartialFunction[Any, Deprecation] = {
 
       // legacy type separator -[:A|:B]->
@@ -58,11 +61,13 @@ object Deprecations {
         // this restriction is necessary because in all other cases, this is an error
         if variable.forall(variable => !AnonymousVariableNameGenerator.isNamed(variable.name)) &&
           !labelExpression.containsGpmSpecificRelTypeExpression &&
-          labelExpression.folder.findAllByClass[ColonDisjunction].nonEmpty =>
+          labelExpression.folder.treeFindByClass[ColonDisjunction].nonEmpty =>
+        val rewrittenExpression = labelExpression.replaceColonSyntax
         Deprecation(
-          Some(Ref(rel) -> rel.copy(labelExpression = Some(labelExpression.replaceColonSyntax))(rel.position)),
+          Some(Ref(rel) -> rel.copy(labelExpression = Some(rewrittenExpression))(rel.position)),
           Some(DeprecatedRelTypeSeparatorNotification(
-            labelExpression.folder.findAllByClass[ColonDisjunction].head.position
+            labelExpression.folder.treeFindByClass[ColonDisjunction].get.position,
+            s":${stringifier.stringifyLabelExpression(rewrittenExpression)}"
           ))
         )
       case s @ SetExactPropertiesFromMapItem(_, e: Variable) =>
