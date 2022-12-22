@@ -46,13 +46,33 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory,
-                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter =
-    normalizeMatchPredicates(
-      MatchPredicateNormalizerChain(
-        PropertyPredicateNormalizer(anonymousVariableNameGenerator),
-        LabelPredicateNormalizer,
-        NodePatternPredicateNormalizer,
-      )
+                           anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = {
+    normalizeMatchPredicates(normalizeInlinedWhereClauses) andThen
+    normalizeMatchPredicates(normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator))
+  }
+
+  /**
+   * Normalizer that moves inlined node WHERE predicates to the outside WHERE clause.
+   * This needs to be the first predicate normalizer that runs, because of scoping.
+   * For example, when a node pattern has an inlined node predicate that introduces new variables, e.g. `(n WHERE EXISTS {(:A)})`, we need to avoid extracting
+   * the `:A` predicate to the outermost scope.
+   *
+   * @note Needs to run before [[normalizeLabelAndPropertyPredicates]].
+   */
+  def normalizeInlinedWhereClauses: MatchPredicateNormalizer =
+    MatchPredicateNormalizerChain(
+      NodePatternPredicateNormalizer
+    )
+
+   /**
+   * Normalizer that moves inlined node property predicates and label expression predicates to the outside WHERE clause.
+   *
+   * @note [[normalizeInlinedWhereClauses]] needs to run before this normalizer, to correctly handle scoping of nested WHERE clauses.
+   */
+  def normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): MatchPredicateNormalizer =
+    MatchPredicateNormalizerChain(
+      PropertyPredicateNormalizer(anonymousVariableNameGenerator),
+      LabelPredicateNormalizer
     )
 }
 

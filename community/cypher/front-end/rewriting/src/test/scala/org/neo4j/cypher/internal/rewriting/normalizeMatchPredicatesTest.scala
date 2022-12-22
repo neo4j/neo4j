@@ -235,4 +235,12 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
       "MATCH (n WHERE n.prop > 123)-->(m WHERE m.prop < 42 AND m.otherProp = 'hello') WHERE n.prop <> m.prop RETURN n",
       s"MATCH (n)-[$rel]->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
   }
+
+  test("should not move label expression in EXISTS clause") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite("MATCH (a WHERE EXISTS {(:A)}) RETURN *",
+      s"MATCH (a) WHERE EXISTS {($node:A)} RETURN *")
+  }
 }
