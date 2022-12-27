@@ -36,6 +36,11 @@ import org.neo4j.memory.MemoryTracker
 
 /**
  * A heap tracking variant inspired by scala.collection.immutable.Set[Long]
+ * 
+ * For smaller sizes, up to size 4, it is an exact replica of what scala.collection.immutable.Set does. For intermediate
+ * sizes, [5, MAX_ARRAY_SIZE] the set is backed by and long array and hence operations are linear. For larger sets we combine a 
+ * HeapTrackingLongSet and a HeapTrackingLongImmutableSet, when the set grows it grows by adding to the immutable set until we hit 
+ * MAX_ARRAY_SIZE. At that point we clone the HeapTrackingLongSet and add all values the the cloned set and start over.
  */
 trait HeapTrackingLongImmutableSet {
   def contains(value: Long): Boolean

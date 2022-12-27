@@ -19,16 +19,15 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
-
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
 public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable {
