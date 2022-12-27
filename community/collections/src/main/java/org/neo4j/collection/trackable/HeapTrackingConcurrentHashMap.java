@@ -19,8 +19,9 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.list.mutable.FastList;
-import org.eclipse.collections.impl.utility.MapIterate;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -41,12 +42,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
+import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.utility.MapIterate;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 @SuppressWarnings({"rawtypes", "ObjectEquality"})
 public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<K, V>, AutoCloseable {
