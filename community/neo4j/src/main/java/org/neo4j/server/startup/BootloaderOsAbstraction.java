@@ -46,6 +46,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.server.NeoBootstrapper;
 import org.neo4j.server.startup.BootloaderExtension.BootloaderArguments;
 
 abstract class BootloaderOsAbstraction {
@@ -69,8 +70,16 @@ abstract class BootloaderOsAbstraction {
         return bootloader.processManager().run(buildStandardStartArguments(), new ConsoleProcess(true));
     }
 
+    protected static final ExitCodeMessageMapper NEO4J_PROCESS_EXITCODE_MAPPER = exitCode -> switch (exitCode) {
+                case NeoBootstrapper.WEB_SERVER_STARTUP_ERROR_CODE -> "Neo4j web server failed to start.";
+                case NeoBootstrapper.GRAPH_DATABASE_STARTUP_ERROR_CODE -> "Neo4j server failed to start.";
+                case NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE -> "Configuration is invalid.";
+                case NeoBootstrapper.LICENSE_NOT_ACCEPTED_ERROR_CODE -> "License agreement has not been accepted.";
+                default -> "Unexpected Neo4j server failure.";
+            } + " See log for more info.";
+
     static class ConsoleProcess implements ProcessStages {
-        private boolean installShutdownHooksForParentProcess;
+        private final boolean installShutdownHooksForParentProcess;
 
         ConsoleProcess(boolean installShutdownHooksForParentProcess) {
             this.installShutdownHooksForParentProcess = installShutdownHooksForParentProcess;
@@ -86,7 +95,7 @@ abstract class BootloaderOsAbstraction {
             if (installShutdownHooksForParentProcess) {
                 processManager.installShutdownHook(process);
             }
-            processManager.waitUntilSuccessful(process);
+            processManager.waitUntilSuccessful(process, NEO4J_PROCESS_EXITCODE_MAPPER);
         }
     }
 
@@ -110,7 +119,8 @@ abstract class BootloaderOsAbstraction {
 
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
-            processManager.waitUntilSuccessful(process);
+            processManager.waitUntilSuccessful(
+                    process, e -> "Admin command failed to start. See output for more info.");
         }
     }
 

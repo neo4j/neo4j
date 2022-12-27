@@ -70,9 +70,10 @@ class ProcessManager {
         env.putIfAbsent(Bootloader.ENV_NEO4J_CONF, bootloader.confDir().toString());
     }
 
-    void waitUntilSuccessful(Process process) throws InterruptedException {
+    void waitUntilSuccessful(Process process, ExitCodeMessageMapper exitCodeMessageMapper) throws InterruptedException {
         if (process.waitFor() != 0) {
-            throw new BootProcessFailureException(process.exitValue());
+            int code = process.exitValue();
+            throw new BootProcessFailureException(exitCodeMessageMapper.map(code), code);
         }
     }
 

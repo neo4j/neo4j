@@ -66,7 +66,8 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction {
 
             if (!success) {
                 if (process.waitFor(1, MINUTES)) {
-                    throw new CommandFailedException("Failed to start server.", process.exitValue());
+                    int code = process.exitValue();
+                    throw new BootProcessFailureException(NEO4J_PROCESS_EXITCODE_MAPPER.map(code), code);
                 }
                 throw new CommandFailedException("Failed to start server.");
             }

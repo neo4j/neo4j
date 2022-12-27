@@ -689,6 +689,21 @@ class FakeDbmsLaunchTest {
             }
         }
 
+        @Test
+        void shouldPrintExpectedErrorMessageOnProcessFailure() throws Exception {
+            int code = NeoBootstrapper.LICENSE_NOT_ACCEPTED_ERROR_CODE;
+            String msg = BootloaderOsAbstraction.NEO4J_PROCESS_EXITCODE_MAPPER.map(code);
+            fork.run(() -> executeWithExitCode(code, msg), Map.of(TestEntryPoint.ENV_EXITCODE, Integer.toString(code)));
+        }
+
+        private void executeWithExitCode(int code, String expectedMessage) {
+            assertThat(execute("start")).isEqualTo(code);
+            assertThat(err.toString()).contains(expectedMessage);
+            clearOutAndErr();
+            assertThat(execute("console")).isEqualTo(code);
+            assertThat(err.toString()).contains(expectedMessage);
+        }
+
         // Process.destroy()/destroyForcibly() on windows are the same and kills process instantly without invoking exit
         // handler. Can't mimic CTRL+C in test.
         @DisabledOnOs(OS.WINDOWS)
@@ -822,6 +837,7 @@ class FakeDbmsLaunchTest {
 
     private static class TestEntryPoint implements EntryPoint {
         static final String ENV_TIMEOUT = "TestEntryPointTimeout";
+        static final String ENV_EXITCODE = "TestEntryPointExitCode";
         static final String STARTUP_MSG = "TestEntryPoint started";
         static final String EXIT_MSG = "TestEntryPoint exited";
         static final String END_MSG = "TestEntryPoint ended";
@@ -838,6 +854,10 @@ class FakeDbmsLaunchTest {
                     .with(args)
                     .withAll(ManagementFactory.getRuntimeMXBean().getInputArguments())
                     .forEach(System.out::println);
+
+            if (StringUtils.isNotEmpty(System.getenv(ENV_EXITCODE))) {
+                System.exit(Integer.parseInt(System.getenv(ENV_EXITCODE)));
+            }
 
             if (Arrays.stream(args).noneMatch(s -> s.equals(Bootloader.ARG_CONSOLE_MODE))) {
                 // Daemon mode, tell parent process to leave us :'(

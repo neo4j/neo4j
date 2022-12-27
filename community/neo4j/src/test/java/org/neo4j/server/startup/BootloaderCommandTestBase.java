@@ -89,8 +89,8 @@ abstract class BootloaderCommandTestBase {
     @Inject
     protected FileSystemAbstraction fs;
 
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream err = new ByteArrayOutputStream();
+    protected ByteArrayOutputStream out = new ByteArrayOutputStream();
+    protected ByteArrayOutputStream err = new ByteArrayOutputStream();
     Path confFile;
     protected Path home;
     Config config;
@@ -239,11 +239,11 @@ abstract class BootloaderCommandTestBase {
      * Wrapping the fork in a fork is the only option to reliably capture that output while not introducing possible flakyness with concurrent tests
      */
     protected static class TestInFork {
-        protected interface TestCode {
+        public interface TestCode {
             void run() throws Exception;
         }
 
-        protected interface Monitor {
+        public interface Monitor {
             int afterStart(Process process);
         }
 
@@ -252,20 +252,20 @@ abstract class BootloaderCommandTestBase {
         private final ByteArrayOutputStream out;
         private final ByteArrayOutputStream err;
 
-        TestInFork(ByteArrayOutputStream out, ByteArrayOutputStream err) {
+        public TestInFork(ByteArrayOutputStream out, ByteArrayOutputStream err) {
             this.out = out;
             this.err = err;
         }
 
-        boolean run(TestCode test) throws Exception {
+        public boolean run(TestCode test) throws Exception {
             return run(test, Map.of());
         }
 
-        boolean run(TestCode test, Map<String, String> env) throws Exception {
+        public boolean run(TestCode test, Map<String, String> env) throws Exception {
             return run(test, env, p -> SUCCESS_CODE);
         }
 
-        boolean run(TestCode test, Map<String, String> env, Monitor monitor) throws Exception {
+        public boolean run(TestCode test, Map<String, String> env, Monitor monitor) throws Exception {
             if (inFork) {
                 test.run();
                 return false;
@@ -412,7 +412,8 @@ abstract class BootloaderCommandTestBase {
             // This method does not make much sense on its own, but is a result of the combined behavior of
             // os-abstraction and command execution
             if (commandMatches(command, "Get-Process")) {
-                throw new BootProcessFailureException(1); // To exit the manual wait loop in WindowsBootloaderOs
+                throw new BootProcessFailureException(
+                        "Exit manual loop", 1); // To exit the manual wait loop in WindowsBootloaderOs
             } else if (commandMatches(command, "//SS//")) {
                 handler.stop();
             } else if (commandMatches(command, "Get-Service")) {
@@ -427,7 +428,8 @@ abstract class BootloaderCommandTestBase {
                         throw new RuntimeException(e);
                     }
                 } else {
-                    throw new BootProcessFailureException(1); // To simulate command when service is not installed
+                    throw new BootProcessFailureException(
+                            "Not installed", 1); // To simulate command when service is not installed
                 }
             } else if (commandMatches(command, entryPoint.getName())) {
                 bootloader.environment.out().println(String.join(System.lineSeparator(), command));

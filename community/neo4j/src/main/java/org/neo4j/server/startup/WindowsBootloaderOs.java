@@ -52,6 +52,10 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
     private static final String POWERSHELL_EXE = "powershell.exe";
     private static final int WINDOWS_PATH_MAX_LENGTH = 250;
 
+    private static final ExitCodeMessageMapper SERVICE_COMMANDS_FAILURE = e -> "Unexpected service command failure.";
+    private static final ExitCodeMessageMapper POWERSHELL_COMMANDS_FAILURE =
+            e -> "Unexpected powershell command failure.";
+
     WindowsBootloaderOs(Bootloader ctx) {
         super(ctx);
     }
@@ -74,7 +78,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
-            processManager.waitUntilSuccessful(process);
+            processManager.waitUntilSuccessful(process, SERVICE_COMMANDS_FAILURE);
         }
     }
 
@@ -139,7 +143,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
 
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
-            processManager.waitUntilSuccessful(process);
+            processManager.waitUntilSuccessful(process, SERVICE_COMMANDS_FAILURE);
         }
     }
 
@@ -268,7 +272,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         @Override
         public void postStart(ProcessManager processManager, Process process) throws Exception {
             out.write(process.getInputStream().readAllBytes());
-            processManager.waitUntilSuccessful(process);
+            processManager.waitUntilSuccessful(process, POWERSHELL_COMMANDS_FAILURE);
         }
     }
 

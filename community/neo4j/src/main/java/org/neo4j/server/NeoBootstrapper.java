@@ -60,8 +60,8 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     public static final String SIGTERM = "TERM";
     public static final String SIGINT = "INT";
     public static final int OK = 0;
-    private static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
-    private static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
+    public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
+    public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     public static final int INVALID_CONFIGURATION_ERROR_CODE = 3;
     public static final int LICENSE_NOT_ACCEPTED_ERROR_CODE = 4;
 

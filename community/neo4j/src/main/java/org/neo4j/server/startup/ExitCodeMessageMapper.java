@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.server.startup;
 
-import org.neo4j.cli.CommandFailedException;
-
-class BootProcessFailureException extends CommandFailedException {
-    BootProcessFailureException(String message, int exitCode) {
-        super(message, exitCode);
-    }
+interface ExitCodeMessageMapper {
+    /**
+     * Only for non-zero codes
+     */
+    String map(int exitCode);
 }
