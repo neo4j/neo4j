@@ -49,7 +49,7 @@ import org.neo4j.memory.MemoryTracker;
 @SuppressWarnings({"rawtypes", "ObjectEquality"})
 public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<K, V>, AutoCloseable {
 
-    private static final Object RESIZE_SENTINEL = new Object();
+    static final Object RESIZE_SENTINEL = new Object();
     static final int DEFAULT_INITIAL_CAPACITY = 16;
 
     /**
@@ -57,21 +57,20 @@ public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<
      * by either of the constructors with arguments.
      * MUST be a power of two <= 1<<30.
      */
-    private static final int MAXIMUM_CAPACITY = 1 << 30;
+    static final int MAXIMUM_CAPACITY = 1 << 30;
 
     private static final AtomicReferenceFieldUpdater<HeapTrackingConcurrentHashMap, AtomicReferenceArray>
             TABLE_UPDATER = AtomicReferenceFieldUpdater.newUpdater(
                     HeapTrackingConcurrentHashMap.class, AtomicReferenceArray.class, "table");
     private static final AtomicIntegerFieldUpdater<HeapTrackingConcurrentHashMap> SIZE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(HeapTrackingConcurrentHashMap.class, "size");
-    private static final Object RESIZED = new Object();
-    private static final Object RESIZING = new Object();
-    private static final int PARTITIONED_SIZE_THRESHOLD =
-            4096; // chosen to keep size below 1% of the total size of the map
+    static final Object RESIZED = new Object();
+    static final Object RESIZING = new Object();
+    static final int PARTITIONED_SIZE_THRESHOLD = 4096; // chosen to keep size below 1% of the total size of the map
     static final int SIZE_BUCKETS = 7;
-    private static final int PARTITIONED_SIZE = SIZE_BUCKETS * 16;
-    private static final long SHALLOW_SIZE_ATOMIC_REFERENCE_ARRAY = shallowSizeOfInstance(AtomicReferenceArray.class);
-    private static final long SIZE_INTEGER_REFERENCE_ARRAY =
+    static final int PARTITIONED_SIZE = SIZE_BUCKETS * 16;
+    static final long SHALLOW_SIZE_ATOMIC_REFERENCE_ARRAY = shallowSizeOfInstance(AtomicReferenceArray.class);
+    static final long SIZE_INTEGER_REFERENCE_ARRAY =
             shallowSizeOfInstance(AtomicIntegerArray.class) + sizeOfIntArray(PARTITIONED_SIZE);
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashMap.class);
 
@@ -124,7 +123,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<
         return new HeapTrackingConcurrentHashMap<>(memoryTracker, size);
     }
 
-    private static int indexFor(int h, int length) {
+    static int indexFor(int h, int length) {
         return h & length - 2;
     }
 
@@ -957,17 +956,17 @@ public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<
         }
     }
 
-    private static final class IteratorState {
-        private AtomicReferenceArray currentTable;
-        private int start;
-        private int end;
+    static final class IteratorState {
+        AtomicReferenceArray currentTable;
+        int start;
+        int end;
 
-        private IteratorState(AtomicReferenceArray currentTable) {
+        IteratorState(AtomicReferenceArray currentTable) {
             this.currentTable = currentTable;
             this.end = this.currentTable.length() - 1;
         }
 
-        private IteratorState(AtomicReferenceArray currentTable, int start, int end) {
+        IteratorState(AtomicReferenceArray currentTable, int start, int end) {
             this.currentTable = currentTable;
             this.start = start;
             this.end = end;
@@ -1309,14 +1308,14 @@ public final class HeapTrackingConcurrentHashMap<K, V> implements ConcurrentMap<
         }
     }
 
-    private static final class ResizeContainer {
-        private static final int QUEUE_INCREMENT =
+    static final class ResizeContainer {
+        static final int QUEUE_INCREMENT =
                 Math.min(1 << 10, Integer.highestOneBit(Runtime.getRuntime().availableProcessors()) << 4);
-        private final AtomicInteger resizers = new AtomicInteger(1);
-        private final AtomicReferenceArray nextArray;
-        private final AtomicInteger queuePosition;
+        final AtomicInteger resizers = new AtomicInteger(1);
+        final AtomicReferenceArray nextArray;
+        final AtomicInteger queuePosition;
 
-        private ResizeContainer(AtomicReferenceArray nextArray, int oldSize) {
+        ResizeContainer(AtomicReferenceArray nextArray, int oldSize) {
             this.nextArray = nextArray;
             this.queuePosition = new AtomicInteger(oldSize);
         }

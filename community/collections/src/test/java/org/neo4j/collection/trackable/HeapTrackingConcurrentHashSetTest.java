@@ -35,14 +35,14 @@ public class HeapTrackingConcurrentHashSetTest {
 
     @Test
     public void add() {
-        HeapTrackingConcurrentHashSet<Integer> set = newSetWith( 1, 2);
+        HeapTrackingConcurrentHashSet<Integer> set = newSetWith(1, 2);
         assertThat(set.add(1)).isFalse();
         assertThat(set.add(3)).isTrue();
     }
 
     @Test
     public void remove() {
-        HeapTrackingConcurrentHashSet<Integer> set = newSetWith( 1, 2);
+        HeapTrackingConcurrentHashSet<Integer> set = newSetWith(1, 2);
 
         assertThat(set.contains(1)).isTrue();
         assertThat(set.remove(1)).isTrue();
@@ -52,8 +52,8 @@ public class HeapTrackingConcurrentHashSetTest {
 
     @Test
     public void concurrentAddAndRemove() {
-        HeapTrackingConcurrentHashSet<Integer> set1 = HeapTrackingConcurrentHashSet.newSet( EmptyMemoryTracker.INSTANCE);
-        HeapTrackingConcurrentHashSet<Integer> set2 = HeapTrackingConcurrentHashSet.newSet( EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentHashSet<Integer> set1 = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentHashSet<Integer> set2 = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
@@ -79,7 +79,7 @@ public class HeapTrackingConcurrentHashSetTest {
 
     @Test
     public void concurrentClear() {
-        HeapTrackingConcurrentHashSet<Integer> set = HeapTrackingConcurrentHashSet.newSet( EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentHashSet<Integer> set = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
@@ -94,8 +94,8 @@ public class HeapTrackingConcurrentHashSetTest {
     }
 
     @SafeVarargs
-    private <K> HeapTrackingConcurrentHashSet<K> newSetWith( K... ks) {
-        HeapTrackingConcurrentHashSet<K> set = HeapTrackingConcurrentHashSet.newSet( EmptyMemoryTracker.INSTANCE);
+    private <K> HeapTrackingConcurrentHashSet<K> newSetWith(K... ks) {
+        HeapTrackingConcurrentHashSet<K> set = HeapTrackingConcurrentHashSet.newSet(EmptyMemoryTracker.INSTANCE);
         set.addAll(Arrays.asList(ks));
         return set;
     }
