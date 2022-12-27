@@ -19,15 +19,16 @@
  */
 package org.neo4j.collection.trackable;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
 public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable {
@@ -54,9 +55,9 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
     }
 
     static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
-        int capacity = smallestPowerOfTwoGreaterThan(initialCapacity);
+        int capacity = smallestPowerOfTwoGreaterThan(initialCapacity << 1);
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(capacity));
-        return new HeapTrackingLongHashSet(memoryTracker, capacity);
+        return new HeapTrackingLongHashSet(memoryTracker, initialCapacity, capacity);
     }
 
     private HeapTrackingLongHashSet(MemoryTracker memoryTracker) {
@@ -64,10 +65,10 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
         this.trackedCapacity = DEFAULT_INITIAL_CAPACITY;
     }
 
-    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
+    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity, int actualCapacity) {
         super(initialCapacity);
         this.memoryTracker = requireNonNull(memoryTracker);
-        this.trackedCapacity = initialCapacity;
+        this.trackedCapacity = actualCapacity;
     }
 
     private HeapTrackingLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
