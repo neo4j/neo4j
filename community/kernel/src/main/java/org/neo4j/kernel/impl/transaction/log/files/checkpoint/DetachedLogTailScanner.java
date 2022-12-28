@@ -423,9 +423,6 @@ public class DetachedLogTailScanner {
             if (start != null) {
                 return start.kernelVersion().version();
             }
-            if (commit != null) {
-                return commit.kernelVersion().version();
-            }
             return 0;
         }
     }

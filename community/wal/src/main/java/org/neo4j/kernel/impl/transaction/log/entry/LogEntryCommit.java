@@ -22,19 +22,14 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 import java.util.Objects;
-import org.neo4j.kernel.KernelVersion;
 
-public class LogEntryCommit extends AbstractVersionAwareLogEntry {
+public class LogEntryCommit extends AbstractLogEntry {
     private final long txId;
     private final long timeWritten;
     private final int checksum;
 
     public LogEntryCommit(long txId, long timeWritten, int checksum) {
-        this(KernelVersion.LATEST, txId, timeWritten, checksum);
-    }
-
-    public LogEntryCommit(KernelVersion kernelVersion, long txId, long timeWritten, int checksum) {
-        super(kernelVersion, TX_COMMIT);
+        super(TX_COMMIT);
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.checksum = checksum;
@@ -66,14 +61,11 @@ public class LogEntryCommit extends AbstractVersionAwareLogEntry {
             return false;
         }
         LogEntryCommit that = (LogEntryCommit) o;
-        return txId == that.txId
-                && timeWritten == that.timeWritten
-                && checksum == that.checksum
-                && kernelVersion() == that.kernelVersion();
+        return txId == that.txId && timeWritten == that.timeWritten && checksum == that.checksum;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(txId, timeWritten, checksum, kernelVersion());
+        return Objects.hash(txId, timeWritten, checksum);
     }
 }

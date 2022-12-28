@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
@@ -97,13 +98,21 @@ public class CheckpointInfoFactory {
                 var logEntryCursor =
                         new LogEntryCursor(new VersionAwareLogEntryReader(context.getCommandReaderFactory()), reader)) {
             LogPosition checkedPosition = null;
+            LogEntryStart logEntryStart = null;
             while (logEntryCursor.next()) {
                 LogEntry logEntry = logEntryCursor.get();
+                if (logEntry instanceof LogEntryStart) {
+                    logEntryStart = (LogEntryStart) logEntry;
+                }
                 checkedPosition = reader.getCurrentPosition();
                 if (logEntry instanceof LogEntryCommit commit && checkedPosition.equals(transactionPosition)) {
+                    if (logEntryStart == null) {
+                        throw new IllegalStateException("Transaction commit entry for tx id: " + commit.getTxId()
+                                + " was found but transaction start was missing.");
+                    }
                     return new TransactionInfo(
                             new TransactionId(commit.getTxId(), commit.getChecksum(), commit.getTimeWritten()),
-                            commit.kernelVersion());
+                            logEntryStart.kernelVersion());
                 }
             }
 

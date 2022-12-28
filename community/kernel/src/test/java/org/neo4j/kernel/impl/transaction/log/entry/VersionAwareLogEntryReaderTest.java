@@ -168,7 +168,7 @@ class VersionAwareLogEntryReaderTest {
     }
 
     private static void writeCommitEntry(InMemoryClosableChannel channel, LogEntryCommit commit) {
-        channel.put(commit.kernelVersion().version());
+        channel.put(LATEST.version());
         channel.put(LogEntryTypeCodes.TX_COMMIT);
         channel.putLong(commit.getTxId());
         channel.putLong(commit.getTimeWritten());
