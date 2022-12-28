@@ -689,6 +689,8 @@ class FakeDbmsLaunchTest {
             }
         }
 
+        // This functionality works on windows but services makes it hard to test
+        @DisabledOnOs(OS.WINDOWS)
         @Test
         void shouldPrintExpectedErrorMessageOnProcessFailure() throws Exception {
             int code = NeoBootstrapper.LICENSE_NOT_ACCEPTED_ERROR_CODE;
