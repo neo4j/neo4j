@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell;
 
+import static java.lang.String.format;
 import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
@@ -39,7 +40,6 @@ import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
-import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
@@ -165,21 +165,19 @@ public class Main implements Closeable {
                 // Can only prompt for password if input has not been redirected
                 connectMaybeInteractively(connectionConfig);
 
-                if (!shell.connectionConfig().uri().equals(connectionConfig.uri())) {
-                    var fallbackWarning = "Failed to connect to " + connectionConfig.uri() + ", fallback to "
-                            + shell.connectionConfig().uri();
-                    printer.printIfVerbose(AnsiFormattedText.s()
-                            .colorOrange()
-                            .append(fallbackWarning)
-                            .formattedString());
-                }
-
                 // Construct shellrunner after connecting, due to interrupt handling
                 ShellRunner shellRunner = runnerFactory.create(args, shell, printer, terminal);
                 CommandHelper commandHelper =
                         new CommandHelper(printer, shellRunner.getHistorian(), shell, terminal, parameters);
 
                 shell.setCommandHelper(commandHelper);
+
+                // Print some messages if needed
+                shell.printFallbackWarning(connectionConfig.uri());
+                if (shellRunner.isInteractive() || args.getFormat() == Format.VERBOSE) {
+                    // Restrict this message to not break machine readability in some cases
+                    shell.printLicenseWarnings();
+                }
 
                 return shellRunner.runUntilEnd();
             }
@@ -293,7 +291,7 @@ public class Main implements Closeable {
     private String promptForNonEmptyText(String prompt, boolean maskInput) throws Exception {
         String text = promptForText(prompt, maskInput);
         while (text.isEmpty()) {
-            text = promptForText(String.format("%s cannot be empty%n%n%s", prompt, prompt), maskInput);
+            text = promptForText(format("%s cannot be empty%n%n%s", prompt, prompt), maskInput);
         }
         return text;
     }

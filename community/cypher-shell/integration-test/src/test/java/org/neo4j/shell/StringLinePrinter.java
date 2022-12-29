@@ -19,10 +19,11 @@
  */
 package org.neo4j.shell;
 
-import org.neo4j.shell.prettyprint.LinePrinter;
+import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.prettyprint.OutputFormatter;
+import org.neo4j.shell.printer.Printer;
 
-public class StringLinePrinter implements LinePrinter {
+public class StringLinePrinter implements Printer {
     private final StringBuilder sb = new StringBuilder();
 
     @Override
@@ -36,5 +37,25 @@ public class StringLinePrinter implements LinePrinter {
 
     public String output() {
         return sb.toString();
+    }
+
+    @Override
+    public void printError(Throwable throwable) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void printError(String text) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Format getFormat() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setFormat(Format format) {
+        throw new UnsupportedOperationException();
     }
 }

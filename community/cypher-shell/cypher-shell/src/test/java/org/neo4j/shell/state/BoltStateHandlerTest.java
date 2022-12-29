@@ -23,7 +23,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doThrow;
@@ -63,6 +62,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.driver.summary.ServerInfo;
@@ -72,6 +72,8 @@ import org.neo4j.shell.build.Build;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.test.bolt.FakeDriver;
+import org.neo4j.shell.test.bolt.FakeRecord;
+import org.neo4j.shell.test.bolt.FakeResult;
 import org.neo4j.shell.test.bolt.FakeSession;
 
 class BoltStateHandlerTest {
@@ -379,7 +381,8 @@ class BoltStateHandlerTest {
         boltStateHandler.reset();
 
         // then
-        verify(sessionMock, times(1)).run(anyString(), eq(systemTxConf));
+        verify(sessionMock, times(1)).run(eq("CALL db.ping()"), eq(systemTxConf));
+        verify(sessionMock, times(1)).run(eq("CALL dbms.acceptedLicenseAgreement()"), eq(systemTxConf));
         verify(sessionMock, times(2)).isOpen();
         verify(sessionMock, times(1)).beginTransaction(eq(userTxConf));
         verifyNoMoreInteractions(sessionMock);
@@ -656,6 +659,54 @@ class BoltStateHandlerTest {
         assertThat(fakeDriver.sessionConfigs.get(0).impersonatedUser()).hasValue("emil");
     }
 
+    @Test
+    void licenseStatusExpired() throws CommandException {
+        final var session = mockSessionWithLicensing("expired");
+        Driver driverMock =
+                stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
+
+        BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
+        handler.connect(config);
+
+        assertThat(handler.trialStatus().expired()).isTrue();
+        assertThat(handler.trialStatus().daysLeft()).isEmpty();
+    }
+
+    @Test
+    void licenseStatusDaysLeft() throws CommandException {
+        final var session = mockSessionWithLicensing("5");
+        Driver driverMock =
+                stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
+
+        BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
+        handler.connect(config);
+
+        assertThat(handler.trialStatus().expired()).isFalse();
+        assertThat(handler.trialStatus().daysLeft()).contains(5L);
+    }
+
+    @Test
+    void licenseStatusUnknown() throws CommandException {
+        final var session = mockSessionWithLicensing("unexpected");
+        Driver driverMock =
+                stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
+
+        BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
+        handler.connect(config);
+
+        assertThat(handler.trialStatus().expired()).isFalse();
+        assertThat(handler.trialStatus().daysLeft()).isEmpty();
+    }
+
+    private Session mockSessionWithLicensing(String license) {
+        final var session = mock(Session.class);
+        final var licenseResult =
+                new FakeResult(Collections.singletonList(FakeRecord.of("value", new StringValue(license))));
+        when(session.run(eq("CALL dbms.acceptedLicenseAgreement()"), eq(systemTxConf)))
+                .thenReturn(licenseResult);
+        return session;
+    }
+
     private Driver stubResultSummaryInAnOpenSession(Result resultMock, Session sessionMock, String version) {
         return stubResultSummaryInAnOpenSession(resultMock, sessionMock, version, DEFAULT_DEFAULT_DB_NAME);
     }
@@ -675,7 +726,6 @@ class BoltStateHandlerTest {
 
         when(sessionMock.isOpen()).thenReturn(true);
         when(sessionMock.run(eq("CALL db.ping()"), eq(systemTxConf))).thenReturn(resultMock);
-        when(sessionMock.run(anyString(), any(Value.class))).thenReturn(resultMock);
         when(driverMock.session(any(SessionConfig.class))).thenReturn(sessionMock);
 
         return driverMock;

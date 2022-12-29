@@ -132,6 +132,11 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         return terminal.getHistory();
     }
 
+    @Override
+    public boolean isInteractive() {
+        return true;
+    }
+
     /**
      * Reads from the InputStream until one or more statements can be found.
      *

@@ -41,20 +41,22 @@ import org.neo4j.shell.test.Util;
 /**
  * A fake Result with fake records and fake values
  */
-class FakeResult implements Result {
+public class FakeResult implements Result {
 
     public static final FakeResult PING_SUCCESS =
             new FakeResult(Collections.singletonList(FakeRecord.of("success", BooleanValue.TRUE)));
     public static final FakeResult SERVER_VERSION = new FakeResult(
             Collections.singletonList(FakeRecord.of("versions", new ListValue(new StringValue("4.3.0")))));
+    public static final FakeResult CALL_ACCEPTED_LICENSE =
+            new FakeResult(Collections.singletonList(FakeRecord.of("value", new StringValue("yes"))));
     private final List<Record> records;
     private int currentRecord = -1;
 
-    FakeResult() {
+    public FakeResult() {
         this(new ArrayList<>());
     }
 
-    FakeResult(List<Record> records) {
+    public FakeResult(List<Record> records) {
         this.records = records;
     }
 
@@ -69,6 +71,10 @@ class FakeResult implements Result {
 
         if (isServerVersion(statement)) {
             return SERVER_VERSION;
+        }
+
+        if (isCallAcceptedLicense(statement)) {
+            return CALL_ACCEPTED_LICENSE;
         }
 
         Pattern returnAsPattern = Pattern.compile("^return (.*) as (.*)$", Pattern.CASE_INSENSITIVE);
@@ -106,6 +112,10 @@ class FakeResult implements Result {
 
     private static boolean isServerVersion(String statement) {
         return statement.trim().equalsIgnoreCase("CALL dbms.components() YIELD versions");
+    }
+
+    private static boolean isCallAcceptedLicense(String statement) {
+        return statement.trim().equalsIgnoreCase("CALL dbms.acceptedLicenseAgreement()");
     }
 
     @Override

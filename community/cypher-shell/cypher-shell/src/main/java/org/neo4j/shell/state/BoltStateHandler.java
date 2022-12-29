@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.state;
 
+import static org.neo4j.shell.state.TrialStatusImpl.NOT_EXPIRED;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
 import java.net.URI;
@@ -80,6 +81,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private String actualDatabaseNameAsReportedByServer;
     private Transaction tx;
     private ConnectionConfig connectionConfig;
+    private TrialStatus trialStatus = NOT_EXPIRED;
 
     public BoltStateHandler(boolean isInteractive) {
         this(GraphDatabase::driver, isInteractive);
@@ -279,6 +281,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private void reconnectAndPing(String databaseToConnectTo, String previousDatabase) throws CommandException {
         reconnect(databaseToConnectTo, previousDatabase);
         getPing().apply();
+        trialStatus = getTrialStatus();
     }
 
     private void reconnect(String databaseToConnectTo, String previousDatabase) {
@@ -335,6 +338,17 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 }
             }
         };
+    }
+
+    private TrialStatus getTrialStatus() {
+        try {
+            final var record = session.run("CALL dbms.acceptedLicenseAgreement()", SYSTEM_TX_CONF)
+                    .single();
+            return TrialStatus.parse(record.get(0).asString());
+        } catch (Exception e) {
+            log.warn("Failed to fetch trial status", e);
+            return NOT_EXPIRED;
+        }
     }
 
     @Override
@@ -574,5 +588,9 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return TransactionConfig.builder()
                 .withMetadata(Map.of("type", type.value(), "app", "cypher-shell_v" + Build.version()))
                 .build();
+    }
+
+    public TrialStatus trialStatus() {
+        return trialStatus;
     }
 }

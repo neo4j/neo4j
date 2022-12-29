@@ -95,4 +95,9 @@ public class NonInteractiveShellRunner implements ShellRunner {
     public Historian getHistorian() {
         return Historian.empty;
     }
+
+    @Override
+    public boolean isInteractive() {
+        return false;
+    }
 }

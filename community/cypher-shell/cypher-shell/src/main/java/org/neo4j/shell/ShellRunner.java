@@ -114,6 +114,8 @@ public interface ShellRunner {
      */
     Historian getHistorian();
 
+    boolean isInteractive();
+
     class Factory {
         public ShellRunner create(CliArgs cliArgs, CypherShell shell, Printer printer, CypherShellTerminal terminal)
                 throws IOException {

@@ -19,6 +19,9 @@
  */
 package org.neo4j.shell;
 
+import static java.lang.String.format;
+
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,8 +35,9 @@ import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
-import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
 
@@ -42,19 +46,33 @@ import org.neo4j.shell.state.BoltStateHandler;
  */
 public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager {
     private static final Logger log = Logger.create();
+    private static final String LICENSE_EXPIRED_WARNING =
+            """
+            Thank you for installing Neo4j. This is a time limited trial, and the
+            30 days has expired. Please contact sales@neo4j.com or
+            licensing@neo4j.com to continue using the software. Use of this
+            Software without a proper commercial or evaluation license with
+            Neo4j,Inc. or its affiliates is prohibited.
+            """;
+    private static final String LICENSE_DAYS_LEFT_WARNING =
+            """
+            Thank you for installing Neo4j. This is a time limited trial, you
+            have %d days remaining out of 30 days. Please
+            contact sales@neo4j.com if you require more time.
+            """;
     private final ParameterService parameters;
-    private final LinePrinter linePrinter;
+    private final Printer printer;
     private final BoltStateHandler boltStateHandler;
     private final PrettyPrinter prettyPrinter;
     private CommandHelper commandHelper;
     private String lastNeo4jErrorCode;
 
     public CypherShell(
-            LinePrinter linePrinter,
+            Printer printer,
             BoltStateHandler boltStateHandler,
             PrettyPrinter prettyPrinter,
             ParameterService parameters) {
-        this.linePrinter = linePrinter;
+        this.printer = printer;
         this.boltStateHandler = boltStateHandler;
         this.prettyPrinter = prettyPrinter;
         this.parameters = parameters;
@@ -97,7 +115,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         try {
             final Optional<BoltResult> result = boltStateHandler.runUserCypher(cypher, parameters.parameterValues());
             result.ifPresent(boltResult -> {
-                prettyPrinter.format(boltResult, linePrinter);
+                prettyPrinter.format(boltResult, printer);
                 boltStateHandler.updateActualDbName(boltResult.getSummary());
             });
             lastNeo4jErrorCode = null;
@@ -270,5 +288,23 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
             return DATABASE_UNAVAILABLE_ERROR_CODE;
         }
         return statusException.code();
+    }
+
+    public void printFallbackWarning(URI originalUri) {
+        final var newUri = connectionConfig().uri();
+        if (!newUri.equals(originalUri)) {
+            var fallbackWarning = format("Failed to connect to %s, fallback to %s", originalUri, newUri);
+            printer.printIfVerbose(AnsiFormattedText.s().orange(fallbackWarning).formattedString());
+        }
+    }
+
+    public void printLicenseWarnings() {
+        final var status = boltStateHandler.trialStatus();
+        if (status.expired()) {
+            printer.printOut(
+                    AnsiFormattedText.s().orange(LICENSE_EXPIRED_WARNING).formattedString());
+        } else if (status.daysLeft().isPresent()) {
+            printer.printOut(format(LICENSE_DAYS_LEFT_WARNING, status.daysLeft().get()));
+        }
     }
 }

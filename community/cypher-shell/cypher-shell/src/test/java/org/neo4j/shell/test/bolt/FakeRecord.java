@@ -36,7 +36,7 @@ import org.neo4j.shell.test.Util;
 /**
  * A fake record of fake values
  */
-class FakeRecord implements Record {
+public class FakeRecord implements Record {
 
     private final TreeMap<String, Value> valueMap = new TreeMap<>();
 

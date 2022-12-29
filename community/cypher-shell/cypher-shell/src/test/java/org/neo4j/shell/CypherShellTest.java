@@ -27,6 +27,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
@@ -46,17 +47,20 @@ import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ListBoltResult;
+import org.neo4j.shell.state.TrialStatus;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 class CypherShellTest {
     private final PrettyPrinter mockedPrettyPrinter = mock(PrettyPrinter.class);
-    private final BoltStateHandler mockedBoltStateHandler = mock(BoltStateHandler.class);
     private final ParameterService mockedParameterService = mock(ParameterService.class);
-    private final Printer printer = mock(Printer.class);
+    private BoltStateHandler mockedBoltStateHandler;
+    private Printer printer;
     private OfflineTestShell offlineTestShell;
 
     @BeforeEach
     void setup() {
+        mockedBoltStateHandler = mock(BoltStateHandler.class);
+        printer = mock(Printer.class);
         when(mockedBoltStateHandler.getProtocolVersion()).thenReturn("");
 
         offlineTestShell = new OfflineTestShell(printer, mockedBoltStateHandler, mockedPrettyPrinter);
@@ -161,5 +165,49 @@ class CypherShellTest {
         var statement = new CommandStatement(":help", List.of("arg1", "arg2"), true, 0, 0);
         CommandException exception = assertThrows(CommandException.class, () -> offlineTestShell.execute(statement));
         assertThat(exception).hasMessageContaining("Incorrect number of arguments");
+    }
+
+    @Test
+    void printLicenseExpired() {
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("expired"));
+        offlineTestShell.printLicenseWarnings();
+        verify(printer).printOut(contains("This is a time limited trial, and the\n30 days has expired"));
+        verify(printer, times(0)).printIfVerbose(anyString());
+    }
+
+    @Test
+    void printLicenseAccepted() {
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("yes"));
+        offlineTestShell.printLicenseWarnings();
+        verify(printer, times(0)).printOut(anyString());
+        verify(printer, times(0)).printIfVerbose(anyString());
+    }
+
+    @Test
+    void printLicenseDaysLeft() {
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("2"));
+        offlineTestShell.printLicenseWarnings();
+        verify(printer).printOut(contains("This is a time limited trial, you\nhave 2 days remaining"));
+        verify(printer, times(0)).printIfVerbose(anyString());
+    }
+
+    @Test
+    void printFallbackWarningScheme() {
+        final var oldConnection = testConnectionConfig("neo4j://hello.hi:1");
+        final var newConnection = testConnectionConfig("bolt://hello.hi:1");
+        when(mockedBoltStateHandler.connectionConfig()).thenReturn(newConnection);
+        offlineTestShell.printFallbackWarning(oldConnection.uri());
+        verify(printer)
+                .printIfVerbose(contains("Failed to connect to neo4j://hello.hi:1, fallback to bolt://hello.hi:1"));
+        verify(printer, times(0)).printOut(anyString());
+    }
+
+    @Test
+    void doNotPrintFallbackWarningScheme() {
+        final var connection = testConnectionConfig("neo4j://hello.hi:1");
+        when(mockedBoltStateHandler.connectionConfig()).thenReturn(connection);
+        offlineTestShell.printFallbackWarning(connection.uri());
+        verify(printer, times(0)).printIfVerbose(anyString());
+        verify(printer, times(0)).printOut(anyString());
     }
 }

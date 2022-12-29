@@ -25,6 +25,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1017,6 +1018,17 @@ class MainIntegrationTest {
         assertFileContains(tempFile, "org.neo4j.driver.internal.logging");
 
         Files.delete(tempFile);
+    }
+
+    @Test
+    void license() throws ArgumentParserException, IOException {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD)
+                .userInputLines("return 1;", ":exit")
+                .run()
+                .assertSuccess()
+                .assertThatOutput(not(contains("time limited trial")))
+                .assertThatErrorOutput(not(contains("time limited trial")));
     }
 
     private static CypherStatement cypher(String cypher) {
