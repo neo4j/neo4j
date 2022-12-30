@@ -34,6 +34,7 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -223,6 +224,10 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
                             + file,
                     e);
         }
+    }
+
+    public Comparator<CountsKey> keyComparator() {
+        return layout;
     }
 
     // === Life cycle ===
