@@ -94,7 +94,7 @@ public class CountsKey {
         return first;
     }
 
-    public long second() {
+    public int second() {
         return second;
     }
 
