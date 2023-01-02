@@ -1355,6 +1355,100 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: Exists inlined in node pattern with label expression on unnamed node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person
+    WHERE EXISTS {
+      MATCH (n)-[]->(:Dog)
+    })
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists inlined in node pattern with label expression on named node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person
+    WHERE EXISTS {
+      MATCH (n)-[]->(dog:Dog)
+    })
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists function inlined in node pattern with label expression should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person
+    WHERE exists((n)-[]->(:Dog)))
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists inlined in relationship pattern with label expression on unnamed node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person)-[r
+    WHERE EXISTS {
+      MATCH (n)-[]->(:Dog)
+    }]->(m)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists inlined in relationship pattern with label expression on named node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person)-[r
+    WHERE EXISTS {
+      MATCH (n)-[]->(dog:Dog)
+    }]->(m)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists function inlined in relationship pattern with label expression should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person)-[r
+    WHERE exists((n)-[]->(:Dog))]->(m)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+      | 'Chris' |
+    And no side effects
 
   Scenario: Exists with create should fail with syntax error
     Given any graph

@@ -307,6 +307,22 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite(s"MATCH (a) WHERE COUNT {($node) WHERE $node:A} > 1 RETURN *")
   }
 
+  test("MATCH (n WHERE EXISTS {MATCH (:A)-[]->(b:B)}) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n) WHERE EXISTS {MATCH ($node)-[$rel]->(b) WHERE $node:A AND b:B} RETURN *")
+  }
+
+  test("MATCH (n WHERE COUNT {MATCH (:A)-[]->(b:B)} > 1) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n) WHERE COUNT {MATCH ($node)-[$rel]->(b) WHERE $node:A AND b:B} > 1 RETURN *")
+  }
+
   test("MATCH (a)-[r WHERE EXISTS {(:A)}]-(b) RETURN *") {
     val anonVarNameGen = new AnonymousVariableNameGenerator
     val node = s"`${anonVarNameGen.nextName}`"
@@ -319,7 +335,41 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite(s"MATCH (a)-[r]->(b) WHERE COUNT {($node)-[s]-(c) WHERE $node:A} > 1 RETURN *")
   }
 
+  test("MATCH (n)-[r WHERE EXISTS {MATCH (:A)-[]->(b:B)}]->(m) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n)-[r]->(m) WHERE EXISTS {MATCH ($node)-[$rel]->(b) WHERE $node:A AND b:B} RETURN *")
+  }
+
+  test("MATCH (n)-[r WHERE COUNT {MATCH (:A)-[]->(b:B)} > 1]->(m) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n)-[r]->(m) WHERE COUNT {MATCH ($node)-[$rel]->(b) WHERE $node:A AND b:B} > 1 RETURN *")
+  }
+
   test("MATCH (a WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1) RETURN *") {
     assertRewrite("MATCH (a) WHERE size([(n)-->() WHERE n.prop > 0 | n.foo]) > 1 RETURN *")
+  }
+
+  test("MATCH (n WHERE exists( (:Label)--() )) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n) WHERE exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
+  }
+
+  test("MATCH (n)-[r WHERE exists( (:Label)--() )]->(m) RETURN *") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val rel = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+
+    assertRewrite(s"MATCH (n)-[r]->(m) WHERE exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
   }
 }

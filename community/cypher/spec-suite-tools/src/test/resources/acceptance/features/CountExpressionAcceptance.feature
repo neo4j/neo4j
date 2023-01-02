@@ -916,6 +916,84 @@ Feature: CountExpressionAcceptance
       | (:A {prop:1}) |
     And no side effects
 
+  Scenario: Count inlined in node pattern with label expression on unnamed node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person
+    WHERE COUNT {
+      MATCH (n)-[]->(:Person)
+    } > 1)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Ada' |
+      | 'Bob' |
+      | 'Cat' |
+    And no side effects
+
+  Scenario: Count inlined in node pattern with label expression on named node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person
+    WHERE COUNT {
+      MATCH (n)-[]->(m:Person)
+    } > 1)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Ada' |
+      | 'Bob' |
+      | 'Cat' |
+    And no side effects
+
+  Scenario: Count inlined in relationship pattern with label expression on unnamed node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person)-[r
+    WHERE COUNT {
+      MATCH (n)-[]->(:Person)
+    } > 1]->(m)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Ada' |
+      | 'Ada' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Cat' |
+      | 'Cat' |
+    And no side effects
+
+  Scenario: Count inlined in relationship pattern with label expression on named node should be supported
+    Given any graph
+    When executing query:
+    """
+    MATCH (n:Person)-[r
+    WHERE COUNT {
+      MATCH (n)-[]->(p:Person)
+    } > 1]->(m)
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Ada' |
+      | 'Ada' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Cat' |
+      | 'Cat' |
+    And no side effects
+
   Scenario: Full count subquery with update clause should fail
     Given any graph
     When executing query:
