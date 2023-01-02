@@ -23,6 +23,7 @@ import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 /**
@@ -68,5 +69,10 @@ class PageCacheFlusher extends Thread {
             throwIfUnchecked(error);
             throw new RuntimeException(error);
         }
+    }
+
+    @VisibleForTesting
+    public Throwable getError() {
+        return error;
     }
 }

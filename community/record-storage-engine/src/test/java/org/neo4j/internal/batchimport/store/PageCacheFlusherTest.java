@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.batchimport.store;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doAnswer;
@@ -73,11 +75,18 @@ class PageCacheFlusherTest {
                 .when(pageCache)
                 .flushAndForce(DatabaseFlushEvent.NULL);
         PageCacheFlusher flusher = new PageCacheFlusher(pageCache);
-        flusher.run();
+        flusher.start();
 
-        // WHEN
-        RuntimeException e = assertThrows(RuntimeException.class, flusher::halt);
-        // THEN
-        assertSame(failure, e);
+        try {
+            // WHEN
+            while (flusher.getError() == null) {
+                MILLISECONDS.sleep(10);
+            }
+            RuntimeException e = assertThrows(RuntimeException.class, flusher::halt);
+            // THEN
+            assertSame(failure, e);
+        } finally {
+            flusher.join(MINUTES.toMillis(5));
+        }
     }
 }

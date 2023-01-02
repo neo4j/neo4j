@@ -1696,13 +1696,13 @@ class TransactionRecordStateTest {
 
     private static void addLabelsToNode(TransactionRecordState recordState, long nodeId, long[] labelIds) {
         for (long labelId : labelIds) {
-            recordState.addLabelToNode((int) labelId, nodeId);
+            recordState.addLabelToNode(labelId, nodeId);
         }
     }
 
     private static void removeLabelsFromNode(TransactionRecordState recordState, long nodeId, long[] labelIds) {
         for (long labelId : labelIds) {
-            recordState.removeLabelFromNode((int) labelId, nodeId);
+            recordState.removeLabelFromNode(labelId, nodeId);
         }
     }
 
