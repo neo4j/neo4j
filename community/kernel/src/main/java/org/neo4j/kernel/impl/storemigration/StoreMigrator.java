@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -164,8 +165,26 @@ public class StoreMigrator {
                     + "' has been identified as the target version of the store migration");
 
             if (checkResult.onRequestedVersion()) {
-                internalLog.info(
-                        "The current store version and the migration target version are the same, so there is nothing to do.");
+                // Sure store version is good, but what about kernel version?
+                var logsMigrator = new LogsMigrator(
+                        fs,
+                        storageEngineFactory,
+                        databaseLayout,
+                        pageCache,
+                        config,
+                        contextFactory,
+                        logTailSupplier,
+                        pageCacheTracer);
+                var logsCheckResult = logsMigrator.assertCleanlyShutDown();
+                if (logTailSupplier.get().kernelVersion().isLessThan(KernelVersion.LATEST)) {
+                    // The kernel version is read from the log tail on start up - migrate the logs to get to the
+                    // latest kernel version
+                    doOnlyLogsMigration(logsCheckResult, checkResult.versionToMigrateTo);
+                } else {
+                    internalLog.info(
+                            "The current store version and the migration target version are the same, so there is nothing to do.");
+                }
+
                 return;
             }
 
@@ -178,6 +197,34 @@ public class StoreMigrator {
                     LogsMigrator.CheckResult::migrate,
                     forceBtreeIndexesToRange);
         }
+    }
+
+    private void doOnlyLogsMigration(
+            LogsMigrator.CheckResult logsCheckResult, StoreVersionIdentifier versionToMigrateTo) {
+        internalLog.info("'" + logTailSupplier.get().kernelVersion()
+                + "' has been identified as the current kernel version of the store.");
+        internalLog.info("'" + KernelVersion.LATEST
+                + "' has been identified as the target kernel version of the store migration.");
+
+        StoreVersion toVersion =
+                storageEngineFactory.versionInformation(versionToMigrateTo).orElseThrow();
+
+        // This is not the most beautiful thing in the world...
+        // We only want to get a new kernel version, for that we only need to update logs so there
+        // is no reason for a migration directory and copying around store files.
+        // BUT the count store and degree store will rebuild if they aren't pointing to the
+        // latest transaction id, therefore we need to do the postMigration step that updates that.
+        MigrationProgressMonitor progressMonitor = VisibleMigrationProgressMonitorFactory.forMigration(internalLog);
+        progressMonitor.started(0);
+        progressMonitor.startTransactionLogsMigration();
+        LogsMigrator.MigrationTransactionIds txIds = logsCheckResult.migrate();
+        progressMonitor.completeTransactionLogsMigration();
+
+        // We are only changing logs, but we need to do the postMigration step since the last tx id has changed
+        var participants = getStoreMigrationParticipants(false);
+        postMigration(participants, toVersion, txIds.txIdBeforeMigration(), txIds.txIdAfterMigration());
+
+        progressMonitor.completed();
     }
 
     public void upgradeIfNeeded() throws UnableToMigrateException, IOException {

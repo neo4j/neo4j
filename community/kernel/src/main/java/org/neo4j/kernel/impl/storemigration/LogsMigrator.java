@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
@@ -111,7 +112,9 @@ class LogsMigrator {
 
         MigrationTransactionIds migrate() {
             try (MetadataProvider store = getMetaDataStore()) {
-                MetadataCache metadataCache = new MetadataCache(logTailSupplier.get());
+                // Always migrate to the latest kernel version
+                MetadataCache metadataCache = new MetadataCache(KernelVersion.LATEST);
+
                 TransactionLogInitializer logInitializer =
                         new TransactionLogInitializer(fs, store, storageEngineFactory, metadataCache);
                 Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();

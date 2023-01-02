@@ -60,6 +60,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -446,6 +448,35 @@ class StoreMigratorTest {
 
         // then
         verify(participant).postMigration(any(), any(), eq(txIdBeforeMigration), eq(txIdBeforeMigration + 1));
+        verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
+        assertFalse(migrationDirPresent());
+    }
+
+    @Test
+    void shouldDoPartOfMigrationIfNotOnLatestKernelVersion() throws Exception {
+        ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(
+                databaseLayout.getNeo4jLayout().homeDirectory());
+        var logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
+                .withStorageEngineFactory(new RecordStorageEngineFactory())
+                .build();
+
+        assertThat(logFiles.getTailMetadata().kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        var txIdBeforeMigration =
+                logFiles.getTailMetadata().getLastCommittedTransaction().transactionId();
+
+        var storeMigrator = createMigrator();
+        var participant = mock(StoreMigrationParticipant.class);
+        when(participant.getName()).thenReturn("Me");
+        mockParticipantAddition(participant);
+
+        storeMigrator.migrateIfNeeded(PageAligned.LATEST_NAME, false);
+
+        verify(participant, never()).migrate(any(), any(), any(), any(), any(), any(), any());
+        verify(participant).postMigration(any(), any(), eq(txIdBeforeMigration), eq(txIdBeforeMigration + 1));
+        logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
+                .withStorageEngineFactory(new RecordStorageEngineFactory())
+                .build();
+        assertThat(logFiles.getTailMetadata().kernelVersion()).isEqualTo(KernelVersion.LATEST);
         verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
         assertFalse(migrationDirPresent());
     }
