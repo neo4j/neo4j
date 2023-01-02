@@ -395,7 +395,7 @@ public class Database extends AbstractDatabase {
 
         if (Recovery.performRecovery(context(
                         fs,
-                        databasePageCache,
+                        globalPageCache,
                         tracers,
                         databaseConfig,
                         databaseLayout,

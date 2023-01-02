@@ -229,6 +229,7 @@ public class GlobalModule {
                 PageCache.class,
                 () -> createPageCache(
                         fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools));
+        globalDependencies.satisfyDependency(pageCache);
 
         globalLife.add(new PageCacheLifecycle(pageCache));
 

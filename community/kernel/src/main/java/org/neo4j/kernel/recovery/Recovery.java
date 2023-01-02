@@ -369,6 +369,8 @@ public final class Recovery {
         Iterable<ExtensionFactory<?>> extensionFactories =
                 context.extensionFactories != null ? context.extensionFactories : loadExtensions();
 
+        assert !(context.pageCache instanceof DatabasePageCache)
+                : "Recovery should use global page cache to avoid using overloaded mapping.";
         var config = new LocalConfig(context.config);
         try {
             return performRecovery(
