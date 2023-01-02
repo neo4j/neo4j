@@ -170,7 +170,7 @@ final case class QuantifiedPathPattern(
   def isSimple: Boolean = {
     this.nodeVariableGroupings.isEmpty &&
     this.pattern.patternRelationships.size == 1 &&
-    this.pattern.selections.predicates.isEmpty &&
+    this.pattern.selections.isEmpty &&
     this.pattern.quantifiedPathPatterns.isEmpty
   }
 

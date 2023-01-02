@@ -972,7 +972,7 @@ case class LogicalPlanProducer(
 
         // It should be safe to mark 'qpp' as solved at this point.
         // However, given how much information that could actually be contained in a QuantifiedPathPattern, it's safer to construct a "solved" by consciously
-        // extracting the specific elements that we _know_ is solved by the VarExpand.
+        // extracting the specific elements that we _know_ are solved by the VarExpand.
         val solvedQpp = QuantifiedPathPattern(
           leftBinding = qpp.leftBinding,
           rightBinding = qpp.rightBinding,
