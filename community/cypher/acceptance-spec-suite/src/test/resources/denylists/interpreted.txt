@@ -2,6 +2,10 @@
 Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable"
 Feature "QuantifiedPathPatternAcceptance": Scenario "Path and subpath variables"
 
+// We currently do not support QPPs nested in EXISTS/COUNT. Handled in https://trello.com/c/slWcQkHq
+Feature "QuantifiedPathPatternAcceptance": Scenario "Pattern expression/EXISTS inside a QPP is allowed": Example "2"
+Feature "QuantifiedPathPatternAcceptance": Scenario "COUNT inside a QPP is allowed"
+
 // Horizontal aggregations are currently not supported. Solved in https://trello.com/c/hO4INisk/
 Feature "QuantifiedPathPatternAcceptance": Scenario "Referencing previously-bound, non-local unconditional singleton"
 Feature "QuantifiedPathPatternAcceptance": Scenario "Referencing non-local unconditional singletons within the same path pattern containing the quantified path pattern"
