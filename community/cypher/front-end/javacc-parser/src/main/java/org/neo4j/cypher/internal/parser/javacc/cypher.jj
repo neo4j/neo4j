@@ -2568,7 +2568,7 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
         | LOOKAHEAD( 2 ) e=MapProjection()
         | e=OldParameter()
-        | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
+        | LOOKAHEAD( <LBRACKET> v=Variable() <IN> e=Expression() ( <WHERE> | <BAR> | <RBRACKET> )) e=ListComprehension() // before literal because it takes precedence. Lookahead due to potential confusion with ListLiteral
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
         | LOOKAHEAD( 3 ) e=ListLiteral()
         | LOOKAHEAD( 3 ) e=FilterExpression()
