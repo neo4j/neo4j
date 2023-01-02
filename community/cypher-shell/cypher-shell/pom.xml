@@ -25,7 +25,7 @@
         <jline.version>3.21.0</jline.version>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
-        <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
+        <moduleName>org.neo4j.shell</moduleName>
         <name-of-main-class>org.neo4j.shell.Main</name-of-main-class>
         <native-maven-plugin.version>0.9.9</native-maven-plugin.version>
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>

@@ -17,7 +17,7 @@
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.options</moduleName>
+        <moduleName>org.neo4j.cypher.internal.cache</moduleName>
     </properties>
 
     <scm>
