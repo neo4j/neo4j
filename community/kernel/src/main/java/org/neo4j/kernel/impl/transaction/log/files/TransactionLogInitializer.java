@@ -126,6 +126,7 @@ public class TransactionLogInitializer {
                 .withLogsDirectory(transactionLogsDirectory)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withDatabaseHealth(new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance()))
+                .withKernelVersionProvider(metadataCache)
                 .build();
         return new LogFilesSpan(new Lifespan(logFiles), logFiles);
     }
