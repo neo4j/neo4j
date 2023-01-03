@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.primitive.LongLists;
+import org.eclipse.collections.api.factory.primitive.LongSets;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
@@ -228,15 +230,14 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
     @Test
     void shouldTraceRelationshipTypeScanEvents() throws KernelException {
-        long first;
-        long second;
-        long third;
+        long rel1;
+        final var typeTwos = new long[2];
         try (KernelTransaction tx = beginTransaction()) {
             final var write = tx.dataWrite();
             write.nodeCreate(); // nudge passed 0
-            first = createRelationship(write, typeOne);
-            second = createRelationship(write, typeTwo);
-            third = createRelationship(write, typeTwo);
+            rel1 = createRelationship(write, typeOne);
+            typeTwos[0] = createRelationship(write, typeTwo);
+            typeTwos[1] = createRelationship(write, typeTwo);
             tx.commit();
         }
 
@@ -250,17 +251,18 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 exhaustCursor(cursor);
 
                 // then
-                tracer.assertEvents(new TraceEvent(RelationshipTypeScan, typeOne), new TraceEvent(Relationship, first));
+                tracer.assertEvents(new TraceEvent(RelationshipTypeScan, typeOne), new TraceEvent(Relationship, rel1));
 
                 // when
                 relationshipTypeScan(tx, typeTwo, cursor, IndexOrder.NONE);
-                exhaustCursor(cursor);
+                final var tracedRelationships = exhaustCursor(cursor);
+                assertThat(tracedRelationships).containsExactlyInAnyOrder(typeTwos);
 
                 // then
                 tracer.assertEvents(
                         new TraceEvent(RelationshipTypeScan, typeTwo),
-                        new TraceEvent(Relationship, second),
-                        new TraceEvent(Relationship, third));
+                        new TraceEvent(Relationship, tracedRelationships[0]),
+                        new TraceEvent(Relationship, tracedRelationships[1]));
             }
         }
     }
@@ -391,6 +393,8 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.commit();
         }
 
+        final var notDeleted = LongSets.immutable.of(second, third);
+
         try (var tx = beginTransaction();
                 var cursor = tx.cursors().allocateRelationshipTypeIndexCursor(NULL_CONTEXT);
                 var scanCursor = tx.cursors().allocateRelationshipScanCursor(NULL_CONTEXT)) {
@@ -402,23 +406,25 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
             // when
             relationshipTypeScan(tx, typeOne, cursor, IndexOrder.NONE);
-            assertThat(cursor.next()).isTrue();
-            assertThat(cursor.readFromStore()).isTrue();
-            try (var tx2 = beginTransaction()) {
-                tx2.dataWrite().relationshipDelete(first);
-                tx2.commit();
-            }
 
             // then
-            assertThat(cursor.type()).isEqualTo(typeOne);
-            assertThat(cursor.sourceNodeReference()).isEqualTo(relSourceNode);
-            assertThat(cursor.targetNodeReference()).isEqualTo(relTargetNode);
+            while (cursor.next()) {
+                assertThat(cursor.readFromStore()).isTrue();
+                assertThat(cursor.type()).isEqualTo(typeOne);
 
-            assertThat(cursor.next()).isTrue();
-            assertThat(cursor.relationshipReference()).isEqualTo(second);
-            assertThat(cursor.next()).isTrue();
-            assertThat(cursor.relationshipReference()).isEqualTo(third);
-            assertThat(cursor.next()).isFalse();
+                if (cursor.relationshipReference() == first) {
+                    try (var tx2 = beginTransaction()) {
+                        tx2.dataWrite().relationshipDelete(first);
+                        tx2.commit();
+                    }
+
+                    assertThat(cursor.sourceNodeReference()).isEqualTo(relSourceNode);
+                    assertThat(cursor.targetNodeReference()).isEqualTo(relTargetNode);
+                } else {
+                    assertThat(notDeleted.contains(cursor.relationshipReference()))
+                            .isTrue();
+                }
+            }
         }
     }
 
@@ -598,9 +604,12 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
-    private static void exhaustCursor(RelationshipTypeIndexCursor cursor) {
-        while (cursor.next()) {}
+    private static long[] exhaustCursor(RelationshipTypeIndexCursor cursor) {
+        final var rels = LongLists.mutable.empty();
+        while (cursor.next()) {
+            rels.add(cursor.relationshipReference());
+        }
+        return rels.toArray();
     }
 
     private static long createRelationship(Write write, int type) throws KernelException {
