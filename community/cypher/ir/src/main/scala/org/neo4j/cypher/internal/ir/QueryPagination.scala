@@ -31,6 +31,8 @@ final case class QueryPagination(skip: Option[Expression] = None, limit: Option[
   def withLimit(limit: Option[Limit]): QueryPagination = copy(limit = limit.map(_.expression))
   def withLimitExpression(limit: Expression): QueryPagination = copy(limit = Some(limit))
 
+  def isEmpty: Boolean = skip.isEmpty && limit.isEmpty
+
   def ++(other: QueryPagination): QueryPagination =
     copy(
       limit = either("LIMIT", limit, other.limit),
