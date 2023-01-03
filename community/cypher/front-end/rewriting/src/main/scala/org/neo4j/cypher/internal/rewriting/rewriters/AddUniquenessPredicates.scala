@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
@@ -158,6 +159,9 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     } yield (x, y)
 
     val interRelUniqueness = pairs.collect {
+      case (x: SingleRelationship, y: SingleRelationship) if x.name == y.name =>
+        Seq(False()(pos))
+
       case (x: SingleRelationship, y: SingleRelationship) if !x.isAlwaysDifferentFrom(y) =>
         Seq(Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos))
 
@@ -183,9 +187,13 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
         val xRels = x.innerRelationships.filter(innerX => y.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerX)))
         val yRels = y.innerRelationships.filter(innerY => x.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerY)))
         Option.when(xRels.nonEmpty && yRels.nonEmpty) {
-          val xList = reduceLists(xRels.map(_.variable.copyId), pos)
-          val yList = reduceLists(yRels.map(_.variable.copyId), pos)
-          Disjoint(xList, yList)(pos)
+          if (xRels.map(_.name).intersect(yRels.map(_.name)).nonEmpty) {
+            False()(pos)
+          } else {
+            val xList = reduceLists(xRels.map(_.variable.copyId), pos)
+            val yList = reduceLists(yRels.map(_.variable.copyId), pos)
+            Disjoint(xList, yList)(pos)
+          }
         }
     }.flatten
 

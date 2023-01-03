@@ -125,6 +125,14 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     assertRewrittenMatches("$n.a AND NOT $n.a", { case Ands(_) => () })
   }
 
+  test("should not simplify self-equality of types that are not equal to themselves") {
+    // because in ternary logic NULL = NULL => NULL, we cannot simplify this to true, as one might be tempted to do
+    assertRewrittenMatches("{n: null} = {n: null}", { case Equals(_, _) => () })
+    assertRewrittenMatches("null = null", { case Equals(_, _) => () })
+    assertRewrittenMatches("NaN = NaN", { case Equals(_, _) => () })
+    assertRewrittenMatches("$param = $param", { case Equals(_, _) => () })
+  }
+
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {

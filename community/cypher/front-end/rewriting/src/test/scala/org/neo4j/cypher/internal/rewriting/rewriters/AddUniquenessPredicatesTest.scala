@@ -128,7 +128,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c) RETURN *",
       s"""MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c)
-         |WHERE ${disjoint("r1", "r1")} AND ${unique("r1", 1)} AND ${unique("r1", 3)}
+         |WHERE false AND ${unique("r1", 0)} AND ${unique("r1", 2)}
          |RETURN *""".stripMargin
     )
   }
@@ -156,6 +156,13 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertRewrite(
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) RETURN *",
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE NOT(r1 = r2) AND NOT(r1 = r3) AND NOT(r2 = r3) RETURN *"
+    )
+  }
+
+  test("uniqueness check is done between relationships, also if they have the same name") {
+    assertRewrite(
+      "MATCH (a)-[r]->(b)-[r]->(c) RETURN *",
+      "MATCH (a)-[r]->(b)-[r]->(c) WHERE false RETURN *"
     )
   }
 
