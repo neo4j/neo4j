@@ -19,27 +19,37 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-public interface PageFaultEvent extends EvictionEventOpportunity, AutoCloseablePageCacheTracerEvent {
+/**
+ * Begin a page fault as part of a pin event.
+ */
+public interface PinPageFaultEvent extends PageFaultEvent {
     /**
-     * Add up a number of bytes that has been read from the backing file into the free page being bound.
+     * A PageFaultEvent that does nothing.
      */
-    void addBytesRead(long bytes);
+    PinPageFaultEvent NULL = new PinPageFaultEvent() {
+        @Override
+        public void addBytesRead(long bytes) {}
+
+        @Override
+        public void setException(Throwable throwable) {}
+
+        @Override
+        public void freeListSize(int freeListSize) {}
+
+        @Override
+        public EvictionEvent beginEviction(long cachePageId) {
+            return EvictionEvent.NULL;
+        }
+
+        @Override
+        public void setCachePageId(long cachePageId) {}
+
+        @Override
+        public void close() {}
+    };
 
     /**
-     * Update free list size as result of fault
-     *
-     * @param freeListSize new free list size
+     * The id of the cache page that is being faulted into.
      */
-    void freeListSize(int freeListSize);
-
-    /**
-     * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
-     */
-    void setException(Throwable throwable);
-
-    /**
-     * The page fault completed.
-     */
-    @Override
-    void close();
+    void setCachePageId(long cachePageId);
 }

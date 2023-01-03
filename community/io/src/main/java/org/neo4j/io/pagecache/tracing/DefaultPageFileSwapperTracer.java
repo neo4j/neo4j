@@ -28,6 +28,9 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer {
     private final LongAdder faults = new LongAdder();
     private final LongAdder failedFaults = new LongAdder();
     private final LongAdder noFaults = new LongAdder();
+    private final LongAdder vectoredFaults = new LongAdder();
+    private final LongAdder failedVectoredFaults = new LongAdder();
+    private final LongAdder noPinFaults = new LongAdder();
     private final LongAdder bytesRead = new LongAdder();
     private final LongAdder bytesWritten = new LongAdder();
     private final LongAdder evictions = new LongAdder();
@@ -79,6 +82,21 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer {
     @Override
     public void failedFaults(long failedFaults) {
         this.failedFaults.add(failedFaults);
+    }
+
+    @Override
+    public void vectoredFaults(long faults) {
+        this.vectoredFaults.add(faults);
+    }
+
+    @Override
+    public void failedVectoredFaults(long failedFaults) {
+        this.failedVectoredFaults.add(failedFaults);
+    }
+
+    @Override
+    public void noPinFaults(long faults) {
+        this.noPinFaults.add(faults);
     }
 
     /**
@@ -148,6 +166,21 @@ public class DefaultPageFileSwapperTracer implements PageFileSwapperTracer {
     @Override
     public long noFaults() {
         return noFaults.sum();
+    }
+
+    @Override
+    public long vectoredFaults() {
+        return vectoredFaults.sum();
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return failedVectoredFaults.sum();
+    }
+
+    @Override
+    public long noPinFaults() {
+        return noPinFaults.sum();
     }
 
     @Override

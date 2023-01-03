@@ -46,8 +46,8 @@ public interface PinEvent extends AutoCloseablePageCacheTracerEvent {
         public void setCachePageId(long cachePageId) {}
 
         @Override
-        public PageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
-            return PageFaultEvent.NULL;
+        public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
+            return PinPageFaultEvent.NULL;
         }
 
         @Override
@@ -73,7 +73,7 @@ public interface PinEvent extends AutoCloseablePageCacheTracerEvent {
      * @param filePageId file page id
      * @param pageSwapper file swapper
      */
-    PageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper);
+    PinPageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper);
 
     /**
      * Page found and bounded.

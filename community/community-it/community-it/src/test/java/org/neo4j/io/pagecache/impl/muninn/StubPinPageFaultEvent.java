@@ -20,9 +20,9 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 
-class StubPageFaultEvent implements PageFaultEvent {
+class StubPinPageFaultEvent implements PinPageFaultEvent {
     long bytesRead;
 
     @Override

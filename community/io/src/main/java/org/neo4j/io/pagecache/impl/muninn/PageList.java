@@ -30,8 +30,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 
 /**
  * The PageList maintains the off-heap meta-data for the individual memory pages.
@@ -322,7 +322,7 @@ class PageList implements PageReferenceTranslator {
         return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
     }
 
-    private static void setFilePageId(long pageRef, long filePageId) {
+    static void setFilePageId(long pageRef, long filePageId) {
         if (filePageId > MAX_FILE_PAGE_ID) {
             throw new IllegalArgumentException(
                     format("File page id: %s is bigger then max supported value %s.", filePageId, MAX_FILE_PAGE_ID));
@@ -353,7 +353,7 @@ class PageList implements PageReferenceTranslator {
         return (int) (v & MASK_SHIFTED_SWAPPER_ID); // 21 bits.
     }
 
-    private static void setSwapperId(long pageRef, int swapperId) {
+    static void setSwapperId(long pageRef, int swapperId) {
         swapperId = swapperId << SHIFT_SWAPPER_ID;
         long address = offPageBinding(pageRef);
         long v = UnsafeUtil.getLong(address) & MASK_NOT_SWAPPER_ID;
@@ -371,7 +371,7 @@ class PageList implements PageReferenceTranslator {
         return expectedBinding == actualBinding;
     }
 
-    static void fault(long pageRef, PageSwapper swapper, int swapperId, long filePageId, PageFaultEvent event)
+    static void fault(long pageRef, PageSwapper swapper, int swapperId, long filePageId, PinPageFaultEvent event)
             throws IOException {
         if (swapper == null) {
             throw swapperCannotBeNull();
@@ -401,7 +401,7 @@ class PageList implements PageReferenceTranslator {
         return new IllegalArgumentException("swapper cannot be null");
     }
 
-    private static IllegalStateException cannotFaultException(
+    static IllegalStateException cannotFaultException(
             long pageRef,
             PageSwapper swapper,
             int swapperId,

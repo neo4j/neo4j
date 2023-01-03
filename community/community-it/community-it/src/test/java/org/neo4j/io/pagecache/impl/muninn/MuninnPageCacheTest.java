@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,6 +42,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -76,6 +78,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
 import org.neo4j.io.pagecache.IOController;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
@@ -87,6 +90,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -96,9 +100,9 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
@@ -265,7 +269,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         int maxPages = 1024;
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             for (int i = 0; i < maxPages; i++) {
-                pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
             }
             assertEquals(12, pageCache.tryGetNumberOfPagesToEvict(12));
         }
@@ -277,7 +281,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             assertThrows(CacheLiveLockException.class, () -> {
                 for (int i = 0; i < maxPages + 1; i++) {
-                    pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                    pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
                 }
             });
             assertEquals(12, pageCache.tryGetNumberOfPagesToEvict(12));
@@ -289,7 +293,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     void countPagesToEvictWithReleasedPages() throws IOException {
         int maxPages = 1024;
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
-            long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+            long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
             pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
             assertEquals(-1, pageCache.tryGetNumberOfPagesToEvict(12));
         }
@@ -300,7 +304,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         int maxPages = 1024;
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             for (int i = 0; i < maxPages; i++) {
-                long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                long pageRef = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
                 pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
             }
             assertEquals(-1, pageCache.tryGetNumberOfPagesToEvict(12));
@@ -312,10 +316,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         int maxPages = 1024;
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             for (int i = 0; i < maxPages - 20; i++) {
-                pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
             }
             for (int i = maxPages - 20; i < maxPages; i++) {
-                var page = pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                var page = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
                 pageCache.addFreePageToFreelist(page, EvictionRunEvent.NULL);
             }
 
@@ -330,10 +334,10 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         int maxPages = 1024;
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             for (int i = 0; i < maxPages - 5; i++) {
-                pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
             }
             for (int i = maxPages - 5; i < maxPages; i++) {
-                var page = pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL);
+                var page = pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL);
                 pageCache.addFreePageToFreelist(page, EvictionRunEvent.NULL);
             }
 
@@ -348,7 +352,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         try (var pageCache = createPageCache(fs, maxPages, new DefaultPageCacheTracer())) {
             var pages = LongLists.mutable.withInitialCapacity(maxPages);
             for (int i = 0; i < maxPages; i++) {
-                pages.add(pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL));
+                pages.add(pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL));
             }
             pages.forEach(page -> pageCache.addFreePageToFreelist(page, EvictionRunEvent.NULL));
 
@@ -365,7 +369,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             var pages = LongLists.mutable.withInitialCapacity(maxPages);
             assertThrows(CacheLiveLockException.class, () -> {
                 for (int i = 0; i <= maxPages; i++) {
-                    pages.add(pageCache.grabFreeAndExclusivelyLockedPage(PageFaultEvent.NULL));
+                    pages.add(pageCache.grabFreeAndExclusivelyLockedPage(PinPageFaultEvent.NULL));
                 }
             });
             pages.forEach(page -> pageCache.addFreePageToFreelist(page, EvictionRunEvent.NULL));
@@ -2111,8 +2115,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     public void setCachePageId(long cachePageId) {}
 
                     @Override
-                    public PageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
-                        return new PageFaultEvent() {
+                    public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
+                        return new PinPageFaultEvent() {
                             @Override
                             public void addBytesRead(long bytes) {}
 
@@ -2317,6 +2321,245 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         @Override
         public VersionContext createVersionContext() {
             return versionContext;
+        }
+    }
+
+    @Test
+    void touchShouldLoadPagesIntoPageCache() throws Exception {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        getPageCache(fs, 1000, tracer);
+        Path file = file("a");
+        int toTouch = 128;
+        var fileSize = toTouch * 4;
+        generateFile(file, fileSize);
+
+        try (var pf = map(file, filePageSize)) {
+            pf.touch(0, toTouch, NULL_CONTEXT);
+
+            var faultsAfterTouch = tracer.faults();
+            try (var context = contextFactory.create("testTouch");
+                    var cursor = pf.io(0, PF_SHARED_READ_LOCK, context)) {
+                for (int i = 0; i < toTouch; i++) {
+                    cursor.next(i);
+                    int valueInPage;
+                    do {
+                        valueInPage = cursor.getInt();
+                    } while (cursor.shouldRetry());
+                    assertThat(valueInPage).isEqualTo(i);
+                }
+            }
+            assertThat(tracer.faults()).isEqualTo(faultsAfterTouch);
+        }
+    }
+
+    @Test
+    void touchMustNotGrowFile() throws Exception {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
+        getPageCache(fs, 1000, tracer);
+        Path file = file("a");
+        int toTouch = 128;
+        var fileSize = toTouch * 4;
+        generateFile(file, fileSize);
+
+        var sizeBefore = fs.getFileSize(file);
+        try (var pf = map(file, filePageSize)) {
+            assertThat(pf.touch(fileSize - 1, toTouch, NULL_CONTEXT)).isEqualTo(1);
+
+            try (var cursor = pf.io(fileSize, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                cursor.next();
+            }
+            pf.flushAndForce(FileFlushEvent.NULL);
+        }
+        assertThat(fs.getFileSize(file)).isEqualTo(sizeBefore + filePageSize);
+    }
+
+    @Test
+    void touchShouldReportFaults() throws Exception {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        getPageCache(fs, 1000, tracer);
+        Path file = file("a");
+        int toTouch = 128;
+        var fileSize = toTouch * 4;
+        generateFile(file, fileSize);
+
+        var initialFaults = tracer.faults();
+
+        try (var pf = map(file, filePageSize)) {
+            try (var context = contextFactory.create("testTouch")) {
+                assertThat(pf.touch(0, toTouch, context)).isEqualTo(toTouch);
+            }
+            assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch);
+            assertThat(tracer.vectoredFaults()).isEqualTo(1);
+
+            // touched the same pages, no more faults
+            try (var context = contextFactory.create("testTouch")) {
+                assertThat(pf.touch(0, toTouch, context)).isEqualTo(toTouch);
+            }
+            assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch);
+            assertThat(tracer.vectoredFaults()).isEqualTo(2);
+
+            // touched new pages
+            try (var context = contextFactory.create("testTouch")) {
+                assertThat(pf.touch(toTouch, toTouch, context)).isEqualTo(toTouch);
+            }
+            assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch * 2);
+            assertThat(tracer.vectoredFaults()).isEqualTo(3);
+
+            // touched pages at the end
+            try (var context = contextFactory.create("testTouch")) {
+                assertThat(pf.touch(fileSize - toTouch / 2, toTouch, context)).isEqualTo(toTouch / 2);
+            }
+            assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch * 2 + toTouch / 2);
+            assertThat(tracer.vectoredFaults()).isEqualTo(4);
+        }
+    }
+
+    @Test
+    void touchWhenSomePagesAlreadyLoaded() throws Exception {
+        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
+        var contextFactory = new CursorContextFactory(tracer, EMPTY);
+        getPageCache(fs, 1000, tracer);
+        Path file = file("a");
+        int toTouch = 128;
+        var fileSize = toTouch * 4;
+        generateFile(file, fileSize);
+
+        var initialFaults = tracer.faults();
+
+        try (var pf = map(file, filePageSize)) {
+
+            try (var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                cursor.next(10);
+                cursor.next(16);
+                cursor.next(37);
+            }
+
+            try (var context = contextFactory.create("testTouch")) {
+                assertThat(pf.touch(0, toTouch, context)).isEqualTo(toTouch);
+            }
+            assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch - 3);
+        }
+    }
+
+    @Test
+    void touchMoreThenLockStriping() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            DefaultPageCacheTracer tracer = new DefaultPageCacheTracer(true);
+            var contextFactory = new CursorContextFactory(tracer, EMPTY);
+            getPageCache(fs, LatchMap.faultLockStriping * 2, tracer);
+            Path file = file("a");
+
+            int toTouch = LatchMap.faultLockStriping + 27;
+            var fileSize = toTouch * 4;
+            generateFile(file, fileSize);
+
+            var initialFaults = tracer.faults();
+
+            try (var pf = map(file, filePageSize)) {
+                try (var context = contextFactory.create("testTouch")) {
+                    assertThat(pf.touch(0, toTouch, context)).isEqualTo(toTouch);
+                }
+                assertThat(tracer.faults()).isEqualTo(initialFaults + toTouch);
+            }
+        });
+    }
+
+    @Test
+    void touchMoreThenPageCacheCanFit() {
+        assertTimeoutPreemptively(ofMillis(SHORT_TIMEOUT_MILLIS), () -> {
+            getPageCache(fs, 200, NULL);
+            Path file = file("a");
+
+            int toTouch = 256;
+            var fileSize = toTouch * 4;
+            generateFile(file, fileSize);
+            try (var pf = map(file, filePageSize)) {
+                assertThatThrownBy(() -> pf.touch(0, toTouch, NULL_CONTEXT)).isInstanceOf(CacheLiveLockException.class);
+                // after that we should be able to pin pages, i.e. locks and latches are released
+                try (var cursor = pf.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                    for (int i = fileSize; i > 0; i--) {
+                        assertThat(cursor.next()).isTrue();
+                    }
+                }
+            }
+        });
+    }
+
+    @RepeatedTest(50)
+    void racePageFileTouchAndEviction() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            assumeTrue(
+                    fs.getClass() == EphemeralFileSystemAbstraction.class,
+                    "This test is very slow on real file system");
+
+            var pageSize = 8 + reservedBytes;
+            try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+                var file = file("a");
+                generateFile(pageCache, file, 10, pageSize);
+                var race = new Race();
+                race.addContestant(Race.throwing(() -> {
+                    try {
+                        for (int i = 0; i < 1000; i++) {
+                            try (var pagedFile = map(pageCache, file, pageSize)) {
+                                pagedFile.touch(0, 8, NULL_CONTEXT);
+                            }
+                        }
+                    } catch (CacheLiveLockException ignore) {
+                    } finally {
+                        // to stop the other contestant
+                        pageCache.close();
+                    }
+                }));
+                race.addContestant(Race.throwing(() -> {
+                    try (var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions(1000)) {
+                        pageCache.evictPages(1000, 0, evictionRunEvent);
+                    }
+                }));
+                race.go();
+            }
+        });
+    }
+
+    @RepeatedTest(50)
+    void racePageFileTouchAndClose() {
+        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
+            assumeTrue(
+                    fs.getClass() == EphemeralFileSystemAbstraction.class,
+                    "This test is very slow on real file system");
+
+            var pageSize = 8 + reservedBytes;
+            try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+                var file = file("a");
+                generateFile(pageCache, file, 10, pageSize);
+                var pagedFile = map(pageCache, file, pageSize);
+                var race = new Race();
+                race.addContestant(Race.throwing(() -> {
+                    try {
+                        for (int i = 0; i < 10000; i++) {
+                            pagedFile.touch(0, 8, NULL_CONTEXT);
+                        }
+                    } catch (CacheLiveLockException | FileIsNotMappedException ignore) {
+                    }
+                }));
+                race.addContestant(Race.throwing(pagedFile::close));
+                race.go();
+            }
+        });
+    }
+
+    private void generateFile(Path file, int numberOfPages) throws IOException {
+        generateFile(pageCache, file, numberOfPages, filePageSize);
+    }
+
+    private void generateFile(PageCache pageCache, Path file, int numberOfPages, int pageSize) throws IOException {
+        try (var pf = map(pageCache, file, pageSize);
+                var writer = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            for (int i = 0; i < numberOfPages; i++) {
+                assertThat(writer.next()).isTrue();
+                writer.putInt(i);
+            }
         }
     }
 }

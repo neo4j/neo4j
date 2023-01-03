@@ -422,5 +422,10 @@ public class ByteArrayPageCursor extends PageCursor {
 
         @Override
         public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) {}
+
+        @Override
+        public int touch(long pageId, int count, CursorContext cursorContext) {
+            return 0;
+        }
     }
 }

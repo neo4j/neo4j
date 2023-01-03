@@ -119,5 +119,10 @@ public class StubPagedFile implements PagedFile {
     }
 
     @Override
-    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {}
+    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) {}
+
+    @Override
+    public int touch(long pageId, int count, CursorContext cursorContext) {
+        return 0;
+    }
 }

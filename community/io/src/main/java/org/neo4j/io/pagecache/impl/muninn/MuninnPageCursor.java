@@ -42,8 +42,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.Preconditions;
@@ -450,7 +450,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         }
     }
 
-    private void abortPageFault(Throwable throwable, int[] chunk, int chunkIndex, PageFaultEvent faultEvent) {
+    private static void abortPageFault(Throwable throwable, int[] chunk, int chunkIndex, PinPageFaultEvent faultEvent) {
         MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
         faultEvent.setException(throwable);
     }

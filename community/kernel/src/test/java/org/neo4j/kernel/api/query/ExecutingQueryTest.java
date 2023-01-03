@@ -405,6 +405,21 @@ class ExecutingQueryTest {
             return 0;
         }
 
+        @Override
+        public long vectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long failedVectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long noPinFaults() {
+            return 0;
+        }
+
         public void faults(long increment) {
             faults += increment;
         }

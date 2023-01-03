@@ -49,7 +49,7 @@ final class LatchMap {
         }
     }
 
-    static final int DEFAULT_FAULT_LOCK_STRIPING = 128;
+    static final int DEFAULT_FAULT_LOCK_STRIPING = 1024;
     static final int faultLockStriping =
             FeatureToggles.getInteger(LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING);
 
@@ -96,6 +96,13 @@ final class LatchMap {
         }
         latch.await();
         return null;
+    }
+
+    /**
+     * Size of the LatchMap
+     */
+    int size() {
+        return latches.length;
     }
 
     private int index(long identifier) {

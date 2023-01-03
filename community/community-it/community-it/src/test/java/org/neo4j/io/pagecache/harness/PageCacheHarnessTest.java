@@ -29,6 +29,7 @@ import static org.neo4j.io.pagecache.randomharness.Command.FlushFile;
 import static org.neo4j.io.pagecache.randomharness.Command.MapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.ReadMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.ReadRecord;
+import static org.neo4j.io.pagecache.randomharness.Command.Touch;
 import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
@@ -190,6 +191,27 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setVerification(filesAreCorrectlyWrittenVerification(recordFormat, filePageCount));
 
             harness.run(LONG_TIMEOUT_MILLIS, MILLISECONDS);
+        }
+    }
+
+    @RepeatedTest(10)
+    void readsWritesAndTouches() throws Exception {
+        int filePageCount = 100;
+        try (RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness()) {
+            harness.disableCommands(MapFile, UnmapFile);
+            additionalDisabledCommands().forEach(harness::disableCommands);
+            harness.setCommandProbabilityFactor(ReadRecord, 0.5);
+            harness.setCommandProbabilityFactor(WriteRecord, 0.5);
+            harness.setCommandProbabilityFactor(Touch, 0.5);
+            harness.setConcurrencyLevel(8);
+            harness.setFilePageCount(filePageCount);
+            harness.setInitialMappedFiles(5);
+            harness.setCachePageCount(filePageCount);
+            harness.setFileSystem(fs);
+            harness.setVerification(filesAreCorrectlyWrittenVerification(new StandardRecordFormat(), filePageCount));
+            harness.setBasePath(directory.directory("readsWritesAndTouches"));
+            harness.setOpenOptions(getOpenOptions());
+            harness.run(SEMI_LONG_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         }
     }
 

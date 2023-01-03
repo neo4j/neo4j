@@ -109,6 +109,21 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long vectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long noPinFaults() {
+        return 0;
+    }
+
+    @Override
     public long evictions() {
         return 0;
     }
@@ -250,6 +265,15 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void failedFaults(long failedFaults) {}
+
+    @Override
+    public void vectoredFaults(long faults) {}
+
+    @Override
+    public void failedVectoredFaults(long failedFaults) {}
+
+    @Override
+    public void noPinFaults(long faults) {}
 
     @Override
     public void bytesRead(long bytesRead) {}

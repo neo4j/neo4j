@@ -25,7 +25,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
  * A PageCacheTracer that delegates all calls to a wrapped instance.
- *
  * Useful for overriding specific functionality in a sub-class.
  */
 public class DelegatingPageCacheTracer implements PageCacheTracer {
@@ -211,6 +210,21 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void vectoredFaults(long faults) {
+        delegate.vectoredFaults(faults);
+    }
+
+    @Override
+    public void failedVectoredFaults(long failedFaults) {
+        delegate.failedVectoredFaults(failedFaults);
+    }
+
+    @Override
+    public void noPinFaults(long faults) {
+        delegate.noPinFaults(faults);
+    }
+
+    @Override
     public void bytesRead(long bytesRead) {
         delegate.bytesRead(bytesRead);
     }
@@ -323,6 +337,21 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     @Override
     public long noFaults() {
         return delegate.noFaults();
+    }
+
+    @Override
+    public long vectoredFaults() {
+        return delegate.vectoredFaults();
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return delegate.failedVectoredFaults();
+    }
+
+    @Override
+    public long noPinFaults() {
+        return delegate.noPinFaults();
     }
 
     @Override

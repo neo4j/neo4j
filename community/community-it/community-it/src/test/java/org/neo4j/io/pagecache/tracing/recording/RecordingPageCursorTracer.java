@@ -23,8 +23,8 @@ import java.util.Objects;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -64,6 +64,21 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     @Override
     public long noFaults() {
+        return 0;
+    }
+
+    @Override
+    public long vectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long noPinFaults() {
         return 0;
     }
 
@@ -141,9 +156,9 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             public void setCachePageId(long cachePageId) {}
 
             @Override
-            public PageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
+            public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
                 hit = false;
-                return new PageFaultEvent() {
+                return new PinPageFaultEvent() {
                     @Override
                     public void addBytesRead(long bytes) {}
 

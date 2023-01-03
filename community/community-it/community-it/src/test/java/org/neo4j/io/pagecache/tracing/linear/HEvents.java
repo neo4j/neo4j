@@ -33,9 +33,9 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 
 /**
  * Container of events for page cache tracers that are used to build linear historical representation of page cache
@@ -274,9 +274,9 @@ class HEvents {
         }
 
         @Override
-        public PageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
+        public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper swapper) {
             hit = false;
-            return tracer.add(new PageFaultHEvent(tracer));
+            return tracer.add(new PinPageFaultHEvent(tracer));
         }
 
         @Override
@@ -302,13 +302,13 @@ class HEvents {
         }
     }
 
-    public static class PageFaultHEvent extends IntervalHEvent implements PageFaultEvent {
+    public static class PinPageFaultHEvent extends IntervalHEvent implements PinPageFaultEvent {
         private int bytesRead;
         private long cachePageId;
         private boolean pageEvictedByFaulter;
         private Throwable exception;
 
-        PageFaultHEvent(LinearHistoryTracer linearHistoryTracer) {
+        PinPageFaultHEvent(LinearHistoryTracer linearHistoryTracer) {
             super(linearHistoryTracer);
         }
 

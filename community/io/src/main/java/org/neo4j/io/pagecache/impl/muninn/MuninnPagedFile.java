@@ -46,10 +46,12 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.VectoredPageFaultEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     static final int UNMAPPED_TTE = -1;
+    private static final boolean USE_VECTORIZED_TOUCH = flag(MuninnPagedFile.class, "USE_VECTORIZED_TOUCH", true);
     private static final boolean mergePagesOnFlush = flag(MuninnPagedFile.class, "mergePagesOnFlush", true);
     private static final int maxChunkGrowth =
             getInteger(MuninnPagedFile.class, "maxChunkGrowth", 16); // One chunk is 32 MiB, by default.
@@ -101,9 +103,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
      * the file – 48 bits, plus an empty file marker bit. Because our pages are usually 2^13 bytes, this means that we
      * only lose 3 bits to the reference count, in terms of keeping large files byte addressable.
-     *
      * The layout looks like this:
-     *
      * ┏━ Empty file marker bit. When 1, the file is empty.
      * ┃    ┏━ Reference count, 15 bits.
      * ┃    ┃                ┏━ 48 bits for the last page id.
@@ -330,7 +330,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                     filePageId++;
                     int chunkIndex = computeChunkIndex(filePageId);
 
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    int pageId = translationTableGetVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
                         long pageRef = deref(pageId);
                         // try to evict page, but we can fail if there is a race or if we still have cursor open for
@@ -395,7 +395,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for (; ; ) {
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    int pageId = translationTableGetVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
                         long pageRef = deref(pageId);
                         long stamp = tryOptimisticReadLock(pageRef);
@@ -436,7 +436,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for (; ; ) {
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    int pageId = translationTableGetVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
                         long pageRef = deref(pageId);
                         if (!tryExclusiveLock(pageRef)) {
@@ -451,7 +451,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                             // and page in a free list. Page should be locked exclusively in the free list.
                             // see MunningPageCache#grabFreeAndExclusivelyLockedPage
                             // see MuninnPageCursor#pageFault
-                            TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
+                            translationTableSetVolatile(chunk, chunkIndex, UNMAPPED_TTE);
                             clearBinding(pageRef);
                             pageCache.addFreePageToFreelist(pageRef, EvictionRunEvent.NULL);
                             continue chunkLoop;
@@ -530,7 +530,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for (; ; ) {
-                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+                    int pageId = translationTableGetVolatile(chunk, chunkIndex);
                     if (pageId != UNMAPPED_TTE) {
                         long pageRef = deref(pageId);
                         long stamp = tryOptimisticReadLock(pageRef);
@@ -843,6 +843,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     /**
      * Grab a free page for the purpose of page faulting. Possibly blocking if
      * none are immediately available.
+     *
      * @param faultEvent The trace event for the current page fault.
      */
     long grabFreeAndExclusivelyLockedPage(PageFaultEvent faultEvent) throws IOException {
@@ -851,6 +852,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     /**
      * Remove the mapping of the given filePageId from the translation table, and return the evicted page object.
+     *
      * @param filePageId The id of the file page to evict.
      */
     private void evictPage(long filePageId) {
@@ -858,10 +860,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         int chunkIndex = computeChunkIndex(filePageId);
         int[] chunk = translationTable[chunkId];
 
-        int mappedPageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+        int mappedPageId = translationTableGetVolatile(chunk, chunkIndex);
         long pageRef = deref(mappedPageId);
         setHighestEvictedTransactionId(getAndResetLastModifiedTransactionId(pageRef));
-        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, UNMAPPED_TTE);
+        translationTableSetVolatile(chunk, chunkIndex, UNMAPPED_TTE);
     }
 
     private void setHighestEvictedTransactionId(long modifiedTransactionId) {
@@ -880,6 +882,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     /**
      * Expand the translation table such that it can include at least the given chunkId.
+     *
      * @param maxChunkId The new translation table must be big enough to include at least this chunkId.
      * @return A reference to the expanded transaction table.
      */
@@ -951,5 +954,156 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     @Override
     public boolean isMultiVersioned() {
         return multiVersioned;
+    }
+
+    /**
+     * Grab page fault latches for unmapped pages starting from pageId up to count, latches will be put into the latches array.
+     * Returns number of grabbed latches
+     */
+    private int grabPageFaultLatches(long pageId, int count, LatchMap.Latch[] latches) {
+        var latchesToGrab = Math.min(count, pageFaultLatches.size());
+        int index = 0;
+        while (index < latchesToGrab) {
+            int chunkId = computeChunkId(pageId + index);
+            int chunkIndex = computeChunkIndex(pageId + index);
+            int[] chunk = translationTable[chunkId];
+
+            for (; ; ) {
+                int mappedPageId = translationTableGetVolatile(chunk, chunkIndex);
+                if (mappedPageId == UNMAPPED_TTE) {
+                    var latch = pageFaultLatches.takeOrAwaitLatch(pageId + index);
+                    if (latch != null) {
+                        // double check that no race with other page fault
+                        if (translationTableGetVolatile(chunk, chunkIndex) == UNMAPPED_TTE) {
+                            // great, remember the latch
+                            latches[index] = latch;
+                            break;
+                        } else {
+                            // found page that already mapped, release latch and exit
+                            latch.release();
+                            return index;
+                        }
+                    }
+                } else {
+                    return index;
+                }
+            }
+            index++;
+        }
+        return index;
+    }
+
+    private static int translationTableGetVolatile(int[] chunk, int chunkIndex) {
+        return (int) TRANSLATION_TABLE_ARRAY.getVolatile(chunk, chunkIndex);
+    }
+
+    private static void translationTableSetVolatile(int[] chunk, int chunkIndex, int value) {
+        TRANSLATION_TABLE_ARRAY.setVolatile(chunk, chunkIndex, value);
+    }
+
+    @Override
+    public int touch(long pageId, int count, CursorContext cursorContext) throws IOException {
+        var lastPageId = getLastPageId();
+        if (pageId < 0 || pageId > lastPageId) {
+            return 0;
+        }
+        count = Math.min(count, (int) (lastPageId - pageId + 1));
+        int touched = 0;
+        if (USE_VECTORIZED_TOUCH) {
+            try (var faultEvent = cursorContext.getCursorTracer().beginVectoredPageFault(swapper)) {
+                touched = vectoredPageFault(pageId, count, faultEvent);
+            }
+        }
+        if (touched < count) {
+            // touch the rest with the cursor
+            try (var cursor = io(pageId + touched, PF_SHARED_READ_LOCK, cursorContext)) {
+                while (touched < count && cursor.next()) {
+                    touched++;
+                }
+            }
+        }
+        return touched;
+    }
+
+    private int vectoredPageFault(long filePageId, int count, VectoredPageFaultEvent faultEvent) throws IOException {
+        var latches = new LatchMap.Latch[count];
+        int numberOfPages = grabPageFaultLatches(filePageId, count, latches);
+        long[] pageRefs = new long[numberOfPages];
+        try {
+            // Note: It is important that we assign the filePageId after we grabbed it.
+            // If the swapping fails, the page will be considered
+            // loaded for the purpose of eviction, and will eventually return to
+            // the freelist. However, because we don't assign the swapper until the
+            // swapping-in has succeeded, the page will not be considered bound to
+            // the file page, so any subsequent thread that finds the page in their
+            // translation table will re-do the page fault.
+            for (int i = 0; i < numberOfPages; i++) {
+                pageRefs[i] = grabFreeAndExclusivelyLockedPage(faultEvent);
+                initBuffer(pageRefs[i]);
+
+                int currentSwapper = getSwapperId(pageRefs[i]);
+                long currentFilePageId = getFilePageId(pageRefs[i]);
+                if (currentFilePageId != PageCursor.UNBOUND_PAGE_ID) {
+                    throw cannotFaultException(
+                            pageRefs[i], swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
+                }
+                // set filePageId here, so if we fail on the next iteration, pagecache pages that already grabbed
+                // are eligible for eviction
+                setFilePageId(pageRefs[i], filePageId + i); // Page now considered isLoaded()
+
+                if (!isExclusivelyLocked(pageRefs[i]) || currentSwapper != 0) {
+                    throw cannotFaultException(
+                            pageRefs[i], swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
+                }
+            }
+
+            // Check if we're racing with unmapping. We have the page lock
+            // here, so the unmapping would have already happened. We do this
+            // check before page.fault(), because that would otherwise reopen
+            // the file channel.
+            getLastPageId();
+
+            long[] bufferAddresses = new long[numberOfPages];
+            int[] bufferLengths = new int[numberOfPages];
+            for (int i = 0; i < numberOfPages; i++) {
+                bufferAddresses[i] = getAddress(pageRefs[i]);
+                bufferLengths[i] = filePageSize;
+            }
+
+            long bytesRead = swapper.read(filePageId, bufferAddresses, bufferLengths, numberOfPages);
+            faultEvent.addBytesRead(bytesRead);
+            for (int i = 0; i < numberOfPages; i++) {
+                setSwapperId(pageRefs[i], swapperId); // Page now considered isBoundTo( swapper, filePageId )
+                // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race
+                // with
+                // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
+                int pageCachePageId = toId(pageRefs[i]);
+                int chunkId = computeChunkId(filePageId + i);
+                int chunkIndex = computeChunkIndex(filePageId + i);
+                translationTableSetVolatile(translationTable[chunkId], chunkIndex, pageCachePageId);
+            }
+            faultEvent.addPagesFaulted(numberOfPages, pageRefs, this);
+        } catch (Throwable throwable) {
+            faultEvent.setException(throwable);
+            // mark pages as unmapped
+            for (int i = 0; i < numberOfPages; i++) {
+                int chunkId = computeChunkId(filePageId + i);
+                int chunkIndex = computeChunkIndex(filePageId + i);
+                translationTableSetVolatile(translationTable[chunkId], chunkIndex, UNMAPPED_TTE);
+            }
+            throw throwable;
+        } finally {
+            for (int i = 0; i < numberOfPages; i++) {
+                if (pageRefs[i] != 0 && getAddress(pageRefs[i]) != 0L) {
+                    PageList.unlockExclusive(pageRefs[i]);
+                }
+            }
+            for (int i = 0; i < numberOfPages; i++) {
+                if (latches[i] != null) {
+                    latches[i].release();
+                }
+            }
+        }
+        return numberOfPages;
     }
 }

@@ -46,6 +46,22 @@ public interface PageCursorCounters {
     long noFaults();
 
     /**
+     * @return The number of vectored faults observed thus far, both failed and successful.
+     * One vectored fault can represent faults of many pages, those pages reported as part of regular faults.
+     */
+    long vectoredFaults();
+
+    /**
+     * @return The number of failed vectored faults observed thus far.
+     */
+    long failedVectoredFaults();
+
+    /**
+     * @return The number of page faults not caused by pins
+     */
+    long noPinFaults();
+
+    /**
      * @return The number of page pins observed thus far.
      */
     long pins();

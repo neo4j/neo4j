@@ -35,6 +35,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder faults = new LongAdder();
     protected final LongAdder noFaults = new LongAdder();
     protected final LongAdder failedFaults = new LongAdder();
+    protected final LongAdder vectoredFaults = new LongAdder();
+    protected final LongAdder failedVectoredFaults = new LongAdder();
+    protected final LongAdder noPinFaults = new LongAdder();
     protected final LongAdder evictions = new LongAdder();
     protected final LongAdder cooperativeEvictions = new LongAdder();
     protected final LongAdder pins = new LongAdder();
@@ -136,6 +139,21 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long vectoredFaults() {
+        return vectoredFaults.sum();
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return failedVectoredFaults.sum();
+    }
+
+    @Override
+    public long noPinFaults() {
+        return noPinFaults.sum();
+    }
+
+    @Override
     public long evictions() {
         return evictions.sum();
     }
@@ -207,7 +225,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
 
     @Override
     public double hitRatio() {
-        return MathUtil.portion(hits(), faults());
+        return MathUtil.portion(hits(), faults() - noPinFaults());
     }
 
     @Override
@@ -338,6 +356,21 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void failedFaults(long failedFaults) {
         this.failedFaults.add(failedFaults);
+    }
+
+    @Override
+    public void vectoredFaults(long faults) {
+        this.vectoredFaults.add(faults);
+    }
+
+    @Override
+    public void failedVectoredFaults(long failedFaults) {
+        this.failedVectoredFaults.add(failedFaults);
+    }
+
+    @Override
+    public void noPinFaults(long faults) {
+        this.noPinFaults.add(faults);
     }
 
     @Override

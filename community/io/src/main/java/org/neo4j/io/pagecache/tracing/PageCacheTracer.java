@@ -91,6 +91,21 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public long vectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long failedVectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long noPinFaults() {
+            return 0;
+        }
+
+        @Override
         public long evictions() {
             return 0;
         }
@@ -232,6 +247,15 @@ public interface PageCacheTracer extends PageCacheCounters {
 
         @Override
         public void failedFaults(long failedFaults) {}
+
+        @Override
+        public void vectoredFaults(long faults) {}
+
+        @Override
+        public void failedVectoredFaults(long failedFaults) {}
+
+        @Override
+        public void noPinFaults(long faults) {}
 
         @Override
         public void bytesRead(long bytesRead) {}
@@ -378,6 +402,24 @@ public interface PageCacheTracer extends PageCacheCounters {
      * @param failedFaults number of failed faults
      */
     void failedFaults(long failedFaults);
+
+    /**
+     * Report number of observed vectored fault attempts
+     * @param faults number of vectored fault attempts
+     */
+    void vectoredFaults(long faults);
+
+    /**
+     * Report number of observed failed vectored faults
+     * @param failedFaults number of failed vectored faults
+     */
+    void failedVectoredFaults(long failedFaults);
+
+    /**
+     * Report number of observed faults not caused by pins
+     * @param faults number faults
+     */
+    void noPinFaults(long faults);
 
     /**
      * Report number of bytes read

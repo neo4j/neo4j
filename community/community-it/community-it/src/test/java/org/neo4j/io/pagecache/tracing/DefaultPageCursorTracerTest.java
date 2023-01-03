@@ -149,7 +149,7 @@ class DefaultPageCursorTracerTest {
     @Test
     void countFlushesAndBytesWritten() {
         try (var pinEvent = pageCursorTracer.beginPin(true, 0, swapper)) {
-            try (PageFaultEvent faultEvent = pinEvent.beginPageFault(3, swapper)) {
+            try (PinPageFaultEvent faultEvent = pinEvent.beginPageFault(3, swapper)) {
                 EvictionEvent evictionEvent = faultEvent.beginEviction(0);
                 {
                     evictionEvent.setSwapper(swapper);
@@ -291,7 +291,7 @@ class DefaultPageCursorTracerTest {
             try (var pinEvent = tracer.beginPin(false, 1, dummyPageSwapper)) {
                 pinEvent.hit();
                 pinEvent.noFault();
-                try (PageFaultEvent pageFaultEvent = pinEvent.beginPageFault(1, dummyPageSwapper)) {
+                try (PinPageFaultEvent pageFaultEvent = pinEvent.beginPageFault(1, dummyPageSwapper)) {
                     pageFaultEvent.addBytesRead(16);
                     pageFaultEvent.setException(null);
                     try (EvictionEvent evictionEvent = pageFaultEvent.beginEviction(3)) {

@@ -33,10 +33,11 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageFileSwapperTracer;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
+import org.neo4j.io.pagecache.tracing.VectoredPageFaultEvent;
 
 public class DefaultPageCursorTracer implements PageCursorTracer {
     /**
@@ -57,6 +58,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     private long faults;
     private long noFaults;
     private long failedFaults;
+    private long vectoredFaults;
+    private long failedVectoredFaults;
+    private long noPinFaults;
     private long bytesRead;
     private long bytesWritten;
     private long evictions;
@@ -69,7 +73,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
     private final PageFaultEvictionEvent evictionEvent = new PageFaultEvictionEvent();
-    private final DefaultPageFaultEvent pageFaultEvent = new DefaultPageFaultEvent();
+    private final DefaultPinPageFaultEvent pageFaultEvent = new DefaultPinPageFaultEvent();
+    private final DefaultVectoredPageFaultEvent vectoredPageFaultEvent = new DefaultVectoredPageFaultEvent();
     private final DefaultFlushEvent flushEvent = new DefaultFlushEvent();
 
     private final PageCacheTracer pageCacheTracer;
@@ -104,6 +109,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         this.faults += statisticSnapshot.faults();
         this.noFaults += statisticSnapshot.noFaults();
         this.failedFaults += statisticSnapshot.failedFaults();
+        this.vectoredFaults += statisticSnapshot.vectoredFaults();
+        this.failedVectoredFaults += statisticSnapshot.failedVectoredFaults();
+        this.noPinFaults += statisticSnapshot.noPinFaults();
         this.bytesRead += statisticSnapshot.bytesRead();
         this.bytesWritten += statisticSnapshot.bytesWritten();
         this.evictions += statisticSnapshot.evictions();
@@ -149,6 +157,15 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         if (failedFaults > 0) {
             pageCacheTracer.failedFaults(failedFaults);
         }
+        if (vectoredFaults > 0) {
+            pageCacheTracer.vectoredFaults(vectoredFaults);
+        }
+        if (failedVectoredFaults > 0) {
+            pageCacheTracer.failedVectoredFaults(vectoredFaults);
+        }
+        if (noPinFaults > 0) {
+            pageCacheTracer.noPinFaults(noPinFaults);
+        }
         if (bytesRead > 0) {
             pageCacheTracer.bytesRead(bytesRead);
         }
@@ -182,8 +199,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     }
 
     private void checkCounters() {
-        boolean pinsInvariant = pins == hits + faults + noFaults;
-        boolean unpinsInvariant = unpins == hits + faults - failedFaults;
+        boolean pinsInvariant = pins == hits + faults + noFaults - noPinFaults;
+        boolean unpinsInvariant = unpins == hits + faults - failedFaults - noPinFaults;
         if (!(pinsInvariant && unpinsInvariant)) {
             throw new RuntimeException("Mismatch cursor counters. " + this);
         }
@@ -192,8 +209,10 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     @Override
     public String toString() {
         return "PageCursorTracer{" + "pins=" + pins + ", unpins=" + unpins + ", hits=" + hits + ", faults=" + faults
-                + ", noFaults=" + noFaults + ", failedFaults="
-                + failedFaults + ", bytesRead=" + bytesRead + ", bytesWritten="
+                + ", noFaults=" + noFaults + ", failedFaults=" + failedFaults
+                + ", vectoredFaults=" + vectoredFaults + ", failedVectoredFaults=" + failedVectoredFaults
+                + ", noPinFaults=" + noPinFaults
+                + ", bytesRead=" + bytesRead + ", bytesWritten="
                 + bytesWritten + ", evictions=" + evictions + ", evictionExceptions=" + evictionExceptions
                 + ", flushes=" + flushes + ", merges="
                 + merges + ", tag='" + tag + '\'' + (DEBUG_PINS ? ", current (yet unpinned) pins:" + currentPins() : "")
@@ -219,6 +238,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         faults = 0;
         noFaults = 0;
         failedFaults = 0;
+        vectoredFaults = 0;
+        failedVectoredFaults = 0;
+        noPinFaults = 0;
         bytesRead = 0;
         bytesWritten = 0;
         evictions = 0;
@@ -243,6 +265,21 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     @Override
     public long noFaults() {
         return noFaults;
+    }
+
+    @Override
+    public long vectoredFaults() {
+        return vectoredFaults;
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return failedVectoredFaults;
+    }
+
+    @Override
+    public long noPinFaults() {
+        return noPinFaults;
     }
 
     @Override
@@ -328,6 +365,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         }
     }
 
+    @Override
+    public VectoredPageFaultEvent beginVectoredPageFault(PageSwapper pageSwapper) {
+        vectoredPageFaultEvent.swapperTracer = pageSwapper.fileSwapperTracer();
+        return vectoredPageFaultEvent;
+    }
+
     public void setIgnoreCounterCheck(boolean ignoreCounterCheck) {
         this.ignoreCounterCheck = ignoreCounterCheck;
     }
@@ -339,7 +382,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         public void setCachePageId(long cachePageId) {}
 
         @Override
-        public PageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
+        public PinPageFaultEvent beginPageFault(long filePageId, PageSwapper pageSwapper) {
             pageFaultEvent.swapperTracer = pageSwapper.fileSwapperTracer();
             return pageFaultEvent;
         }
@@ -368,7 +411,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         }
     }
 
-    private class DefaultPageFaultEvent implements PageFaultEvent {
+    private class DefaultPinPageFaultEvent implements PinPageFaultEvent {
         private PageFileSwapperTracer swapperTracer;
 
         @Override
@@ -399,6 +442,45 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
 
         @Override
         public void setCachePageId(long cachePageId) {}
+    }
+
+    private class DefaultVectoredPageFaultEvent implements VectoredPageFaultEvent {
+        private PageFileSwapperTracer swapperTracer;
+
+        @Override
+        public void addBytesRead(long bytes) {
+            bytesRead += bytes;
+            swapperTracer.bytesRead(bytesRead);
+        }
+
+        @Override
+        public void close() {
+            vectoredFaults++;
+            swapperTracer.vectoredFaults(1);
+        }
+
+        @Override
+        public void setException(Throwable throwable) {
+            failedVectoredFaults++;
+            swapperTracer.failedVectoredFaults(1);
+        }
+
+        @Override
+        public void freeListSize(int listSize) {}
+
+        @Override
+        public EvictionEvent beginEviction(long cachePageId) {
+            return evictionEvent;
+        }
+
+        @Override
+        public void addPagesFaulted(int numberOfPages, long[] pageRefs, PageReferenceTranslator referenceTranslator) {
+            // we track page faults happened as part of vectored fault separately at cursor level, so we can check
+            // pin-hit-fault invariants
+            noPinFaults += numberOfPages;
+            faults += numberOfPages;
+            swapperTracer.faults(numberOfPages);
+        }
     }
 
     private class DefaultFlushEvent implements FlushEvent {

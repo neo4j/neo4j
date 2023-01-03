@@ -103,6 +103,7 @@ class CommandPrimer {
     public Action prime(Command command) {
         return switch (command) {
             case FlushCache -> flushCache();
+            case Touch -> touchFile();
             case FlushFile -> flushFile();
             case MapFile -> mapFile();
             case UnmapFile -> unmapFile();
@@ -110,6 +111,26 @@ class CommandPrimer {
             case WriteRecord -> writeRecord();
             case ReadMulti -> readMulti();
             case WriteMulti -> writeMulti();
+        };
+    }
+
+    private Action touchFile() {
+        if (mappedFiles.size() > 0) {
+            final Path file = mappedFiles.get(rng.nextInt(mappedFiles.size()));
+            return new Action(Command.Touch, "[file=%s]", file.getFileName()) {
+                @Override
+                public void perform() throws Exception {
+                    PagedFile pagedFile = fileMap.get(file);
+                    if (pagedFile != null) {
+                        var filePagesCount = pagedFile.getLastPageId();
+                        pagedFile.touch(rng.nextLong(filePagesCount), filePageCount / 10, NULL_CONTEXT);
+                    }
+                }
+            };
+        }
+        return new Action(Command.Touch, "[no files mapped to touch]") {
+            @Override
+            public void perform() {}
         };
     }
 

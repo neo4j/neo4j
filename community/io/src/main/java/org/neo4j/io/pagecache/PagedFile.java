@@ -233,4 +233,14 @@ public interface PagedFile extends AutoCloseable {
      * If any such protection or guarantees are required those should be done elsewhere.
      */
     void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException;
+
+    /**
+     * Ensure that specified continuous range of pages is loaded into page cache.
+     * This method could produce fault events without matching pin events.
+     *
+     * @param pageId - start page id
+     * @param count  - number of pages to touch
+     * @return number of pages touched, value that is less than requested means end of file reached
+     */
+    int touch(long pageId, int count, CursorContext cursorContext) throws IOException;
 }

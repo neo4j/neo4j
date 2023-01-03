@@ -57,6 +57,21 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
     }
 
     @Override
+    public long vectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long failedVectoredFaults() {
+        return 0;
+    }
+
+    @Override
+    public long noPinFaults() {
+        return 0;
+    }
+
+    @Override
     public long pins() {
         return 0;
     }

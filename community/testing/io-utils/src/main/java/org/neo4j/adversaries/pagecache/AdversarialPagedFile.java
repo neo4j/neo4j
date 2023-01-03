@@ -139,6 +139,12 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
+    public int touch(long pageId, int count, CursorContext cursorContext) throws IOException {
+        adversary.injectFailure(IOException.class);
+        return delegate.touch(pageId, count, cursorContext);
+    }
+
+    @Override
     public String toString() {
         return "AdversarialPagedFile{" + "delegate=" + delegate + '}';
     }

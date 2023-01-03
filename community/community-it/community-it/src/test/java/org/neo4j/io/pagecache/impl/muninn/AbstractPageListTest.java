@@ -55,8 +55,8 @@ import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
+import org.neo4j.io.pagecache.tracing.PinPageFaultEvent;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
@@ -1443,7 +1443,7 @@ public class AbstractPageListTest {
         pageList.initBuffer(pageRef);
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, (short) 0, 0, PageFaultEvent.NULL));
+                () -> PageList.fault(pageRef, DUMMY_SWAPPER, (short) 0, 0, PinPageFaultEvent.NULL));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1454,7 +1454,8 @@ public class AbstractPageListTest {
         // exclusive lock implied by the constructor
         pageList.initBuffer(pageRef);
         assertThrows(
-                IllegalArgumentException.class, () -> PageList.fault(pageRef, null, (short) 0, 0, PageFaultEvent.NULL));
+                IllegalArgumentException.class,
+                () -> PageList.fault(pageRef, null, (short) 0, 0, PinPageFaultEvent.NULL));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1467,7 +1468,7 @@ public class AbstractPageListTest {
         assertThrows(
                 IllegalStateException.class,
                 () -> PageList.fault(
-                        pageRef, DUMMY_SWAPPER, (short) 0, PageCursor.UNBOUND_PAGE_ID, PageFaultEvent.NULL));
+                        pageRef, DUMMY_SWAPPER, (short) 0, PageCursor.UNBOUND_PAGE_ID, PinPageFaultEvent.NULL));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1489,7 +1490,7 @@ public class AbstractPageListTest {
             }
         };
         pageList.initBuffer(pageRef);
-        PageList.fault(pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL);
+        PageList.fault(pageRef, swapper, swapperId, filePageId, PinPageFaultEvent.NULL);
 
         long address = PageList.getAddress(pageRef);
         assertThat(address).isNotEqualTo(0L);
@@ -1512,7 +1513,7 @@ public class AbstractPageListTest {
         int swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer(pageRef);
-        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL);
+        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
         assertThat(PageList.getFilePageId(pageRef)).isEqualTo(filePageId);
         assertThat(PageList.getSwapperId(pageRef)).isEqualTo(swapperId);
         assertTrue(PageList.isLoaded(pageRef));
@@ -1528,7 +1529,7 @@ public class AbstractPageListTest {
         int swapperId = 12;
         long filePageId = Integer.MAX_VALUE + 1L;
         pageList.initBuffer(pageRef);
-        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL);
+        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
         assertThat(PageList.getFilePageId(pageRef)).isEqualTo(filePageId);
         assertThat(PageList.getSwapperId(pageRef)).isEqualTo(swapperId);
         assertTrue(PageList.isLoaded(pageRef));
@@ -1551,7 +1552,7 @@ public class AbstractPageListTest {
         long filePageId = 42;
         pageList.initBuffer(pageRef);
         try {
-            PageList.fault(pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL);
+            PageList.fault(pageRef, swapper, swapperId, filePageId, PinPageFaultEvent.NULL);
             fail();
         } catch (IOException e) {
             assertThat(e.getMessage()).isEqualTo("boo");
@@ -1571,11 +1572,11 @@ public class AbstractPageListTest {
         short swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer(pageRef);
-        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL);
+        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
 
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL));
+                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1592,7 +1593,7 @@ public class AbstractPageListTest {
         // We still can't fault into a loaded page, though.
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL));
+                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL));
     }
 
     private void doFailedFault(short swapperId, long filePageId) {
@@ -1605,7 +1606,7 @@ public class AbstractPageListTest {
             }
         };
         try {
-            PageList.fault(pageRef, swapper, swapperId, filePageId, PageFaultEvent.NULL);
+            PageList.fault(pageRef, swapper, swapperId, filePageId, PinPageFaultEvent.NULL);
             fail("fault should have thrown");
         } catch (IOException e) {
             assertThat(e.getMessage()).isEqualTo("boom");
@@ -1627,7 +1628,7 @@ public class AbstractPageListTest {
                 return 333;
             }
         };
-        StubPageFaultEvent event = new StubPageFaultEvent();
+        StubPinPageFaultEvent event = new StubPinPageFaultEvent();
         PageList.fault(pageRef, swapper, swapperId, filePageId, event);
         assertThat(event.bytesRead).isEqualTo(333L);
     }
@@ -2246,7 +2247,7 @@ public class AbstractPageListTest {
     private void doFault(int swapperId, long filePageId) throws IOException {
         assertTrue(PageList.tryExclusiveLock(pageRef));
         pageList.initBuffer(pageRef);
-        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PageFaultEvent.NULL);
+        PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
     }
 
     // todo freelist? (entries chained via file page ids in a linked list? should work as free pages are always

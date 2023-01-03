@@ -24,6 +24,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import java.io.Closeable;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.VectoredPageFaultEvent;
 
 /**
  * Event tracer for page cursors.
@@ -46,6 +47,21 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
 
         @Override
         public long noFaults() {
+            return 0;
+        }
+
+        @Override
+        public long vectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long failedVectoredFaults() {
+            return 0;
+        }
+
+        @Override
+        public long noPinFaults() {
             return 0;
         }
 
@@ -155,6 +171,13 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
      * Unpin the page
      */
     void unpin(long filePageId, PageSwapper swapper);
+
+    /**
+     * Begin page
+     */
+    default VectoredPageFaultEvent beginVectoredPageFault(PageSwapper pageSwapper) {
+        return VectoredPageFaultEvent.NULL;
+    }
 
     /**
      * Report to global page cache tracer events observed by current page cursor tracer.

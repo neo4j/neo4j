@@ -40,6 +40,22 @@ public interface PageCacheCounters {
     long noFaults();
 
     /**
+     * @return The number of vectored faults observed thus far, both failed and successful.
+     * One vectored fault can represent faults of many pages.
+     */
+    long vectoredFaults();
+
+    /**
+     * @return The number of failed vectored faults observed thus far.
+     */
+    long failedVectoredFaults();
+
+    /**
+     * @return The number of page faults not caused by pins
+     */
+    long noPinFaults();
+
+    /**
      * @return The number of page evictions observed thus far.
      */
     long evictions();

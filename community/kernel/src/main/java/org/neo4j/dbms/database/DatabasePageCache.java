@@ -300,6 +300,11 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public int touch(long pageId, int count, CursorContext cursorContext) throws IOException {
+            return delegate.touch(pageId, count, cursorContext);
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;

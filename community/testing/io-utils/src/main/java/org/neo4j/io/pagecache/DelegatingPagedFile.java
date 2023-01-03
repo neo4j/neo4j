@@ -112,4 +112,9 @@ public class DelegatingPagedFile implements PagedFile {
     public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {
         delegate.truncate(pagesToKeep, truncateEvent);
     }
+
+    @Override
+    public int touch(long pageId, int count, CursorContext cursorContext) throws IOException {
+        return delegate.touch(pageId, count, cursorContext);
+    }
 }
