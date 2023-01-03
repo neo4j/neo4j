@@ -72,7 +72,7 @@ import picocli.CommandLine.Parameters;
         name = "dump",
         header = "Dump a database into a single-file archive.",
         description = "Dump a database into a single-file archive. The archive can be used by the load command. "
-                + "<destination-path> should be a directory (in which case a file called <database>.dump will "
+                + "<to-path> should be a directory (in which case a file called <database>.dump will "
                 + "be created), or --to-stdout can be supplied to use standard output. "
                 + "If neither --to-path or --to-stdout is supplied `server.directories.dumps.root` setting will "
                 + "be used as destination. "
