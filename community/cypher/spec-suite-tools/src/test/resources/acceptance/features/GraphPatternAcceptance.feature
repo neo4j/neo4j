@@ -177,8 +177,6 @@ Feature: GraphPatternAcceptance
       | a      | b      | c      | d      | f      | q      | r      |
       | [(:A)] | [(:B)] | [[:R]] | [(:C)] | [(:D)] | [[:R]] | [[:R]] |
 
-  # Currently not allowed to use a relationship twice. Solved in https://trello.com/c/c8hczVMn/
-  @Fails
   Scenario: Singleton element variable can be repeated across graph pattern to express implicit join
     Given having executed:
       """
@@ -193,9 +191,6 @@ Feature: GraphPatternAcceptance
     Then the result should be, in any order:
       | a    | b    | c    | f    | n    | r    | x    | z    |
 
-
-  # Currently not allowed to use a relationship twice. Solved in https://trello.com/c/c8hczVMn/
-  @Fails
   @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Element variable can be repeated in a path pattern inside a QPP
     Given having executed:
