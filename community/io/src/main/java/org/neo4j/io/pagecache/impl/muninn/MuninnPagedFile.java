@@ -1008,10 +1008,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             return 0;
         }
         count = Math.min(count, (int) (lastPageId - pageId + 1));
-        //        var maxCachedPages = pageCache.maxCachedPages();
-        //        if (count > maxCachedPages) {
-        //            count = (int) maxCachedPages;
-        //        }
         int touched = 0;
         if (USE_VECTORIZED_TOUCH) {
             try (var faultEvent = cursorContext.getCursorTracer().beginVectoredPageFault(swapper)) {
