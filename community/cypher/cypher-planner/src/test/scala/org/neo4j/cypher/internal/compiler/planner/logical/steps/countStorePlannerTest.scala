@@ -270,6 +270,38 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     ))
   }
 
+  test("should not plan a node count store operator when horizon has skip") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n) RETURN count(n) SKIP 1"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a relationship count store operator when horizon has skip") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n)-[r]->(m) RETURN count(r) SKIP 1"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a node count store operator when horizon has limit") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n) RETURN count(n) LIMIT 0"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a relationship count store operator when horizon has limit") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (n)-[r]->(m) RETURN count(r) LIMIT 0"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
