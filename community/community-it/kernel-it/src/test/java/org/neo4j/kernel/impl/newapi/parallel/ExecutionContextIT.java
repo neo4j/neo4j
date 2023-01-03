@@ -346,4 +346,17 @@ public class ExecutionContextIT {
             }
         }
     }
+
+    @Test
+    void shouldFailToCloseIfNotCompleted() {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var kts = ((InternalTransaction) transaction).kernelTransaction();
+            try (Statement statement = kts.acquireStatement()) {
+                var executionContext = kts.createExecutionContext();
+                assertThatThrownBy(executionContext::close)
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("Execution context closed before it was marked as completed.");
+            }
+        }
+    }
 }
