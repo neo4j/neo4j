@@ -57,10 +57,7 @@ class DatabaseReadOnlyCheckerTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<DatabaseId>();
         databases.add(foo.databaseId());
-        var globalChecker = new DefaultReadOnlyDatabases(() -> {
-            var snapshot = Set.copyOf(databases);
-            return snapshot::contains;
-        });
+        var globalChecker = new DefaultReadOnlyDatabases(() -> createConfigBasedLookup(databases));
         var fooChecker = globalChecker.forDatabase(foo);
         var barChecker = globalChecker.forDatabase(bar);
 
@@ -78,10 +75,7 @@ class DatabaseReadOnlyCheckerTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var databases = new HashSet<DatabaseId>();
         databases.add(foo.databaseId());
-        var globalChecker = spy(new DefaultReadOnlyDatabases(() -> {
-            var snapshot = Set.copyOf(databases);
-            return snapshot::contains;
-        }));
+        var globalChecker = spy(new DefaultReadOnlyDatabases(() -> createConfigBasedLookup(databases)));
         var fooChecker = globalChecker.forDatabase(foo);
         var barChecker = globalChecker.forDatabase(bar);
 
@@ -101,5 +95,19 @@ class DatabaseReadOnlyCheckerTest {
 
         // then
         verify(globalChecker, times(2)).isReadOnly(foo.databaseId());
+    }
+
+    private ReadOnlyDatabases.Lookup createConfigBasedLookup(Set<DatabaseId> databaseIds) {
+        return new ReadOnlyDatabases.Lookup() {
+            @Override
+            public boolean databaseIsReadOnly(DatabaseId databaseId) {
+                return databaseIds.contains(databaseId);
+            }
+
+            @Override
+            public Source source() {
+                return Source.CONFIG;
+            }
+        };
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database.readonly;
 
+import java.util.Set;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
@@ -56,6 +57,16 @@ public interface ReadOnlyDatabases {
     long updateId();
 
     /**
+     * @return readonly sources for requested databaseId
+     * */
+    Set<Lookup.Source> readonlySources(DatabaseId databaseId);
+
+    default boolean hasReadOnlyJustInLocalConfigs(DatabaseId databaseId) {
+        var sources = readonlySources(databaseId);
+        return sources.size() == 1 && sources.contains(Lookup.Source.CONFIG);
+    }
+
+    /**
      * Objects implementing this interface create {@link Lookup}s: immutable snapshots of the logical set of read only databases
      */
     @FunctionalInterface
@@ -67,8 +78,14 @@ public interface ReadOnlyDatabases {
      * Objects implementing this interface are immutable snapshots of a logical set of read only databases. The interface is
      * analogous to a {@code Predicate<NamedDatabaseId>} or a {@code Set#contains} method reference over an immutable set.
      */
-    @FunctionalInterface
     interface Lookup {
         boolean databaseIsReadOnly(DatabaseId databaseId);
+
+        Source source();
+
+        enum Source {
+            CONFIG,
+            SYSTEM_GRAPH
+        }
     }
 }

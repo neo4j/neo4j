@@ -57,6 +57,21 @@ public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
     }
 
     @Override
+    public Set<Lookup.Source> readonlySources(DatabaseId databaseId) {
+        Objects.requireNonNull(databaseId);
+
+        // System database can't be read only
+        if (databaseId.isSystemDatabase()) {
+            return Set.of();
+        }
+
+        return readOnlyDatabases.stream()
+                .filter(l -> l.databaseIsReadOnly(databaseId))
+                .map(Lookup::source)
+                .collect(Collectors.toSet());
+    }
+
+    @Override
     public DatabaseReadOnlyChecker forDatabase(NamedDatabaseId namedDatabaseId) {
         Objects.requireNonNull(namedDatabaseId);
 

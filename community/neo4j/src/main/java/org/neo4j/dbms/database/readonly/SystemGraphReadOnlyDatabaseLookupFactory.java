@@ -104,6 +104,11 @@ public final class SystemGraphReadOnlyDatabaseLookupFactory implements ReadOnlyD
         }
 
         @Override
+        public Source source() {
+            return Source.SYSTEM_GRAPH;
+        }
+
+        @Override
         public String toString() {
             return "SystemGraphLookup{" + "readOnlyDatabases=" + lookup + ", alwaysReadOnly=" + alwaysReadOnly + '}';
         }

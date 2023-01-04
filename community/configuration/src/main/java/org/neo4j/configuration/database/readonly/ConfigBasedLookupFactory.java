@@ -74,6 +74,11 @@ public final class ConfigBasedLookupFactory implements ReadOnlyDatabases.LookupF
             return explicitlyReadOnly(databaseId) || implicitlyReadOnly(databaseId);
         }
 
+        @Override
+        public Source source() {
+            return Source.CONFIG;
+        }
+
         private boolean explicitlyReadOnly(DatabaseId databaseId) {
             return containsDatabaseId(readOnlyDatabaseNames, databaseId);
         }

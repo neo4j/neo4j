@@ -206,10 +206,7 @@ class DefaultReadOnlyDatabasesTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var readOnlyDatabases = new HashSet<DatabaseId>();
         readOnlyDatabases.add(foo.databaseId());
-        var readOnly = new DefaultReadOnlyDatabases(() -> {
-            var snapshot = Set.copyOf(readOnlyDatabases);
-            return snapshot::contains;
-        });
+        var readOnly = new DefaultReadOnlyDatabases(() -> createConfigBasedLookup(readOnlyDatabases));
 
         // when
         readOnly.refresh();
@@ -238,5 +235,19 @@ class DefaultReadOnlyDatabasesTest {
 
         // then
         assertThat(readOnlyDatabases.updateId()).isEqualTo(originalUpdateId + 1);
+    }
+
+    private ReadOnlyDatabases.Lookup createConfigBasedLookup(Set<DatabaseId> databaseIds) {
+        return new ReadOnlyDatabases.Lookup() {
+            @Override
+            public boolean databaseIsReadOnly(DatabaseId databaseId) {
+                return databaseIds.contains(databaseId);
+            }
+
+            @Override
+            public Source source() {
+                return Source.CONFIG;
+            }
+        };
     }
 }
