@@ -63,4 +63,7 @@ object UndirectedRelationshipIndexSeek extends IndexSeekNames {
   override val PLAN_DESCRIPTION_INDEX_SCAN_NAME = "UndirectedRelationshipIndexScan"
   override val PLAN_DESCRIPTION_INDEX_SEEK_NAME = "UndirectedRelationshipIndexSeek"
   override val PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME = "UndirectedRelationshipIndexSeekByRange"
+  override val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME = "UndirectedRelationshipUniqueIndexSeek"
+  override val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME = "UndirectedRelationshipUniqueIndexSeekByRange"
+  override val PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME = "UndirectedRelationshipUniqueIndexSeek(Locking)"
 }

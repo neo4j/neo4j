@@ -420,7 +420,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private val PLANNER_VERSION = PlannerVersion.currentVersion
 
   implicit val idGen: IdGen = new SequentialIdGen()
-  private val readOnly = true
   private val effectiveCardinalities = new EffectiveCardinalities
   private val providedOrders = new ProvidedOrders
   private val id = Id.INVALID_ID
@@ -1160,6 +1159,76 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")),
         Set("r", "x", "y")
       )
+    )
+  }
+
+  test("RelationshipUniqueIndexSeek") {
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "DirectedRelationshipUniqueIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(1 < Prop < 123)]->(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "DirectedRelationshipUniqueIndexSeekByRange",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop > 1 AND Prop < 123, cache[r.Prop]")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "DirectedRelationshipUniqueIndexSeek(Locking)",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")),
+        Set("r", "x", "y")
+      ),
+      readOnly = false
+    )
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "UndirectedRelationshipUniqueIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(1 < Prop < 123)]-(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "UndirectedRelationshipUniqueIndexSeekByRange",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop > 1 AND Prop < 123, cache[r.Prop]")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue, unique = true), 23.0),
+      planDescription(
+        id,
+        "UndirectedRelationshipUniqueIndexSeek(Locking)",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")),
+        Set("r", "x", "y")
+      ),
+      readOnly = false
     )
   }
 
@@ -5943,10 +6012,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
-  def assertGood(
+  private def assertGood(
     logicalPlan: LogicalPlan,
     expectedPlanDescription: InternalPlanDescription,
-    validateAllArgs: Boolean = false
+    validateAllArgs: Boolean = false,
+    readOnly: Boolean = true
   ): Unit = {
     val producedPlanDescription = LogicalPlan2PlanDescription.create(
       logicalPlan,

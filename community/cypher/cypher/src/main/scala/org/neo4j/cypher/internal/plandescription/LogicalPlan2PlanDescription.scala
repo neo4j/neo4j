@@ -121,6 +121,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
@@ -140,6 +141,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IndexSeekNames
 import org.neo4j.cypher.internal.logical.plans.InequalitySeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
@@ -242,6 +244,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
@@ -499,6 +502,8 @@ case class LogicalPlan2PlanDescription(
           indexType,
           valueExpr,
           directed = true,
+          unique = false,
+          readOnly = readOnly,
           p.cachedProperties
         )
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
@@ -513,6 +518,40 @@ case class LogicalPlan2PlanDescription(
           indexType,
           valueExpr,
           directed = false,
+          unique = false,
+          readOnly = readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables, withRawCardinalities)
+      case p @ DirectedRelationshipUniqueIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType) =>
+        val (indexMode, indexDesc) = getRelIndexDescriptions(
+          idName,
+          start,
+          typ,
+          end,
+          isDirected = true,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          directed = true,
+          unique = true,
+          readOnly = readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
+      case p @ UndirectedRelationshipUniqueIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType) =>
+        val (indexMode, indexDesc) = getRelIndexDescriptions(
+          idName,
+          start,
+          typ,
+          end,
+          isDirected = false,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          directed = false,
+          unique = true,
+          readOnly = readOnly,
           p.cachedProperties
         )
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables, withRawCardinalities)
@@ -2302,10 +2341,12 @@ case class LogicalPlan2PlanDescription(
     indexType: IndexType,
     valueExpr: QueryExpression[expressions.Expression],
     directed: Boolean,
+    unique: Boolean,
+    readOnly: Boolean,
     caches: Seq[expressions.Expression]
   ): (String, PrettyString) = {
 
-    val name = relationshipIndexOperatorName(valueExpr, directed)
+    val name = relationshipIndexOperatorName(valueExpr, unique, readOnly, directed)
     val predicate = indexPredicateString(propertyKeys, valueExpr)
     val info = relIndexInfoString(idName, start, typeToken, end, isDirected, propertyKeys, indexType, predicate, caches)
 
@@ -2317,36 +2358,43 @@ case class LogicalPlan2PlanDescription(
     unique: Boolean,
     readOnly: Boolean
   ): String = {
-    def findName(exactOnly: Boolean = true) =
-      if (unique && !readOnly && exactOnly) {
-        NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME
-      } else if (unique) {
-        NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME
-      } else {
-        NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_NAME
-      }
-    valueExpr match {
-      case _: ExistenceQueryExpression[expressions.Expression] =>
-        NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SCAN_NAME
-      case _: RangeQueryExpression[expressions.Expression] =>
-        if (unique) NodeIndexSeek.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME
-        else NodeIndexSeek.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
-      case e: CompositeQueryExpression[expressions.Expression] =>
-        findName(e.exactOnly)
-      case _ =>
-        findName()
-    }
+    indexOperatorName(NodeIndexSeek, valueExpr, unique, readOnly)
   }
 
   private def relationshipIndexOperatorName(
     valueExpr: QueryExpression[expressions.Expression],
+    unique: Boolean,
+    readOnly: Boolean,
     directed: Boolean
   ): String = {
     val indexSeekNames = if (directed) DirectedRelationshipIndexSeek else UndirectedRelationshipIndexSeek
+    indexOperatorName(indexSeekNames, valueExpr, unique, readOnly)
+  }
+
+  private def indexOperatorName(
+    indexSeekNames: IndexSeekNames,
+    valueExpr: QueryExpression[expressions.Expression],
+    unique: Boolean,
+    readOnly: Boolean
+  ): String = {
+    def findName(exactOnly: Boolean = true) =
+      if (unique && !readOnly && exactOnly) {
+        indexSeekNames.PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME
+      } else if (unique) {
+        indexSeekNames.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME
+      } else {
+        indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_NAME
+      }
     valueExpr match {
-      case _: ExistenceQueryExpression[expressions.Expression] => indexSeekNames.PLAN_DESCRIPTION_INDEX_SCAN_NAME
-      case _: RangeQueryExpression[expressions.Expression]     => indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
-      case _                                                   => indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_NAME
+      case _: ExistenceQueryExpression[expressions.Expression] =>
+        indexSeekNames.PLAN_DESCRIPTION_INDEX_SCAN_NAME
+      case _: RangeQueryExpression[expressions.Expression] =>
+        if (unique) indexSeekNames.PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME
+        else indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME
+      case e: CompositeQueryExpression[expressions.Expression] =>
+        findName(e.exactOnly)
+      case _ =>
+        findName()
     }
   }
 

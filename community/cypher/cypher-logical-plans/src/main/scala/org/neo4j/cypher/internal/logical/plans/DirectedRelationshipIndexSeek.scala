@@ -66,4 +66,8 @@ object DirectedRelationshipIndexSeek extends IndexSeekNames {
   override val PLAN_DESCRIPTION_INDEX_SCAN_NAME = "DirectedRelationshipIndexScan"
   override val PLAN_DESCRIPTION_INDEX_SEEK_NAME = "DirectedRelationshipIndexSeek"
   override val PLAN_DESCRIPTION_INDEX_SEEK_RANGE_NAME = "DirectedRelationshipIndexSeekByRange"
+  override val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_NAME = "DirectedRelationshipUniqueIndexSeek"
+  override val PLAN_DESCRIPTION_UNIQUE_INDEX_SEEK_RANGE_NAME = "DirectedRelationshipUniqueIndexSeekByRange"
+  override val PLAN_DESCRIPTION_UNIQUE_LOCKING_INDEX_SEEK_NAME = "DirectedRelationshipUniqueIndexSeek(Locking)"
+
 }
