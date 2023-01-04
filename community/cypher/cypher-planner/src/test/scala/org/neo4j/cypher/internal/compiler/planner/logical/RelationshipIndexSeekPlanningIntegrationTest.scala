@@ -41,7 +41,18 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .setRelationshipCardinality("()-[:REL2]-()", 50)
       .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001)
 
-  for (
+  private def plannerBuilderWithIndexUniqueness(isUnique: Boolean)
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    if (isUnique) {
+      plannerBuilder()
+        .enablePlanningRelationshipUniqueIndexSeek()
+        .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001, isUnique = true)
+    } else {
+      plannerBuilder()
+    }
+  }
+
+  for {
     (pred, indexStr) <- Seq(
       "r.prop = 123" -> "prop = 123",
       "r.prop > 123" -> "prop > 123",
@@ -51,43 +62,46 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       "123 >= r.prop > 10" -> "10 < prop <= 123",
       "r.prop IN [1, 2]" -> "prop = 1 OR 2"
     )
-  ) {
+    isUnique <- Seq(true, false)
+  } {
 
-    test(s"should plan undirected relationship index seek for $pred") {
-      val planner = plannerBuilder().build()
+    test(s"should plan undirected relationship index seek for $pred (isUnique = $isUnique)") {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
 
       planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE)
+          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
           .build()
       )
     }
 
-    test(s"should plan directed OUTGOING relationship index seek for $pred") {
-      val planner = plannerBuilder().build()
+    test(s"should plan directed OUTGOING relationship index seek for $pred (isUnique = $isUnique)") {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
 
       planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]->(b)", indexType = IndexType.RANGE)
+          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]->(b)", indexType = IndexType.RANGE, unique = isUnique)
           .build()
       )
     }
 
-    test(s"should plan directed INCOMING relationship index seek for $pred") {
-      val planner = plannerBuilder().build()
+    test(s"should plan directed INCOMING relationship index seek for $pred (isUnique = $isUnique)") {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
 
       planner.plan(s"MATCH (a)<-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)<-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE)
+          .relationshipIndexOperator(s"(a)<-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
           .build()
       )
     }
 
-    test(s"should plan undirected relationship index seek on the RHS of an Apply with correct arguments for $pred") {
-      val planner = plannerBuilder().build()
+    test(
+      s"should plan undirected relationship index seek on the RHS of an Apply with correct arguments for $pred (isUnique = $isUnique)"
+    ) {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
 
       planner.plan(
         s"""
@@ -108,15 +122,18 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
           .|.relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("n"),
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            unique = isUnique
           )
           .allNodeScan("n")
           .build()
       )
     }
 
-    test(s"should plan undirected relationship index seek over NodeByLabelScan using a hint for $pred") {
-      val planner = plannerBuilder()
+    test(
+      s"should plan undirected relationship index seek over NodeByLabelScan using a hint for $pred (isUnique = $isUnique)"
+    ) {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique)
         .setLabelCardinality("A", 10)
         .setRelationshipCardinality("(:A)-[:REL]-()", 10)
         .build()
@@ -125,13 +142,15 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           .filterExpression(hasLabels("a", "A"))
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE)
+          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
           .build()
       )
     }
 
-    test(s"should plan relationship index seek with filter for already bound start node for $pred") {
-      val planner = plannerBuilder().build()
+    test(
+      s"should plan relationship index seek with filter for already bound start node for $pred (isUnique = $isUnique)"
+    ) {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
       planner.plan(
         s"""MATCH (a) WITH a SKIP 0
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
@@ -144,7 +163,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
           .|.relationshipIndexOperator(
             s"(anon_1)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("a"),
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            unique = isUnique
           )
           .skip(0)
           .allNodeScan("a")
@@ -152,8 +172,10 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       )
     }
 
-    test(s"should plan relationship index seek with filter for already bound end node for $pred") {
-      val planner = plannerBuilder().build()
+    test(
+      s"should plan relationship index seek with filter for already bound end node for $pred (isUnique = $isUnique)"
+    ) {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
       planner.plan(
         s"""MATCH (b) WITH b SKIP 0
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
@@ -166,7 +188,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
           .|.relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]-(anon_1)",
             argumentIds = Set("b"),
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            unique = isUnique
           )
           .skip(0)
           .allNodeScan("b")
@@ -174,8 +197,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       )
     }
 
-    test(s"should plan relationship index seek with filter for already bound nodes for $pred") {
-      val planner = plannerBuilder().build()
+    test(s"should plan relationship index seek with filter for already bound nodes for $pred (isUnique = $isUnique)") {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
       planner.plan(
         s"""MATCH (a), (b) WITH a, b SKIP 0
            |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin
@@ -188,7 +211,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
           .|.relationshipIndexOperator(
             s"(anon_2)-[r:REL($indexStr)]-(anon_3)",
             argumentIds = Set("a", "b"),
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            unique = isUnique
           )
           .skip(0)
           .cartesianProduct()
@@ -198,8 +222,10 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       )
     }
 
-    test(s"should not plan relationship index seek for already bound relationship variable for $pred") {
-      val planner = plannerBuilder().build()
+    test(
+      s"should not plan relationship index seek for already bound relationship variable for $pred (isUnique = $isUnique)"
+    ) {
+      val planner = plannerBuilderWithIndexUniqueness(isUnique).build()
       withClue("Did not expect an UndirectedRelationshipIndexSeek to be planned") {
         planner.plan(
           s"""MATCH (a)-[r:REL]-(b) WITH r SKIP 0
@@ -327,6 +353,28 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       .build()
   }
 
+  test(
+    "should plan composite relationship unique index seek when there is an index on two properties and both are in equality predicates"
+  ) {
+    val planner = plannerBuilder()
+      .enablePlanningRelationshipUniqueIndexSeek()
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop1", "prop2"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.5,
+        isUnique = true
+      )
+      .build()
+
+    val query = "MATCH (a)-[r:REL]->(b) WHERE r.prop1 = 42 AND r.prop2 = 'foo' RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)", unique = true)
+      .build()
+  }
+
   test("should plan relationship index seek for self-loops") {
     val planner = plannerBuilder().build()
 
@@ -335,6 +383,20 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         .produceResults("r")
         .filter("a = anon_1")
         .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_1)", indexType = IndexType.RANGE)
+        .build()
+    )
+  }
+
+  test("should not plan unique index seek when it's disabled") {
+    val planner = plannerBuilderWithIndexUniqueness(isUnique = true)
+      .enablePlanningRelationshipUniqueIndexSeek(enabled = false)
+      .build()
+
+    planner.plan("MATCH (a)-[r:REL {prop: 123}]-(b) RETURN r") should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .filter("r.prop = 123")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
         .build()
     )
   }

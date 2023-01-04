@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -197,5 +198,39 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .projection(project = Seq("n AS a"), discard = Set("n"))
       .allNodeScan("n")
       .build()
+  }
+
+  test("should plan relationship unique index seek under MERGE") {
+    val cfg = plannerBuilder()
+      .enablePlanningRelationshipUniqueIndexSeek()
+      .enablePlanningMergeRelationshipUniqueIndexSeek()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
+      .build()
+
+    val plan = cfg.plan("MERGE (a)-[r:REL {prop: 123}]->(b)").stripProduceResults
+
+    val mergeNodes = Seq(createNode("a"), createNode("b"))
+    val mergeRelationships = Seq(createRelationship("r", "a", "REL", "b", OUTGOING, Some("{prop: 123}")))
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .merge(mergeNodes, mergeRelationships)
+      .relationshipIndexOperator("(a)-[r:REL(prop = 123)]->(b)", unique = true)
+      .build()
+  }
+
+  test("should not plan relationship unique index seek under MERGE if it's disabled") {
+    val cfg = plannerBuilder()
+      .enablePlanningRelationshipUniqueIndexSeek()
+      .enablePlanningMergeRelationshipUniqueIndexSeek(enabled = false)
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
+      .build()
+
+    val plan = cfg.plan("MERGE (a)-[r:REL {prop: 123}]->(b)").stripProduceResults
+    plan should not be using[DirectedRelationshipUniqueIndexSeek]
   }
 }

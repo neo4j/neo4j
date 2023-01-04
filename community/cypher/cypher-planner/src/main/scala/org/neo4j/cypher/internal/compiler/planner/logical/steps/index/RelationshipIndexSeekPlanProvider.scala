@@ -43,6 +43,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
   ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions)
+    if !indexMatch.indexDescriptor.isUnique || context.settings.planningRelationshipUniqueIndexSeekEnabled
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 
@@ -97,7 +98,8 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       hiddenSelections = hiddenSelections,
       providedOrder = indexMatch.providedOrder,
       context = context,
-      indexType = indexMatch.indexDescriptor.indexType
+      indexType = indexMatch.indexDescriptor.indexType,
+      unique = indexMatch.indexDescriptor.isUnique
     )
 
     planHiddenSelectionAndRelationshipLeafPlan(

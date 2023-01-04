@@ -127,6 +127,10 @@ object LogicalPlanningContext {
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
+    planningRelationshipUniqueIndexSeekEnabled: Boolean =
+      GraphDatabaseInternalSettings.planning_relationship_unique_index_seek_enabled.defaultValue(),
+    planningMergeRelationshipUniqueIndexSeekEnabled: Boolean =
+      GraphDatabaseInternalSettings.planning_merge_relationship_unique_index_seek_enabled.defaultValue(),
     useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
   ) {
 
@@ -150,6 +154,8 @@ object LogicalPlanningContext {
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
           planningIntersectionScansEnabled: Boolean,
+          planningRelationshipUniqueIndexSeekEnabled: Boolean,
+          planningMergeRelationshipUniqueIndexSeekEnabled: Boolean,
           useLegacyShortestPath: Boolean
         ) =>
         val builder = Seq.newBuilder[Any]
@@ -176,6 +182,12 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic())
           builder.addOne(planningIntersectionScansEnabled)
+
+        if (GraphDatabaseInternalSettings.planning_relationship_unique_index_seek_enabled.dynamic())
+          builder.addOne(planningRelationshipUniqueIndexSeekEnabled)
+
+        if (GraphDatabaseInternalSettings.planning_merge_relationship_unique_index_seek_enabled.dynamic())
+          builder.addOne(planningMergeRelationshipUniqueIndexSeekEnabled)
 
         // use_legacy_shortest_path is dynamic, but documented to not affect caching.
         // if (GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic())

@@ -226,6 +226,20 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => config.planningIntersectionScansEnabled
   }
 
+  val planningRelationshipUniqueIndexSeekEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_relationship_unique_index_seek_enabled.dynamic()
+    )
+    () => config.planningRelationshipUniqueIndexSeekEnabled
+  }
+
+  val planningMergeRelationshipUniqueIndexSeekEnabled: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.planning_merge_relationship_unique_index_seek_enabled.dynamic()
+    )
+    () => config.planningMergeRelationshipUniqueIndexSeekEnabled
+  }
+
   val predicatesAsUnionMaxSize: () => Int = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.predicates_as_union_max_size.dynamic()

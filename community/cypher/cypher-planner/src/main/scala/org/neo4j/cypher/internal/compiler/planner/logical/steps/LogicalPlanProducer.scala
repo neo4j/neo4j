@@ -142,6 +142,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWith
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -237,6 +238,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWi
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
@@ -626,7 +628,8 @@ case class LogicalPlanProducer(
     hiddenSelections: Seq[Expression],
     providedOrder: ProvidedOrder,
     context: LogicalPlanningContext,
-    indexType: IndexType
+    indexType: IndexType,
+    unique: Boolean
   ): LogicalPlan = {
 
     def planLeaf = {
@@ -636,7 +639,13 @@ case class LogicalPlanProducer(
 
       val leafPlan =
         if (patternForLeafPlan.dir == SemanticDirection.BOTH) {
-          UndirectedRelationshipIndexSeek(
+          val makeUndirected =
+            if (unique)
+              UndirectedRelationshipUniqueIndexSeek.apply _
+            else
+              UndirectedRelationshipIndexSeek.apply _
+
+          makeUndirected(
             idName,
             patternForLeafPlan.left,
             patternForLeafPlan.right,
@@ -648,7 +657,13 @@ case class LogicalPlanProducer(
             indexType.toPublicApi
           )
         } else {
-          DirectedRelationshipIndexSeek(
+          val makeDirected =
+            if (unique)
+              DirectedRelationshipUniqueIndexSeek.apply _
+            else
+              DirectedRelationshipIndexSeek.apply _
+
+          makeDirected(
             idName,
             patternForLeafPlan.inOrder._1,
             patternForLeafPlan.inOrder._2,

@@ -105,6 +105,12 @@ class CypherConfiguration private (val config: Config) {
   val planningIntersectionScansEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
 
+  val planningRelationshipUniqueIndexSeekEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.planning_relationship_unique_index_seek_enabled)
+
+  val planningMergeRelationshipUniqueIndexSeekEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.planning_merge_relationship_unique_index_seek_enabled)
+
   val useLPEagerAnalyzer: Boolean = config.get(
     GraphDatabaseInternalSettings.cypher_eager_analysis_implementation
   ) == GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
