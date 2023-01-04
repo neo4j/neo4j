@@ -1243,6 +1243,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     indexOrder: IndexOrder = IndexOrderNone,
     paramExpr: Iterable[Expression] = Seq.empty,
     argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
     indexType: IndexType = IndexType.RANGE
   ): IMPL = {
@@ -1253,6 +1254,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         indexOrder,
         paramExpr,
         argumentIds,
+        unique,
         customQueryExpression,
         indexType
       )(idGen)
@@ -1300,6 +1302,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     indexOrder: IndexOrder = IndexOrderNone,
     paramExpr: Iterable[Expression] = Seq.empty,
     argumentIds: Set[String] = Set.empty,
+    unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
     indexType: IndexType = IndexType.RANGE
   ): IdGen => RelationshipIndexLeafPlan = {
@@ -1316,6 +1319,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         argumentIds,
         Some(propIds),
         relType,
+        unique,
         customQueryExpression,
         indexType
       )(idGen)

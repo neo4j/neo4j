@@ -208,6 +208,8 @@ object LogicalPlanToPlanBuilderString {
       case _: DirectedRelationshipIndexEndsWithScan   => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
+      case _: UndirectedRelationshipUniqueIndexSeek   => "relationshipIndexOperator"
+      case _: DirectedRelationshipUniqueIndexSeek     => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
       case _: DirectedAllRelationshipsScan            => "allRelationshipsScan"
@@ -846,6 +848,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = true,
+          unique = false,
           queryStr,
           indexType
         )
@@ -871,6 +874,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = false,
+          unique = false,
           queryStr,
           indexType
         )
@@ -894,6 +898,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = true,
+          unique = false,
           propNames.mkString(", "),
           indexType
         )
@@ -917,6 +922,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = false,
+          unique = false,
           propNames.mkString(", "),
           indexType
         )
@@ -941,6 +947,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = true,
+          unique = false,
           s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
           indexType
         )
@@ -965,6 +972,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = false,
+          unique = false,
           s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
           indexType
         )
@@ -989,6 +997,7 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = true,
+          unique = false,
           s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
           indexType
         )
@@ -1013,7 +1022,60 @@ object LogicalPlanToPlanBuilderString {
           argumentIds,
           indexOrder,
           directed = false,
+          unique = false,
           s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
+          indexType
+        )
+      case DirectedRelationshipUniqueIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        val queryStr = queryExpressionStr(valueExpr, propNames)
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = true,
+          unique = true,
+          queryStr,
+          indexType
+        )
+      case UndirectedRelationshipUniqueIndexSeek(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        val queryStr = queryExpressionStr(valueExpr, propNames)
+        relationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          directed = false,
+          unique = true,
+          queryStr,
           indexType
         )
       case RollUpApply(_, _, collectionName, variableToCollect) =>
@@ -1186,6 +1248,7 @@ object LogicalPlanToPlanBuilderString {
     argumentIds: Set[String],
     indexOrder: IndexOrder,
     directed: Boolean,
+    unique: Boolean,
     parenthesesContent: String,
     indexType: IndexType
   ): String = {
@@ -1193,11 +1256,12 @@ object LogicalPlanToPlanBuilderString {
     val indexStr = s"($start)-[$idName:${typeToken.name}($parenthesesContent)]$rarrow($end)"
     val indexOrderStr = ", indexOrder = " + objectName(indexOrder)
     val argStr = s", argumentIds = Set(${wrapInQuotationsAndMkString(argumentIds)})"
+    val uniqueStr = s", unique = $unique"
 
     val getValueBehaviors = indexedPropertyGetValueBehaviors(properties)
     val getValueStr = s", getValue = $getValueBehaviors"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
-    s""" "$indexStr"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+    s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr$indexTypeStr """.trim
   }
 
   private def indexedPropertyGetValueBehaviors(properties: Seq[IndexedProperty]): String = {

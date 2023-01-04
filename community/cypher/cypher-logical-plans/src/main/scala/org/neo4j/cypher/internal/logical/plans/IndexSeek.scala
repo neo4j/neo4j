@@ -176,6 +176,7 @@ object IndexSeek {
     argumentIds: Set[String] = Set.empty,
     propIds: Option[PartialFunction[String, Int]] = None,
     typeId: Int = 0,
+    unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
     indexType: IndexType = IndexType.RANGE
   )(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
@@ -200,7 +201,13 @@ object IndexSeek {
       valueExpr: QueryExpression[Expression]
     ): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexSeek(
+        val makeDirected =
+          if (unique)
+            DirectedRelationshipUniqueIndexSeek.apply _
+          else
+            DirectedRelationshipIndexSeek.apply _
+
+        makeDirected(
           rel,
           startNode,
           endNode,
@@ -212,7 +219,13 @@ object IndexSeek {
           indexType
         )
       } else {
-        UndirectedRelationshipIndexSeek(
+        val makeUndirected =
+          if (unique)
+            UndirectedRelationshipUniqueIndexSeek.apply _
+          else
+            UndirectedRelationshipIndexSeek.apply _
+
+        makeUndirected(
           rel,
           startNode,
           endNode,

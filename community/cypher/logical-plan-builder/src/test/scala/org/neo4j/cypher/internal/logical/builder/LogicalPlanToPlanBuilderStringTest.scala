@@ -1725,6 +1725,140 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "relationshipIndexOperator - unique", {
+      val builder = new TestPlanBuilder().produceResults("r")
+
+      // DirectedRelationshipUniqueIndexSeek
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)->(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop >= 20)]->(y)",
+          indexOrder = IndexOrderNone,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop < 20)->(y)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop <= 20)->(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10, prop2 = '20')->(y)",
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Label(text STARTS WITH 'as')->(y)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .build()
+    }
+  )
+
+  testPlan(
+    "relationshipIndexOperator - unique 2", {
+      val builder = new TestPlanBuilder().produceResults("r")
+
+      // UndirectedRelationshipUniqueIndexSeek
+      builder
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)-(y)", indexType = IndexType.RANGE, unique = true)
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop >= 20)]-(y)",
+          indexOrder = IndexOrderNone,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop < 20)-(y)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop <= 20)-(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10, prop2 = '20')-(y)",
+          indexOrder = IndexOrderDescending,
+          getValue = {
+            case "prop"  => GetValue;
+            case "prop2" => DoNotGetValue
+          },
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .apply()
+        .|.relationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')-(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .relationshipIndexOperator(
+          "(x)-[r:Label(text STARTS WITH 'as')-(y)",
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.RANGE,
+          unique = true
+        )
+        .build()
+    }
+  )
+
+  testPlan(
     "multiNodeIndexSeekOperator",
     new TestPlanBuilder()
       .produceResults("n", "m")
