@@ -53,9 +53,6 @@ public interface OutOfOrderSequence {
      */
     long getHighestGapFreeNumber();
 
-    /**
-     * Used in recovery. I don't like the visibility of this method at all.
-     */
     void set(long number, long[] meta);
 
     Snapshot snapshot();

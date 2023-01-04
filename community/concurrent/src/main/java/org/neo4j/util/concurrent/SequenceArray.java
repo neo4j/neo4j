@@ -126,25 +126,6 @@ public class SequenceArray {
         return builder.toString();
     }
 
-    boolean seen(long baseNumber, long number, long[] meta) {
-        int diff = (int) (number - baseNumber);
-        int index = cursor + diff - 1;
-
-        if (index >= cursor + itemsAhead) {
-            return false;
-        }
-
-        int absIndex = index(index);
-        long[] arrayRef = array;
-        long num = arrayRef[absIndex];
-        if (num != number) {
-            return false;
-        }
-
-        long[] metaCopy = Arrays.copyOfRange(arrayRef, absIndex + 1, absIndex + longsPerItem);
-        return Arrays.equals(meta, metaCopy);
-    }
-
     long[][] snapshot() {
         long[][] temp = new long[itemsAhead][]; // worst-case size
         int remaining = itemsAhead - 1;
