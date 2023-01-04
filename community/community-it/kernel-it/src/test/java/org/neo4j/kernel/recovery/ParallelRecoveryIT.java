@@ -19,24 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static java.util.function.Predicate.not;
-import static org.assertj.core.api.Assumptions.assumeThatThrownBy;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.do_parallel_recovery;
 
-import org.assertj.core.api.Condition;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.lock.LockGroup;
-import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.CommandStream;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class ParallelRecoveryIT extends RecoveryIT {
-
     @Override
     void additionalConfiguration(Config config) {
         super.additionalConfiguration(config);
@@ -46,26 +34,5 @@ class ParallelRecoveryIT extends RecoveryIT {
     @Override
     TestDatabaseManagementServiceBuilder additionalConfiguration(TestDatabaseManagementServiceBuilder builder) {
         return builder.setConfig(do_parallel_recovery, true);
-    }
-
-    @Override
-    protected GraphDatabaseAPI createDatabase(long logThreshold) {
-        GraphDatabaseAPI db = super.createDatabase(logThreshold);
-        DependencyResolver dependencyResolver = db.getDependencyResolver();
-        if (dependencyResolver.containsDependency(StorageEngine.class)) {
-            StorageEngine storageEngine = dependencyResolver.resolveDependency(StorageEngine.class);
-            assumeParallelRecoveryImplemented(storageEngine);
-        }
-        return db;
-    }
-
-    private void assumeParallelRecoveryImplemented(StorageEngine engine) {
-        assumeThatThrownBy(() -> engine.lockRecoveryCommands(
-                        mock(CommandStream.class),
-                        mock(LockService.class),
-                        mock(LockGroup.class),
-                        TransactionApplicationMode.EXTERNAL))
-                .is(new Condition<Throwable>(
-                        not(UnsupportedOperationException.class::isInstance), "Supported operation"));
     }
 }
