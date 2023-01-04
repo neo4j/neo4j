@@ -79,7 +79,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
-      semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) chain
+      semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) ifOkChain
       when(ctx != SemanticContext.Create) {
         ensureNoReferencesOutFromQuantifiedPath(pattern) chain
           ensureNoRepeatedRelationships(pattern) chain

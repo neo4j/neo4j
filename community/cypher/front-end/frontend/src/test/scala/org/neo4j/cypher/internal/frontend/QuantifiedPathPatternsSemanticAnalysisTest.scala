@@ -68,6 +68,21 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     )
   }
 
+  test("MATCH (a) (()--(x {prop: a.prop}))+ (b) (()--())+ (c) RETURN *") {
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.\n" +
+        "In this case, a is defined in the same `MATCH` clause as (()--(x {prop: a.prop}))+."
+    )
+  }
+
+  test("MERGE (var0 WHERE COUNT { ((var1)--())+ } > 1 ) RETURN *") {
+    // This test asserts that we give semantic errors instead of throwing "java.util.NoSuchElementException: key not found"
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
+      "Node pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension",
+      "Subquery expressions are not allowed in a MERGE clause."
+    )
+  }
+
   test("MATCH (p = (a)--(b))+ (p = (c)--(d))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `p` occurs in multiple quantified path patterns and needs to be renamed.",
@@ -269,8 +284,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs in multiple quantified path patterns and needs to be renamed.",
       "Type mismatch: r defined with conflicting type List<Relationship> (expected Relationship)",
-      "Variable `r` already declared",
-      "Cannot use the same relationship variable 'r' for multiple relationships"
+      "Variable `r` already declared"
     )
   }
 
@@ -284,27 +298,21 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MATCH (a)-[e]->(d) ((a)-[b]->(c))*  RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `a` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-      "Variable `a` already declared",
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, a is defined in the same `MATCH` clause as ((a)-[b]->(c))*.""".stripMargin
+      "Variable `a` already declared"
     )
   }
 
   test("MATCH (()-[r]->())* ()-[r]->() RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-      "Type mismatch: r defined with conflicting type List<Relationship> (expected Relationship)",
-      "Cannot use the same relationship variable 'r' for multiple relationships"
+      "Type mismatch: r defined with conflicting type List<Relationship> (expected Relationship)"
     )
   }
 
   test("MATCH ()-[r]->() (()-[r]->())*  RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `r` occurs both inside and outside a quantified path pattern and needs to be renamed.",
-      "Variable `r` already declared",
-      """From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
-        |In this case, r is defined in the same `MATCH` clause as (()-[r]->())*.""".stripMargin,
-      "Cannot use the same relationship variable 'r' for multiple relationships"
+      "Variable `r` already declared"
     )
   }
 
@@ -320,8 +328,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "The variable `b` occurs in multiple quantified path patterns and needs to be renamed.",
       "Type mismatch: b defined with conflicting type List<Relationship> (expected Relationship)",
-      "Variable `b` already declared",
-      "Cannot use the same relationship variable 'b' for multiple relationships"
+      "Variable `b` already declared"
     )
   }
 
