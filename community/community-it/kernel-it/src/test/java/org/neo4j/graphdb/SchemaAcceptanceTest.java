@@ -55,7 +55,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -137,7 +136,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         };
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
-        builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
     }
 
     @BeforeEach

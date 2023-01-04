@@ -31,7 +31,6 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -44,7 +43,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -52,13 +50,6 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     private static String TOKEN = "Token1";
     private static String KEY = "key1";
     private static String VALUE = "value1";
-
-    @Override
-    protected TestDatabaseManagementServiceBuilder configure(
-            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
-        return super.configure(
-                databaseManagementServiceBuilder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
-    }
 
     private static long createLabeledNode(KernelTransaction transaction, String label) throws KernelException {
         long node = transaction.dataWrite().nodeCreate();

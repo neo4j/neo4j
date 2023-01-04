@@ -48,7 +48,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.Write;
@@ -204,7 +203,7 @@ abstract class OperationsTest {
                 constraintIndexCreator,
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
-                Config.defaults(GraphDatabaseInternalSettings.rel_unique_constraints, true),
+                Config.defaults(),
                 INSTANCE);
         operations.initialize(NULL_CONTEXT);
 

@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -66,7 +65,6 @@ class ConstraintIndexFailureIT {
                 // use delegating index provider with custom descriptor, so it can be replaced with failing provider
                 .addExtension(new BuiltInDelegatingIndexProviderFactory(new RangeIndexProviderFactory(), DESCRIPTOR))
                 .noOpSystemGraphInitializer()
-                .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true)
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
         try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
