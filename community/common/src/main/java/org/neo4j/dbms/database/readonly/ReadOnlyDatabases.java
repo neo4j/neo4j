@@ -57,14 +57,10 @@ public interface ReadOnlyDatabases {
     long updateId();
 
     /**
-     * @return readonly sources for requested databaseId
-     * */
+     * @return all readonly sources for requested databaseId.
+     * If the result is empty this means that the requested database doesn't exist or it is not in read-only mode.
+     */
     Set<Lookup.Source> readonlySources(DatabaseId databaseId);
-
-    default boolean hasReadOnlyJustInLocalConfigs(DatabaseId databaseId) {
-        var sources = readonlySources(databaseId);
-        return sources.size() == 1 && sources.contains(Lookup.Source.CONFIG);
-    }
 
     /**
      * Objects implementing this interface create {@link Lookup}s: immutable snapshots of the logical set of read only databases
