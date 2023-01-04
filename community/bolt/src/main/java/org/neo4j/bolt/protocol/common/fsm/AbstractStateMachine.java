@@ -216,6 +216,7 @@ public abstract class AbstractStateMachine implements StateMachine {
 
         // However a new transaction may have been created so we must always to reset
         resetTransactionState();
+        transactionManager().cleanUp(new CleanUpConnectionContext(context.connectionId()));
     }
 
     @Override
