@@ -30,19 +30,16 @@ import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
   private val pipelineWithMultiGraphs = pipelineWithSemanticFeatures(
-    SemanticFeature.MultipleGraphs,
-    SemanticFeature.WithInitialQuerySignature
+    SemanticFeature.MultipleGraphs
   )
 
   private val pipelineWithUseGraphSelector = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.WithInitialQuerySignature,
     SemanticFeature.UseGraphSelector
   )
 
   private val pipelineWithExpressionsInView = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.WithInitialQuerySignature,
     SemanticFeature.UseGraphSelector,
     SemanticFeature.ExpressionsInViewInvocations
   )

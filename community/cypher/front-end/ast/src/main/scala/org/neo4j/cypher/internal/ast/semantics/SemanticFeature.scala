@@ -38,7 +38,6 @@ object SemanticFeature {
   }
 
   case object ExpressionsInViewInvocations extends SemanticFeature
-  case object WithInitialQuerySignature extends SemanticFeature
 
   case object QuantifiedPathPatterns extends SemanticFeature with FeatureToString {
     override def name: String = "Quantified path patterns"
@@ -53,7 +52,6 @@ object SemanticFeature {
     MultipleGraphs,
     UseGraphSelector,
     ExpressionsInViewInvocations,
-    WithInitialQuerySignature,
     QuantifiedPathPatterns,
     CallInTxsStatusAndErrorHandling
   )

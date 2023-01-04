@@ -355,8 +355,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case (clause, idx) =>
         val next = SemanticCheck.fromState { currentState =>
           clause match {
-            case w: With if idx == 0 && currentState.features(SemanticFeature.WithInitialQuerySignature) =>
-              checkHorizon(w, None)
             case c: HorizonClause =>
               checkHorizon(c, outerScope)
             case _ =>
