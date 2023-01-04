@@ -42,7 +42,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.consistency.LookupAccessorsFromRunningDb;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.dbms.api.DatabaseManagementService;

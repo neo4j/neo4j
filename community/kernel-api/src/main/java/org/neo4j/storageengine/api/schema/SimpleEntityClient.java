@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.kernel.api.index.IndexProgressor;
 
-public class SimpleEntityClient {
+public abstract class SimpleEntityClient {
     public long reference;
     private IndexProgressor progressor;
 

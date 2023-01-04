@@ -140,7 +140,11 @@ public class IndexAccessors implements Closeable {
     }
 
     public IndexAccessor accessorFor(IndexDescriptor indexRule) {
-        return propertyIndexAccessors.get(indexRule.getId());
+        return accessorFor(indexRule.getId());
+    }
+
+    public IndexAccessor accessorFor(long indexRuleId) {
+        return propertyIndexAccessors.get(indexRuleId);
     }
 
     public List<IndexDescriptor> onlineRules() {
