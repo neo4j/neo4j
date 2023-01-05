@@ -206,7 +206,7 @@ class DefaultReadOnlyDatabasesTest {
         var bar = DatabaseIdFactory.from("bar", UUID.randomUUID());
         var readOnlyDatabases = new HashSet<DatabaseId>();
         readOnlyDatabases.add(foo.databaseId());
-        var readOnly = new DefaultReadOnlyDatabases(() -> createConfigBasedLookup(readOnlyDatabases));
+        var readOnly = new DefaultReadOnlyDatabases(() -> createConfigBasedLookup(new HashSet<>(readOnlyDatabases)));
 
         // when
         readOnly.refresh();
