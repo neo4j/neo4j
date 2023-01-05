@@ -34,6 +34,8 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.ThreadMXBean;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Properties;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -44,6 +46,8 @@ import javax.management.ReflectionException;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import jdk.jfr.Configuration;
+import jdk.management.jfr.FlightRecorderMXBean;
 import org.neo4j.internal.utils.DumpUtils;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
@@ -184,5 +188,73 @@ public class JmxDump {
                 return 0;
             }
         };
+    }
+
+    public JfrProfileConnection jfrConnection() throws IOException {
+        FlightRecorderMXBean bean = ManagementFactory.getPlatformMXBean(mBeanServer, FlightRecorderMXBean.class);
+        return new JfrProfileConnection(bean);
+    }
+
+    public static class JfrProfileConnection {
+
+        /**
+         * See <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.management.jfr/jdk/management/jfr/FlightRecorderMXBean.html">...</a>
+         */
+        private final FlightRecorderMXBean bean;
+        private final Map<String, String> settings;
+        private boolean hasRecording;
+        private long recordingId;
+
+        private JfrProfileConnection(FlightRecorderMXBean bean) {
+            this.bean = bean;
+            try {
+                // Typically two configurations exists. "default" with 1% overhead and "profile" with 2% overhead
+                settings = Configuration.getConfiguration("profile").getSettings();
+            } catch (Exception e) {
+                // Should we have a static config map here as a fallback instead?
+                throw new RuntimeException("No configuration found for JFR");
+            }
+        }
+
+        public void start(String name, Duration maxDuration, Path path) {
+            if (hasRecording) {
+                throw new IllegalStateException("Already has a running recording, needs to be stopped first");
+            }
+            recordingId = bean.newRecording();
+            Map<String, String> config = Map.of(
+                    "name", name,
+                    "duration", maxDuration.getSeconds() + "s",
+                    "destination", path.toAbsolutePath().toString(),
+                    "disk", "true",
+                    "maxAge", "0s", // Unlimited
+                    "maxSize", "0", // Unlimited
+                    "dumpOnExit", "true");
+            bean.setRecordingOptions(recordingId, config);
+            bean.setRecordingSettings(recordingId, settings);
+            bean.startRecording(recordingId);
+            hasRecording = true;
+        }
+
+        public void stop() {
+            if (hasRecording) {
+                try {
+                    bean.closeRecording(recordingId);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                } finally {
+                    hasRecording = false;
+                }
+            }
+        }
+
+        public boolean isRunning() {
+            if (hasRecording) {
+                // Valid return values are "NEW", "DELAYED", "STARTING", "RUNNING", "STOPPING", "STOPPED" and "CLOSED".
+                return bean.getRecordings().stream()
+                        .anyMatch(info ->
+                                info.getId() == recordingId && info.getState().equals("RUNNING"));
+            }
+            return false;
+        }
     }
 }
