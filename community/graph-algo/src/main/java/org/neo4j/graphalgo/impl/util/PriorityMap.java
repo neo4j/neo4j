@@ -56,7 +56,7 @@ public class PriorityMap<E, K, P> {
 
     @SuppressWarnings("unchecked")
     public static <K, P> PriorityMap<K, K, P> withSelfKey(Comparator<P> priority) {
-        return new PriorityMap<K, K, P>(SELF_KEY, priority, true);
+        return new PriorityMap<>(SELF_KEY, priority, true);
     }
 
     private static class NaturalPriority<P extends Comparable<P>> implements Comparator<P> {
@@ -99,7 +99,7 @@ public class PriorityMap<E, K, P> {
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder(
             boolean reversed, boolean onlyKeepBestPriorities) {
         Comparator<P> priority = new NaturalPriority<>(reversed);
-        return new PriorityMap<K, K, P>(SELF_KEY, priority, onlyKeepBestPriorities);
+        return new PriorityMap<>(SELF_KEY, priority, onlyKeepBestPriorities);
     }
 
     private final Converter<K, E> keyFunction;

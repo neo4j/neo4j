@@ -355,7 +355,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                             .isLessThanOrEqualTo(maxNumberOfPartitions);
 
                     // given  each partition distributed over multiple threads
-                    final var allFound = Collections.synchronizedSet(new HashSet<Long>());
+                    final var allFound = Collections.synchronizedSet(new HashSet<>());
                     final var workerContexts =
                             TestUtils.createContexts(tx, factory.getCursor(kernel.cursors())::with, numberOfThreads);
                     final var race = new Race();

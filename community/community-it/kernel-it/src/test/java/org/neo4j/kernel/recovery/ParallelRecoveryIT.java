@@ -65,7 +65,7 @@ class ParallelRecoveryIT extends RecoveryIT {
                         mock(LockService.class),
                         mock(LockGroup.class),
                         TransactionApplicationMode.EXTERNAL))
-                .is(new Condition<Throwable>(
+                .is(new Condition<>(
                         not(UnsupportedOperationException.class::isInstance), "Supported operation"));
     }
 }

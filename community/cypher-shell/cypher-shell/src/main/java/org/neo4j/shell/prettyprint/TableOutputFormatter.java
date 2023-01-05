@@ -68,7 +68,7 @@ public class TableOutputFormatter implements OutputFormatter {
 
     private int formatResultAndCountRows(String[] columns, Iterator<Record> records, LinePrinter output) {
 
-        ArrayList<Record> topRecords = new ArrayList<Record>(numSampleRows);
+        ArrayList<Record> topRecords = new ArrayList<>(numSampleRows);
         try {
             take(records, topRecords, numSampleRows);
         } catch (RuntimeException e) {

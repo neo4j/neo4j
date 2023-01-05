@@ -70,7 +70,7 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
         scopedMemoryTracker.allocateHeap(
                 SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance(IntUnaryOperator.class));
-        return new EagerBuffer<T>(scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy);
+        return new EagerBuffer<>(scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy);
     }
 
     private EagerBuffer(
