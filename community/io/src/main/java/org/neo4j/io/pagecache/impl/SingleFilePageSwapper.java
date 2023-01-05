@@ -700,7 +700,7 @@ public class SingleFilePageSwapper implements PageSwapper {
                 // restore interruption flag
                 Thread.currentThread().interrupt();
             }
-            if (caughtException != null) {
+            if (caughtException != null && caughtException != initialException) {
                 // this means we failed on our last retry
                 initialException.addSuppressed(caughtException);
                 throw initialException;

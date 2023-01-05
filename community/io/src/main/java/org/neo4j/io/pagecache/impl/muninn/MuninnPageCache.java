@@ -1045,9 +1045,9 @@ public class MuninnPageCache implements PageCache {
                 return 0;
             }
 
-            int namberOfPagesToEvict = tryGetNumberOfPagesToEvict(keepFree);
-            if (namberOfPagesToEvict != UNKNOWN_PAGES_TO_EVICT) {
-                return namberOfPagesToEvict;
+            int numberOfPagesToEvict = tryGetNumberOfPagesToEvict(keepFree);
+            if (numberOfPagesToEvict != UNKNOWN_PAGES_TO_EVICT) {
+                return numberOfPagesToEvict;
             }
         }
     }
