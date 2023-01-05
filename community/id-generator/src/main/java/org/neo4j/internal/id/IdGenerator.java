@@ -168,6 +168,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         void markFree(long id, int numberOfIds);
 
+        default void markDeletedAndFree(long id) {
+            markDeletedAndFree(id, 1);
+        }
+
+        void markDeletedAndFree(long id, int numberOfIds);
+
         /**
          * For an ID that was allocated and later not committed (e.g. tx rolled back).
          */
@@ -200,6 +206,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             @Override
             public void markFree(long id, int numberOfIds) {
                 actual.markFree(id, numberOfIds);
+            }
+
+            @Override
+            public void markDeletedAndFree(long id, int numberOfIds) {
+                actual.markDeletedAndFree(id, numberOfIds);
             }
 
             @Override
@@ -335,6 +346,10 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public void markDeleted(long id, int numberOfIds) { // no-op
+        }
+
+        @Override
+        public void markDeletedAndFree(long id, int numberOfIds) { // no-op
         }
 
         @Override

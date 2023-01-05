@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
@@ -249,27 +251,7 @@ class IdRangeMarkerTest {
         }
 
         // then
-        MutableLongSet deletedIdsInTree = LongSets.mutable.empty();
-        tree.visit(
-                new GBPTreeVisitor.Adaptor<>() {
-                    private IdRangeKey idRangeKey;
-
-                    @Override
-                    public void key(IdRangeKey idRangeKey, boolean isLeaf, long offloadId) {
-                        this.idRangeKey = idRangeKey;
-                    }
-
-                    @Override
-                    public void value(IdRange idRange) {
-                        for (int i = 0; i < idsPerEntry; i++) {
-                            if (idRange.getState(i) == DELETED) {
-                                deletedIdsInTree.add(idRangeKey.getIdRangeIdx() * idsPerEntry + i);
-                            }
-                        }
-                    }
-                },
-                NULL_CONTEXT);
-        assertEquals(expectedIds, deletedIdsInTree);
+        assertEquals(expectedIds, gatherIds(DELETED));
     }
 
     @Test
@@ -299,6 +281,31 @@ class IdRangeMarkerTest {
         verify(writer, times(1)).mergeIfExists(any(), any(), any());
     }
 
+    @Test
+    void shouldMarkDeletedAndFree() throws IOException {
+        // given
+        var freeIdsNotifier = new AtomicBoolean();
+        try (var marker = new IdRangeMarker(
+                idsPerEntry,
+                layout,
+                tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
+                mock(Lock.class),
+                IdRangeMerger.DEFAULT,
+                true,
+                freeIdsNotifier,
+                1,
+                new AtomicLong(-1),
+                true,
+                NO_MONITOR)) {
+            // when
+            marker.markDeletedAndFree(5, 3);
+        }
+
+        // then
+        assertThat(freeIdsNotifier.get()).isTrue();
+        assertThat(gatherIds(IdRange.IdState.FREE)).isEqualTo(LongSets.immutable.of(5, 6, 7));
+    }
+
     private static ValueMerger realMergerMock() {
         ValueMerger merger = mock(ValueMerger.class);
         when(merger.merge(any(), any(), any(), any()))
@@ -323,5 +330,29 @@ class IdRangeMarkerTest {
                 highestWritternId,
                 true,
                 NO_MONITOR);
+    }
+
+    private LongSet gatherIds(IdRange.IdState state) throws IOException {
+        MutableLongSet deletedIdsInTree = LongSets.mutable.empty();
+        tree.visit(
+                new GBPTreeVisitor.Adaptor<>() {
+                    private IdRangeKey idRangeKey;
+
+                    @Override
+                    public void key(IdRangeKey idRangeKey, boolean isLeaf, long offloadId) {
+                        this.idRangeKey = idRangeKey;
+                    }
+
+                    @Override
+                    public void value(IdRange idRange) {
+                        for (int i = 0; i < idsPerEntry; i++) {
+                            if (idRange.getState(i) == state) {
+                                deletedIdsInTree.add(idRangeKey.getIdRangeIdx() * idsPerEntry + i);
+                            }
+                        }
+                    }
+                },
+                NULL_CONTEXT);
+        return deletedIdsInTree;
     }
 }

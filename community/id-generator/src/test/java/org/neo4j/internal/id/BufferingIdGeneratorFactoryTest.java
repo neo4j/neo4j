@@ -350,6 +350,12 @@ class BufferingIdGeneratorFactoryTest {
         }
 
         @Override
+        public void markDeletedAndFree(long id, int numberOfIds) {
+            markDeleted(id, numberOfIds);
+            markFree(id, numberOfIds);
+        }
+
+        @Override
         public void markUnallocated(long id, int numberOfIds) {}
 
         void verifyDeleted(long id, int numberOfIds) {

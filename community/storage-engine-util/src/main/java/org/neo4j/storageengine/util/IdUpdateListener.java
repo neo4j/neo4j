@@ -57,6 +57,27 @@ public interface IdUpdateListener extends AutoCloseable {
         }
     };
 
+    IdUpdateListener DIRECT_WITH_FREE_ON_DELETE = new IdUpdateListener() {
+        @Override
+        public void close() {
+            // no-op
+        }
+
+        @Override
+        public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            try (Marker marker = idGenerator.marker(cursorContext)) {
+                marker.markUsed(id, size);
+            }
+        }
+
+        @Override
+        public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
+            try (Marker marker = idGenerator.marker(cursorContext)) {
+                marker.markDeletedAndFree(id, size);
+            }
+        }
+    };
+
     IdUpdateListener IGNORE = new IdUpdateListener() {
         @Override
         public void close() {

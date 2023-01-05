@@ -825,6 +825,11 @@ class FreeIdScannerTest {
                 }
 
                 @Override
+                public void markDeletedAndFree(long id, int numberOfIds) {
+                    actual.markDeletedAndFree(id, numberOfIds);
+                }
+
+                @Override
                 public void markUnallocated(long id, int numberOfIds) {
                     actual.markUnallocated(id, numberOfIds);
                 }

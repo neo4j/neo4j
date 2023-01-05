@@ -46,6 +46,15 @@ public class IdGeneratorUpdatesWorkSync {
     public static final String ID_GENERATOR_BATCH_APPLIER_TAG = "idGeneratorBatchApplier";
 
     private final Map<IdGenerator, WorkSync<IdGenerator, IdGeneratorUpdateWork>> workSyncMap = new HashMap<>();
+    private final boolean alsoFreeOnDelete;
+
+    public IdGeneratorUpdatesWorkSync() {
+        this(false);
+    }
+
+    public IdGeneratorUpdatesWorkSync(boolean alsoFreeOnDelete) {
+        this.alsoFreeOnDelete = alsoFreeOnDelete;
+    }
 
     public void add(IdGenerator idGenerator) {
         this.workSyncMap.put(idGenerator, new WorkSync<>(idGenerator));
@@ -65,12 +74,16 @@ public class IdGeneratorUpdatesWorkSync {
 
         @Override
         public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            idUpdatesMap.computeIfAbsent(idGenerator, t -> new ChangedIds()).addUsedId(id, size);
+            idUpdatesMap
+                    .computeIfAbsent(idGenerator, t -> new ChangedIds(alsoFreeOnDelete))
+                    .addUsedId(id, size);
         }
 
         @Override
         public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            idUpdatesMap.computeIfAbsent(idGenerator, t -> new ChangedIds()).addUnusedId(id, size);
+            idUpdatesMap
+                    .computeIfAbsent(idGenerator, t -> new ChangedIds(alsoFreeOnDelete))
+                    .addUnusedId(id, size);
         }
 
         public AsyncApply applyAsync() {
@@ -116,13 +129,18 @@ public class IdGeneratorUpdatesWorkSync {
         // The order in which IDs come in, used vs. unused must be kept and therefore all IDs must reside in the same
         // list
         private final MutableLongList ids = LongLists.mutable.empty();
+        private final boolean alsoFreeOnDelete;
         private AsyncApply asyncApply;
+
+        ChangedIds(boolean alsoFreeOnDelete) {
+            this.alsoFreeOnDelete = alsoFreeOnDelete;
+        }
 
         private void addUsedId(long id, int numberOfIds) {
             ids.add(combinedIdAndNumberOfIds(id, numberOfIds, true));
         }
 
-        void addUnusedId(long id, int numberOfIds) {
+        private void addUnusedId(long id, int numberOfIds) {
             ids.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
         }
 
@@ -133,7 +151,11 @@ public class IdGeneratorUpdatesWorkSync {
                 if (usedFromCombinedId(combined)) {
                     visitor.markUsed(id, slots);
                 } else {
-                    visitor.markDeleted(id, slots);
+                    if (alsoFreeOnDelete) {
+                        visitor.markDeletedAndFree(id, slots);
+                    } else {
+                        visitor.markDeleted(id, slots);
+                    }
                 }
             });
         }

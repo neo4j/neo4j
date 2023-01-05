@@ -196,6 +196,20 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
     }
 
     @Override
+    public void markDeletedAndFree(long id, int numberOfIds) {
+        if (!hasReservedIdInRange(id, id + numberOfIds)) {
+            prepareRange(id, true);
+            value.setBits(BITSET_COMMIT, idOffset(id), numberOfIds);
+            value.setBits(BITSET_REUSE, idOffset(id), numberOfIds);
+            writer.merge(key, value, merger);
+            monitor.markedAsDeleted(id, numberOfIds);
+            monitor.markedAsFree(id, numberOfIds);
+        }
+
+        freeIdsNotifier.set(true);
+    }
+
+    @Override
     public void markUnallocated(long id, int numberOfIds) {
         // To bridge this gap here is going to be very rare, basically if there are allocations that
         // are not committed but instead freed (tx rollback after writes).
