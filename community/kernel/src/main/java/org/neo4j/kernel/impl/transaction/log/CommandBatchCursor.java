@@ -17,12 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 
 /**
- * Recovery transaction applier that will apply all recovered transaction to underlying store.
+ * {@link IOCursor} over {@link CommittedCommandBatch} i.e. already committed command batches.
  */
-public interface RecoveryApplier extends Visitor<CommittedCommandBatch, Exception>, AutoCloseable {}
+public interface CommandBatchCursor extends IOCursor<CommittedCommandBatch> {
+
+    /**
+     * @return {@link LogPosition} representing position after most recent command batch, i.e. after
+     * command batch read from most recent {@link #next()} (which returned true) call.
+     */
+    LogPosition position();
+}

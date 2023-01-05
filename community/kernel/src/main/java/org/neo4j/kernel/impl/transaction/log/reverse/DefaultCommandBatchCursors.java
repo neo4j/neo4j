@@ -20,19 +20,19 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor.eagerlyReverse;
+import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedCommandBatchCursor.eagerlyReverse;
 
 import java.io.IOException;
 import java.util.Optional;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
+import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
-public class DefaultTransactionCursors implements TransactionCursors {
+public class DefaultCommandBatchCursors implements CommandBatchCursors {
 
     private final LogFile logFile;
     private final LogPosition beginning;
@@ -41,7 +41,7 @@ public class DefaultTransactionCursors implements TransactionCursors {
     private final ReversedTransactionCursorMonitor monitor;
     private long currentVersion;
 
-    public DefaultTransactionCursors(
+    public DefaultCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,
@@ -56,7 +56,7 @@ public class DefaultTransactionCursors implements TransactionCursors {
     }
 
     @Override
-    public Optional<TransactionCursor> next() {
+    public Optional<CommandBatchCursor> next() {
         if (currentVersion < beginning.getLogVersion()) {
             return Optional.empty();
         }
@@ -65,7 +65,7 @@ public class DefaultTransactionCursors implements TransactionCursors {
             LogPosition position = currentVersion > beginning.getLogVersion()
                     ? logFile.extractHeader(currentVersion).getStartPosition()
                     : beginning;
-            TransactionCursor cursor = createCursor(logFile.getReader(position, NO_MORE_CHANNELS));
+            CommandBatchCursor cursor = createCursor(logFile.getReader(position, NO_MORE_CHANNELS));
             currentVersion--;
             return Optional.of(cursor);
         } catch (IOException e) {
@@ -73,12 +73,12 @@ public class DefaultTransactionCursors implements TransactionCursors {
         }
     }
 
-    private TransactionCursor createCursor(ReadableLogChannel channel) throws IOException {
+    private CommandBatchCursor createCursor(ReadableLogChannel channel) throws IOException {
         if (channel instanceof ReadAheadLogChannel) {
-            return new ReversedSingleFileTransactionCursor(
+            return new ReversedSingleFileCommandBatchCursor(
                     (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor);
         }
-        return eagerlyReverse(new PhysicalTransactionCursor(channel, reader));
+        return eagerlyReverse(new CommittedCommandBatchCursor(channel, reader));
     }
 
     @Override

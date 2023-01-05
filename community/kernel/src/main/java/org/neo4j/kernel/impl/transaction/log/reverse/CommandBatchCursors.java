@@ -19,27 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import java.io.Closeable;
+import java.util.Optional;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 
-public class NullTransactionCursor implements TransactionCursor {
-    @Override
-    public boolean next() throws IOException {
-        return false;
-    }
+public interface CommandBatchCursors extends Closeable {
+    CommandBatchCursor NO_MORE_CURSORS = new NullCommandBatchCursor();
 
-    @Override
-    public void close() throws IOException {}
-
-    @Override
-    public LogPosition position() {
-        throw new UnsupportedOperationException("unsupported");
-    }
-
-    @Override
-    public CommittedTransactionRepresentation get() {
-        throw new UnsupportedOperationException("unsupported");
-    }
+    Optional<CommandBatchCursor> next();
 }

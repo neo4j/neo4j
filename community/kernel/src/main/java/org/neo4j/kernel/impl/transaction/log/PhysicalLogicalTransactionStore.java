@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogHeaderVisitor;
-import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -64,14 +64,14 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     }
 
     @Override
-    public TransactionCursor getTransactions(LogPosition position) throws IOException {
-        return new PhysicalTransactionCursor(
+    public CommandBatchCursor getCommandBatches(LogPosition position) throws IOException {
+        return new CommittedCommandBatchCursor(
                 logFile.getReader(position), new VersionAwareLogEntryReader(commandReaderFactory));
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder(LogPosition backToPosition) {
-        return ReversedMultiFileTransactionCursor.fromLogFile(
+    public CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition backToPosition) {
+        return ReversedMultiFileCommandBatchCursor.fromLogFile(
                 logFile,
                 backToPosition,
                 new VersionAwareLogEntryReader(commandReaderFactory),
@@ -81,7 +81,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     }
 
     @Override
-    public TransactionCursor getTransactions(final long transactionIdToStartFrom) throws IOException {
+    public CommandBatchCursor getCommandBatches(final long transactionIdToStartFrom) throws IOException {
         // look up in position cache
         try {
             var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory);
@@ -90,7 +90,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
             if (transactionMetadata != null) {
                 // we're good
                 var channel = logFile.getReader(transactionMetadata.startPosition());
-                return new PhysicalTransactionCursor(channel, logEntryReader);
+                return new CommittedCommandBatchCursor(channel, logEntryReader);
             }
 
             // ask logFiles about the version it may be in
@@ -102,7 +102,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
             logFile.accept(transactionPositionLocator, headerVisitor.getLogPosition());
             var position = transactionPositionLocator.getLogPosition();
             transactionMetadataCache.cacheTransactionMetadata(transactionIdToStartFrom, position);
-            return new PhysicalTransactionCursor(logFile.getReader(position), logEntryReader);
+            return new CommittedCommandBatchCursor(logFile.getReader(position), logEntryReader);
         } catch (NoSuchFileException e) {
             throw new NoSuchTransactionException(
                     transactionIdToStartFrom,

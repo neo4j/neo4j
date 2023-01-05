@@ -20,9 +20,13 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.ChunkEndLogEntryParserV5_4;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.ChunkStartLogEntryParserV5_4;
 
 public class LogEntryParserSetV5_4 extends LogEntryParserSetV5_0 {
     LogEntryParserSetV5_4() {
         super(KernelVersion.V5_4);
+        register(new ChunkStartLogEntryParserV5_4());
+        register(new ChunkEndLogEntryParserV5_4());
     }
 }

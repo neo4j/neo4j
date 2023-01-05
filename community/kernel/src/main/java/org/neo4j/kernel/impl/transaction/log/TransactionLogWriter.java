@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.util.VisibleForTesting;
@@ -41,26 +40,44 @@ public class TransactionLogWriter {
         this.logEntryWriterFactory = logEntryWriterFactory;
     }
 
-    /**
-     * Append a transaction to the transaction log file
-     * @return checksum of the transaction
-     */
+    /*
+    * It's possible to append two types of transactions: complete or chunked.
+    * Complete transactions are transactions that come with all desired changes in one command batch.
+    * This kind of transaction is stored in logs as a sequence of commands like:
+    *   start entry -> transactional content -> commit entry
+    * Chunked transactions are stored in logs in different chunks where each chunk contains only part of the transaction.
+    * This kind of transaction is stored in logs as a sequence of commands like:
+        start entry -> chunk start > chunk content -> chunk end -> chunk start > chunk content -> chunk end -> commit entry
+    * </p>
+    * An important difference is chunk start/chunk end command pairs. They present only in chunked transactions.
+    * The first chunk of chunked transactions comes also with a start entry.
+    * The last chunk in the chunked transaction comes with a commit entry at the end.
+    */
     public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
-        var writer = getWriter(batch);
+        var writer = getWriter(batch.kernelVersion());
         if (batch.isFirst()) {
             writer.writeStartEntry(
                     batch.getTimeStarted(),
                     batch.getLatestCommittedTxWhenStarted(),
                     previousChecksum,
                     batch.additionalHeader());
+        } else {
+            writer.writeChunkStartEntry(batch.getTimeCommitted(), chunkId);
         }
 
         // Write all the commands to the log channel
         writer.serialize(batch);
 
-        // TODO: tx envelops will allow this not to return -1 for non commit entries
-        // Write commit record
-        return batch.isLast() ? writer.writeCommitEntry(transactionId, batch.getTimeCommitted()) : BASE_TX_CHECKSUM;
+        if (batch.isLast()) {
+            return writer.writeCommitEntry(transactionId, batch.getTimeCommitted());
+        } else {
+            return writer.writeChunkEndEntry(transactionId, chunkId);
+        }
+    }
+
+    public int append(CommittedCommandBatch commandBatch) throws IOException {
+        var writer = getWriter(commandBatch.kernelVersion());
+        return commandBatch.serialize(writer);
     }
 
     public LogPosition getCurrentPosition() throws IOException {
@@ -76,20 +93,15 @@ public class TransactionLogWriter {
         return channel;
     }
 
-    @VisibleForTesting
-    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(KernelVersion version) {
-        return logEntryWriterFactory.createEntryWriter(channel, version);
-    }
-
     public void append(ByteBuffer byteBuffer) throws IOException {
         channel.write(byteBuffer);
     }
 
-    private LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(CommandBatch batch) {
-        KernelVersion kernelVersion = batch.kernelVersion();
-        if (writerVersion != kernelVersion) {
-            writerVersion = kernelVersion;
-            cachedWriter = logEntryWriterFactory.createEntryWriter(channel, kernelVersion);
+    @VisibleForTesting
+    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(KernelVersion version) {
+        if (writerVersion != version) {
+            writerVersion = version;
+            cachedWriter = logEntryWriterFactory.createEntryWriter(channel, version);
         }
         return cachedWriter;
     }

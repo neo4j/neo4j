@@ -34,4 +34,7 @@ public class LogEntryTypeCodes {
 
     // Checkpoint that contains transaction info (tx id, checksum, commit timestamp)
     public static final byte DETACHED_CHECK_POINT_V5_0 = (byte) 9;
+
+    public static final byte CHUNK_START = 10;
+    public static final byte CHUNK_END = 11;
 }

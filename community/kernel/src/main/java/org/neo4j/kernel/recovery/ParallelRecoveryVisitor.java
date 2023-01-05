@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -84,29 +84,29 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
     }
 
     @Override
-    public boolean visit(CommittedTransactionRepresentation transaction) throws Exception {
+    public boolean visit(CommittedCommandBatch commandBatch) throws Exception {
         checkFailure();
 
         // We need to know the starting point for the "is it my turn yet?" check below that each thread needs to do
         // before acquiring the locks
-        prevLockedTxId.compareAndSet(-1, transaction.commitEntry().getTxId() - stride);
+        prevLockedTxId.compareAndSet(-1, commandBatch.txId() - stride);
 
-        // TODO Also consider the memory usage of all active transaction instances and apply back-pressure if surpassing
-        // it
+        // TODO Also consider the memory usage of all active commandBatch instances and apply back-pressure if
+        // surpassing it
         appliers.submit(() -> {
-            long txId = transaction.commitEntry().getTxId();
+            long txId = commandBatch.txId();
             while (prevLockedTxId.get() != txId - stride) {
                 Thread.onSpinWait();
                 checkFailure();
             }
             try (LockGroup locks = new LockGroup()) {
-                storageEngine.lockRecoveryCommands(transaction.commandBatch(), lockService, locks, mode);
+                storageEngine.lockRecoveryCommands(commandBatch.commandBatch(), lockService, locks, mode);
                 boolean myTurn = prevLockedTxId.compareAndSet(txId - stride, txId);
                 checkState(
                         myTurn,
                         "Something wrong with the algorithm, I thought it was my turn, but apparently it wasn't %d",
                         txId);
-                apply(transaction);
+                apply(commandBatch);
             } catch (Throwable e) {
                 failure.compareAndSet(null, e);
             }
@@ -123,7 +123,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
         }
     }
 
-    private void apply(CommittedTransactionRepresentation transaction) throws Exception {
+    private void apply(CommittedCommandBatch transaction) throws Exception {
         try (CursorContext cursorContext = contextFactory.create(tracerTag);
                 var storeCursors = storageEngine.createStorageCursors(cursorContext)) {
             var tx = new TransactionToApply(transaction, cursorContext, storeCursors);

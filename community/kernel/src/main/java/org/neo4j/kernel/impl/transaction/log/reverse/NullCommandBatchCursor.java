@@ -17,19 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import java.io.IOException;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-/**
- * {@link IOCursor} over {@link CommittedTransactionRepresentation} i.e. already committed transactions.
- */
-public interface TransactionCursor extends IOCursor<CommittedTransactionRepresentation> {
+public class NullCommandBatchCursor implements CommandBatchCursor {
+    @Override
+    public boolean next() throws IOException {
+        return false;
+    }
 
-    /**
-     * @return {@link LogPosition} representing position after most recent transaction, i.e. after
-     * transaction read from most recent {@link #next()} (which returned true) call.
-     */
-    LogPosition position();
+    @Override
+    public void close() throws IOException {}
+
+    @Override
+    public LogPosition position() {
+        throw new UnsupportedOperationException("unsupported");
+    }
+
+    @Override
+    public CommittedCommandBatch get() {
+        throw new UnsupportedOperationException("unsupported");
+    }
 }

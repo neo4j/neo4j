@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -29,7 +30,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -39,12 +39,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.CommandBatch;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -65,20 +63,18 @@ class ProduceNoopCommandsIT {
     private static final RelationshipType TYPE3 = RelationshipType.withName("TYPE_3");
 
     @Inject
-    private GraphDatabaseService db;
+    private GraphDatabaseAPI db;
 
     @AfterEach
     void listNoopCommands() throws IOException {
-        LogicalTransactionStore txStore =
-                ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        try (TransactionCursor transactions = txStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
+        var txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
+        try (CommandBatchCursor transactions = txStore.getCommandBatches(BASE_TX_ID + 1)) {
             while (transactions.next()) {
-                CommittedTransactionRepresentation tx = transactions.get();
-                CommandBatch commandBatch = tx.commandBatch();
-                if (hasNoOpCommand(commandBatch)) {
-                    StringBuilder error = new StringBuilder("Tx contains no-op commands, " + tx.startEntry());
-                    printNoOpCommands(commandBatch, error);
-                    error.append(format("%n%s", tx.commitEntry()));
+                var tx = transactions.get();
+                var commands = tx.commandBatch();
+                if (hasNoOpCommand(commands)) {
+                    StringBuilder error = new StringBuilder("Tx contains no-op commands, " + tx);
+                    printNoOpCommands(commands, error);
                     fail(error.toString());
                 }
             }
@@ -88,7 +84,7 @@ class ProduceNoopCommandsIT {
     @Test
     void addExistingLabelToNode() {
         // given
-        long id = node().withLabels(LABEL).build();
+        String id = node().withLabels(LABEL).build();
 
         // when
         onNode(id, (tx, node) -> node.addLabel(LABEL));
@@ -97,7 +93,7 @@ class ProduceNoopCommandsIT {
     @Test
     void removeNonExistentLabelFromNode() {
         // given
-        long id = node().withLabels(LABEL).build();
+        String id = node().withLabels(LABEL).build();
 
         // when
         onNode(id, (tx, node) -> node.removeLabel(LABEL2));
@@ -106,7 +102,7 @@ class ProduceNoopCommandsIT {
     @Test
     void removeAddLabelToNode() {
         // given
-        long id = node().withLabels(LABEL).build();
+        String id = node().withLabels(LABEL).build();
 
         // when
         onNode(id, (tx, node) -> {
@@ -118,7 +114,7 @@ class ProduceNoopCommandsIT {
     @Test
     void setNodePropertyToSameValue() {
         // given
-        long id = node().withProperty(KEY, 123).build();
+        String id = node().withProperty(KEY, 123).build();
 
         // when
         onNode(id, (tx, node) -> node.setProperty(KEY, 123));
@@ -128,7 +124,7 @@ class ProduceNoopCommandsIT {
     @Test
     void removeAndSetNodePropertyToSameValue() {
         // given
-        long id = node().withProperty(KEY, 123).build();
+        String id = node().withProperty(KEY, 123).build();
 
         // when
         onNode(id, (tx, node) -> {
@@ -140,7 +136,7 @@ class ProduceNoopCommandsIT {
     @Test
     void overwriteNodePropertyInOneEndOfChain() {
         // given
-        long id = node().withProperty(KEY, 123)
+        String id = node().withProperty(KEY, 123)
                 .withProperty(KEY2, "123")
                 .withProperty(KEY3, 456)
                 .withProperty(KEY4, "123")
@@ -157,7 +153,7 @@ class ProduceNoopCommandsIT {
     @Test
     void overwriteNodePropertyInAnotherEndOfChain() {
         // given
-        long id = node().withProperty(KEY, 123)
+        String id = node().withProperty(KEY, 123)
                 .withProperty(KEY2, "123")
                 .withProperty(KEY3, 456)
                 .withProperty(KEY4, "123")
@@ -174,7 +170,7 @@ class ProduceNoopCommandsIT {
     @Test
     void createRelationshipOnDenseNode() {
         // given
-        long id = node().withRelationships(TYPE, 30)
+        String id = node().withRelationships(TYPE, 30)
                 .withRelationships(TYPE2, 30)
                 .withRelationships(TYPE3, 30)
                 .build();
@@ -186,7 +182,7 @@ class ProduceNoopCommandsIT {
     @Test
     void deleteRelationshipFromNode() {
         // given
-        long id = node().withRelationships(TYPE, 2)
+        String id = node().withRelationships(TYPE, 2)
                 .withRelationships(TYPE2, 2)
                 .withRelationships(TYPE3, 2)
                 .build();
@@ -198,7 +194,7 @@ class ProduceNoopCommandsIT {
     @Test
     void deleteRelationshipFromDenseNode() {
         // given
-        long id = node().withRelationships(TYPE, 30)
+        String id = node().withRelationships(TYPE, 30)
                 .withRelationships(TYPE2, 30)
                 .withRelationships(TYPE3, 30)
                 .build();
@@ -210,7 +206,7 @@ class ProduceNoopCommandsIT {
     @Test
     void createAndDeleteRelationshipOnDenseNode() {
         // given
-        long id = node().withRelationships(TYPE, 30)
+        String id = node().withRelationships(TYPE, 30)
                 .withRelationships(TYPE2, 30)
                 .withRelationships(TYPE3, 30)
                 .build();
@@ -275,9 +271,9 @@ class ProduceNoopCommandsIT {
         return new NodeBuilder(db.beginTx());
     }
 
-    private void onNode(long node, BiConsumer<Transaction, Node> action) {
+    private void onNode(String nodeId, BiConsumer<Transaction, Node> action) {
         try (Transaction tx = db.beginTx()) {
-            action.accept(tx, tx.getNodeById(node));
+            action.accept(tx, tx.getNodeByElementId(nodeId));
             tx.commit();
         }
     }
@@ -308,10 +304,10 @@ class ProduceNoopCommandsIT {
             return this;
         }
 
-        long build() {
+        String build() {
             tx.commit();
             tx.close();
-            return node.getId();
+            return node.getElementId();
         }
     }
 }

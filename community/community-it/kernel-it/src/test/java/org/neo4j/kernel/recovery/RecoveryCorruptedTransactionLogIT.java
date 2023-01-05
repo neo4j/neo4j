@@ -77,7 +77,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -1278,23 +1278,22 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private static class RecoveryMonitor implements org.neo4j.kernel.recovery.RecoveryMonitor {
-        private final List<Long> recoveredTransactions = new ArrayList<>();
+        private final List<Long> recoveredBatches = new ArrayList<>();
         private int numberOfRecoveredTransactions;
         private final AtomicBoolean recoveryRequired = new AtomicBoolean();
 
         @Override
         public void recoveryRequired(LogPosition recoveryPosition) {
             recoveryRequired.set(true);
+            numberOfRecoveredTransactions = 0;
         }
 
         @Override
-        public void transactionRecovered(long txId) {
-            recoveredTransactions.add(txId);
-        }
-
-        @Override
-        public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
-            this.numberOfRecoveredTransactions = numberOfRecoveredTransactions;
+        public void batchRecovered(CommittedCommandBatch committedBatch) {
+            recoveredBatches.add(committedBatch.txId());
+            if (committedBatch.commandBatch().isLast()) {
+                numberOfRecoveredTransactions++;
+            }
         }
 
         boolean wasRecoveryRequired() {
@@ -1414,7 +1413,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
 
         @Override
-        public void serialize(CommittedTransactionRepresentation tx) throws IOException {
+        public void serialize(CommittedCommandBatch tx) throws IOException {
             delegate.serialize(tx);
         }
 

@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.common.Subject.ANONYMOUS;
+
 import java.io.IOException;
-import org.neo4j.internal.helpers.collection.Visitor;
+import java.util.List;
+import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -34,25 +40,61 @@ import org.neo4j.storageengine.api.StorageCommand;
  * asked for a transaction via a cursor.
  */
 public record CommittedTransactionRepresentation(
-        LogEntryStart startEntry, CommandBatch commandBatch, LogEntryCommit commitEntry) {
+        LogEntryStart startEntry, CommandBatch commandBatch, LogEntryCommit commitEntry)
+        implements CommittedCommandBatch {
 
-    public void accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
-        commandBatch.accept(visitor);
+    public CommittedTransactionRepresentation(
+            LogEntryStart startEntry, List<StorageCommand> commands, LogEntryCommit commitEntry) {
+        this(
+                startEntry,
+                new CompleteTransaction(
+                        commands,
+                        startEntry.getAdditionalHeader(),
+                        startEntry.getTimeWritten(),
+                        startEntry.getLastCommittedTxWhenTransactionStarted(),
+                        commitEntry.getTimeWritten(),
+                        -1,
+                        startEntry.kernelVersion(),
+                        ANONYMOUS),
+                commitEntry);
     }
 
-    public int getChecksum() {
-        return commitEntry().getChecksum();
+    @Override
+    public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
+        writer.writeStartEntry(
+                startEntry.getTimeWritten(),
+                startEntry.getLastCommittedTxWhenTransactionStarted(),
+                startEntry.getPreviousChecksum(),
+                startEntry.getAdditionalHeader());
+        writer.serialize(commandBatch);
+        return writer.writeCommitEntry(commitEntry.getTxId(), commitEntry.getTimeWritten());
+    }
+
+    @Override
+    public int checksum() {
+        return commitEntry.getChecksum();
+    }
+
+    @Override
+    public long timeWritten() {
+        return commitEntry.getTimeWritten();
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return startEntry.kernelVersion();
+    }
+
+    @Override
+    public long txId() {
+        return commitEntry.getTxId();
     }
 
     @Override
     public String toString() {
-        return toString(false);
-    }
-
-    public String toString(boolean includeCommands) {
         return "CommittedTransactionRepresentation{" + "startEntry="
                 + startEntry + ", transactionRepresentation="
-                + commandBatch.toString(includeCommands) + ", commitEntry="
+                + commandBatch + ", commitEntry="
                 + commitEntry + '}';
     }
 }

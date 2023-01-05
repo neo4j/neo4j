@@ -22,17 +22,17 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface RecoveryService {
-    TransactionCursor getTransactions(long transactionId) throws IOException;
+    CommandBatchCursor getCommandBatches(long transactionId) throws IOException;
 
-    TransactionCursor getTransactions(LogPosition recoveryFromPosition) throws IOException;
+    CommandBatchCursor getCommandBatches(LogPosition recoveryFromPosition) throws IOException;
 
-    TransactionCursor getTransactionsInReverseOrder(LogPosition recoveryFromPosition) throws IOException;
+    CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition recoveryFromPosition) throws IOException;
 
     RecoveryStartInformation getRecoveryStartInformation() throws IOException;
 
@@ -40,7 +40,7 @@ public interface RecoveryService {
             TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) throws Exception;
 
     void transactionsRecovered(
-            CommittedTransactionRepresentation lastRecoveredTransaction,
+            CommittedCommandBatch lastRecoveredBatch,
             LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,

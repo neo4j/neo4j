@@ -35,9 +35,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -227,7 +227,7 @@ class TestLogPruning {
             StorageEngineFactory storageEngineFactory =
                     db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
             try (ReadableLogChannel channel = new ReadAheadLogChannel(versionedStoreChannel, bridge, INSTANCE)) {
-                try (PhysicalTransactionCursor physicalTransactionCursor = new PhysicalTransactionCursor(
+                try (CommittedCommandBatchCursor physicalTransactionCursor = new CommittedCommandBatchCursor(
                         channel, new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory()))) {
                     while (physicalTransactionCursor.next()) {
                         counter++;

@@ -56,18 +56,18 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     }
 
     @Override
-    public TransactionCursor getTransactions(long transactionIdToStartFrom) throws IOException {
-        return physicalStore.getTransactions(transactionIdToStartFrom);
+    public CommandBatchCursor getCommandBatches(long transactionIdToStartFrom) throws IOException {
+        return physicalStore.getCommandBatches(transactionIdToStartFrom);
     }
 
     @Override
-    public TransactionCursor getTransactions(LogPosition position) throws IOException {
-        return physicalStore.getTransactions(position);
+    public CommandBatchCursor getCommandBatches(LogPosition position) throws IOException {
+        return physicalStore.getCommandBatches(position);
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder(LogPosition backToPosition) throws IOException {
-        return physicalStore.getTransactionsInReverseOrder(backToPosition);
+    public CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition backToPosition) throws IOException {
+        return physicalStore.getCommandBatchesInReverseOrder(backToPosition);
     }
 
     @Override

@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.lang.String.format;
+import static java.time.Instant.ofEpochMilli;
 import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.helpers.Format.duration;
 
 import java.nio.file.Path;
-import java.time.Instant;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
@@ -35,9 +34,10 @@ import org.neo4j.logging.InternalLog;
 
 public class LoggingLogFileMonitor
         implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor {
-    private long firstTransactionRecovered = -1;
-    private long lastTransactionRecovered;
+    private long minRecoveredTransaction = -1;
+    private long maxTransactionRecovered;
     private final InternalLog log;
+    private int numberOfRecoveredTransactions;
 
     public LoggingLogFileMonitor(InternalLog log) {
         this.log = log;
@@ -49,13 +49,13 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+    public void recoveryCompleted(long recoveryTimeInMilliseconds) {
         if (numberOfRecoveredTransactions != 0) {
             log.info(format(
                     "Recovery completed. %d transactions, first:%d, last:%d recovered, time spent: %s",
                     numberOfRecoveredTransactions,
-                    firstTransactionRecovered,
-                    lastTransactionRecovered,
+                    minRecoveredTransaction,
+                    maxTransactionRecovered,
                     duration(recoveryTimeInMilliseconds)));
         } else {
             log.info("No recovery required");
@@ -64,20 +64,19 @@ public class LoggingLogFileMonitor
 
     @Override
     public void failToRecoverTransactionsAfterCommit(
-            Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition) {
+            Throwable t, CommittedCommandBatch commandBatch, LogPosition recoveryToPosition) {
         log.warn(
                 format(
                         "Fail to recover all transactions. Last recoverable transaction id:%d, committed "
                                 + "at:%d. Any later transaction after %s are unreadable and will be truncated.",
-                        commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition),
+                        commandBatch.txId(), commandBatch.timeWritten(), recoveryToPosition),
                 t);
     }
 
     @Override
-    public void partialRecovery(
-            RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction) {
+    public void partialRecovery(RecoveryPredicate recoveryPredicate, CommittedCommandBatch commandBatch) {
         log.info("Partial database recovery based on provided criteria: " + recoveryPredicate.describe()
-                + ". Last replayed transaction: " + describeTransaction(lastTransaction) + ".");
+                + ". Last replayed transaction: " + describeBatch(commandBatch) + ".");
     }
 
     @Override
@@ -96,11 +95,14 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void transactionRecovered(long txId) {
-        if (firstTransactionRecovered == -1) {
-            firstTransactionRecovered = txId;
+    public void batchRecovered(CommittedCommandBatch committedBatch) {
+        if (minRecoveredTransaction == -1) {
+            minRecoveredTransaction = committedBatch.txId();
         }
-        lastTransactionRecovered = txId;
+        maxTransactionRecovered = Math.max(maxTransactionRecovered, committedBatch.txId());
+        if (committedBatch.commandBatch().isLast()) {
+            numberOfRecoveredTransactions++;
+        }
     }
 
     @Override
@@ -145,12 +147,10 @@ public class LoggingLogFileMonitor
         log.info(sb.append('.').toString());
     }
 
-    private static String describeTransaction(CommittedTransactionRepresentation lastTransaction) {
-        if (lastTransaction == null) {
+    private static String describeBatch(CommittedCommandBatch commandBatch) {
+        if (commandBatch == null) {
             return "Not found.";
         }
-        LogEntryCommit commitEntry = lastTransaction.commitEntry();
-        return "transaction id: " + commitEntry.getTxId() + ", time "
-                + date(Instant.ofEpochMilli(commitEntry.getTimeWritten()));
+        return "transaction id: " + commandBatch.txId() + ", time " + date(ofEpochMilli(commandBatch.timeWritten()));
     }
 }

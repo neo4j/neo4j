@@ -28,7 +28,6 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -493,13 +492,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public void lockRecoveryCommands(
             CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode) {
-        try {
-            commands.accept(element -> {
-                ((Command) element).lockForRecovery(lockService, lockGroup, mode);
-                return false;
-            });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        for (StorageCommand command : commands) {
+            ((Command) command).lockForRecovery(lockService, lockGroup, mode);
         }
     }
 

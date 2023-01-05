@@ -23,7 +23,7 @@ import org.neo4j.kernel.KernelVersion;
 
 public class LogEntryParserSetV4_4 extends LogEntryParserSetV4_3 {
     LogEntryParserSetV4_4() {
-        super(KernelVersion.V4_4);
+        this(KernelVersion.V4_4);
     }
 
     public LogEntryParserSetV4_4(KernelVersion version) {

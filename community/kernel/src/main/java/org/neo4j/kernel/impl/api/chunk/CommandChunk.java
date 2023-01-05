@@ -19,7 +19,78 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import org.neo4j.common.Subject;
+import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMetadata) {}
+public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMetadata) implements CommandBatch {
+    @Override
+    public byte[] additionalHeader() {
+        return chunkMetadata.additionalData();
+    }
+
+    @Override
+    public long getTimeStarted() {
+        return chunkMetadata.startTimeMillis();
+    }
+
+    @Override
+    public long getLatestCommittedTxWhenStarted() {
+        return chunkMetadata.lastTransactionIdWhenStarted();
+    }
+
+    @Override
+    public long getTimeCommitted() {
+        return chunkMetadata.chunkCommitTime();
+    }
+
+    @Override
+    public int getLeaseId() {
+        return chunkMetadata.leaseId();
+    }
+
+    @Override
+    public Subject subject() {
+        return chunkMetadata.subject();
+    }
+
+    @Override
+    public KernelVersion kernelVersion() {
+        return chunkMetadata.kernelVersion();
+    }
+
+    @Override
+    public String toString(boolean includeCommands) {
+        return "CommandChunk{" + "commands=" + commands + ", chunkMetadata=" + chunkMetadata + '}';
+    }
+
+    @Override
+    public boolean isLast() {
+        return chunkMetadata.last();
+    }
+
+    @Override
+    public boolean isFirst() {
+        return chunkMetadata.first();
+    }
+
+    @Override
+    public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
+        for (StorageCommand command : commands) {
+            if (visitor.visit(command)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public Iterator<StorageCommand> iterator() {
+        return commands.iterator();
+    }
+}

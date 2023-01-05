@@ -20,52 +20,51 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 
 /**
- * Accessor of transactions and meta data information about transactions.
+ * Accessor of command batches and their metadata.
  */
 public interface LogicalTransactionStore {
     /**
-     * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
-     * instances for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
-     * Transactions will be returned from the cursor in transaction-id-sequential order.
+     * Acquires a {@link CommandBatchCursor cursor} which will provide {@link CommittedCommandBatch}
+     * instances for committed command batches, starting from the specified {@code transactionIdToStartFrom}.
+     * Command batches will be returned from the cursor in sequential order.
      *
      * @param transactionIdToStartFrom id of the first transaction that the cursor will return.
-     * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
+     * @return an {@link CommandBatchCursor} capable of returning {@link CommittedCommandBatch} instances
      * for committed transactions, starting from the specified {@code transactionIdToStartFrom}.
      * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactions(long transactionIdToStartFrom) throws IOException;
+    CommandBatchCursor getCommandBatches(long transactionIdToStartFrom) throws IOException;
 
     /**
-     * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
-     * instances for committed transactions, starting from the specified {@link LogPosition}.
+     * Acquires a {@link CommandBatchCursor cursor} which will provide {@link CommittedCommandBatch}
+     * instances for committed command batches, starting from the specified {@link LogPosition}.
      * This is useful for placing a cursor at a position referred to by a {@link CheckpointInfo}.
-     * Transactions will be returned from the cursor in transaction-id-sequential order.
+     * Command batches will be returned from the cursor in transaction-id-sequential order.
      *
      * @param position {@link LogPosition} of the first transaction that the cursor will return.
-     * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
+     * @return an {@link CommandBatchCursor} capable of returning {@link CommittedCommandBatch} instances
      * for committed transactions, starting from the specified {@code position}.
      * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactions(LogPosition position) throws IOException;
+    CommandBatchCursor getCommandBatches(LogPosition position) throws IOException;
 
     /**
-     * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
-     * instances for committed transactions, starting from the end of the whole transaction stream
-     * back to (and including) the transaction at {@link LogPosition}.
-     * Transactions will be returned in reverse order from the end of the transaction stream and backwards in
-     * descending order of transaction id.
+     * Acquires a {@link CommandBatchCursor cursor} which will provide {@link CommittedCommandBatch}
+     * instances for committed transactions, starting from the end of the whole command batch stream
+     * back to (and including) the batch at {@link LogPosition}.
+     * Command batches will be returned in reverse order from the end of the batch stream.
      *
      * @param backToPosition {@link LogPosition} of the lowest (last to be returned) transaction.
-     * @return an {@link TransactionCursor} capable of returning {@link CommittedTransactionRepresentation} instances
-     * for committed transactions in the given range in reverse order.
+     * @return an {@link CommandBatchCursor} capable of returning {@link CommittedCommandBatch} instances
+     * for committed command batches in the given range in reverse order.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactionsInReverseOrder(LogPosition backToPosition) throws IOException;
+    CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition backToPosition) throws IOException;
 }

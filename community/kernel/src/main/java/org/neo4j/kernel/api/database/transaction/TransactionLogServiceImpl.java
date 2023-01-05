@@ -31,10 +31,10 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -130,8 +130,8 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     private LogPosition getLogPosition(long startingTxId) throws IOException {
-        try (TransactionCursor transactionCursor = transactionStore.getTransactions(startingTxId)) {
-            return transactionCursor.position();
+        try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(startingTxId)) {
+            return commandBatchCursor.position();
         } catch (NoSuchTransactionException e) {
             throw new IllegalArgumentException("Transaction id " + startingTxId + " not found in transaction logs.", e);
         }

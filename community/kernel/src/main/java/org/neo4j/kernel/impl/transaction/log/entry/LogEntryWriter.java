@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
@@ -29,7 +31,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -48,14 +50,6 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
         channel.put(parserSetVersion).put(type);
     }
 
-    private void writeStartEntry(LogEntryStart entry) throws IOException {
-        writeStartEntry(
-                entry.getTimeWritten(),
-                entry.getLastCommittedTxWhenTransactionStarted(),
-                entry.getPreviousChecksum(),
-                entry.getAdditionalHeader());
-    }
-
     public void writeStartEntry(
             long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
             throws IOException {
@@ -68,8 +62,17 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
                 .put(additionalHeaderData, additionalHeaderData.length);
     }
 
-    private void writeCommitEntry(LogEntryCommit entry) throws IOException {
-        writeCommitEntry(entry.getTxId(), entry.getTimeWritten());
+    public void writeChunkStartEntry(long timeWritten, long chunkId) throws IOException {
+        channel.beginChecksum();
+        writeLogEntryHeader(CHUNK_START, channel);
+        channel.putLong(timeWritten).putLong(chunkId);
+    }
+
+    public int writeChunkEndEntry(long transactionId, long chunkId) throws IOException {
+        writeLogEntryHeader(CHUNK_END, channel);
+        channel.putLong(transactionId);
+        channel.putLong(chunkId);
+        return channel.putChecksum();
     }
 
     public int writeCommitEntry(long transactionId, long timeWritten) throws IOException {
@@ -82,10 +85,8 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
         tx.accept(serializer);
     }
 
-    public void serialize(CommittedTransactionRepresentation tx) throws IOException {
-        writeStartEntry(tx.startEntry());
-        serialize(tx.commandBatch());
-        writeCommitEntry(tx.commitEntry());
+    public void serialize(CommittedCommandBatch commandBatch) throws IOException {
+        commandBatch.serialize(this);
     }
 
     public void serialize(Collection<StorageCommand> commands) throws IOException {
@@ -102,14 +103,8 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
         return channel;
     }
 
-    private static class StorageCommandSerializer implements Visitor<StorageCommand, IOException> {
-        private final WritableChannel channel;
-        private final LogEntryWriter entryWriter;
-
-        StorageCommandSerializer(WritableChannel channel, LogEntryWriter entryWriter) {
-            this.channel = channel;
-            this.entryWriter = entryWriter;
-        }
+    private record StorageCommandSerializer(WritableChannel channel, LogEntryWriter<?> entryWriter)
+            implements Visitor<StorageCommand, IOException> {
 
         @Override
         public boolean visit(StorageCommand command) throws IOException {

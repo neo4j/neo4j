@@ -56,7 +56,7 @@ public interface CommandBatch extends CommandStream, KernelVersionProvider {
 
     /**
      * @return the subject associated with the transaction.
-     * Typically an authenticated end user that created the transaction.
+     * Typically, an authenticated end user that created the transaction.
      */
     Subject subject();
 

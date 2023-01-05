@@ -20,32 +20,32 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
+import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
 /**
- * Similar to {@link PhysicalTransactionCursor} and actually uses it internally. This main difference is that transactions
+ * Similar to {@link CommittedCommandBatchCursor} and actually uses it internally. This main difference is that batches
  * are returned in reverse order, starting from the end and back towards (and including) a specified {@link LogPosition}.
  *
  * Since the transaction log format lacks data which would allow for a memory efficient reverse reading implementation,
  * this implementation tries to minimize peak memory consumption by efficiently reading a single log version at a time
  * in reverse order before moving over to the previous version. Peak memory consumption compared to normal
- * {@link PhysicalTransactionCursor} should be negligible due to the offset mapping that {@link ReversedSingleFileTransactionCursor}
+ * {@link CommittedCommandBatchCursor} should be negligible due to the offset mapping that {@link ReversedSingleFileCommandBatchCursor}
  * does.
  *
- * @see ReversedSingleFileTransactionCursor
+ * @see ReversedSingleFileCommandBatchCursor
  */
-public class ReversedMultiFileTransactionCursor implements TransactionCursor {
-    private final TransactionCursors transactionCursors;
-    private TransactionCursor currentLogTransactionCursor;
+public class ReversedMultiFileCommandBatchCursor implements CommandBatchCursor {
+    private final CommandBatchCursors commandBatchCursors;
+    private CommandBatchCursor currentLogCommandBatchCursor;
 
     /**
-     * Utility method for creating a {@link ReversedMultiFileTransactionCursor} with a {@link LogFile} as the source of
-     * {@link TransactionCursor} for each log version.
+     * Utility method for creating a {@link ReversedMultiFileCommandBatchCursor} with a {@link LogFile} as the source of
+     * {@link CommandBatchCursor} for each log version.
      *
      * @param logFile accessor of log files.
      * @param backToPosition {@link LogPosition} to read backwards to.
@@ -53,10 +53,10 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor {
      * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
      * @param monitor reverse transaction cursor monitor
      * @param presketch enables pre-sketching of next transaction file.
-     * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
+     * @return a {@link CommandBatchCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
      */
-    public static TransactionCursor fromLogFile(
+    public static CommandBatchCursor fromLogFile(
             LogFile logFile,
             LogPosition backToPosition,
             LogEntryReader logEntryReader,
@@ -64,32 +64,32 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor {
             ReversedTransactionCursorMonitor monitor,
             boolean presketch) {
         if (presketch) {
-            return new ReversedMultiFileTransactionCursor(new PrefetchedTransactionCursors(
+            return new ReversedMultiFileCommandBatchCursor(new PrefetchedCommandBatchCursors(
                     logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
         } else {
-            return new ReversedMultiFileTransactionCursor(new DefaultTransactionCursors(
+            return new ReversedMultiFileCommandBatchCursor(new DefaultCommandBatchCursors(
                     logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles, monitor));
         }
     }
 
-    public ReversedMultiFileTransactionCursor(TransactionCursors transactionCursors) {
-        this.transactionCursors = transactionCursors;
+    public ReversedMultiFileCommandBatchCursor(CommandBatchCursors commandBatchCursors) {
+        this.commandBatchCursors = commandBatchCursors;
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
-        return currentLogTransactionCursor.get();
+    public CommittedCommandBatch get() {
+        return currentLogCommandBatchCursor.get();
     }
 
     @Override
     public boolean next() throws IOException {
-        while (currentLogTransactionCursor == null || !currentLogTransactionCursor.next()) {
-            var cursor = transactionCursors.next();
+        while (currentLogCommandBatchCursor == null || !currentLogCommandBatchCursor.next()) {
+            var cursor = commandBatchCursors.next();
             if (cursor.isEmpty()) {
                 return false;
             }
             closeCurrent();
-            currentLogTransactionCursor = cursor.get();
+            currentLogCommandBatchCursor = cursor.get();
         }
         return true;
     }
@@ -97,18 +97,18 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor {
     @Override
     public void close() throws IOException {
         closeCurrent();
-        transactionCursors.close();
+        commandBatchCursors.close();
     }
 
     private void closeCurrent() throws IOException {
-        if (currentLogTransactionCursor != null) {
-            currentLogTransactionCursor.close();
-            currentLogTransactionCursor = null;
+        if (currentLogCommandBatchCursor != null) {
+            currentLogCommandBatchCursor.close();
+            currentLogCommandBatchCursor = null;
         }
     }
 
     @Override
     public LogPosition position() {
-        return currentLogTransactionCursor.position();
+        return currentLogCommandBatchCursor.position();
     }
 }

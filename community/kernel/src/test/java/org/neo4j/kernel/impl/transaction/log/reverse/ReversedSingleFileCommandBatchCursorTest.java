@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
-import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
+import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -72,7 +72,7 @@ import org.neo4j.test.extension.RandomExtension;
 
 @Neo4jLayoutExtension
 @ExtendWith({RandomExtension.class, LifeExtension.class})
-class ReversedSingleFileTransactionCursorTest {
+class ReversedSingleFileCommandBatchCursorTest {
     @Inject
     private FileSystemAbstraction fs;
 
@@ -88,7 +88,7 @@ class ReversedSingleFileTransactionCursorTest {
     private long txId = TransactionIdStore.BASE_TX_ID;
     private final InternalLogProvider logProvider = new AssertableLogProvider(true);
     private final ReverseTransactionCursorLoggingMonitor monitor =
-            new ReverseTransactionCursorLoggingMonitor(logProvider.getLog(ReversedSingleFileTransactionCursor.class));
+            new ReverseTransactionCursorLoggingMonitor(logProvider.getLog(ReversedSingleFileCommandBatchCursor.class));
     private LogFile logFile;
     private LogFiles logFiles;
 
@@ -114,7 +114,7 @@ class ReversedSingleFileTransactionCursorTest {
         writeTransactions(10, 1, 1);
 
         // when
-        CommittedTransactionRepresentation[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -126,7 +126,7 @@ class ReversedSingleFileTransactionCursorTest {
         writeTransactions(20_000, 1, 1);
 
         // when
-        CommittedTransactionRepresentation[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -138,7 +138,7 @@ class ReversedSingleFileTransactionCursorTest {
         writeTransactions(10, 1000, 1000);
 
         // when
-        CommittedTransactionRepresentation[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertTransactionRange(readTransactions, txId, TransactionIdStore.BASE_TX_ID);
@@ -149,7 +149,7 @@ class ReversedSingleFileTransactionCursorTest {
         // given
 
         // when
-        CommittedTransactionRepresentation[] readTransactions = readAllFromReversedCursor();
+        CommittedCommandBatch[] readTransactions = readAllFromReversedCursor();
 
         // then
         assertEquals(0, readTransactions.length);
@@ -165,7 +165,7 @@ class ReversedSingleFileTransactionCursorTest {
         // when
         try (ReadAheadLogChannel channel = (ReadAheadLogChannel)
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition())) {
-            new ReversedSingleFileTransactionCursor(channel, logEntryReader(), false, monitor);
+            new ReversedSingleFileCommandBatchCursor(channel, logEntryReader(), false, monitor);
             fail("Should've failed");
         } catch (IllegalArgumentException e) {
             // then good
@@ -179,7 +179,7 @@ class ReversedSingleFileTransactionCursorTest {
         writeTransactions(readableTransactions, 1, 1);
         appendCorruptedTransaction();
         writeTransactions(readableTransactions, 1, 1);
-        CommittedTransactionRepresentation[] committedTransactionRepresentations = readAllFromReversedCursor();
+        CommittedCommandBatch[] committedTransactionRepresentations = readAllFromReversedCursor();
         assertTransactionRange(
                 committedTransactionRepresentations,
                 readableTransactions + TransactionIdStore.BASE_TX_ID,
@@ -196,33 +196,32 @@ class ReversedSingleFileTransactionCursorTest {
         assertThrows(IOException.class, this::readAllFromReversedCursorFailOnCorrupted);
     }
 
-    private CommittedTransactionRepresentation[] readAllFromReversedCursor() throws IOException {
-        try (ReversedSingleFileTransactionCursor cursor = txCursor(false)) {
+    private CommittedCommandBatch[] readAllFromReversedCursor() throws IOException {
+        try (ReversedSingleFileCommandBatchCursor cursor = txCursor(false)) {
             return exhaust(cursor);
         }
     }
 
-    private CommittedTransactionRepresentation[] readAllFromReversedCursorFailOnCorrupted() throws IOException {
-        try (ReversedSingleFileTransactionCursor cursor = txCursor(true)) {
+    private CommittedCommandBatch[] readAllFromReversedCursorFailOnCorrupted() throws IOException {
+        try (ReversedSingleFileCommandBatchCursor cursor = txCursor(true)) {
             return exhaust(cursor);
         }
     }
 
-    private static void assertTransactionRange(
-            CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId) {
+    private static void assertTransactionRange(CommittedCommandBatch[] readTransactions, long highTxId, long lowTxId) {
         long expectedTxId = highTxId;
-        for (CommittedTransactionRepresentation tx : readTransactions) {
-            assertEquals(expectedTxId, tx.commitEntry().getTxId());
+        for (CommittedCommandBatch commandBatch : readTransactions) {
+            assertEquals(expectedTxId, commandBatch.txId());
             expectedTxId--;
         }
         assertEquals(expectedTxId, lowTxId);
     }
 
-    private ReversedSingleFileTransactionCursor txCursor(boolean failOnCorruptedLogFiles) throws IOException {
+    private ReversedSingleFileCommandBatchCursor txCursor(boolean failOnCorruptedLogFiles) throws IOException {
         ReadAheadLogChannel fileReader = (ReadAheadLogChannel)
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition());
         try {
-            return new ReversedSingleFileTransactionCursor(
+            return new ReversedSingleFileCommandBatchCursor(
                     fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor);
         } catch (Exception e) {
             fileReader.close();

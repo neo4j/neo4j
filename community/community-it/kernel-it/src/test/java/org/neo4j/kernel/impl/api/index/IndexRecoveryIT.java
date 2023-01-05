@@ -492,16 +492,9 @@ class IndexRecoveryIT {
         public IndexUpdater newUpdater(final IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
             return new CollectingIndexUpdater(updates -> {
                 switch (mode) {
-                    case ONLINE:
-                        regularUpdates.addAll(updates);
-                        break;
-
-                    case RECOVERY:
-                        batchedUpdates.addAll(updates);
-                        break;
-
-                    default:
-                        throw new UnsupportedOperationException();
+                    case ONLINE -> regularUpdates.addAll(updates);
+                    case RECOVERY -> batchedUpdates.addAll(updates);
+                    default -> throw new UnsupportedOperationException();
                 }
             });
         }
@@ -529,7 +522,7 @@ class IndexRecoveryIT {
         }
 
         @Override
-        public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+        public void recoveryCompleted(long recoveryTimeInMilliseconds) {
             recoverySemaphore.release();
         }
     }

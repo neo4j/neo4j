@@ -30,9 +30,8 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -56,7 +55,6 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private final RecoveryStartupChecker recoveryStartupChecker;
     private final CursorContextFactory contextFactory;
     private final RecoveryPredicate recoveryPredicate;
-    private int numberOfRecoveredTransactions;
 
     public TransactionLogsRecovery(
             RecoveryService recoveryService,
@@ -95,23 +93,24 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
-        CommittedTransactionRepresentation lastTransaction = null;
-        CommittedTransactionRepresentation lastReversedTransaction = null;
+        CommittedCommandBatch lastCommandBatch = null;
+        CommittedCommandBatch lastReversedCommandBatch = null;
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-                try (var transactionsToRecover = recoveryService.getTransactionsInReverseOrder(recoveryStartPosition);
+                try (var transactionsToRecover =
+                                recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
                         var recoveryVisitor = recoveryService.getRecoveryApplier(
                                 REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
                     while (transactionsToRecover.next()) {
                         recoveryStartupChecker.checkIfCanceled();
-                        CommittedTransactionRepresentation transaction = transactionsToRecover.get();
-                        if (lastReversedTransaction == null) {
-                            lastReversedTransaction = transaction;
-                            initProgressReporter(recoveryStartInformation, lastReversedTransaction);
+                        CommittedCommandBatch commandBatch = transactionsToRecover.get();
+                        if (lastReversedCommandBatch == null) {
+                            lastReversedCommandBatch = commandBatch;
+                            initProgressReporter(recoveryStartInformation, lastReversedCommandBatch);
                         }
-                        recoveryVisitor.visit(transaction);
-                        lowestRecoveredTxId = transaction.commitEntry().getTxId();
+                        recoveryVisitor.visit(commandBatch);
+                        lowestRecoveredTxId = commandBatch.txId();
                         reportProgress();
                     }
                 }
@@ -121,20 +120,20 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have returned
                 // the store to a consistent state.
                 // We need to be able to read the store before we can even figure out what indexes, tokens, etc. we
-                // have. Hence we defer the initialisation
+                // have. Hence, we defer the initialisation
                 // of the schema life until after we've done the reverse recovery.
                 schemaLife.init();
 
                 boolean fullRecovery = true;
-                try (var transactionsToRecover = recoveryService.getTransactions(recoveryStartPosition);
+                try (var transactionsToRecover = recoveryService.getCommandBatches(recoveryStartPosition);
                         var recoveryVisitor =
                                 recoveryService.getRecoveryApplier(RECOVERY, contextFactory, RECOVERY_TAG)) {
                     while (fullRecovery && transactionsToRecover.next()) {
-                        var nextTransaction = transactionsToRecover.get();
-                        if (!recoveryPredicate.test(nextTransaction)) {
-                            monitor.partialRecovery(recoveryPredicate, lastTransaction);
+                        var nextCommandBatch = transactionsToRecover.get();
+                        if (!recoveryPredicate.test(nextCommandBatch)) {
+                            monitor.partialRecovery(recoveryPredicate, lastCommandBatch);
                             fullRecovery = false;
-                            if (lastTransaction == null) {
+                            if (lastCommandBatch == null) {
                                 // First transaction after checkpoint failed predicate test
                                 // we can't always load transaction before checkpoint to check what values we had there
                                 // since those logs may be pruned,
@@ -151,17 +150,17 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                             beforeCheckpointTransaction, recoveryPredicate.describe()));
                                 }
                                 try (var beforeCheckpointCursor =
-                                        recoveryService.getTransactions(beforeCheckpointTransaction)) {
+                                        recoveryService.getCommandBatches(beforeCheckpointTransaction)) {
                                     if (beforeCheckpointCursor.next()) {
-                                        CommittedTransactionRepresentation candidate = beforeCheckpointCursor.get();
+                                        CommittedCommandBatch candidate = beforeCheckpointCursor.get();
                                         if (!recoveryPredicate.test(candidate)) {
                                             throw new RecoveryPredicateException(format(
                                                     "Partial recovery criteria can't be satisfied. "
                                                             + "Transaction after and before checkpoint does not satisfy provided recovery criteria. "
                                                             + "Observed transaction id: %d, recovery criteria: %s.",
-                                                    candidate.commitEntry().getTxId(), recoveryPredicate.describe()));
+                                                    candidate.txId(), recoveryPredicate.describe()));
                                         }
-                                        lastTransaction = candidate;
+                                        lastCommandBatch = candidate;
                                         lastTransactionPosition = beforeCheckpointCursor.position();
                                     } else {
                                         throw new RecoveryPredicateException(format(
@@ -182,12 +181,12 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             }
                         } else {
                             recoveryStartupChecker.checkIfCanceled();
-                            long txId = nextTransaction.commitEntry().getTxId();
-                            recoveryVisitor.visit(nextTransaction);
+                            recoveryVisitor.visit(nextCommandBatch);
 
-                            lastTransaction = nextTransaction;
-                            monitor.transactionRecovered(txId);
-                            numberOfRecoveredTransactions++;
+                            if (lastCommandBatch == null || lastCommandBatch.txId() < nextCommandBatch.txId()) {
+                                lastCommandBatch = nextCommandBatch;
+                            }
+                            monitor.batchRecovered(nextCommandBatch);
                             lastTransactionPosition = transactionsToRecover.position();
                             recoveryToPosition = lastTransactionPosition;
                             reportProgress();
@@ -207,9 +206,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 if (failOnCorruptedLogFiles) {
                     throwUnableToCleanRecover(t);
                 }
-                if (lastTransaction != null) {
-                    LogEntryCommit commitEntry = lastTransaction.commitEntry();
-                    monitor.failToRecoverTransactionsAfterCommit(t, commitEntry, recoveryToPosition);
+                if (lastCommandBatch != null) {
+                    monitor.failToRecoverTransactionsAfterCommit(t, lastCommandBatch, recoveryToPosition);
                 } else {
                     monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
                 }
@@ -221,21 +219,20 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {
             final boolean missingLogs = recoveryStartInformation.isMissingLogs();
             recoveryService.transactionsRecovered(
-                    lastTransaction,
+                    lastCommandBatch,
                     lastTransactionPosition,
                     recoveryToPosition,
                     recoveryStartInformation.getCheckpointPosition(),
                     missingLogs,
                     cursorContext);
         }
-        monitor.recoveryCompleted(numberOfRecoveredTransactions, recoveryStartTime.elapsed(MILLISECONDS));
+        monitor.recoveryCompleted(recoveryStartTime.elapsed(MILLISECONDS));
     }
 
     private void initProgressReporter(
-            RecoveryStartInformation recoveryStartInformation,
-            CommittedTransactionRepresentation lastReversedTransaction) {
+            RecoveryStartInformation recoveryStartInformation, CommittedCommandBatch lastReversedBatch) {
         long numberOfTransactionToRecover =
-                getNumberOfTransactionToRecover(recoveryStartInformation, lastReversedTransaction);
+                estimateNumberOfTransactionToRecover(recoveryStartInformation, lastReversedBatch);
         // since we will process each transaction twice (doing reverse and direct detour) we need to
         // multiply number of transactions that we want to recover by 2 to be able to report correct progress
         progressReporter.start(numberOfTransactionToRecover * 2);
@@ -245,12 +242,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         progressReporter.progress(1);
     }
 
-    private static long getNumberOfTransactionToRecover(
-            RecoveryStartInformation recoveryStartInformation,
-            CommittedTransactionRepresentation lastReversedTransaction) {
-        return lastReversedTransaction.commitEntry().getTxId()
-                - recoveryStartInformation.getFirstTxIdAfterLastCheckPoint()
-                + 1;
+    private static long estimateNumberOfTransactionToRecover(
+            RecoveryStartInformation recoveryStartInformation, CommittedCommandBatch lastReversedCommandBatch) {
+        return lastReversedCommandBatch.txId() - recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
     }
 
     @Override

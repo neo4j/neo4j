@@ -33,6 +33,7 @@ import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
 
 import java.time.Clock;
 import java.util.Iterator;
@@ -991,7 +992,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private class ChunkCommitter implements TransactionCommitter {
-        private int batchNumber;
+        private int chunkNumber = BASE_CHUNK_NUMBER;
         private KernelVersion kernelVersion;
         private ChunkedTransaction transactionPayload;
         private final TransactionCommitmentFactory commitmentFactory;
@@ -1005,7 +1006,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throws KernelException {
             List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
             if (!extractedCommands.isEmpty() || commit) {
-                batchNumber++;
                 if (kernelVersion == null) {
                     kernelVersion = kernelVersionProvider.kernelVersion();
                 }
@@ -1015,9 +1015,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
                 }
                 var chunkMetadata = new ChunkMetadata(
-                        batchNumber == 1,
+                        chunkNumber == BASE_CHUNK_NUMBER,
                         commit,
-                        batchNumber,
+                        chunkNumber,
                         EMPTY_BYTE_ARRAY,
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
@@ -1035,13 +1035,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
                 transactionPayload.init(chunk);
                 commitProcess.commit(transactionPayload, commitEvent, INTERNAL);
+                chunkNumber++;
             }
             return transactionPayload != null ? transactionPayload.transactionId() : READ_ONLY_ID;
         }
 
         @Override
         public void reset() {
-            batchNumber = 0;
+            chunkNumber = BASE_CHUNK_NUMBER;
             kernelVersion = null;
             transactionPayload = null;
         }

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor.eagerlyReverse;
+import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedCommandBatchCursor.eagerlyReverse;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -28,16 +28,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
+import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 
-public class PrefetchedTransactionCursors implements TransactionCursors {
-    private final BlockingQueue<TransactionCursor> cursors = new LinkedBlockingDeque<>(2);
+public class PrefetchedCommandBatchCursors implements CommandBatchCursors {
+    private final BlockingQueue<CommandBatchCursor> cursors = new LinkedBlockingDeque<>(2);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final LogFile logFile;
     private final LogPosition beginning;
@@ -46,7 +46,7 @@ public class PrefetchedTransactionCursors implements TransactionCursors {
     private final ReversedTransactionCursorMonitor monitor;
     private long currentVersion;
 
-    public PrefetchedTransactionCursors(
+    public PrefetchedCommandBatchCursors(
             LogFile logFile,
             LogPosition beginning,
             LogEntryReader reader,
@@ -63,7 +63,7 @@ public class PrefetchedTransactionCursors implements TransactionCursors {
     }
 
     @Override
-    public Optional<TransactionCursor> next() {
+    public Optional<CommandBatchCursor> next() {
         try {
             var cursor = cursors.take();
             if (cursor == NO_MORE_CURSORS) {
@@ -84,10 +84,10 @@ public class PrefetchedTransactionCursors implements TransactionCursors {
                         : beginning;
                 ReadableLogChannel channel = logFile.getReader(position, NO_MORE_CHANNELS);
                 if (channel instanceof ReadAheadLogChannel) {
-                    cursors.put(new ReversedSingleFileTransactionCursor(
+                    cursors.put(new ReversedSingleFileCommandBatchCursor(
                             (ReadAheadLogChannel) channel, reader, failOnCorruptedLogFiles, monitor));
                 } else {
-                    cursors.put(eagerlyReverse(new PhysicalTransactionCursor(channel, reader)));
+                    cursors.put(eagerlyReverse(new CommittedCommandBatchCursor(channel, reader)));
                 }
                 currentVersion--;
             }

@@ -27,10 +27,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
-import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
+import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor.fromLogFile;
+import static org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileCommandBatchCursor.fromLogFile;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -46,14 +46,14 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -71,7 +71,7 @@ import org.neo4j.test.extension.RandomExtension;
 
 @Neo4jLayoutExtension
 @ExtendWith({RandomExtension.class, LifeExtension.class})
-class ReversedMultiFileTransactionCursorTest {
+class ReversedMultiFileCommandBatchCursorTest {
     @Inject
     private FileSystemAbstraction fs;
 
@@ -193,33 +193,32 @@ class ReversedMultiFileTransactionCursorTest {
         assertThat(readTransactions).isEmpty();
     }
 
-    private CommittedTransactionRepresentation[] readTransactions(LogPosition position, boolean presketch)
-            throws IOException {
-        try (TransactionCursor cursor = txCursor(position, presketch)) {
+    private CommittedCommandBatch[] readTransactions(LogPosition position, boolean presketch) throws IOException {
+        try (CommandBatchCursor cursor = txCursor(position, presketch)) {
             return exhaust(cursor);
         }
     }
 
-    private CommittedTransactionRepresentation[] readTransactions(boolean presketch) throws IOException {
+    private CommittedCommandBatch[] readTransactions(boolean presketch) throws IOException {
         return readTransactions(new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), presketch);
     }
 
     private void assertRecovery(
-            boolean presketch, CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId) {
+            boolean presketch, CommittedCommandBatch[] readTransactions, long highTxId, long lowTxId) {
         if (presketch) {
             verify(monitor).presketchingTransactionLogs();
         } else {
             verify(monitor, never()).presketchingTransactionLogs();
         }
         long expectedTxId = highTxId;
-        for (CommittedTransactionRepresentation tx : readTransactions) {
-            assertEquals(expectedTxId, tx.commitEntry().getTxId());
+        for (CommittedCommandBatch tx : readTransactions) {
+            assertEquals(expectedTxId, tx.txId());
             expectedTxId--;
         }
         assertEquals(expectedTxId, lowTxId);
     }
 
-    private TransactionCursor txCursor(LogPosition position, boolean presketch) throws IOException {
+    private CommandBatchCursor txCursor(LogPosition position, boolean presketch) throws IOException {
         ReadAheadLogChannel fileReader = (ReadAheadLogChannel)
                 logFile.getReader(logFiles.getLogFile().extractHeader(0).getStartPosition());
         try {

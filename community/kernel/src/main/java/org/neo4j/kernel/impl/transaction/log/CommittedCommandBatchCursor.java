@@ -19,27 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.common.Subject.ANONYMOUS;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.neo4j.kernel.impl.transaction.CommittedChunkRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class PhysicalTransactionCursor implements TransactionCursor {
+public class CommittedCommandBatchCursor implements CommandBatchCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    private CommittedTransactionRepresentation current;
+    private CommittedCommandBatch current;
 
-    public PhysicalTransactionCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
+    public CommittedCommandBatchCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
             throws IOException {
         this.channel = channel;
         channel.getCurrentPosition(lastGoodPositionMarker);
@@ -47,54 +49,47 @@ public class PhysicalTransactionCursor implements TransactionCursor {
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
+    public CommittedCommandBatch get() {
         return current;
     }
 
     @Override
     public boolean next() throws IOException {
-        // Clear the previous deserialized transaction so that it won't have to be kept in heap while deserializing
-        // the next one. Could be problematic if both are really big.
         current = null;
 
-        while (true) {
-            if (!logEntryCursor.next()) {
-                return false;
-            }
+        if (!logEntryCursor.next()) {
+            return false;
+        }
 
-            LogEntry entry = logEntryCursor.get();
-            assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
-            LogEntryStart startEntry = (LogEntryStart) entry;
-            LogEntryCommit commitEntry;
+        LogEntry entry = logEntryCursor.get();
+        List<StorageCommand> entries = new ArrayList<>();
 
-            List<StorageCommand> entries = new ArrayList<>();
+        if (entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart) {
+            LogEntry startEntry = entry;
+            LogEntry endEntry;
             while (true) {
                 if (!logEntryCursor.next()) {
                     return false;
                 }
 
                 entry = logEntryCursor.get();
-                if (entry instanceof LogEntryCommit) {
-                    commitEntry = (LogEntryCommit) entry;
+                if (entry instanceof LogEntryCommit || entry instanceof LogEntryChunkEnd) {
+                    endEntry = entry;
                     break;
                 }
 
                 LogEntryCommand command = (LogEntryCommand) entry;
                 entries.add(command.getCommand());
             }
-
-            CompleteTransaction transaction = new CompleteTransaction(
-                    entries,
-                    startEntry.getAdditionalHeader(),
-                    startEntry.getTimeWritten(),
-                    startEntry.getLastCommittedTxWhenTransactionStarted(),
-                    commitEntry.getTimeWritten(),
-                    -1,
-                    startEntry.kernelVersion(),
-                    ANONYMOUS);
-            current = new CommittedTransactionRepresentation(startEntry, transaction, commitEntry);
+            if (startEntry instanceof LogEntryStart entryStart && endEntry instanceof LogEntryCommit commitEntry) {
+                current = new CommittedTransactionRepresentation(entryStart, entries, commitEntry);
+            } else {
+                current = CommittedChunkRepresentation.createChunkRepresentation(startEntry, entries, endEntry);
+            }
             channel.getCurrentPosition(lastGoodPositionMarker);
             return true;
+        } else {
+            throw new IllegalStateException("Was expecting transaction or chunk start but got: " + entry);
         }
     }
 

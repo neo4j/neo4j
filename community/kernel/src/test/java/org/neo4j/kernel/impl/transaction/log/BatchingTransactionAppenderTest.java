@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -128,12 +129,13 @@ class BatchingTransactionAppenderTest {
 
         // THEN
         final LogEntryReader logEntryReader = logEntryReader();
-        try (PhysicalTransactionCursor reader = new PhysicalTransactionCursor(channel, logEntryReader)) {
+        try (CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(channel, logEntryReader)) {
             reader.next();
-            CommandBatch tx = reader.get().commandBatch();
+            CommittedCommandBatch commandBatch = reader.get();
+            CommandBatch tx = commandBatch.commandBatch();
             assertArrayEquals(transaction.additionalHeader(), tx.additionalHeader());
             assertEquals(transaction.getTimeStarted(), tx.getTimeStarted());
-            assertEquals(transaction.getTimeCommitted(), tx.getTimeCommitted());
+            assertEquals(transaction.getTimeCommitted(), commandBatch.timeWritten());
             assertEquals(transaction.getLatestCommittedTxWhenStarted(), tx.getLatestCommittedTxWhenStarted());
         }
     }
@@ -179,20 +181,11 @@ class BatchingTransactionAppenderTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
-        CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                singleTestCommand(),
-                additionalHeader,
-                timeStarted,
-                latestCommittedTxWhenStarted,
-                timeCommitted,
-                -1,
-                LATEST,
-                ANONYMOUS);
-
-        LogEntryStart start = new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(nextTxId, 0L, BASE_TX_CHECKSUM);
+        LogEntryStart start = new LogEntryStart(
+                timeStarted, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+        LogEntryCommit commit = new LogEntryCommit(nextTxId, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
-                new CommittedTransactionRepresentation(start, transactionRepresentation, commit);
+                new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
         appender.append(
                 new TransactionToApply(
@@ -205,12 +198,13 @@ class BatchingTransactionAppenderTest {
 
         // THEN
         LogEntryReader logEntryReader = logEntryReader();
-        try (PhysicalTransactionCursor reader = new PhysicalTransactionCursor(channel, logEntryReader)) {
+        try (CommittedCommandBatchCursor reader = new CommittedCommandBatchCursor(channel, logEntryReader)) {
             reader.next();
-            CommandBatch result = reader.get().commandBatch();
+            CommittedCommandBatch commandBatch = reader.get();
+            CommandBatch result = commandBatch.commandBatch();
             assertArrayEquals(additionalHeader, result.additionalHeader());
             assertEquals(timeStarted, result.getTimeStarted());
-            assertEquals(timeCommitted, result.getTimeCommitted());
+            assertEquals(timeCommitted, commandBatch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted());
         }
     }
@@ -229,22 +223,13 @@ class BatchingTransactionAppenderTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
-        CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                singleTestCommand(),
-                additionalHeader,
-                timeStarted,
-                latestCommittedTxWhenStarted,
-                timeCommitted,
-                -1,
-                LATEST,
-                ANONYMOUS);
-
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
-        LogEntryStart start = new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, null, LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(latestCommittedTxWhenStarted + 2, 0L, BASE_TX_CHECKSUM);
+        LogEntryStart start =
+                new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+        LogEntryCommit commit = new LogEntryCommit(latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
-                new CommittedTransactionRepresentation(start, transactionRepresentation, commit);
+                new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
         var e = assertThrows(
                 Exception.class,
@@ -357,7 +342,7 @@ class BatchingTransactionAppenderTest {
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
                 new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
-                mock(CommandBatch.class, RETURNS_MOCKS),
+                singleTestCommand(),
                 new LogEntryCommit(11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);

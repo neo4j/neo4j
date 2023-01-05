@@ -19,29 +19,99 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.KernelVersion.LATEST;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets.parserSet;
+import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
+import org.neo4j.test.utils.TestDirectory;
 
-class LogEntryParserDispatcherV6Test {
+@TestDirectoryExtension
+class LogEntryParserDispatcherTest {
     private final KernelVersion version = LATEST;
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition(0, 25);
 
+    @Inject
+    private FileSystemAbstraction fs;
+
+    @Inject
+    private TestDirectory directory;
+
     @Test
-    void shouldParserStartEntry() throws IOException {
+    void writeAndParseChunksEntries() throws IOException {
+        try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
+            Path path = directory.createFile("a");
+            StoreChannel storeChannel = fs.write(path);
+            try (PhysicalFlushableChecksumChannel writeChannel =
+                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+                var entryWriter = new LogEntryWriter<>(writeChannel, LATEST);
+                entryWriter.writeStartEntry(1, 2, 3, EMPTY_BYTE_ARRAY);
+                entryWriter.writeChunkEndEntry(17, 13);
+                entryWriter.writeChunkStartEntry(11, 13);
+                entryWriter.writeCommitEntry(7, 8);
+            }
+
+            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
+            try (var readChannel = new ReadAheadLogChannel(
+                    new PhysicalLogVersionedStoreChannel(
+                            fs.read(path), 1, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
+                    NO_MORE_CHANNELS,
+                    INSTANCE)) {
+                var startEntry = entryReader.readLogEntry(readChannel);
+                var chunkEnd = entryReader.readLogEntry(readChannel);
+                var chunkStart = entryReader.readLogEntry(readChannel);
+                var commitEnd = entryReader.readLogEntry(readChannel);
+
+                assertThat(startEntry).isInstanceOf(LogEntryStart.class);
+                assertThat(commitEnd).isInstanceOf(LogEntryCommit.class);
+
+                assertThat(chunkEnd).isInstanceOf(LogEntryChunkEnd.class);
+                var chunkEndEntry = (LogEntryChunkEnd) chunkEnd;
+                assertEquals(17, chunkEndEntry.getTransactionId());
+                assertEquals(13, chunkEndEntry.getChunkId());
+
+                assertThat(chunkStart).isInstanceOf(LogEntryChunkStart.class);
+                var chunkStartEntry = (LogEntryChunkStart) chunkStart;
+                assertEquals(11, chunkStartEntry.getTimeWritten());
+                assertEquals(13, chunkStartEntry.getChunkId());
+            }
+        }
+    }
+
+    @Test
+    void parseStartEntry() throws IOException {
         // given
         final LogEntryStart start = new LogEntryStart(version, 1, 2, 3, new byte[] {4}, position);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -63,7 +133,7 @@ class LogEntryParserDispatcherV6Test {
     }
 
     @Test
-    void shouldParserOnePhaseCommitEntry() throws IOException {
+    void parseCommitEntry() throws IOException {
         // given
         final LogEntryCommit commit = new LogEntryCommit(42, 21, -361070784);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();

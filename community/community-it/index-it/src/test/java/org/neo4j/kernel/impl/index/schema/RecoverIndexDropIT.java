@@ -44,11 +44,11 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -95,7 +95,7 @@ class RecoverIndexDropIT {
     @Test
     void shouldDropIndexOnRecovery() throws IOException {
         // given a transaction stream ending in an INDEX DROP command.
-        CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
+        CommittedCommandBatch dropTransaction = prepareDropTransaction();
         DatabaseManagementService managementService = configure(
                         new TestDatabaseManagementServiceBuilder(databaseLayout))
                 .build();
@@ -141,9 +141,7 @@ class RecoverIndexDropIT {
     }
 
     private void appendDropTransactionToTransactionLog(
-            Path transactionLogsDirectory,
-            CommittedTransactionRepresentation dropTransaction,
-            StorageEngineFactory storageEngineFactory)
+            Path transactionLogsDirectory, CommittedCommandBatch dropBatch, StorageEngineFactory storageEngineFactory)
             throws IOException {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(transactionLogsDirectory, fs)
                 .withStorageEngineFactory(storageEngineFactory)
@@ -159,12 +157,12 @@ class RecoverIndexDropIT {
             storeChannel.position(position.getByteOffset());
             try (var writeChannel = new PhysicalFlushableChecksumChannel(
                     storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-                new LogEntryWriter<>(writeChannel, KernelVersion.LATEST).serialize(dropTransaction);
+                new LogEntryWriter<>(writeChannel, KernelVersion.LATEST).serialize(dropBatch);
             }
         }
     }
 
-    private CommittedTransactionRepresentation prepareDropTransaction() throws IOException {
+    private CommittedCommandBatch prepareDropTransaction() throws IOException {
         DatabaseManagementService managementService = configure(
                         new TestDatabaseManagementServiceBuilder(directory.directory("preparation")))
                 .build();
@@ -183,10 +181,10 @@ class RecoverIndexDropIT {
         }
     }
 
-    private static CommittedTransactionRepresentation extractLastTransaction(GraphDatabaseAPI db) throws IOException {
+    private static CommittedCommandBatch extractLastTransaction(GraphDatabaseAPI db) throws IOException {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        CommittedTransactionRepresentation transaction = null;
-        try (TransactionCursor cursor = txStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
+        CommittedCommandBatch transaction = null;
+        try (CommandBatchCursor cursor = txStore.getCommandBatches(TransactionIdStore.BASE_TX_ID + 1)) {
             while (cursor.next()) {
                 transaction = cursor.get();
             }

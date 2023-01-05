@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static java.util.Collections.emptyList;
 import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,8 +38,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -50,15 +51,15 @@ class RecoveryProgressIndicatorTest {
         RecoveryService recoveryService = mock(RecoveryService.class, Answers.RETURNS_MOCKS);
         CorruptedLogsTruncator logsTruncator = mock(CorruptedLogsTruncator.class);
         RecoveryMonitor recoveryMonitor = mock(RecoveryMonitor.class);
-        TransactionCursor reverseTransactionCursor = mock(TransactionCursor.class);
-        TransactionCursor transactionCursor = mock(TransactionCursor.class);
+        CommandBatchCursor reverseCommandBatchCursor = mock(CommandBatchCursor.class);
+        CommandBatchCursor commandBatchCursor = mock(CommandBatchCursor.class);
 
         int transactionsToRecover = 5;
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
         CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
                 new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
-                null,
+                emptyList(),
                 new LogEntryCommit(lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
         LogPosition checkpointLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
@@ -66,15 +67,15 @@ class RecoveryProgressIndicatorTest {
         RecoveryStartInformation startInformation = new RecoveryStartInformation(
                 transactionLogPosition, checkpointLogPosition, firstTxIdAfterLastCheckPoint);
 
-        when(reverseTransactionCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
-        when(transactionCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
-        when(reverseTransactionCursor.get()).thenReturn(transactionRepresentation);
-        when(transactionCursor.get()).thenReturn(transactionRepresentation);
+        when(reverseCommandBatchCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
+        when(commandBatchCursor.next()).thenAnswer(new NextTransactionAnswer(transactionsToRecover));
+        when(reverseCommandBatchCursor.get()).thenReturn(transactionRepresentation);
+        when(commandBatchCursor.get()).thenReturn(transactionRepresentation);
 
         when(recoveryService.getRecoveryStartInformation()).thenReturn(startInformation);
-        when(recoveryService.getTransactionsInReverseOrder(transactionLogPosition))
-                .thenReturn(reverseTransactionCursor);
-        when(recoveryService.getTransactions(transactionLogPosition)).thenReturn(transactionCursor);
+        when(recoveryService.getCommandBatchesInReverseOrder(transactionLogPosition))
+                .thenReturn(reverseCommandBatchCursor);
+        when(recoveryService.getCommandBatches(transactionLogPosition)).thenReturn(commandBatchCursor);
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter(expectedMax);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY);

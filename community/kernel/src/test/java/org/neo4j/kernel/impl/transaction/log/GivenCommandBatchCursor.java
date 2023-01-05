@@ -22,24 +22,24 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 
-public class GivenTransactionCursor implements TransactionCursor {
+public class GivenCommandBatchCursor implements CommandBatchCursor {
     private int index = -1;
-    private final CommittedTransactionRepresentation[] transactions;
+    private final CommittedCommandBatch[] commandBatches;
 
-    private GivenTransactionCursor(CommittedTransactionRepresentation... transactions) {
-        this.transactions = transactions;
+    private GivenCommandBatchCursor(CommittedCommandBatch... commandBatches) {
+        this.commandBatches = commandBatches;
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
-        return transactions[index];
+    public CommittedCommandBatch get() {
+        return commandBatches[index];
     }
 
     @Override
     public boolean next() {
-        if (index + 1 < transactions.length) {
+        if (index + 1 < commandBatches.length) {
             index++;
             return true;
         }
@@ -54,15 +54,15 @@ public class GivenTransactionCursor implements TransactionCursor {
         return null;
     }
 
-    public static TransactionCursor given(CommittedTransactionRepresentation... transactions) {
-        return new GivenTransactionCursor(transactions);
+    public static CommandBatchCursor given(CommittedCommandBatch... commandBatches) {
+        return new GivenCommandBatchCursor(commandBatches);
     }
 
-    public static CommittedTransactionRepresentation[] exhaust(TransactionCursor cursor) throws IOException {
-        List<CommittedTransactionRepresentation> list = new ArrayList<>();
+    public static CommittedCommandBatch[] exhaust(CommandBatchCursor cursor) throws IOException {
+        List<CommittedCommandBatch> list = new ArrayList<>();
         while (cursor.next()) {
             list.add(cursor.get());
         }
-        return list.toArray(new CommittedTransactionRepresentation[0]);
+        return list.toArray(new CommittedCommandBatch[0]);
     }
 }

@@ -17,14 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.reverse;
+package org.neo4j.kernel.impl.transaction;
 
-import java.io.Closeable;
-import java.util.Optional;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import java.io.IOException;
+import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.storageengine.api.CommandBatch;
 
-public interface TransactionCursors extends Closeable {
-    TransactionCursor NO_MORE_CURSORS = new NullTransactionCursor();
+public interface CommittedCommandBatch {
 
-    Optional<TransactionCursor> next();
+    CommandBatch commandBatch();
+
+    int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException;
+
+    int checksum();
+
+    long timeWritten();
+
+    KernelVersion kernelVersion();
+
+    long txId();
 }

@@ -30,7 +30,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandBatchToApply;
@@ -64,18 +64,18 @@ public class TransactionToApply implements CommandBatchToApply {
     private LongConsumer closedCallback;
 
     public TransactionToApply(
-            CommittedTransactionRepresentation transaction, CursorContext cursorContext, StoreCursors storeCursors) {
-        this(transaction, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
+            CommittedCommandBatch committedCommandBatch, CursorContext cursorContext, StoreCursors storeCursors) {
+        this(committedCommandBatch, cursorContext, storeCursors, Commitment.NO_COMMITMENT, EXTERNAL_ID);
     }
 
     public TransactionToApply(
-            CommittedTransactionRepresentation transaction,
+            CommittedCommandBatch committedCommandBatch,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             Commitment commitment,
             TransactionIdGenerator transactionIdGenerator) {
-        this(transaction.commandBatch(), cursorContext, storeCursors, commitment, transactionIdGenerator);
-        this.transactionId = transaction.commitEntry().getTxId();
+        this(committedCommandBatch.commandBatch(), cursorContext, storeCursors, commitment, transactionIdGenerator);
+        this.transactionId = committedCommandBatch.txId();
     }
 
     public TransactionToApply(

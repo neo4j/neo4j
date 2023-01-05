@@ -52,6 +52,11 @@ public interface TransactionIdStore {
     long BASE_TX_COMMIT_TIMESTAMP = 0;
 
     /**
+     * First chunk id for chunked transaction
+     */
+    int BASE_CHUNK_NUMBER = 1;
+
+    /**
      * CONSTANT FOR UNKNOWN TX CHECKSUM
      */
     int UNKNOWN_TX_CHECKSUM = 1;

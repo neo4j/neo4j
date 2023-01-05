@@ -61,14 +61,15 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -390,10 +391,11 @@ class DatabaseUpgradeTransactionIT {
     private void assertUpgradeTransactionInOrder(KernelVersion from, KernelVersion to, long fromTxId) throws Exception {
         LogicalTransactionStore lts = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
         ArrayList<KernelVersion> transactionVersions = new ArrayList<>();
-        ArrayList<CommittedTransactionRepresentation> transactions = new ArrayList<>();
-        try (TransactionCursor transactionCursor = lts.getTransactions(fromTxId + 1)) {
-            while (transactionCursor.next()) {
-                CommittedTransactionRepresentation representation = transactionCursor.get();
+        ArrayList<CommittedCommandBatch> transactions = new ArrayList<>();
+        try (CommandBatchCursor commandBatchCursor = lts.getCommandBatches(fromTxId + 1)) {
+            while (commandBatchCursor.next()) {
+                CommittedTransactionRepresentation representation =
+                        (CommittedTransactionRepresentation) commandBatchCursor.get();
                 transactions.add(representation);
                 transactionVersions.add(representation.startEntry().kernelVersion());
             }
@@ -406,12 +408,11 @@ class DatabaseUpgradeTransactionIT {
         assertThat(transactionVersions.get(0)).isEqualTo(from); // First should be "from" version
         assertThat(transactionVersions.get(transactionVersions.size() - 1)).isEqualTo(to); // And last the "to" version
 
-        CommittedTransactionRepresentation upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
-        CompleteTransaction commandBatch = (CompleteTransaction) upgradeTransaction.commandBatch();
-        commandBatch.accept(element -> {
-            assertThat(element).isInstanceOf(Command.MetaDataCommand.class);
-            return true;
-        });
+        CommittedCommandBatch upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
+        var commands = upgradeTransaction.commandBatch();
+        for (StorageCommand command : commands) {
+            assertThat(command).isInstanceOf(Command.MetaDataCommand.class);
+        }
     }
 
     private String createDenseNode() {

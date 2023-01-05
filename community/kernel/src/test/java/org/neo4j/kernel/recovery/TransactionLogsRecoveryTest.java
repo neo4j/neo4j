@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -56,9 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +63,6 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
@@ -78,6 +74,7 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -86,6 +83,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
@@ -164,14 +162,14 @@ class TransactionLogsRecoveryTest {
         LogFile logFile = logFiles.getLogFile();
         Path file = logFile.getLogFileForVersion(logVersion);
 
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
             LogPositionMarker marker = new LogPositionMarker();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            consumer.accept(marker);
+            channel.getCurrentPosition(marker);
             LogPosition lastCommittedTxPosition = marker.newPosition();
             writer.writeStartEntry(2L, 3L, previousChecksum, new byte[0]);
             lastCommittedTxStartEntry =
@@ -190,7 +188,7 @@ class TransactionLogsRecoveryTest {
                     "test");
 
             // tx committed after checkpoint
-            consumer.accept(marker);
+            channel.getCurrentPosition(marker);
             writer.writeStartEntry(6L, 4L, previousChecksum, new byte[0]);
             expectedStartEntry = new LogEntryStart(6L, 4L, previousChecksum, new byte[0], marker.newPosition());
 
@@ -201,19 +199,7 @@ class TransactionLogsRecoveryTest {
         });
 
         LifeSupport life = new LifeSupport();
-        var recoveryRequired = new AtomicBoolean();
-        var recoveredTransactions = new MutableInt();
-        RecoveryMonitor monitor = new RecoveryMonitor() {
-            @Override
-            public void recoveryRequired(LogPosition recoveryPosition) {
-                recoveryRequired.set(true);
-            }
-
-            @Override
-            public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
-                recoveredTransactions.setValue(numberOfRecoveredTransactions);
-            }
-        };
+        LogsRecoveryMonitor monitor = new LogsRecoveryMonitor();
         try {
             var recoveryLogFiles = buildLogFiles();
             life.add(recoveryLogFiles);
@@ -256,18 +242,20 @@ class TransactionLogsRecoveryTest {
                                 }
 
                                 @Override
-                                public boolean visit(CommittedTransactionRepresentation tx) throws Exception {
-                                    actual.visit(tx);
-                                    switch (nr++) {
-                                        case 0 -> {
-                                            assertEquals(lastCommittedTxStartEntry, tx.startEntry());
-                                            assertEquals(lastCommittedTxCommitEntry, tx.commitEntry());
+                                public boolean visit(CommittedCommandBatch commandBatch) throws Exception {
+                                    actual.visit(commandBatch);
+                                    if (commandBatch instanceof CommittedTransactionRepresentation tx) {
+                                        switch (nr++) {
+                                            case 0 -> {
+                                                assertEquals(lastCommittedTxStartEntry, tx.startEntry());
+                                                assertEquals(lastCommittedTxCommitEntry, tx.commitEntry());
+                                            }
+                                            case 1 -> {
+                                                assertEquals(expectedStartEntry, tx.startEntry());
+                                                assertEquals(expectedCommitEntry, tx.commitEntry());
+                                            }
+                                            default -> fail("Too many recovered transactions");
                                         }
-                                        case 1 -> {
-                                            assertEquals(expectedStartEntry, tx.startEntry());
-                                            assertEquals(expectedCommitEntry, tx.commitEntry());
-                                        }
-                                        default -> fail("Too many recovered transactions");
                                     }
                                     return false;
                                 }
@@ -285,8 +273,8 @@ class TransactionLogsRecoveryTest {
 
             life.start();
 
-            assertTrue(recoveryRequired.get());
-            assertEquals(2, recoveredTransactions.getValue());
+            assertTrue(monitor.isRecoveryRequired());
+            assertEquals(2, monitor.recoveredBatches());
         } finally {
             life.shutdown();
         }
@@ -298,27 +286,24 @@ class TransactionLogsRecoveryTest {
         var contextFactory = new CursorContextFactory(NULL, EmptyVersionContextSupplier.EMPTY);
 
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeDataWithVersion(
-                file,
-                pair -> {
-                    LogEntryWriter<?> writer = pair.first();
-                    Consumer<LogPositionMarker> consumer = pair.other();
-                    TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L);
+        writeSomeDataWithVersion(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
+            TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L);
 
-                    // last committed tx
-                    consumer.accept(marker);
-                    writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
-                    writer.writeCommitEntry(4L, 5L);
+            // last committed tx
+            channel.getCurrentPosition(marker);
+            writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
+            writer.writeCommitEntry(4L, 5L);
 
-                    // check point
-                    consumer.accept(marker);
-                    var checkpointFile = logFiles.getCheckpointFile();
-                    var checkpointAppender = checkpointFile.getCheckpointAppender();
-                    checkpointAppender.checkPoint(
-                            LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test");
-                    return true;
-                },
-                KernelVersion.LATEST);
+            // check point
+            channel.getCurrentPosition(marker);
+            var checkpointFile = logFiles.getCheckpointFile();
+            var checkpointAppender = checkpointFile.getCheckpointAppender();
+            checkpointAppender.checkPoint(
+                    LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test");
+            return true;
+        });
 
         LifeSupport life = new LifeSupport();
         RecoveryMonitor monitor = mock(RecoveryMonitor.class);
@@ -369,12 +354,12 @@ class TransactionLogsRecoveryTest {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
 
             // incomplete tx
-            consumer.accept(marker); // <-- marker has the last good position
+            channel.getCurrentPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(5L, 4L, 0, new byte[0]);
 
             return true;
@@ -392,14 +377,14 @@ class TransactionLogsRecoveryTest {
     void doNotTruncateCheckpointsAfterLastTransaction() throws IOException {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L);
 
             writer.writeCommitEntry(1L, 2L);
-            Consumer<LogPositionMarker> other = pair.other();
-            other.accept(marker);
+            channel.getCurrentPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -432,14 +417,14 @@ class TransactionLogsRecoveryTest {
     void shouldTruncateInvalidCheckpointAndAllCorruptTransactions() throws IOException {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         LogPositionMarker marker = new LogPositionMarker();
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
             writer.writeStartEntry(1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(1L, 2L);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L);
 
-            Consumer<LogPositionMarker> other = pair.other();
-            other.accept(marker);
+            channel.getCurrentPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -469,9 +454,9 @@ class TransactionLogsRecoveryTest {
         Path file = logFiles.getLogFile().getLogFileForVersion(logVersion);
         final LogPositionMarker marker = new LogPositionMarker();
 
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
@@ -479,7 +464,7 @@ class TransactionLogsRecoveryTest {
             previousChecksum = writer.writeCommitEntry(4L, 5L);
 
             // incomplete tx
-            consumer.accept(marker); // <-- marker has the last good position
+            channel.getCurrentPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(5L, 4L, previousChecksum, new byte[0]);
 
             return true;
@@ -502,14 +487,14 @@ class TransactionLogsRecoveryTest {
         final byte[] additionalHeaderData = new byte[0];
         final long transactionId = 4;
         final long commitTimestamp = 5;
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
+        writeSomeData(file, dataWriters -> {
+            LogEntryWriter<?> writer = dataWriters.writer();
+            PositionAwareChannel channel = dataWriters.channel();
 
             // last committed tx
             writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
             writer.writeCommitEntry(transactionId, commitTimestamp);
-            consumer.accept(marker);
+            channel.getCurrentPosition(marker);
 
             return true;
         });
@@ -565,14 +550,14 @@ class TransactionLogsRecoveryTest {
         final byte[] additionalHeaderData = new byte[0];
         final long transactionId = 4;
         final long commitTimestamp = 5;
-        writeSomeData(file, pair -> {
-            LogEntryWriter<?> writer = pair.first();
-            Consumer<LogPositionMarker> consumer = pair.other();
+        writeSomeData(file, writers -> {
+            LogEntryWriter<?> writer = writers.writer();
+            PositionAwareChannel channel = writers.channel();
 
             // last committed tx
             writer.writeStartEntry(2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
             writer.writeCommitEntry(transactionId, commitTimestamp);
-            consumer.accept(marker);
+            channel.getCurrentPosition(marker);
 
             return true;
         });
@@ -589,7 +574,7 @@ class TransactionLogsRecoveryTest {
         assertThat(rootCause).isInstanceOf(DatabaseStartAbortedException.class);
 
         verify(logsTruncator, never()).truncate(any());
-        verify(monitor, never()).recoveryCompleted(anyInt(), anyLong());
+        verify(monitor, never()).recoveryCompleted(anyLong());
     }
 
     private boolean recovery(Path storeDir) throws IOException {
@@ -645,17 +630,11 @@ class TransactionLogsRecoveryTest {
         return recoveryRequired.get();
     }
 
-    private void writeSomeData(
-            Path file, Visitor<Pair<LogEntryWriter<?>, Consumer<LogPositionMarker>>, IOException> visitor)
-            throws IOException {
-        writeSomeDataWithVersion(file, visitor, KernelVersion.LATEST);
+    private void writeSomeData(Path file, Visitor<DataWriters, IOException> visitor) throws IOException {
+        writeSomeDataWithVersion(file, visitor);
     }
 
-    private void writeSomeDataWithVersion(
-            Path file,
-            Visitor<Pair<LogEntryWriter<?>, Consumer<LogPositionMarker>>, IOException> visitor,
-            KernelVersion version)
-            throws IOException {
+    private void writeSomeDataWithVersion(Path file, Visitor<DataWriters, IOException> visitor) throws IOException {
         try (var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                         fileSystem.write(file),
                         logVersion,
@@ -668,17 +647,12 @@ class TransactionLogsRecoveryTest {
                         new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             writeLogHeader(versionedStoreChannel, new LogHeader(logVersion, 2L, storeId), INSTANCE);
             writableLogChannel.beginChecksum();
-            Consumer<LogPositionMarker> consumer = marker -> {
-                try {
-                    writableLogChannel.getCurrentPosition(marker);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            };
-            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, version);
-            visitor.visit(Pair.of(first, consumer));
+            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, KernelVersion.LATEST);
+            visitor.visit(new DataWriters(first, writableLogChannel));
         }
     }
+
+    private record DataWriters(LogEntryWriter<?> writer, PositionAwareChannel channel) {}
 
     private LogFiles buildLogFiles() throws IOException {
         return LogFilesBuilder.builder(databaseLayout, fileSystem)
@@ -690,5 +664,28 @@ class TransactionLogsRecoveryTest {
                         .set(GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false)
                         .build())
                 .build();
+    }
+
+    private static final class LogsRecoveryMonitor implements RecoveryMonitor {
+        private int batchCounter;
+        private boolean recoveryRequired;
+
+        @Override
+        public void batchRecovered(CommittedCommandBatch committedBatch) {
+            batchCounter++;
+        }
+
+        @Override
+        public void recoveryRequired(LogPosition recoveryPosition) {
+            recoveryRequired = true;
+        }
+
+        public boolean isRecoveryRequired() {
+            return recoveryRequired;
+        }
+
+        public int recoveredBatches() {
+            return batchCounter;
+        }
     }
 }

@@ -624,7 +624,7 @@ class TransactionLogServiceIT {
     }
 
     private long getTxOffset(int txId) throws IOException {
-        return transactionStore.getTransactions(txId).position().getByteOffset();
+        return transactionStore.getCommandBatches(txId).position().getByteOffset();
     }
 
     private void verifyReportedPositions(int txId, long expectedOffset) throws IOException {

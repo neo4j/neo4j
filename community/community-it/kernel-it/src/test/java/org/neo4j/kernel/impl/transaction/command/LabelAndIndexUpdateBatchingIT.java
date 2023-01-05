@@ -36,10 +36,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -53,7 +53,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
  * Later in that batch there would be a uniqueness constraint created for label L and property P.
  * The number of nodes matching this constraint would be few and so the label scan store would be selected
  * to drive the population of the index. Problem is that the label update for N would still sit in
- * the batch state, to be applied at the end of the batch. Hence the node would be forgotten when the
+ * the batch state, to be applied at the end of the batch. Hence, the node would be forgotten when the
  * index was being built.
  */
 class LabelAndIndexUpdateBatchingIT {
@@ -66,7 +66,7 @@ class LabelAndIndexUpdateBatchingIT {
         // perform the transactions from db-level and extract the transactions as commands
         // so that they can be applied batch-wise they way we'd like to later.
 
-        List<CommittedTransactionRepresentation> transactions;
+        List<CommittedCommandBatch> transactions;
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
@@ -133,19 +133,18 @@ class LabelAndIndexUpdateBatchingIT {
         }
     }
 
-    private static int findCutoffIndex(Collection<CommittedTransactionRepresentation> transactions, long txId) {
+    private static int findCutoffIndex(Collection<CommittedCommandBatch> transactions, long txId) {
         var iterator = transactions.iterator();
         for (int i = 0; iterator.hasNext(); i++) {
             var tx = iterator.next();
-            if (tx.commitEntry().getTxId() == txId) {
+            if (tx.txId() == txId) {
                 return i;
             }
         }
         throw new AssertionError("Couldn't find the transaction which would be the cut-off point");
     }
 
-    private static TransactionToApply toApply(
-            Collection<CommittedTransactionRepresentation> transactions, GraphDatabaseAPI db) {
+    private static TransactionToApply toApply(Collection<CommittedCommandBatch> transactions, GraphDatabaseAPI db) {
         StorageEngine storageEngine = db.getDependencyResolver().resolveDependency(StorageEngine.class);
         var commitmentFactory = db.getDependencyResolver().resolveDependency(TransactionCommitmentFactory.class);
         var transactionIdGenerator = db.getDependencyResolver().resolveDependency(TransactionIdGenerator.class);
@@ -166,11 +165,11 @@ class LabelAndIndexUpdateBatchingIT {
         return first;
     }
 
-    private static List<CommittedTransactionRepresentation> extractTransactions(GraphDatabaseAPI db, long txIdToStartOn)
+    private static List<CommittedCommandBatch> extractTransactions(GraphDatabaseAPI db, long txIdToStartOn)
             throws IOException {
         LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        List<CommittedTransactionRepresentation> transactions = new ArrayList<>();
-        try (TransactionCursor cursor = txStore.getTransactions(txIdToStartOn)) {
+        List<CommittedCommandBatch> transactions = new ArrayList<>();
+        try (CommandBatchCursor cursor = txStore.getCommandBatches(txIdToStartOn)) {
             cursor.forAll(transactions::add);
         }
         return transactions;

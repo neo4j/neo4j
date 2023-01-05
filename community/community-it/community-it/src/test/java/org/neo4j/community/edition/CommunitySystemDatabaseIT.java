@@ -47,8 +47,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -209,7 +209,7 @@ class CommunitySystemDatabaseIT {
     private static int countTransactionInLogicalStore(GraphDatabaseAPI facade) throws IOException {
         LogicalTransactionStore transactionStore =
                 facade.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-        try (TransactionCursor cursor = transactionStore.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
+        try (CommandBatchCursor cursor = transactionStore.getCommandBatches(TransactionIdStore.BASE_TX_ID + 1)) {
             var count = 0;
             while (cursor.next()) {
                 count++;

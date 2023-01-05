@@ -147,7 +147,7 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
-import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -381,7 +381,7 @@ public class Database extends AbstractDatabase {
         databaseMonitors.addMonitorListener(
                 new LoggingLogTailScannerMonitor(internalLogProvider.getLog(DetachedLogTailScanner.class)));
         databaseMonitors.addMonitorListener(new ReverseTransactionCursorLoggingMonitor(
-                internalLogProvider.getLog(ReversedSingleFileTransactionCursor.class)));
+                internalLogProvider.getLog(ReversedSingleFileCommandBatchCursor.class)));
 
         // Upgrade the store before we begin
         upgradeStore(databaseConfig, databasePageCache, otherDatabaseMemoryTracker);

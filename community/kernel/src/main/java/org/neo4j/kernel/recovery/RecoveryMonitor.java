@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
 public interface RecoveryMonitor {
     default void recoveryRequired(LogPosition recoveryPosition) {
         // noop
     }
 
-    default void transactionRecovered(long txId) {
+    default void batchRecovered(CommittedCommandBatch committedBatch) {
         // noop
     }
 
-    default void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+    default void recoveryCompleted(long recoveryTimeInMilliseconds) {
         // noop
     }
 
@@ -41,7 +40,7 @@ public interface RecoveryMonitor {
     }
 
     default void failToRecoverTransactionsAfterCommit(
-            Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition) {
+            Throwable t, CommittedCommandBatch commandBatch, LogPosition recoveryToPosition) {
         // noop
     }
 
@@ -49,8 +48,7 @@ public interface RecoveryMonitor {
         // noop
     }
 
-    default void partialRecovery(
-            RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction) {
+    default void partialRecovery(RecoveryPredicate recoveryPredicate, CommittedCommandBatch commandBatch) {
         // noop
     }
 }

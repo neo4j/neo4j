@@ -22,31 +22,31 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
 /**
- * Eagerly exhausts a {@link TransactionCursor} and allows moving through it in reverse order.
+ * Eagerly exhausts a {@link CommandBatchCursor} and allows moving through it in reverse order.
  * The idea is that this should only be done for a subset of a bigger transaction log stream, typically
  * for one log file.
  *
- * For reversing a transaction log consisting of multiple log files {@link ReversedMultiFileTransactionCursor}
+ * For reversing a transaction log consisting of multiple log files {@link ReversedMultiFileCommandBatchCursor}
  * should be used (it will use this class internally though).
  *
- * @see ReversedMultiFileTransactionCursor
+ * @see ReversedMultiFileCommandBatchCursor
  */
-public class EagerlyReversedTransactionCursor implements TransactionCursor {
-    private final List<CommittedTransactionRepresentation> txs = new ArrayList<>();
-    private final TransactionCursor cursor;
+public class EagerlyReversedCommandBatchCursor implements CommandBatchCursor {
+    private final List<CommittedCommandBatch> batches = new ArrayList<>();
+    private final CommandBatchCursor cursor;
     private int indexToReturn;
 
-    public EagerlyReversedTransactionCursor(TransactionCursor cursor) throws IOException {
+    public EagerlyReversedCommandBatchCursor(CommandBatchCursor cursor) throws IOException {
         this.cursor = cursor;
         while (cursor.next()) {
-            txs.add(cursor.get());
+            batches.add(cursor.get());
         }
-        this.indexToReturn = txs.size();
+        this.indexToReturn = batches.size();
     }
 
     @Override
@@ -64,8 +64,8 @@ public class EagerlyReversedTransactionCursor implements TransactionCursor {
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
-        return txs.get(indexToReturn);
+    public CommittedCommandBatch get() {
+        return batches.get(indexToReturn);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class EagerlyReversedTransactionCursor implements TransactionCursor {
         throw new UnsupportedOperationException("Should not be called");
     }
 
-    public static TransactionCursor eagerlyReverse(TransactionCursor cursor) throws IOException {
-        return new EagerlyReversedTransactionCursor(cursor);
+    public static CommandBatchCursor eagerlyReverse(CommandBatchCursor cursor) throws IOException {
+        return new EagerlyReversedCommandBatchCursor(cursor);
     }
 }

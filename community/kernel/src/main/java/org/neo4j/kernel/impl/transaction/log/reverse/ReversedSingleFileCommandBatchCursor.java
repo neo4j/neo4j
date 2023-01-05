@@ -24,31 +24,31 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import org.neo4j.io.fs.ReadAheadChannel;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
+import org.neo4j.kernel.impl.transaction.log.CommittedCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.SketchingTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.SketchingCommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 
 /**
- * Returns transactions in reverse order in a log file. It tries to keep peak memory consumption to a minimum
+ * Returns command batches in reverse order in a log file. It tries to keep peak memory consumption to a minimum
  * by first sketching out the offsets of all transactions in the log. Then it starts from the end and moves backwards,
  * taking advantage of read-ahead feature of the {@link ReadAheadLogChannel} by moving in chunks backwards in roughly
- * the size of the read-ahead window. Coming across large transactions means moving further back to at least read one transaction
+ * the size of the read-ahead window. Coming across large batches means moving further back to at least read one batch
  * per chunk "move". This is all internal, so from the outside it simply reverses a transaction log.
  * The memory overhead compared to reading a log in the natural order is almost negligible.
  *
  * This cursor currently only works for a single log file, such that the given {@link ReadAheadLogChannel} should not be
  * instantiated with a {@link LogVersionBridge} moving it over to other versions when exhausted. For reversing a whole
- * log stream consisting of multiple log files have a look at {@link ReversedMultiFileTransactionCursor}.
+ * log stream consisting of multiple log files have a look at {@link ReversedMultiFileCommandBatchCursor}.
  *
  * <pre>
  *
- *              ◄────────────────┤                          {@link #chunkTransactions} for the current chunk, reading {@link #readNextChunk()}.
+ *              ◄────────────────┤                          {@link #chunkBatches} for the current chunk, reading {@link #readNextChunk()}.
  * [2  |3|4    |5  |6          |7 |8   |9      |10  ]
  * ▲   ▲ ▲     ▲   ▲           ▲  ▲    ▲       ▲
  * │   │ │     │   │           │  │    │       │
@@ -58,28 +58,28 @@ import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionExceptio
  *
  * </pre>
  *
- * @see ReversedMultiFileTransactionCursor
+ * @see ReversedMultiFileCommandBatchCursor
  */
-public class ReversedSingleFileTransactionCursor implements TransactionCursor {
+public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor {
     // Should this be passed in or extracted from the read-ahead channel instead?
     private static final int CHUNK_SIZE = ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 
     private final ReadAheadLogChannel channel;
     private final boolean failOnCorruptedLogFiles;
     private final ReversedTransactionCursorMonitor monitor;
-    private final TransactionCursor transactionCursor;
+    private final CommandBatchCursor commandBatchCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of
     // ReadAheadLogChannel
-    private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>(20);
-    private final SketchingTransactionCursor sketchingCursor;
-    private CommittedTransactionRepresentation currentChunkTransaction;
+    private final Deque<CommittedCommandBatch> chunkBatches = new ArrayDeque<>(20);
+    private final SketchingCommandBatchCursor sketchingCursor;
+    private CommittedCommandBatch currentCommandBatch;
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
     private int offsetsLength;
     private int chunkStartOffsetIndex;
     private long totalSize;
 
-    ReversedSingleFileTransactionCursor(
+    ReversedSingleFileCommandBatchCursor(
             ReadAheadLogChannel channel,
             LogEntryReader logEntryReader,
             boolean failOnCorruptedLogFiles,
@@ -90,8 +90,8 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor {
         this.monitor = monitor;
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
-        this.transactionCursor = new PhysicalTransactionCursor(channel, logEntryReader);
-        this.sketchingCursor = new SketchingTransactionCursor(channel, logEntryReader);
+        this.commandBatchCursor = new CommittedCommandBatchCursor(channel, logEntryReader);
+        this.sketchingCursor = new SketchingCommandBatchCursor(channel, logEntryReader);
         this.offsets = sketchOutTransactionStartOffsets();
     }
 
@@ -137,7 +137,7 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor {
             if (currentChunkExhausted()) {
                 readNextChunk();
             }
-            currentChunkTransaction = chunkTransactions.pop();
+            currentCommandBatch = chunkBatches.pop();
             return true;
         }
         return false;
@@ -164,17 +164,17 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor {
         int chunkLength = chunkStartOffsetIndex - newLowOffsetIndex;
         chunkStartOffsetIndex = newLowOffsetIndex;
         channel.setCurrentPosition(offsets[chunkStartOffsetIndex]);
-        assert chunkTransactions.isEmpty();
+        assert chunkBatches.isEmpty();
         for (int i = 0; i < chunkLength; i++) {
-            boolean success = transactionCursor.next();
+            boolean success = commandBatchCursor.next();
             assert success;
 
-            chunkTransactions.push(transactionCursor.get());
+            chunkBatches.push(commandBatchCursor.get());
         }
     }
 
     private boolean currentChunkExhausted() {
-        return chunkTransactions.isEmpty();
+        return chunkBatches.isEmpty();
     }
 
     private boolean exhausted() {
@@ -183,12 +183,12 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor {
 
     @Override
     public void close() throws IOException {
-        transactionCursor.close(); // closes the channel too
+        commandBatchCursor.close(); // closes the channel too
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
-        return currentChunkTransaction;
+    public CommittedCommandBatch get() {
+        return currentCommandBatch;
     }
 
     @Override

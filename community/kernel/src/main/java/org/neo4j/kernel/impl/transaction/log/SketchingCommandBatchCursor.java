@@ -19,20 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 import java.io.IOException;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
 
-public class SketchingTransactionCursor implements TransactionCursor {
+public class SketchingCommandBatchCursor implements CommandBatchCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    public SketchingTransactionCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
+    public SketchingCommandBatchCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
             throws IOException {
         this.channel = channel;
         channel.getCurrentPosition(lastGoodPositionMarker);
@@ -40,7 +42,7 @@ public class SketchingTransactionCursor implements TransactionCursor {
     }
 
     @Override
-    public CommittedTransactionRepresentation get() {
+    public CommittedCommandBatch get() {
         throw new UnsupportedOperationException();
     }
 
@@ -48,13 +50,14 @@ public class SketchingTransactionCursor implements TransactionCursor {
     public boolean next() throws IOException {
         while (hasEntries()) {
             LogEntry entry = logEntryCursor.get();
-            assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
+            assert entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart
+                    : "Expected Start entry, read " + entry + " instead";
 
             // Read till commit entry
             while (hasEntries()) {
                 entry = logEntryCursor.get();
 
-                if (isCommit(entry)) {
+                if (isBatchEnd(entry)) {
                     channel.getCurrentPosition(lastGoodPositionMarker);
                     return true;
                 }
@@ -68,8 +71,16 @@ public class SketchingTransactionCursor implements TransactionCursor {
         return logEntryCursor.next();
     }
 
-    private boolean isCommit(LogEntry entry) {
+    private boolean isBatchEnd(LogEntry entry) {
+        return isChunkEnd(entry) || isCommit(entry);
+    }
+
+    private static boolean isCommit(LogEntry entry) {
         return entry.getType() == TX_COMMIT;
+    }
+
+    private static boolean isChunkEnd(LogEntry entry) {
+        return entry.getType() == CHUNK_END;
     }
 
     @Override

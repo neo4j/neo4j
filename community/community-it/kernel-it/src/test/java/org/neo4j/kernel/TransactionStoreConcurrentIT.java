@@ -66,7 +66,7 @@ public class TransactionStoreConcurrentIT {
         try {
             var logicalTransactionStore =
                     dbapi.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
-            try (var txCursor = logicalTransactionStore.getTransactions(random.nextLong(TX_COUNT / 2, TX_COUNT))) {
+            try (var txCursor = logicalTransactionStore.getCommandBatches(random.nextLong(TX_COUNT / 2, TX_COUNT))) {
                 while (txCursor.next()) {
                     txCursor.position();
                 }

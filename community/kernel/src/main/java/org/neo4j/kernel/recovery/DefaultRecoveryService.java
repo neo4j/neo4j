@@ -27,11 +27,10 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -81,23 +80,23 @@ public class DefaultRecoveryService implements RecoveryService {
     }
 
     @Override
-    public TransactionCursor getTransactions(long transactionId) throws IOException {
-        return logicalTransactionStore.getTransactions(transactionId);
+    public CommandBatchCursor getCommandBatches(long transactionId) throws IOException {
+        return logicalTransactionStore.getCommandBatches(transactionId);
     }
 
     @Override
-    public TransactionCursor getTransactions(LogPosition position) throws IOException {
-        return logicalTransactionStore.getTransactions(position);
+    public CommandBatchCursor getCommandBatches(LogPosition position) throws IOException {
+        return logicalTransactionStore.getCommandBatches(position);
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder(LogPosition position) throws IOException {
-        return logicalTransactionStore.getTransactionsInReverseOrder(position);
+    public CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition position) throws IOException {
+        return logicalTransactionStore.getCommandBatchesInReverseOrder(position);
     }
 
     @Override
     public void transactionsRecovered(
-            CommittedTransactionRepresentation lastRecoveredTransaction,
+            CommittedCommandBatch lastRecoveredBatch,
             LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,
@@ -132,12 +131,11 @@ public class DefaultRecoveryService implements RecoveryService {
             }
             return;
         }
-        if (lastRecoveredTransaction != null) {
-            LogEntryCommit commitEntry = lastRecoveredTransaction.commitEntry();
+        if (lastRecoveredBatch != null) {
             transactionIdStore.setLastCommittedAndClosedTransactionId(
-                    commitEntry.getTxId(),
-                    lastRecoveredTransaction.getChecksum(),
-                    commitEntry.getTimeWritten(),
+                    lastRecoveredBatch.txId(),
+                    lastRecoveredBatch.checksum(),
+                    lastRecoveredBatch.timeWritten(),
                     lastRecoveredTransactionPosition.getByteOffset(),
                     lastRecoveredTransactionPosition.getLogVersion());
         } else {

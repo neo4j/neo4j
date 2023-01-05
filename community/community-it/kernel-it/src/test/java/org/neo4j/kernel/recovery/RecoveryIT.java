@@ -1006,7 +1006,7 @@ class RecoveryIT {
             }
 
             @Override
-            public void recoveryCompleted(int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds) {
+            public void recoveryCompleted(long recoveryTimeInMilliseconds) {
                 recoveryCompleted.set(true);
             }
 

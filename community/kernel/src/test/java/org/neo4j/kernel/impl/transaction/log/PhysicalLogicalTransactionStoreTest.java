@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -308,7 +308,7 @@ class PhysicalLogicalTransactionStoreTest {
 
             // WHEN
             // we ask for that transaction and forward
-            assertThrows(NoSuchTransactionException.class, () -> txStore.getTransactions(10));
+            assertThrows(NoSuchTransactionException.class, () -> txStore.getCommandBatches(10));
         } finally {
             life.shutdown();
         }
@@ -370,14 +370,14 @@ class PhysicalLogicalTransactionStoreTest {
             long timeCommitted,
             LogicalTransactionStore store)
             throws IOException {
-        try (TransactionCursor cursor = store.getTransactions(TransactionIdStore.BASE_TX_ID + 1)) {
+        try (CommandBatchCursor cursor = store.getCommandBatches(TransactionIdStore.BASE_TX_ID + 1)) {
             boolean hasNext = cursor.next();
             assertTrue(hasNext);
-            CommittedTransactionRepresentation tx = cursor.get();
-            CommandBatch transaction = tx.commandBatch();
+            CommittedCommandBatch commandBatch = cursor.get();
+            CommandBatch transaction = commandBatch.commandBatch();
             assertArrayEquals(additionalHeader, transaction.additionalHeader());
             assertEquals(timeStarted, transaction.getTimeStarted());
-            assertEquals(timeCommitted, transaction.getTimeCommitted());
+            assertEquals(timeCommitted, commandBatch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted());
         }
 
@@ -406,11 +406,11 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         @Override
-        public boolean visit(CommittedTransactionRepresentation tx) {
-            CommandBatch transaction = tx.commandBatch();
+        public boolean visit(CommittedCommandBatch batch) {
+            CommandBatch transaction = batch.commandBatch();
             assertArrayEquals(additionalHeader, transaction.additionalHeader());
             assertEquals(timeStarted, transaction.getTimeStarted());
-            assertEquals(timeCommitted, transaction.getTimeCommitted());
+            assertEquals(timeCommitted, batch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted());
             visitedTransactions++;
             return false;
@@ -456,23 +456,23 @@ class PhysicalLogicalTransactionStoreTest {
         }
 
         @Override
-        public TransactionCursor getTransactions(long transactionId) throws IOException {
-            return txStore.getTransactions(transactionId);
+        public CommandBatchCursor getCommandBatches(long transactionId) throws IOException {
+            return txStore.getCommandBatches(transactionId);
         }
 
         @Override
-        public TransactionCursor getTransactions(LogPosition position) throws IOException {
-            return txStore.getTransactions(position);
+        public CommandBatchCursor getCommandBatches(LogPosition position) throws IOException {
+            return txStore.getCommandBatches(position);
         }
 
         @Override
-        public TransactionCursor getTransactionsInReverseOrder(LogPosition position) throws IOException {
-            return txStore.getTransactionsInReverseOrder(position);
+        public CommandBatchCursor getCommandBatchesInReverseOrder(LogPosition position) throws IOException {
+            return txStore.getCommandBatchesInReverseOrder(position);
         }
 
         @Override
         public void transactionsRecovered(
-                CommittedTransactionRepresentation lastRecoveredTransaction,
+                CommittedCommandBatch committedCommandBatch,
                 LogPosition lastTransactionPosition,
                 LogPosition positionAfterLastRecoveredTransaction,
                 LogPosition checkpointPosition,
