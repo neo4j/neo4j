@@ -1046,4 +1046,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> pagecache_warmup_blocking = newBuilder(
                     "internal.db.memory.pagecache.warmup.blocking_enabled", BOOL, false)
             .build();
+
+    @Internal
+    @Description("A feature toggle behind which change data capture feature is developed")
+    public static final Setting<Boolean> change_data_capture =
+            newBuilder("internal.dbms.change_data_capture", BOOL, false).build();
 }
