@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.AbstractCommand;
+import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.commandline.admin.security.SetInitialPasswordCommand;
@@ -92,7 +93,7 @@ class AdminCommandsIT {
     }
 
     @Test
-    void shouldExpandCommands() throws Exception {
+    void shouldExpandCommands() {
         assertSuccess(new SetInitialPasswordCommand(context), "--expand-commands", "password");
         assertSuccess(new SetDefaultAdminCommand(context), "--expand-commands", "admin");
         assertSuccess(new StoreInfoCommand(context), "--expand-commands", "path");
@@ -137,13 +138,13 @@ class AdminCommandsIT {
         assertExpansionError(new UnbindCommand(context));
     }
 
-    private static void assertSuccess(AbstractCommand command, String... args) throws Exception {
-        CommandLine.populateCommand(command, args).call();
+    private void assertSuccess(AbstractCommand command, String... args) {
+        new CommandLine(command, new ContextInjectingFactory(context)).execute(args);
     }
 
-    private static void assertExpansionError(AbstractCommand command, String... args) {
+    private void assertExpansionError(AbstractCommand command, String... args) {
         var exception = new MutableObject<Exception>();
-        new CommandLine(command)
+        new CommandLine(command, new ContextInjectingFactory(context))
                 .setExecutionExceptionHandler((ex, commandLine, parseResult) -> {
                     exception.setValue(ex);
                     return 1;

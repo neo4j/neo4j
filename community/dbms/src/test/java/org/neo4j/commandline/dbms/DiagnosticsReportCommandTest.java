@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.cli.ExecutionContext;
 import picocli.CommandLine;
 
@@ -32,9 +33,11 @@ class DiagnosticsReportCommandTest {
     @Test
     void printUsageHelp() {
         final var baos = new ByteArrayOutputStream();
-        final var command = new DiagnosticsReportCommand(new ExecutionContext(Path.of("."), Path.of(".")));
+        ExecutionContext ctx = new ExecutionContext(Path.of("."), Path.of("."));
+        final var command = new DiagnosticsReportCommand(ctx);
         try (var out = new PrintStream(baos)) {
-            CommandLine.usage(command, new PrintStream(out), CommandLine.Help.Ansi.OFF);
+            CommandLine commandLine = new CommandLine(command, new ContextInjectingFactory(ctx));
+            commandLine.usage(new PrintStream(out), CommandLine.Help.Ansi.OFF);
         }
         assertThat(baos.toString().trim())
                 .isEqualToIgnoringNewLines(
@@ -45,7 +48,7 @@ class DiagnosticsReportCommandTest {
 
                 report [-h] [--expand-commands] [--list] [--verbose] [--ignore-disk-space-check
                        [=true|false]] [--additional-config=<file>] [--to-path=<path>]
-                       [<classifier>...]
+                       [<classifier>...] [COMMAND]
 
                 DESCRIPTION
 

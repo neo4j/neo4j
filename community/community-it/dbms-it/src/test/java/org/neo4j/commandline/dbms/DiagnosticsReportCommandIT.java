@@ -40,6 +40,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.CommandTestUtils;
+import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -97,8 +99,7 @@ class DiagnosticsReportCommandIT {
         var signalToIgnoreThisTest = new MutableBoolean();
         withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
             try {
-                DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-                CommandLine.populateCommand(diagnosticsReportCommand, args);
+                DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
                 diagnosticsReportCommand.execute();
             } catch (CommandFailedException e) {
                 if (e.getMessage().equals("Unknown classifier: threads")) {
@@ -147,8 +148,7 @@ class DiagnosticsReportCommandIT {
         var signalToIgnoreThisTest = new MutableBoolean();
         withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
             try {
-                DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-                CommandLine.populateCommand(diagnosticsReportCommand, args);
+                DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
                 diagnosticsReportCommand.execute();
             } catch (CommandFailedException e) {
                 if (e.getMessage().equals("Unknown classifier: heap")) {
@@ -191,8 +191,7 @@ class DiagnosticsReportCommandIT {
         String[] args = {"logs", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         Path homeDir = testDirectory.homePath();
         withSuppressedOutput(homeDir, homeDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
         });
 
@@ -217,8 +216,7 @@ class DiagnosticsReportCommandIT {
 
         String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
         });
 
@@ -246,8 +244,7 @@ class DiagnosticsReportCommandIT {
 
         String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
         });
 
@@ -275,8 +272,7 @@ class DiagnosticsReportCommandIT {
     void allHasToBeOnlyClassifier() {
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             String[] args = {"all", "logs", "tx"};
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
 
             CommandFailedException incorrectUsage =
                     assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
@@ -290,8 +286,7 @@ class DiagnosticsReportCommandIT {
     void printUnrecognizedClassifiers() {
         String[] args = {"logs", "tx", "invalid"};
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             CommandFailedException incorrectUsage =
                     assertThrows(CommandFailedException.class, diagnosticsReportCommand::execute);
             assertEquals("Unknown classifier: invalid", incorrectUsage.getMessage());
@@ -316,8 +311,7 @@ class DiagnosticsReportCommandIT {
         String[] args = {"--list"};
 
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
 
             assertThat(ctx.outAsString())
@@ -340,8 +334,7 @@ class DiagnosticsReportCommandIT {
         String[] args = {toArgument, "all"};
 
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
-            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
-            CommandLine.populateCommand(diagnosticsReportCommand, args);
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
             diagnosticsReportCommand.execute();
         });
 
@@ -352,6 +345,13 @@ class DiagnosticsReportCommandIT {
         // Default should be empty
         Path reports = testDirectory.homePath().resolve("reports");
         assertThat(fs.fileExists(reports)).isEqualTo(false);
+    }
+
+    private DiagnosticsReportCommand populateCommand(CommandTestUtils.CapturingExecutionContext ctx, String... args) {
+        DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand(ctx);
+        CommandLine commandLine = new CommandLine(diagnosticsReportCommand, new ContextInjectingFactory(ctx));
+        commandLine.parseArgs(args);
+        return diagnosticsReportCommand;
     }
 
     private static long getPID() {

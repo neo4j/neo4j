@@ -47,6 +47,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.dbms.diagnostics.profile.ProfileCommand;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
@@ -60,7 +61,8 @@ import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
         description =
                 "Will collect information about the system and package everything in an archive. If you specify 'all', "
                         + "everything will be included. You can also fine tune the selection by passing classifiers to the tool, "
-                        + "e.g 'logs tx threads'.")
+                        + "e.g 'logs tx threads'.",
+        subcommands = {ProfileCommand.class})
 public class DiagnosticsReportCommand extends AbstractAdminCommand {
     static final String[] DEFAULT_CLASSIFIERS = {
         "logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"

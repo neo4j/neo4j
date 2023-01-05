@@ -23,6 +23,8 @@ import static java.lang.String.format;
 import static org.neo4j.configuration.ToolingMemoryCalculations.NOTIFY_SYS_ERR;
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateInternalDatabaseName;
 
+import java.time.Duration;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.ToolingMemoryCalculations;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.configuration.helpers.FromPaths;
@@ -85,6 +87,19 @@ public interface Converters {
         @Override
         public Long convert(String value) throws Exception {
             return new ToolingMemoryCalculations(NOTIFY_SYS_ERR).calculateMaxAvailableOffHeapMemory(value);
+        }
+    }
+
+    class DurationConverter implements ITypeConverter<Duration> {
+
+        @Override
+        public Duration convert(String value) throws Exception {
+            try {
+                return SettingValueParsers.DURATION.parse(value);
+            } catch (Exception ex) {
+                throw new TypeConversionException(
+                        String.format("'%s' is not a valid duration. %s", value, ex.getMessage()));
+            }
         }
     }
 }
