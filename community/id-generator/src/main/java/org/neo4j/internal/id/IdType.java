@@ -33,6 +33,7 @@ public interface IdType {
      * start from a higher, sometimes much higher, start ID. This generally doesn't work so well for
      * schema/token stores.
      */
+    @SuppressWarnings("unused") // method is used as part of external recovery robustness tests
     default boolean isSchemaType() {
         return false;
     }
