@@ -218,7 +218,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         Optional<JmxDump> jmxDump;
         jmxDump = jmxDumper.getJMXDump();
         jmxDump.ifPresent(jmx -> {
-            reporter.registerSource("threads", jmx.threadDump());
+            reporter.registerSource("threads", jmx.threadDumpSource());
             reporter.registerSource("heap", jmx.heapDump());
             reporter.registerSource("sysprop", jmx.systemProperties());
         });

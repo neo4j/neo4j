@@ -75,27 +75,29 @@ public class JmxDump {
      *
      * @return a diagnostics source the will emit a thread dump.
      */
-    public DiagnosticsReportSource threadDump() {
-        return DiagnosticsReportSources.newDiagnosticsString("threaddump.txt", () -> {
-            String result;
-            try {
-                // Try to invoke real thread dump
-                result = (String) mBeanServer.invoke(
-                        new ObjectName("com.sun.management:type=DiagnosticCommand"),
-                        "threadPrint",
-                        new Object[] {null},
-                        new String[] {String[].class.getName()});
-            } catch (InstanceNotFoundException
-                    | ReflectionException
-                    | MBeanException
-                    | MalformedObjectNameException
-                    | IOException exception) {
-                // Failed, do a poor mans attempt
-                result = getMXThreadDump();
-            }
+    public DiagnosticsReportSource threadDumpSource() {
+        return DiagnosticsReportSources.newDiagnosticsString("threaddump.txt", this::threadDump);
+    }
 
-            return result;
-        });
+    public String threadDump() {
+        String result;
+        try {
+            // Try to invoke real thread dump
+            result = (String) mBeanServer.invoke(
+                    new ObjectName("com.sun.management:type=DiagnosticCommand"),
+                    "threadPrint",
+                    new Object[] {null},
+                    new String[] {String[].class.getName()});
+        } catch (InstanceNotFoundException
+                | ReflectionException
+                | MBeanException
+                | MalformedObjectNameException
+                | IOException exception) {
+            // Failed, do a poor mans attempt
+            result = getMXThreadDump();
+        }
+
+        return result;
     }
 
     /**
