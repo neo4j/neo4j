@@ -125,19 +125,19 @@
     <jamm.version>0.3.3</jamm.version>
     <lucene.version>9.4.2</lucene.version>
     <bouncycastle.version>1.70</bouncycastle.version>
-    <jetty.version>9.4.49.v20220914</jetty.version>
+    <jetty.version>9.4.50.v20221201</jetty.version>
     <scala-maven-plugin.version>4.4.1</scala-maven-plugin.version>
     <scala.version>2.13.10</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.test.version>3.2.13</scala.test.version>
     <asm.version>9.4</asm.version>
-    <metrics.version>4.2.13</metrics.version>
+    <metrics.version>4.2.15</metrics.version>
     <scala.target.vm>17</scala.target.vm>
     <jersey.version>2.34</jersey.version>
     <junit.version>5.7.2</junit.version>
     <junit.platform.version>1.6.2</junit.platform.version> <!-- Surefire only supports 1.3.1, but 1.6.2 works by luck since the signatures are the same -->
-    <mockito.version>4.9.0</mockito.version>
+    <mockito.version>4.11.0</mockito.version>
     <opencypher.version>1.0.0-M21</opencypher.version>
     <caffeine.version>3.1.2</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
@@ -147,7 +147,7 @@
     <guava.version>31.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.19.0</log4j.version>
-    <slf4j.version>2.0.5</slf4j.version>
+    <slf4j.version>2.0.6</slf4j.version>
     <neo4j-java-driver.version>5.3.1</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <picocli.version>4.7.0</picocli.version>
@@ -978,7 +978,7 @@
       <dependency>
         <groupId>org.codehaus.jettison</groupId>
         <artifactId>jettison</artifactId>
-        <version>1.5.2</version>
+        <version>1.5.3</version>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
@@ -1018,7 +1018,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.10.0</version>
+        <version>1.10.1</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
@@ -1072,7 +1072,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2020.0.26</version>
+        <version>2022.0.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1544,7 +1544,7 @@
       <dependency>
         <groupId>com.google.testing.compile</groupId>
         <artifactId>compile-testing</artifactId>
-        <version>0.20</version>
+        <version>0.21.0</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
