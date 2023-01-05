@@ -26,14 +26,21 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
+    private final ReadOnlyChangeListener listener;
     private volatile Set<Lookup> readOnlyDatabases;
     private volatile long updateId;
     private final Set<LookupFactory> readOnlyDatabasesLookupFactories;
 
     public DefaultReadOnlyDatabases(LookupFactory... readOnlyDatabasesLookupFactories) {
+        this(ReadOnlyChangeListener.NO_OP, readOnlyDatabasesLookupFactories);
+    }
+
+    public DefaultReadOnlyDatabases(
+            ReadOnlyChangeListener listener, LookupFactory... readOnlyDatabasesLookupFactories) {
         this.readOnlyDatabasesLookupFactories = Set.of(readOnlyDatabasesLookupFactories);
         this.readOnlyDatabases = Set.of();
         this.updateId = -1;
+        this.listener = listener;
     }
 
     @Override
@@ -90,5 +97,6 @@ public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
         this.readOnlyDatabases = readOnlyDatabasesLookupFactories.stream()
                 .map(LookupFactory::lookupReadOnlyDatabases)
                 .collect(Collectors.toUnmodifiableSet());
+        listener.onRefresh(this);
     }
 }
