@@ -83,7 +83,7 @@
       -Djdk.nio.maxCachedBufferSize=1024
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
-      "-XX:HeapDumpPath=target/test data"
+      "-XX:HeapDumpPath=target/"
       -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.impl.muninn.MuninnWritePageCursor.CHECK_WRITE_LOCKS=true
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
