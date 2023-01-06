@@ -5862,7 +5862,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Repeat(Trail)",
         TwoChildren(lhsPD, rhsPD),
-        List(details("{0, *}")),
+        List(details("(start) (…){0, *} (end)")),
         Set("r", "a", "b", "start", "end")
       )
     )
