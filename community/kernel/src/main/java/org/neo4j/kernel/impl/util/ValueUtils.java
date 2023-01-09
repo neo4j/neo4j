@@ -33,6 +33,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextNode;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextRelationship;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -98,7 +99,7 @@ public final class ValueUtils {
             } else if (object instanceof Iterable<?>) {
                 if (object instanceof Path) {
                     if (wrapEntities) {
-                        return wrapPath((Path) object);
+                        return maybeWrapPath((Path) object);
                     } else {
                         return pathReferenceFromPath((Path) object);
                     }
@@ -340,9 +341,23 @@ public final class ValueUtils {
         return new PathWrappingPathValue(path);
     }
 
+    @Deprecated
+    public static VirtualPathValue maybeWrapPath(Path path) {
+        // Execution Context Path is a special implementation of Path used in procedures and functions
+        // invoked from parallel runtime. It contains a reference to an Execution Context. Execution Context is always
+        // owned by one thread, therefore references to Execution Contexts must not escape to be possibly
+        // used concurrently by other threads. Execution Context Path must therefore always be turned into
+        // a reference type.
+        if (path instanceof ExecutionContextValueMapper.ExecutionContextPath) {
+            return pathReferenceFromPath(path);
+        } else {
+            return new PathWrappingPathValue(path);
+        }
+    }
+
     public static VirtualPathValue pathReferenceFromPath(Path path) {
-        if (path instanceof DefaultValueMapper.CoreAPIPath) {
-            return ((DefaultValueMapper.CoreAPIPath) path).pathValue();
+        if (path instanceof BaseCoreAPIPath) {
+            return ((BaseCoreAPIPath) path).pathValue();
         } else {
             int len = path.length();
             long[] nodes = new long[len + 1];

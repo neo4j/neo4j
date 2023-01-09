@@ -1010,7 +1010,7 @@ public final class ProcedureCompilation {
             return nullCheck(
                     expression,
                     invoke(
-                            methodReference(ValueUtils.class, VirtualPathValue.class, "wrapPath", Path.class),
+                            methodReference(ValueUtils.class, VirtualPathValue.class, "maybeWrapPath", Path.class),
                             expression));
         } else if (type.equals(POINT)) {
             return nullCheck(

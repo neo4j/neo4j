@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.PathWrappingPathValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -67,6 +69,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.NodeIdReference;
+import org.neo4j.values.virtual.PathReference;
 import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -137,6 +140,34 @@ class ExecutionContextProcedureIT {
         });
     }
 
+    @ValueSource(strings = {"passThrough", "passThroughPath"})
+    @ParameterizedTest
+    void testProcedureAcceptingPathAndProducingPath(String method) throws ProcedureException {
+        long[] nodeIds = new long[3];
+        long[] relIds = new long[2];
+        try (Transaction tx = db.beginTx()) {
+            var node1 = tx.createNode();
+            nodeIds[0] = node1.getId();
+            var node2 = tx.createNode();
+            nodeIds[1] = node2.getId();
+            var node3 = tx.createNode();
+            nodeIds[2] = node3.getId();
+            relIds[0] = node1.createRelationshipTo(node2, withName("T1")).getId();
+            relIds[1] = node2.createRelationshipTo(node3, withName("T1")).getId();
+            tx.commit();
+        }
+
+        var path = VirtualValues.pathReference(nodeIds, relIds);
+
+        doWithExecutionContext(executionContext -> {
+            AnyValue result = invokeSimpleProcedure(executionContext, method, path);
+            assertThat(result).isInstanceOf(PathReference.class);
+            PathReference resultPath = (PathReference) result;
+            assertThat(resultPath.nodeIds()).containsExactly(nodeIds);
+            assertThat(resultPath.relationshipIds()).containsExactly(relIds);
+        });
+    }
+
     @Test
     void procedureShouldNotWrapExecutionContextNodes() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
@@ -174,6 +205,18 @@ class ExecutionContextProcedureIT {
             assertThat(result).isInstanceOf(RelationshipEntityWrappingValue.class);
             var unwrappedRelationship = ((RelationshipEntityWrappingValue) result).getEntity();
             assertThat(unwrappedRelationship).isEqualTo(originalWrappedRelationship);
+        });
+    }
+
+    @Test
+    void procedureShouldNotHandleWrappedPathsAsReferences() throws ProcedureException {
+        doWithExecutionContext(executionContext -> {
+            var originalWrappedPath = mock(Path.class);
+            AnyValue result =
+                    invokeSimpleProcedure(executionContext, "passThrough", ValueUtils.wrapPath(originalWrappedPath));
+            assertThat(result).isInstanceOf(PathWrappingPathValue.class);
+            var unwrappedPath = ((PathWrappingPathValue) result).path();
+            assertThat(unwrappedPath).isEqualTo(originalWrappedPath);
         });
     }
 
@@ -393,8 +436,13 @@ class ExecutionContextProcedureIT {
         }
 
         @Procedure("execution.context.test.procedure.passThrough")
-        public Stream<GenericResult> nodesWithoutPassThrough(@Name("Object") Object o) {
+        public Stream<GenericResult> passThrough(@Name("Object") Object o) {
             return Stream.of(o).map(GenericResult::new);
+        }
+
+        @Procedure("execution.context.test.procedure.passThroughPath")
+        public Stream<PathResult> passThroughPath(@Name("Object") Path path) {
+            return Stream.of(path).map(PathResult::new);
         }
 
         @Procedure("execution.context.test.procedure.deleteEntity")
@@ -409,6 +457,8 @@ class ExecutionContextProcedureIT {
         public record RelationshipResult(Relationship relationship) {}
 
         public record NodeResult(Node node) {}
+
+        public record PathResult(Path path) {}
     }
 
     public static class ProcedureInjectingTransaction {

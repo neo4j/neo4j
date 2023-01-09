@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.ExecutionContext;
+import org.neo4j.kernel.impl.util.BaseCoreAPIPath;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.PathWrappingPathValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -37,8 +41,10 @@ public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
 
     @Override
     public Object mapPath(VirtualPathValue value) {
-        throw new UnsupportedOperationException(
-                "Submitting Path to a function is not supported during parallel query execution.");
+        if (value instanceof PathWrappingPathValue wrapper) {
+            return wrapper.path();
+        }
+        return new ExecutionContextPath(value);
     }
 
     @Override
@@ -56,5 +62,22 @@ public class ExecutionContextValueMapper extends ValueMapper.JavaMapper {
             return wrapper.getEntity();
         }
         return new ExecutionContextRelationship(value.id(), executionContext);
+    }
+
+    public class ExecutionContextPath extends BaseCoreAPIPath {
+
+        private ExecutionContextPath(VirtualPathValue value) {
+            super(value);
+        }
+
+        @Override
+        protected Node mapNode(long value) {
+            return new ExecutionContextNode(value, executionContext);
+        }
+
+        @Override
+        protected Relationship mapRelationship(long value) {
+            return new ExecutionContextRelationship(value, executionContext);
+        }
     }
 }

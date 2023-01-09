@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
+import org.neo4j.kernel.impl.util.PathWrappingPathValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -150,6 +152,15 @@ class ExecutionContextFunctionIT {
     }
 
     @Test
+    void userFunctionShouldNotWrapExecutionContextPaths() throws ProcedureException {
+        doWithExecutionContext(executionContext -> {
+            var path = VirtualValues.pathReference(new long[] {11, 22}, new long[] {33});
+            AnyValue result = invokeUserFunction(executionContext, "passThrough", path);
+            assertThat(result).isNotInstanceOf(PathWrappingPathValue.class);
+        });
+    }
+
+    @Test
     void userFunctionShouldNotHandleWrappedNodesAsReferences() throws ProcedureException {
         doWithExecutionContext(executionContext -> {
             var originalWrappedNode = mock(Node.class);
@@ -170,6 +181,18 @@ class ExecutionContextFunctionIT {
             assertThat(result).isInstanceOf(RelationshipEntityWrappingValue.class);
             var unwrappedRelationship = ((RelationshipEntityWrappingValue) result).getEntity();
             assertThat(unwrappedRelationship).isEqualTo(originalWrappedRelationship);
+        });
+    }
+
+    @Test
+    void userFunctionShouldNotHandleWrappedPathsAsReferences() throws ProcedureException {
+        doWithExecutionContext(executionContext -> {
+            var originalWrappedPath = mock(Path.class);
+            AnyValue result =
+                    invokeUserFunction(executionContext, "passThrough", ValueUtils.wrapPath(originalWrappedPath));
+            assertThat(result).isInstanceOf(PathWrappingPathValue.class);
+            var unwrappedPath = ((PathWrappingPathValue) result).path();
+            assertThat(unwrappedPath).isSameAs(originalWrappedPath);
         });
     }
 
