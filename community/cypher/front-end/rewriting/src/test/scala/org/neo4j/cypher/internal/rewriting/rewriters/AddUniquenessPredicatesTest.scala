@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.label_expressions.BinaryLabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
@@ -29,7 +31,9 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
+import org.neo4j.cypher.internal.label_expressions.MultiOperatorLabelExpression
 import org.neo4j.cypher.internal.rewriting.RewriteTest
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.SingleRelationship
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.evaluate
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -459,6 +463,59 @@ class AddUniquenessPredicatesPropertyTest extends CypherFunSuite with ScalaCheck
 
     buildExpression(10_000, wildcard).overlaps(wildcard) shouldBe true
   }
+
+  // This test was used for a quick and unreliable benchmark of the performance of isAlwaysDifferentFrom,
+  // to answer the question if it is worth it to shortcut the calculation above certain sizes and always return
+  // false. It is left here for reference
+  ignore("isAlwaysDifferentFrom performance") {
+    // This is more accurate than le.flatten.size, which does not count wildcards or non-leaves.
+    def size(le: LabelExpression): Long = le match {
+      case le: BinaryLabelExpression        => size(le.lhs) + size(le.rhs) + 1
+      case le: MultiOperatorLabelExpression => le.children.map(size).sum + 1
+      case Negation(e)                      => 1 + size(e)
+      case Wildcard()                       => 1
+      case Leaf(_)                          => 1
+    }
+
+    var seed = org.scalacheck.rng.Seed.random()
+    val exps = for (i <- Seq(1, 10, 100, 1000, 10_000, 100_000, 1_000_000, 10_000_000)) yield {
+      val exp1 = genLabelExpression(Gen.Parameters.default.withSize(i), seed).getOrElse(
+        Wildcard()(position)
+      )
+      seed = seed.next
+      val exp2 = genLabelExpression(Gen.Parameters.default.withSize(i), seed).getOrElse(
+        Wildcard()(position)
+      )
+      seed = seed.next
+
+      (exp1, exp2)
+    }
+
+    for {
+      (exp1, exp2) <- exps
+    } {
+      val actualSizes = s"{${size(exp1)},${size(exp2)}} / {${exp1.flatten.size},${exp2.flatten.size}}"
+      val sr1 = SingleRelationship(Variable("v1")(position), Some(exp1))
+      val sr2 = SingleRelationship(Variable("v2")(position), Some(exp2))
+
+      {
+        val t0 = System.nanoTime()
+        sr1.isAlwaysDifferentFrom(sr2)
+        val t1 = System.nanoTime()
+        val elapsed = t1 - t0
+        println(s"$actualSizes isAlwaysDifferentFrom Elapsed time: " + elapsed + " ns")
+      }
+
+      {
+        val t0 = System.nanoTime()
+        exp1.flatten.size
+        val t1 = System.nanoTime()
+        val elapsed = t1 - t0
+        println(s"$actualSizes flatten.size Elapsed time: " + elapsed + " ns")
+      }
+      println()
+    }
+  }
 }
 
 trait RelationshipTypeExpressionGenerators {
@@ -505,8 +562,8 @@ trait RelationshipTypeExpressionGenerators {
   def genBinary[A](f: (LabelExpression, LabelExpression) => A): Gen[A] =
     Gen.sized(size =>
       for {
-        lhs <- Gen.resize(size / 2, genLabelExpression)
-        rhs <- Gen.resize(size / 2, genLabelExpression)
+        lhs <- Gen.resize((size - 1) / 2, genLabelExpression)
+        rhs <- Gen.resize((size - 1) / 2, genLabelExpression)
       } yield f(lhs, rhs)
     )
 
@@ -527,10 +584,10 @@ trait RelationshipTypeExpressionGenerators {
 
   val genLabelExpression: Gen[LabelExpression] =
     Gen.sized(size =>
-      if (size <= 0)
-        Gen.oneOf(
-          genWildCard,
-          genRelType
+      if (size <= 1)
+        Gen.frequency(
+          1 -> genWildCard,
+          names.size -> genRelType
         )
       else
         Gen.oneOf(
@@ -538,9 +595,7 @@ trait RelationshipTypeExpressionGenerators {
           genColonConjunction,
           genDisjunction,
           genColonDisjunction,
-          genNegation,
-          genWildCard,
-          genRelType
+          genNegation
         )
     )
 
