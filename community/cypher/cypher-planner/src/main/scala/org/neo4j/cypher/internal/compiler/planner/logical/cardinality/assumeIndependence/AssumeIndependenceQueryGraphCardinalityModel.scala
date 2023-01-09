@@ -164,7 +164,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(
       .filter {
         case r: PatternRelationship if qg.argumentIds.contains(r.name) => false
         case _                                                         => true
-      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels)(
+      }.map(nodeConnectionMultiplierCalculator.nodeConnectionMultiplier(_, labels, qg.selections)(
         semanticTable,
         cardinalityModel,
         indexPredicateProviderContext

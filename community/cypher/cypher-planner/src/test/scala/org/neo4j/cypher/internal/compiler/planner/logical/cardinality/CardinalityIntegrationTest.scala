@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -41,6 +42,37 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
   val rel2Count = 78.0
 
   def getIndexType: IndexType
+
+  test("should agree between QPP with 2 relationships and its expansion") {
+    val config = plannerBuilder()
+      .setAllNodesCardinality(200)
+      .setLabelCardinality("A", 50)
+      .setLabelCardinality("B", 20)
+      .setRelationshipCardinality("()-[]->()", 70)
+      .setRelationshipCardinality("()-[:R]->()", 40)
+      .setRelationshipCardinality("(:A)-[:R]->(:B)", 10)
+      .setRelationshipCardinality("(:A)-[:R]->()", 35)
+      .setRelationshipCardinality("()-[:R]->(:B)", 25)
+      .setRelationshipCardinality("()-[:S]->()", 48)
+      .setRelationshipCardinality("(:B)-[:S]->()", 12)
+      .setRelationshipCardinality("(:B)-[:R]->()", 15)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val expectedCardinality = 35 * 40 * 40 * 15 / math.pow(200, 3) * math.pow(.99, 6)
+
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:A)(()-[r:R]->()<-[s:R]-()){2}(b:B)",
+      expectedCardinality
+    )
+
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (a:A)-[r1:R]->()<-[s1:R]-()-[r2:R]->()<-[s2:R]-(b:B)",
+      expectedCardinality
+    )
+  }
 
   test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1

@@ -838,6 +838,24 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
     queryShouldHaveCardinality("MATCH (:A) (()-[:T1]->()){1,3} (:B)", varLength1_1 + varLength2_2 + varLength3_3)
   }
 
+  private val length4 =
+    A * N * N * N * B * A_T1_ANY_sel * ANY_T1_ANY_sel * ANY_T1_ANY_sel * ANY_T1_B_sel *
+      uniquenessSelectivityForNRels(4).factor
+
+  test("QPP {2} with 2 relationships should be equal to non-QPP 4 relationship pattern") {
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T1]->()-[r3:T1]->()-[r4:T1]->(:B)", length4)
+    queryShouldHaveCardinality("MATCH (a:A)(()-[r1:T1]->()-[r2:T1]->()){2}(b:B)", length4)
+  }
+
+  private val length4_diverse =
+    A * N * N * N * B * A_T1_ANY_sel * ANY_T2_ANY_sel * ANY_T1_ANY_sel * ANY_T2_B_sel *
+      uniquenessSelectivityForNRels(2).factor * uniquenessSelectivityForNRels(2).factor
+
+  test("QPP {2} with 2 different relationships should be equal to non-QPP 4 relationship pattern") {
+    queryShouldHaveCardinality("MATCH (:A)-[r1:T1]->()-[r2:T2]->()-[r3:T1]->()-[r4:T2]->(:B)", length4_diverse)
+    queryShouldHaveCardinality("MATCH (a:A)(()-[r1:T1]->()-[r2:T2]->()){2}(b:B)", length4_diverse)
+  }
+
   private val AB = N * Asel * Bsel
   private val BC = N * Bsel * Csel
 

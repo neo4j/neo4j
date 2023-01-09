@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.RelationshipUniquenessPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedAndKnown
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedButUnknown
@@ -31,17 +32,20 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Unspecifie
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -92,7 +96,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
 
   def nodeConnectionMultiplier(
     pattern: NodeConnection,
-    labels: LabelInfo
+    labels: LabelInfo,
+    selections: Selections
   )(
     implicit semanticTable: SemanticTable,
     cardinalityModel: CardinalityModel,
@@ -110,6 +115,20 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     if (lhsCardinality == Cardinality.EMPTY || rhsCardinality == Cardinality.EMPTY) {
       Multiplier.ZERO
     } else {
+
+      /**
+       * Which of the given relationships are part of a [[Unique]] predicate?
+       */
+      def relationshipsWithUniquePredicate(relIds: Set[String]) =
+        selections.predicatesGiven(relIds).collect {
+          case Unique(VariableList(relationships)) => relIds intersect relationships
+        }.flatten.toSet
+
+      def uniquenessPredicatesWithin(qpp: QuantifiedPathPattern) =
+        qpp.pattern.selections.flatPredicates.collect {
+          case RelationshipUniquenessPredicate(pred) if pred.isOnRelationships(semanticTable) => pred
+        }
+
       pattern match {
         case rel: PatternRelationship =>
           patternRelationshipMultiplier(
@@ -118,7 +137,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             rel,
             lhsCardinality,
             rhsCardinality,
-            totalNbrOfNodes
+            totalNbrOfNodes,
+            relationshipsWithUniquePredicate(Set(rel.name))
           )
         case qpp: QuantifiedPathPattern =>
           qppMultiplier(
@@ -126,7 +146,9 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             lhsCardinality,
             rhsCardinality,
             totalNbrOfNodes,
-            labels
+            labels,
+            relationshipsWithUniquePredicate(qpp.relationshipVariableGroupings.map(_.groupName)),
+            uniquenessPredicatesWithin(qpp)
           )
       }
     }
@@ -138,7 +160,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     pattern: PatternRelationship,
     lhsCardinality: Cardinality,
     rhsCardinality: Cardinality,
-    totalNbrOfNodes: Cardinality
+    totalNbrOfNodes: Cardinality,
+    relationshipsWithUniquePredicate: => Set[String]
   )(implicit semanticTable: SemanticTable): Multiplier = {
     val types: Seq[TokenSpec[RelTypeId]] = mapToRelTokenSpecs(pattern.types.toSet)
 
@@ -200,7 +223,11 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
                 // We multiply for each step to get the overall multiplier for the path.
                 // Since the relationship uniqueness is not added as an extra predicate, like for any pair of simple length relationships,
                 // we need to weight the relationship uniqueness in here as well.
-                stepMultipliers.product * uniquenessSelectivityForNRels(length)
+                stepMultipliers.product * uniquenessSelectivityForQpp(
+                  relationshipsWithUniquePredicate,
+                  length,
+                  Seq.empty
+                )
             }
           }
         // Different lengths are exclusive, we we can simply add the Multipliers.
@@ -213,7 +240,9 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     outerLhsCardinality: Cardinality,
     outerRhsCardinality: Cardinality,
     totalNbrOfNodes: Cardinality,
-    labelInfo: LabelInfo
+    labelInfo: LabelInfo,
+    relationshipsWithUniquePredicate: => Set[String],
+    withinIterationUniquenessPredicates: => Seq[RelationshipUniquenessPredicate]
   )(
     implicit semanticTable: SemanticTable,
     cardinalityModel: CardinalityModel,
@@ -224,8 +253,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
 
     val range = qppRangeForEstimations(qpp.repetition)
 
-    val multipliersPerStep = for (length <- range) yield {
-      length match {
+    val multipliersPerStep = for (numberOfIterations <- range) yield {
+      numberOfIterations match {
         case 0 =>
           Multiplier.ofDivision(1, totalNbrOfNodes).getOrElse(Multiplier.ZERO)
 
@@ -235,14 +264,17 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
           val leftToRightLabelPredicates =
             copyLabelPredicates(qpp, from = qpp.leftBinding.inner, to = qpp.rightBinding.inner)
 
-          val stepMultipliers = for (i <- 1 to length) yield {
+          val stepMultipliers = for (currentIteration <- 1 to numberOfIterations) yield {
             val stepQg = {
               val extraPredicatesForStep = {
-                val leftNodePredicates = if (i > 1) rightToLeftLabelPredicates else Vector()
-                val rightNodePredicates = if (i < length) leftToRightLabelPredicates else Vector()
+                val leftNodePredicates = if (currentIteration > 1) rightToLeftLabelPredicates else Vector()
+                val rightNodePredicates =
+                  if (currentIteration < numberOfIterations) leftToRightLabelPredicates else Vector()
                 val predicatesFromOuterNodes = Vector(
-                  Option.when(i == 1) { copyOuterLabelPredicatesToInner(qpp.leftBinding, labelInfo) },
-                  Option.when(i == length) { copyOuterLabelPredicatesToInner(qpp.rightBinding, labelInfo) }
+                  Option.when(currentIteration == 1) { copyOuterLabelPredicatesToInner(qpp.leftBinding, labelInfo) },
+                  Option.when(currentIteration == numberOfIterations) {
+                    copyOuterLabelPredicatesToInner(qpp.rightBinding, labelInfo)
+                  }
                 ).flatten
 
                 leftNodePredicates ++ rightNodePredicates ++ predicatesFromOuterNodes
@@ -264,22 +296,75 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
             val labelsOnR = mapToLabelTokenSpecs(stepQg.selections.labelsOnNode(qpp.rightBinding.inner))
 
             val lhsCardinality =
-              if (i == 1) outerLhsCardinality
+              if (currentIteration == 1) outerLhsCardinality
               else totalNbrOfNodes * calculateLabelSelectivity(labelsOnL, totalNbrOfNodes)
 
             val rhsCardinality =
-              if (i == length) outerRhsCardinality
+              if (currentIteration == numberOfIterations) outerRhsCardinality
               else totalNbrOfNodes * calculateLabelSelectivity(labelsOnR, totalNbrOfNodes)
 
             val stepMultiplier =
               Multiplier.ofDivision(stepCardinality, lhsCardinality * rhsCardinality).getOrElse(Multiplier.ZERO)
 
-            if (i == length) stepMultiplier else stepMultiplier * Multiplier(rhsCardinality.amount)
+            if (currentIteration == numberOfIterations) stepMultiplier
+            else stepMultiplier * Multiplier(rhsCardinality.amount)
           }
-          stepMultipliers.product * uniquenessSelectivityForNRels(length)
+          stepMultipliers.product * uniquenessSelectivityForQpp(
+            relationshipsWithUniquePredicate,
+            numberOfIterations,
+            withinIterationUniquenessPredicates
+          )
       }
     }
     multipliersPerStep.sum
+  }
+
+  /**
+   * Calculates, how many uniqueness comparisons need to be made for a QPP.
+   * 
+   * @param relationshipsWithUniquePredicate the relationships `rel` for which there exists a predicate `Unique(rel)`
+   * @param numberOfIterations how many iterations of the pattern do we currently consider
+   * @param withinIterationUniquenessPredicates relationship uniqueness predicates present in the QPP (independent of repetitions/iterations)
+   */
+  private def uniquenessSelectivityForQpp(
+    relationshipsWithUniquePredicate: => Set[String],
+    numberOfIterations: Int,
+    withinIterationUniquenessPredicates: => Seq[RelationshipUniquenessPredicate]
+  ) = {
+    /*
+     * Given a QPP like (()-[r1]->()-[r2]->()){2} = ()-[r1_1]->()-[r2_1]->()-[r1_2]->()-[r2_2]->(),
+     * then there are 6 possible comparisons that we could consider:
+     *
+     * Iteration 1:   r1_1 -(1)- r2_1
+     *                   |\      /|
+     *                   | (3)  / |
+     *                  (2)   X  (4)
+     *                   | (5) \  |
+     *                   |/     \ |
+     * Iteration 2:   r1_2 -(6)- r2_2
+     *
+     * We now count how many uniqueness predicates we need to take care of.
+     *
+     * The same variable can always overlap with itself (r1_1 vs r1_2) across iterations.
+     * That is, if there is a UNIQUE-predicate on it, we need to take care of comparisons like 2 and 4.
+     * For each of the relationshipsWithUniquePredicate need to consider (numberOfIterations choose 2) predicates.
+     * (see https://en.wikipedia.org/wiki/Binomial_coefficient)
+     */
+    val countWithinOneRelationship =
+      relationshipsWithUniquePredicate.size * numberOfIterations * (numberOfIterations - 1) / 2
+
+    /*
+     * Iff the relationships r1 and r2 overlap, then we generate a uniqueness predicate for this pair, which is also taken care of in the
+     * [[ExpressionSelectivityCalculator]]. However, the comparison between the iterations like 3 and 5 in our example, we need to take care of here.
+     * That is, fixing one of the `withinIterationUniquenessPredicates`, for each of the `numberOfIterations` relationships we have `(numberOfIterations - 1)`
+     * possibilities to consider for the other relationship in the uniqueness predicate.
+     */
+    val countBetweenRelationships =
+      withinIterationUniquenessPredicates.size * numberOfIterations * (numberOfIterations - 1)
+    val totalNumberOfUnquenessPredicatesToConsider = countBetweenRelationships + countWithinOneRelationship
+    val selectivity = Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor, totalNumberOfUnquenessPredicatesToConsider)
+
+    Selectivity(selectivity)
   }
 
   private def calculateMultiplierForSingleRelHop(

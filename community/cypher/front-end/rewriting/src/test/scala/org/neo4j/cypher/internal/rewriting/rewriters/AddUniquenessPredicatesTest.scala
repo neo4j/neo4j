@@ -157,6 +157,11 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) RETURN *",
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE NOT(r1 = r2) AND NOT(r1 = r3) AND NOT(r2 = r3) RETURN *"
     )
+
+    assertRewrite(
+      "MATCH (a)-[r1:A]->(b), (b)-[r2:B]->(c), (c)-[r3:A|B]->(d) RETURN *",
+      "MATCH (a)-[r1:A]->(b), (b)-[r2:B]->(c), (c)-[r3:A|B]->(d) WHERE NOT(r1 = r3) AND NOT(r2 = r3) RETURN *"
+    )
   }
 
   test("uniqueness check is done between relationships, also if they have the same name") {

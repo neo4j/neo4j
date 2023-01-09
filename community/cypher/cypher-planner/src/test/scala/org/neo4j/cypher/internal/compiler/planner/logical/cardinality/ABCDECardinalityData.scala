@@ -240,6 +240,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
 
   val ANY_T2_ANY: Double = A_T2_ANY + B_T2_ANY + C_T2_ANY + D_T2_ANY + E_T2_ANY
   val ANY_T2_ANY_sel: Double = ANY_T2_ANY / (N * N)
+  val ANY_T2_B_sel: Double = ANY_T2_B / (N * B)
 
   // Relationship count: the total number of relationships in the system
   val R: Double = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY

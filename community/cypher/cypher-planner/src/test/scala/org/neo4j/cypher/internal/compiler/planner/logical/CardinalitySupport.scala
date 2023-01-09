@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.util.EffectiveCardinality
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 import org.scalactic.Equality
 import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
@@ -40,6 +41,14 @@ object CardinalitySupport {
     def areEqual(a: Selectivity, b: Any): Boolean = b match {
       case b: Selectivity => a.factor === (b.factor +- tolerance(a.factor))
       case _              => false
+    }
+  }
+
+  implicit object MultiplierEquality extends Equality[Multiplier] {
+
+    def areEqual(a: Multiplier, b: Any): Boolean = b match {
+      case b: Multiplier => a.coefficient === (b.coefficient +- tolerance(a.coefficient))
+      case _             => false
     }
   }
 
