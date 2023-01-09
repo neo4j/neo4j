@@ -528,14 +528,15 @@ class DetachedLogTailScannerTest {
                 int previousChecksum = BASE_TX_CHECKSUM;
                 try {
                     TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
-                    LogEntryWriter writer = logWriter.getWriter(LATEST);
+                    LogEntryWriter<?> writer = logWriter.getWriter();
+                    byte version = LATEST.version();
                     for (Entry entry : entries) {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);
                         if (entry instanceof StartEntry) {
-                            writer.writeStartEntry(0, 0, previousChecksum, new byte[0]);
+                            writer.writeStartEntry(version, 0, 0, previousChecksum, new byte[0]);
                         } else if (entry instanceof CommitEntry commitEntry) {
-                            previousChecksum = writer.writeCommitEntry(commitEntry.txId, 0);
+                            previousChecksum = writer.writeCommitEntry(version, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);
                         } else if (entry instanceof CheckPointEntry checkPointEntry) {
                             Entry target = checkPointEntry.withPositionOfEntry;

@@ -61,13 +61,15 @@ public record CommittedTransactionRepresentation(
 
     @Override
     public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
+        byte version = startEntry.kernelVersion().version();
         writer.writeStartEntry(
+                version,
                 startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted(),
                 startEntry.getPreviousChecksum(),
                 startEntry.getAdditionalHeader());
         writer.serialize(commandBatch);
-        return writer.writeCommitEntry(commitEntry.getTxId(), commitEntry.getTimeWritten());
+        return writer.writeCommitEntry(version, commitEntry.getTxId(), commitEntry.getTimeWritten());
     }
 
     @Override

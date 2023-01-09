@@ -26,8 +26,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_C
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
 import java.io.IOException;
-import java.util.Collection;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
@@ -36,25 +34,25 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class LogEntryWriter<T extends WritableChecksumChannel> {
-    private final Visitor<StorageCommand, IOException> serializer;
     protected final T channel;
-    private final byte parserSetVersion;
 
-    public LogEntryWriter(T channel, KernelVersion version) {
+    public LogEntryWriter(T channel) {
         this.channel = channel;
-        this.parserSetVersion = version.version();
-        this.serializer = new StorageCommandSerializer(channel, this);
     }
 
-    public void writeLogEntryHeader(byte type, WritableChannel channel) throws IOException {
-        channel.put(parserSetVersion).put(type);
+    public void writeLogEntryHeader(byte version, byte type, WritableChannel channel) throws IOException {
+        channel.put(version).put(type);
     }
 
     public void writeStartEntry(
-            long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+            byte version,
+            long timeWritten,
+            long latestCommittedTxWhenStarted,
+            int previousChecksum,
+            byte[] additionalHeaderData)
             throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(TX_START, channel);
+        writeLogEntryHeader(version, TX_START, channel);
         channel.putLong(timeWritten)
                 .putLong(latestCommittedTxWhenStarted)
                 .putInt(previousChecksum)
@@ -62,55 +60,47 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
                 .put(additionalHeaderData, additionalHeaderData.length);
     }
 
-    public void writeChunkStartEntry(long timeWritten, long chunkId) throws IOException {
+    public void writeChunkStartEntry(byte version, long timeWritten, long chunkId) throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(CHUNK_START, channel);
+        writeLogEntryHeader(version, CHUNK_START, channel);
         channel.putLong(timeWritten).putLong(chunkId);
     }
 
-    public int writeChunkEndEntry(long transactionId, long chunkId) throws IOException {
-        writeLogEntryHeader(CHUNK_END, channel);
+    public int writeChunkEndEntry(byte version, long transactionId, long chunkId) throws IOException {
+        writeLogEntryHeader(version, CHUNK_END, channel);
         channel.putLong(transactionId);
         channel.putLong(chunkId);
         return channel.putChecksum();
     }
 
-    public int writeCommitEntry(long transactionId, long timeWritten) throws IOException {
-        writeLogEntryHeader(TX_COMMIT, channel);
+    public int writeCommitEntry(byte version, long transactionId, long timeWritten) throws IOException {
+        writeLogEntryHeader(version, TX_COMMIT, channel);
         channel.putLong(transactionId).putLong(timeWritten);
         return channel.putChecksum();
     }
 
-    public void serialize(CommandBatch tx) throws IOException {
-        tx.accept(serializer);
+    public void serialize(CommandBatch batch) throws IOException {
+        serialize(batch, batch.kernelVersion());
     }
 
     public void serialize(CommittedCommandBatch commandBatch) throws IOException {
         commandBatch.serialize(this);
     }
 
-    public void serialize(Collection<StorageCommand> commands) throws IOException {
-        for (StorageCommand command : commands) {
-            serializer.visit(command);
+    public void serialize(Iterable<StorageCommand> commands, KernelVersion kernelVersion) throws IOException {
+        byte version = kernelVersion.version();
+        for (StorageCommand storageCommand : commands) {
+            writeLogEntryHeader(version, COMMAND, channel);
+            storageCommand.serialize(channel);
         }
     }
 
-    public void serialize(StorageCommand command) throws IOException {
-        serializer.visit(command);
+    public void serialize(StorageCommand command, KernelVersion kernelVersion) throws IOException {
+        writeLogEntryHeader(kernelVersion.version(), COMMAND, channel);
+        command.serialize(channel);
     }
 
     public T getChannel() {
         return channel;
-    }
-
-    private record StorageCommandSerializer(WritableChannel channel, LogEntryWriter<?> entryWriter)
-            implements Visitor<StorageCommand, IOException> {
-
-        @Override
-        public boolean visit(StorageCommand command) throws IOException {
-            entryWriter.writeLogEntryHeader(COMMAND, channel);
-            command.serialize(channel);
-            return false;
-        }
     }
 }

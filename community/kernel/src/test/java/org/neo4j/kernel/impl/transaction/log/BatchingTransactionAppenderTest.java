@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.util.Collections.emptyIterator;
 import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -57,7 +58,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -111,8 +111,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -143,7 +142,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
-        TransactionLogWriter logWriter = new TransactionLogWriter(channel, new LogEntryWriterFactory());
+        TransactionLogWriter logWriter = new TransactionLogWriter(channel);
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -166,8 +165,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -213,8 +211,7 @@ class BatchingTransactionAppenderTest {
     void shouldNotAppendCommittedTransactionsWhenTooFarAhead() {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -254,8 +251,7 @@ class BatchingTransactionAppenderTest {
                 new HeapScopedBuffer(Long.BYTES * 2, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -301,8 +297,7 @@ class BatchingTransactionAppenderTest {
                 .when(channel)
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, new LogEntryWriterFactory()));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -313,15 +308,16 @@ class BatchingTransactionAppenderTest {
                 life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth));
 
         // WHEN
-        CommandBatch transaction = mock(CommandBatch.class);
-        when(transaction.additionalHeader()).thenReturn(new byte[0]);
-        when(transaction.kernelVersion()).thenReturn(LATEST);
+        CommandBatch commandBatch = mock(CommandBatch.class);
+        when(commandBatch.additionalHeader()).thenReturn(new byte[0]);
+        when(commandBatch.kernelVersion()).thenReturn(LATEST);
+        when(commandBatch.iterator()).thenReturn(emptyIterator());
 
         var e = assertThrows(
                 IOException.class,
                 () -> appender.append(
                         new TransactionToApply(
-                                transaction,
+                                commandBatch,
                                 NULL_CONTEXT,
                                 StoreCursors.NULL,
                                 new TransactionCommitment(metadataCache, transactionIdStore),

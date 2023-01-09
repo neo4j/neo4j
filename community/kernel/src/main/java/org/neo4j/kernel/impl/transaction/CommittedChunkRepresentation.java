@@ -63,9 +63,10 @@ public record CommittedChunkRepresentation(
 
     @Override
     public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
-        writer.writeChunkStartEntry(chunkStart.getTimeWritten(), chunkStart.getChunkId());
+        byte version = chunkStart.kernelVersion().version();
+        writer.writeChunkStartEntry(version, chunkStart.getTimeWritten(), chunkStart.getChunkId());
         writer.serialize(commandBatch);
-        return writer.writeChunkEndEntry(chunkEnd.getTransactionId(), chunkEnd.getChunkId());
+        return writer.writeChunkEndEntry(version, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
     }
 
     @Override

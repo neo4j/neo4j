@@ -42,7 +42,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -248,7 +247,7 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private void appendCorruptedTransaction() throws IOException {
         var channel = logFile.getTransactionLogWriter().getChannel();
-        TransactionLogWriter writer = new TransactionLogWriter(channel, new CorruptedLogEntryWriterFactory());
+        TransactionLogWriter writer = new TransactionLogWriter(channel, new CorruptedLogEntryWriter<>(channel));
         writer.append(tx(random.intBetween(100, 1000)), ++txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
     }
 
@@ -261,25 +260,20 @@ class ReversedSingleFileCommandBatchCursorTest {
         return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
     }
 
-    private static class CorruptedLogEntryWriterFactory extends LogEntryWriterFactory {
-
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(
-                T channel, KernelVersion version) {
-            return new CorruptedLogEntryWriter<>(channel, version);
-        }
-    }
-
     private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
-        CorruptedLogEntryWriter(T channel, KernelVersion version) {
-            super(channel, version);
+        CorruptedLogEntryWriter(T channel) {
+            super(channel);
         }
 
         @Override
         public void writeStartEntry(
-                long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+                byte version,
+                long timeWritten,
+                long latestCommittedTxWhenStarted,
+                int previousChecksum,
+                byte[] additionalHeaderData)
                 throws IOException {
-            writeLogEntryHeader(TX_START, channel);
+            writeLogEntryHeader(version, TX_START, channel);
             for (int i = 0; i < 100; i++) {
                 channel.put((byte) -1);
             }

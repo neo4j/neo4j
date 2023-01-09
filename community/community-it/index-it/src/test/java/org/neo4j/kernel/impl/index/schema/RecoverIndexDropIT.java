@@ -40,7 +40,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -157,7 +156,7 @@ class RecoverIndexDropIT {
             storeChannel.position(position.getByteOffset());
             try (var writeChannel = new PhysicalFlushableChecksumChannel(
                     storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-                new LogEntryWriter<>(writeChannel, KernelVersion.LATEST).serialize(dropBatch);
+                new LogEntryWriter<>(writeChannel).serialize(dropBatch);
             }
         }
     }

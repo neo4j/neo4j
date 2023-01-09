@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,7 +73,6 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -1086,12 +1084,11 @@ class RecoveryCorruptedTransactionLogIT {
         try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
             LogEntryWriter<FlushablePositionAwareChecksumChannel> realLogEntryWriter =
-                    transactionLogFile.getTransactionLogWriter().getWriter(KernelVersion.LATEST);
+                    transactionLogFile.getTransactionLogWriter().getWriter();
             LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
-            StaticLogEntryWriterFactory<FlushablePositionAwareChecksumChannel> factory =
-                    new StaticLogEntryWriterFactory<>(wrappedLogEntryWriter);
-            TransactionLogWriter writer = new TransactionLogWriter(realLogEntryWriter.getChannel(), factory);
+            TransactionLogWriter writer =
+                    new TransactionLogWriter(realLogEntryWriter.getChannel(), wrappedLogEntryWriter);
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
@@ -1211,20 +1208,6 @@ class RecoveryCorruptedTransactionLogIT {
         <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter);
     }
 
-    private static class StaticLogEntryWriterFactory<T extends WritableChecksumChannel> extends LogEntryWriterFactory {
-        private final LogEntryWriter<T> logEntryWriter;
-
-        StaticLogEntryWriterFactory(LogEntryWriter<T> logEntryWriter) {
-            this.logEntryWriter = logEntryWriter;
-        }
-
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter(
-                T channel, KernelVersion version) {
-            return (LogEntryWriter<T>) logEntryWriter;
-        }
-    }
-
     private static class CorruptedLogEntryWrapper implements LogEntryWriterWrapper {
         @Override
         public <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
@@ -1241,9 +1224,13 @@ class RecoveryCorruptedTransactionLogIT {
 
         @Override
         public void writeStartEntry(
-                long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+                byte version,
+                long timeWritten,
+                long latestCommittedTxWhenStarted,
+                int previousChecksum,
+                byte[] additionalHeaderData)
                 throws IOException {
-            writeLogEntryHeader(TX_START, channel);
+            writeLogEntryHeader(version, TX_START, channel);
         }
     }
 
@@ -1261,11 +1248,15 @@ class RecoveryCorruptedTransactionLogIT {
         }
 
         /**
-         * Use a non-existing log entry version. Implementation stolen from {@link LogEntryWriter#writeStartEntry(long, long, int, byte[])}.
+         * Use a non-existing log entry version. Implementation stolen from {@link LogEntryWriter#writeStartEntry(byte, long, long, int, byte[])}.
          */
         @Override
         public void writeStartEntry(
-                long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+                byte version,
+                long timeWritten,
+                long latestCommittedTxWhenStarted,
+                int previousChecksum,
+                byte[] additionalHeaderData)
                 throws IOException {
             byte nonExistingLogEntryVersion = (byte) (KernelVersion.LATEST.version() + 10);
             channel.put(nonExistingLogEntryVersion).put(TX_START);
@@ -1386,25 +1377,30 @@ class RecoveryCorruptedTransactionLogIT {
         private final LogEntryWriter<T> delegate;
 
         DelegatingLogEntryWriter(LogEntryWriter<T> logEntryWriter) {
-            super(logEntryWriter.getChannel(), KernelVersion.LATEST);
+            super(logEntryWriter.getChannel());
             this.delegate = logEntryWriter;
         }
 
         @Override
-        public void writeLogEntryHeader(byte type, WritableChannel channel) throws IOException {
-            delegate.writeLogEntryHeader(type, channel);
+        public void writeLogEntryHeader(byte version, byte type, WritableChannel channel) throws IOException {
+            delegate.writeLogEntryHeader(version, type, channel);
         }
 
         @Override
         public void writeStartEntry(
-                long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData)
+                byte version,
+                long timeWritten,
+                long latestCommittedTxWhenStarted,
+                int previousChecksum,
+                byte[] additionalHeaderData)
                 throws IOException {
-            delegate.writeStartEntry(timeWritten, latestCommittedTxWhenStarted, previousChecksum, additionalHeaderData);
+            delegate.writeStartEntry(
+                    version, timeWritten, latestCommittedTxWhenStarted, previousChecksum, additionalHeaderData);
         }
 
         @Override
-        public int writeCommitEntry(long transactionId, long timeWritten) throws IOException {
-            return delegate.writeCommitEntry(transactionId, timeWritten);
+        public int writeCommitEntry(byte version, long transactionId, long timeWritten) throws IOException {
+            return delegate.writeCommitEntry(version, transactionId, timeWritten);
         }
 
         @Override
@@ -1415,16 +1411,6 @@ class RecoveryCorruptedTransactionLogIT {
         @Override
         public void serialize(CommittedCommandBatch tx) throws IOException {
             delegate.serialize(tx);
-        }
-
-        @Override
-        public void serialize(Collection<StorageCommand> commands) throws IOException {
-            delegate.serialize(commands);
-        }
-
-        @Override
-        public void serialize(StorageCommand command) throws IOException {
-            delegate.serialize(command);
         }
 
         @Override

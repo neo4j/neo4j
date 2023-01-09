@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -30,14 +28,18 @@ import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogWriter {
     private final FlushablePositionAwareChecksumChannel channel;
-    private final LogEntryWriterFactory logEntryWriterFactory;
-    private KernelVersion writerVersion;
-    private LogEntryWriter<FlushablePositionAwareChecksumChannel> cachedWriter;
+    private final LogEntryWriter<FlushablePositionAwareChecksumChannel> writer;
 
+    public TransactionLogWriter(FlushablePositionAwareChecksumChannel channel) {
+        this(channel, new LogEntryWriter<>(channel));
+    }
+
+    @VisibleForTesting
     public TransactionLogWriter(
-            FlushablePositionAwareChecksumChannel channel, LogEntryWriterFactory logEntryWriterFactory) {
+            FlushablePositionAwareChecksumChannel channel,
+            LogEntryWriter<FlushablePositionAwareChecksumChannel> writer) {
         this.channel = channel;
-        this.logEntryWriterFactory = logEntryWriterFactory;
+        this.writer = writer;
     }
 
     /*
@@ -54,29 +56,30 @@ public class TransactionLogWriter {
     * The last chunk in the chunked transaction comes with a commit entry at the end.
     */
     public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
-        var writer = getWriter(batch.kernelVersion());
+        byte version = batch.kernelVersion().version();
+
         if (batch.isFirst()) {
             writer.writeStartEntry(
+                    version,
                     batch.getTimeStarted(),
                     batch.getLatestCommittedTxWhenStarted(),
                     previousChecksum,
                     batch.additionalHeader());
         } else {
-            writer.writeChunkStartEntry(batch.getTimeCommitted(), chunkId);
+            writer.writeChunkStartEntry(version, batch.getTimeCommitted(), chunkId);
         }
 
         // Write all the commands to the log channel
         writer.serialize(batch);
 
         if (batch.isLast()) {
-            return writer.writeCommitEntry(transactionId, batch.getTimeCommitted());
+            return writer.writeCommitEntry(version, transactionId, batch.getTimeCommitted());
         } else {
-            return writer.writeChunkEndEntry(transactionId, chunkId);
+            return writer.writeChunkEndEntry(version, transactionId, chunkId);
         }
     }
 
     public int append(CommittedCommandBatch commandBatch) throws IOException {
-        var writer = getWriter(commandBatch.kernelVersion());
         return commandBatch.serialize(writer);
     }
 
@@ -98,11 +101,7 @@ public class TransactionLogWriter {
     }
 
     @VisibleForTesting
-    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter(KernelVersion version) {
-        if (writerVersion != version) {
-            writerVersion = version;
-            cachedWriter = logEntryWriterFactory.createEntryWriter(channel, version);
-        }
-        return cachedWriter;
+    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter() {
+        return writer;
     }
 }

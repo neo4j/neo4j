@@ -75,11 +75,12 @@ class LogEntryParserDispatcherTest {
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
-                var entryWriter = new LogEntryWriter<>(writeChannel, LATEST);
-                entryWriter.writeStartEntry(1, 2, 3, EMPTY_BYTE_ARRAY);
-                entryWriter.writeChunkEndEntry(17, 13);
-                entryWriter.writeChunkStartEntry(11, 13);
-                entryWriter.writeCommitEntry(7, 8);
+                var entryWriter = new LogEntryWriter<>(writeChannel);
+                byte version = LATEST.version();
+                entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);
+                entryWriter.writeChunkEndEntry(version, 17, 13);
+                entryWriter.writeChunkStartEntry(version, 11, 13);
+                entryWriter.writeCommitEntry(version, 7, 8);
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
