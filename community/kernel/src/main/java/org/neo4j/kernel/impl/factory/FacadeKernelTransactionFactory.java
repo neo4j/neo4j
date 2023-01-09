@@ -21,10 +21,12 @@ package org.neo4j.kernel.impl.factory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 
+import java.util.function.Consumer;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class FacadeKernelTransactionFactory implements KernelTransactionFactory {
     private final Config config;
@@ -37,7 +39,10 @@ public class FacadeKernelTransactionFactory implements KernelTransactionFactory 
 
     @Override
     public KernelTransaction beginKernelTransaction(
-            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo) {
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            Consumer<Status> terminationCallback) {
         return facade.beginKernelTransaction(
                 type,
                 loginContext,

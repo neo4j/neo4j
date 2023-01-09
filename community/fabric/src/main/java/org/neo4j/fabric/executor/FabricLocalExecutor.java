@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
@@ -179,20 +178,14 @@ public class FabricLocalExecutor {
                 GraphDatabaseAPI databaseAPI, FabricTransactionInfo transactionInfo) {
             KernelTransaction.Type kernelTransactionType = getKernelTransactionType(transactionInfo);
 
-            InternalTransaction internalTransaction = databaseAPI instanceof GraphDatabaseFacade facade
-                    ? facade.beginTransaction(
-                            kernelTransactionType,
-                            transactionInfo.getLoginContext(),
-                            transactionInfo.getClientConnectionInfo(),
-                            transactionInfo.getTxTimeout().toMillis(),
-                            compositeTransaction::childTransactionTerminated,
-                            this::transformTerminalOperationError)
-                    : databaseAPI.beginTransaction(
-                            kernelTransactionType,
-                            transactionInfo.getLoginContext(),
-                            transactionInfo.getClientConnectionInfo(),
-                            transactionInfo.getTxTimeout().toMillis(),
-                            TimeUnit.MILLISECONDS);
+            InternalTransaction internalTransaction = databaseAPI.beginTransaction(
+                    kernelTransactionType,
+                    transactionInfo.getLoginContext(),
+                    transactionInfo.getClientConnectionInfo(),
+                    transactionInfo.getTxTimeout().toMillis(),
+                    TimeUnit.MILLISECONDS,
+                    compositeTransaction::childTransactionTerminated,
+                    this::transformTerminalOperationError);
 
             if (transactionInfo.getTxMetadata() != null) {
                 internalTransaction.setMetaData(transactionInfo.getTxMetadata());

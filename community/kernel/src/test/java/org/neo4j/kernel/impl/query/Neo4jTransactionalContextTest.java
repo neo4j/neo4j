@@ -113,7 +113,7 @@ class Neo4jTransactionalContextTest {
         KernelTransaction secondKTX = mockTransaction(secondStatement);
         QueryRegistry secondQueryRegistry = mock(QueryRegistry.class);
 
-        when(transactionFactory.beginKernelTransaction(transactionType, securityContext, connectionInfo))
+        when(transactionFactory.beginKernelTransaction(transactionType, securityContext, connectionInfo, null))
                 .thenReturn(secondKTX);
         when(executingQuery.databaseId()).thenReturn(Optional.of(namedDatabaseId));
         Mockito.doThrow(RuntimeException.class).when(initialKTX).commit();

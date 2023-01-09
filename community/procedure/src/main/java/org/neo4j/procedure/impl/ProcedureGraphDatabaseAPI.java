@@ -22,6 +22,7 @@ package org.neo4j.procedure.impl;
 import static java.util.Objects.requireNonNull;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -30,8 +31,10 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -100,5 +103,17 @@ public class ProcedureGraphDatabaseAPI extends GraphDatabaseTransactions impleme
             long timeout,
             TimeUnit unit) {
         return delegate.beginTransaction(type, loginContextTransformer.apply(loginContext), clientInfo, timeout, unit);
+    }
+
+    @Override
+    public InternalTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            long timeout,
+            TimeUnit unit,
+            Consumer<Status> terminationCallback,
+            TransactionExceptionMapper transactionExceptionMapper) {
+        return beginTransaction(type, loginContext, clientInfo, timeout, unit);
     }
 }

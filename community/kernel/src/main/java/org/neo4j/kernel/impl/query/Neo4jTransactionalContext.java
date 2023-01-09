@@ -222,7 +222,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         oldQueryRegistry.unbindExecutingQuery(executingQuery, transactionSequenceNumber);
 
         // (3) Create and register new transaction
-        kernelTransaction = transactionFactory.beginKernelTransaction(transactionType, securityContext, clientInfo);
+        kernelTransaction =
+                transactionFactory.beginKernelTransaction(transactionType, securityContext, clientInfo, null);
         statement = (KernelStatement) kernelTransaction.acquireStatement();
         queryRegistry = statement.queryRegistry();
         transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();

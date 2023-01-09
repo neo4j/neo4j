@@ -107,15 +107,22 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
                 transactionExceptionMapper);
     }
 
+    @Override
     public InternalTransaction beginTransaction(
             Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
-            Long timeoutMillis,
+            long timeout,
+            TimeUnit unit,
             Consumer<Status> terminationCallback,
             TransactionExceptionMapper transactionExceptionMapper) {
         return beginTransactionInternal(
-                type, loginContext, clientInfo, timeoutMillis, terminationCallback, transactionExceptionMapper);
+                type,
+                loginContext,
+                clientInfo,
+                unit.toMillis(timeout),
+                terminationCallback,
+                transactionExceptionMapper);
     }
 
     protected InternalTransaction beginTransactionInternal(
