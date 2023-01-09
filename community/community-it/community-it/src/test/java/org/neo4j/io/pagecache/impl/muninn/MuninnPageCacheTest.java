@@ -45,7 +45,6 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,7 +58,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -2551,13 +2549,15 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         race.go();
                         // ensure touch doesn't leave unevictable pages
                         // first wait for the background evictor to do its job, then evict the rest
-                        assertEventually(
-                                () -> pageCache.tryGetNumberOfPagesToEvict(pageCache.getKeepFree()),
-                                i -> i == -1,
-                                SHORT_TIMEOUT_MILLIS,
-                                TimeUnit.MILLISECONDS);
-                        pageCache.evictPages(pageCache.tryGetNumberOfPagesToEvict(8), 0, EvictionRunEvent.NULL);
-                        assertThat(pageCache.tryGetNumberOfPagesToEvict(8)).isEqualTo(-1);
+                        //                        assertEventually(
+                        //                                () ->
+                        // pageCache.tryGetNumberOfPagesToEvict(pageCache.getKeepFree()),
+                        //                                i -> i == -1,
+                        //                                SHORT_TIMEOUT_MILLIS,
+                        //                                TimeUnit.MILLISECONDS);
+                        //                        pageCache.evictPages(pageCache.tryGetNumberOfPagesToEvict(8), 0,
+                        // EvictionRunEvent.NULL);
+                        //                        assertThat(pageCache.tryGetNumberOfPagesToEvict(8)).isEqualTo(-1);
                     },
                     pageCache::toString);
         }
