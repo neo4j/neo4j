@@ -296,7 +296,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     public enum CypherWorkerManagement {
         DEFAULT,
-        FIXED_THREADS,
         THREAD_POOL
     }
 
