@@ -114,7 +114,7 @@ class ExtractorsTest {
     @Test
     void shouldFailExtractingLongArrayWhereAnyValueIsEmpty() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         long[] longData = new long[] {112233, 4455, 66778899};
         String data = toString(longData, ';') + ";";
 
@@ -127,7 +127,7 @@ class ExtractorsTest {
     @Test
     void shouldFailExtractingLongArrayWhereAnyValueIsntReallyANumber() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
 
         // WHEN extracting long[] from "<number>;<number>...;" i.e. ending with a delimiter
         String data = "123;456;abc;789";
@@ -269,7 +269,7 @@ class ExtractorsTest {
 
     @Test
     void shouldNormalizeNumberTypes() {
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         assertSame(extractors.long_(), extractors.byte_().normalize());
         assertSame(extractors.long_(), extractors.short_().normalize());
         assertSame(extractors.long_(), extractors.int_().normalize());
@@ -279,7 +279,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractPointArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         char[] asChars = "{latitude: 56.7, longitude: 13.2};{latitude: 0.7, longitude: 0.25}".toCharArray();
         var extractor = extractors.pointArray();
         String headerInfo = "{crs:WGS-84}";
@@ -298,7 +298,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractDateArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "1985-4-20;2030-12-12".toCharArray();
         var extractor = extractors.dateArray();
 
@@ -313,7 +313,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractTimeArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "2:41:34;18:3:51".toCharArray();
         var extractor = extractors.timeArray();
         String headerInformation = "{timezone:+10:00}";
@@ -332,7 +332,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractDateTimeArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "1985-4-20T2:41:34;2030-12-12T18:3:51".toCharArray();
         var extractor = extractors.dateTimeArray();
         String headerInformation = "{timezone:+10:00}";
@@ -351,7 +351,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractLocalTimeArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "2:41:34;18:3:51".toCharArray();
         var extractor = extractors.localTimeArray();
 
@@ -366,7 +366,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractLocalDateTimeArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "1985-4-20T2:41:34;2030-12-12T18:3:51".toCharArray();
         var extractor = extractors.localDateTimeArray();
         String headerInformation = "{timezone:+10:00}";
@@ -384,7 +384,7 @@ class ExtractorsTest {
     @Test
     void shouldExtractDurationArray() {
         // GIVEN
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
         var asChars = "PT60S;PT2H".toCharArray();
         var extractor = extractors.durationArray();
 
@@ -400,7 +400,7 @@ class ExtractorsTest {
     @ParameterizedTest
     <T> void shouldExtractEmptyField(Function<Extractors, Extractor<T>> extractorSelector) {
         // given
-        var extractors = new Extractors(';');
+        var extractors = new Extractors();
         var extractor = extractorSelector.apply(extractors);
 
         // when

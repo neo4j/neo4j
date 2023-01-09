@@ -242,7 +242,7 @@ public class DataFactoriesTest {
     public void shouldAllowMissingIdHeaderEntry() throws Exception {
         // GIVEN
         CharSeeker seeker = seeker("one\ttwo");
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
 
         // WHEN
         Header header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
@@ -265,7 +265,7 @@ public class DataFactoriesTest {
                 value -> value,
                 () -> new MultiReadable(Readables.iterator(IOFunctions.identity(), firstSource, secondSource)));
         Header.Factory headerFactory = defaultFormatNodeFileHeader();
-        Extractors extractors = new Extractors(';');
+        Extractors extractors = new Extractors();
 
         // WHEN
         CharSeeker seeker = CharSeekers.charSeeker(new MultiReadable(dataFactory.create(TABS).stream()), TABS, false);
@@ -341,7 +341,7 @@ public class DataFactoriesTest {
         var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
 
         // THEN
-        var extractors = new Extractors(';');
+        var extractors = new Extractors();
         assertThat(header.entries())
                 .isEqualTo(array(
                         entry(
@@ -363,7 +363,7 @@ public class DataFactoriesTest {
         var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
 
         // THEN
-        var extractors = new Extractors(';');
+        var extractors = new Extractors();
         assertThat(header.entries())
                 .isEqualTo(array(
                         entry(
@@ -385,7 +385,7 @@ public class DataFactoriesTest {
         var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.ACTUAL, groups);
 
         // THEN
-        var extractors = new Extractors(';');
+        var extractors = new Extractors();
         assertThat(header.entries())
                 .isEqualTo(array(
                         entry(
@@ -407,7 +407,7 @@ public class DataFactoriesTest {
         var header = defaultFormatNodeFileHeader().create(seeker, TABS, IdType.STRING, groups);
 
         // THEN
-        var extractors = new Extractors(';');
+        var extractors = new Extractors();
         var group = groups.get("MyGroup");
         assertThat(header.entries())
                 .isEqualTo(array(entry("id", Type.ID, group, extractors.long_(), Map.of("id-type", "long"), null)));

@@ -114,6 +114,10 @@ public class Extractors {
     private final TextValueExtractor textValue;
     private final DurationArrayExtractor durationArray;
 
+    public Extractors() {
+        this(';');
+    }
+
     public Extractors(char arrayDelimiter) {
         this(arrayDelimiter, COMMAS.emptyQuotedStringsAsNull(), COMMAS.trimStrings(), inUTC);
     }

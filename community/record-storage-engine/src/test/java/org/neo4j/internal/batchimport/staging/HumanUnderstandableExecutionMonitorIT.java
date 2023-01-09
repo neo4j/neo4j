@@ -100,12 +100,13 @@ class HumanUnderstandableExecutionMonitorIT {
         DataGeneratorInput.DataDistribution dataDistribution = DataGeneratorInput.data(NODE_COUNT, RELATIONSHIP_COUNT);
         Groups groups = new Groups();
         Group group = groups.getOrCreate(null);
+        var extractors = new Extractors();
         Input input = new DataGeneratorInput(
                 dataDistribution,
                 idType,
                 random.seed(),
-                bareboneNodeHeader(idType, group, new Extractors(';')),
-                bareboneRelationshipHeader(idType, group, new Extractors(';')),
+                bareboneNodeHeader(idType, group, extractors),
+                bareboneRelationshipHeader(idType, group, extractors),
                 groups);
         Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
             @Override
