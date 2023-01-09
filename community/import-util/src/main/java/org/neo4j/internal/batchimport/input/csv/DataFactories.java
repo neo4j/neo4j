@@ -332,7 +332,7 @@ public class DataFactories {
 
         // The type
         {
-            int typeIndex = rawHeaderField.indexOf(':');
+            int typeIndex = rawHeaderField.lastIndexOf(':');
             if (typeIndex != -1) {
                 type = rawHeaderField.substring(typeIndex + 1);
                 rawHeaderField = rawHeaderField.substring(0, typeIndex);

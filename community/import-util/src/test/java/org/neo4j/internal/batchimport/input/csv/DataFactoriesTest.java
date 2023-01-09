@@ -414,6 +414,23 @@ public class DataFactoriesTest {
         assertThat(group.specificIdType()).isEqualTo("long");
     }
 
+    @Test
+    void shouldParsePropertyHeaderWithColonInName() {
+        // GIVEN
+        var seeker = seeker("uri:ID,http://example.com/property/name:string[]");
+
+        // WHEN
+        var header = defaultFormatNodeFileHeader().create(seeker, COMMAS, IdType.STRING, groups);
+
+        // THEN
+        var extractors = new Extractors();
+        var entries = header.entries();
+        assertThat(entries)
+                .isEqualTo(array(
+                        entry("uri", Type.ID, globalGroup, extractors.string()),
+                        entry("http://example.com/property/name", Type.PROPERTY, extractors.stringArray())));
+    }
+
     private static final Configuration SEEKER_CONFIG =
             Configuration.TABS.toBuilder().withBufferSize(1000).build();
 
