@@ -49,6 +49,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
@@ -168,6 +169,8 @@ object StaticEvaluation {
     override def statementClock(): Clock = notAvailable()
 
     override def transactionClock(): Clock = notAvailable()
+
+    override def transaction(): Transaction = notAvailable()
 
     override def internalTransaction(): InternalTransaction = notAvailable()
 

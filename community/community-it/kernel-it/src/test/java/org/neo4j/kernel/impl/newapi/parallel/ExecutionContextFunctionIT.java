@@ -71,6 +71,7 @@ import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.NodeIdReference;
 import org.neo4j.values.virtual.VirtualValues;
 
 @DbmsExtension(configurationCallback = "configuration")
@@ -216,12 +217,19 @@ class ExecutionContextFunctionIT {
     }
 
     @Test
-    void testTransactionInjectionIntoUserFunction() throws ProcedureException {
+    void testInjectingTransactionIntoUserFunctionAndGettingDataFromIt() throws ProcedureException {
+        NodeIdReference nodeRef;
+        String nodeId;
+        try (Transaction tx = db.beginTx()) {
+            var node = tx.createNode();
+            nodeId = node.getElementId();
+            nodeRef = VirtualValues.node(node.getId());
+            tx.commit();
+        }
+
         doWithExecutionContext(executionContext -> {
-            assertThatThrownBy(() ->
-                            invokeUserFunction(executionContext, "doSomethingWithTransaction", Values.intValue(1)))
-                    .hasRootCauseInstanceOf(ProcedureException.class)
-                    .hasMessageContaining("There is no `Transaction` in the current procedure call context.");
+            AnyValue result = invokeUserFunction(executionContext, "getNodeById", Values.of(nodeId));
+            assertThat(result).isEqualTo(nodeRef);
         });
     }
 
@@ -517,9 +525,9 @@ class ExecutionContextFunctionIT {
         @Context
         public Transaction transaction;
 
-        @UserFunction("execution.context.test.function.doSomethingWithTransaction")
-        public Object doSomethingWithTransaction(@Name("value") Object value) {
-            return value;
+        @UserFunction("execution.context.test.function.getNodeById")
+        public Node getNodeById(@Name("elementId") String elementId) {
+            return transaction.getNodeByElementId(elementId);
         }
     }
 

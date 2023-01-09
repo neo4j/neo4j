@@ -239,11 +239,19 @@ class ExecutionContextProcedureIT {
     }
 
     @Test
-    void testTransactionInjectionIntoProcedure() throws ProcedureException {
+    void testInjectingTransactionIntoProcedureAndGettingDataFromIt() throws ProcedureException {
+        NodeIdReference node1;
+        NodeIdReference node2;
+        try (Transaction tx = db.beginTx()) {
+            node1 = VirtualValues.node(tx.createNode().getId());
+            node2 = VirtualValues.node(tx.createNode().getId());
+            tx.commit();
+        }
+
         doWithExecutionContext(executionContext -> {
-            assertThatThrownBy(() -> invokeProcedure(executionContext, "doSomethingWithTransaction"))
-                    .hasRootCauseInstanceOf(ProcedureException.class)
-                    .hasMessageContaining("There is no `Transaction` in the current procedure call context.");
+            List<AnyValue[]> result = invokeProcedure(executionContext, "getAllNodesFromTransaction");
+            assertColumnCount(result, 1);
+            assertThat(result.stream().map(row -> row[0])).containsExactly(node1, node2);
         });
     }
 
@@ -397,6 +405,8 @@ class ExecutionContextProcedureIT {
 
     public record GenericResult(Object object) {}
 
+    public record NodeResult(Node node) {}
+
     public static class BasicTestProcedures {
 
         @Procedure("execution.context.test.procedure.range")
@@ -456,8 +466,6 @@ class ExecutionContextProcedureIT {
 
         public record RelationshipResult(Relationship relationship) {}
 
-        public record NodeResult(Node node) {}
-
         public record PathResult(Path path) {}
     }
 
@@ -466,8 +474,10 @@ class ExecutionContextProcedureIT {
         @Context
         public Transaction transaction;
 
-        @Procedure("execution.context.test.procedure.doSomethingWithTransaction")
-        public void doSomethingWithTransaction() {}
+        @Procedure("execution.context.test.procedure.getAllNodesFromTransaction")
+        public Stream<NodeResult> getAllNodesFromTransaction() {
+            return transaction.getAllNodes().stream().map(NodeResult::new);
+        }
     }
 
     public static class ProcedureInjectingKernelTransaction {

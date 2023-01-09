@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.procedure;
 
 import java.time.Clock;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -81,6 +82,18 @@ public interface Context {
      * @return the thread of this context
      */
     Thread thread();
+
+    /**
+     * Returns the public API transaction that should be used by the procedure and function authors.
+     * Such transaction has typically some functionality like commit or rollback disabled, as they are not supported
+     * from procedures and functions.
+     * In this way it differs from {@link #internalTransaction()} and {@link #internalTransactionOrNull()}
+     * that apart from returning internal API transaction implementing {@link InternalTransaction} also return
+     * a transaction representation that does not have such operations disabled.
+     *
+     * @throws ProcedureException if no transaction has been associated with the context
+     */
+    Transaction transaction() throws ProcedureException;
 
     /**
      * Returns the internal transaction of this context

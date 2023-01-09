@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import java.time.Clock;
 import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -35,7 +36,8 @@ import org.neo4j.values.ValueMapper;
 
 public class BasicContext implements Context {
     private final DependencyResolver resolver;
-    private final InternalTransaction transaction;
+    private final Transaction procedureTransaction;
+    private final InternalTransaction internalTransaction;
     private final SecurityContext securityContext;
     private final ClockContext clockContext;
     private final ValueMapper<Object> valueMapper;
@@ -44,14 +46,16 @@ public class BasicContext implements Context {
 
     private BasicContext(
             DependencyResolver resolver,
-            InternalTransaction transaction,
+            Transaction procedureTransaction,
+            InternalTransaction internalTransaction,
             SecurityContext securityContext,
             ClockContext clockContext,
             ValueMapper<Object> valueMapper,
             Thread thread,
             ProcedureCallContext procedureCallContext) {
         this.resolver = resolver;
-        this.transaction = transaction;
+        this.procedureTransaction = procedureTransaction;
+        this.internalTransaction = internalTransaction;
         this.securityContext = securityContext;
         this.clockContext = clockContext;
         this.valueMapper = valueMapper;
@@ -85,13 +89,18 @@ public class BasicContext implements Context {
     }
 
     @Override
+    public Transaction transaction() throws ProcedureException {
+        return throwIfNull("Transaction", procedureTransaction);
+    }
+
+    @Override
     public InternalTransaction internalTransaction() throws ProcedureException {
-        return throwIfNull("Transaction", transaction);
+        return throwIfNull("Transaction", internalTransaction);
     }
 
     @Override
     public InternalTransaction internalTransactionOrNull() {
-        return transaction;
+        return internalTransaction;
     }
 
     @Override
@@ -135,7 +144,8 @@ public class BasicContext implements Context {
 
     public static class ContextBuilder {
         private DependencyResolver resolver;
-        private InternalTransaction transaction;
+        private Transaction procedureTransaction;
+        private InternalTransaction internalTransaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private ClockContext clockContext;
         private Thread thread = Thread.currentThread();
@@ -147,8 +157,13 @@ public class BasicContext implements Context {
             this.valueMapper = valueMapper;
         }
 
-        public ContextBuilder withTransaction(InternalTransaction internalTransaction) {
-            this.transaction = internalTransaction;
+        public ContextBuilder withProcedureTransaction(Transaction procedureTransaction) {
+            this.procedureTransaction = procedureTransaction;
+            return this;
+        }
+
+        public ContextBuilder withInternalTransaction(InternalTransaction internalTransaction) {
+            this.internalTransaction = internalTransaction;
             return this;
         }
 
@@ -173,7 +188,14 @@ public class BasicContext implements Context {
             requireNonNull(valueMapper);
             requireNonNull(thread);
             return new BasicContext(
-                    resolver, transaction, securityContext, clockContext, valueMapper, thread, procedureCallContext);
+                    resolver,
+                    procedureTransaction,
+                    internalTransaction,
+                    securityContext,
+                    clockContext,
+                    valueMapper,
+                    thread,
+                    procedureCallContext);
         }
     }
 }

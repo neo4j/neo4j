@@ -472,7 +472,7 @@ class BuiltInProceduresTest {
     private List<Object[]> call(String name, Object... args) throws ProcedureException, IndexNotFoundKernelException {
         DefaultValueMapper valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
         Context ctx = buildContext(resolver, valueMapper)
-                .withTransaction(transaction)
+                .withInternalTransaction(transaction)
                 .withProcedureCallContext(callContext)
                 .context();
 

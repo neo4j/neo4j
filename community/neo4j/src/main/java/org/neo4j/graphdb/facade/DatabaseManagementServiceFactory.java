@@ -90,7 +90,6 @@ import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureGraphDatabaseAPI;
 import org.neo4j.procedure.impl.ProcedureLoginContextTransformer;
-import org.neo4j.procedure.impl.ProcedureTransactionProvider;
 import org.neo4j.procedure.impl.TerminationGuardProvider;
 import org.neo4j.procedure.impl.TransactionStatusDetailsProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -348,7 +347,7 @@ public class DatabaseManagementServiceFactory {
 
             // Register injected public API components
             globalProcedures.registerComponent(Log.class, ctx -> proceduresLog, true);
-            globalProcedures.registerComponent(Transaction.class, new ProcedureTransactionProvider(), true);
+            globalProcedures.registerComponent(Transaction.class, Context::transaction, true);
             globalProcedures.registerComponent(
                     org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
             globalProcedures.registerComponent(

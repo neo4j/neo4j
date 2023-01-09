@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.newapi;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
-import java.time.Clock;
 import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
+import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
@@ -148,7 +149,8 @@ public abstract class ProcedureCaller {
 
     Context prepareContext(SecurityContext securityContext, ProcedureCallContext procedureContext) {
         return buildContext(databaseDependencies, createValueMapper())
-                .withTransaction(maybeInternalTransaction())
+                .withProcedureTransaction(procedureTransaction())
+                .withInternalTransaction(maybeInternalTransaction())
                 .withSecurityContext(securityContext)
                 .withProcedureCallContext(procedureContext)
                 .withClock(clockContext())
@@ -204,6 +206,8 @@ public abstract class ProcedureCaller {
 
     abstract OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context);
 
+    abstract Transaction procedureTransaction();
+
     abstract InternalTransaction maybeInternalTransaction();
 
     abstract void performCheckBeforeOperation();
@@ -242,24 +246,7 @@ public abstract class ProcedureCaller {
 
         @Override
         ClockContext clockContext() {
-            // This needs to be lazy, because transactions from virtual databases don't have clock context.
-            return new ClockContext() {
-
-                @Override
-                public Clock systemClock() {
-                    return ktx.clocks().systemClock();
-                }
-
-                @Override
-                public Clock transactionClock() {
-                    return ktx.clocks().transactionClock();
-                }
-
-                @Override
-                public Clock statementClock() {
-                    return ktx.clocks().statementClock();
-                }
-            };
+            return ktx.clocks();
         }
 
         @Override
@@ -292,6 +279,11 @@ public abstract class ProcedureCaller {
         OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context) {
             KernelTransaction.Revertable revertable = ktx.overrideWith(context);
             return revertable::close;
+        }
+
+        @Override
+        Transaction procedureTransaction() {
+            return new ProcedureTransactionImpl(ktx.internalTransaction());
         }
 
         @Override
@@ -359,6 +351,11 @@ public abstract class ProcedureCaller {
         @Override
         OverridableSecurityContext.Revertable overrideSecurityContext(SecurityContext context) {
             return overridableSecurityContext.overrideWith(context);
+        }
+
+        @Override
+        Transaction procedureTransaction() {
+            return new ExecutionContextProcedureTransaction(executionContext);
         }
 
         @Override
