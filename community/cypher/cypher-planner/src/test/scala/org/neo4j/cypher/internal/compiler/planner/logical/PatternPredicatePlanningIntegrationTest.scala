@@ -94,9 +94,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     .setRelationshipCardinality("()-[:X]-()", 10)
     .setRelationshipCardinality("()-[:X]-(:Foo)", 10)
     .setRelationshipCardinality("()-[:X]-(:Bar)", 10)
+    .setRelationshipCardinality("()-[:X]-(:B)", 10)
     .setRelationshipCardinality("(:Foo)-[]->()", 10)
     .setRelationshipCardinality("()-[]->(:Foo)", 10)
     .setRelationshipCardinality("()-[:Y]-()", 20)
+    .setRelationshipCardinality("()-[:Y]-(:B)", 20)
     .setRelationshipCardinality("()-[]->(:B)", 10)
     .setRelationshipCardinality("()-[]->(:C)", 10)
     .setRelationshipCardinality("()-[]->(:D)", 10)
@@ -195,110 +197,133 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   // Please look at the SemiApplyVsGetDegree benchmark.
-  // GetDegree is slower on sparse nodes, but faster on dense nodes.
-  // We heuristically always choose SemiApply, which will do better on average.
+  // GetDegree is faster than SemiApply.
 
-  test("should build plans with SemiApply for a single pattern predicate") {
+  test("should build plans with GetDegree for a single pattern predicate") {
     val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:X]->() RETURN a")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern predicate") {
+  test("should build plans with GetDegree for a single negated pattern predicate") {
     val logicalPlan = planner.plan("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(not(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with SemiApply for a single pattern predicate with exists") {
+  test("should build plans with GetDegree for a single pattern predicate with exists") {
     val logicalPlan = planner.plan("MATCH (a) WHERE exists((a)-[:X]->()) RETURN a")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with SemiApply for a single pattern predicate after a WITH") {
+  test("should build plans with GetDegree for a single pattern predicate after a WITH") {
     val logicalPlan = planner.plan("MATCH (a) WITH a AS b WHERE EXISTS((b)-[:X]->()) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("b")
-        .semiApply()
-        .|.expandAll("(b)-[anon_0:X]->(anon_1)")
-        .|.argument("b")
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("b"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos))
         .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern predicate with exists") {
+  test("should build plans with GetDegree for a single negated pattern predicate with exists") {
     val logicalPlan = planner.plan("MATCH (a) WHERE NOT exists((a)-[:X]->()) RETURN a")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
-        .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(not(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern predicate after a WITH") {
+  test("should build plans with GetDegree for a single negated pattern predicate after a WITH") {
     val logicalPlan = planner.plan("MATCH (a) WITH a AS b WHERE NOT exists((b)-[:X]->()) RETURN b")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("b")
-        .antiSemiApply()
-        .|.expandAll("(b)-[anon_0:X]->(anon_1)")
-        .|.argument("b")
+        .filterExpression(not(HasDegreeGreaterThan(
+          varFor("b"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .projection(project = Seq("a AS b"), discard = Set("a"))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with SemiApply for a single pattern predicate with 0 < COUNT") {
+  test("should build plans with GetDegree for a single pattern predicate with 0 < COUNT") {
     val logicalPlan = planner.plan("MATCH (a) WHERE 0<COUNT{(a)-[:X]->()} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with AntiSemiApply for a single pattern predicate with 0=COUNT") {
+  test("should build plans with GetDegree for a single pattern predicate with 0=COUNT") {
     val logicalPlan = planner.plan("MATCH (a) WHERE 0=COUNT{(a)-[:X]->()} RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(not(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .allNodeScan("a")
         .build()
     )
@@ -401,29 +426,35 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with SemiApply for a single pattern in a pattern comprehension, with 0 < size(pt)") {
+  test("should build plans with GetDegree for a single pattern in a pattern comprehension, with 0 < size(pt)") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0 < size([pt = (a)-[:X]->() | pt]) RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos))
         .allNodeScan("a")
         .build()
     )
   }
 
-  test("should build plans with AntiSemiApply for a single negated pattern in a pattern comprehension, 0 < size(pt)") {
+  test("should build plans with GetDegree for a single negated pattern in a pattern comprehension, 0 < size(pt)") {
     val logicalPlan =
       planner.plan("MATCH (a) WHERE 0=size([pt = (a)-[:X]->() | pt]) RETURN a")
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .antiSemiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
+        .filterExpression(not(HasDegreeGreaterThan(
+          varFor("a"),
+          Some(RelTypeName("X")(pos)),
+          SemanticDirection.OUTGOING,
+          literalInt(0)
+        )(pos)))
         .allNodeScan("a")
         .build()
     )
@@ -463,55 +494,17 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with 2 SemiApplies for two pattern predicates") {
-    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a")
+  test("should build plans with 2 SemiApplies for two pattern predicates with labels on the other node") {
+    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:X]->(:B) AND (a)-[:Y]->(:B) RETURN a")
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
         .semiApply()
+        .|.filter("anon_3:B")
         .|.expandAll("(a)-[anon_2:Y]->(anon_3)")
         .|.argument("a")
         .semiApply()
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with SelectOrSemiApply for a pattern predicate and an expression") {
-    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a")
-    logicalPlan should equal(
-      planner.planBuilder()
-        .produceResults("a")
-        .selectOrSemiApply("a.prop > 4")
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with SelectOrSemiApply for a pattern predicate and multiple expressions") {
-    val logicalPlan =
-      planner.plan("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a")
-    logicalPlan should equal(
-      planner.planBuilder()
-        .produceResults("a")
-        .selectOrSemiApply("a.prop > 4 OR a.prop2 = 9")
-        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with SelectOrAntiSemiApply for a single negated pattern predicate and an expression") {
-    val logicalPlan = planner.plan("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a")
-    logicalPlan should equal(
-      planner.planBuilder()
-        .produceResults("a")
-        .selectOrAntiSemiApply("a.prop = 9")
+        .|.filter("anon_1:B")
         .|.expandAll("(a)-[anon_0:X]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -520,20 +513,71 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test(
-    "should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates and expressions"
+    "should build plans with SelectOrSemiApply for a pattern predicate with labels on the other node and an expression"
   ) {
-    val logicalPlan = planner.plan("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")
+    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:X]->(:B) OR a.prop > 4 RETURN a")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .selectOrSemiApply("a.prop > 4")
+        .|.filter("anon_1:B")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with SelectOrSemiApply for a pattern predicate with labels on the other node and multiple expressions"
+  ) {
+    val logicalPlan =
+      planner.plan("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->(:B) OR a.prop > 4 RETURN a")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .selectOrSemiApply("a.prop > 4 OR a.prop2 = 9")
+        .|.filter("anon_1:B")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with SelectOrAntiSemiApply for a single negated pattern predicate with labels on the other node and an expression"
+  ) {
+    val logicalPlan = planner.plan("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->(:B) RETURN a")
+    logicalPlan should equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .selectOrAntiSemiApply("a.prop = 9")
+        .|.filter("anon_1:B")
+        .|.expandAll("(a)-[anon_0:X]->(anon_1)")
+        .|.argument("a")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates with labels on the other node and expressions"
+  ) {
+    val logicalPlan = planner.plan("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->(:B) OR NOT (a)-[:X]->(:B) RETURN a")
 
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
         .selectOrAntiSemiApply("anon_7")
+        .|.filter("anon_3:B")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .letSelectOrSemiApply(
           "anon_7",
           "a.prop = 9"
         ) // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.filter("anon_1:B")
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -541,16 +585,20 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with LetSemiApply and SelectOrAntiSemiApply for two pattern predicates with one negation") {
-    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")
+  test(
+    "should build plans with LetSemiApply and SelectOrAntiSemiApply for two pattern predicates with labels on the other node with one negation"
+  ) {
+    val logicalPlan = planner.plan("MATCH (a) WHERE (a)-[:Y]->(:B) OR NOT (a)-[:X]->(:B) RETURN a")
 
     logicalPlan should equal(
       planner.planBuilder()
         .produceResults("a")
         .selectOrAntiSemiApply("anon_7")
+        .|.filter("anon_3:B")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .letSemiApply("anon_7") // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.filter("anon_1:B")
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")
@@ -558,16 +606,45 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with LetAntiSemiApply and SelectOrAntiSemiApply for two negated pattern predicates") {
+  test("should build plans with GetDegree for two negated pattern predicates") {
     val query = "MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
     val logicalPlan = planner.plan(query).stripProduceResults
 
     logicalPlan should equal(
       planner.subPlanBuilder()
+        .filterExpression(ors(
+          not(HasDegreeGreaterThan(
+            varFor("a"),
+            Some(RelTypeName("Y")(pos)),
+            SemanticDirection.OUTGOING,
+            literalInt(0)
+          )(pos)),
+          not(HasDegreeGreaterThan(
+            varFor("a"),
+            Some(RelTypeName("X")(pos)),
+            SemanticDirection.OUTGOING,
+            literalInt(0)
+          )(pos))
+        ))
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should build plans with LetAntiSemiApply and SelectOrAntiSemiApply for two negated pattern predicates with labels on the other node"
+  ) {
+    val query = "MATCH (a) WHERE NOT (a)-[:Y]->(:B) OR NOT (a)-[:X]->(:B) RETURN a"
+    val logicalPlan = planner.plan(query).stripProduceResults
+
+    logicalPlan should equal(
+      planner.subPlanBuilder()
         .selectOrAntiSemiApply("anon_7")
+        .|.filter("anon_3:B")
         .|.expandAll("(a)-[anon_2:X]->(anon_3)")
         .|.argument("a")
         .letAntiSemiApply("anon_7") // anon_7 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.filter("anon_1:B")
         .|.expandAll("(a)-[anon_0:Y]->(anon_1)")
         .|.argument("a")
         .allNodeScan("a")

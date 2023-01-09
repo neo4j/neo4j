@@ -150,10 +150,11 @@ case object QueryPlanner
     // This works on the IR
     CompilationContains[UnionQuery],
     UnnecessaryOptionalMatchesRemoved,
+    ExpressionsRewrittenToGetDegree,
     TokensResolved
   )
 
-  override def postConditions = Set(
+  override def postConditions: Set[StepSequencer.Condition] = Set(
     CompilationContains[LogicalPlan],
     AttributeFullyAssigned[Solveds],
     AttributeFullyAssigned[Cardinalities],

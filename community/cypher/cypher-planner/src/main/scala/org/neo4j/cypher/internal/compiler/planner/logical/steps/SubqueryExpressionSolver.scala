@@ -121,10 +121,7 @@ object SubqueryExpressionSolver {
         throw new IllegalArgumentException("You cannot solve more expressions after obtaining the rewritten plan.")
       }
       if (qualifiesForRewriting(expression, context)) {
-        // Try to rewrite using the getDegreeRewriter first.
-        val expressionWithGetDegree = expression.endoRewrite(getDegreeRewriter)
-
-        val RewriteResult(plan, solvedExp, introducedVariables) = expressionWithGetDegree match {
+        val RewriteResult(plan, solvedExp, introducedVariables) = expression match {
           case expression: ListIRExpression =>
             val (newPlan, newVar) =
               solveUsingRollUpApply(resultPlan, expression, maybeKey, context)

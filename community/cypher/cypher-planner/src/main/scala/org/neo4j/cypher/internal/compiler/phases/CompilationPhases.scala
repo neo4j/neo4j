@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
 import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
+import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
@@ -94,6 +95,7 @@ object CompilationPhases {
           ResolveTokens,
           CreatePlannerQuery,
           OptionalMatchRemover,
+          GetDegreeRewriterStep,
           QueryPlanner,
           PlanRewriter,
           InsertCachedProperties,
