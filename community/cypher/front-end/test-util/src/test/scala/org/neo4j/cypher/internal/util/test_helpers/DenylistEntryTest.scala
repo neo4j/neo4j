@@ -59,13 +59,25 @@ class DenylistEntryTest extends CypherFunSuite {
 
   test("parseFeatureOnly") {
     DenylistEntry("""Feature "QuantifiedPathPatternAcceptance"""") should equal(
-      FeatureDenylistEntry("QuantifiedPathPatternAcceptance")
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false)
     )
   }
 
-  test("toStringFlakyFeature") {
-    FeatureDenylistEntry("QuantifiedPathPatternAcceptance").toString should equal(
+  test("parseFlakyFeatureOnly") {
+    DenylistEntry("""?Feature "QuantifiedPathPatternAcceptance"""") should equal(
+      FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true)
+    )
+  }
+
+  test("toStringFeatureOnly") {
+    FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = false).toString should equal(
       """Feature "QuantifiedPathPatternAcceptance""""
+    )
+  }
+
+  test("toStringFlakyFeatureOnly") {
+    FeatureDenylistEntry("QuantifiedPathPatternAcceptance", isFlaky = true).toString should equal(
+      """?Feature "QuantifiedPathPatternAcceptance""""
     )
   }
 

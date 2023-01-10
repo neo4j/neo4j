@@ -27,11 +27,11 @@ trait DenylistEntry {
 }
 
 case class FeatureDenylistEntry(
-  featureName: String
+  featureName: String,
+  override val isFlaky: Boolean
 ) extends DenylistEntry {
   override def isDenylisted(scenario: Scenario): Boolean = scenario.featureName == featureName
-  override def isFlaky: Boolean = false
-  override def toString: String = s"""Feature "$featureName""""
+  override def toString: String = s"""${if (isFlaky) "?" else ""}Feature "$featureName""""
 }
 
 case class ScenarioDenylistEntry(
@@ -65,7 +65,7 @@ case class ScenarioDenylistEntry(
 
 object DenylistEntry {
   val entryPattern: Regex = """(\??)Feature "([^"]*)": Scenario "([^"]*)"(?:: Example "(.*)")?""".r
-  val featurePattern: Regex = """^Feature "([^"]+)"$""".r
+  val featurePattern: Regex = """^(\??)Feature "([^"]+)"$""".r
 
   def apply(line: String): DenylistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
@@ -79,8 +79,8 @@ object DenylistEntry {
             Some(exampleNumberOrName),
             isFlaky = questionMark.nonEmpty
           )
-        case featurePattern(featureName) =>
-          FeatureDenylistEntry(featureName)
+        case featurePattern(questionMark, featureName) =>
+          FeatureDenylistEntry(featureName, isFlaky = questionMark.nonEmpty)
         case other => throw new UnsupportedOperationException(s"Could not parse denylist entry $other")
       }
 
