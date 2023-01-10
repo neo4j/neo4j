@@ -118,6 +118,10 @@ public class DbmsSupportController {
         dbms.shutdownDatabase(databaseName);
     }
 
+    public void dropDatabase(String databaseName) {
+        dbms.dropDatabase(databaseName);
+    }
+
     public void restartDatabase(String databaseName) {
         stopDatabase(databaseName);
         startDatabase(databaseName);
