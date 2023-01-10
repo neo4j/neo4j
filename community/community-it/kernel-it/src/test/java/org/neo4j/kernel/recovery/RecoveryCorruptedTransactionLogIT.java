@@ -41,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1053,10 +1052,10 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private byte randomInvalidVersionsBytes() {
-        int highestVersionByte = Arrays.stream(KernelVersion.values())
+        int highestVersionByte = KernelVersion.VERSIONS.stream()
                 .mapToInt(KernelVersion::version)
                 .max()
-                .getAsInt();
+                .orElseThrow();
         return (byte) random.nextInt(highestVersionByte + 1, Byte.MAX_VALUE + 1);
     }
 

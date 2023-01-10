@@ -21,8 +21,6 @@ package org.neo4j.kernel.database;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.kernel.KernelVersion;
@@ -36,14 +34,12 @@ import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith(RandomExtension.class)
 class MetadataCacheTest {
-    private static final List<KernelVersion> KERNEL_VERSIONS = Arrays.asList(KernelVersion.values());
-
     @Inject
     RandomSupport random;
 
     @Test
     void shouldProvideGivenKernelVersion() {
-        final var kernelVersion = random.among(KERNEL_VERSIONS);
+        final var kernelVersion = random.among(KernelVersion.VERSIONS);
         final var kernelVersionProvider = (KernelVersionProvider) new MetadataCache(kernelVersion);
 
         assertThat(kernelVersionProvider.kernelVersion())
@@ -63,8 +59,8 @@ class MetadataCacheTest {
 
     @Test
     void shouldSetGivenKernelVersion() {
-        final var kernelVersions = random.ints(2, 0, KERNEL_VERSIONS.size())
-                .mapToObj(KERNEL_VERSIONS::get)
+        final var kernelVersions = random.ints(2, 0, KernelVersion.VERSIONS.size())
+                .mapToObj(KernelVersion.VERSIONS::get)
                 .sorted()
                 .toList();
         final var initialKernelVersion = kernelVersions.get(0);
@@ -81,7 +77,7 @@ class MetadataCacheTest {
 
     private LogTailMetadata randomLogTailMetadata() {
         return new EmptyLogTailMetadata() {
-            private final KernelVersion kernelVersion = random.among(KERNEL_VERSIONS);
+            private final KernelVersion kernelVersion = random.among(KernelVersion.VERSIONS);
 
             @Override
             public KernelVersion kernelVersion() {
