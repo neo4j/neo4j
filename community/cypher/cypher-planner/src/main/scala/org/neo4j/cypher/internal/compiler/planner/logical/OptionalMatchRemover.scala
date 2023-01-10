@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
@@ -49,7 +50,6 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -437,7 +437,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[UnionQuery]
+    CompilationContains[PlannerQuery]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(UnnecessaryOptionalMatchesRemoved)

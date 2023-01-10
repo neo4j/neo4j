@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.TokensResolved
 import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -80,7 +80,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     TokensResolved,
-    CompilationContains[UnionQuery]
+    CompilationContains[PlannerQuery]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NotificationsForUnresolvedTokensGenerated)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
@@ -34,7 +34,7 @@ case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends Valid
       tag.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-        case x if classOf[UnionQuery] == x && state.maybeQuery.isEmpty        => Seq("Union query missing")
+        case x if classOf[PlannerQuery] == x && state.maybeQuery.isEmpty      => Seq("Planner query missing")
         case x if classOf[LogicalPlan] == x && state.maybeLogicalPlan.isEmpty => Seq("Logical plan missing")
         case _                                                                => Seq.empty
       }

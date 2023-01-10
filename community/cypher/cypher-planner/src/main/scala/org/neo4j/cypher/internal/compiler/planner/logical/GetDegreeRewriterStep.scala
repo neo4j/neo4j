@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriter
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 
@@ -39,7 +39,7 @@ case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequence
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[UnionQuery]
+    CompilationContains[PlannerQuery]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ExpressionsRewrittenToGetDegree)

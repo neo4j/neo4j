@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
@@ -84,7 +83,7 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     // We look up semantic info during PlannerQuery building
     SemanticInfoAvailable
 
-  override def postConditions = Set(CompilationContains[UnionQuery])
+  override def postConditions: Set[StepSequencer.Condition] = Set(CompilationContains[PlannerQuery])
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

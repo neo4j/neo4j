@@ -148,7 +148,7 @@ case object QueryPlanner
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[UnionQuery],
+    CompilationContains[PlannerQuery],
     UnnecessaryOptionalMatchesRemoved,
     ExpressionsRewrittenToGetDegree,
     TokensResolved
