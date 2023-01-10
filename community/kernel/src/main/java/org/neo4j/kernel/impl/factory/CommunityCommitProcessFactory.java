@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
@@ -31,10 +30,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 public class CommunityCommitProcessFactory implements CommitProcessFactory {
     @Override
     public TransactionCommitProcess create(
-            TransactionAppender appender,
-            StorageEngine storageEngine,
-            NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyChecker,
+            TransactionAppender appender, StorageEngine storageEngine, DatabaseReadOnlyChecker readOnlyChecker,
             boolean preAllocateSpaceInStoreFiles) {
         return new DatabaseTransactionCommitProcess(
                 new InternalTransactionCommitProcess(appender, storageEngine, preAllocateSpaceInStoreFiles),

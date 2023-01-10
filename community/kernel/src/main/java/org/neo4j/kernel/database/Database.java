@@ -904,10 +904,8 @@ public class Database extends AbstractDatabase {
             CursorContextFactory cursorContextFactory) {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create(
-                logsModule.transactionAppender(),
-                storageEngine,
-                namedDatabaseId,
+        TransactionCommitProcess transactionCommitProcess =
+                commitProcessFactory.create(logsModule.transactionAppender(), storageEngine,
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
 

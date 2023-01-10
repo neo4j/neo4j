@@ -21,12 +21,9 @@ package org.neo4j.kernel.impl.factory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -37,11 +34,7 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenWritable() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess = factory.create(
-                mock(TransactionAppender.class),
-                mock(StorageEngine.class),
-                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
-                writable(),
+        var commitProcess = factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), writable(),
                 false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
@@ -51,11 +44,7 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenDynamicallyReadOnly() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess = factory.create(
-                mock(TransactionAppender.class),
-                mock(StorageEngine.class),
-                from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
-                readOnly(),
+        var commitProcess = factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), readOnly(),
                 false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
