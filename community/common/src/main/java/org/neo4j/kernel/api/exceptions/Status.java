@@ -217,6 +217,9 @@ public interface Status {
                 ClientNotification, "The query contains a relationship type expression that cannot be satisfied."),
         RepeatedRelationshipReference(
                 ClientNotification, "The query returns no results due to repeated references to a relationship."),
+        RemoteExecutionClientError(
+                ClientError,
+                "The database was unable to execute a remote part of the statement due to an unknown client error."),
 
         // database errors
         ExecutionFailed(DatabaseError, "The database was unable to execute the statement."),
@@ -227,6 +230,9 @@ public interface Status {
 
         // transient errors
         ExecutionTimeout(TransientError, "The database was unable to execute the statement in a timely fashion."),
+        RemoteExecutionTransientError(
+                TransientError,
+                "The database was unable to execute a remote part of the statement due to an unknown transient failure."),
 
         // client notifications (performance)
         CartesianProduct(ClientNotification, "This query builds a cartesian product between disconnected patterns."),
