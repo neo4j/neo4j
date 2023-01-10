@@ -38,6 +38,7 @@ public class LoggingLogFileMonitor
     private long maxTransactionRecovered;
     private final InternalLog log;
     private int numberOfRecoveredTransactions;
+    private int numberOfRolledbackBatches;
 
     public LoggingLogFileMonitor(InternalLog log) {
         this.log = log;
@@ -103,6 +104,11 @@ public class LoggingLogFileMonitor
         if (committedBatch.commandBatch().isLast()) {
             numberOfRecoveredTransactions++;
         }
+    }
+
+    @Override
+    public void batchRolledback(CommittedCommandBatch committedBatch) {
+        numberOfRolledbackBatches++;
     }
 
     @Override

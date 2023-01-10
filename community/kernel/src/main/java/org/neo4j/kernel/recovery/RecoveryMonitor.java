@@ -51,4 +51,6 @@ public interface RecoveryMonitor {
     default void partialRecovery(RecoveryPredicate recoveryPredicate, CommittedCommandBatch commandBatch) {
         // noop
     }
+
+    default void batchRolledback(CommittedCommandBatch committedBatch) {}
 }

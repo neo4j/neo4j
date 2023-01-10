@@ -98,6 +98,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
+                TransactionIdTracker transactionIdTracker = new TransactionIdTracker();
                 try (var transactionsToRecover =
                                 recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
                         var recoveryVisitor = recoveryService.getRecoveryApplier(
@@ -110,6 +111,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             initProgressReporter(recoveryStartInformation, lastReversedCommandBatch);
                         }
                         recoveryVisitor.visit(commandBatch);
+                        transactionIdTracker.trackBatch(commandBatch);
                         lowestRecoveredTxId = commandBatch.txId();
                         reportProgress();
                     }
@@ -181,12 +183,15 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             }
                         } else {
                             recoveryStartupChecker.checkIfCanceled();
-                            recoveryVisitor.visit(nextCommandBatch);
-
+                            if (transactionIdTracker.isCompletedTransaction(nextCommandBatch.txId())) {
+                                recoveryVisitor.visit(nextCommandBatch);
+                                monitor.batchRecovered(nextCommandBatch);
+                            } else {
+                                monitor.batchRolledback(nextCommandBatch);
+                            }
                             if (lastCommandBatch == null || lastCommandBatch.txId() < nextCommandBatch.txId()) {
                                 lastCommandBatch = nextCommandBatch;
                             }
-                            monitor.batchRecovered(nextCommandBatch);
                             lastTransactionPosition = transactionsToRecover.position();
                             recoveryToPosition = lastTransactionPosition;
                             reportProgress();
