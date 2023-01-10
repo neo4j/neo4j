@@ -399,6 +399,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("should not allow referencing elements being created by the pattern within that same pattern") {
     val badQueries = Seq(
       "CREATE (a {prop:7})-[r:R {prop: a.prop}]->(b)",
+      "CREATE (a {prop:a.prop})",
       "CREATE (a {prop:7})-[r:R]->(b {prop: a.prop})",
       "CREATE (a {prop: r.prop})-[r:R {prop:7}]->(b)",
       "CREATE (a)-[r:R {prop:7}]->(b {prop: r.prop})",
@@ -410,6 +411,11 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "CREATE (a {prop:7})-[:R {prop: a.prop}]->(b)",
       "CREATE (a {prop:7})-[r:R]->({prop: a.prop})",
       "CREATE p=({prop:7})-[:R]->(b {prop: nodes(p)[0].prop})",
+      "CREATE (n {prop: true IN [a IN [false] WHERE n.prop | a]})",
+      "CREATE (n)-[r:R {prop: true IN [a IN [false] WHERE n.prop | a]}]->(m)",
+      "CREATE (n)-[r:R {prop: true IN [a IN [false] WHERE r.prop | a]}]->(m)",
+      "CREATE (n)-[r:R]->(m {prop: true IN [a IN [false] WHERE n.prop | a]})",
+      "CREATE (n)-[r:R]->(m {prop: true IN [a IN [false] WHERE r.prop | a]})",
     )
 
     assertNotificationInSupportedVersions(badQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)
@@ -422,6 +428,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a {prop:7})-[r:R {prop: a.prop}]->(b) RETURN *",
       "CREATE (a {prop:7}) CREATE (a)-[:R]->(b {prop: a.prop})",
       "MATCH (a) CREATE (a)-[:R]->(b {prop: a.prop})",
+      "CREATE (n {prop: true IN [n IN [false] | true]})",
+      "CREATE (n {prop: true IN [n IN [false] | n]})",
+      "CREATE (a)-[r:R {prop: true IN [r IN [false] | true]}]->(b)",
+      "CREATE (a)-[r:R {prop: true IN [r IN [false] | r]}]->(b)",
+      "CREATE (a)-[r:R {prop: true IN [a IN [false] | a]}]->(b)",
+      "CREATE (a)-[r:R]->(b {prop: true IN [r IN [false] | r]})",
+      "CREATE (a)-[r:R]->(b {prop: true IN [a IN [false] | a]})"
     )
 
     assertNoNotificationInSupportedVersions(okQueries, DEPRECATED_SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN)

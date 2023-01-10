@@ -439,7 +439,7 @@ object Deprecations {
     private def hasSelfReferenceToVariableInPattern(pattern: Pattern, semanticTable: SemanticTable): Boolean = {
       val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
-      def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
+      def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet.filter(v => !isDefinition(v))
       def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
       val (declaredVariables, referencedVariables) = pattern.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
