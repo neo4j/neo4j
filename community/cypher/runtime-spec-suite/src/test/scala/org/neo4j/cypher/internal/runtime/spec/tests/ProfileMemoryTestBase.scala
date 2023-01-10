@@ -292,20 +292,21 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should profile memory of IN") {
     given {
-      nodePropertyGraph(SIZE, {
-        case _ => Map("p" -> Array(1, 2, 3, 4))
-      })
+      nodeGraph(SIZE)
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .projection("43 IN x.p AS y")
-      .allNodeScan("x")
+      .apply()
+      .|.projection("43 IN list AS y")
+      .|.allNodeScan("x", "list")
+      .projection(s"range(1, 256) AS list")
+      .argument()
       .build()
 
     // then
-    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+    assertOnMemory(logicalQuery, NO_INPUT, 6, 2)
   }
 
   test("should profile memory of varExpand") {

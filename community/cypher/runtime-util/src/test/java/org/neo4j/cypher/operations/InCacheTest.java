@@ -43,10 +43,13 @@ import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
+import static org.neo4j.values.virtual.VirtualValues.range;
 
+@SuppressWarnings( "resource" )
 class InCacheTest
 {
     @Test
@@ -55,18 +58,22 @@ class InCacheTest
         InCache cache = new InCache();
         ListValue list = list( stringValue( "a" ), stringValue( "b" ), stringValue( "c" ) );
 
-        Map<Value,Value> expected =
-                Map.of(
-                        stringValue( "a" ), TRUE,
-                        stringValue( "b" ), TRUE,
-                        stringValue( "c" ), TRUE,
-                        stringValue( "d" ), FALSE,
-                        NO_VALUE, NO_VALUE
-                );
+        Map<Value,Value> expected = Map.of(
+                stringValue( "a" ),
+                TRUE,
+                stringValue( "b" ),
+                TRUE,
+                stringValue( "c" ),
+                TRUE,
+                stringValue( "d" ),
+                FALSE,
+                NO_VALUE,
+                NO_VALUE );
 
         for ( Entry<Value,Value> entry : shuffled( expected ) )
         {
-            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
+            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) )
+                    .isEqualTo( entry.getValue() );
         }
     }
 
@@ -75,46 +82,51 @@ class InCacheTest
     {
         InCache cache = new InCache();
         ListValue list = list( stringValue( "a" ), NO_VALUE, stringValue( "c" ), NO_VALUE );
-        Map<Value,Value> expected =
-                Map.of(
-                        stringValue( "a" ), TRUE,
-                        stringValue( "b" ), NO_VALUE,
-                        stringValue( "c" ), TRUE,
-                        stringValue( "d" ), NO_VALUE,
-                        NO_VALUE, NO_VALUE
-                );
+        Map<Value,Value> expected = Map.of(
+                stringValue( "a" ),
+                TRUE,
+                stringValue( "b" ),
+                NO_VALUE,
+                stringValue( "c" ),
+                TRUE,
+                stringValue( "d" ),
+                NO_VALUE,
+                NO_VALUE,
+                NO_VALUE );
 
         for ( Entry<Value,Value> entry : shuffled( expected ) )
         {
-            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
+            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) )
+                    .isEqualTo( entry.getValue() );
         }
     }
 
     @Test
     void shouldHandleEmptyListAndNull()
     {
-        //given
+        // given
         InCache cache = new InCache();
 
-        //when
+        // when
         Value check = cache.check( NO_VALUE, VirtualValues.EMPTY_LIST, EmptyMemoryTracker.INSTANCE );
 
-        //then
+        // then
         assertThat( check ).isEqualTo( FALSE );
     }
 
     @Test
     void shouldTrackMemory()
     {
-        //given
+        // given
         InCache cache = new InCache();
-        ListValue list = list( stringValue( "a" ), stringValue( "b" ), stringValue( "c" ) );
+        ListValue list = range( 1L, 256L, 1L );
 
-        //when
+        // when
         MemoryTracker memoryTracker = mock( MemoryTracker.class );
-        cache.check( stringValue( "a" ), list, memoryTracker );
+        cache.check( longValue( 1L ), list, memoryTracker );
+        cache.check( longValue( 2L ), list, memoryTracker );
 
-        //then
+        // then
         ArgumentCaptor<Long> arg = ArgumentCaptor.forClass( Long.class );
         verify( memoryTracker ).allocateHeap( arg.capture() );
         assertThat( arg.getValue() ).isGreaterThan( 0 );
@@ -123,10 +135,10 @@ class InCacheTest
     @Test
     void shouldHandleArraysWithNulls()
     {
-        //given
+        // given
         InCache cache = new InCache();
 
-        //when
+        // when
         var list = list( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 3 ), intValue( 4 ) ) );
 
         // then
@@ -137,15 +149,33 @@ class InCacheTest
     @Test
     void shouldHandleMapsWithNulls()
     {
-        //given
+        // given
         InCache cache = new InCache();
 
-        //when
-        var list = list( map( new String[]{ "a" }, new AnyValue[]{ intValue( 1 ) } ) );
+        // when
+        var list = list( map( new String[]{"a"}, new AnyValue[]{intValue( 1 )} ) );
 
         // then
         assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE ) );
-        assertEquals( NO_VALUE, cache.check( map( new String[]{ "a" }, new AnyValue[]{ NO_VALUE } ), list, EmptyMemoryTracker.INSTANCE ) );
+        assertEquals(
+                NO_VALUE,
+                cache.check( map( new String[]{"a"}, new AnyValue[]{NO_VALUE} ), list, EmptyMemoryTracker.INSTANCE ) );
+    }
+
+    @Test
+    void shouldCloseCacheThatIsNeverUsed()
+    {
+        new InCache().close();
+    }
+
+    @Test
+    void shouldCloseCacheThatIsUsedOnce()
+    {
+        InCache cache = new InCache();
+        ListValue list = range( 1L, 256L, 1L );
+
+        cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE );
+        cache.close();
     }
 
     private static <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )

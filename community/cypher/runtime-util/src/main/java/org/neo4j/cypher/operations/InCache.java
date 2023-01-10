@@ -20,8 +20,6 @@
 package org.neo4j.cypher.operations;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingUnifiedSet;
@@ -39,65 +37,76 @@ import static org.neo4j.values.storable.Values.TRUE;
 
 public class InCache implements AutoCloseable
 {
-        private final LinkedHashMap<ListValue,InCacheChecker> seen;
+    private final SimpleIdentityCache<ListValue,DelayedInCacheChecker> seen;
 
-        public InCache()
-        {
-            this( 16 );
-        }
+    public InCache()
+    {
+        this( 16 );
+    }
 
-        public InCache( int maxSize )
-        {
-            seen = new LinkedHashMap<>( maxSize >> 2, 0.75f, true )
-            {
-                @Override
-                protected boolean removeEldestEntry( Map.Entry<ListValue,InCacheChecker> eldest )
-                {
-                    return super.size() > maxSize;
-                }
-            };
-        }
+    public InCache( int maxSize )
+    {
+        seen = new SimpleIdentityCache<>( maxSize );
+    }
 
     public Value check( AnyValue value, ListValue list, MemoryTracker memoryTracker )
     {
-        if ( list.isEmpty() )
+        if ( list.size() < 128 || value == NO_VALUE )
         {
-            return FALSE;
-        }
-        else if ( value == NO_VALUE )
-        {
-            return NO_VALUE;
+            return CypherFunctions.in( value, list );
         }
         else
         {
-            InCacheChecker checker = seen.computeIfAbsent( list,
-                                                           k -> new InCacheChecker( list.iterator(), memoryTracker ) );
-            return checker.check( value );
+            return seen.getOrCache( list, oldValue ->
+                       {
+                           if ( oldValue != null )
+                           {
+                               oldValue.close();
+                           }
+                           return new DelayedInCacheChecker();
+                       } )
+                       .check( value, list, memoryTracker );
         }
     }
 
     @Override
     public void close()
     {
-        seen.values().forEach( InCacheChecker::close );
+        seen.foreach( ( k, v ) -> v.close() );
     }
 
-    private static class InCacheChecker implements AutoCloseable
+    private static class DelayedInCacheChecker implements AutoCloseable
     {
-        private final HeapTrackingUnifiedSet<AnyValue> seen;
-        private final Iterator<AnyValue> iterator;
+        private static final int DEFAULT_DELAY = 1;
+        private HeapTrackingUnifiedSet<AnyValue> seen;
+        private Iterator<AnyValue> iterator;
         private boolean seenUndefined; // Not valid for sequence values and maps
+        private int cacheHits;
 
-        private InCacheChecker( Iterator<AnyValue> iterator, MemoryTracker memoryTracker )
+        private final int delay;
+
+        private DelayedInCacheChecker()
         {
-            this.iterator = iterator;
-            this.seen = HeapTrackingCollections.newSet( memoryTracker );
+            this( DEFAULT_DELAY );
         }
 
-        private Value check( AnyValue value )
+        private DelayedInCacheChecker( int delay )
+        {
+            this.delay = delay;
+        }
+
+        private Value check( AnyValue value, ListValue list, MemoryTracker memoryTracker )
         {
             assert value != NO_VALUE;
-
+            if ( cacheHits++ < delay )
+            {
+                return CypherFunctions.in( value, list );
+            }
+            if ( iterator == null )
+            {
+                iterator = list.iterator();
+                this.seen = HeapTrackingCollections.newSet( memoryTracker );
+            }
             if ( seen.contains( value ) )
             {
                 return TRUE;
@@ -127,7 +136,8 @@ public class InCache implements AutoCloseable
             }
             else if ( value instanceof SequenceValue || value instanceof MapValue )
             {
-                var undefinedEquality = seen.stream().anyMatch( seenValue -> value.ternaryEquals( seenValue ) == Equality.UNDEFINED );
+                var undefinedEquality =
+                        seen.stream().anyMatch( seenValue -> value.ternaryEquals( seenValue ) == Equality.UNDEFINED );
                 return undefinedEquality ? NO_VALUE : FALSE;
             }
             else
@@ -139,7 +149,11 @@ public class InCache implements AutoCloseable
         @Override
         public void close()
         {
-            seen.close();
+            if ( seen != null )
+            {
+                seen.close();
+            }
         }
     }
 }
+
