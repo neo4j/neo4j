@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -336,9 +338,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should equal(
       planner.planBuilder()
         .produceResults("n")
-        .antiSemiApply()
-        .|.expandAll("(n2)-[anon_2]->(anon_1)")
-        .|.argument("n2")
+        .filterExpression(
+          not(HasDegreeGreaterThan(
+            varFor("n2"),
+            None,
+            SemanticDirection.OUTGOING,
+            literalInt(0)
+          )(pos))
+        )
         .limit(10)
         .aggregation(Seq("n2 AS n2"), Seq("count(n1) AS n"))
         .allRelationshipsScan("(n1)-[anon_0]->(n2)")

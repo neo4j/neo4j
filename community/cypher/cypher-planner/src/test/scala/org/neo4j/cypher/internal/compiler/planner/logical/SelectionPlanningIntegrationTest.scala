@@ -237,30 +237,36 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     }
   }
 
-  test("Should solve extremely selective filter before any pattern predicates") {
+  test("Should solve extremely selective filter before any pattern predicates solved with SemiApply") {
     val planner = plannerBuilder()
       .removeNodeLookupIndex()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 1)
       .setLabelCardinality("B", 1)
+      .setLabelCardinality("C", 1000)
       .setAllRelationshipsCardinality(1000)
       .setRelationshipCardinality("(:A)-[]->()", 500)
       .setRelationshipCardinality("(:B)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[]->(:C)", 500)
+      .setRelationshipCardinality("(:B)-[]->(:C)", 500)
+      .setRelationshipCardinality("()-[]->(:C)", 1000)
       .setRelationshipCardinality("()-[]->()", 1000)
       .build()
 
     val query =
       """MATCH (a:A:B) WHERE
-        |     EXISTS { (a)-[r]->(b) }
-        | AND EXISTS { (a)-[q]->(c) }
+        |     EXISTS { (a)-[r]->(b:C) }
+        | AND EXISTS { (a)-[q]->(c:C) }
         |RETURN a""".stripMargin
 
     planner.plan(query).stripProduceResults should equal(
       planner.subPlanBuilder()
         .semiApply()
+        .|.filter("c:C")
         .|.expandAll("(a)-[q]->(c)")
         .|.argument("a")
         .semiApply()
+        .|.filter("b:C")
         .|.expandAll("(a)-[r]->(b)")
         .|.argument("a")
         .filter("a:A", "a:B")
