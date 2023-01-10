@@ -19,9 +19,7 @@
  */
 package org.neo4j.server;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -134,10 +132,10 @@ public final class WebContainerTestUtils {
     public static void verifyConnector(GraphDatabaseService db, ConnectorType connectorType, boolean enabled) {
         HostnamePort address = connectorAddress(db, connectorType);
         if (enabled) {
-            assertNotNull(address);
-            assertTrue(canConnectToSocket(address.getHost(), address.getPort()));
+            assertThat(address).isNotNull();
+            assertThat(canConnectToSocket(address.getHost(), address.getPort())).isTrue();
         } else {
-            assertNull(address);
+            assertThat(address).isNull();
         }
     }
 

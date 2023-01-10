@@ -51,6 +51,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Cryptography :: Hashing
   Apache Shiro :: Event
   Apache Shiro :: Lang
+  AssertJ fluent assertions
   Caffeine cache
   fastinfoset
   IPAddress
@@ -81,14 +82,9 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   jPowerShell
   jProcesses
-  json4s-ast
-  json4s-core
-  json4s-native
-  json4s-scalap
   LZ4 and xxHash
   magnolia
   mercator
-  Neo4j Java Driver
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP
@@ -114,7 +110,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  ParaNamer Core
   Zstandard
 
 BSD License 2-clause

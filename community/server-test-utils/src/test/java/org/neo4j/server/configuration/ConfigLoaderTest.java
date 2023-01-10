@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
@@ -95,7 +96,7 @@ class ConfigLoaderTest {
                 .build();
 
         // then
-        assertEquals(
+        Assertions.assertEquals(
                 testDirectory.absolutePath().toString(),
                 testConf.get(neo4j_home).toString());
     }

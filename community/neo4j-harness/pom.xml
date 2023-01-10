@@ -111,9 +111,8 @@
 
         <dependency>
             <groupId>org.neo4j.app</groupId>
-            <artifactId>neo4j-server</artifactId>
+            <artifactId>neo4j-server-test-utils</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
         </dependency>
 
         <!-- Test dependencies -->

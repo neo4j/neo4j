@@ -21,12 +21,6 @@ package org.neo4j.server.http.cypher.integration;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -75,17 +70,17 @@ public final class TransactionConditions {
                 Iterator<Status> expected = iterator(expectedErrors);
 
                 while (expected.hasNext()) {
-                    assertTrue(errors.hasNext());
+                    assertThat(errors.hasNext()).isTrue();
                     assertThat(errors.next().get("code").asText())
                             .isEqualTo(expected.next().code().serialize());
                 }
                 if (errors.hasNext()) {
                     JsonNode error = errors.next();
-                    fail("Expected no more errors, but got " + error.get("code") + " - '" + error.get("message")
-                            + "'.");
+                    Assertions.fail("Expected no more errors, but got " + error.get("code") + " - '"
+                            + error.get("message") + "'.");
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -102,7 +97,7 @@ public final class TransactionConditions {
                 int nodeCounter = 0;
                 int relCounter = 0;
                 for (int i = 0; i < nodes + rels; ++i) {
-                    assertTrue(meta.hasNext());
+                    assertThat(meta.hasNext()).isTrue();
                     JsonNode node = meta.next();
                     assertThat(node.get("deleted").asBoolean()).isEqualTo(Boolean.TRUE);
                     String type = node.get("type").asText();
@@ -114,18 +109,18 @@ public final class TransactionConditions {
                             ++relCounter;
                             break;
                         default:
-                            fail("Unexpected type: " + type);
+                            Assertions.fail("Unexpected type: " + type);
                             break;
                     }
                 }
-                assertEquals(nodes, nodeCounter);
-                assertEquals(rels, relCounter);
+                assertThat(nodes).isEqualTo(nodeCounter);
+                assertThat(rels).isEqualTo(relCounter);
                 while (meta.hasNext()) {
                     JsonNode node = meta.next();
                     assertThat(node.get("deleted").asBoolean()).isEqualTo(Boolean.FALSE);
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -137,9 +132,13 @@ public final class TransactionConditions {
 
                 int nodeCounter = 0;
                 int relCounter = 0;
-                assertTrue(meta.hasNext(), "Expected to find a JSON node, but there was none");
+                assertThat(meta.hasNext())
+                        .describedAs("Expected to find a JSON node, but there was none")
+                        .isTrue();
                 JsonNode node = meta.next();
-                assertTrue(node.isArray(), "Expected the node to be a list (for a path)");
+                assertThat(node.isArray())
+                        .describedAs("Expected the node to be a list (for a path)")
+                        .isTrue();
                 for (JsonNode inner : node) {
                     String type = inner.get("type").asText();
                     switch (type) {
@@ -154,14 +153,14 @@ public final class TransactionConditions {
                             }
                             break;
                         default:
-                            fail("Unexpected type: " + type);
+                            Assertions.fail("Unexpected type: " + type);
                             break;
                     }
                 }
-                assertEquals(nodes, nodeCounter);
-                assertEquals(rels, relCounter);
+                assertThat(nodes).isEqualTo(nodeCounter);
+                assertThat(rels).isEqualTo(relCounter);
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -184,23 +183,21 @@ public final class TransactionConditions {
                 if (!node.isNull()) {
                     String type = node.get("type").asText();
                     if (type.equals(element)) {
-                        assertEquals(
-                                indexes[i],
-                                metaIndex,
-                                "Expected " + element + " to be at indexes " + Arrays.toString(indexes)
-                                        + ", but found it at " + metaIndex);
+                        assertThat(indexes[i])
+                                .describedAs("Expected " + element + " to be at indexes " + Arrays.toString(indexes)
+                                        + ", but found it at " + metaIndex)
+                                .isEqualTo(metaIndex);
                         ++i;
                     } else {
-                        assertNotEquals(
-                                indexes[i],
-                                metaIndex,
-                                "Expected " + element + " at index " + metaIndex + ", but found " + type);
+                        assertThat(indexes[i])
+                                .describedAs("Expected " + element + " at index " + metaIndex + ", but found " + type)
+                                .isEqualTo(metaIndex);
                     }
                 }
             }
-            assertEquals(indexes.length, i);
+            assertThat(indexes.length).isEqualTo(i);
         } catch (JsonParseException e) {
-            assertNull(e);
+            assertThat(e).isNull();
         }
     }
 
@@ -212,11 +209,11 @@ public final class TransactionConditions {
                 for (int metaIndex = 0; meta.hasNext(); metaIndex++) {
                     JsonNode node = meta.next();
                     if (metaIndex == index) {
-                        assertTrue(node.isArray());
+                        assertThat(node.isArray()).isTrue();
                     }
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -228,15 +225,15 @@ public final class TransactionConditions {
                         getJsonNodeWithName(response, "rest").iterator();
 
                 for (int i = 0; i < amount; ++i) {
-                    assertTrue(entities.hasNext());
+                    assertThat(entities.hasNext()).isTrue();
                     JsonNode node = entities.next();
                     assertThat(node.get("metadata").get("deleted").asBoolean()).isEqualTo(Boolean.TRUE);
                 }
                 if (entities.hasNext()) {
-                    fail("Expected no more entities");
+                    Assertions.fail("Expected no more entities");
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -250,16 +247,16 @@ public final class TransactionConditions {
                 while (nodes.hasNext()) {
                     JsonNode node = nodes.next();
                     if (node.get("deleted") != null) {
-                        assertTrue(node.get("deleted").asBoolean());
+                        assertThat(node.get("deleted").asBoolean()).isTrue();
                         deleted++;
                     }
                 }
-                assertEquals(
-                        amount,
-                        deleted,
-                        format("Expected to see %d deleted elements but %d was encountered.", amount, deleted));
+                assertThat(amount)
+                        .describedAs(
+                                format("Expected to see %d deleted elements but %d was encountered.", amount, deleted))
+                        .isEqualTo(deleted);
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -268,13 +265,13 @@ public final class TransactionConditions {
         return response -> {
             try {
                 for (JsonNode node : getJsonNodeWithName(response, "graph").get("nodes")) {
-                    assertNull(node.get("deleted"));
+                    assertThat(node.get("deleted")).isNull();
                 }
                 for (JsonNode node : getJsonNodeWithName(response, "graph").get("relationships")) {
-                    assertNull(node.get("deleted"));
+                    assertThat(node.get("deleted")).isNull();
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -283,10 +280,10 @@ public final class TransactionConditions {
         return response -> {
             try {
                 for (JsonNode node : getJsonNodeWithName(response, "meta")) {
-                    assertFalse(node.get("deleted").asBoolean());
+                    assertThat(node.get("deleted").asBoolean()).isFalse();
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -295,10 +292,10 @@ public final class TransactionConditions {
         return response -> {
             try {
                 for (JsonNode node : getJsonNodeWithName(response, "rest")) {
-                    assertNull(node.get("metadata").get("deleted"));
+                    assertThat(node.get("metadata").get("deleted")).isNull();
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
@@ -311,16 +308,16 @@ public final class TransactionConditions {
                         .iterator();
 
                 for (int i = 0; i < amount; ++i) {
-                    assertTrue(relationships.hasNext());
+                    assertThat(relationships.hasNext()).isTrue();
                     JsonNode node = relationships.next();
                     assertThat(node.get("deleted").asBoolean()).isEqualTo(Boolean.TRUE);
                 }
                 if (relationships.hasNext()) {
                     JsonNode node = relationships.next();
-                    fail("Expected no more nodes, but got a node with id " + node.get("id"));
+                    Assertions.fail("Expected no more nodes, but got a node with id " + node.get("id"));
                 }
             } catch (JsonParseException e) {
-                assertNull(e);
+                assertThat(e).isNull();
             }
         };
     }
