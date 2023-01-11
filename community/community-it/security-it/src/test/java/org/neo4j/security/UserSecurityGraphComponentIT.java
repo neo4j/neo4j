@@ -54,12 +54,14 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -93,7 +95,7 @@ class UserSecurityGraphComponentIT {
 
     private static DatabaseManagementService dbms;
     private static GraphDatabaseFacade system;
-    private static SystemGraphComponents systemGraphComponents;
+    private static SystemGraphComponents internalSystemGraphComponents;
     private static UserSecurityGraphComponent userSecurityGraphComponent;
     private static AuthManager authManager;
     // Synthetic system graph component representing the whole system
@@ -106,9 +108,19 @@ class UserSecurityGraphComponentIT {
                 .set(allow_single_automatic_upgrade, FALSE)
                 .build();
 
+        var injectedDependencies = new Dependencies();
+        var internalSystemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+
+        // register a dummy DBMS runtime component as it is not a subject of this test
+        internalSystemGraphComponentsBuilder.register(new StubComponent(DBMS_RUNTIME_COMPONENT.name()));
+        // register a dummy user security component as it is manually initialised in every test.
+        internalSystemGraphComponentsBuilder.register(new StubComponent(SECURITY_USER_COMPONENT.name()));
+        injectedDependencies.satisfyDependencies(internalSystemGraphComponentsBuilder);
+
         dbms = new TestDatabaseManagementServiceBuilder(directory.homePath())
                 .impermanent()
                 .setConfig(cfg)
+                .setExternalDependencies(injectedDependencies)
                 .noOpSystemGraphInitializer()
                 .build();
         system = (GraphDatabaseFacade) dbms.database(SYSTEM_DATABASE_NAME);
@@ -120,21 +132,19 @@ class UserSecurityGraphComponentIT {
                 NullLogProvider.getInstance(),
                 CommunitySecurityLog.NULL_LOG);
 
-        // remove DBMS runtime component as it is not a subject of this test
-        systemGraphComponents = resolver.resolveDependency(SystemGraphComponents.class);
-        systemGraphComponents.deregister(DBMS_RUNTIME_COMPONENT);
+        internalSystemGraphComponents = resolver.resolveDependency(SystemGraphComponents.class);
     }
 
     @BeforeEach
     void clear() throws Exception {
+        // Clear and re-initialise the system database before every test
         inTx(tx -> Iterables.forEach(tx.getAllNodes(), n -> {
             Iterables.forEach(n.getRelationships(), Relationship::delete);
             n.delete();
         }));
         inTx(tx -> tx.schema().getConstraints().forEach(ConstraintDefinition::drop));
-        // Remove the SecurityUserComponent, to be able to initialize it with the correct version
-        systemGraphComponents.deregister(SECURITY_USER_COMPONENT);
-        systemGraphComponents.initializeSystemGraph(system);
+
+        internalSystemGraphComponents.initializeSystemGraph(system);
     }
 
     @AfterAll
@@ -155,7 +165,8 @@ class UserSecurityGraphComponentIT {
     @Test
     void shouldInitializeDefaultVersion() throws Exception {
         userSecurityGraphComponent.initializeSystemGraph(system, true);
-        systemGraphComponents.register(userSecurityGraphComponent);
+        var systemGraphComponents =
+                systemGraphComponentsPlus(internalSystemGraphComponents, userSecurityGraphComponent);
 
         HashMap<SystemGraphComponent.Name, SystemGraphComponent.Status> componentStatuses = new HashMap<>();
         SystemGraphComponent.Name overallStatus =
@@ -167,7 +178,11 @@ class UserSecurityGraphComponentIT {
         });
 
         var expectedComponents = Set.of(
-                MULTI_DATABASE_COMPONENT, SECURITY_USER_COMPONENT, COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, overallStatus);
+                DBMS_RUNTIME_COMPONENT,
+                MULTI_DATABASE_COMPONENT,
+                SECURITY_USER_COMPONENT,
+                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
+                overallStatus);
         assertThat(componentStatuses.keySet()).containsExactlyInAnyOrderElementsOf(expectedComponents);
         for (SystemGraphComponent.Name component : expectedComponents) {
             assertThat(componentStatuses.get(component))
@@ -197,6 +212,8 @@ class UserSecurityGraphComponentIT {
     void shouldAddUserIdsOnUpgradeFromOlderSystemDb(UserSecurityGraphComponentVersion version) throws Exception {
         // Given
         initUserSecurityComponent(version);
+        var systemGraphComponents =
+                systemGraphComponentsPlus(internalSystemGraphComponents, userSecurityGraphComponent);
 
         createUser(version, "alice");
 
@@ -221,6 +238,8 @@ class UserSecurityGraphComponentIT {
             throws Exception {
         // Given
         initUserSecurityComponent(version);
+        var systemGraphComponents =
+                systemGraphComponentsPlus(internalSystemGraphComponents, userSecurityGraphComponent);
 
         try (Transaction tx = system.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
             Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints(USER_LABEL);
@@ -247,6 +266,16 @@ class UserSecurityGraphComponentIT {
         }
     }
 
+    private static SystemGraphComponents systemGraphComponentsPlus(
+            SystemGraphComponents existing, SystemGraphComponent... components) {
+        var builder = new SystemGraphComponents.Builder();
+        for (var component : components) {
+            builder.register(component);
+        }
+        existing.forEach(builder::register);
+        return builder.build();
+    }
+
     private static Stream<Arguments> supportedPreviousVersions() {
         return Arrays.stream(UserSecurityGraphComponentVersion.values())
                 .filter(version -> version.runtimeSupported() && !version.isCurrent())
@@ -269,33 +298,46 @@ class UserSecurityGraphComponentIT {
 
     private static void assertCanUpgradeThisVersionAndThenUpgradeIt(SystemGraphComponent.Status initialState)
             throws Exception {
-        var systemGraphComponents = system.getDependencyResolver().resolveDependency(SystemGraphComponents.class);
-        assertStatus(Map.of(
-                MULTI_DATABASE_COMPONENT,
-                CURRENT,
-                SECURITY_USER_COMPONENT,
-                initialState,
-                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
-                CURRENT,
-                testComponent,
-                initialState));
+        var internalSystemGraphComponents =
+                system.getDependencyResolver().resolveDependency(SystemGraphComponents.class);
+        var systemGraphComponents =
+                systemGraphComponentsPlus(internalSystemGraphComponents, userSecurityGraphComponent);
+        assertStatus(
+                systemGraphComponents,
+                Map.of(
+                        DBMS_RUNTIME_COMPONENT,
+                        CURRENT,
+                        MULTI_DATABASE_COMPONENT,
+                        CURRENT,
+                        SECURITY_USER_COMPONENT,
+                        initialState,
+                        COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
+                        CURRENT,
+                        testComponent,
+                        initialState));
 
         // When running dbms.upgrade
         systemGraphComponents.upgradeToCurrent(system);
 
         // Then when looking at component statuses
-        assertStatus(Map.of(
-                MULTI_DATABASE_COMPONENT,
-                CURRENT,
-                SECURITY_USER_COMPONENT,
-                CURRENT,
-                COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
-                CURRENT,
-                testComponent,
-                CURRENT));
+        assertStatus(
+                systemGraphComponents,
+                Map.of(
+                        DBMS_RUNTIME_COMPONENT,
+                        CURRENT,
+                        MULTI_DATABASE_COMPONENT,
+                        CURRENT,
+                        SECURITY_USER_COMPONENT,
+                        CURRENT,
+                        COMMUNITY_TOPOLOGY_GRAPH_COMPONENT,
+                        CURRENT,
+                        testComponent,
+                        CURRENT));
     }
 
-    private static void assertStatus(Map<SystemGraphComponent.Name, SystemGraphComponent.Status> expected)
+    private static void assertStatus(
+            SystemGraphComponents systemGraphComponents,
+            Map<SystemGraphComponent.Name, SystemGraphComponent.Status> expected)
             throws Exception {
         HashMap<SystemGraphComponent.Name, SystemGraphComponent.Status> statuses = new HashMap<>();
         inTx(tx -> {
@@ -353,15 +395,46 @@ class UserSecurityGraphComponentIT {
                     .create());
         }
         userSecurityGraphComponent.postInitialization(system, true);
-
-        // re-add the user security component to allow querying for status
-        systemGraphComponents.register(userSecurityGraphComponent);
     }
 
     private static void inTx(ThrowingConsumer<Transaction, Exception> consumer) throws Exception {
         try (Transaction tx = system.beginTx()) {
             consumer.accept(tx);
             tx.commit();
+        }
+    }
+
+    static class StubComponent implements SystemGraphComponent {
+
+        private final SystemGraphComponent.Name name;
+
+        public StubComponent(String name) {
+            this.name = new SystemGraphComponent.Name(name);
+        }
+
+        @Override
+        public Name componentName() {
+            return name;
+        }
+
+        @Override
+        public int getLatestSupportedVersion() {
+            return 0;
+        }
+
+        @Override
+        public Status detect(Transaction tx) {
+            return CURRENT;
+        }
+
+        @Override
+        public void initializeSystemGraph(GraphDatabaseService system, boolean firstInitialization) {
+            // NO-OP
+        }
+
+        @Override
+        public void upgradeToCurrent(GraphDatabaseService system) {
+            // NO-OP
         }
     }
 }

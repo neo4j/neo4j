@@ -22,13 +22,12 @@ package org.neo4j.graphdb.facade;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.util.concurrent.TimeUnit;
-import org.neo4j.collection.Dependencies;
 import org.neo4j.commandline.dbms.MigrateStoreCommand;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.migration.MigrationEditionModuleFactory;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.storemigration.VisibleMigrationProgressMonitorFactory;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -74,7 +72,7 @@ public class SystemDbUpgrader {
         var bootstrapProgress = progressMonitor.startSection("Bootstrap");
         var graphDatabaseDependencies =
                 dependenciesWithoutExtensions(eventListener).databaseEventListeners(Iterables.iterable(eventListener));
-        GlobalModule globalModule = new GlobalModule(config, DbmsInfo.TOOL, graphDatabaseDependencies) {
+        var globalModule = new GlobalModule(config, DbmsInfo.TOOL, graphDatabaseDependencies) {
             @Override
             protected LogService createLogService(InternalLogProvider userLogProvider) {
                 return new SimpleLogService(systemDbStartupLogProvider);
@@ -85,20 +83,18 @@ public class SystemDbUpgrader {
                 return GlobalTransactionEventListeners.NULL;
             }
         };
-        AbstractEditionModule edition = editionFactory.apply(globalModule);
-        Dependencies globalDependencies = globalModule.getGlobalDependencies();
-        LifeSupport globalLife = globalModule.getGlobalLife();
-
-        var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
-
-        edition.bootstrapFabricServices();
-
+        var edition = editionFactory.apply(globalModule);
+        var globalDependencies = globalModule.getGlobalDependencies();
+        var globalLife = globalModule.getGlobalLife();
         globalModule.getGlobalDependencies().satisfyDependency(new GlobalProceduresRegistry());
 
+        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
-        globalModule.getSystemGraphComponents().register(dbmsRuntimeSystemGraphComponent);
+        systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
+        edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
 
-        edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
+        var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
+        edition.bootstrapFabricServices();
         edition.registerDatabaseInitializers(globalModule);
 
         edition.createDefaultDatabaseResolver(globalModule);
@@ -122,7 +118,8 @@ public class SystemDbUpgrader {
 
         // Upgrade system graph components
         var systemGraphComponentsProgress = progressMonitor.startSection("System graph components");
-        globalModule.getSystemGraphComponents().upgradeToCurrent(systemDb);
+
+        edition.getSystemGraphComponents().upgradeToCurrent(systemDb);
         systemGraphComponentsProgress.completed();
 
         // Wait for indexes to come online

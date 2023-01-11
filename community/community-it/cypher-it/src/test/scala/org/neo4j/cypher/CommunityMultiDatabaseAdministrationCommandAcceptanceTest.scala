@@ -816,10 +816,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   }
 
   private def initSystemGraph(config: Config): Unit = {
-    val systemGraphComponents = new SystemGraphComponents(NullLogProvider.getInstance())
-    systemGraphComponents.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
-    systemGraphComponents.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
-    systemGraphComponents.register(new UserSecurityGraphComponent(
+    val systemGraphComponentsBuilder = new SystemGraphComponents.Builder()
+    systemGraphComponentsBuilder.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
+    systemGraphComponentsBuilder.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
+    systemGraphComponentsBuilder.register(new UserSecurityGraphComponent(
       new InMemoryUserRepository,
       config,
       NullLogProvider.getInstance(),
@@ -829,7 +829,10 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val databaseContextProvider =
       graph.getDependencyResolver.resolveDependency(classOf[DatabaseContextProvider[DatabaseContext]])
     val systemSupplier = SystemGraphRealmHelper.makeSystemSupplier(databaseContextProvider)
-    val systemGraphInitializer = new DefaultSystemGraphInitializer(systemSupplier, systemGraphComponents)
+    val systemGraphInitializer = new DefaultSystemGraphInitializer(
+      systemSupplier,
+      systemGraphComponentsBuilder.build()
+    )
     systemGraphInitializer.start()
 
     selectDatabase(SYSTEM_DATABASE_NAME)

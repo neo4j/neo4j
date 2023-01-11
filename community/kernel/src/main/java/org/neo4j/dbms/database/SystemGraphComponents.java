@@ -34,10 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.util.Preconditions;
-import org.neo4j.util.VisibleForTesting;
 
 /**
  * Central collection for managing multiple versioned system graph initializers. There could be several components in the DBMS that each have a requirement on
@@ -48,46 +45,19 @@ import org.neo4j.util.VisibleForTesting;
  * upgrade from one version to another.
  */
 public class SystemGraphComponents {
-    private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap = new LinkedHashMap<>();
-    private final InternalLog log;
+    private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap;
 
-    /**
-     * Latch to indicate that something has started reading the state of this component, implying that any changes
-     * after this point are risky.
-     */
-    private boolean readAccessBegun;
-
-    public SystemGraphComponents(InternalLogProvider logProvider) {
-        this.log = logProvider.getLog(getClass());
-    }
-
-    public void register(SystemGraphComponent initializer) {
-        if (readAccessBegun) {
-            log.warn(String.format(
-                    "Registering component '%s' after some reads of the component state have occurred",
-                    initializer.componentName()));
-        }
-        if (componentMap.containsKey(initializer.componentName())) {
-            throw new IllegalStateException("Component already registered: " + initializer.componentName());
-        }
-        componentMap.put(initializer.componentName(), initializer);
-    }
-
-    @VisibleForTesting
-    @SuppressWarnings("WeakerAccess")
-    public void deregister(SystemGraphComponent.Name key) {
-        componentMap.remove(key);
+    private SystemGraphComponents(Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap) {
+        this.componentMap = componentMap;
     }
 
     public void forEachThrowing(ThrowingConsumer<SystemGraphComponent, Exception> process) throws Exception {
-        ensureReadAccessBegun();
         for (SystemGraphComponent component : componentMap.values()) {
             process.accept(component);
         }
     }
 
     public void forEach(Consumer<SystemGraphComponent> process) {
-        ensureReadAccessBegun();
         componentMap.values().forEach(process);
     }
 
@@ -96,7 +66,6 @@ public class SystemGraphComponents {
     }
 
     public SystemGraphComponent.Status detect(Transaction tx) {
-        ensureReadAccessBegun();
         return componentMap.values().stream()
                 .map(c -> c.detect(tx))
                 .reduce(SystemGraphComponent.Status::with)
@@ -104,7 +73,6 @@ public class SystemGraphComponents {
     }
 
     public SystemGraphComponent.Status detect(GraphDatabaseService system) {
-        ensureReadAccessBegun();
         return componentMap.values().stream()
                 .map(c -> c.detect(system))
                 .reduce(SystemGraphComponent.Status::with)
@@ -112,8 +80,6 @@ public class SystemGraphComponents {
     }
 
     public void initializeSystemGraph(GraphDatabaseService system) {
-        ensureReadAccessBegun();
-
         Preconditions.checkState(
                 system.databaseName().equals(SYSTEM_DATABASE_NAME),
                 "Cannot initialize system graph on database '" + system.databaseName() + "'");
@@ -140,8 +106,6 @@ public class SystemGraphComponents {
     }
 
     public void upgradeToCurrent(GraphDatabaseService system) throws Exception {
-        ensureReadAccessBegun();
-
         Exception failure = null;
         for (SystemGraphComponent component : componentsToUpgrade(system)) {
             try {
@@ -175,7 +139,15 @@ public class SystemGraphComponents {
         return componentsToUpgrade;
     }
 
-    private void ensureReadAccessBegun() {
-        readAccessBegun = true;
+    public static class Builder {
+        private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap = new LinkedHashMap<>();
+
+        public void register(SystemGraphComponent component) {
+            componentMap.putIfAbsent(component.componentName(), component);
+        }
+
+        public SystemGraphComponents build() {
+            return new SystemGraphComponents(componentMap);
+        }
     }
 }

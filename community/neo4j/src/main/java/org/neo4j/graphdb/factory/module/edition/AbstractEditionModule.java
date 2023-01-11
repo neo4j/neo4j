@@ -129,7 +129,9 @@ public abstract class AbstractEditionModule {
     public abstract void registerDatabaseInitializers(GlobalModule globalModule);
 
     public abstract void registerSystemGraphComponents(
-            SystemGraphComponents systemGraphComponents, GlobalModule globalModule);
+            SystemGraphComponents.Builder systemGraphComponentsBuilder, GlobalModule globalModule);
+
+    public abstract SystemGraphComponents getSystemGraphComponents();
 
     public abstract void createSecurityModule(GlobalModule globalModule);
 

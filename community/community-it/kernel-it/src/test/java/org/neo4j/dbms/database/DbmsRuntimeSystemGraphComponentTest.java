@@ -35,7 +35,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -51,14 +50,15 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     private GraphDatabaseService fakeSystemDb;
 
-    private final SystemGraphComponents systemGraphComponents =
-            new SystemGraphComponents(NullLogProvider.getInstance());
+    private SystemGraphComponents systemGraphComponents;
     private DbmsRuntimeSystemGraphComponent dbmsRuntimeSystemGraphComponent;
 
     @BeforeEach
     void beforeEach() {
+        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
         fakeSystemDb = new FakeSystemDb(userDatabase);
-        initDbmsComponent(false);
+        initDbmsComponent(systemGraphComponentsBuilder, false);
+        systemGraphComponents = systemGraphComponentsBuilder.build();
     }
 
     @Test
@@ -82,8 +82,9 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     @Test
     void testInitialisationOnExistingDatabaseWithAutomaticUpgrade() {
-        systemGraphComponents.deregister(DBMS_RUNTIME_COMPONENT);
-        initDbmsComponent(true);
+        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        initDbmsComponent(systemGraphComponentsBuilder, true);
+        var systemGraphComponents = systemGraphComponentsBuilder.build();
 
         createVersionNode(userDatabase);
 
@@ -156,12 +157,13 @@ class DbmsRuntimeSystemGraphComponentTest {
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
-    private void initDbmsComponent(boolean automaticUpgrade) {
+    private void initDbmsComponent(
+            SystemGraphComponents.Builder systemGraphComponentsBuilder, boolean automaticUpgrade) {
         var config = Config.newBuilder()
                 .set(GraphDatabaseInternalSettings.allow_single_automatic_upgrade, automaticUpgrade)
                 .build();
         dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(config);
-        systemGraphComponents.register(dbmsRuntimeSystemGraphComponent);
+        systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
     }
 
     private void assertVersion(ComponentVersion expectedVersion, GraphDatabaseService system) {

@@ -61,10 +61,8 @@ import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.io.device.DeviceMapper;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
@@ -112,6 +110,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
     private Lifecycle defaultDatabaseInitializer = new LifecycleAdapter();
+    private SystemGraphComponents systemGraphComponents;
 
     public CommunityEditionModule(GlobalModule globalModule) {
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
@@ -277,10 +276,9 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         registerDefaultDatabaseInitializer(globalModule);
     }
 
-    private static void registerSystemGraphInitializer(GlobalModule globalModule) {
+    private void registerSystemGraphInitializer(GlobalModule globalModule) {
         Supplier<GraphDatabaseService> systemSupplier =
                 CommunityEditionModule.systemSupplier(globalModule.getGlobalDependencies());
-        var systemGraphComponents = globalModule.getSystemGraphComponents();
         SystemGraphInitializer initializer = CommunityEditionModule.tryResolveOrCreate(
                 SystemGraphInitializer.class,
                 globalModule.getExternalDependencyResolver(),
@@ -294,21 +292,25 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public void registerSystemGraphComponents(SystemGraphComponents systemGraphComponents, GlobalModule globalModule) {
+    public void registerSystemGraphComponents(
+            SystemGraphComponents.Builder systemGraphComponentsBuilder, GlobalModule globalModule) {
         var config = globalModule.getGlobalConfig();
         var log = globalModule.getLogService().getInternalLogProvider();
         var clock = globalModule.getGlobalClock();
         var systemGraphComponent = new DefaultSystemGraphComponent(config, clock);
-        systemGraphComponents.register(systemGraphComponent);
         var communityTopologyGraphComponentComponent = new CommunityTopologyGraphComponent(config, log);
-        systemGraphComponents.register(communityTopologyGraphComponentComponent);
+        systemGraphComponentsBuilder.register(systemGraphComponent);
+        systemGraphComponentsBuilder.register(communityTopologyGraphComponentComponent);
+        registerSecurityGraphComponent(systemGraphComponentsBuilder, globalModule);
+        this.systemGraphComponents = systemGraphComponentsBuilder.build();
     }
 
-    private void setupSecurityGraphInitializer(GlobalModule globalModule) {
-        Config config = globalModule.getGlobalConfig();
-        FileSystemAbstraction fileSystem = globalModule.getFileSystem();
-        InternalLogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        AbstractSecurityLog securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
+    private void registerSecurityGraphComponent(
+            SystemGraphComponents.Builder systemGraphComponentsBuilder, GlobalModule globalModule) {
+        var config = globalModule.getGlobalConfig();
+        var fileSystem = globalModule.getFileSystem();
+        var logProvider = globalModule.getLogService().getInternalLogProvider();
+        var securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
 
         var communityComponent = CommunitySecurityModule.createSecurityComponent(
                 config,
@@ -317,9 +319,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 securityLog,
                 globalModule.getOtherMemoryPool().getPoolMemoryTracker());
 
-        Dependencies dependencies = globalModule.getGlobalDependencies();
-        SystemGraphComponents systemGraphComponents = dependencies.resolveDependency(SystemGraphComponents.class);
-        systemGraphComponents.register(communityComponent);
+        systemGraphComponentsBuilder.register(communityComponent);
     }
 
     @Override
@@ -334,7 +334,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
     private SecurityProvider makeSecurityModule(GlobalModule globalModule) {
         globalModule.getGlobalDependencies().satisfyDependency(CommunitySecurityLog.NULL_LOG);
-        setupSecurityGraphInitializer(globalModule);
         if (globalModule.getGlobalConfig().get(GraphDatabaseSettings.auth_enabled)) {
             SecurityModule securityModule = new CommunitySecurityModule(
                     globalModule.getLogService(), globalModule.getGlobalConfig(), globalModule.getGlobalDependencies());
@@ -391,5 +390,10 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     @Override
     public ReadOnlyDatabases readOnlyDatabases() {
         return globalReadOnlyChecker;
+    }
+
+    @Override
+    public SystemGraphComponents getSystemGraphComponents() {
+        return systemGraphComponents;
     }
 }

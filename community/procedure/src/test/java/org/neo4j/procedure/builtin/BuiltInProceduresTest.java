@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
@@ -95,7 +94,6 @@ class BuiltInProceduresTest {
     private final Map<Integer, String> labels = new HashMap<>();
     private final Map<Integer, String> propKeys = new HashMap<>();
     private final Map<Integer, String> relTypes = new HashMap<>();
-
     private final Read read = mock(Read.class);
     private final TokenRead tokens = mock(TokenRead.class);
     private final SchemaRead schemaRead = mock(SchemaRead.class);
@@ -106,11 +104,9 @@ class BuiltInProceduresTest {
     private final DependencyResolver resolver = mock(DependencyResolver.class);
     private final GraphDatabaseAPI graphDatabaseAPI = mock(GraphDatabaseAPI.class);
     private final IndexingService indexingService = mock(IndexingService.class);
-    private final SystemGraphComponents systemGraphComponents =
-            new SystemGraphComponents(NullLogProvider.getInstance());
     private final Log log = mock(InternalLog.class);
-
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
+    private SystemGraphComponents systemGraphComponents = new SystemGraphComponents.Builder().build();
 
     @BeforeEach
     void setup() throws Exception {
@@ -533,9 +529,11 @@ class BuiltInProceduresTest {
     }
 
     private void setupFakeSystemComponents() {
-        systemGraphComponents.register(makeSystemComponentCurrent("component_A"));
-        systemGraphComponents.register(makeSystemComponentCurrent("component_B"));
-        systemGraphComponents.register(makeSystemComponentUpgradeSucceeds("component_C"));
-        systemGraphComponents.register(makeSystemComponentUpgradeFails("component_D"));
+        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        systemGraphComponentsBuilder.register(makeSystemComponentCurrent("component_A"));
+        systemGraphComponentsBuilder.register(makeSystemComponentCurrent("component_B"));
+        systemGraphComponentsBuilder.register(makeSystemComponentUpgradeSucceeds("component_C"));
+        systemGraphComponentsBuilder.register(makeSystemComponentUpgradeFails("component_D"));
+        systemGraphComponents = systemGraphComponentsBuilder.build();
     }
 }

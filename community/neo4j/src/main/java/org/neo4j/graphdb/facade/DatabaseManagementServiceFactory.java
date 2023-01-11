@@ -128,19 +128,26 @@ public class DatabaseManagementServiceFactory {
      * @return the initialised {@link GraphDatabaseFacade}
      */
     public DatabaseManagementService build(Config config, final ExternalDependencies dependencies) {
-        GlobalModule globalModule = createGlobalModule(config, dependencies);
-        AbstractEditionModule edition = editionFactory.apply(globalModule);
-        Dependencies globalDependencies = globalModule.getGlobalDependencies();
-        LifeSupport globalLife = globalModule.getGlobalLife();
+        var globalModule = createGlobalModule(config, dependencies);
+        var edition = editionFactory.apply(globalModule);
+        var globalDependencies = globalModule.getGlobalDependencies();
+        var globalLife = globalModule.getGlobalLife();
+        var logService = globalModule.getLogService();
+        var internalLog = logService.getInternalLog(getClass());
 
-        LogService logService = globalModule.getLogService();
-        InternalLog internalLog = logService.getInternalLog(getClass());
+        var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
+        var systemGraphComponentsBuilder = tryResolveOrCreate(
+                SystemGraphComponents.Builder.class,
+                globalModule.getExternalDependencyResolver(),
+                SystemGraphComponents.Builder::new);
+        systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
+        edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
+        globalDependencies.satisfyDependency(edition.getSystemGraphComponents());
+
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
-        DatabaseManagementService managementService =
-                createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
+        var managementService = createManagementService(globalModule, globalLife, internalLog, databaseContextProvider);
         globalDependencies.satisfyDependencies(managementService);
         globalDependencies.satisfyDependency(new DatabaseSizeServiceImpl(databaseContextProvider));
-
         var databaseInfoService = edition.createDatabaseInfoService(databaseContextProvider);
         globalDependencies.satisfyDependencies(databaseInfoService);
 
@@ -150,11 +157,6 @@ public class DatabaseManagementServiceFactory {
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
         setupProcedures(globalModule, edition, databaseContextProvider);
-
-        var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
-        globalModule.getSystemGraphComponents().register(dbmsRuntimeSystemGraphComponent);
-
-        edition.registerSystemGraphComponents(globalModule.getSystemGraphComponents(), globalModule);
         edition.registerDatabaseInitializers(globalModule);
 
         edition.createSecurityModule(globalModule);
@@ -343,7 +345,7 @@ public class DatabaseManagementServiceFactory {
                     KernelTransaction.class, ctx -> ctx.internalTransaction().kernelTransaction(), false);
             globalProcedures.registerComponent(GraphDatabaseAPI.class, Context::graphDatabaseAPI, false);
             globalProcedures.registerComponent(
-                    SystemGraphComponents.class, ctx -> globalModule.getSystemGraphComponents(), false);
+                    SystemGraphComponents.class, ctx -> editionModule.getSystemGraphComponents(), false);
             globalProcedures.registerComponent(
                     DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency(DataCollector.class), false);
 

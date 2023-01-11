@@ -46,7 +46,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.cypher.internal.cache.SharedExecutorBasedCaffeineCacheFactory;
-import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -141,7 +140,6 @@ public class GlobalModule {
     private final MemoryPools memoryPools;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
-    private final SystemGraphComponents systemGraphComponents;
     private final TransactionManager transactionManager;
     private final CapabilitiesService capabilitiesService;
 
@@ -203,10 +201,6 @@ public class GlobalModule {
                 globalConfig.get(data_collector_max_recent_query_count),
                 memoryPools.pool(MemoryGroup.RECENT_QUERY_BUFFER, 0, null).getPoolMemoryTracker());
         globalDependencies.satisfyDependency(recentQueryBuffer);
-
-        systemGraphComponents = tryResolveOrCreate(
-                SystemGraphComponents.class, () -> new SystemGraphComponents(logService.getInternalLogProvider()));
-        globalDependencies.satisfyDependency(systemGraphComponents);
 
         if (globalConfig.get(GraphDatabaseInternalSettings.vm_pause_monitor_enabled)) {
             globalLife.add(new VmPauseMonitorComponent(
@@ -538,10 +532,6 @@ public class GlobalModule {
 
     public GlobalMemoryGroupTracker getOtherMemoryPool() {
         return otherMemoryPool;
-    }
-
-    public SystemGraphComponents getSystemGraphComponents() {
-        return systemGraphComponents;
     }
 
     public TransactionManager getTransactionManager() {
