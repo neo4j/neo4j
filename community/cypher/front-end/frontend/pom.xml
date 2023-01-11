@@ -108,6 +108,13 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast-generator</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-ast-factory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
