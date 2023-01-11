@@ -648,7 +648,7 @@ public final class Recovery {
         try {
             recoveryLife.start();
 
-            if (databaseHealth.isHealthy()) {
+            if (databaseHealth.hasNoPanic()) {
                 if (logTailMetadata.hasUnreadableBytesInCheckpointLogs()) {
                     logFiles.getCheckpointFile().rotate();
                 }

@@ -157,7 +157,7 @@ public class FileLogRotation implements LogRotation {
              * In order to rotate the log file safely we need to assert that the kernel is still
              * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
              */
-            databasePanic.assertHealthy(IOException.class);
+            databasePanic.assertNoPanic(IOException.class);
             long startTimeMillis = clock.millis();
             monitor.startRotation(currentVersion);
             Path newLogFile = fileRotator.rotate();

@@ -46,7 +46,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic {
      * @throws EXCEPTION exception type to wrap cause in.
      */
     @Override
-    public <EXCEPTION extends Throwable> void assertHealthy(Class<EXCEPTION> panicDisguise) throws EXCEPTION {
+    public <EXCEPTION extends Throwable> void assertNoPanic(Class<EXCEPTION> panicDisguise) throws EXCEPTION {
         if (!healthy) {
             throw Exceptions.disguiseException(panicDisguise, panicMessage, causeOfPanic);
         }
@@ -68,12 +68,12 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic {
     }
 
     @Override
-    public boolean isHealthy() {
+    public boolean hasNoPanic() {
         return healthy;
     }
 
     @Override
-    public Throwable cause() {
+    public Throwable causeOfPanic() {
         return causeOfPanic;
     }
 }

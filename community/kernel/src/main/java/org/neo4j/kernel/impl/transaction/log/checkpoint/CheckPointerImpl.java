@@ -172,7 +172,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              * getting into a scenario where we would await a condition that would potentially never
              * happen.
              */
-            databasePanic.assertHealthy(IOException.class);
+            databasePanic.assertNoPanic(IOException.class);
             /*
              * First we flush the store. If we fail now or during the flush, on recovery we'll find the
              * earlier check point and replay from there all the log entries. Everything will be ok.
@@ -190,7 +190,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
              * repair the damages.
              */
-            databasePanic.assertHealthy(IOException.class);
+            databasePanic.assertNoPanic(IOException.class);
             checkpointAppender.checkPoint(
                     checkPointEvent, lastClosedTransaction, logPosition, clock.instant(), checkpointReason);
             threshold.checkPointHappened(lastClosedTransactionId, logPosition);

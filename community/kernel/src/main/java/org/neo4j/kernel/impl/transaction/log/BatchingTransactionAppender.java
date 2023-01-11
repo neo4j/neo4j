@@ -61,7 +61,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized (logFile) {
             // Assert that kernel is healthy before making any changes
-            databasePanic.assertHealthy(IOException.class);
+            databasePanic.assertNoPanic(IOException.class);
             try (AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction(1)) {
                 // Append all transactions in this batch to the log under the same logFile monitor
                 CommandBatchToApply commands = batch;

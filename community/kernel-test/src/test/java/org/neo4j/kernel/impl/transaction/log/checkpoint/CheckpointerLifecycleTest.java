@@ -37,7 +37,7 @@ class CheckpointerLifecycleTest {
 
     @BeforeEach
     void setUp() {
-        when(databasePanic.isHealthy()).thenReturn(true);
+        when(databasePanic.hasNoPanic()).thenReturn(true);
     }
 
     @Test

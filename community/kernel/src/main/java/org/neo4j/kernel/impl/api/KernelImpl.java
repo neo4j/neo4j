@@ -109,7 +109,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
     public KernelTransaction beginTransaction(
             KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout)
             throws TransactionFailureException {
-        panic.assertHealthy(TransactionFailureException.class);
+        panic.assertNoPanic(TransactionFailureException.class);
         KernelTransaction transaction = transactions.newInstance(type, loginContext, connectionInfo, timeout);
         transactionMonitor.transactionStarted();
         transactionExecutionMonitor.start(transaction);

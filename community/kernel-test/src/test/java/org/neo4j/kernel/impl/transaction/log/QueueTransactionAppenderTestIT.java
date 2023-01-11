@@ -225,8 +225,8 @@ class QueueTransactionAppenderTestIT {
                 .getRootCause()
                 .hasMessageContaining("failure is.");
 
-        assertFalse(databaseHealth.isHealthy());
-        assertThat(databaseHealth.cause()).isSameAs(criticalException);
+        assertFalse(databaseHealth.hasNoPanic());
+        assertThat(databaseHealth.causeOfPanic()).isSameAs(criticalException);
 
         assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
                 .getRootCause()

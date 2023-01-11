@@ -244,7 +244,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             }
 
             private void processBatch() throws IOException {
-                databasePanic.assertHealthy(IOException.class);
+                databasePanic.assertNoPanic(IOException.class);
                 int drainedElements = index;
                 elements = new TxQueueElement[drainedElements];
                 txIds = new long[drainedElements];

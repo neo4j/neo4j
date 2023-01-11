@@ -40,7 +40,7 @@ public class CheckpointerLifecycle extends LifecycleAdapter {
     public void shutdown() throws Exception {
         // Write new checkpoint in the log only if the database is healthy.
         // We cannot throw here since we need to shutdown without exceptions.
-        if (checkpointOnShutdown && databasePanic.isHealthy()) {
+        if (checkpointOnShutdown && databasePanic.hasNoPanic()) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Database shutdown"));
             checkPointer.shutdown();
         }

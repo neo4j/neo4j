@@ -157,7 +157,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         }
         synchronized (checkpointFile) {
             try {
-                databasePanic.assertHealthy(IOException.class);
+                databasePanic.assertNoPanic(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentPosition();
                 checkpointWriter.writeCheckPointEntry(transactionId, logPosition, checkpointTime, storeId, reason);
                 var logPositionAfterCheckpoint = writer.getCurrentPosition();

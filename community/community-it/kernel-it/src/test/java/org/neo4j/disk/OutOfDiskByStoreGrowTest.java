@@ -98,8 +98,8 @@ class OutOfDiskByStoreGrowTest {
                         .hasMessageContaining("System is out of disk space for store file ");
             }
             var health = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(DatabaseHealth.class);
-            assertThat(health.isHealthy()).isFalse();
-            assertThat(health.cause()).isInstanceOf(TransactionApplyKernelException.class);
+            assertThat(health.hasNoPanic()).isFalse();
+            assertThat(health.causeOfPanic()).isInstanceOf(TransactionApplyKernelException.class);
 
             assertThatThrownBy(db::beginTx)
                     .isInstanceOf(TransactionFailureException.class)

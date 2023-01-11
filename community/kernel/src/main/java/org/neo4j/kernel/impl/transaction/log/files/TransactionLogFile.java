@@ -469,7 +469,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
             // actually doing the forcing (where failure would throw panic exception) I need to
             // explicitly check if everything is OK before considering this transaction committed.
             if (!attemptedForce) {
-                databaseHealth.assertHealthy(IOException.class);
+                databaseHealth.assertNoPanic(IOException.class);
             }
         }
         return attemptedForce;
@@ -708,7 +708,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         // also synchronize on writer.
         Flushable flushable;
         synchronized (this) {
-            databaseHealth.assertHealthy(IOException.class);
+            databaseHealth.assertNoPanic(IOException.class);
             flushable = writer.prepareForFlush();
         }
         // Force the writer outside of the lock.

@@ -124,7 +124,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(panic, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -156,7 +156,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(panic, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -187,7 +187,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(panic, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -218,7 +218,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(panic, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertNoPanic(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
