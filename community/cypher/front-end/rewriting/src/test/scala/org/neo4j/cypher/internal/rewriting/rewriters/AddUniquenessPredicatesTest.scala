@@ -124,6 +124,15 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
   }
 
+  test("uniqueness check is done for the same repeated variable length relationship") {
+    assertRewrite(
+      "MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c) RETURN *",
+      s"""MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c)
+         |WHERE ${disjoint("r1", "r1")} AND ${unique("r1", 1)} AND ${unique("r1", 3)}
+         |RETURN *""".stripMargin
+    )
+  }
+
   test("no uniqueness check between relationships of variable and variable pattern lengths of different type") {
     assertRewrite(
       "MATCH (a)-[r1:R1*0..1]->(b)-[r2:R2*0..1]->(c) RETURN *",
