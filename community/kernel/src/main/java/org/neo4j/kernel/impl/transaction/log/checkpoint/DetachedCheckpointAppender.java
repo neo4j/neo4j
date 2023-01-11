@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -60,7 +60,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final CheckpointFile checkpointFile;
     private final TransactionLogChannelAllocator channelAllocator;
     private final TransactionLogFilesContext context;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private final LogRotation logRotation;
     private StoreId storeId;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
@@ -82,7 +82,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         this.checkpointFile = requireNonNull(checkpointFile);
         this.context = requireNonNull(context);
         this.channelAllocator = requireNonNull(channelAllocator);
-        this.databaseHealth = requireNonNull(context.getDatabaseHealth());
+        this.databasePanic = requireNonNull(context.getDatabaseHealth());
         this.logRotation = requireNonNull(checkpointRotation);
         this.log = context.getLogProvider().getLog(DetachedCheckpointAppender.class);
         this.logTailScanner = logTailScanner;
@@ -157,7 +157,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         }
         synchronized (checkpointFile) {
             try {
-                databaseHealth.assertHealthy(IOException.class);
+                databasePanic.assertHealthy(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentPosition();
                 checkpointWriter.writeCheckPointEntry(transactionId, logPosition, checkpointTime, storeId, reason);
                 var logPositionAfterCheckpoint = writer.getCurrentPosition();
@@ -165,7 +165,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 forceAfterAppend(logCheckPointEvent);
                 logRotation.rotateLogIfNeeded(logCheckPointEvent);
             } catch (Throwable cause) {
-                databaseHealth.panic(cause);
+                databasePanic.panic(cause);
                 throw cause;
             }
         }

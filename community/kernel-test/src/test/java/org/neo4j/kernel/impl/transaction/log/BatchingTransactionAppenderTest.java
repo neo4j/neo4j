@@ -79,7 +79,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -98,7 +98,7 @@ class BatchingTransactionAppenderTest {
     private final InMemoryVersionableReadableClosablePositionAwareChannel channel =
             new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
-    private final Health databaseHealth = mock(DatabaseHealth.class);
+    private final Panic databasePanic = mock(DatabaseHealth.class);
     private final LogFile logFile = mock(LogFile.class);
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
     private final TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -206,7 +206,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(nextTxId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
         TransactionAppender appender =
-                life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth));
+                life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
         // WHEN
         final byte[] additionalHeader = new byte[] {1, 2, 5};
@@ -290,7 +290,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
-        Mockito.reset(databaseHealth);
+        Mockito.reset(databasePanic);
         TransactionAppender appender = life.add(createTransactionAppender());
 
         // WHEN
@@ -313,7 +313,7 @@ class BatchingTransactionAppenderTest {
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
         verify(transactionIdStore, never()).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong());
-        verify(databaseHealth).panic(failure);
+        verify(databasePanic).panic(failure);
     }
 
     @Test
@@ -339,7 +339,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
         TransactionAppender appender =
-                life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth));
+                life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
         // WHEN
         CommandBatch commandBatch = mock(CommandBatch.class);
@@ -382,7 +382,7 @@ class BatchingTransactionAppenderTest {
     }
 
     private BatchingTransactionAppender createTransactionAppender() {
-        return new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth);
+        return new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic);
     }
 
     private static CommandBatch transaction(

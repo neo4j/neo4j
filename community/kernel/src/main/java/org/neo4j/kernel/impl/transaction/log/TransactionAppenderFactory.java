@@ -24,7 +24,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.dedicated_tr
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -33,14 +33,14 @@ public class TransactionAppenderFactory {
             LogFiles logFiles,
             TransactionIdStore transactionIdStore,
             Config config,
-            Health databaseHealth,
+            Panic databasePanic,
             JobScheduler scheduler,
             InternalLogProvider logProvider) {
         if (config.get(dedicated_transaction_appender)) {
-            var queue = new TransactionLogQueue(logFiles, transactionIdStore, databaseHealth, scheduler, logProvider);
+            var queue = new TransactionLogQueue(logFiles, transactionIdStore, databasePanic, scheduler, logProvider);
             return new QueueTransactionAppender(queue);
         }
 
-        return new BatchingTransactionAppender(logFiles, transactionIdStore, databaseHealth);
+        return new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic);
     }
 }

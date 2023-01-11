@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -52,7 +52,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
     private final LogFiles logFiles;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private final MpscUnboundedXaddArrayQueue<TxQueueElement> txAppendQueue;
     private final JobScheduler jobScheduler;
     private final InternalLog log;
@@ -63,13 +63,13 @@ public class TransactionLogQueue extends LifecycleAdapter {
     public TransactionLogQueue(
             LogFiles logFiles,
             TransactionIdStore transactionIdStore,
-            Health databaseHealth,
+            Panic databasePanic,
             JobScheduler jobScheduler,
             InternalLogProvider logProvider) {
         this.logFiles = logFiles;
         this.logRotation = logFiles.getLogFile().getLogRotation();
         this.transactionIdStore = transactionIdStore;
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
         this.txAppendQueue = new MpscUnboundedXaddArrayQueue<>(INITIAL_CAPACITY);
         this.jobScheduler = jobScheduler;
         this.stopped = true;
@@ -93,7 +93,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
     @Override
     public synchronized void start() {
         transactionWriter = new TransactionWriter(
-                txAppendQueue, logFiles.getLogFile(), transactionIdStore, databaseHealth, logRotation, log);
+                txAppendQueue, logFiles.getLogFile(), transactionIdStore, databasePanic, logRotation, log);
         logAppender = jobScheduler.threadFactory(Group.LOG_WRITER).newThread(transactionWriter);
         logAppender.start();
         stopped = false;
@@ -162,7 +162,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
         private final MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue;
         private final TransactionLogWriter transactionLogWriter;
         private final LogFile logFile;
-        private final Health databaseHealth;
+        private final Panic databasePanic;
         private final LogRotation logRotation;
         private final InternalLog log;
         private final int checksum;
@@ -173,14 +173,14 @@ public class TransactionLogQueue extends LifecycleAdapter {
                 MpscUnboundedXaddArrayQueue<TxQueueElement> txQueue,
                 LogFile logFile,
                 TransactionIdStore transactionIdStore,
-                Health databaseHealth,
+                Panic databasePanic,
                 LogRotation logRotation,
                 InternalLog log) {
             this.txQueue = txQueue;
             this.transactionLogWriter = logFile.getTransactionLogWriter();
             this.logFile = logFile;
             this.checksum = transactionIdStore.getLastCommittedTransaction().checksum();
-            this.databaseHealth = databaseHealth;
+            this.databasePanic = databasePanic;
             this.logRotation = logRotation;
             this.log = log;
             this.waitStrategy = new SpinParkCombineWaitingStrategy();
@@ -188,7 +188,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
 
         @Override
         public void run() {
-            TxConsumer txConsumer = new TxConsumer(databaseHealth, transactionLogWriter, checksum);
+            TxConsumer txConsumer = new TxConsumer(databasePanic, transactionLogWriter, checksum);
 
             int idleCounter = 0;
             while (!stopped) {
@@ -210,7 +210,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
                     }
                 } catch (Throwable t) {
                     log.error("Transaction log applier failure.", t);
-                    databaseHealth.panic(t);
+                    databasePanic.panic(t);
                     txConsumer.cancelBatch(t);
                 }
             }
@@ -223,7 +223,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
         }
 
         private static class TxConsumer implements MessagePassingQueue.Consumer<TxQueueElement> {
-            private final Health databaseHealth;
+            private final Panic databasePanic;
             private final TransactionLogWriter transactionLogWriter;
 
             private int checksum;
@@ -232,8 +232,8 @@ public class TransactionLogQueue extends LifecycleAdapter {
             private TxQueueElement[] elements;
             private long[] txIds;
 
-            TxConsumer(Health databaseHealth, TransactionLogWriter transactionLogWriter, int checksum) {
-                this.databaseHealth = databaseHealth;
+            TxConsumer(Panic databasePanic, TransactionLogWriter transactionLogWriter, int checksum) {
+                this.databasePanic = databasePanic;
                 this.transactionLogWriter = transactionLogWriter;
                 this.checksum = checksum;
             }
@@ -244,7 +244,7 @@ public class TransactionLogQueue extends LifecycleAdapter {
             }
 
             private void processBatch() throws IOException {
-                databaseHealth.assertHealthy(IOException.class);
+                databasePanic.assertHealthy(IOException.class);
                 int drainedElements = index;
                 elements = new TxQueueElement[drainedElements];
                 txIds = new long[drainedElements];

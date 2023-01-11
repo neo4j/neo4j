@@ -27,7 +27,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -44,7 +44,7 @@ public class CheckPointScheduler extends LifecycleAdapter {
     private final CheckPointer checkPointer;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
-    private final Health health;
+    private final Panic panic;
     private final String databaseName;
     private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
@@ -70,7 +70,7 @@ public class CheckPointScheduler extends LifecycleAdapter {
                 // We're counting check pointer to log about the failure itself
                 if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES_TOLERANCE) {
                     UnderlyingStorageException combinedFailure = constructCombinedFailure();
-                    health.panic(combinedFailure);
+                    panic.panic(combinedFailure);
                     throw combinedFailure;
                 }
             } finally {
@@ -101,12 +101,12 @@ public class CheckPointScheduler extends LifecycleAdapter {
             CheckPointer checkPointer,
             JobScheduler scheduler,
             long recurringPeriodMillis,
-            Health health,
+            Panic panic,
             String databaseName) {
         this.checkPointer = checkPointer;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
-        this.health = health;
+        this.panic = panic;
         this.databaseName = databaseName;
     }
 

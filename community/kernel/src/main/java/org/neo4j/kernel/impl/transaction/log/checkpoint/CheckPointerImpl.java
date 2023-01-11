@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Stopwatch;
@@ -54,7 +54,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
     private final CheckPointThreshold threshold;
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private final InternalLog log;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
@@ -71,7 +71,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
             ForceOperation forceOperation,
             LogPruning logPruning,
             CheckpointAppender checkpointAppender,
-            Health databaseHealth,
+            Panic databasePanic,
             InternalLogProvider logProvider,
             DatabaseTracers tracers,
             StoreCopyCheckPointMutex mutex,
@@ -83,7 +83,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
         this.threshold = threshold;
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
         this.log = logProvider.getLog(CheckPointerImpl.class);
         this.tracers = tracers;
         this.mutex = mutex;
@@ -172,7 +172,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              * getting into a scenario where we would await a condition that would potentially never
              * happen.
              */
-            databaseHealth.assertHealthy(IOException.class);
+            databasePanic.assertHealthy(IOException.class);
             /*
              * First we flush the store. If we fail now or during the flush, on recovery we'll find the
              * earlier check point and replay from there all the log entries. Everything will be ok.
@@ -190,7 +190,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
              * repair the damages.
              */
-            databaseHealth.assertHealthy(IOException.class);
+            databasePanic.assertHealthy(IOException.class);
             checkpointAppender.checkPoint(
                     checkPointEvent, lastClosedTransaction, logPosition, clock.instant(), checkpointReason);
             threshold.checkPointHappened(lastClosedTransactionId, logPosition);

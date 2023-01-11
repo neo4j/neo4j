@@ -72,7 +72,7 @@ import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.kernel.recovery.TransactionLogsRecovery;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -89,7 +89,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 @Neo4jLayoutExtension
 class PhysicalLogicalTransactionStoreTest {
-    private static final Health DATABASE_HEALTH = mock(DatabaseHealth.class);
+    private static final Panic DATABASE_PANIC = mock(DatabaseHealth.class);
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -387,7 +387,7 @@ class PhysicalLogicalTransactionStoreTest {
     private static TransactionAppender createTransactionAppender(
             TransactionIdStore transactionIdStore, LogFiles logFiles, Config config, JobScheduler jobScheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
-                logFiles, transactionIdStore, config, DATABASE_HEALTH, jobScheduler, NullLogProvider.getInstance());
+                logFiles, transactionIdStore, config, DATABASE_PANIC, jobScheduler, NullLogProvider.getInstance());
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier {

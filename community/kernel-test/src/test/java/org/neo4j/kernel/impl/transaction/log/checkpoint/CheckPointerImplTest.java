@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
@@ -79,7 +79,7 @@ class CheckPointerImplTest {
     private final ForceOperation forceOperation = mock(ForceOperation.class);
     private final LogPruning logPruning = mock(LogPruning.class);
     private final CheckpointAppender appender = mock(CheckpointAppender.class);
-    private final Health health = mock(DatabaseHealth.class);
+    private final Panic panic = mock(DatabaseHealth.class);
     private final DatabaseTracer tracer = mock(DatabaseTracer.class, RETURNS_MOCKS);
 
     private final long initialTransactionId = 2L;
@@ -124,7 +124,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(health, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -137,7 +137,7 @@ class CheckPointerImplTest {
         verify(threshold).isCheckPointingNeeded(transactionId, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
         verify(tracer).beginCheckPoint();
-        verifyNoMoreInteractions(forceOperation, health, appender, threshold, tracer);
+        verifyNoMoreInteractions(forceOperation, panic, appender, threshold, tracer);
     }
 
     @Test
@@ -156,7 +156,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(health, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -168,7 +168,7 @@ class CheckPointerImplTest {
         verify(threshold).checkPointHappened(transactionId, logPosition);
         verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
-        verifyNoMoreInteractions(forceOperation, health, appender, threshold);
+        verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
 
     @Test
@@ -187,7 +187,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(health, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -199,7 +199,7 @@ class CheckPointerImplTest {
         verify(threshold).checkPointHappened(transactionId, logPosition);
         verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
-        verifyNoMoreInteractions(forceOperation, health, appender, threshold);
+        verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
 
     @Test
@@ -218,7 +218,7 @@ class CheckPointerImplTest {
         // Then
         assertEquals(transactionId, txId);
         verify(forceOperation).flushAndForce(any(), any());
-        verify(health, times(2)).assertHealthy(IOException.class);
+        verify(panic, times(2)).assertHealthy(IOException.class);
         verify(appender)
                 .checkPoint(
                         any(LogCheckPointEvent.class),
@@ -230,7 +230,7 @@ class CheckPointerImplTest {
         verify(threshold).checkPointHappened(transactionId, logPosition);
         verify(threshold, never()).isCheckPointingNeeded(transactionId, logPosition, INFO);
         verify(logPruning).pruneLogs(logPosition.getLogVersion());
-        verifyNoMoreInteractions(forceOperation, health, appender, threshold);
+        verifyNoMoreInteractions(forceOperation, panic, appender, threshold);
     }
 
     @Test
@@ -392,7 +392,7 @@ class CheckPointerImplTest {
                 forceOperation,
                 logPruning,
                 appender,
-                health,
+                panic,
                 NullLogProvider.getInstance(),
                 databaseTracers,
                 mutex,

@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 
 public class CheckpointerLifecycle extends LifecycleAdapter {
     private final CheckPointer checkPointer;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private volatile boolean checkpointOnShutdown = true;
 
-    public CheckpointerLifecycle(CheckPointer checkPointer, Health databaseHealth) {
+    public CheckpointerLifecycle(CheckPointer checkPointer, Panic databasePanic) {
         this.checkPointer = checkPointer;
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
     }
 
     public void setCheckpointOnShutdown(boolean checkpointOnShutdown) {
@@ -40,7 +40,7 @@ public class CheckpointerLifecycle extends LifecycleAdapter {
     public void shutdown() throws Exception {
         // Write new checkpoint in the log only if the database is healthy.
         // We cannot throw here since we need to shutdown without exceptions.
-        if (checkpointOnShutdown && databaseHealth.isHealthy()) {
+        if (checkpointOnShutdown && databasePanic.isHealthy()) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Database shutdown"));
             checkPointer.shutdown();
         }

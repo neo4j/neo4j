@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.StorageEngine;
 
 /**
@@ -56,7 +56,7 @@ import org.neo4j.storageengine.api.StorageEngine;
  */
 public class KernelImpl extends LifecycleAdapter implements Kernel {
     private final KernelTransactions transactions;
-    private final Health health;
+    private final Panic panic;
     private final TransactionMonitor transactionMonitor;
     private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final GlobalProcedures globalProcedures;
@@ -66,14 +66,14 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
 
     public KernelImpl(
             KernelTransactions transactions,
-            Health health,
+            Panic panic,
             TransactionMonitor transactionMonitor,
             GlobalProcedures globalProcedures,
             Config config,
             StorageEngine storageEngine,
             TransactionExecutionMonitor transactionExecutionMonitor) {
         this.transactions = transactions;
-        this.health = health;
+        this.panic = panic;
         this.transactionMonitor = transactionMonitor;
         this.globalProcedures = globalProcedures;
         this.config = config;
@@ -109,7 +109,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
     public KernelTransaction beginTransaction(
             KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout)
             throws TransactionFailureException {
-        health.assertHealthy(TransactionFailureException.class);
+        panic.assertHealthy(TransactionFailureException.class);
         KernelTransaction transaction = transactions.newInstance(type, loginContext, connectionInfo, timeout);
         transactionMonitor.transactionStarted();
         transactionExecutionMonitor.start(transaction);

@@ -28,16 +28,16 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 
 class CheckpointerLifecycleTest {
     private final CheckPointer checkPointer = mock(CheckPointer.class);
-    private final Health databaseHealth = mock(DatabaseHealth.class);
-    private final CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle(checkPointer, databaseHealth);
+    private final Panic databasePanic = mock(DatabaseHealth.class);
+    private final CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle(checkPointer, databasePanic);
 
     @BeforeEach
     void setUp() {
-        when(databaseHealth.isHealthy()).thenReturn(true);
+        when(databasePanic.isHealthy()).thenReturn(true);
     }
 
     @Test

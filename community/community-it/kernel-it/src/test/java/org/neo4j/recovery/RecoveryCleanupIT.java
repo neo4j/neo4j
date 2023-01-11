@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -190,12 +190,12 @@ class RecoveryCleanupIT {
     private void dirtyDatabase() throws IOException {
         db = startDatabase();
 
-        Health databaseHealth = databaseHealth(db);
+        Panic databasePanic = databaseHealth(db);
         index(db);
         someData(db);
         checkpoint(db);
         someData(db);
-        databaseHealth.panic(new Throwable("Trigger recovery on next startup"));
+        databasePanic.panic(new Throwable("Trigger recovery on next startup"));
         managementService.shutdown();
         db = null;
     }
@@ -246,7 +246,7 @@ class RecoveryCleanupIT {
         return managementService.database(DEFAULT_DATABASE_NAME);
     }
 
-    private static Health databaseHealth(GraphDatabaseService db) {
+    private static Panic databaseHealth(GraphDatabaseService db) {
         return dependencyResolver(db).resolveDependency(DatabaseHealth.class);
     }
 

@@ -29,20 +29,20 @@ import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 
 class DatabaseHealthTest {
     @Test
     void shouldGenerateDatabasePanicEvents() {
         // GIVEN
         DatabasePanicEventGenerator generator = mock(DatabasePanicEventGenerator.class);
-        Health databaseHealth =
+        Panic databasePanic =
                 new DatabaseHealth(generator, NullLogProvider.getInstance().getLog(DatabaseHealth.class));
 
         // WHEN
         Exception cause = new Exception("My own fault");
-        databaseHealth.panic(cause);
-        databaseHealth.panic(cause);
+        databasePanic.panic(cause);
+        databasePanic.panic(cause);
 
         // THEN
         verify(generator).panic(cause);
@@ -52,13 +52,13 @@ class DatabaseHealthTest {
     void shouldLogDatabasePanicEvent() {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        Health databaseHealth =
+        Panic databasePanic =
                 new DatabaseHealth(mock(DatabasePanicEventGenerator.class), logProvider.getLog(DatabaseHealth.class));
 
         // WHEN
         String message = "Listen everybody... panic!";
         Exception exception = new Exception(message);
-        databaseHealth.panic(exception);
+        databasePanic.panic(exception);
 
         // THEN
         assertThat(logProvider)

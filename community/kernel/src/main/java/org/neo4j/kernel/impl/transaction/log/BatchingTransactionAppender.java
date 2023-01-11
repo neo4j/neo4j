@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -37,15 +37,15 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 class BatchingTransactionAppender extends LifecycleAdapter implements TransactionAppender {
     private final LogFile logFile;
     private final LogRotation logRotation;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
 
     private TransactionLogWriter transactionLogWriter;
     private int previousChecksum;
 
-    BatchingTransactionAppender(LogFiles logFiles, TransactionIdStore transactionIdStore, Health databaseHealth) {
+    BatchingTransactionAppender(LogFiles logFiles, TransactionIdStore transactionIdStore, Panic databasePanic) {
         this.logFile = logFiles.getLogFile();
         this.logRotation = logFile.getLogRotation();
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
         this.previousChecksum = transactionIdStore.getLastCommittedTransaction().checksum();
     }
 
@@ -61,7 +61,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
         // Synchronized with logFile to get absolute control over concurrent rotations happening
         synchronized (logFile) {
             // Assert that kernel is healthy before making any changes
-            databaseHealth.assertHealthy(IOException.class);
+            databasePanic.assertHealthy(IOException.class);
             try (AppendTransactionEvent appendEvent = logAppendEvent.beginAppendTransaction(1)) {
                 // Append all transactions in this batch to the log under the same logFile monitor
                 CommandBatchToApply commands = batch;
@@ -114,7 +114,7 @@ class BatchingTransactionAppender extends LifecycleAdapter implements Transactio
             logAppendEvent.appendToLogFile(logPositionBeforeCommit, logPositionAfterCommit);
             commands.batchAppended(logPositionBeforeCommit, logPositionAfterCommit, previousChecksum);
         } catch (final Throwable panic) {
-            databaseHealth.panic(panic);
+            databasePanic.panic(panic);
             throw panic;
         }
     }

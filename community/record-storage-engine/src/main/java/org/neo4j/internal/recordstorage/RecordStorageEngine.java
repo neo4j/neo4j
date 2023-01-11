@@ -99,7 +99,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
@@ -135,7 +135,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final Config config;
     private final InternalLogProvider internalLogProvider;
     private final TokenHolders tokenHolders;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private final SchemaCache schemaCache;
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
@@ -175,7 +175,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             ConstraintRuleAccessor constraintSemantics,
             IndexConfigCompleter indexConfigCompleter,
             LockService lockService,
-            Health databaseHealth,
+            Panic databasePanic,
             IdGeneratorFactory idGeneratorFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             MemoryTracker otherMemoryTracker,
@@ -190,7 +190,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
         this.constraintSemantics = constraintSemantics;
         this.idGeneratorFactory = idGeneratorFactory;
         this.contextFactory = contextFactory;
@@ -511,7 +511,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         } catch (Throwable cause) {
             TransactionApplyKernelException kernelException = new TransactionApplyKernelException(
                     cause, "Failed to apply transaction: %s", batch == null ? initialBatch : batch);
-            databaseHealth.panic(kernelException);
+            databasePanic.panic(kernelException);
             throw kernelException;
         }
     }

@@ -70,7 +70,7 @@ import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -131,9 +131,9 @@ class TransactionLogAppendAndRotateIT {
         monitors.addMonitorListener(monitoring);
 
         TransactionIdStore txIdStore = new SimpleTransactionIdStore();
-        Health health = new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
+        Panic panic = new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
         final TransactionAppender appender =
-                life.add(createBatchAppender(logFiles, txIdStore, health, jobScheduler, Config.defaults()));
+                life.add(createBatchAppender(logFiles, txIdStore, panic, jobScheduler, Config.defaults()));
 
         // WHEN
         Race race = new Race();
@@ -164,9 +164,9 @@ class TransactionLogAppendAndRotateIT {
     }
 
     private TransactionAppender createBatchAppender(
-            LogFiles logFiles, TransactionIdStore txIdStore, Health health, JobScheduler jobScheduler, Config config) {
+            LogFiles logFiles, TransactionIdStore txIdStore, Panic panic, JobScheduler jobScheduler, Config config) {
         return createTransactionAppender(
-                logFiles, txIdStore, config, health, jobScheduler, NullLogProvider.getInstance());
+                logFiles, txIdStore, config, panic, jobScheduler, NullLogProvider.getInstance());
     }
 
     private static Runnable endAfterMax(

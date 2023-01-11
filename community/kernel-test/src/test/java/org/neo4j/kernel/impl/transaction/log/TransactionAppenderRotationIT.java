@@ -60,7 +60,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -105,10 +105,10 @@ class TransactionAppenderRotationIT {
             throws IOException, ExecutionException, InterruptedException {
         LogFiles logFiles = getLogFiles(logVersionRepository, transactionIdStore);
         life.add(logFiles);
-        Health databaseHealth = getDatabaseHealth();
+        Panic databasePanic = getDatabaseHealth();
 
         TransactionAppender transactionAppender =
-                createTransactionAppender(logFiles, databaseHealth, transactionIdStore, jobScheduler);
+                createTransactionAppender(logFiles, databasePanic, transactionIdStore, jobScheduler);
 
         life.add(transactionAppender);
 
@@ -125,12 +125,12 @@ class TransactionAppenderRotationIT {
     }
 
     private static TransactionAppender createTransactionAppender(
-            LogFiles logFiles, Health databaseHealth, TransactionIdStore transactionIdStore, JobScheduler scheduler) {
+            LogFiles logFiles, Panic databasePanic, TransactionIdStore transactionIdStore, JobScheduler scheduler) {
         return TransactionAppenderFactory.createTransactionAppender(
                 logFiles,
                 transactionIdStore,
                 Config.defaults(),
-                databaseHealth,
+                databasePanic,
                 scheduler,
                 NullLogProvider.getInstance());
     }
@@ -165,7 +165,7 @@ class TransactionAppenderRotationIT {
                 .build();
     }
 
-    private static Health getDatabaseHealth() {
+    private static Panic getDatabaseHealth() {
         return new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
     }
 

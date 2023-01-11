@@ -53,7 +53,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.test.DoubleLatch;
@@ -63,7 +63,7 @@ import org.neo4j.test.OtherThreadExecutor;
 class CheckPointSchedulerTest {
     private final CheckPointer checkPointer = mock(CheckPointer.class);
     private final OnDemandJobScheduler jobScheduler = spy(new OnDemandJobScheduler());
-    private final Health health = mock(DatabaseHealth.class);
+    private final Panic panic = mock(DatabaseHealth.class);
 
     private static ExecutorService executor;
 
@@ -81,7 +81,7 @@ class CheckPointSchedulerTest {
     @Test
     void shouldScheduleTheCheckPointerJobOnStart() {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, panic, "test db");
 
         assertNull(jobScheduler.getJob());
 
@@ -102,7 +102,7 @@ class CheckPointSchedulerTest {
     @Test
     void shouldRescheduleTheJobAfterARun() throws Throwable {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, panic, "test db");
 
         assertNull(jobScheduler.getJob());
 
@@ -129,7 +129,7 @@ class CheckPointSchedulerTest {
     @Test
     void shouldNotRescheduleAJobWhenStopped() {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 20L, panic, "test db");
 
         assertNull(jobScheduler.getJob());
 
@@ -146,7 +146,7 @@ class CheckPointSchedulerTest {
 
     @Test
     void stoppedJobCantBeInvoked() throws Throwable {
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 10L, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 10L, panic, "test db");
         scheduler.start();
         jobScheduler.runJob();
 
@@ -212,7 +212,7 @@ class CheckPointSchedulerTest {
         };
 
         final CheckPointScheduler scheduler =
-                new CheckPointScheduler(checkPointer, jobScheduler, 20L, health, "test db");
+                new CheckPointScheduler(checkPointer, jobScheduler, 20L, panic, "test db");
 
         // when
         scheduler.start();
@@ -252,7 +252,7 @@ class CheckPointSchedulerTest {
     void shouldContinueThroughSporadicFailures() {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 1, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 1, panic, "test db");
         scheduler.start();
 
         // WHEN/THEN
@@ -260,12 +260,12 @@ class CheckPointSchedulerTest {
             // Fail
             checkPointer.fail = true;
             jobScheduler.runJob();
-            verifyNoInteractions(health);
+            verifyNoInteractions(panic);
 
             // Succeed
             checkPointer.fail = false;
             jobScheduler.runJob();
-            verifyNoInteractions(health);
+            verifyNoInteractions(panic);
         }
     }
 
@@ -278,7 +278,7 @@ class CheckPointSchedulerTest {
         CountDownLatch checkPointerLatch = new CountDownLatch(1);
         WaitUnlimitedCheckPointer checkPointer =
                 new WaitUnlimitedCheckPointer(IOController.DISABLED, checkPointerLatch);
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 0L, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 0L, panic, "test db");
         scheduler.start();
 
         Future<?> checkpointerStarter = executor.submit(jobScheduler::runJob);
@@ -297,20 +297,20 @@ class CheckPointSchedulerTest {
             new RuntimeException("First"), new RuntimeException("Second"), new RuntimeException("Third")
         };
         when(checkPointer.checkPointIfNeeded(any(TriggerInfo.class))).thenThrow(failures);
-        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 1, health, "test db");
+        CheckPointScheduler scheduler = new CheckPointScheduler(checkPointer, jobScheduler, 1, panic, "test db");
         scheduler.start();
 
         // WHEN
         for (int i = 0; i < CheckPointScheduler.MAX_CONSECUTIVE_FAILURES_TOLERANCE - 1; i++) {
             jobScheduler.runJob();
-            verifyNoInteractions(health);
+            verifyNoInteractions(panic);
         }
 
         UnderlyingStorageException error = assertThrows(UnderlyingStorageException.class, jobScheduler::runJob);
 
         // THEN
         assertEquals(Iterators.asSet(failures), Iterators.asSet(error.getSuppressed()));
-        verify(health).panic(error);
+        verify(panic).panic(error);
     }
 
     private static class ControlledCheckPointer implements CheckPointer {

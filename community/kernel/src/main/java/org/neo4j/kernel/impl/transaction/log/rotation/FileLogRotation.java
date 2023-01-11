@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvents;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -41,7 +41,7 @@ import org.neo4j.util.VisibleForTesting;
 public class FileLogRotation implements LogRotation {
     private final Clock clock;
     private final LogRotationMonitor monitor;
-    private final Health databaseHealth;
+    private final Panic databasePanic;
     private final RotatableFile rotatableFile;
     private long lastRotationCompleted;
     private final LongSupplier lastTransactionIdSupplier;
@@ -51,23 +51,23 @@ public class FileLogRotation implements LogRotation {
             CheckpointLogFile checkpointLogFile,
             LogFile logFile,
             Clock clock,
-            Health databaseHealth,
+            Panic databasePanic,
             LogRotationMonitor monitor) {
         return new FileLogRotation(
                 checkpointLogFile,
                 clock,
-                databaseHealth,
+                databasePanic,
                 monitor,
                 () -> logFile.getLogFileInformation().committingEntryId(),
                 uncheckedLongSupplier(checkpointLogFile::getCurrentDetachedLogVersion));
     }
 
     public static LogRotation transactionLogRotation(
-            LogFile logFile, Clock clock, Health databaseHealth, LogRotationMonitor monitor) {
+            LogFile logFile, Clock clock, Panic databasePanic, LogRotationMonitor monitor) {
         return new FileLogRotation(
                 logFile,
                 clock,
-                databaseHealth,
+                databasePanic,
                 monitor,
                 () -> logFile.getLogFileInformation().committingEntryId(),
                 logFile::getCurrentLogVersion);
@@ -76,13 +76,13 @@ public class FileLogRotation implements LogRotation {
     private FileLogRotation(
             RotatableFile rotatableFile,
             Clock clock,
-            Health databaseHealth,
+            Panic databasePanic,
             LogRotationMonitor monitor,
             LongSupplier lastTransactionIdSupplier,
             LongSupplier currentFileVersionSupplier) {
         this.clock = clock;
         this.monitor = monitor;
-        this.databaseHealth = databaseHealth;
+        this.databasePanic = databasePanic;
         this.rotatableFile = rotatableFile;
         this.lastTransactionIdSupplier = lastTransactionIdSupplier;
         this.currentFileVersionSupplier = currentFileVersionSupplier;
@@ -157,7 +157,7 @@ public class FileLogRotation implements LogRotation {
              * In order to rotate the log file safely we need to assert that the kernel is still
              * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
              */
-            databaseHealth.assertHealthy(IOException.class);
+            databasePanic.assertHealthy(IOException.class);
             long startTimeMillis = clock.millis();
             monitor.startRotation(currentVersion);
             Path newLogFile = fileRotator.rotate();
