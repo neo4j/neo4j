@@ -188,15 +188,6 @@ public interface TopologyGraphDbmsModel {
     String DELETED_DATABASE_DELETED_AT_PROPERTY = "deleted_at";
     String DATABASE_LOG_ENRICHMENT_PROPERTY = "txLogEnrichment";
 
-    @Deprecated
-    String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";
-
-    @Deprecated
-    String DATABASE_STORE_CREATION_TIME_PROPERTY = "store_creation_time";
-
-    @Deprecated
-    String DATABASE_STORE_VERSION_PROPERTY = "store_version";
-
     Label DATABASE_NAME_LABEL = Label.label("DatabaseName");
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
     String DATABASE_NAME_LABEL_DESCRIPTION = "Database alias";
@@ -244,9 +235,6 @@ public interface TopologyGraphDbmsModel {
     String INSTANCE_STATUS_PROPERTY = "status";
     String INSTANCE_DISCOVERED_AT_PROPERTY = "discovered_at";
 
-    @Deprecated
-    String INSTANCE_MODE_PROPERTY = "mode";
-
     String INSTANCE_ALLOWED_DATABASES_PROPERTY = "allowedDatabases";
     String INSTANCE_DENIED_DATABASES_PROPERTY = "deniedDatabases";
     String INSTANCE_MODE_CONSTRAINT_PROPERTY = "modeConstraint";
@@ -268,9 +256,6 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_CREATE_ATTEMPTED_FLAG = "default_database_created";
     String TOPOLOGY_GRAPH_CONFIG_INITIAL_INSTANCES_ENABLED_FLAG = "initial_instances_enabled";
-
-    @Deprecated
-    String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_ALLOCATED_FLAG = "default_database_allocated";
 
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.
