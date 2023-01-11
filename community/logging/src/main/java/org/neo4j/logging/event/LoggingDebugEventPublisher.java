@@ -21,28 +21,35 @@ package org.neo4j.logging.event;
 
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.PrefixedLogProvider;
 import org.neo4j.util.VisibleForTesting;
 
-class LoggingEventPublisher implements EventPublisher {
-    private final Log log;
+class LoggingDebugEventPublisher implements DebugEventPublisher {
+    private final Log debugLog;
 
-    LoggingEventPublisher(InternalLogProvider logProvider, String description) {
-        this(new PrefixedLogProvider(logProvider, "Event").getLog(description));
+    LoggingDebugEventPublisher(InternalLogProvider logProvider, ComponentNamespace component) {
+        var prefixLogProvider = new PrefixedLogProvider(logProvider, "Event");
+        this.debugLog = prefixLogProvider.getLog(component.getName());
+    }
+
+    LoggingDebugEventPublisher(LogService logService, ComponentNamespace component) {
+        var prefixLogger = new PrefixedLogProvider(logService.getInternalLogProvider(), "Event");
+        this.debugLog = prefixLogger.getLog(component.getName());
     }
 
     @VisibleForTesting
-    LoggingEventPublisher(Log log) {
-        this.log = log;
+    LoggingDebugEventPublisher(Log log) {
+        this.debugLog = log;
     }
 
     @Override
     public void publish(Type type, String message, Parameters parameters) {
         switch (type) {
-            case Begin, Finish -> log.info("%s - %s %s", type, message, parameters);
-            case Info -> log.info("%s %s", message, parameters);
-            case Warn -> log.warn("%s %s", message, parameters);
-            case Error -> log.error("%s %s", message, parameters);
+            case Begin, Finish -> debugLog.info("%s - %s %s", type, message, parameters);
+            case Info -> debugLog.info("%s %s", message, parameters);
+            case Warn -> debugLog.warn("%s %s", message, parameters);
+            case Error -> debugLog.error("%s %s", message, parameters);
         }
     }
 

@@ -19,23 +19,25 @@
  */
 package org.neo4j.logging.event;
 
-/**
- * Eache event published by {@link DebugEventPublisher} requires a {@link Type}.
- * <p>
- * {@link Type#Begin} Used to signal the start of a process that will publish multiple events.
- * <p>
- * {@link Type#Finish} Used to signal the end of a process that has published multiple events.
- * <p>
- * {@link Type#Info} Used for publishing normal events.
- * <p>
- * {@link Type#Warn} Used for publishing warning events.
- * <p>
- * {@link Type#Error} Used for publishing error events.
- */
-public enum Type {
-    Begin,
-    Finish,
-    Info,
-    Warn,
-    Error
+public interface DebugEventPublisher {
+
+    DebugEventPublisher NO_OP = new DebugEventPublisher() {
+        @Override
+        public void publish(Type type, String message, Parameters parameters) {}
+
+        @Override
+        public void publish(Type type, String message) {}
+    };
+
+    void publish(Type type, String message, Parameters parameters);
+
+    void publish(Type type, String message);
+
+    /**
+     * @return A stateful {@link CappedDebugEventPublisher} intended to be used where event publishing may be spammy. For
+     * example in loops.
+     */
+    default DebugEventPublisher capped(EventsFilter filter) {
+        return CappedDebugEventPublisher.capped(this, filter);
+    }
 }

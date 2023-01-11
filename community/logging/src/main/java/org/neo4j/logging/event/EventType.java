@@ -19,23 +19,14 @@
  */
 package org.neo4j.logging.event;
 
-/**
- * Eache event published by {@link DebugEventPublisher} requires a {@link Type}.
- * <p>
- * {@link Type#Begin} Used to signal the start of a process that will publish multiple events.
- * <p>
- * {@link Type#Finish} Used to signal the end of a process that has published multiple events.
- * <p>
- * {@link Type#Info} Used for publishing normal events.
- * <p>
- * {@link Type#Warn} Used for publishing warning events.
- * <p>
- * {@link Type#Error} Used for publishing error events.
+/** This should be subclassed as java.lang.Enum and declare a value for each type of
+ * event we wish to publish. Each instance should provide a message and logging level.
+ * The component namespace returns which component causes this event.
  */
-public enum Type {
-    Begin,
-    Finish,
-    Info,
-    Warn,
-    Error
+public interface EventType {
+    String getMessage();
+
+    Type getLoggingLevel();
+
+    ComponentNamespace getComponentNamespace();
 }

@@ -62,6 +62,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
 
     private Monitors monitors;
     private InternalLogProvider userLogProvider;
+    private InternalLogProvider debugLogProvider;
     private DependencyResolver dependencies;
     private List<ExtensionFactory<?>> extensions;
     private List<DatabaseEventListener> databaseEventListeners;
@@ -90,6 +91,11 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
 
     public GraphDatabaseDependencies userLogProvider(InternalLogProvider userLogProvider) {
         this.userLogProvider = userLogProvider;
+        return this;
+    }
+
+    public GraphDatabaseDependencies debugLogProvider(InternalLogProvider debugLogProvider) {
+        this.debugLogProvider = debugLogProvider;
         return this;
     }
 
@@ -122,6 +128,10 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
     @Override
     public InternalLogProvider userLogProvider() {
         return userLogProvider;
+    }
+
+    public InternalLogProvider debugLogProvider() {
+        return debugLogProvider;
     }
 
     @Override

@@ -19,25 +19,33 @@
  */
 package org.neo4j.logging.event;
 
-public interface EventPublisher {
+public enum TestEvents implements EventType {
+    START("Test started", Type.Begin),
+    END("Test ended", Type.Warn),
+    WITH_PARAMS("With Params", Type.Info);
 
-    EventPublisher NO_OP = new EventPublisher() {
-        @Override
-        public void publish(Type type, String message, Parameters parameters) {}
+    public static ComponentNamespace TEST_COMPONENT_NAMESPACE = new ComponentNamespace("TestComponent");
 
-        @Override
-        public void publish(Type type, String message) {}
-    };
+    private final String message;
+    private final Type level;
 
-    void publish(Type type, String message, Parameters parameters);
+    private TestEvents(String message, Type level) {
+        this.message = message;
+        this.level = level;
+    }
 
-    void publish(Type type, String message);
+    @Override
+    public String getMessage() {
+        return message;
+    }
 
-    /**
-     * @return A stateful {@link CappedEventPublisher} intended to be used where event publishing may be spammy. For
-     * example in loops.
-     */
-    default EventPublisher capped(EventsFilter filter) {
-        return CappedEventPublisher.capped(this, filter);
+    @Override
+    public Type getLoggingLevel() {
+        return level;
+    }
+
+    @Override
+    public ComponentNamespace getComponentNamespace() {
+        return TEST_COMPONENT_NAMESPACE;
     }
 }

@@ -19,30 +19,18 @@
  */
 package org.neo4j.logging.event;
 
-class CappedEventPublisher implements EventPublisher {
-    private final EventPublisher delegate;
-    private final EventsFilter filter;
+import org.neo4j.logging.InternalLogProvider;
 
-    private CappedEventPublisher(EventPublisher delegate, EventsFilter filter) {
-        this.delegate = delegate;
-        this.filter = filter;
+public class LoggingEventPublisherFactory {
+
+    private LoggingEventPublisherFactory() {}
+
+    public static DebugEventPublisher debugLogEventPublisher(
+            InternalLogProvider debugLogProvider, ComponentNamespace component) {
+        return new LoggingDebugEventPublisher(debugLogProvider, component);
     }
 
-    static CappedEventPublisher capped(EventPublisher delegate, EventsFilter filter) {
-        return new CappedEventPublisher(delegate, filter);
-    }
-
-    @Override
-    public void publish(Type type, String message, Parameters parameters) {
-        if (filter.canPublish()) {
-            delegate.publish(type, message, parameters);
-        }
-    }
-
-    @Override
-    public void publish(Type type, String message) {
-        if (filter.canPublish()) {
-            delegate.publish(type, message);
-        }
+    public static UserEventPublisher userLogEventPublisher(InternalLogProvider userLogProvider) {
+        return new LoggingUserEventPublisher(userLogProvider);
     }
 }

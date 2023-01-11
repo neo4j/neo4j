@@ -19,13 +19,21 @@
  */
 package org.neo4j.logging.event;
 
-import org.neo4j.logging.InternalLogProvider;
+/** Interface for publishing lifecycle event to user log. It cannot publish arbitrary messages to log
+ * only events declared as EventTypes. The motivation is to make it easy to enumerate and share the
+ * possible messages logged to support and users.
+ */
+public interface UserEventPublisher {
+    UserEventPublisher NO_OP = new UserEventPublisher() {
 
-public class ComponentEventLogger {
+        @Override
+        public void publish(EventType eventType) {}
 
-    private ComponentEventLogger() {}
+        @Override
+        public void publish(EventType eventType, Parameters parameters) {}
+    };
 
-    public static EventPublisher eventPublisher(InternalLogProvider logProvider, ComponentNamespace component) {
-        return new LoggingEventPublisher(logProvider, component.toString());
-    }
+    void publish(EventType eventType);
+
+    void publish(EventType eventType, Parameters parameters);
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.logging.event;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,9 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
-class ComponentEventLoggerTest {
+public class LoggingUserEventPublisherTest {
 
-    private static final ComponentNamespace TEST_NAMESPACE = new ComponentNamespace("test");
     private final InternalLogProvider logProvider = mock(InternalLogProvider.class);
     private final InternalLog log = mock(InternalLog.class);
 
@@ -42,22 +42,27 @@ class ComponentEventLoggerTest {
     }
 
     @Test
-    void shouldCreateLogForNamespece() {
-        ComponentEventLogger.eventPublisher(logProvider, TEST_NAMESPACE);
-        verify(logProvider).getLog(TEST_NAMESPACE.toString());
+    void shouldLogBegin() {
+        var publisher = new LoggingUserEventPublisher(logProvider);
+
+        publisher.publish(TestEvents.START);
+        verify(log).info(anyString(), eq(Type.Begin), eq(TestEvents.START.getMessage()), anyString(), any());
     }
 
     @Test
-    void logLinesShouldBeIdenticalIfSameNamespace() {
+    void shouldLogWarning() {
+        var publisher = new LoggingUserEventPublisher(logProvider);
 
-        var eventPublisher1 = ComponentEventLogger.eventPublisher(logProvider, TEST_NAMESPACE);
-        var eventPublisher2 = ComponentEventLogger.eventPublisher(logProvider, TEST_NAMESPACE);
+        publisher.publish(TestEvents.END);
+        verify(log).warn(anyString(), eq(TestEvents.END.getMessage()), anyString(), any());
+    }
 
-        eventPublisher1.publish(Type.Info, "hello", Parameters.of("param", TEST_NAMESPACE));
-        eventPublisher2.publish(Type.Info, "hello", Parameters.of("param", TEST_NAMESPACE));
+    @Test
+    void shouldLogWithParams() {
+        var publisher = new LoggingUserEventPublisher(logProvider);
 
-        verify(logProvider, times(2)).getLog(TEST_NAMESPACE.toString());
-
-        verify(log, times(2)).info("[Event] %s %s", "hello", Parameters.of("param", TEST_NAMESPACE));
+        var params = Parameters.of("key", "value");
+        publisher.publish(TestEvents.WITH_PARAMS, params);
+        verify(log).info(anyString(), eq(TestEvents.WITH_PARAMS.getMessage()), anyString(), eq(params));
     }
 }

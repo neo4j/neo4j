@@ -23,10 +23,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * This class is used by the {@link LoggingEventPublisher} for parameter logging. Because some maps in
+ * This class is used by the {@link LoggingDebugEventPublisher} for parameter logging. Because some maps in
  * java does not allow null as values, this if for example true for the most convenient map {@link Map#of()}, there
  * is a risk of the event publisher throwing {@link NullPointerException}. It would be unexpected and unacceptable
- * for the {@link EventPublisher} to throw on null values.
+ * for the {@link DebugEventPublisher} to throw on null values.
  */
 public class Parameters {
 
@@ -133,5 +133,9 @@ public class Parameters {
     @Override
     public int hashCode() {
         return Arrays.hashCode(parameters);
+    }
+
+    public boolean isEmpty() {
+        return parameters.length == 0;
     }
 }
