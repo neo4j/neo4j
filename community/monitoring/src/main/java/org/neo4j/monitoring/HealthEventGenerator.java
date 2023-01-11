@@ -17,22 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.monitoring;
+package org.neo4j.monitoring;
 
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.monitoring.PanicEventGenerator;
+@FunctionalInterface
+public interface HealthEventGenerator {
+    HealthEventGenerator NO_OP = ignoredCause -> {};
 
-public class DatabasePanicEventGenerator implements PanicEventGenerator {
-    private final DatabaseEventListeners databaseEventListeners;
-    private final NamedDatabaseId databaseId;
-
-    public DatabasePanicEventGenerator(DatabaseEventListeners databaseEventListeners, NamedDatabaseId databaseId) {
-        this.databaseEventListeners = databaseEventListeners;
-        this.databaseId = databaseId;
-    }
-
-    @Override
-    public void panic(Throwable causeOfPanic) {
-        databaseEventListeners.databasePanic(databaseId, causeOfPanic);
-    }
+    void panic(Throwable causeOfPanic);
 }

@@ -52,8 +52,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Panic;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -121,7 +121,7 @@ public class RecordStorageEngineSupport {
     public class Builder {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private Panic databasePanic = new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
+        private Panic databasePanic = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
         private final RecordDatabaseLayout databaseLayout;
         private Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer =
                 applierFacade -> applierFacade;

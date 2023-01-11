@@ -51,8 +51,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.ReadOnlyLogVersionRepository;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -357,7 +357,7 @@ public class LogFilesBuilder {
         if (dependencies != null) {
             return dependencies.resolveDependency(DatabaseHealth.class);
         }
-        return new DatabaseHealth(PanicEventGenerator.NO_OP, logProvider.getLog(DatabaseHealth.class));
+        return new DatabaseHealth(HealthEventGenerator.NO_OP, logProvider.getLog(DatabaseHealth.class));
     }
 
     private Monitors getMonitors() {

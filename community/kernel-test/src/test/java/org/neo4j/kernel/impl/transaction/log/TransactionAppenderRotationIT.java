@@ -60,8 +60,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Panic;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -166,7 +166,7 @@ class TransactionAppenderRotationIT {
     }
 
     private static Panic getDatabaseHealth() {
-        return new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
+        return new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     }
 
     private record RotationLogAppendEvent(LogRotation logRotation) implements LogAppendEvent {

@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -96,7 +96,7 @@ class QueueTransactionAppenderTestIT {
         logProvider = NullLogProvider.getInstance();
         metadataCache = new TransactionMetadataCache();
         config = Config.defaults();
-        databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, logProvider.getLog(DatabaseHealth.class));
+        databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, logProvider.getLog(DatabaseHealth.class));
     }
 
     @AfterEach

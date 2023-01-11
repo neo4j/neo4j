@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
+import static org.neo4j.monitoring.HealthEventGenerator.NO_OP;
 
 import java.io.IOException;
 import java.util.List;

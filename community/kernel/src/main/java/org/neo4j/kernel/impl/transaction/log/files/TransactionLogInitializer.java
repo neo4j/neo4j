@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -125,7 +125,7 @@ public class TransactionLogInitializer {
                 .withStoreId(store.getStoreId())
                 .withLogsDirectory(transactionLogsDirectory)
                 .withStorageEngineFactory(storageEngineFactory)
-                .withDatabaseHealth(new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance()))
+                .withDatabaseHealth(new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()))
                 .withKernelVersionProvider(metadataCache)
                 .build();
         return new LogFilesSpan(new Lifespan(logFiles), logFiles);

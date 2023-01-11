@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.DatabaseLogService;
@@ -166,7 +166,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.transactionStats = transactionStats;
         this.eventListeners = globalModule.getDatabaseEventListeners();
         this.databaseHealthFactory = () -> new DatabaseHealth(
-                new DatabasePanicEventGenerator(eventListeners, namedDatabaseId),
+                new DatabaseHealthEventGenerator(eventListeners, namedDatabaseId),
                 databaseLogService.getInternalLog(DatabaseHealth.class));
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = globalModule.getPageCache();

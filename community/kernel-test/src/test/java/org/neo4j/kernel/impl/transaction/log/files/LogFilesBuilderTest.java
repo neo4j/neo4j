@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -144,7 +144,7 @@ class LogFilesBuilderTest {
     void buildDefaultContextWithDependencies() throws IOException {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository(2);
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
+        DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(logVersionRepository);
         dependencies.satisfyDependency(transactionIdStore);

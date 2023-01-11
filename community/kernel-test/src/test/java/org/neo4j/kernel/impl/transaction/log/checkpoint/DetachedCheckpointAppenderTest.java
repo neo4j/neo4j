@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -72,7 +72,7 @@ class DetachedCheckpointAppenderTest {
     private LifeSupport life;
 
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
-    private final DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance());
+    private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
     private final TransactionIdStore transactionIdStore =
             new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);

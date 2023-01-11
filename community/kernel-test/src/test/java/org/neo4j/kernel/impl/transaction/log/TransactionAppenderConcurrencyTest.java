@@ -77,7 +77,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -143,7 +143,7 @@ public class TransactionAppenderConcurrencyTest {
         FileSystemAbstraction fs = new AdversarialFileSystemAbstraction(adversary, efs);
         life.add(new FileSystemLifecycleAdapter(fs));
         DatabaseHealth databaseHealth =
-                new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
+                new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
@@ -184,7 +184,7 @@ public class TransactionAppenderConcurrencyTest {
         OutOfMemoryAwareFileSystem fs = new OutOfMemoryAwareFileSystem();
 
         DatabaseHealth databaseHealth =
-                new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
+                new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         life.add(new FileSystemLifecycleAdapter(fs));
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
                 .withLogVersionRepository(logVersionRepository)

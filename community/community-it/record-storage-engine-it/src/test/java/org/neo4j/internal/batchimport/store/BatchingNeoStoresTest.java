@@ -103,7 +103,7 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -538,7 +538,7 @@ class BatchingNeoStoresTest {
                     new StandardConstraintSemantics(),
                     indexConfigCompleter,
                     LockService.NO_LOCK_SERVICE,
-                    new DatabaseHealth(PanicEventGenerator.NO_OP, nullLog),
+                    new DatabaseHealth(HealthEventGenerator.NO_OP, nullLog),
                     new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME),
                     recoveryCleanupWorkCollector,
                     INSTANCE,

@@ -29,12 +29,12 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic {
             + "and needs to be restarted. Please see database logs for more details.";
 
     private volatile boolean healthy = true;
-    private final PanicEventGenerator panicEventGenerator;
+    private final HealthEventGenerator healthEventGenerator;
     private final InternalLog log;
     private volatile Throwable causeOfPanic;
 
-    public DatabaseHealth(PanicEventGenerator panicEventGenerator, InternalLog log) {
-        this.panicEventGenerator = panicEventGenerator;
+    public DatabaseHealth(HealthEventGenerator healthEventGenerator, InternalLog log) {
+        this.healthEventGenerator = healthEventGenerator;
         this.log = log;
     }
 
@@ -62,8 +62,8 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic {
         this.causeOfPanic = cause;
         this.healthy = false;
         log.error("Database panic: " + panicMessage, cause);
-        if (panicEventGenerator != null) {
-            panicEventGenerator.panic(cause);
+        if (healthEventGenerator != null) {
+            healthEventGenerator.panic(cause);
         }
     }
 

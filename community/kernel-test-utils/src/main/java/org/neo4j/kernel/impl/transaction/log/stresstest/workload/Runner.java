@@ -44,7 +44,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -99,7 +99,7 @@ public class Runner implements Callable<Long> {
     private static TransactionAppender createBatchingTransactionAppender(
             LogFiles logFiles, TransactionIdStore transactionIdStore, Config config, JobScheduler jobScheduler) {
         InternalLog log = NullLog.getInstance();
-        DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, log);
+        DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, log);
         return createTransactionAppender(
                 logFiles, transactionIdStore, config, databaseHealth, jobScheduler, NullLogProvider.getInstance());
     }

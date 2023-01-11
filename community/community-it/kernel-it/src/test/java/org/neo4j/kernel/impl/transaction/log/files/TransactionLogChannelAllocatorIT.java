@@ -61,8 +61,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -226,7 +226,7 @@ class TransactionLogChannelAllocatorIT {
                 INSTANCE,
                 new Monitors(),
                 true,
-                new DatabaseHealth(PanicEventGenerator.NO_OP, NullLog.getInstance()),
+                new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()),
                 KernelVersionProvider.LATEST_VERSION,
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,

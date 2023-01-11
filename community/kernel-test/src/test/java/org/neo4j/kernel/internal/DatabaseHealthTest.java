@@ -25,7 +25,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -35,7 +35,7 @@ class DatabaseHealthTest {
     @Test
     void shouldGenerateDatabasePanicEvents() {
         // GIVEN
-        DatabasePanicEventGenerator generator = mock(DatabasePanicEventGenerator.class);
+        DatabaseHealthEventGenerator generator = mock(DatabaseHealthEventGenerator.class);
         Panic databasePanic =
                 new DatabaseHealth(generator, NullLogProvider.getInstance().getLog(DatabaseHealth.class));
 
@@ -53,7 +53,7 @@ class DatabaseHealthTest {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Panic databasePanic =
-                new DatabaseHealth(mock(DatabasePanicEventGenerator.class), logProvider.getLog(DatabaseHealth.class));
+                new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), logProvider.getLog(DatabaseHealth.class));
 
         // WHEN
         String message = "Listen everybody... panic!";

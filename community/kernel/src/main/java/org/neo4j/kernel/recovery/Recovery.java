@@ -124,8 +124,8 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -445,7 +445,7 @@ public final class Recovery {
 
         CursorContextFactory cursorContextFactory =
                 new CursorContextFactory(tracers.getPageCacheTracer(), EmptyVersionContextSupplier.EMPTY);
-        DatabaseHealth databaseHealth = new DatabaseHealth(PanicEventGenerator.NO_OP, recoveryLog);
+        DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, recoveryLog);
 
         TokenHolders tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY),

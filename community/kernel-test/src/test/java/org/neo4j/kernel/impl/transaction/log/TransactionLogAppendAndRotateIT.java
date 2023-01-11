@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -131,7 +131,7 @@ class TransactionLogAppendAndRotateIT {
         monitors.addMonitorListener(monitoring);
 
         TransactionIdStore txIdStore = new SimpleTransactionIdStore();
-        Panic panic = new DatabaseHealth(mock(DatabasePanicEventGenerator.class), NullLog.getInstance());
+        Panic panic = new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         final TransactionAppender appender =
                 life.add(createBatchAppender(logFiles, txIdStore, panic, jobScheduler, Config.defaults()));
 
