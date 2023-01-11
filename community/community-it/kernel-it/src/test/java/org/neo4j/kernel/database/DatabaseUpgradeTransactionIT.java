@@ -58,7 +58,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -83,17 +83,18 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 @TestDirectoryExtension
-class DatabaseUpgradeTransactionIT {
+public class DatabaseUpgradeTransactionIT {
     @Inject
     private TestDirectory testDirectory;
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private DatabaseManagementService dbms;
-    private GraphDatabaseAPI db;
+    protected DatabaseManagementService dbms;
+    protected GraphDatabaseAPI db;
+    private GraphDatabaseAPI systemDb;
 
     @BeforeEach
     void setUp() throws IOException {
-        ZippedStoreCommunity.REC_AF11_V50_EMPTY.unzip(testDirectory.homePath());
+        createDbFiles();
         startDbms();
     }
 
@@ -104,12 +105,24 @@ class DatabaseUpgradeTransactionIT {
         }
     }
 
+    protected void createDbFiles() throws IOException {
+        ZippedStoreCommunity.REC_AF11_V50_EMPTY.unzip(testDirectory.homePath());
+    }
+
+    protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
+        return builder.setDatabaseRootDirectory(testDirectory.homePath())
+                .setInternalLogProvider(logProvider)
+                .setConfig(allow_single_automatic_upgrade, false);
+    }
+
+    protected Class<? extends StorageCommand> upgradeCommandClass() {
+        return MetaDataCommand.class;
+    }
+
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransaction() throws Exception {
         // Given
-        long startTransaction = db.getDependencyResolver()
-                .resolveDependency(TransactionIdStore.class)
-                .getLastCommittedTransactionId();
+        long startTransaction = lastCommittedTransactionId();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
@@ -135,9 +148,7 @@ class DatabaseUpgradeTransactionIT {
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction(
             DbmsRuntimeVersion dbmsRuntimeVersion) throws Exception {
         // Given
-        long startTransaction = db.getDependencyResolver()
-                .resolveDependency(TransactionIdStore.class)
-                .getLastCommittedTransactionId();
+        long startTransaction = lastCommittedTransactionId();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
@@ -160,9 +171,7 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransactionStressTest() throws Throwable {
-        long startTransaction = db.getDependencyResolver()
-                .resolveDependency(TransactionIdStore.class)
-                .getLastCommittedTransactionId();
+        long startTransaction = lastCommittedTransactionId();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
@@ -172,10 +181,7 @@ class DatabaseUpgradeTransactionIT {
         // When
         Race race =
                 new Race().withRandomStartDelays().withEndCondition(() -> KernelVersion.LATEST.equals(kernelVersion()));
-        race.addContestant(
-                () -> dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
-                        .executeTransactionally("CALL dbms.upgrade()"),
-                1);
+        race.addContestant(() -> systemDb.executeTransactionally("CALL dbms.upgrade()"), 1);
         race.addContestants(max(Runtime.getRuntime().availableProcessors() - 1, 2), Race.throwing(() -> {
             createWriteTransaction();
             Thread.sleep(ThreadLocalRandom.current().nextInt(0, 2));
@@ -190,9 +196,7 @@ class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable {
-        long startTransaction = db.getDependencyResolver()
-                .resolveDependency(TransactionIdStore.class)
-                .getLastCommittedTransactionId();
+        long startTransaction = lastCommittedTransactionId();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
@@ -218,8 +222,7 @@ class DatabaseUpgradeTransactionIT {
                     while (true) {
                         try {
                             Thread.sleep(ThreadLocalRandom.current().nextInt(0, 1_000));
-                            dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
-                                    .executeTransactionally("CALL dbms.upgrade()");
+                            systemDb.executeTransactionally("CALL dbms.upgrade()");
                             return;
                         } catch (DeadlockDetectedException de) {
                             // retry
@@ -355,7 +358,7 @@ class DatabaseUpgradeTransactionIT {
         }
     }
 
-    private String createWriteTransaction() {
+    protected String createWriteTransaction() {
         try (Transaction tx = db.beginTx()) {
             String nodeId = tx.createNode().getElementId();
             tx.commit();
@@ -363,30 +366,30 @@ class DatabaseUpgradeTransactionIT {
         }
     }
 
-    private void startDbms() {
-        dbms = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setConfig(allow_single_automatic_upgrade, false)
-                .setInternalLogProvider(logProvider)
-                .build();
+    protected void startDbms() {
+        dbms = configure(new TestDatabaseManagementServiceBuilder()).build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
+        systemDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+    }
+
+    private long lastCommittedTransactionId() {
+        return get(db, TransactionIdStore.class).getLastCommittedTransactionId();
     }
 
     private KernelVersion kernelVersion() {
-        return db.getDependencyResolver()
-                .resolveDependency(KernelVersionProvider.class)
-                .kernelVersion();
+        return get(db, KernelVersionProvider.class).kernelVersion();
     }
 
     private DbmsRuntimeVersion dbmsRuntimeVersion() {
-        GraphDatabaseAPI system = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
-        return system.getDependencyResolver()
-                .resolveDependency(DbmsRuntimeRepository.class)
-                .getVersion();
+        return get(systemDb, DbmsRuntimeRepository.class).getVersion();
     }
 
-    private void set(DbmsRuntimeVersion runtimeVersion) {
-        GraphDatabaseAPI system = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
-        try (var tx = system.beginTx();
+    protected <T> T get(GraphDatabaseAPI db, Class<T> cls) {
+        return db.getDependencyResolver().resolveDependency(cls);
+    }
+
+    protected void set(DbmsRuntimeVersion runtimeVersion) {
+        try (var tx = systemDb.beginTx();
                 var nodes = tx.findNodes(VERSION_LABEL).stream()) {
             nodes.forEach(dbmsRuntimeNode ->
                     dbmsRuntimeNode.setProperty(DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion()));
@@ -395,7 +398,7 @@ class DatabaseUpgradeTransactionIT {
     }
 
     private void assertUpgradeTransactionInOrder(KernelVersion from, KernelVersion to, long fromTxId) throws Exception {
-        LogicalTransactionStore lts = db.getDependencyResolver().resolveDependency(LogicalTransactionStore.class);
+        LogicalTransactionStore lts = get(db, LogicalTransactionStore.class);
         ArrayList<KernelVersion> transactionVersions = new ArrayList<>();
         ArrayList<CommittedCommandBatch> transactions = new ArrayList<>();
         try (CommandBatchCursor commandBatchCursor = lts.getCommandBatches(fromTxId + 1)) {
@@ -417,7 +420,7 @@ class DatabaseUpgradeTransactionIT {
         CommittedCommandBatch upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
         var commands = upgradeTransaction.commandBatch();
         for (StorageCommand command : commands) {
-            assertThat(command).isInstanceOf(Command.MetaDataCommand.class);
+            assertThat(command).isInstanceOf(upgradeCommandClass());
         }
     }
 
