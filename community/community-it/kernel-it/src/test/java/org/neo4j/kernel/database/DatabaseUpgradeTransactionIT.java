@@ -41,6 +41,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -127,8 +130,11 @@ class DatabaseUpgradeTransactionIT {
         assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.LATEST, startTransaction);
     }
 
-    @Test
-    void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction() throws Exception {
+    @ParameterizedTest
+    @EnumSource(mode = Mode.MATCH_ALL, names = "V5_[1-9]\\d*")
+    void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction(
+            DbmsRuntimeVersion dbmsRuntimeVersion) throws Exception {
+        // Given
         long startTransaction = db.getDependencyResolver()
                 .resolveDependency(TransactionIdStore.class)
                 .getLastCommittedTransactionId();
@@ -136,7 +142,7 @@ class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
-        set(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        set(dbmsRuntimeVersion);
 
         // When
         createReadTransaction();
@@ -148,8 +154,8 @@ class DatabaseUpgradeTransactionIT {
         createWriteTransaction();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.LATEST);
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.LATEST, startTransaction);
+        assertThat(kernelVersion()).isEqualTo(dbmsRuntimeVersion.kernelVersion());
+        assertUpgradeTransactionInOrder(KernelVersion.V5_0, dbmsRuntimeVersion.kernelVersion(), startTransaction);
     }
 
     @Test
