@@ -218,6 +218,7 @@ public class IndexAccessors implements Closeable {
         }
     }
 
+    @FunctionalInterface
     public interface IndexAccessorLookup {
         IndexAccessor apply(IndexDescriptor indexDescriptor) throws IOException;
     }

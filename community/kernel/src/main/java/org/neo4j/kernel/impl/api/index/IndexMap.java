@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -70,7 +71,7 @@ public final class IndexMap {
         indexesById.forEachKeyValue(consumer);
     }
 
-    Iterable<IndexProxy> getAllIndexProxies() {
+    Collection<IndexProxy> getAllIndexProxies() {
         return indexesById.values();
     }
 

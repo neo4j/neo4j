@@ -48,10 +48,7 @@ import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
@@ -184,8 +181,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
         this.openOptions = storageEngine.getOpenOptions();
-        this.storeView = indexStoreViewFactory.createTokenIndexStoreView(
-                descriptor -> indexMapRef.getIndexProxy(descriptor.getId()));
+        this.storeView =
+                indexStoreViewFactory.createTokenIndexStoreView(descriptor -> indexMapRef.getIndexProxy(descriptor));
     }
 
     /**
@@ -607,12 +604,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     public IndexProxy getIndexProxy(IndexDescriptor index) throws IndexNotFoundKernelException {
-        return indexMapRef.getIndexProxy(index.getId());
+        return indexMapRef.getIndexProxy(index);
     }
 
-    @Deprecated
-    public IndexProxy getIndexProxy(long indexId) throws IndexNotFoundKernelException {
-        return indexMapRef.getIndexProxy(indexId);
+    public Iterable<IndexProxy> getIndexProxies() {
+        return indexMapRef.getAllIndexProxies();
     }
 
     public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
@@ -633,10 +629,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 operation.accept(indexProxy);
             } catch (Exception e) {
                 try {
-                    IndexProxy proxy = indexMapRef.getIndexProxy(id);
-                    throw new UnderlyingStorageException("Unable to " + name + " " + proxy, e);
+                    if (indexMapRef.getIndexProxy(indexProxy.getDescriptor()) != null) {
+                        throw new UnderlyingStorageException("Unable to " + name + " " + indexProxy, e);
+                    }
                 } catch (IndexNotFoundKernelException infe) {
-                    // index was dropped while trying to operate on it, we can continue to other indexes
+                    // index was dropped while trying to operate on it, we can continue to
                 }
             }
         };
@@ -657,15 +654,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 return new IndexMap();
             });
         }
-    }
-
-    public LongSet getIndexIds() {
-        Iterable<IndexProxy> indexProxies = indexMapRef.getAllIndexProxies();
-        MutableLongSet indexIds = new LongHashSet();
-        for (IndexProxy indexProxy : indexProxies) {
-            indexIds.add(indexProxy.getDescriptor().getId());
-        }
-        return indexIds;
     }
 
     public ResourceIterator<Path> snapshotIndexFiles() throws IOException {

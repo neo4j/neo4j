@@ -33,12 +33,11 @@ import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -48,9 +47,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.collection.PrefetchingIterator;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.DirectRecordAccess;
 import org.neo4j.internal.recordstorage.Loaders;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -62,6 +60,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -271,22 +270,10 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         }
     }
 
-    public Iterator<IndexDescriptor> getIndexDescriptors() {
-        LongIterator ids = indexingService.getIndexIds().longIterator();
-        return new PrefetchingIterator<>() {
-            @Override
-            protected IndexDescriptor fetchNextOrNull() {
-                if (ids.hasNext()) {
-                    long indexId = ids.next();
-                    try {
-                        return indexingService.getIndexProxy(indexId).getDescriptor();
-                    } catch (IndexNotFoundKernelException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
-                return null;
-            }
-        };
+    public List<IndexDescriptor> getIndexDescriptors() {
+        return Iterables.stream(indexingService.getIndexProxies())
+                .map(IndexProxy::getDescriptor)
+                .toList();
     }
 
     public IndexDescriptor getIndexDescriptorByName(String indexName) {

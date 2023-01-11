@@ -33,7 +33,6 @@ import static org.neo4j.test.mockito.mock.Property.set;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -173,9 +172,7 @@ class SpecialisedIndexFullCheckTest {
         void shouldReportNodesThatAreNotIndexed(IndexSize indexSize) throws Exception {
             indexSize.createAdditionalData(fixture);
 
-            Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-            while (indexDescriptorIterator.hasNext()) {
-                IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
                 if (indexDescriptor.schema().entityType() == EntityType.NODE) {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                     try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -207,9 +204,7 @@ class SpecialisedIndexFullCheckTest {
         void shouldReportRelationshipsThatAreNotIndexed(IndexSize indexSize) throws Exception {
             indexSize.createAdditionalData(fixture);
 
-            Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-            while (indexDescriptorIterator.hasNext()) {
-                IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
                 if (indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP) {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                     try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -241,9 +236,8 @@ class SpecialisedIndexFullCheckTest {
             // given
             long newNode = createOneNode();
 
-            Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-            while (indexDescriptorIterator.hasNext()) {
-                IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            Iterable<IndexDescriptor> indexDescriptors = getValueIndexDescriptors();
+            for (IndexDescriptor indexDescriptor : indexDescriptors) {
                 if (indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique()) {
                     IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                     try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -261,18 +255,17 @@ class SpecialisedIndexFullCheckTest {
         }
 
         Value[] values(IndexDescriptor indexRule) {
-            switch (indexRule.schema().getPropertyIds().length) {
-                case 1:
-                    return Iterators.array(Values.of(indexedValue()));
-                case 2:
-                    return Iterators.array(Values.of(indexedValue()), Values.of(anotherIndexedValue()));
-                default:
-                    throw new UnsupportedOperationException();
-            }
+            return switch (indexRule.schema().getPropertyIds().length) {
+                case 1 -> Iterators.array(Values.of(indexedValue()));
+                case 2 -> Iterators.array(Values.of(indexedValue()), Values.of(anotherIndexedValue()));
+                default -> throw new UnsupportedOperationException();
+            };
         }
 
-        private Iterator<IndexDescriptor> getValueIndexDescriptors() {
-            return Iterators.filter(descriptor -> !descriptor.isTokenIndex(), fixture.getIndexDescriptors());
+        private Iterable<IndexDescriptor> getValueIndexDescriptors() {
+            return fixture.getIndexDescriptors().stream()
+                    .filter(descriptor -> !descriptor.isTokenIndex())
+                    .toList();
         }
 
         private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException {

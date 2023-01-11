@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.Collection;
 import java.util.function.UnaryOperator;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -38,7 +39,6 @@ public class IndexMapReference implements IndexMapSnapshotProvider {
      * a snapshot of the current {@link IndexMap}. That {@link IndexMap} is meant to be modified by the function
      * and in the end returned. The function can also return another {@link IndexMap} instance if it wants to, e.g.
      * for clearing the map. The returned map will be set as the current index map before exiting the method.
-     *
      * This is the only way contents of the {@link IndexMap} considered the current one can be modified.
      *
      * @param modifier the function modifying the snapshot.
@@ -56,15 +56,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider {
         return proxy;
     }
 
-    public IndexProxy getIndexProxy(long indexId) throws IndexNotFoundKernelException {
-        IndexProxy proxy = indexMap.getIndexProxy(indexId);
-        if (proxy == null) {
-            throw new IndexNotFoundKernelException("No index for index id " + indexId + " exists.");
-        }
-        return proxy;
-    }
-
-    Iterable<IndexProxy> getAllIndexProxies() {
+    Collection<IndexProxy> getAllIndexProxies() {
         return indexMap.getAllIndexProxies();
     }
 

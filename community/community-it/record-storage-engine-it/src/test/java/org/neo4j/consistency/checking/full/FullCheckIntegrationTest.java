@@ -75,7 +75,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,6 +111,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -420,11 +420,9 @@ public class FullCheckIntegrationTest {
     }
 
     private IndexDescriptor findTokenIndex(GraphStoreFixture fixture, EntityType entityType) {
-        Iterator<IndexDescriptor> indexDescriptors = fixture.getIndexDescriptors();
-        while (indexDescriptors.hasNext()) {
-            IndexDescriptor next = indexDescriptors.next();
-            if (next.isTokenIndex() && next.schema().entityType() == entityType) {
-                return next;
+        for (IndexDescriptor indexDescriptor : fixture.getIndexDescriptors()) {
+            if (indexDescriptor.isTokenIndex() && indexDescriptor.schema().entityType() == entityType) {
+                return indexDescriptor;
             }
         }
         throw new RuntimeException(entityType + " index missing");
@@ -483,15 +481,13 @@ public class FullCheckIntegrationTest {
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexDescriptor> rules = getValueIndexDescriptors();
-        while (rules.hasNext()) {
-            IndexDescriptor rule = rules.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig(Config.defaults());
             IndexPopulator populator = storeAccess
                     .indexes()
-                    .lookup(rule.getIndexProvider())
+                    .lookup(indexDescriptor.getIndexProvider())
                     .getPopulator(
-                            rule,
+                            indexDescriptor,
                             samplingConfig,
                             heapBufferFactory(1024),
                             INSTANCE,
@@ -594,9 +590,7 @@ public class FullCheckIntegrationTest {
         indexSize.createAdditionalData(fixture);
 
         // given
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.NODE) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -627,9 +621,7 @@ public class FullCheckIntegrationTest {
         indexSize.createAdditionalData(fixture);
 
         // given
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -663,9 +655,7 @@ public class FullCheckIntegrationTest {
         // given
         long newNode = createOneNode();
 
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique()) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -692,9 +682,7 @@ public class FullCheckIntegrationTest {
         // given
         long newRel = createOneRelationship();
 
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP && !indexDescriptor.isUnique()) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -724,9 +712,7 @@ public class FullCheckIntegrationTest {
             id.set(node.getId());
         });
 
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.NODE && !indexDescriptor.isUnique()) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -760,9 +746,7 @@ public class FullCheckIntegrationTest {
             id.set(relationship.getId());
         });
 
-        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
-        while (indexDescriptorIterator.hasNext()) {
-            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             if (indexDescriptor.schema().entityType() == EntityType.RELATIONSHIP) {
                 IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
@@ -797,19 +781,17 @@ public class FullCheckIntegrationTest {
         // given
         indexSize.createAdditionalData(fixture);
 
-        Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
         // Create a node so the duplicate in the index refers to a valid node
         // (IndexChecker only reports the duplicate if it refers to a node id lower than highId)
         long nodeId = createOneNode();
-        while (indexRuleIterator.hasNext()) {
-            IndexDescriptor indexRule = indexRuleIterator.next();
-            if (indexRule.schema().isLabelSchemaDescriptor()) {
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
+            if (indexDescriptor.schema().isLabelSchemaDescriptor()) {
                 // Don't close this accessor. It will be done when shutting down db.
-                IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexRule);
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
 
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
                     // There is already another node (created in generateInitialData()) that has this value
-                    updater.process(IndexEntryUpdate.add(nodeId, indexRule, values(indexRule)));
+                    updater.process(IndexEntryUpdate.add(nodeId, indexDescriptor, values(indexDescriptor)));
                 }
                 accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
             }
@@ -3394,8 +3376,8 @@ public class FullCheckIntegrationTest {
                 rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors());
     }
 
-    protected Iterator<IndexDescriptor> getValueIndexDescriptors() {
-        return Iterators.filter(descriptor -> !descriptor.isTokenIndex(), fixture.getIndexDescriptors());
+    protected Iterable<IndexDescriptor> getValueIndexDescriptors() {
+        return Iterables.filter(descriptor -> !descriptor.isTokenIndex(), fixture.getIndexDescriptors());
     }
 
     private static class Reference<T> {

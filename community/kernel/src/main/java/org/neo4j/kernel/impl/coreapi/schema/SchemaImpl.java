@@ -341,16 +341,11 @@ public class SchemaImpl implements Schema {
             IndexDescriptor reference =
                     getIndexReference(schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index);
             InternalIndexState indexState = schemaRead.indexGetState(reference);
-            switch (indexState) {
-                case POPULATING:
-                    return POPULATING;
-                case ONLINE:
-                    return ONLINE;
-                case FAILED:
-                    return FAILED;
-                default:
-                    throw new IllegalArgumentException(String.format("Illegal index state %s", indexState));
-            }
+            return switch (indexState) {
+                case POPULATING -> POPULATING;
+                case ONLINE -> ONLINE;
+                case FAILED -> FAILED;
+            };
         } catch (KernelException e) {
             throw newIndexNotFoundException(index, e);
         }

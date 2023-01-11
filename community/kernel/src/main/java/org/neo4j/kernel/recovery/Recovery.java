@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
@@ -61,7 +62,6 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -87,6 +87,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
@@ -663,21 +664,15 @@ public final class Recovery {
 
     private static void awaitIndexesOnline(IndexingService indexingService, long awaitIndexesOnlineMillis) {
         var stopWatch = Stopwatch.start();
-        var indexIdIterator = indexingService.getIndexIds().longIterator();
-        while (indexIdIterator.hasNext()) {
-            var indexId = indexIdIterator.next();
-            try {
-                var indexProxy = indexingService.getIndexProxy(indexId);
-                while (stopWatch.hasTimedOut(awaitIndexesOnlineMillis, TimeUnit.MILLISECONDS)
+        try {
+            for (IndexProxy indexProxy : indexingService.getIndexProxies()) {
+                while (stopWatch.hasTimedOut(awaitIndexesOnlineMillis, MILLISECONDS)
                         && indexProxy.getState() == InternalIndexState.POPULATING) {
-                    Thread.sleep(10);
+                    MILLISECONDS.sleep(10);
                 }
-            } catch (IndexNotFoundKernelException e) {
-                throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

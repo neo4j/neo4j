@@ -45,6 +45,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.stringValue;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
@@ -81,7 +82,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.SchemaStorage;
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -343,8 +343,7 @@ class CheckerTestBase {
         return indexId;
     }
 
-    long uniqueIndex(SchemaDescriptor descriptor) throws KernelException {
-        long indexId;
+    IndexDescriptor uniqueIndex(SchemaDescriptor descriptor) throws KernelException {
         String constraintName = "me";
         try (KernelTransaction tx = ktx()) {
             tx.schemaWrite()
@@ -352,12 +351,20 @@ class CheckerTestBase {
                             IndexPrototype.uniqueForSchema(descriptor).withName(constraintName));
             tx.commit();
         }
-        try (KernelTransaction tx = ktx()) {
-            ConstraintDescriptor constraint = tx.schemaRead().constraintGetForName(constraintName);
-            indexId = constraint.asUniquenessConstraint().ownedIndexId();
-        }
         awaitIndexesOnline();
-        return indexId;
+        try (KernelTransaction tx = ktx()) {
+            var constraint =
+                    tx.schemaRead().constraintGetForName(constraintName).asUniquenessConstraint();
+            long indexId = constraint.ownedIndexId();
+            Iterator<IndexDescriptor> iterator = tx.schemaRead().indexesGetAllNonLocking();
+            while (iterator.hasNext()) {
+                IndexDescriptor indexDescriptor = iterator.next();
+                if (indexDescriptor.getId() == indexId) {
+                    return indexDescriptor;
+                }
+            }
+        }
+        throw new RuntimeException("Index not found: " + descriptor);
     }
 
     private void awaitIndexesOnline() {

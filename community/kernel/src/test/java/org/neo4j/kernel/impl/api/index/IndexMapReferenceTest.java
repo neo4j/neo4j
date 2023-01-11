@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -28,6 +29,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.Race;
 
 class IndexMapReferenceTest {
@@ -55,12 +57,9 @@ class IndexMapReferenceTest {
         race.go();
 
         // then
-        for (int i = 0; i < existing.length; i++) {
-            assertNull(ref.getIndexProxy(i));
-        }
-        for (int i = 0; i < created.length; i++) {
-            assertSame(created[i], ref.getIndexProxy(existing.length + i));
-        }
+        var indexProxies = Iterables.asList(ref.getAllIndexProxies());
+        assertFalse(indexProxies.stream().anyMatch(indexProxy -> contains(existing, indexProxy)));
+        assertTrue(indexProxies.stream().allMatch(indexProxy -> contains(created, indexProxy)));
     }
 
     private static Runnable putIndexProxy(IndexMapReference ref, IndexProxy proxy) {

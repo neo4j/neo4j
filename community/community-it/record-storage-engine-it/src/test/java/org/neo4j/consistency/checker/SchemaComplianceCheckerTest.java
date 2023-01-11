@@ -43,6 +43,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -112,7 +113,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
     void shouldReportNotUniquelyIndexed() throws Exception {
         // given
         LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
-        long indexId = uniqueIndex(descriptor);
+        var index = uniqueIndex(descriptor);
         long nodeId;
         try (AutoCloseable ignored = tx()) {
             TextValue value = stringValue("a");
@@ -121,14 +122,14 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
                 long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
                 nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
-                indexValue(descriptor, indexId, nodeId, value);
+                indexValue(descriptor, index, nodeId, value);
             }
             // (N2) indexed w/ property A
             {
                 long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
                 long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
-                indexValue(descriptor, indexId, nodeId2, value);
+                indexValue(descriptor, index, nodeId2, value);
             }
         }
 
@@ -187,7 +188,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
     void shouldCheckIndexesWithLookupFiltering() throws Exception {
         // given
         LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
-        long indexId = uniqueIndex(descriptor);
+        var index = uniqueIndex(descriptor);
         long nodeId;
         try (AutoCloseable ignored = tx()) {
             PointValue value = pointValue(CoordinateReferenceSystem.WGS_84, 2, 4);
@@ -197,7 +198,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
                 long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
                 nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
-                indexValue(descriptor, indexId, nodeId, value);
+                indexValue(descriptor, index, nodeId, value);
             }
 
             // (N2) w/ property
@@ -205,7 +206,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
                 long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
                 long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
-                indexValue(descriptor, indexId, nodeId2, value);
+                indexValue(descriptor, index, nodeId2, value);
             }
         }
 
@@ -218,11 +219,11 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
                 report -> report.uniqueIndexNotUnique(any(), any(), anyLong()));
     }
 
-    private void indexValue(LabelSchemaDescriptor descriptor, long indexId, long nodeId, Value value)
+    private void indexValue(LabelSchemaDescriptor descriptor, IndexDescriptor index, long nodeId, Value value)
             throws IndexNotFoundKernelException, IndexEntryConflictException {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
         try (IndexUpdater indexUpdater =
-                indexingService.getIndexProxy(indexId).newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
+                indexingService.getIndexProxy(index).newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
             indexUpdater.process(add(nodeId, () -> descriptor, value));
         }
     }

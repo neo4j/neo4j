@@ -234,9 +234,11 @@ public class DetectRandomSabotageIT {
         SchemaStore schemaStore = neoStores.getSchemaStore();
         PropertyStore propertyStore = schemaStore.propertyStore();
         long indexId = resolver.resolveDependency(IndexingService.class)
-                .getIndexIds()
-                .longIterator()
-                .next();
+                .getIndexProxies()
+                .iterator()
+                .next()
+                .getDescriptor()
+                .getId();
         SchemaRecord schemaRecord = schemaStore.newRecord();
         var cursor = storageCursors.readCursor(RecordCursorTypes.SCHEMA_CURSOR);
         schemaStore.getRecordByCursor(indexId, schemaRecord, RecordLoad.FORCE, cursor);
@@ -896,12 +898,10 @@ public class DetectRandomSabotageIT {
                     StoreCursors storageCursors)
                     throws Exception {
                 IndexingService indexing = otherDependencies.resolveDependency(IndexingService.class);
-                long[] indexIds = indexing.getIndexIds().toArray();
+                var indexes = Iterables.asList(indexing.getIndexProxies());
                 IndexProxy indexProxy = null;
                 while (indexProxy == null) {
-                    // Make sure we get an index proxy representing a RANGE index (and not e.g. TokenIndex)
-                    long indexId = indexIds[random.nextInt(indexIds.length)];
-                    indexProxy = indexing.getIndexProxy(indexId);
+                    indexProxy = indexes.get(random.nextInt(indexes.size()));
                     while (indexProxy instanceof AbstractDelegatingIndexProxy) {
                         indexProxy = ((AbstractDelegatingIndexProxy) indexProxy).getDelegate();
                     }

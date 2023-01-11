@@ -25,7 +25,6 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,7 +58,6 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
     void shouldFindDuplicatesInUniqueIndexEvenWhenInDifferentRanges()
             throws ConsistencyCheckIncompleteException, IndexEntryConflictException, IOException {
         // given
-        Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
 
         // Create 2 extra nodes to guarantee that the node id of our duplicate is not in the same range as the original
         // entry.
@@ -68,15 +66,14 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
         // Create a node so the duplicate in the index refers to a valid node
         // (IndexChecker only reports the duplicate if it refers to a node id lower than highId)
         long nodeId = createOneNode();
-        while (indexRuleIterator.hasNext()) {
-            IndexDescriptor indexRule = indexRuleIterator.next();
-            if (indexRule.schema().entityType() == EntityType.NODE) {
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
+            if (indexDescriptor.schema().entityType() == EntityType.NODE) {
                 // Don't close this accessor. It will be done when shutting down db.
-                IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexRule);
+                IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
 
                 try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
                     // There is already another node (created in generateInitialData()) that has this value
-                    updater.process(IndexEntryUpdate.add(nodeId, indexRule, values(indexRule)));
+                    updater.process(IndexEntryUpdate.add(nodeId, indexDescriptor, values(indexDescriptor)));
                 }
                 accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
             }
@@ -145,18 +142,16 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
 
     private void removeFromIndex(long nodeToRemoveFromIndex, long relToRemoveFromIndex)
             throws IOException, IndexEntryConflictException {
-        Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
-        while (indexRuleIterator.hasNext()) {
-            IndexDescriptor indexRule = indexRuleIterator.next();
+        for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             // Don't close this accessor. It will be done when shutting down db.
-            IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexRule);
+            IndexAccessor accessor = fixture.indexAccessorLookup().apply(indexDescriptor);
 
             try (IndexUpdater updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
                 long idToRemove = relToRemoveFromIndex;
-                if (indexRule.schema().entityType() == EntityType.NODE) {
+                if (indexDescriptor.schema().entityType() == EntityType.NODE) {
                     idToRemove = nodeToRemoveFromIndex;
                 }
-                updater.process(IndexEntryUpdate.remove(idToRemove, indexRule, values(indexRule)));
+                updater.process(IndexEntryUpdate.remove(idToRemove, indexDescriptor, values(indexDescriptor)));
             }
             accessor.force(FileFlushEvent.NULL, NULL_CONTEXT);
         }

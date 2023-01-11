@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Function;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -36,10 +35,6 @@ public class SchemaAndIndexingFileIndexListing {
 
     SchemaAndIndexingFileIndexListing(IndexingService indexingService) {
         this.indexingService = indexingService;
-    }
-
-    public LongSet getIndexIds() {
-        return indexingService.getIndexIds();
     }
 
     Resource gatherSchemaIndexFiles(Collection<StoreFileMetadata> targetFiles) throws IOException {
