@@ -1535,6 +1535,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE DATABASE `graph.db` IF NOT EXISTS WAIT",
     "create database graph.db options {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} wait" ->
       "CREATE DATABASE `graph.db` OPTIONS {existingData: \"use\", existingDataSeedInstance: \"84c3ee6f-260e-47db-a4b6-589c807f2c2e\"} WAIT",
+    "create database graph.db options {`backticked key`: 'use'} WAIT" ->
+      "CREATE DATABASE `graph.db` OPTIONS {`backticked key`: \"use\"} WAIT",
     "create database graph.db options $ops wait" ->
       "CREATE DATABASE `graph.db` OPTIONS $ops WAIT",
     "create composite database composite" ->
@@ -1589,6 +1591,28 @@ class PrettifierIT extends CypherFunSuite {
       "ALTER DATABASE foo SET TOPOLOGY 2 PRIMARIES 1 SECONDARY",
     "ALTER DATABASE foo SET ACCESS read write SET TOPOLOGY 1 SECONDARY 2 PRIMARY" ->
       "ALTER DATABASE foo SET ACCESS READ WRITE SET TOPOLOGY 2 PRIMARIES 1 SECONDARY",
+    "ALTER DATABASE foo SET OPTION key1 1" ->
+      "ALTER DATABASE foo SET OPTION key1 1",
+    "ALTER DATABASE foo SET OPTION `backticked option` 1" ->
+      "ALTER DATABASE foo SET OPTION `backticked option` 1",
+    "ALTER DATABASE foo SET OPTION key1 1 SET OPTION key2 true" ->
+      "ALTER DATABASE foo SET OPTION key1 1 SET OPTION key2 true",
+    "alter database foo set option KEY_A 'value' set option KEY_B 1.0" ->
+      "ALTER DATABASE foo SET OPTION KEY_A \"value\" SET OPTION KEY_B 1.0",
+    "alter database foo set option KEY_A \"a value\" set option KEY_B 1.0" ->
+      "ALTER DATABASE foo SET OPTION KEY_A \"a value\" SET OPTION KEY_B 1.0",
+    "alter database foo SET ACCESS read write set option KEY_A \"a value\" set option `some complex option key` 1.0" ->
+      "ALTER DATABASE foo SET ACCESS READ WRITE SET OPTION KEY_A \"a value\" SET OPTION `some complex option key` 1.0",
+    "alter database foo set option KEY_A \"a value\" SET ACCESS read write set option KEY_B 1.0" ->
+      "ALTER DATABASE foo SET ACCESS READ WRITE SET OPTION KEY_A \"a value\" SET OPTION KEY_B 1.0",
+    "ALTER DATABASE foo SET OPTION key1 1 set topology 1 PRIMARY" ->
+      "ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY SET OPTION key1 1",
+    "ALTER DATABASE foo REMOVE OPTION key1" ->
+      "ALTER DATABASE foo REMOVE OPTION key1",
+    "ALTER DATABASE foo REMOVE OPTION `backticked option`" ->
+      "ALTER DATABASE foo REMOVE OPTION `backticked option`",
+    "ALTER DATABASE foo REMOVE OPTION key1 REMOVE OPTION key2 REMOVE OPTION `some complex option key`" ->
+      "ALTER DATABASE foo REMOVE OPTION key1 REMOVE OPTION key2 REMOVE OPTION `some complex option key`",
     "start database $foo" ->
       "START DATABASE $foo",
     "start database foO_Bar_42" ->

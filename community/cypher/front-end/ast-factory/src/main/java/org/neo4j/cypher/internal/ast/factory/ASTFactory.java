@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Factory for constructing ASTs.
@@ -601,7 +602,9 @@ public interface ASTFactory<
             boolean ifExists,
             AccessType accessType,
             Integer topologyPrimaries,
-            Integer topologySecondaries);
+            Integer topologySecondaries,
+            Map<String, EXPRESSION> options,
+            Set<String> optionsToRemove);
 
     ADMINISTRATION_COMMAND showDatabase(
             POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);

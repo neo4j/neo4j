@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -907,7 +908,9 @@ public class LiteralInterpreter
             boolean ifExists,
             AccessType accessType,
             Integer topologyPrimaries,
-            Integer topologySecondaries) {
+            Integer topologySecondaries,
+            Map<String, Object> options,
+            Set<String> optionsToRemove) {
         throw new UnsupportedOperationException("alterDatabase is not a literal");
     }
 

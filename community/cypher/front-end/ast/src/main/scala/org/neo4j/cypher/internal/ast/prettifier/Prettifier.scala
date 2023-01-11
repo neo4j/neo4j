@@ -685,11 +685,13 @@ case class Prettifier(
             s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
 
-      case x @ AlterDatabase(dbName, ifExists, access, topology) =>
+      case x @ AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove) =>
         val maybeAccessString = access.map(getAccessString).getOrElse("")
         val maybeIfExists = if (ifExists) " IF EXISTS" else ""
         val maybeTopologyString = topology.map(topo => s" SET${Prettifier.extractTopology(topo)}").getOrElse("")
-        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString"
+        val formattedOptions = asIndividualOptions(options)
+        val formattedOptionsToRemove = optionsToRemove.map(o => s" REMOVE OPTION ${backtick(o)}").mkString("")
+        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString$formattedOptions$formattedOptionsToRemove"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
@@ -862,6 +864,13 @@ case class Prettifier(
     else {
       " OPTIONS {}"
     }
+
+  private def asIndividualOptions(options: Options) = options match {
+    case NoOptions => ""
+    case OptionsMap(map) => map.map {
+        case (key, value) => s" SET OPTION ${backtick(key)} ${expr(value)}"
+      }.mkString("")
+  }
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
     def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)

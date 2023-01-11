@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.empty;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.cypher.internal.ast.factory.AccessType;
@@ -1245,7 +1246,9 @@ public class NullAstFactory
             boolean ifExists,
             AccessType accessType,
             Integer topologyPrimaries,
-            Integer topologySecondaries) {
+            Integer topologySecondaries,
+            Map<String, NULL> options,
+            Set<String> optionsToRemove) {
         return null;
     }
 

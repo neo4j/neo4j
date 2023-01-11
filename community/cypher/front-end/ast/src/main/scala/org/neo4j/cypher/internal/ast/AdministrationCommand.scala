@@ -872,6 +872,7 @@ object ShowDatabase {
   val LAST_COMMITTED_TX_COL = "lastCommittedTxn"
   val REPLICATION_LAG_COL = "replicationLag"
   val CONSTITUENTS_COL = "constituents"
+  val OPTIONS_COL = "options"
 
   def apply(scope: DatabaseScope, yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowDatabase = {
     val showColumns = List(
@@ -904,7 +905,8 @@ object ShowDatabase {
       (ShowColumn(STORE_COL)(position), false),
       (ShowColumn(LAST_COMMITTED_TX_COL, CTInteger)(position), false),
       (ShowColumn(REPLICATION_LAG_COL, CTInteger)(position), false),
-      (ShowColumn(CONSTITUENTS_COL, CTList(CTString))(position), true)
+      (ShowColumn(CONSTITUENTS_COL, CTList(CTString))(position), true),
+      (ShowColumn(OPTIONS_COL, CTMap)(position), false)
     )
 
     ShowDatabase(scope, yieldOrWhere, DefaultOrAllShowColumns(showColumns, yieldOrWhere))(position)
@@ -994,7 +996,9 @@ final case class AlterDatabase(
   dbName: DatabaseName,
   ifExists: Boolean,
   access: Option[Access],
-  topology: Option[Topology]
+  topology: Option[Topology],
+  options: Options,
+  optionsToRemove: Set[String]
 )(
   val position: InputPosition
 ) extends WriteAdministrationCommand {

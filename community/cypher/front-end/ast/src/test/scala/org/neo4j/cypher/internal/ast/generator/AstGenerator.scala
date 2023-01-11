@@ -1780,6 +1780,22 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     finalMap <- oneOf(OptionsMap(map), OptionsParam(param), NoOptions)
   } yield finalMap
 
+  def _optionsForAlterDatabaseOrNone: Gen[Options] = for {
+    map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
+    finalMap <- oneOf(OptionsMap(map), NoOptions)
+  } yield finalMap
+
+  def _optionsToRemove(hasSetClause: Boolean): Gen[Set[String]] =
+    if (hasSetClause) {
+      // Must be empty
+      Gen.containerOfN[Set, String](0, _identifier)
+    } else {
+      // Must have at least one entry
+      Gen.chooseNum(1, 5).flatMap { n =>
+        Gen.containerOfN[Set, String](n, _identifier)
+      }
+    }
+
   def _optionsMapAsEither: Gen[Options] = for {
     map <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
     param <- _mapParameter
@@ -2225,9 +2241,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _alterDatabase: Gen[AlterDatabase] = for {
     dbName <- _databaseName
     ifExists <- boolean
+    options <- _optionsForAlterDatabaseOrNone
     access <- option(_access)
-    topology <- if (access.isEmpty) some(_topology) else option(_topology)
-  } yield AlterDatabase(dbName, ifExists, access, topology)(pos)
+    topology <- option(_topology)
+    optionsToRemove <- _optionsToRemove(hasSetClause =
+      access.nonEmpty || topology.nonEmpty || (!options.equals(NoOptions))
+    )
+  } yield AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove)(pos)
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _databaseName

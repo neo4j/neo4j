@@ -21,8 +21,13 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.NamespacedName
+import org.neo4j.cypher.internal.ast.NoOptions
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.Topology
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
@@ -415,6 +420,55 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  test("CREATE DATABASE foo SET OPTION key value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'SET': expected
+        |  "."
+        |  "IF"
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "TOPOLOGY"
+        |  "WAIT"
+        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo OPTION {key: value}") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'OPTION': expected
+        |  "."
+        |  "IF"
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "TOPOLOGY"
+        |  "WAIT"
+        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo SET OPTIONS key value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'SET': expected
+        |  "."
+        |  "IF"
+        |  "NOWAIT"
+        |  "OPTIONS"
+        |  "TOPOLOGY"
+        |  "WAIT"
+        |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+    )
+  }
+
+  test("CREATE DATABASE foo OPTIONS key value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'key': expected "{" or a parameter (line 1, column 29 (offset: 28))""".stripMargin
+    )
+  }
+
   test("CREATE DATABASE foo TOPOLOGY 1 PRIMARY") {
     assertAst(
       ast.CreateDatabase(
@@ -712,7 +766,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   ).foreach {
     case (accessKeyword, accessType) =>
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None)(defaultPos))
+        assertAst(
+          ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None, NoOptions, Set.empty)(defaultPos)
+        )
       }
 
       test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
@@ -720,23 +776,35 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           stringParamName("foo"),
           ifExists = false,
           Some(accessType),
-          None
+          None,
+          NoOptions,
+          Set.empty
         )(
           defaultPos
         ))
       }
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literal("foo.bar"), ifExists = false, Some(accessType), None)(defaultPos))
+        assertAst(
+          ast.AlterDatabase(literal("foo.bar"), ifExists = false, Some(accessType), None, NoOptions, Set.empty)(
+            defaultPos
+          )
+        )
       }
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None)((1, 12, 11)))
+        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None, NoOptions, Set.empty)((
+          1,
+          12,
+          11
+        )))
       }
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = true, Some(accessType), None)(defaultPos))
+        assertAst(
+          ast.AlterDatabase(literalFoo, ifExists = true, Some(accessType), None, NoOptions, Set.empty)(defaultPos)
+        )
       }
   }
 
@@ -750,21 +818,21 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo") {
     assertFailsWithMessage(
       testName,
-      "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))"
+      "Invalid input '': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 19 (offset: 18))"
     )
   }
 
   test("ALTER DATABASE foo SET READ ONLY") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'READ': expected \"ACCESS\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
+      "Invalid input 'READ': expected \"ACCESS\", \"OPTION\" or \"TOPOLOGY\" (line 1, column 24 (offset: 23))"
     )
   }
 
   test("ALTER DATABASE foo ACCESS READ WRITE") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))"
+      "Invalid input 'ACCESS': expected \".\", \"IF\", \"REMOVE\" or \"SET\" (line 1, column 20 (offset: 19))"
     )
   }
 
@@ -810,6 +878,260 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     )
   }
 
+  test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL'") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos))),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key 1") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        OptionsMap(Map("key" -> SignedDecimalIntegerLiteral("1")(pos))),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key -1") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        OptionsMap(Map("key" -> SignedDecimalIntegerLiteral("-1")(pos))),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key null") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        OptionsMap(Map("key" -> Null()(pos))),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key1 1 SET OPTION key2 'two'") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        OptionsMap(Map(
+          "key1" -> SignedDecimalIntegerLiteral("1")(pos),
+          "key2" -> StringLiteral("two")(pos)
+        )),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ ONLY SET TOPOLOGY 1 PRIMARY SET OPTION txLogEnrichment 'FULL'") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ReadOnlyAccess),
+        Some(Topology(Some(1), None)),
+        OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos))),
+        Set.empty
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key2") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        None,
+        NoOptions,
+        Set("key", "key2")
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTION key REMOVE OPTION key") {
+    assertFailsWithMessage(testName, """Duplicate 'REMOVE OPTION key' clause (line 1, column 38 (offset: 37))""")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 41 (offset: 40))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTIONS {key: value}") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION {key: value}") {
+    assertFailsWithMessage(testName, """Invalid input '{': expected an identifier (line 1, column 31 (offset: 30))""")
+  }
+
+  test("ALTER DATABASE foo SET OPTIONS key value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'OPTIONS': expected "ACCESS", "OPTION" or "TOPOLOGY" (line 1, column 24 (offset: 23))"""
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key value key2 value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'key2': expected
+        |  "!="
+        |  "%"
+        |  "*"
+        |  "+"
+        |  "-"
+        |  "."
+        |  "/"
+        |  ":"
+        |  "<"
+        |  "<="
+        |  "<>"
+        |  "="
+        |  "=~"
+        |  ">"
+        |  ">="
+        |  "AND"
+        |  "CONTAINS"
+        |  "ENDS"
+        |  "IN"
+        |  "IS"
+        |  "OR"
+        |  "SET"
+        |  "STARTS"
+        |  "XOR"
+        |  "["
+        |  "^"
+        |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo SET OPTION key value, key2 value") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input ',': expected
+        |  "!="
+        |  "%"
+        |  "*"
+        |  "+"
+        |  "-"
+        |  "."
+        |  "/"
+        |  ":"
+        |  "<"
+        |  "<="
+        |  "<>"
+        |  "="
+        |  "=~"
+        |  ">"
+        |  ">="
+        |  "AND"
+        |  "CONTAINS"
+        |  "ENDS"
+        |  "IN"
+        |  "IS"
+        |  "OR"
+        |  "SET"
+        |  "STARTS"
+        |  "XOR"
+        |  "["
+        |  "^"
+        |  <EOF> (line 1, column 40 (offset: 39))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTION key key2") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'key2': expected "REMOVE" or <EOF> (line 1, column 38 (offset: 37))"""
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTION key, key2") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input ',': expected "REMOVE" or <EOF> (line 1, column 37 (offset: 36))"""
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTIONS key") {
+    assertFailsWithMessage(testName, """Invalid input 'OPTIONS': expected "OPTION" (line 1, column 27 (offset: 26))""")
+  }
+
+  test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' SET OPTION txLogEnrichment 'FULL'") {
+    assertFailsWithMessage(testName, "Duplicate 'SET OPTION txLogEnrichment' clause (line 1, column 54 (offset: 53))")
+  }
+
+  test("ALTER DATABASE foo SET OPTION txLogEnrichment 'FULL' REMOVE OPTION txLogEnrichment") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'REMOVE': expected
+        |  "!="
+        |  "%"
+        |  "*"
+        |  "+"
+        |  "-"
+        |  "."
+        |  "/"
+        |  ":"
+        |  "<"
+        |  "<="
+        |  "<>"
+        |  "="
+        |  "=~"
+        |  ">"
+        |  ">="
+        |  "AND"
+        |  "CONTAINS"
+        |  "ENDS"
+        |  "IN"
+        |  "IS"
+        |  "OR"
+        |  "SET"
+        |  "STARTS"
+        |  "XOR"
+        |  "["
+        |  "^"
+        |  <EOF> (line 1, column 54 (offset: 53))""".stripMargin
+    )
+  }
+
+  test("ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'SET': expected \"REMOVE\" or <EOF> (line 1, column 50 (offset: 49))"
+    )
+  }
+
   // ALTER OR REPLACE
   test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
     assertFailsWithMessage(
@@ -829,7 +1151,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(Some(1), None))
+        Some(Topology(Some(1), None)),
+        NoOptions,
+        Set.empty
       )(pos)
     )
   }
@@ -854,7 +1178,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(Some(1), Some(1)))
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty
       )(pos)
     )
   }
@@ -865,7 +1191,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         None,
-        Some(Topology(Some(1), Some(1)))
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty
       )(pos)
     )
   }
@@ -890,7 +1218,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         Some(ast.ReadWriteAccess),
-        Some(Topology(Some(1), Some(1)))
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty
       )(pos)
     )
   }
@@ -901,7 +1231,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         literalFoo,
         ifExists = false,
         Some(ast.ReadWriteAccess),
-        Some(Topology(Some(1), Some(1)))
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty
       )(pos)
     )
   }
@@ -954,7 +1286,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY") {
     assertAst(
-      ast.AlterDatabase(literalFoo, ifExists = false, None, Some(Topology(None, Some(1))))(pos)
+      ast.AlterDatabase(literalFoo, ifExists = false, None, Some(Topology(None, Some(1))), NoOptions, Set.empty)(pos)
     )
   }
 

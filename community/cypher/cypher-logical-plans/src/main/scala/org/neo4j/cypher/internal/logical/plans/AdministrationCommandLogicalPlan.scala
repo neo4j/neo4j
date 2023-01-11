@@ -424,7 +424,9 @@ case class AlterDatabase(
   source: AdministrationCommandLogicalPlan,
   databaseName: DatabaseName,
   access: Option[Access],
-  topology: Option[Topology]
+  topology: Option[Topology],
+  options: Options,
+  optionsToRemove: Set[String]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class StartDatabase(source: AdministrationCommandLogicalPlan, databaseName: DatabaseName)(

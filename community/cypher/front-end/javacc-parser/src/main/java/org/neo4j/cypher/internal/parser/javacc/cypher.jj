@@ -63,10 +63,12 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.Stack;
 import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
@@ -503,6 +505,7 @@ TOKEN [IGNORE_CASE] :
     | < ONLY: "ONLY" >
     | < OPTIONAL: "OPTIONAL" >
     | < OPTIONS: "OPTIONS" >
+    | < OPTION: "OPTION" >
     | < OR: "OR" >
     | < ORDER: "ORDER" >
     | < OUTPUT: "OUTPUT" >
@@ -5543,17 +5546,23 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
     Token secondaries = null;
     Token count = null;
     Token set = null;
+    Map<String, EXPRESSION> options = null;
+    Set<String> optionsToRemove = new LinkedHashSet<>();
     String accessSetError = "Duplicate SET ACCESS clause";
     String topologySetError = "Duplicate SET TOPOLOGY clause";
     Token errorStart = null;
     String topologyMultiplePrimaryError = "Duplicate PRIMARY clause";
     String topologyMultipleSecondaryError = "Duplicate SECONDARY clause";
+    Token key = null;
+    Token remove = null;
+    EXPRESSION value = null;
 }
 {
     <DATABASE>
     databaseName=SymbolicAliasName()
     ( <IF> <EXISTS> { ifExists = true; } )?
-    (set=<SET> (
+    (
+      (set=<SET> (
         <ACCESS> { assertNotAlreadySet( accessType, set, accessSetError); }
             <READ> ( <ONLY> { accessType = AccessType.READ_ONLY; } | <WRITE> { accessType = AccessType.READ_WRITE; })
         | <TOPOLOGY>
@@ -5564,7 +5573,22 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
                     | (errorStart=<SECONDARY> | errorStart=<SECONDARIES>){ assertNotAlreadySet(secondaries, errorStart, topologyMultipleSecondaryError); } {secondaries = count;}
                 )
             )+
-    ))+
+        | <OPTION> key=SymbolicNameString() value=Expression() {
+            if (options == null) {
+                options = new LinkedHashMap<>();
+            }
+            assertNotAlreadySet(options.getOrDefault(key.image, null), set, "Duplicate 'SET OPTION " + key.image + "' clause");
+            options.put(key.image, value);
+        }
+      ))+ |
+      (remove=<REMOVE> (
+        <OPTION> key=SymbolicNameString() {
+            String entryOrNull = optionsToRemove.contains(key.image) ? key.image : null;
+            assertNotAlreadySet(entryOrNull, remove, "Duplicate 'REMOVE OPTION " + key.image + "' clause");
+            optionsToRemove.add(key.image);
+        }
+      ))+
+    )
     {
         return astFactory.alterDatabase(
             pos( start ),
@@ -5572,7 +5596,9 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
             ifExists,
             accessType,
             (primaries != null) ? Integer.parseInt(primaries.image) : null,
-            (secondaries != null) ? Integer.parseInt(secondaries.image) : null);
+            (secondaries != null) ? Integer.parseInt(secondaries.image) : null,
+            options,
+            optionsToRemove);
     }
 }
 
@@ -6152,6 +6178,7 @@ Token UnescapedSymbolicNameString() :
         | t=<ONLY>
         | t=<OPTIONAL>
         | t=<OPTIONS>
+        | t=<OPTION>
         | t=<OR>
         | t=<ORDER>
         | t=<OUTPUT>

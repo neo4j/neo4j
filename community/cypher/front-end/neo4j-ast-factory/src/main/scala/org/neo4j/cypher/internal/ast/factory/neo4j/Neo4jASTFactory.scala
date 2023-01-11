@@ -453,6 +453,7 @@ import java.util.stream.Collectors
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
+import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.language.implicitConversions
 
 final case class Privilege(
@@ -2307,7 +2308,9 @@ class Neo4jASTFactory(query: String)
     ifExists: Boolean,
     accessType: AccessType,
     topologyPrimaries: Integer,
-    topologySecondaries: Integer
+    topologySecondaries: Integer,
+    options: util.Map[String, Expression],
+    optionsToRemove: util.Set[String]
   ): AlterDatabase = {
     val access = Option(accessType) map {
       case READ_ONLY  => ReadOnlyAccess
@@ -2315,11 +2318,16 @@ class Neo4jASTFactory(query: String)
     }
     val primaryOpt = Option(topologyPrimaries).map(_.intValue())
     val secondaryOpt = Option(topologySecondaries).map(_.intValue())
+    val opts = if (options != null) OptionsMap(options.asScala.toMap) else NoOptions
+    val optsToRemove: Set[String] = optionsToRemove.asScala.toSet
+
     AlterDatabase(
       databaseName,
       ifExists,
       access,
-      if (primaryOpt.nonEmpty || secondaryOpt.nonEmpty) Some(Topology(primaryOpt, secondaryOpt)) else None
+      if (primaryOpt.nonEmpty || secondaryOpt.nonEmpty) Some(Topology(primaryOpt, secondaryOpt)) else None,
+      opts,
+      optsToRemove
     )(p)
   }
 

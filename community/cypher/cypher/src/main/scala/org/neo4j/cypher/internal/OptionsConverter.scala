@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -51,7 +52,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
-import org.neo4j.values.storable.IntegralValue
+import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
 import org.neo4j.values.virtual.ListValue
@@ -60,7 +61,9 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
+import java.util.UUID
 
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -72,27 +75,30 @@ trait OptionsConverter[T] {
     evaluator.evaluate(expression, params)
   }
 
-  def convert(options: Options, params: MapValue): Option[T] = options match {
+  def convert(options: Options, params: MapValue, config: Option[Config] = None): Option[T] = options match {
     case NoOptions => None
-    case OptionsMap(map) => Some(convert(VirtualValues.map(
-        map.keys.map(_.toLowerCase).toArray,
-        map.view.mapValues(evaluate(_, params)).values.toArray
-      )))
+    case OptionsMap(map) => Some(convert(
+        VirtualValues.map(
+          map.keys.map(_.toLowerCase).toArray,
+          map.view.mapValues(evaluate(_, params)).values.toArray
+        ),
+        config
+      ))
     case OptionsParam(parameter) =>
       val opsMap = params.get(parameter.name)
       opsMap match {
         case mv: MapValue =>
           val builder = new MapValueBuilder()
           mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
-          Some(convert(builder.build()))
+          Some(convert(builder.build(), config))
         case _ =>
           throw new InvalidArgumentsException(s"Could not $operation with options '$opsMap'. Expected a map value.")
       }
   }
 
-  def operation: String
+  implicit def operation: String
 
-  def convert(options: MapValue): T
+  def convert(options: MapValue, config: Option[Config]): T
 }
 
 case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
@@ -105,7 +111,7 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
 
   override def operation: String = "enable server"
 
-  override def convert(map: MapValue): ServerOptions = {
+  override def convert(map: MapValue, config: Option[Config]): ServerOptions = {
     map.foldLeft(ServerOptions(None, None, None, None)) {
       case (ops, (key, value)) =>
         if (key.equalsIgnoreCase(ALLOWED_DATABASES)) {
@@ -186,137 +192,256 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
   }
 }
 
-case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
-  val EXISTING_DATA = "existingData"
-  val EXISTING_SEED_INSTANCE = "existingDataSeedInstance"
-  val NUM_PRIMARIES = "primaries"
-  val NUM_SECONDARIES = "secondaries"
-  val STORE_FORMAT = "storeFormat"
-  val SEED_URI = "seedURI"
-  val SEED_CREDENTIALS = "seedCredentials"
-  val SEED_CONFIG = "seedConfig"
-  val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE', '$STORE_FORMAT'"
+trait OptionValidator[T] {
 
-  // existing Data values
-  val USE_EXISTING_DATA = "use"
+  val KEY: String
+  protected def validate(value: AnyValue)(implicit operation: String): T
 
-  override def convert(map: MapValue): CreateDatabaseOptions = {
+  def findIn(optionsMap: MapValue)(implicit operation: String): Option[T] = {
+    optionsMap
+      .find(_._1.equalsIgnoreCase(KEY))
+      .map(_._2)
+      .flatMap {
+        case _: NoValue => None
+        case value      => Some(value)
+      }
+      .map(validate)
+  }
+}
 
-    map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None, None, None)) {
-      case (ops, (key, value)) =>
-        // existingData
-        if (key.equalsIgnoreCase(EXISTING_DATA)) {
-          value match {
-            case existingDataVal: TextValue if USE_EXISTING_DATA.equalsIgnoreCase(existingDataVal.stringValue()) =>
-              ops.copy(existingData = Some(USE_EXISTING_DATA))
-            case value: TextValue =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $EXISTING_DATA '${value.stringValue()}'. Expected '$USE_EXISTING_DATA'."
-              )
-            case value: AnyValue =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $EXISTING_DATA '$value'. Expected '$USE_EXISTING_DATA'."
-              )
-          }
+trait StringOptionValidator extends OptionValidator[String] {
 
-          // existingDataSeedInstance
-        } else if (key.equalsIgnoreCase(EXISTING_SEED_INSTANCE)) {
-          value match {
-            case seed: TextValue => ops.copy(databaseSeed = Some(seed.stringValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $EXISTING_SEED_INSTANCE '$value'. Expected server uuid string."
-              )
-          }
-          // primariesCount
-        } else if (key.equalsIgnoreCase(NUM_PRIMARIES)) {
-          value match {
-            case number: IntegralValue if number.longValue() >= 1 =>
-              ops.copy(primaries = Some(number.longValue().intValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $NUM_PRIMARIES '$value'. Expected positive integer number of primaries."
-              )
-          }
-          // secondariesCount
-        } else if (key.equalsIgnoreCase(NUM_SECONDARIES)) {
-          value match {
-            case number: IntegralValue if number.longValue() >= 0 =>
-              ops.copy(secondaries = Some(number.longValue().intValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $NUM_SECONDARIES '$value'. Expected non-negative integer number of secondaries."
-              )
-          }
-          // storeFormat
-        } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
-          value match {
-            case storeFormat: TextValue =>
-              try {
-                // Validate the format by looking for a storage engine that supports it - will throw if none was found
-                StorageEngineFactory.selectStorageEngine(Config.defaults(
-                  GraphDatabaseSettings.db_format,
-                  storeFormat.stringValue()
-                ))
-                ops.copy(storeFormatNewDb = Some(storeFormat.stringValue()))
-              } catch {
-                case _: Exception =>
-                  throw new InvalidArgumentsException(
-                    s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
-                      + "'aligned', 'standard' or 'high_limit'"
-                  )
-              }
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $STORE_FORMAT '$value', String expected."
-              )
-          }
-        }
-        // seed URI
-        else if (key.equalsIgnoreCase(SEED_URI)) {
-          value match {
-            case seedURI: TextValue => ops.copy(seedURI = Some(seedURI.stringValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $SEED_URI '$value', String expected."
-              )
-          }
-        } else if (key.equalsIgnoreCase(SEED_CREDENTIALS)) {
-          value match {
-            case seedCredentials: TextValue => ops.copy(seedCredentials = Some(seedCredentials.stringValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $SEED_CREDENTIALS '$value', String expected."
-              )
-          }
-        } else if (key.equalsIgnoreCase(SEED_CONFIG)) {
-          value match {
-            case seedConfig: TextValue => ops.copy(seedConfig = Some(seedConfig.stringValue()))
-            case _ =>
-              throw new InvalidArgumentsException(
-                s"Could not create database with specified $SEED_CONFIG '$value', String expected."
-              )
-          }
-        } else {
-          throw new InvalidArgumentsException(
-            s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS."
-          )
-        }
+  protected def validateContent(value: String)(implicit operation: String): Unit
+
+  override protected def validate(value: AnyValue)(implicit operation: String): String = {
+    value match {
+      case textValue: TextValue =>
+        validateContent(textValue.stringValue())
+        textValue.stringValue()
+      case _ =>
+        throw new InvalidArgumentsException(s"Could not $operation with specified $KEY '$value', String expected.")
+    }
+  }
+}
+
+object ExistingDataOption extends StringOptionValidator {
+  val KEY = "existingData"
+
+  // possible options:
+  val VALID_VALUE = "use"
+
+  // override to keep legacy behaviour. ExistingDataOption is parsed to lowercase, other options keep input casing.
+  override protected def validate(value: AnyValue)(implicit operation: String): String =
+    super.validate(value).toLowerCase
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    if (!value.equalsIgnoreCase(VALID_VALUE)) {
+      throw new InvalidArgumentsException(
+        s"Could not $operation with specified $KEY '$value'. Expected '$VALID_VALUE'."
+      )
+    }
+  }
+}
+
+object ExistingSeedInstanceOption extends StringOptionValidator {
+  override val KEY: String = "existingDataSeedInstance"
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit =
+    try {
+      UUID.fromString(value)
+    } catch {
+      case _: IllegalArgumentException =>
+        throw new InvalidArgumentsException(
+          s"Could not $operation with specified $KEY '$value'. Expected server uuid string."
+        )
+    }
+}
+
+object StoreFormatOption extends StringOptionValidator {
+  override val KEY: String = "storeFormat"
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    try {
+      // Validate the format by looking for a storage engine that supports it - will throw if none was found
+      StorageEngineFactory.selectStorageEngine(Config.defaults(
+        GraphDatabaseSettings.db_format,
+        value
+      ))
+    } catch {
+      case _: Exception =>
+        throw new InvalidArgumentsException(
+          s"Could not $operation with specified $KEY '$value'. Unknown format, supported formats are "
+            + "'aligned', 'standard' or 'high_limit'"
+        )
+    }
+  }
+}
+
+object SeedURIOption extends StringOptionValidator {
+  override val KEY: String = "seedURI"
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    // no content validation, any string is accepted
+  }
+}
+
+object SeedCredentialsOption extends StringOptionValidator {
+  override val KEY: String = "seedCredentials"
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    // no content validation, any string is accepted
+  }
+}
+
+object SeedConfigOption extends StringOptionValidator {
+  override val KEY: String = "seedConfig"
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    // no content validation, any string is accepted
+  }
+}
+
+object LogEnrichmentOption extends StringOptionValidator {
+  override val KEY: String = "txLogEnrichment"
+
+  private val FULL: String = "FULL"
+  private val DIFF: String = "DIFF"
+  private val OFF: String = "OFF"
+  private val validValues = Seq(FULL, DIFF, OFF)
+
+  // override to normalize to uppercase.
+  override protected def validate(value: AnyValue)(implicit operation: String): String =
+    super.validate(value).toUpperCase
+
+  override protected def validateContent(value: String)(implicit operation: String): Unit = {
+    if (!validValues.exists(value.equalsIgnoreCase)) {
+      throw new InvalidArgumentsException(
+        s"Could not $operation with specified $KEY '$value', Expected one of ${validValues.mkString("'", "', '", "'")}"
+      )
+    }
+  }
+}
+
+case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabaseOptions] {
+
+  // expectedKeys must be kept in sync with AlterDatabaseOptions below!
+  private val expectedKeys: Set[String] = Set(
+    LogEnrichmentOption.KEY
+  )
+
+  private val VISIBLE_PERMITTED_OPTIONS: String = expectedKeys.map(opt => s"'$opt'").mkString(", ")
+
+  def validForRemoval(keys: Set[String], config: Config): Unit = {
+    if (keys.nonEmpty && !config.get(GraphDatabaseInternalSettings.change_data_capture)) {
+      throw new UnsupportedOperationException("Removing options is not supported yet")
+    }
+    val invalidKeys = keys
+      .map(_.toLowerCase)
+      .diff(expectedKeys.map(_.toLowerCase))
+    if (invalidKeys.nonEmpty) {
+      val validForCreateDatabase = invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase))
+      if (validForCreateDatabase.isEmpty) {
+        // keys are not even valid for CREATE DATABASE OPTIONS
+        throw new InvalidArgumentsException(
+          s"Could not remove unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+        )
+      } else {
+        // keys are valid in CREATE DATABASE OPTIONS, but not allowed to be removed through ALTER DATABASE REMOVE OPTION
+        throw new InvalidArgumentsException(
+          s"Could not remove 'CREATE DATABASE' option(s): ${validForCreateDatabase.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+        )
+      }
     }
   }
 
-  override def operation: String = "create database"
+  override def convert(optionsMap: MapValue, config: Option[Config]): AlterDatabaseOptions = {
+    if (optionsMap.nonEmpty && !config.exists(_.get(GraphDatabaseInternalSettings.change_data_capture))) {
+      throw new UnsupportedOperationException("Setting options in alter is not supported yet")
+    }
+    val invalidKeys = optionsMap.keySet().asScala.toSeq.filterNot(found =>
+      expectedKeys.exists(expected => found.equalsIgnoreCase(expected))
+    )
+    if (invalidKeys.nonEmpty) {
+      val validForCreateDatabase = invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase))
+
+      if (validForCreateDatabase.isEmpty) {
+        // keys are not even valid for CREATE DATABASE OPTIONS
+        throw new InvalidArgumentsException(
+          s"Could not $operation with unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+        )
+      } else {
+        // keys are valid in CREATE DATABASE OPTIONS, but not allowed to be mutated through ALTER DATABASE SET OPTION
+        throw new InvalidArgumentsException(
+          s"Could not $operation with 'CREATE DATABASE' option(s): ${validForCreateDatabase.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+        )
+      }
+    }
+
+    // Keys must be kept in sync with expectedKeys above!
+    AlterDatabaseOptions(
+      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap)
+    )
+  }
+
+  implicit override def operation: String = "alter database"
+
+}
+
+case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
+
+  // expectedKeys must be kept in sync with CreateDatabaseOptions below!
+  val expectedKeys: Set[String] = Set(
+    ExistingDataOption.KEY,
+    ExistingSeedInstanceOption.KEY,
+    StoreFormatOption.KEY,
+    SeedURIOption.KEY,
+    SeedCredentialsOption.KEY,
+    SeedConfigOption.KEY,
+    LogEnrichmentOption.KEY
+  )
+
+  val VISIBLE_PERMITTED_OPTIONS: String = expectedKeys.map(opt => s"'$opt'").mkString(", ")
+
+  override def convert(optionsMap: MapValue, config: Option[Config]): CreateDatabaseOptions = {
+    if (
+      optionsMap.keySet().asScala.map(_.toLowerCase).toSeq.contains(LogEnrichmentOption.KEY.toLowerCase) &&
+      !config.exists(_.get(GraphDatabaseInternalSettings.change_data_capture))
+    ) {
+      throw new UnsupportedOperationException(s"${LogEnrichmentOption.KEY} is not supported yet")
+    }
+    val invalidKeys = optionsMap.keySet().asScala.toSeq.filterNot(found =>
+      expectedKeys.exists(expected => found.equalsIgnoreCase(expected))
+    )
+    if (invalidKeys.nonEmpty) {
+      throw new InvalidArgumentsException(
+        s"Could not $operation with unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+      )
+    }
+
+    // Keys must be kept in sync with expectedKeys above!
+    CreateDatabaseOptions(
+      existingData = ExistingDataOption.findIn(optionsMap),
+      databaseSeed = ExistingSeedInstanceOption.findIn(optionsMap),
+      storeFormatNewDb = StoreFormatOption.findIn(optionsMap),
+      seedURI = SeedURIOption.findIn(optionsMap),
+      seedCredentials = SeedCredentialsOption.findIn(optionsMap),
+      seedConfig = SeedConfigOption.findIn(optionsMap),
+      txLogEnrichment = LogEnrichmentOption.findIn(optionsMap)
+    )
+  }
+
+  implicit override def operation: String = "create database"
 }
 
 case object CreateCompositeDatabaseOptionsConverter extends OptionsConverter[CreateDatabaseOptions] {
   // Composite databases do not have any valid options, but allows for an empty options map
 
-  override def convert(options: MapValue): CreateDatabaseOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateDatabaseOptions = {
     if (!options.isEmpty)
       throw new InvalidArgumentsException(
-        s"Could not create composite database: composite databases have no valid options values."
+        s"Could not $operation: composite databases have no valid options values."
       )
-    CreateDatabaseOptions(None, None, None, None, None, None, None, None)
+    CreateDatabaseOptions(None, None, None, None, None, None, None)
   }
 
   override def operation: String = s"create composite database"
@@ -430,7 +555,7 @@ case class PropertyExistenceConstraintOptionsConverter(entity: String, context: 
     extends IndexOptionsConverter[CreateWithNoOptions] {
   // Property existence constraints are not index-backed and do not have any valid options, but allows for an empty options map
 
-  override def convert(options: MapValue): CreateWithNoOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateWithNoOptions = {
     if (!options.isEmpty)
       throw new InvalidArgumentsException(
         s"Could not create $entity property existence constraint: property existence constraints have no valid options values."
@@ -454,7 +579,7 @@ case class CreateRangeIndexOptionsConverter(schemaType: String, context: QueryCo
 abstract class CreateRangeOptionsConverter(schemaType: String)
     extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
 
-  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexProviderOnlyOptions = {
     val (indexProvider, _) = getOptionsParts(options, schemaType, IndexType.RANGE)
     CreateIndexProviderOnlyOptions(indexProvider)
   }
@@ -470,7 +595,7 @@ case class CreateLookupIndexOptionsConverter(context: QueryContext)
     extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
   private val schemaType = "token lookup index"
 
-  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexProviderOnlyOptions = {
     val (indexProvider, _) = getOptionsParts(options, schemaType, IndexType.LOOKUP)
     CreateIndexProviderOnlyOptions(indexProvider)
   }
@@ -486,7 +611,7 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
     extends IndexOptionsConverter[CreateIndexWithFullOptions] {
   private val schemaType = "fulltext index"
 
-  override def convert(options: MapValue): CreateIndexWithFullOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexWithFullOptions = {
     val (indexProvider, indexConfig) = getOptionsParts(options, schemaType, IndexType.FULLTEXT)
     CreateIndexWithFullOptions(indexProvider, indexConfig)
   }
@@ -529,7 +654,7 @@ case class CreateTextIndexOptionsConverter(context: QueryContext)
     extends IndexOptionsConverter[CreateIndexProviderOnlyOptions] {
   private val schemaType = "text index"
 
-  override def convert(options: MapValue): CreateIndexProviderOnlyOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexProviderOnlyOptions = {
     val (indexProvider, _) = getOptionsParts(options, schemaType, IndexType.TEXT)
     CreateIndexProviderOnlyOptions(indexProvider)
   }
@@ -545,7 +670,7 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
     extends IndexOptionsConverter[CreateIndexWithFullOptions] {
   private val schemaType = "point index"
 
-  override def convert(options: MapValue): CreateIndexWithFullOptions = {
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexWithFullOptions = {
     val (indexProvider, indexConfig) = getOptionsParts(options, schemaType, IndexType.POINT)
     CreateIndexWithFullOptions(indexProvider, indexConfig)
   }
@@ -591,13 +716,14 @@ case class CreateIndexWithFullOptions(provider: Option[IndexProviderDescriptor],
 case class CreateDatabaseOptions(
   existingData: Option[String],
   databaseSeed: Option[String],
-  primaries: Option[Integer],
-  secondaries: Option[Integer],
   storeFormatNewDb: Option[String],
   seedURI: Option[String],
   seedCredentials: Option[String],
-  seedConfig: Option[String]
+  seedConfig: Option[String],
+  txLogEnrichment: Option[String]
 )
+
+case class AlterDatabaseOptions(txLogEnrichment: Option[String])
 
 case class ServerOptions(
   allowed: Option[Set[NormalizedDatabaseName]],

@@ -186,6 +186,7 @@ public interface TopologyGraphDbmsModel {
     String DATABASE_STOPPED_AT_PROPERTY = "stopped_at";
     String DELETED_DATABASE_DUMP_DATA_PROPERTY = "dump_data";
     String DELETED_DATABASE_DELETED_AT_PROPERTY = "deleted_at";
+    String DATABASE_LOG_ENRICHMENT_PROPERTY = "txLogEnrichment";
 
     @Deprecated
     String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";

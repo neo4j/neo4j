@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
+import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DeallocateServers
 import org.neo4j.cypher.internal.ast.DenyPrivilege
@@ -72,6 +73,7 @@ import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsReplace
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.ParsedAsYield
@@ -744,30 +746,30 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           .map(wrapInWait(_, dbName, waitUntilComplete))
           .map(plans.LogSystemCommand(_, prettifier.asString(c)))
 
-      // ALTER DATABASE foo [IF EXISTS] [SET ACCESS {READ ONLY | READ WRITE}] [SET TOPOLOGY n PRIMARY [m SECONDARY]]
-      case c @ AlterDatabase(dbName, ifExists, access, topology) =>
-        val assertAllowed = (access, topology) match {
-          // ALTER ... SET ACCESS SET TOPOLOGY requires both SetDatabaseAccess privileges and AlterDatabase privileges
-          case (Some(_), Some(_)) => plans.AssertAllowedDbmsActions(
-              Some(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction)),
-              Seq(SetDatabaseAccessAction, AlterDatabaseAction)
-            )
-          // ALTER ... SET ACCESS without topology requires only SetDatabaseAccess privilege
-          case (Some(_), None) => plans.AssertAllowedDbmsActions(
-              plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
-              SetDatabaseAccessAction
-            )
-          // ALTER ... SET TOPOLOGY without access requires only AlterDatabasePrivileges
-          case (None, Some(_)) => plans.AssertAllowedDbmsActions(
-              plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction),
-              AlterDatabaseAction
-            )
-          // Likely unreachable, default to the most restrictive privileges
-          case _ => plans.AssertAllowedDbmsActions(
-              Some(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction)),
-              Seq(SetDatabaseAccessAction, AlterDatabaseAction)
-            )
-        }
+      // ALTER DATABASE foo [IF EXISTS] [SET ACCESS {READ ONLY | READ WRITE}] [SET TOPOLOGY n PRIMARY [m SECONDARY]] [SET OPTION key value] [REMOVE OPTION key]
+      case c @ AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove) =>
+        // For a set of (predicate -> privilege); If the predicate is true, add the privilege to the set of required privileges
+        val requiredPrivilegedActions: Seq[DbmsAction] = Seq(
+          // ALTER DATABASE foo SET TOPOLOGY requires 'ALTER DATABASE' privileges:
+          topology.nonEmpty -> AlterDatabaseAction,
+          // ALTER DATABASE foo SET OPTION ... requires 'ALTER DATABASE' privileges:
+          (options != NoOptions) -> AlterDatabaseAction,
+          // ALTER DATABASE foo REMOVE OPTION ... requires 'ALTER DATABASE' privileges:
+          optionsToRemove.nonEmpty -> AlterDatabaseAction,
+          // ALTER DATABASE foo SET ACCESS ... requires 'SET DATABASE ACCESS' privileges:
+          access.nonEmpty -> SetDatabaseAccessAction
+        ).filter(_._1)
+          .map(_._2)
+          .distinct
+
+        val assertAllowed =
+          plans.AssertAllowedDbmsActions(
+            // AssertNotBlockedDatabaseManagement doesn't know about SetDatabaseAccessAction,
+            // pass AlterDatabaseAction no matter what requiredPrivilegedActions we need
+            Some(plans.AssertNotBlockedDatabaseManagement(AlterDatabaseAction)),
+            requiredPrivilegedActions
+          )
+
         val source =
           if (ifExists) plans.DoNothingIfDatabaseNotExists(
             assertAllowed,
@@ -777,7 +779,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           )
           else assertAllowed
         val plan =
-          plans.AlterDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "alter"), dbName, access, topology)
+          plans.AlterDatabase(
+            plans.EnsureValidNonSystemDatabase(source, dbName, "alter"),
+            dbName,
+            access,
+            topology,
+            options,
+            optionsToRemove
+          )
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // START DATABASE foo

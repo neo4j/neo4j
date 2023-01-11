@@ -723,7 +723,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test("ALTER DATABASE ALIAS name SET TARGET db") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'name': expected ".", "IF" or "SET" (line 1, column 22 (offset: 21))"""
+      """Invalid input 'name': expected ".", "IF", "REMOVE" or "SET" (line 1, column 22 (offset: 21))"""
     )
   }
 

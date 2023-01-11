@@ -136,6 +136,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NULL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ON;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ONLY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONAL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR;
@@ -347,6 +348,7 @@ public class IdentifierTokens {
             ON,
             ONLY,
             OPTIONS,
+            OPTION,
             OPTIONAL,
             OR,
             ORDER,

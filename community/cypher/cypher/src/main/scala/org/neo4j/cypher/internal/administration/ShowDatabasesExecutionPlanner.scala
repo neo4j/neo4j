@@ -28,6 +28,12 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.AdministrationShowCommandUtils
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.ExistingDataOption
+import org.neo4j.cypher.internal.ExistingSeedInstanceOption
+import org.neo4j.cypher.internal.LogEnrichmentOption
+import org.neo4j.cypher.internal.SeedConfigOption
+import org.neo4j.cypher.internal.SeedCredentialsOption
+import org.neo4j.cypher.internal.SeedURIOption
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -48,6 +54,7 @@ import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_COMMITTED_TX_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_START_TIME_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.LAST_STOP_TIME_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.NAME_COL
+import org.neo4j.cypher.internal.ast.ShowDatabase.OPTIONS_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.REPLICATION_LAG_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.REQUESTED_PRIMARIES_COUNT_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.REQUESTED_SECONDARIES_COUNT_COL
@@ -71,12 +78,17 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE_LABE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LOG_ENRICHMENT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CONFIG_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
@@ -124,6 +136,13 @@ case class ShowDatabasesExecutionPlanner(
   securityAuthorizationHandler: SecurityAuthorizationHandler
 )(implicit extendedDatabaseInfoMapper: DatabaseInfoMapper[ExtendedDatabaseInfo]) {
 
+  private val OPTIONS_TX_LOG_ENRICHMENT_KEY = LogEnrichmentOption.KEY
+  private val OPTIONS_EXISTING_DATA_KEY = ExistingDataOption.KEY
+  private val OPTIONS_SEED_URI_KEY = SeedURIOption.KEY
+  private val OPTIONS_SEED_CONFIG_KEY = SeedConfigOption.KEY
+  private val OPTIONS_SEED_CREDENTIALS_KEY = SeedCredentialsOption.KEY
+  private val OPTIONS_SEED_INSTANCE_KEY = ExistingSeedInstanceOption.KEY
+
   private val accessibleDbsKey = internalKey("accessibleDbs")
   private val dbms = resolver.resolveDependency(classOf[DatabaseManagementService])
   private val infoService = resolver.resolveDependency(classOf[DatabaseInfoService])
@@ -137,6 +156,8 @@ case class ShowDatabasesExecutionPlanner(
     returns: Option[Return]
   ): ExecutionPlan = {
     val usernameKey = internalKey("username")
+    val optionsKey = internalKey("options")
+    val isCompositeKey = internalKey("isComposite")
     val paramGenerator: (Transaction, SecurityContext) => MapValue =
       (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, yields, verbose)
 
@@ -160,6 +181,44 @@ case class ShowDatabasesExecutionPlanner(
       case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter, noOpValidator)
     }
 
+    def optionsOutputMap(keys: Set[String], mapName: String): String = {
+
+      /** For a set of keys [A, B] that might be found in the map [mapName] produce:
+       * CASE
+       *    WHEN mapName.A IS NULL AND mapName.B IS NULL THEN {} 
+       *    WHEN mapName.A IS NULL THEN {B: mapName.B}
+       *    WHEN mapName.B IS NULL THEN {A: mapName.A}
+       * ELSE mapName
+       */
+      val whens: Seq[String] = keys.subsets()
+        .filter(_.nonEmpty)
+        // Sort so that stricter predicates occur before less strict predicates
+        .toList.sortBy(_.size).reverse
+        .map(predicateKeys => {
+          val predicates = predicateKeys.map(key => s"$mapName.$key IS NULL").toList.sorted
+
+          val remainingKeys = keys -- predicateKeys
+          val entries = remainingKeys.map(key => s"$key: $mapName.$key").toList.sorted
+          val filteredMap = s"{${entries.mkString(", ")}}"
+
+          s"WHEN ${predicates.mkString(" AND ")} THEN $filteredMap"
+        })
+
+      s"CASE ${whens.mkString(java.lang.System.lineSeparator())} ELSE $mapName END"
+    }
+
+    val optionsMap = optionsOutputMap(
+      Set(
+        OPTIONS_EXISTING_DATA_KEY,
+        OPTIONS_SEED_URI_KEY,
+        OPTIONS_SEED_CONFIG_KEY,
+        OPTIONS_SEED_CREDENTIALS_KEY,
+        OPTIONS_SEED_INSTANCE_KEY,
+        OPTIONS_TX_LOG_ENRICHMENT_KEY
+      ),
+      optionsKey
+    )
+
     val verboseColumns =
       if (verbose) {
         s""", props.$DATABASE_ID_COL as $DATABASE_ID_COL,
@@ -172,7 +231,15 @@ case class ShowDatabasesExecutionPlanner(
            |d.$DATABASE_CREATED_AT_PROPERTY as $CREATION_TIME_COL,
            |d.$DATABASE_STARTED_AT_PROPERTY as $LAST_START_TIME_COL,
            |d.$DATABASE_STOPPED_AT_PROPERTY as $LAST_STOP_TIME_COL,
-           |props.$STORE_COL as $STORE_COL
+           |props.$STORE_COL as $STORE_COL,
+           |d:$COMPOSITE_DATABASE as $isCompositeKey,
+           |{ $OPTIONS_EXISTING_DATA_KEY: CASE WHEN coalesce(d.$DATABASE_SEED_URI_PROPERTY, d.$DATABASE_DESIGNATED_SEEDER_PROPERTY) IS NOT NULL THEN 'use' ELSE NULL END,
+           |  $OPTIONS_SEED_URI_KEY: d.$DATABASE_SEED_URI_PROPERTY,
+           |  $OPTIONS_SEED_CONFIG_KEY: d.$DATABASE_SEED_CONFIG_PROPERTY,
+           |  $OPTIONS_SEED_CREDENTIALS_KEY: CASE WHEN d.$DATABASE_SEED_CREDENTIALS_ENCRYPTED_PROPERTY IS NOT NULL THEN '********' ELSE NULL END,
+           |  $OPTIONS_SEED_INSTANCE_KEY: d.$DATABASE_DESIGNATED_SEEDER_PROPERTY,
+           |  $OPTIONS_TX_LOG_ENRICHMENT_KEY: d.$DATABASE_LOG_ENRICHMENT_PROPERTY } as $optionsKey
+           |with *, CASE WHEN $isCompositeKey THEN NULL ELSE $optionsMap END as $OPTIONS_COL
            |""".stripMargin
       } else {
         ""
@@ -180,7 +247,8 @@ case class ShowDatabasesExecutionPlanner(
     val verboseNames =
       if (verbose) {
         s", $DATABASE_ID_COL, $SERVER_ID_COL, $REQUESTED_PRIMARIES_COUNT_COL, $REQUESTED_SECONDARIES_COUNT_COL, $CURRENT_PRIMARIES_COUNT_COL, " +
-          s"$CURRENT_SECONDARIES_COUNT_COL, $CREATION_TIME_COL, $LAST_START_TIME_COL, $LAST_STOP_TIME_COL, $STORE_COL, $LAST_COMMITTED_TX_COL, $REPLICATION_LAG_COL"
+          s"$CURRENT_SECONDARIES_COUNT_COL, $CREATION_TIME_COL, $LAST_START_TIME_COL, $LAST_STOP_TIME_COL, $STORE_COL, $LAST_COMMITTED_TX_COL, $REPLICATION_LAG_COL, " +
+          s"$OPTIONS_COL"
       } else {
         ""
       }
@@ -232,7 +300,8 @@ case class ShowDatabasesExecutionPlanner(
            |home AS $HOME_COL,
            |constituents as $CONSTITUENTS_COL
            |$verboseNames
-           |$returnClause"""
+           |$returnClause
+           |"""
     ).stripMargin
     SystemCommandExecutionPlan(
       scope.showCommandName,
@@ -333,6 +402,7 @@ case class ShowDatabasesExecutionPlanner(
             accessForDatabase(defaultDatabaseNode, roles)
           ).reduceOption(_ && _)
       }.get
+
     val allDatabaseAccess = databaseAccess("DatabaseAll")
     val defaultDatabaseAccess = databaseAccess("DatabaseDefault")
     val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
