@@ -1011,6 +1011,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(0))
             .build();
 
+    @Internal
+    @Description("A feature toggle behind which uniqueness constraints for relationships are developed")
+    public static final Setting<Boolean> rel_unique_constraints = newBuilder(
+                    "internal.dbms.relationship_uniqueness_constraints", BOOL, true)
+            .build();
+
     public enum ExtractLiteral {
         ALWAYS,
         NEVER,

@@ -27,6 +27,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class IndexCreateIT extends KernelIntegrationTest {
     private static final IndexCreator INDEX_CREATOR =
@@ -50,6 +52,13 @@ public class IndexCreateIT extends KernelIntegrationTest {
             (schemaWrite, schema, provider, name) -> schemaWrite.uniquePropertyConstraintCreate(
                     IndexPrototype.uniqueForSchema(schema, schemaWrite.indexProviderByName(provider))
                             .withName(name));
+
+    @Override
+    protected TestDatabaseManagementServiceBuilder configure(
+            TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder) {
+        return super.configure(
+                databaseManagementServiceBuilder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true));
+    }
 
     @ParameterizedTest
     @EnumSource(EntityType.class)

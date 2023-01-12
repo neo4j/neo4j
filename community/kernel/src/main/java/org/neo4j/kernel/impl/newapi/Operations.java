@@ -64,6 +64,7 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingIntFunction;
@@ -171,6 +172,7 @@ public class Operations implements Write, SchemaWrite {
     private final IndexingProvidersService indexProviders;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
+    private final boolean relationshipUniquenessConstraintEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -208,6 +210,7 @@ public class Operations implements Write, SchemaWrite {
         this.indexProviders = indexProviders;
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
+        this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -1572,9 +1575,11 @@ public class Operations implements Write, SchemaWrite {
         SchemaDescriptor schema = prototype.schema();
 
         if (schema.entityType() == RELATIONSHIP) {
-            assertSupportedInVersion(
-                    "Failed to create Relationship Uniqueness constraint.",
-                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+            if (!relationshipUniquenessConstraintEnabled) {
+                throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
+            } else {
+                assertSupportedInVersion("Failed to create Relationship Uniqueness constraint.", KernelVersion.V5_4);
+            }
         }
 
         exclusiveSchemaLock(schema);
@@ -1748,9 +1753,11 @@ public class Operations implements Write, SchemaWrite {
         SchemaDescriptor schema = prototype.schema();
 
         if (schema.entityType() == RELATIONSHIP) {
-            assertSupportedInVersion(
-                    "Failed to create Relationship Key constraint.",
-                    KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
+            if (!relationshipUniquenessConstraintEnabled) {
+                throw new UnsupportedOperationException("Relationship key constraints are not supported yet");
+            } else {
+                assertSupportedInVersion("Failed to create Relationship Key constraint.", KernelVersion.V5_4);
+            }
         }
 
         exclusiveSchemaLock(schema);

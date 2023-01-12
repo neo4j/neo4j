@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
@@ -45,6 +47,9 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       .filter(id => id.getIndexType.equals(IndexType.LOOKUP))
       .foreach(i => i.drop())
   })
+
+  override def databaseConfig(): Map[Setting[_], Object] =
+    super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)
 
   // Index commands
 

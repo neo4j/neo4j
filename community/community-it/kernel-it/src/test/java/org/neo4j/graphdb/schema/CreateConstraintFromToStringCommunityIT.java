@@ -23,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.test.extension.DbmsExtension;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 public class CreateConstraintFromToStringCommunityIT extends CreateConstraintFromToStringITBase {
     @ParameterizedTest
     @EnumSource(value = CommunityConstraint.class)

@@ -1605,7 +1605,8 @@ class RecoveryIT {
                     .setClock(fakeClock)
                     .setInternalLogProvider(logProvider)
                     .setConfig(GraphDatabaseSettings.keep_logical_logs, "keep_all")
-                    .setConfig(logical_log_rotation_threshold, logThreshold);
+                    .setConfig(logical_log_rotation_threshold, logThreshold)
+                    .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
             builder = additionalConfiguration(builder);
         }
     }
