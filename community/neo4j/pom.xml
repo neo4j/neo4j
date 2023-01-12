@@ -61,21 +61,21 @@
                         <goals>
                             <goal>enforce</goal>
                         </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>*:*:*:test-jar:compile:tests</exclude>
+                                        <exclude>*:*:*:test-jar:runtime:tests</exclude>
+                                    </excludes>
+                                    <searchTransitive>true</searchTransitive>
+                                    <message>Neo4j cannot include test jars in compile scope</message>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration combine.self="append">
-                    <rules>
-                        <bannedDependencies>
-                            <excludes>
-                                <exclude>*:*:*:test-jar:compile:tests</exclude>
-                                <exclude>*:*:*:test-jar:runtime:tests</exclude>
-                            </excludes>
-                            <searchTransitive>true</searchTransitive>
-                            <message>Neo4j cannot include test jars in compile scope</message>
-                        </bannedDependencies>
-                    </rules>
-                    <fail>true</fail>
-                </configuration>
             </plugin>
         </plugins>
     </build>

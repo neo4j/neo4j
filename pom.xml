@@ -583,35 +583,66 @@
               <version>2.0.0</version>
             </dependency>
           </dependencies>
-          <configuration>
-            <rules>
-              <dependencyConvergence/>
-              <evaluateBeanshell>
-                <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
-                <condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
-              </evaluateBeanshell>
-              <requireFilesDontExist>
-                <message>You are not allowed to have classes in "com" package</message>
-                <files>
-                  <file>${project.build.sourceDirectory}/com</file>
-                  <file>${project.build.testSourceDirectory}/com</file>
-                </files>
-              </requireFilesDontExist>
-              <requireFilesDontExist>
-                <files>
-                  <file>enterprise</file>
-                </files>
-              </requireFilesDontExist>
-              <requireMavenVersion>
-                <version>${required.maven.version}</version>
-              </requireMavenVersion>
-              <RestrictImports>
-                <reason>Star imports are not allowed, please configure your editor to substitute them with fully qualified imports.</reason>
-                <bannedImport>**.'*'</bannedImport>
-              </RestrictImports>
-            </rules>
-            <fail>true</fail>
-          </configuration>
+          <executions>
+            <execution>
+              <id>default</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <dependencyConvergence/>
+                  <evaluateBeanshell>
+                    <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
+                    <condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
+                  </evaluateBeanshell>
+                  <requireFilesDontExist>
+                    <message>You are not allowed to have classes in "com" package</message>
+                    <files>
+                      <file>${project.build.sourceDirectory}/com</file>
+                      <file>${project.build.testSourceDirectory}/com</file>
+                    </files>
+                  </requireFilesDontExist>
+                  <requireFilesDontExist>
+                    <files>
+                      <file>enterprise</file>
+                    </files>
+                  </requireFilesDontExist>
+                  <requireMavenVersion>
+                    <version>${required.maven.version}</version>
+                  </requireMavenVersion>
+                  <RestrictImports>
+                    <reason>Star imports are not allowed, please configure your editor to substitute them with fully
+                      qualified imports.
+                    </reason>
+                    <bannedImport>**.'*'</bannedImport>
+                  </RestrictImports>
+                </rules>
+                <fail>true</fail>
+              </configuration>
+            </execution>
+            <execution>
+              <!-- Ban messing up the build by depending on test-jars from non-test scope -->
+              <id>ban-test-dependencies-in-compile</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <bannedDependencies>
+                    <excludes>
+                      <exclude>*:*:*:test-jar:compile:tests</exclude>
+                      <exclude>*:*:*:test-jar:runtime:tests</exclude>
+                    </excludes>
+                    <searchTransitive>false</searchTransitive>
+                    <message>Depending on test-jars in compile scope is banned</message>
+                  </bannedDependencies>
+                </rules>
+                <fail>true</fail>
+              </configuration>
+            </execution>
+          </executions>
+
         </plugin>
 
         <!-- Plugin version management -->
@@ -775,19 +806,6 @@
             <phase>verify</phase>
             <goals>
               <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!-- Always enforce -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>enforce</goal>
             </goals>
           </execution>
         </executions>
