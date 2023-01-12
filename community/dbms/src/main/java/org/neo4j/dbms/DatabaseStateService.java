@@ -41,8 +41,8 @@ public interface DatabaseStateService {
     Map<NamedDatabaseId, DatabaseState> stateOfAllDatabases();
 
     /**
-     * Note that if a database with the given name does not exist, the state
-     * "UNKNOWN" will be returned.
+     * Note that if a database with the given name exists in the database manager but not in the reconciler,
+     * the state "INITIAL" will be returned. However, if the name does not exist in either, "UNKNOWN" will be returned
      *
      * @param namedDatabaseId the database whose state to return
      * @return state of database with name
