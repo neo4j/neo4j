@@ -110,27 +110,6 @@
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <configuration>
-                    <rules combine.children="append">
-                        <requireFilesDontExist>
-                            <files>
-                                <file>cypher-planner-3.6</file>
-                                <file>cypher-planner-3.5</file>
-                                <file>cypher-compiler-3.4</file>
-                                <file>cypher-compiler-3.3</file>
-                                <file>cypher-compiler-3.2</file>
-                                <file>cypher-compiler-3.1</file>
-                                <file>cypher-compiler-3.0</file>
-                                <file>cypher-compiler-2.3</file>
-                            </files>
-                        </requireFilesDontExist>
-                    </rules>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
