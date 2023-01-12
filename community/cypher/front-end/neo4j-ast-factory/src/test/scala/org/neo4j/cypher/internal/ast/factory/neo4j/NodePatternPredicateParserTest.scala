@@ -28,14 +28,42 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
 
   implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
+  for {
+    (maybeLabelExpression, maybeLabelExpressionAst) <-
+      Seq(("", None), (":Foo|Bar", Some(labelDisjunction(labelLeaf("Foo"), labelLeaf("Bar")))))
+    (maybeProperties, maybePropertiesAst) <-
+      Seq(("", None), ("{prop: 'test'}", Some(mapOf("prop" -> literalString("test")))))
+  } yield {
+
+    test(s"MATCH (n$maybeLabelExpression $maybeProperties WHERE n.otherProp > 123)") {
+      parseNodePatterns(testName) shouldBe Seq(
+        nodePat(
+          Some("n"),
+          maybeLabelExpressionAst,
+          maybePropertiesAst,
+          Some(greaterThan(prop("n", "otherProp"), literalInt(123)))
+        )
+      )
+    }
+
+    test(s"MATCH ($maybeLabelExpression $maybeProperties WHERE true)") {
+      parseNodePatterns(testName) shouldBe Seq(
+        nodePat(
+          None,
+          maybeLabelExpressionAst,
+          maybePropertiesAst,
+          Some(trueLiteral)
+        )
+      )
+    }
+  }
+
   test("MATCH (n WHERE n.prop > 123)") {
     val expected = Seq(
-      NodePattern(
-        Some(varFor("n")),
-        None,
-        None,
-        Some(greaterThan(prop("n", "prop"), literalInt(123)))
-      )(pos)
+      nodePat(
+        Some("n"),
+        predicates = Some(greaterThan(prop("n", "prop"), literalInt(123)))
+      )
     )
     parseNodePatterns(testName) shouldBe expected
     parseNodePatterns(testName.replaceAllLiterally("WHERE", "wHeRe")) shouldBe expected
@@ -60,65 +88,78 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
     }
   }
 
+  test("MATCH (WHERE)") {
+    parseNodePatterns(testName) shouldBe Seq(nodePat(Some("WHERE")))
+  }
+
+  /* This case is ambiguous from a language standpoint, it could be either
+   * 1. an inlined WHERE clause with a map expression (which would fail in semantic checking as WHERE expects a boolean expression)
+   * 2. a node named WHERE with a property map
+   * As the second case is not just syntactically but also semantically correct, the parser has been programmed to prefer it.
+   */
+  test("MATCH (WHERE {prop: 123})") {
+    parseNodePatterns(testName) shouldBe Seq(
+      nodePat(Some("WHERE"), properties = Some(mapOf("prop" -> literal(123))))
+    )
+  }
+
+  test("MATCH (WHERE WHERE {prop: 123})") {
+    parseNodePatterns(testName) shouldBe Seq(
+      nodePat(Some("WHERE"), predicates = Some(mapOf("prop" -> literal(123))))
+    )
+  }
+
+  test("MATCH (WHERE {prop: 123} WHERE {prop: 123})") {
+    parseNodePatterns(testName) shouldBe Seq(
+      nodePat(
+        Some("WHERE"),
+        properties = Some(mapOf("prop" -> literal(123))),
+        predicates = Some(mapOf("prop" -> literal(123)))
+      )
+    )
+  }
+
   test("MATCH (WHERE WHERE WHERE.prop > 123)") {
     parseNodePatterns(testName) shouldBe Seq(
-      NodePattern(
-        Some(varFor("WHERE")),
-        None,
-        None,
-        Some(greaterThan(prop("WHERE", "prop"), literalInt(123)))
-      )(pos)
+      nodePat(
+        Some("WHERE"),
+        predicates = Some(greaterThan(prop("WHERE", "prop"), literalInt(123)))
+      )
+    )
+  }
+
+  test("MATCH (WHERE WHERE.WHERE='WHERE')") {
+    parseNodePatterns(testName) shouldBe Seq(
+      nodePat(predicates = Some(equals(prop("WHERE", "WHERE"), literalString("WHERE"))))
     )
   }
 
   test("RETURN [(n:A WHERE n.prop >= 123)-->(end WHERE end.prop < 42) | n]") {
     parseNodePatterns(testName).toSet shouldBe Set(
-      NodePattern(
-        Some(varFor("n")),
+      nodePat(
+        Some("n"),
         Some(labelLeaf("A")),
-        None,
-        Some(greaterThanOrEqual(prop("n", "prop"), literalInt(123)))
-      )(pos),
-      NodePattern(
-        Some(varFor("end")),
-        None,
-        None,
-        Some(lessThan(prop("end", "prop"), literalInt(42)))
-      )(pos)
+        predicates = Some(greaterThanOrEqual(prop("n", "prop"), literalInt(123)))
+      ),
+      nodePat(
+        Some("end"),
+        predicates = Some(lessThan(prop("end", "prop"), literalInt(42)))
+      )
     )
   }
 
   test("RETURN exists((n {prop: 'test'} WHERE n.otherProp = 123)-->(end WHERE end.prop = 42)) AS result") {
     parseNodePatterns(testName).toSet shouldBe Set(
-      NodePattern(
-        Some(varFor("n")),
-        None,
-        Some(mapOf("prop" -> literalString("test"))),
-        Some(equals(prop("n", "otherProp"), literalInt(123)))
-      )(pos),
-      NodePattern(
-        Some(varFor("end")),
-        None,
-        None,
-        Some(equals(prop("end", "prop"), literalInt(42)))
-      )(pos)
+      nodePat(
+        Some("n"),
+        properties = Some(mapOf("prop" -> literalString("test"))),
+        predicates = Some(equals(prop("n", "otherProp"), literalInt(123)))
+      ),
+      nodePat(
+        Some("end"),
+        predicates = Some(equals(prop("end", "prop"), literalInt(42)))
+      )
     )
-  }
-
-  test("MATCH (WHERE {prop: 123})") {
-    parseNodePatterns(testName) shouldBe Seq(
-      NodePattern(
-        Some(varFor("WHERE")),
-        None,
-        Some(mapOf("prop" -> literal(123))),
-        None
-      )(pos)
-    )
-  }
-
-  test("MATCH (:Label {prop: 123} WHERE 2 > 1)") {
-    val e = the[Exception] thrownBy parseNodePatterns(testName)
-    e.getMessage should include("Invalid input 'WHERE'")
   }
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)

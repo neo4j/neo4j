@@ -2328,8 +2328,17 @@ NODE_PATTERN NodePattern() throws Exception:
 {
     t=<LPAREN>
     (
-        v=Variable() (labelExpression=LabelExpression(astFactory.nodeType()))? [properties=Properties()] [<WHERE> predicate=Expression()]
-        | (labelExpression=LabelExpression(astFactory.nodeType()))? [properties=Properties()]
+       ( LOOKAHEAD(3) v=Variable() <WHERE> predicate=Expression() // Needed to support (WHERE WHERE expr) i.e variable name WHERE with an inlined WHERE clause
+       | LOOKAHEAD(2) v=Variable() properties=Properties() ( <WHERE> predicate=Expression() )? // Needed to support (WHERE {prop:1} WHERE expr)
+       | LOOKAHEAD(2) <WHERE> predicate=Expression() // Needed to support (WHERE expr) i.e. no variable name with an inlined WHERE expr
+       // Despite solving the above issues, this will still produce a choice conflict warning, as the below option overlaps with the above ones.
+       // To cover all 2^4 possible combinations except the three ones above is possible but makes the parser code very verbose and hard to read,
+       // so it was considered better to leave the false positive warning.
+       | ( v=Variable() )?
+            ( labelExpression = LabelExpression(astFactory.nodeType()) )?
+            ( properties=Properties() )?
+            ( <WHERE> predicate=Expression() )?
+        )
     )
     <RPAREN>
     {
@@ -2428,11 +2437,19 @@ REL_PATTERN RelationshipPattern() throws Exception:
 }
 {
     ( LeftArrow() { left = true; })? ArrowLine()
-    ( <LBRACKET> ( v=Variable() )?
-        ( labelExpression = LabelExpression(astFactory.relationshipType()) )?
-        ( pathLength=PathLength() )?
-        ( properties=Properties() )?
-        ( <WHERE> predicate=Expression() )?
+    ( <LBRACKET>
+       ( LOOKAHEAD(3) v=Variable() <WHERE> predicate=Expression() // Needed to support [WHERE WHERE expr] i.e variable name WHERE with an inlined WHERE clause
+       | LOOKAHEAD(2) v=Variable() properties=Properties() ( <WHERE> predicate=Expression() )? // Needed to support [WHERE {prop:1} WHERE expr]
+       | LOOKAHEAD(2) <WHERE> predicate=Expression() // Needed to support [WHERE expr] i.e. no variable name with an inlined WHERE expression
+       // Despite solving the above issues, this will still produce a choice conflict warning, as the below option overlaps with the above ones.
+       // To cover all 2^5 possible combinations except the three ones above is possible but makes the parser code very verbose and hard to read,
+       // so it was considered better to leave the false positive warning.
+       | ( v=Variable() )?
+            ( labelExpression = LabelExpression(astFactory.relationshipType()) )?
+            ( pathLength=PathLength() )?
+            ( properties=Properties() )?
+            ( <WHERE> predicate=Expression() )?
+        )
         <RBRACKET>
     )?
     ArrowLine() ( RightArrow() { right = true; } )?
