@@ -35,4 +35,9 @@ public class DatabaseHealthEventGenerator implements HealthEventGenerator {
     public void panic(Throwable causeOfPanic) {
         databaseEventListeners.databasePanic(databaseId, causeOfPanic);
     }
+
+    @Override
+    public void outOfDiskSpace() {
+        databaseEventListeners.databaseOutOfDiskSpace(databaseId);
+    }
 }

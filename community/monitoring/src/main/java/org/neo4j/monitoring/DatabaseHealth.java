@@ -24,7 +24,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 
-public class DatabaseHealth extends LifecycleAdapter implements Panic {
+public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDiskSpace {
     private static final String panicMessage = "The database has encountered a critical error, "
             + "and needs to be restarted. Please see database logs for more details.";
 
@@ -75,5 +75,12 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic {
     @Override
     public Throwable causeOfPanic() {
         return causeOfPanic;
+    }
+
+    @Override
+    public void outOfDiskSpace() {
+        if (healthEventGenerator != null) {
+            healthEventGenerator.outOfDiskSpace();
+        }
     }
 }

@@ -47,4 +47,9 @@ public class DatabaseEventListenerAdapter implements DatabaseEventListener {
     public void databaseDrop(DatabaseEventContext eventContext) {
         // empty
     }
+
+    @Override
+    public void databaseOutOfDiskSpace(DatabaseEventContext event) {
+        // empty
+    }
 }

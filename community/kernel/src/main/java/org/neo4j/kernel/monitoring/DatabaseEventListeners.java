@@ -83,6 +83,11 @@ public class DatabaseEventListeners {
         notifyEventListeners(handler -> handler.databasePanic(event), databaseEventListeners);
     }
 
+    void databaseOutOfDiskSpace(NamedDatabaseId databaseId) {
+        var event = new DefaultDatabaseEvent(databaseId);
+        notifyEventListeners(handler -> handler.databaseOutOfDiskSpace(event), databaseEventListeners);
+    }
+
     private <T> void notifyEventListeners(Consumer<T> consumer, List<T> listeners) {
         for (var listener : listeners) {
             try {

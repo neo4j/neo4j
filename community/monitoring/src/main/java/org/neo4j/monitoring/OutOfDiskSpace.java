@@ -19,18 +19,7 @@
  */
 package org.neo4j.monitoring;
 
-public interface HealthEventGenerator {
-    HealthEventGenerator NO_OP = new HealthEventGenerator.Adaptor();
-
-    void panic(Throwable causeOfPanic);
-
+@FunctionalInterface
+public interface OutOfDiskSpace {
     void outOfDiskSpace();
-
-    class Adaptor implements HealthEventGenerator {
-        @Override
-        public void panic(Throwable causeOfPanic) {}
-
-        @Override
-        public void outOfDiskSpace() {}
-    }
 }
