@@ -191,7 +191,7 @@ public final class TransactionConditions {
                     } else {
                         assertThat(indexes[i])
                                 .describedAs("Expected " + element + " at index " + metaIndex + ", but found " + type)
-                                .isEqualTo(metaIndex);
+                                .isNotEqualTo(metaIndex);
                     }
                 }
             }
