@@ -246,10 +246,10 @@ case class CompositeExpressionSelectivityCalculator(
       planContext,
       indexPredicateProviderContext,
       // text indexes do not support composite indexes
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = planningRangeIndexesEnabled,
+      findTextIndexes = false,
+      findRangeIndexes = planningRangeIndexesEnabled,
       // point indexes do not support composite indexes
-      planningPointIndexesEnabled = false
+      findPointIndexes = false
     ).toSet[IndexMatch]
   }
 

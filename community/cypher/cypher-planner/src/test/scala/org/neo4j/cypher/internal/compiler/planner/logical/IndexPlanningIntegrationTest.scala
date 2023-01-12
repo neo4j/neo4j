@@ -97,29 +97,6 @@ class IndexPlanningIntegrationTest
     }
   }
 
-  test("should not plan range index if feature flag is disabled") {
-    val cfg =
-      plannerBaseConfigForIndexOnLabelPropTests()
-        .enablePlanningRangeIndexes(false)
-        .addNodeIndex(
-          "Label",
-          Seq("prop"),
-          existsSelectivity = 1.0,
-          uniqueSelectivity = 0.1,
-          indexType = IndexType.RANGE
-        )
-        .build()
-
-    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
-      val plan = cfg.plan(s"MATCH (a:Label) WHERE a.prop $op 'test' RETURN a").stripProduceResults
-
-      plan shouldEqual cfg.subPlanBuilder()
-        .filter(s"a.prop $op 'test'")
-        .nodeByLabelScan("a", "Label", IndexOrderNone)
-        .build()
-    }
-  }
-
   test("should plan range index scan for partial existence predicate if predicate is for points") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
 
@@ -1204,48 +1181,6 @@ class IndexPlanningIntegrationTest
       .filter("cacheRFromStore[r.prop] IS NOT NULL")
       .relationshipTypeScan("(a)-[r:REL]->(b)")
       .build()
-  }
-
-  test("should not plan node text index usage when feature flag is not set") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .enablePlanningTextIndexes(false)
-      .build()
-
-    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
-      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
-      plan shouldEqual cfg.subPlanBuilder()
-        .projection("cacheN[a.prop] AS `a.prop`")
-        .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeByLabelScan("a", "A")
-        .build()
-    }
-  }
-
-  test("should not plan relationship text index usage when feature flag is not set") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setRelationshipCardinality("()-[:REL]->()", 200)
-      .addRelationshipIndex(
-        "REL",
-        Seq("prop"),
-        existsSelectivity = 0.5,
-        uniqueSelectivity = 0.1,
-        indexType = IndexType.TEXT
-      )
-      .enablePlanningTextIndexes(false)
-      .build()
-
-    for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH", "ENDS WITH", "CONTAINS")) {
-      val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
-      plan shouldEqual cfg.subPlanBuilder()
-        .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
-        .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipTypeScan("(a)-[r:REL]->(b)")
-        .build()
-    }
   }
 
   test("should plan node text index usage only for supported predicates when feature flag is set") {

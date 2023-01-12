@@ -173,9 +173,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planContext,
       newExpressionEvaluator,
       ExecutionModel.default,
-      CypherPlannerConfiguration.defaults().planningTextIndexesEnabled(),
-      CypherPlannerConfiguration.defaults().planningRangeIndexesEnabled(),
-      CypherPlannerConfiguration.defaults().planningPointIndexesEnabled()
+      planningTextIndexesEnabled = true,
+      planningRangeIndexesEnabled = true,
+      planningPointIndexesEnabled = true
     )
   }
 

@@ -219,27 +219,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
   }
 
-  val planningTextIndexesEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.planning_text_indexes_enabled.dynamic()
-    )
-    () => config.planningTextIndexesEnabled
-  }
-
-  val planningRangeIndexesEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.planning_range_indexes_enabled.dynamic()
-    )
-    () => config.planningRangeIndexesEnabled
-  }
-
-  val planningPointIndexesEnabled: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.planning_point_indexes_enabled.dynamic()
-    )
-    () => config.planningPointIndexesEnabled
-  }
-
   val planningIntersectionScansEnabled: () => Boolean = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic()

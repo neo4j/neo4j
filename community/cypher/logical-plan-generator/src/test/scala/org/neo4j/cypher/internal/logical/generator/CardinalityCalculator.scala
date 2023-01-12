@@ -128,9 +128,9 @@ object CardinalityCalculator {
         planContext,
         SimpleMetricsFactory.newSelectivityCalculator(
           planContext,
-          planningTextIndexesEnabled = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
-          planningRangeIndexesEnabled = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
-          planningPointIndexesEnabled = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue()
+          planningTextIndexesEnabled = true,
+          planningRangeIndexesEnabled = true,
+          planningPointIndexesEnabled = true
         ),
         IndependenceCombiner
       )

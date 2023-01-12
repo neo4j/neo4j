@@ -599,18 +599,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     this.copy(options = options.copy(semanticFeatures = options.semanticFeatures :+ sf))
   }
 
-  def enablePlanningTextIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(GraphDatabaseInternalSettings.planning_text_indexes_enabled, Boolean.box(enabled))
-  }
-
-  def enablePlanningRangeIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(GraphDatabaseInternalSettings.planning_range_indexes_enabled, Boolean.box(enabled))
-  }
-
-  def enablePlanningPointIndexes(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(GraphDatabaseInternalSettings.planning_point_indexes_enabled, Boolean.box(enabled))
-  }
-
   def enablePlanningIntersectionScans(enabled: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     withSetting(GraphDatabaseInternalSettings.planning_intersection_scans_enabled, Boolean.box(enabled))
   }
@@ -932,9 +920,9 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      plannerConfiguration.planningTextIndexesEnabled(),
-      plannerConfiguration.planningRangeIndexesEnabled(),
-      plannerConfiguration.planningPointIndexesEnabled()
+      planningTextIndexesEnabled = true,
+      planningRangeIndexesEnabled = true,
+      planningPointIndexesEnabled = true
     )
 
     val context = ContextHelper.create(

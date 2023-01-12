@@ -226,21 +226,9 @@ object VerifyBestPlan {
       val labelName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def textExists =
-        context.settings.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(
-          labelName,
-          propertyNames
-        )
-      def rangeExists =
-        context.settings.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(
-          labelName,
-          propertyNames
-        )
-      def pointExists =
-        context.settings.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(
-          labelName,
-          propertyNames
-        )
+      lazy val textExists = planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
+      lazy val rangeExists = planContext.rangeIndexExistsForLabelAndProperties(labelName, propertyNames)
+      lazy val pointExists = planContext.pointIndexExistsForLabelAndProperties(labelName, propertyNames)
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists
@@ -258,21 +246,9 @@ object VerifyBestPlan {
       val relTypeName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def textExists =
-        context.settings.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(
-          relTypeName,
-          propertyNames
-        )
-      def rangeExists =
-        context.settings.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(
-          relTypeName,
-          propertyNames
-        )
-      def pointExists =
-        context.settings.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(
-          relTypeName,
-          propertyNames
-        )
+      lazy val textExists = planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+      lazy val rangeExists = planContext.rangeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
+      lazy val pointExists = planContext.pointIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
 
       indexHintType match {
         case UsingAnyIndexType   => textExists || rangeExists || pointExists

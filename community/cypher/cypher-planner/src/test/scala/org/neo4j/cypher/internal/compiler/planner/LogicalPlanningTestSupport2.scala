@@ -446,9 +446,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planContext,
         mock[ExpressionEvaluator],
         config.executionModel,
-        cypherConfig.planningTextIndexesEnabled(),
-        cypherConfig.planningRangeIndexesEnabled(),
-        cypherConfig.planningPointIndexesEnabled()
+        planningTextIndexesEnabled = true,
+        planningRangeIndexesEnabled = true,
+        planningPointIndexesEnabled = true
       )
 
       ContextHelper.create(

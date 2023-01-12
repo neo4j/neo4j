@@ -917,24 +917,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("Feature flag to enable/disable planning use of text indexes.")
-    public static final Setting<Boolean> planning_text_indexes_enabled = newBuilder(
-                    "internal.cypher.planning_text_indexes_enabled", BOOL, true)
-            .build();
-
-    @Internal
-    @Description("Feature flag to enable/disable planning use of range indexes.")
-    public static final Setting<Boolean> planning_range_indexes_enabled = newBuilder(
-                    "internal.cypher.planning_range_indexes_enabled", BOOL, true)
-            .build();
-
-    @Internal
-    @Description("Feature flag to enable/disable planning use of point indexes.")
-    public static final Setting<Boolean> planning_point_indexes_enabled = newBuilder(
-                    "internal.cypher.planning_point_indexes_enabled", BOOL, true)
-            .build();
-
-    @Internal
     @Description("Feature flag to enable/disable planning use of intersection scans.")
     public static final Setting<Boolean> planning_intersection_scans_enabled = newBuilder(
                     "internal.cypher.planning_intersection_scans_enabled", BOOL, true)

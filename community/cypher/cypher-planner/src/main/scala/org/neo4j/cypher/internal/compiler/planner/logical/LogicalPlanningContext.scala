@@ -111,12 +111,6 @@ object LogicalPlanningContext {
    * @param errorIfShortestPathHasCommonNodesAtRuntime a setting to fail if the start and the end node is the same for shortestPaths, at runtime.
    * @param legacyCsvQuoteEscaping a setting to configure quoting in LOAD CSV
    * @param csvBufferSize the buffer size for LOAD CSV
-   * @param planningTextIndexesEnabled a setting if text indexes should be used.
-   *                                   Relevant for caching.
-   * @param planningRangeIndexesEnabled a setting if range indexes should be used.
-   *                                    Relevant for caching.
-   * @param planningPointIndexesEnabled a setting if point indexes should be used.
-   *                                    Relevant for caching.
    *  @param useLegacyShortestPath a setting for the shortest path algorithm to use.
    */
   case class Settings(
@@ -131,9 +125,6 @@ object LogicalPlanningContext {
       GraphDatabaseSettings.forbid_shortestpath_common_nodes.defaultValue(),
     legacyCsvQuoteEscaping: Boolean = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
-    planningTextIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_text_indexes_enabled.defaultValue(),
-    planningRangeIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_range_indexes_enabled.defaultValue(),
-    planningPointIndexesEnabled: Boolean = GraphDatabaseInternalSettings.planning_point_indexes_enabled.defaultValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
     useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
@@ -158,9 +149,6 @@ object LogicalPlanningContext {
           errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
-          planningTextIndexesEnabled: Boolean,
-          planningRangeIndexesEnabled: Boolean,
-          planningPointIndexesEnabled: Boolean,
           planningIntersectionScansEnabled: Boolean,
           useLegacyShortestPath: Boolean
         ) =>
@@ -185,15 +173,6 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseSettings.csv_buffer_size.dynamic())
           builder.addOne(csvBufferSize)
-
-        if (GraphDatabaseInternalSettings.planning_text_indexes_enabled.dynamic())
-          builder.addOne(planningTextIndexesEnabled)
-
-        if (GraphDatabaseInternalSettings.planning_range_indexes_enabled.dynamic())
-          builder.addOne(planningRangeIndexesEnabled)
-
-        if (GraphDatabaseInternalSettings.planning_point_indexes_enabled.dynamic())
-          builder.addOne(planningPointIndexesEnabled)
 
         if (GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic())
           builder.addOne(planningIntersectionScansEnabled)

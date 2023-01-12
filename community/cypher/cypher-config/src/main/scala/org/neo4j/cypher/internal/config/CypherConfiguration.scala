@@ -101,7 +101,6 @@ class CypherConfiguration private (val config: Config) {
 
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
-  val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
 
   val planningIntersectionScansEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
@@ -109,9 +108,6 @@ class CypherConfiguration private (val config: Config) {
   val useLPEagerAnalyzer: Boolean = config.get(
     GraphDatabaseInternalSettings.cypher_eager_analysis_implementation
   ) == GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
-
-  val planningRangeIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_range_indexes_enabled)
-  val planningPointIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_point_indexes_enabled)
 
   val varExpandRelationshipIdSetThreshold: Integer =
     config.get(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold)

@@ -68,9 +68,9 @@ case class RelationshipIndexLeafPlanner(
       context.plannerState.indexCompatiblePredicatesProviderContext,
       interestingOrderConfig,
       context.providedOrderFactory,
-      context.settings.planningTextIndexesEnabled,
-      context.settings.planningRangeIndexesEnabled,
-      context.settings.planningPointIndexesEnabled
+      planningTextIndexesEnabled = true,
+      planningRangeIndexesEnabled = true,
+      planningPointIndexesEnabled = true
     )
 
     val result: Set[LogicalPlan] =

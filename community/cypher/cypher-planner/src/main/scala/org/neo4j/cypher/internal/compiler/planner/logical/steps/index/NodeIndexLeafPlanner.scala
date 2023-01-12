@@ -64,10 +64,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
       context.staticComponents.planContext,
       context.plannerState.indexCompatiblePredicatesProviderContext,
       interestingOrderConfig,
-      context.providedOrderFactory,
-      context.settings.planningTextIndexesEnabled,
-      context.settings.planningRangeIndexesEnabled,
-      context.settings.planningPointIndexesEnabled
+      context.providedOrderFactory
     )
 
     // Find plans solving given property predicates together with any label predicates from QG
@@ -136,9 +133,9 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
     providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean = true,
+    findRangeIndexes: Boolean = true,
+    findPointIndexes: Boolean = true
   ): Set[NodeIndexMatch] = {
     val predicates = qg.selections.flatPredicates.toSet
     val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
@@ -166,9 +163,9 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
           semanticTable,
           planContext,
           providedOrderFactory,
-          planningTextIndexesEnabled,
-          planningRangeIndexesEnabled,
-          planningPointIndexesEnabled
+          findTextIndexes,
+          findRangeIndexes,
+          findPointIndexes
         )
       } yield indexMatch
       matches.toSet
@@ -183,9 +180,9 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     semanticTable: SemanticTable,
     planContext: PlanContext,
     providedOrderFactory: ProvidedOrderFactory,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean,
+    findRangeIndexes: Boolean,
+    findPointIndexes: Boolean
   ): Set[NodeIndexMatch] = for {
     labelPredicate <- labelPredicates
     labelName <- labelPredicate.labels
@@ -193,9 +190,9 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     indexDescriptor <- indexDescriptorsForLabel(
       labelId,
       planContext,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
+      findTextIndexes,
+      findRangeIndexes,
+      findPointIndexes
     )
     predicatesForIndex <- predicatesForIndex(
       indexDescriptor,
@@ -219,18 +216,18 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   private def indexDescriptorsForLabel(
     labelId: LabelId,
     planContext: PlanContext,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean,
+    findRangeIndexes: Boolean,
+    findPointIndexes: Boolean
   ): Iterator[IndexDescriptor] = {
     {
-      if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForLabel(labelId)
+      if (findRangeIndexes) planContext.rangeIndexesGetForLabel(labelId)
       else Iterator.empty
     } ++ {
-      if (planningTextIndexesEnabled) planContext.textIndexesGetForLabel(labelId)
+      if (findTextIndexes) planContext.textIndexesGetForLabel(labelId)
       else Iterator.empty
     } ++ {
-      if (planningPointIndexesEnabled) planContext.pointIndexesGetForLabel(labelId)
+      if (findPointIndexes) planContext.pointIndexesGetForLabel(labelId)
       else Iterator.empty
     }
   }

@@ -268,7 +268,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
+    )
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandB(context, selections = textSelections("a")),
@@ -291,7 +291,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
+    )
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandBandR(context, selections = textSelections("r")),
@@ -314,7 +314,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
+    )
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandB(context),
@@ -337,7 +337,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       notificationLogger = notificationLogger,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = false
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = true))
+    )
 
     VerifyBestPlan(
       getSimpleLogicalPlanWithAandBandR(context),
@@ -448,7 +448,8 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       planContext = planContext,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = true
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = false))
+    )
+    // TODO
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
@@ -478,7 +479,8 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       planContext = planContext,
       semanticTable = getSemanticTable,
       useErrorsOverWarnings = true
-    ).withModifiedSettings(_.copy(planningTextIndexesEnabled = false))
+    )
+    // TODO
 
     the[IndexHintException] thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
