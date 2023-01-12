@@ -20,9 +20,12 @@
 package org.neo4j.kernel.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -49,6 +52,9 @@ public class OutOfDiskSpaceMonitoringIT {
     @Inject
     private DatabaseHealth databaseHealth;
 
+    @Inject
+    private GraphDatabaseService db;
+
     @Test
     void shouldPropagateOutOfDiskSpaceEventToRegisteredListener() {
         // When
@@ -57,5 +63,19 @@ public class OutOfDiskSpaceMonitoringIT {
         // Then
         assertThat(eventContext).isNotNull();
         assertThat(eventContext.getDatabaseName()).isEqualTo(DEFAULT_DATABASE_NAME);
+    }
+
+    @Test
+    void shouldPutDatabaseIntoReadOnlyState() {
+        // When
+        databaseHealth.outOfDiskSpace();
+
+        // Then
+        try (Transaction tx = db.beginTx()) {
+            assertThatThrownBy(tx::createNode)
+                    .hasMessageContaining(
+                            "No write operations are allowed on this database. The database is in read-only mode on this Neo4j instance.");
+            tx.commit();
+        }
     }
 }

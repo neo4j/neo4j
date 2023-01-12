@@ -258,6 +258,9 @@ public class GlobalModule {
         }
         globalDependencies.satisfyDependencies(databaseEventListeners);
 
+        var outOfDiskSpaceListener = new OutOfDiskSpaceListener(globalConfig);
+        databaseEventListeners.registerDatabaseEventListener(outOfDiskSpaceListener);
+
         transactionEventListeners = createGlobalTransactionEventListeners();
         globalDependencies.satisfyDependency(transactionEventListeners);
 
