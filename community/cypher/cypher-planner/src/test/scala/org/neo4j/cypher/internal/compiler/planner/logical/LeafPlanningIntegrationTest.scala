@@ -963,7 +963,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expandB = Expand(scanA, "a", INCOMING, Seq.empty, "b", "rB", ExpandAll)
     val selectionB = Selection(Seq(hasLabels("b", "B")), expandB)
     val expandC = Expand(selectionB, "a", INCOMING, Seq.empty, "c", "rC", ExpandAll)
-    val selectionC = Selection(Seq(hasLabels("c", "C"), not(equals(varFor("rB"), varFor("rC")))), expandC)
+    val selectionC = Selection(Seq(hasLabels("c", "C"), not(equals(varFor("rC"), varFor("rB")))), expandC)
     val expected = selectionC
 
     plan should equal(expected)

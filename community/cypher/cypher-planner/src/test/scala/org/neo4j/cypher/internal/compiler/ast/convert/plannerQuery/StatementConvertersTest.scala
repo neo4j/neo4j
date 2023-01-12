@@ -452,7 +452,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
+    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r2"), varFor("r"))))
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(
       Map(
@@ -470,7 +470,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship("r2", ("b", "a"), OUTGOING, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
+    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r2"), varFor("r"))))
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(
       Map(
@@ -487,7 +487,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, SimplePatternLength)))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
+    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r2"), varFor("r"))))
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(
       Map(
@@ -616,8 +616,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, VarPatternLength(1, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
 
-    val inner = anyInList(varFor("anon_1"), varFor("r2"), equals(varFor("anon_0"), varFor("anon_1")))
-    val outer = noneInList(varFor("anon_0"), varFor("r"), inner)
+    val inner = anyInList(varFor("anon_1"), varFor("r"), equals(varFor("anon_0"), varFor("anon_1")))
+    val outer = noneInList(varFor("anon_0"), varFor("r2"), inner)
     val predicate = Predicate(Set("r2", "r"), outer)
 
     query.queryGraph.selections should equal(Selections(Set(predicate)))
