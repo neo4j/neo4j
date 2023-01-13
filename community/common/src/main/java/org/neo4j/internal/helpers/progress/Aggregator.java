@@ -64,9 +64,13 @@ final class Aggregator {
     }
 
     void update(long delta) {
-        long progress = min(totalCount, PROGRESS_UPDATER.addAndGet(this, delta));
-        int current = (int) ((progress * indicator.reportResolution()) / totalCount);
-        updateTo(current);
+        if (delta > 0) {
+            long progress = min(totalCount, PROGRESS_UPDATER.addAndGet(this, delta));
+            if (progress > 0) {
+                int current = (int) ((progress * indicator.reportResolution()) / totalCount);
+                updateTo(current);
+            }
+        }
     }
 
     private void updateTo(int to) {
