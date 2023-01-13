@@ -58,11 +58,6 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
     }
 
     @Override
-    public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
-        throw new UnsupportedOperationException("Relationship key constraints are not supported on nodes.");
-    }
-
-    @Override
     public ConstraintCreator withName(String name) {
         return new BaseNodeConstraintCreator(actions, name, label, indexType, indexConfig);
     }

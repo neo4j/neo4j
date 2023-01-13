@@ -48,13 +48,18 @@ public enum KernelVersion {
     V4_3_D4((byte) 3),
     V4_4((byte) 4), // 4.4. Introduces RANGE, POINT and TEXT index types.
     V5_0((byte) 5), // 5.0.
-    V5_4((byte) 6); // 5.4. Introduces relationship uniqueness and relationship key constraints.
+    V5_4((byte) 6), // 5.4. Introduces chunked transactions
+
+    // An unreleased future version.
+    // This version is meant to be used when developing a new feature
+    // and it is not sure which version the feature will land in.
+    GLORIOUS_FUTURE((byte) 99);
 
     public static final KernelVersion EARLIEST = V4_2;
     public static final KernelVersion LATEST = V5_4;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
-    public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = V5_4;
+    public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = GLORIOUS_FUTURE;
     public static final List<KernelVersion> VERSIONS = Arrays.asList(KernelVersion.values());
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
             ByteObjectMaps.immutable.from(List.of(values()), KernelVersion::version, v -> v);

@@ -36,6 +36,10 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory {
             case V4_4 -> LogCommandSerializationV4_4.INSTANCE;
             case V5_0 -> LogCommandSerializationV5_0.INSTANCE;
             case V5_4 -> LogCommandSerializationV5_4.INSTANCE;
+            case GLORIOUS_FUTURE -> {
+                throw new IllegalStateException(
+                        "Serialization is not supported for unsupported future format version " + version);
+            }
         };
     }
 }

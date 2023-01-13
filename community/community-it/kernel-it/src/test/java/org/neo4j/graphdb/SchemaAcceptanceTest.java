@@ -81,6 +81,7 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
@@ -1165,8 +1166,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void relationshipKeyConstraintsMustNotBeAvailableInCommunityEdition() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator constraintCreator =
-                    tx.schema().constraintFor(relType).assertPropertyIsRelationshipKey(propertyKey);
+            ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
+                            tx.schema().constraintFor(relType))
+                    .assertPropertyIsRelationshipKey(propertyKey);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");

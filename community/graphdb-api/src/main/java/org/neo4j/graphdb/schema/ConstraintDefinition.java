@@ -41,8 +41,7 @@ public interface ConstraintDefinition {
 
     /**
      * This accessor method returns a relationship type which this constraint is associated with if this constraint
-     * has type {@link ConstraintType#RELATIONSHIP_UNIQUENESS}, {@link ConstraintType#RELATIONSHIP_PROPERTY_EXISTENCE},
-     * or {@link ConstraintType#RELATIONSHIP_KEY}.
+     * has type {@link ConstraintType#RELATIONSHIP_PROPERTY_EXISTENCE}.
      * Type of the constraint can be examined by calling {@link #getConstraintType()} or
      * {@link #isConstraintType(ConstraintType)} methods.
      *
