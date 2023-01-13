@@ -43,7 +43,8 @@ public interface BoltWire {
                 new BoltV42Wire(),
                 new BoltV43Wire(),
                 new BoltV44Wire(),
-                new BoltV50Wire());
+                new BoltV50Wire(),
+                new BoltV51Wire());
     }
 
     /**
