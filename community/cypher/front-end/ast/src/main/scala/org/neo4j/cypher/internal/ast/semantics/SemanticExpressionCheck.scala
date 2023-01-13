@@ -41,8 +41,8 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterExpression
-import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FilteringExpression
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
@@ -67,8 +67,8 @@ import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.Modulo
-import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.Not
@@ -581,8 +581,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         @tailrec
         def existsIsValidHere(p: Seq[Expression]): SemanticCheck = p match {
           case Nil => None
-          case (And(_, _) | Or(_, _) | Ands(_) | Ors(_) | Not(_) | ExistsSubClause(_,_)) :: ps  => existsIsValidHere(ps)
-          case _ => SemanticError("EXISTS is only valid in a WHERE clause as a standalone predicate or as part of a boolean expression (AND / OR / NOT)", x.position)
+          case (And(_, _) | Or(_, _) | Ands(_) | Ors(_) | Xor(_, _) | Not(_) | ExistsSubClause(_,_)) :: ps  => existsIsValidHere(ps)
+          case _ => SemanticError("EXISTS is only valid in a WHERE clause as a standalone predicate or as part of a boolean expression (AND / OR / XOR / NOT)", x.position)
         }
         existsIsValidHere(parents) chain
           SemanticState.recordCurrentScope(x) chain
