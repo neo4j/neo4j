@@ -160,6 +160,7 @@ import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedRemoteAliasManage
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
@@ -290,6 +291,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
 import org.neo4j.cypher.internal.logical.plans.RenameServer
 import org.neo4j.cypher.internal.logical.plans.RenameUser
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
@@ -5853,11 +5855,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Repetition(0, Unlimited),
           "start",
           "end",
-          "  UNNAMED111",
-          "  UNNAMED112",
-          Set(VariableGrouping("  UNNAMED111", "a"), VariableGrouping("  UNNAMED112", "b")),
-          Set(VariableGrouping("  UNNAMED113", "r")),
-          Set("r"),
+          "  a@1",
+          "  UNNAMED1",
+          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
+          Set(VariableGrouping("  r@1", "  r@2")),
+          Set("  r@1"),
           Set.empty,
           Set.empty,
           reverseGroupVariableProjections = false
@@ -5869,7 +5871,74 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "Repeat(Trail)",
         TwoChildren(lhsPD, rhsPD),
         List(details("(start) (…){0, *} (end)")),
-        Set("r", "a", "b", "start", "end")
+        Set("r", "a", "anon_2", "start", "end")
+      )
+    )
+
+    assertGood(
+      attach(
+        Trail(
+          lhsLP,
+          rhsLP,
+          Repetition(0, Unlimited),
+          "  UNNAMED0",
+          "  end@1",
+          "  a@1",
+          "  UNNAMED1",
+          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
+          Set(VariableGrouping("  r@1", "  r@2")),
+          Set("  r@1"),
+          Set.empty,
+          Set.empty,
+          reverseGroupVariableProjections = false
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "Repeat(Trail)",
+        TwoChildren(lhsPD, rhsPD),
+        List(details("(anon_0) (…){0, *} (end)")),
+        Set("r", "a", "anon_2", "anon_0", "end")
+      )
+    )
+  }
+
+  test("BidirectionalRepeat && RepeatOptions") {
+    assertGood(
+      attach(
+        BidirectionalRepeatTrail(
+          lhsLP,
+          RepeatOptions(lhsLP, rhsLP),
+          Repetition(0, Unlimited),
+          "  UNNAMED0",
+          "  end@1",
+          "  a@1",
+          "  UNNAMED1",
+          Set(VariableGrouping("  a@1", "  a@2"), VariableGrouping("  UNNAMED1", "  UNNAMED2")),
+          Set(VariableGrouping("  r@1", "  r@2")),
+          Set("  r@1"),
+          Set.empty,
+          Set.empty,
+          reverseGroupVariableProjections = false
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "BidirectionalRepeat(Trail)",
+        TwoChildren(
+          lhsPD,
+          planDescription(
+            id,
+            "RepeatOptions",
+            TwoChildren(lhsPD, rhsPD),
+            List(),
+            Set("a")
+          )
+        ),
+        List(details("(anon_0) (…){0, *} (end)")),
+        Set("r", "a", "anon_2", "anon_0", "end")
       )
     )
   }

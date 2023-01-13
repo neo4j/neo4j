@@ -2169,30 +2169,21 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(id = plan.id, plan.productPrefix, children, Seq.empty, variables, withRawCardinalities)
 
       case Trail(_, _, repetition, start, end, _, _, _, _, _, _, _, _) =>
-        val repString = repetition match {
-          case Repetition(min, Limited(n)) => s"{$min, $n}"
-          case Repetition(min, Unlimited)  => s"{$min, *}"
-        }
-        val details = s"($start) (…)$repString ($end)"
         PlanDescriptionImpl(
           id = plan.id,
           "Repeat(Trail)",
           children,
-          Seq(Details(PrettyString(details))),
+          Seq(Details(repeatDetails(repetition, start, end))),
           variables,
           withRawCardinalities
         )
 
-      case BidirectionalRepeatTrail(_, _, repetition, _, _, _, _, _, _, _, _, _, _) =>
-        val repString = repetition match {
-          case Repetition(min, Limited(n)) => s"{$min, $n}"
-          case Repetition(min, Unlimited)  => s"{$min, *}"
-        }
+      case BidirectionalRepeatTrail(_, _, repetition, start, end, _, _, _, _, _, _, _, _) =>
         PlanDescriptionImpl(
           id = plan.id,
           "BidirectionalRepeat(Trail)",
           children,
-          Seq(Details(PrettyString(repString))),
+          Seq(Details(repeatDetails(repetition, start, end))),
           variables,
           withRawCardinalities
         )
@@ -2211,6 +2202,16 @@ case class LogicalPlan2PlanDescription(
     }
 
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
+  }
+
+  private def repeatDetails(repetition: Repetition, start: String, end: String): PrettyString = {
+    val repString = repetition match {
+      case Repetition(min, Limited(n)) =>
+        pretty"{${asPrettyString.raw(min.toString)}, ${asPrettyString.raw(n.toString)}}"
+      case Repetition(min, Unlimited) =>
+        pretty"{${asPrettyString.raw(min.toString)}, *}"
+    }
+    pretty"(${asPrettyString(start)}) (…)$repString (${asPrettyString(end)})"
   }
 
   private def addPlanningAttributes(
