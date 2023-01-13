@@ -295,7 +295,8 @@ class DbmsDiagnosticsManagerTest {
                         "Java classpath",
                         "Library path",
                         "Network information",
-                        "DBMS config");
+                        "DBMS config",
+                        "Packaging");
     }
 
     private void assertContainingAdditionalDiagnostics(DiagnosticsProvider diagnosticsProvider) {

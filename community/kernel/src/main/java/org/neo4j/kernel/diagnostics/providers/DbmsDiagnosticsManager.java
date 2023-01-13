@@ -139,10 +139,12 @@ public class DbmsDiagnosticsManager {
 
     private void dumpSystemDiagnostics(InternalLog log) {
         dumpAsSingleMessage(log, stringJoiner -> {
+            Config config = dependencies.resolveDependency(Config.class);
+
             DiagnosticsManager.section(stringJoiner::add, "System diagnostics");
             DiagnosticsManager.dump(SystemDiagnostics.class, log, stringJoiner::add);
-            DiagnosticsManager.dump(
-                    new ConfigDiagnostics(dependencies.resolveDependency(Config.class)), log, stringJoiner::add);
+            DiagnosticsManager.dump(new ConfigDiagnostics(config), log, stringJoiner::add);
+            DiagnosticsManager.dump(new PackagingDiagnostics(config), log, stringJoiner::add);
             // dump any custom additional diagnostics that can be registered by specific edition
             dependencies
                     .resolveTypeDependencies(DiagnosticsProvider.class)
