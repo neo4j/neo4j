@@ -25,8 +25,23 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Trai
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->()-[]->(b)]{0,*} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,*} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,1} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,2} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,3} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{1,2} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{2,2} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(you) [(b)<-[r]-(a)]{0, *} (me)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(you) [(c)-[rr]->(d)]{0,1} (other)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(you) [(c)-[rr]->(d)]{0,2} (other)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(you) [(c)-[rr]->(d)]{1,2} (other)`
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -43,146 +58,6 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-
-  private def createMeYouTrailParameters(min: Int, max: UpperBound): TrailParameters = {
-    TrailParameters(
-      min,
-      max,
-      start = "me",
-      end = "you",
-      innerStart = "a_inner",
-      innerEnd = "b_inner",
-      groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
-      groupRelationships = Set(("r_inner", "r")),
-      innerRelationships = Set("r_inner"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = false
-    )
-  }
-
-  private def createYouOtherTrailParameters(min: Int, max: UpperBound): TrailParameters = {
-    TrailParameters(
-      min,
-      max,
-      start = "you",
-      end = "other",
-      innerStart = "c_inner",
-      innerEnd = "d_inner",
-      groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
-      groupRelationships = Set(("rr_inner", "rr")),
-      innerRelationships = Set("rr_inner"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("r"),
-      reverseGroupVariableProjections = false
-    )
-  }
-
-  protected val `(me) [(a)-[r]->(b)]{0,1} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 0, max = Limited(1))
-
-  protected val `(me) [(a)-[r]->(b)]{0,2} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 0, max = Limited(2))
-
-  protected val `(me) [(a)-[r]->(b)]{0,3} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 0, max = Limited(3))
-
-  protected val `(me) [(a)-[r]->(b)]{0,*} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 0, max = Unlimited)
-
-  protected val `(me) [(a)-[r]->(b)]{1,1} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 1, max = Limited(1))
-
-  protected val `(me) [(a)-[r]->(b)]{1,2} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 1, max = Limited(2))
-
-  protected val `(me) [(a)-[r]->(b)]{2,2} (you)` : TrailParameters =
-    createMeYouTrailParameters(min = 2, max = Limited(2))
-
-  protected val `(you) [(c)-[rr]->(d)]{0,1} (other)` : TrailParameters =
-    createYouOtherTrailParameters(min = 0, max = Limited(1))
-
-  protected val `(you) [(c)-[rr]->(d)]{0,2} (other)` : TrailParameters =
-    createYouOtherTrailParameters(min = 0, max = Limited(2))
-
-  protected val `(you) [(c)-[rr]->(d)]{1,2} (other)` : TrailParameters =
-    createYouOtherTrailParameters(min = 1, max = Limited(2))
-
-  protected val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)` : TrailParameters = TrailParameters(
-    min = 0,
-    max = Unlimited,
-    start = "me",
-    end = "you",
-    innerStart = "a_inner",
-    innerEnd = "b_inner",
-    groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
-    groupRelationships = Set(("r_inner", "r")),
-    innerRelationships = Set("r_inner", "ranon"),
-    previouslyBoundRelationships = Set.empty,
-    previouslyBoundRelationshipGroups = Set.empty,
-    reverseGroupVariableProjections = false
-  )
-
-  protected val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)` : TrailParameters = TrailParameters(
-    min = 1,
-    max = Limited(1),
-    start = "start",
-    end = "firstMiddle",
-    innerStart = "anon_start_inner",
-    innerEnd = "anon_end_inner",
-    groupNodes = Set(),
-    groupRelationships = Set(),
-    innerRelationships = Set("anon_r_inner"),
-    previouslyBoundRelationships = Set.empty,
-    previouslyBoundRelationshipGroups = Set.empty,
-    reverseGroupVariableProjections = false
-  )
-
-  protected val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)` : TrailParameters = TrailParameters(
-    min = 0,
-    max = Unlimited,
-    start = "firstMiddle",
-    end = "middle",
-    innerStart = "a_inner",
-    innerEnd = "b_inner",
-    groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
-    groupRelationships = Set(("r1_inner", "r1")),
-    innerRelationships = Set("r1_inner"),
-    previouslyBoundRelationships = Set.empty,
-    previouslyBoundRelationshipGroups = Set.empty,
-    reverseGroupVariableProjections = false
-  )
-
-  protected val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)` : TrailParameters = TrailParameters(
-    min = 0,
-    max = Unlimited,
-    start = "middle",
-    end = "end",
-    innerStart = "c_inner",
-    innerEnd = "d_inner",
-    groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
-    groupRelationships = Set(("r2_inner", "r2")),
-    innerRelationships = Set("r2_inner"),
-    previouslyBoundRelationships = Set.empty,
-    previouslyBoundRelationshipGroups = Set("r1"),
-    reverseGroupVariableProjections = false
-  )
-
-  protected val `(you) [(b)<-[r]-(a)]{0, *} (me)` : TrailParameters =
-    TrailParameters(
-      min = 0,
-      max = Unlimited,
-      start = "you",
-      end = "me",
-      innerStart = "b_inner",
-      innerEnd = "a_inner",
-      groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
-      groupRelationships = Set(("r_inner", "r")),
-      innerRelationships = Set("r_inner"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = true
-    )
 
   test("should respect upper limit") {
     // (n1:START) → (n2) → (n3) → (n4)
@@ -1460,38 +1335,15 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
-  protected def listOf(values: AnyRef*): util.List[AnyRef] = java.util.List.of[AnyRef](values: _*)
+  protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
 
   //  (n0:START)                                                  (n6:LOOP)
   //             ↘             →                                ↗     |
   //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
   //             ↗             ←                                ↖     ↓
   //  (n2:START)                                                  (n7:LOOP)
-  protected def complexGraph = {
-    given {
-      val n0 = tx.createNode(label("START"))
-      val n1 = tx.createNode(label("START"))
-      val n2 = tx.createNode(label("START"))
-      val n3 = tx.createNode(label("MIDDLE"))
-      val n4 = tx.createNode(label("MIDDLE"))
-      val n5 = tx.createNode(label("MIDDLE"), label("LOOP"))
-      val n6 = tx.createNode(label("LOOP"))
-      val n7 = tx.createNode(label("LOOP"))
-      n0.setProperty("foo", 0)
-      n1.setProperty("foo", 1)
-      n2.setProperty("foo", 2)
-      val r03 = n0.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r13 = n1.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r34a = n3.createRelationshipTo(n4, RelationshipType.withName("R"))
-      val r34b = n3.createRelationshipTo(n4, RelationshipType.withName("R"))
-      val r43 = n4.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r45 = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
-      val r56 = n5.createRelationshipTo(n6, RelationshipType.withName("R"))
-      val r67 = n6.createRelationshipTo(n7, RelationshipType.withName("R"))
-      val r75 = n7.createRelationshipTo(n5, RelationshipType.withName("R"))
-      (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75)
-    }
+  protected def givenComplexGraph(): ComplexGraph = {
+    given(complexGraph())
   }
 
   /**
@@ -1514,7 +1366,8 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
    *
    */
   protected def complexGraphAndExpectedResult: Seq[Array[Object]] = {
-    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) = complexGraph
+    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
+      ComplexGraph.unapply(givenComplexGraph).get
 
     Seq(
       Array(n0, n3, n5, n5, listOf(n3, n4), listOf(n4, n5), listOf(r34a, r45), emptyList(), emptyList(), emptyList()),
@@ -2000,6 +1853,150 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       (n1, n2, n3, r12, r23, r31)
     }
   }
+}
+
+object TrailTestBase {
+  def listOf(values: AnyRef*): util.List[AnyRef] = java.util.List.of[AnyRef](values: _*)
+
+  private def createMeYouTrailParameters(min: Int, max: UpperBound): TrailParameters = {
+    TrailParameters(
+      min,
+      max,
+      start = "me",
+      end = "you",
+      innerStart = "a_inner",
+      innerEnd = "b_inner",
+      groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+      groupRelationships = Set(("r_inner", "r")),
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+  }
+
+  private def createYouOtherTrailParameters(min: Int, max: UpperBound): TrailParameters = {
+    TrailParameters(
+      min,
+      max,
+      start = "you",
+      end = "other",
+      innerStart = "c_inner",
+      innerEnd = "d_inner",
+      groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
+      groupRelationships = Set(("rr_inner", "rr")),
+      innerRelationships = Set("rr_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set("r"),
+      reverseGroupVariableProjections = false
+    )
+  }
+
+  val `(me) [(a)-[r]->(b)]{0,1} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 0, max = Limited(1))
+
+  val `(me) [(a)-[r]->(b)]{0,2} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 0, max = Limited(2))
+
+  val `(me) [(a)-[r]->(b)]{0,3} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 0, max = Limited(3))
+
+  val `(me) [(a)-[r]->(b)]{0,*} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 0, max = Unlimited)
+
+  val `(me) [(a)-[r]->(b)]{1,1} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 1, max = Limited(1))
+
+  val `(me) [(a)-[r]->(b)]{1,2} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 1, max = Limited(2))
+
+  val `(me) [(a)-[r]->(b)]{2,2} (you)` : TrailParameters =
+    createMeYouTrailParameters(min = 2, max = Limited(2))
+
+  val `(you) [(c)-[rr]->(d)]{0,1} (other)` : TrailParameters =
+    createYouOtherTrailParameters(min = 0, max = Limited(1))
+
+  val `(you) [(c)-[rr]->(d)]{0,2} (other)` : TrailParameters =
+    createYouOtherTrailParameters(min = 0, max = Limited(2))
+
+  val `(you) [(c)-[rr]->(d)]{1,2} (other)` : TrailParameters =
+    createYouOtherTrailParameters(min = 1, max = Limited(2))
+
+  val `(me) [(a)-[r]->()-[]->(b)]{0,*} (you)` : TrailParameters = TrailParameters(
+    min = 0,
+    max = Unlimited,
+    start = "me",
+    end = "you",
+    innerStart = "a_inner",
+    innerEnd = "b_inner",
+    groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+    groupRelationships = Set(("r_inner", "r")),
+    innerRelationships = Set("r_inner", "ranon"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
+  )
+
+  val `(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)` : TrailParameters = TrailParameters(
+    min = 1,
+    max = Limited(1),
+    start = "start",
+    end = "firstMiddle",
+    innerStart = "anon_start_inner",
+    innerEnd = "anon_end_inner",
+    groupNodes = Set(),
+    groupRelationships = Set(),
+    innerRelationships = Set("anon_r_inner"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
+  )
+
+  val `(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)` : TrailParameters = TrailParameters(
+    min = 0,
+    max = Unlimited,
+    start = "firstMiddle",
+    end = "middle",
+    innerStart = "a_inner",
+    innerEnd = "b_inner",
+    groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+    groupRelationships = Set(("r1_inner", "r1")),
+    innerRelationships = Set("r1_inner"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
+  )
+
+  val `(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)` : TrailParameters = TrailParameters(
+    min = 0,
+    max = Unlimited,
+    start = "middle",
+    end = "end",
+    innerStart = "c_inner",
+    innerEnd = "d_inner",
+    groupNodes = Set(("c_inner", "c"), ("d_inner", "d")),
+    groupRelationships = Set(("r2_inner", "r2")),
+    innerRelationships = Set("r2_inner"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set("r1"),
+    reverseGroupVariableProjections = false
+  )
+
+  val `(you) [(b)<-[r]-(a)]{0, *} (me)` : TrailParameters =
+    TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "you",
+      end = "me",
+      innerStart = "b_inner",
+      innerEnd = "a_inner",
+      groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+      groupRelationships = Set(("r_inner", "r")),
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
+    )
 }
 
 trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
@@ -4217,6 +4214,15 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     }
   }
 
+  def complexGraphAndPartiallyOrderedExpectedResult(): Seq[Seq[Array[Object]]] = {
+    OrderedTrailTestBase.complexGraphAndPartiallyOrderedExpectedResult(givenComplexGraph)
+  }
+}
+
+object OrderedTrailTestBase {
+
+  protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
+
   /**
    * NOTE: Expected result obviously assumes that certain (equivalent) plans are used, which is the case for all tests calling this method.
    *
@@ -4236,8 +4242,9 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
    * (n2:START)                                                  (n7:LOOP)
    *
    */
-  protected def complexGraphAndPartiallyOrderedExpectedResult: Seq[Seq[Array[Object]]] = {
-    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) = complexGraph
+  def complexGraphAndPartiallyOrderedExpectedResult(complexGraph: ComplexGraph): Seq[Seq[Array[Object]]] = {
+    val (n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75) =
+      ComplexGraph.unapply(complexGraph).get
 
     Seq(
       Seq(

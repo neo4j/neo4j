@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
@@ -437,6 +439,37 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (nodes.toSeq, rels.toSeq, globalCenter)
   }
 
+  //  (n0:START)                                                  (n6:LOOP)
+  //             ↘             →                                ↗     |
+  //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
+  //             ↗             ←                                ↖     ↓
+  //  (n2:START)                                                  (n7:LOOP)
+  def complexGraph(): ComplexGraph = {
+    val tx = runtimeTestSupport.tx
+    val n0 = tx.createNode(label("START"))
+    val n1 = tx.createNode(label("START"))
+    val n2 = tx.createNode(label("START"))
+    val n3 = tx.createNode(label("MIDDLE"))
+    val n4 = tx.createNode(label("MIDDLE"))
+    val n5 = tx.createNode(label("MIDDLE"), label("LOOP"))
+    val n6 = tx.createNode(label("LOOP"))
+    val n7 = tx.createNode(label("LOOP"))
+    n0.setProperty("foo", 0)
+    n1.setProperty("foo", 1)
+    n2.setProperty("foo", 2)
+    val r03 = n0.createRelationshipTo(n3, RelationshipType.withName("R"))
+    val r13 = n1.createRelationshipTo(n3, RelationshipType.withName("R"))
+    val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+    val r34a = n3.createRelationshipTo(n4, RelationshipType.withName("R"))
+    val r34b = n3.createRelationshipTo(n4, RelationshipType.withName("R"))
+    val r43 = n4.createRelationshipTo(n3, RelationshipType.withName("R"))
+    val r45 = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
+    val r56 = n5.createRelationshipTo(n6, RelationshipType.withName("R"))
+    val r67 = n6.createRelationshipTo(n7, RelationshipType.withName("R"))
+    val r75 = n7.createRelationshipTo(n5, RelationshipType.withName("R"))
+    ComplexGraph(n0, n1, n2, n3, n4, n5, n6, n7, r03, r13, r23, r34a, r34b, r43, r45, r56, r67, r75)
+  }
+
   /**
    * Same as a nestedStarGraph, but do not return the nodes and relationships, only the center node and the node count
    * This is useful if you want to measure heap usage and want to avoid retaining unnecessary memory in your test case
@@ -630,6 +663,30 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
+}
+
+object GraphCreation {
+
+  case class ComplexGraph(
+    n0: Node,
+    n1: Node,
+    n2: Node,
+    n3: Node,
+    n4: Node,
+    n5: Node,
+    n6: Node,
+    n7: Node,
+    r03: Relationship,
+    r13: Relationship,
+    r23: Relationship,
+    r34a: Relationship,
+    r34b: Relationship,
+    r43: Relationship,
+    r45: Relationship,
+    r56: Relationship,
+    r67: Relationship,
+    r75: Relationship
+  )
 }
 
 case class SineGraph(
