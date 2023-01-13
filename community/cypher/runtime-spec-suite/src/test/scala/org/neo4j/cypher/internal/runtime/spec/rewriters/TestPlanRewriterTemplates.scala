@@ -40,13 +40,18 @@ object TestPlanRewriterTemplates {
     ctx: PlanRewriterContext,
     config: PlanRewriterStepConfig,
     rewritePlan: LogicalPlan => LogicalPlan
+  ): Rewriter = everywhere(config.weight, rewritePlan)
+
+  def everywhere(
+    weight: Double,
+    rewritePlan: LogicalPlan => LogicalPlan
   ): Rewriter = {
     bottomUpWithParent(
       RewriterWithParent.lift {
         case (pr: ProduceResult, _) =>
           pr
         case (p: LogicalPlan, parent: Option[LogicalPlan])
-          if isParentOkToInterject(parent) && randomShouldApply(config) =>
+          if isParentOkToInterject(parent) && randomShouldApply(weight) =>
           rewritePlan(p)
       },
       onlyRewriteLogicalPlansStopper
@@ -69,13 +74,17 @@ object TestPlanRewriterTemplates {
   // Conditions
   // --------------------------------------------------------------------------
   def randomShouldApply(stepConfig: PlanRewriterStepConfig): Boolean = {
-    stepConfig.weight match {
+    randomShouldApply(stepConfig.weight)
+  }
+
+  def randomShouldApply(weight: Double, random: Random = Random): Boolean = {
+    weight match {
       case 0.0 =>
         false
       case 1.0 =>
         true
       case w =>
-        Random.nextDouble() < w
+        random.nextDouble() < w
     }
   }
 
