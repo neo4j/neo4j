@@ -466,6 +466,8 @@ trait UpdateGraph {
       Some(EagernessReason.OverlappingSetLabels(overlapWithKnownLabels.toSeq.map(_.name)))
     else if (overlapWithLabelsFunction)
       Some(EagernessReason.OverlappingSetLabels(Seq.empty))
+    else if (labelsToSet.nonEmpty && isReturningNode(qgWithInfo, semanticTable))
+      Some(EagernessReason.OverlappingSetLabels(labelsToSet.map(_.name).toSeq))
     else
       None
   }
@@ -486,8 +488,13 @@ trait UpdateGraph {
 
     val readPropKeys = getReadPropKeys(qgWithInfo)
 
-    setNodePropertyOverlap(readPropKeys.nodePropertyKeys, hasDynamicProperties, hasPropertyFunctionRead) ||
-      setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties)
+    setNodePropertyOverlap(
+      readPropKeys.nodePropertyKeys,
+      hasDynamicProperties,
+      hasPropertyFunctionRead,
+      isReturningNode(qgWithInfo, semanticTable)
+    ) ||
+    setRelPropertyOverlap(readPropKeys.relPropertyKeys, hasDynamicProperties, isReturningRel(qgWithInfo, semanticTable))
   }
 
   private case class ReadPropKeys(nodePropertyKeys: Set[PropertyKeyName], relPropertyKeys: Set[PropertyKeyName])
@@ -619,8 +626,10 @@ trait UpdateGraph {
     val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
 
     val overlappingLabels: Seq[LabelName] = removeLabelPatterns.collect {
-      case RemoveLabelPattern(_, labelsToRemove) =>
-        //does any other identifier match on the labels I am deleting?
+      case RemoveLabelPattern(_, labelsToRemove)
+        if labelsToRemove.nonEmpty && isReturningNode(qgWithInfo, semanticTable) =>
+        labelsToRemove
+      case RemoveLabelPattern(_, labelsToRemove) =>//does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.filter(l => {
           otherLabelsRead(l)
@@ -641,7 +650,8 @@ trait UpdateGraph {
   private def setNodePropertyOverlap(
     propertiesToRead: Set[PropertyKeyName],
     hasDynamicProperties: Boolean,
-    hasPropertyFunctionRead: Boolean
+    hasPropertyFunctionRead: Boolean,
+    isReturningNode: Boolean
   ): Boolean = {
 
     @tailrec
@@ -673,7 +683,7 @@ trait UpdateGraph {
 
     val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
+    ((hasDynamicProperties || isReturningNode) && propertiesToSet.overlapsWithDynamicPropertyRead) ||
       (hasPropertyFunctionRead && propertiesToSet.overlapsWithFunctionPropertyRead) ||
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
@@ -682,7 +692,11 @@ trait UpdateGraph {
    * Checks for overlap between what relationship props are read in query graph
    * and what is updated with SET here
    */
-  private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName], hasDynamicProperties: Boolean): Boolean = {
+  private def setRelPropertyOverlap(
+    propertiesToRead: Set[PropertyKeyName],
+    hasDynamicProperties: Boolean,
+    isReturningRel: Boolean
+  ): Boolean = {
     @tailrec
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
@@ -717,7 +731,7 @@ trait UpdateGraph {
 
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
+    ((hasDynamicProperties || isReturningRel) && propertiesToSet.overlapsWithDynamicPropertyRead) ||
       propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
@@ -749,6 +763,16 @@ trait UpdateGraph {
     case _: SetNodePropertiesFromMapPattern => true
     case _ => false
   }
+
+  private def isReturningNode(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean =
+    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists(expr =>
+      semanticTable.isNodeNoFail(expr)
+    )
+
+  private def isReturningRel(qgWithInfo: QgWithLeafInfo, semanticTable: SemanticTable): Boolean =
+    qgWithInfo.isTerminatingProjection && qgWithInfo.queryGraph.selections.predicates.map(_.expr).exists(expr =>
+      semanticTable.isRelationshipNoFail(expr)
+    )
 
   def mergeQueryGraph: Option[QueryGraph] = mutatingPatterns.collectFirst {
     case c: MergePattern => c.matchGraph

@@ -115,7 +115,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
       patternComprehensions ++
       patternExpressions ++
       patterns
-    allQgsWithLeafInfo.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves) ++
+    allQgsWithLeafInfo.map(qg => QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(qg)) ++
       optionalMatches.flatMap(_.allQGsWithLeafInfo)
   }
 

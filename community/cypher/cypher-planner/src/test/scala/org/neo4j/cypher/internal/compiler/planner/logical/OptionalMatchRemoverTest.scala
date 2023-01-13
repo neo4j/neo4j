@@ -685,7 +685,8 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       ast.asInstanceOf[Query],
       table,
       anonymousVariableNameGenerator,
-      CancellationChecker.NeverCancelled
+      CancellationChecker.NeverCancelled,
+      nonTerminating = false
     )
   }
 

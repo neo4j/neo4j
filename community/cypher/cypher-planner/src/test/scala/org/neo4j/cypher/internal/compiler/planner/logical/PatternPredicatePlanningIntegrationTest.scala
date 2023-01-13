@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -1065,9 +1066,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case SetNodeProperty(
+      case Eager(SetNodeProperty(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
+      ), Seq(EagernessReason.Unknown)
       ) => ()
     }
   }
@@ -1079,10 +1081,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case SetNodePropertiesFromMap(
+      case Eager(SetNodePropertiesFromMap(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
-      ) => ()
+      ), Seq(EagernessReason.Unknown)) => ()
     }
   }
 
@@ -1093,10 +1095,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case SetRelationshipProperty(
+      case Eager(SetRelationshipProperty(
       RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
-      ) => ()
+      ), Seq(EagernessReason.Unknown)) => ()
     }
   }
 
@@ -1107,10 +1109,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case SetRelationshipPropertiesFromMap(
+      case Eager(SetRelationshipPropertiesFromMap(
       RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
-      ) => ()
+      ),
+      Seq(EagernessReason.Unknown))=> ()
     }
   }
 

@@ -53,8 +53,8 @@ object QgWithLeafInfo {
   /**
    * @return a QgWithInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
    */
-  def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
-    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
+  def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph, isReturningProjection: Boolean = false): QgWithLeafInfo =
+    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None, isReturningProjection)
 
 }
 
@@ -67,11 +67,14 @@ object QgWithLeafInfo {
  * @param stablySolvedPredicates The predicates solved by the leaf plan that solves the stable identifier.
  * @param unstableLeaves         The unstable leaves of the considered plan.
  * @param stableIdentifier       The identifier of the node found in the stable iterator.
+ * @param isTerminatingProjection  whether this is the projection of the last RETURN in the query.
  */
 case class QgWithLeafInfo(private val solvedQg: QueryGraph,
                           private val stablySolvedPredicates: Set[Predicate],
                           private val unstableLeaves: Set[String],
-                          private val stableIdentifier: Option[StableIdentifier]) {
+                          private val stableIdentifier: Option[StableIdentifier],
+                          isTerminatingProjection: Boolean
+) {
 
   /**
    * We exclude all stably solved predicates from the eagerness analysis.

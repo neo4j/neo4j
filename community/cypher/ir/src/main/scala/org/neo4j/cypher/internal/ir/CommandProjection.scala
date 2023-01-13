@@ -32,4 +32,6 @@ case class CommandProjection(clause: CommandClause) extends QueryHorizon {
   override def allHints: Set[Hint] = Set.empty
 
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
+
+  override def isTerminatingProjection: Boolean = false
 }

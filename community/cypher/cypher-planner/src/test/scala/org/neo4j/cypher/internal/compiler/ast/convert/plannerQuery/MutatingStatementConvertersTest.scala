@@ -47,7 +47,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"))
+      projections = Map("n" -> varFor("n")),
+      isTerminating = true
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -59,7 +60,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("removing a node property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"))
+      projections = Map("n" -> varFor("n")),
+      isTerminating = true
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -71,7 +73,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("setting a relationship property: MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r"))
+      projections = Map("r" -> varFor("r")),
+      isTerminating = true
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
@@ -85,7 +88,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("removing a relationship property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r"))
+      projections = Map("r" -> varFor("r")),
+      isTerminating = true
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
@@ -99,7 +103,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("Query with single CREATE clause") {
     val query = buildSinglePlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b"))
+      projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b")),
+      isTerminating = true
     ))
 
     query.queryGraph.mutatingPatterns should equal(Seq(

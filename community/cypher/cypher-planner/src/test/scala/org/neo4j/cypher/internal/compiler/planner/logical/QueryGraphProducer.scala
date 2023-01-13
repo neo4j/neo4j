@@ -107,7 +107,8 @@ trait QueryGraphProducer extends MockitoSugar {
         output.statement().asInstanceOf[Query],
         semanticTable,
         anonymousVariableNameGenerator,
-        CancellationChecker.NeverCancelled
+        CancellationChecker.NeverCancelled,
+        nonTerminating = false
       )
     (plannerQuery.query.asInstanceOf[SinglePlannerQuery], semanticTable)
   }

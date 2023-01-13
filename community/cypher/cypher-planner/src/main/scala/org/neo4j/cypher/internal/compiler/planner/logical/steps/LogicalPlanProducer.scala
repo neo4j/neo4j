@@ -1665,7 +1665,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    */
   def planProduceResult(inner: LogicalPlan, columns: Seq[String], lastInterestingOrders: Option[InterestingOrder]): LogicalPlan = {
     val produceResult = ProduceResult(inner, columns)
-    solveds.copy(inner.id, produceResult.id)
+    if (columns.nonEmpty) {
+      val newSolved = solveds.get(inner.id) match {
+        case query: SinglePlannerQuery => query.updateTailOrSelf(
+            _.updateQueryProjection(_.withIsTerminating(true))
+          )
+        case uq @ UnionQuery(_, _, _, _) =>
+          uq
+      }
+      solveds.set(produceResult.id, newSolved)
+    } else {
+      solveds.copy(inner.id, produceResult.id)
+    }
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
     // It will get a wrong value with some projections. Use the cardinality of inner instead
     cardinalities.copy(inner.id, produceResult.id)

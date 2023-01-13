@@ -24,12 +24,15 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
+
+import scala.collection.immutable.ListSet
 
 class LimitPropagationPlanningIntegrationTest
   extends CypherFunSuite
@@ -373,6 +376,7 @@ class LimitPropagationPlanningIntegrationTest
       .produceResults("a", "c")
       .top(Seq(Ascending("c.id")), 10)
       .projection("cache[c.id] AS `c.id`")
+      .eager(Seq(EagernessReason.Unknown))
       .setNodeProperty("b", "prop", "5")
       .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
       .expandAll("(b)<-[cb:REL_CB]-(c)")
