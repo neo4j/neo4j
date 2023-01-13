@@ -34,9 +34,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -54,7 +51,6 @@ import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
@@ -65,8 +61,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.TailCalls
 import scala.util.control.TailCalls.TailRec
-
-case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
 
 /**
  * Remove optional match, if possible.
@@ -435,6 +429,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     qg.patternRelationships.flatMap(_.coveredIds)
   }
 
+  case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
+
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
     CompilationContains[PlannerQuery]
@@ -448,18 +444,4 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
   ): Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] = this
-}
-
-trait PlannerQueryRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
-  self: Product =>
-
-  override def phase: CompilationPhase = LOGICAL_PLANNING
-
-  def instance(from: LogicalPlanState, context: PlannerContext): Rewriter
-
-  override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val query = from.query
-    val rewritten = query.endoRewrite(instance(from, context))
-    from.copy(maybeQuery = Some(rewritten))
-  }
 }

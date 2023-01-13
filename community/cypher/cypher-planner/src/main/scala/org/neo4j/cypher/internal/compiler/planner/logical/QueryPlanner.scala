@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicatesToConnectedNodes.QuantifiedPathPatternPredicatesMovedToConnectedNodes
+import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.UnnecessaryOptionalMatchesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -152,7 +154,8 @@ case object QueryPlanner
     UnnecessaryOptionalMatchesRemoved,
     ExpressionsRewrittenToGetDegree,
     UnfulfillableQueryGraphsRemoved,
-    TokensResolved
+    TokensResolved,
+    QuantifiedPathPatternPredicatesMovedToConnectedNodes
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

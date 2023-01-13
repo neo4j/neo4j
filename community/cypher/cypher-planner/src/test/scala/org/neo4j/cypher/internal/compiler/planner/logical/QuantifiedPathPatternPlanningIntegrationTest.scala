@@ -687,26 +687,27 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val `((n)-[]->(m))+` = TrailParameters(
       min = 1,
       max = Unlimited,
-      start = "anon_2",
-      end = "anon_0",
-      innerStart = "m",
-      innerEnd = "n",
+      start = "anon_0",
+      end = "anon_2",
+      innerStart = "n",
+      innerEnd = "m",
       groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(("anon_4", "anon_8")),
       innerRelationships = Set("anon_4"),
       previouslyBoundRelationships = Set.empty,
       previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = true
+      reverseGroupVariableProjections = false
     )
 
     plan should equal(
       planner.subPlanBuilder()
         .apply()
         .|.trail(`((n)-[]->(m))+`)
+        .|.|.expandAll("(n)-[anon_4]->(m)")
         .|.|.filter("n.prop > prop")
-        .|.|.expandAll("(m)<-[anon_4]-(n)")
-        .|.|.argument("m", "prop")
-        .|.allNodeScan("anon_2", "prop")
+        .|.|.argument("n", "prop")
+        .|.filter("anon_0.prop > prop")
+        .|.allNodeScan("anon_0", "prop")
         .projection(project = Seq("a.prop AS prop"), discard = Set("a"))
         .allNodeScan("a")
         .build()
@@ -739,6 +740,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.filter("cacheNFromStore[n.prop] > cacheN[a.prop]", "cacheNFromStore[n.prop] > cacheN[b.prop]")
         .|.expandAll("(m)<-[r]-(n)")
         .|.argument("m", "a", "b")
+        .filter("cacheN[a.prop] > cacheN[a.prop]", "cacheN[a.prop] > cacheN[b.prop]")
         .cartesianProduct()
         .|.cacheProperties("cacheNFromStore[b.prop]")
         .|.allNodeScan("b")
@@ -774,6 +776,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.expandAll("(n)-[r]->(m)")
         .|.filter("n:N", "n:NN", "n.prop = 5", "n.foo > 0")
         .|.argument("n")
+        .filter("anon_0.prop = 5", "anon_0.foo > 0", "anon_0:NN", "anon_0:N")
         .nodeByLabelScan("anon_0", "User")
         .build()
     )
@@ -953,6 +956,82 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
+  test("should plan an index seek for predicates on QPP start node") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(5000)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("()-[]->(:A)", 500)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 500)
+      .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val q = "MATCH ((a:A WHERE a.prop > 0)<--())+ RETURN *"
+
+    val plan = planner.plan(q).stripProduceResults
+    val params = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_0",
+      end = "anon_3",
+      innerStart = "a",
+      innerEnd = "anon_2",
+      groupNodes = Set(("a", "a")),
+      groupRelationships = Set(("anon_5", "anon_7")),
+      innerRelationships = Set("anon_5"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = false
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .trail(params)
+      .|.expandAll("(a)<-[anon_5]-(anon_2)")
+      .|.filter("a:A", "a.prop > 0")
+      .|.argument("a")
+      .nodeIndexOperator("anon_0:A(prop > 0)")
+      .build()
+  }
+
+  test("should plan an index seek for predicates on QPP end node") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(5000)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 500)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 500)
+      .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .build()
+
+    val q = "MATCH (()<--(a:A WHERE a.prop > 0))+ RETURN *"
+
+    val plan = planner.plan(q).stripProduceResults
+    val params = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_3",
+      end = "anon_0",
+      innerStart = "a",
+      innerEnd = "anon_1",
+      groupNodes = Set(("a", "a")),
+      groupRelationships = Set(("anon_4", "anon_7")),
+      innerRelationships = Set("anon_4"),
+      previouslyBoundRelationships = Set(),
+      previouslyBoundRelationshipGroups = Set(),
+      reverseGroupVariableProjections = true
+    )
+
+    plan shouldBe planner.subPlanBuilder()
+      .trail(params)
+      .|.expandAll("(a)-[anon_4]->(anon_1)")
+      .|.filter("a:A", "a.prop > 0")
+      .|.argument("a")
+      .nodeIndexOperator("anon_3:A(prop > 0)")
+      .build()
+  }
+
   test("Should start with higher cardinality label if first expansion is cheaper") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(160)
@@ -1016,6 +1095,8 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:M)-[:REL]->(:N)", 500)
       .setRelationshipCardinality("(:N)-[:REL]->(:X)", 500)
       .setRelationshipCardinality("(:M)-[:REL]->(:X)", 500)
+      .setRelationshipCardinality("(:N)-[:REL]->(:P)", 500)
+      .setRelationshipCardinality("(:M)-[:REL]->(:P)", 500)
       .setRelationshipCardinality("(:P)-[:REL]->()", 10)
       .setRelationshipCardinality("()-[:REL]->(:Q)", 10)
       .setRelationshipCardinality("(:P)-[:REL]->(:Q)", 10)
@@ -1026,6 +1107,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:Q)-[:REL]->(:B)", 10)
       .setRelationshipCardinality("(:X)-[:REL]->(:Q)", 10)
       .setRelationshipCardinality("(:X)-[:REL]->(:P)", 10)
+      .setRelationshipCardinality("(:M)-[:REL]->(:Q)", 10)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
@@ -1067,19 +1149,19 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
 
     plan shouldBe planner.subPlanBuilder()
-      .filter("a:A")
+      .filter("a:A", "a:N")
       .trail(n_r1_m_trail)
       .|.filter("n:N")
       .|.expandAll("(m)<-[r1:REL]-(n)")
       .|.filter("m:M")
       .|.argument("m")
-      .filter("b:B")
+      .filter("b:B", "b:Q")
       .trail(p_r2_q_trail)
       .|.filter("q:Q")
       .|.expandAll("(p)-[r2:REL]->(q)")
       .|.filter("p:P")
       .|.argument("p")
-      .nodeByLabelScan("x", "X")
+      .intersectionNodeByLabelsScan("x", Seq("X", "M", "P"))
       .build()
   }
 
@@ -1119,7 +1201,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(40)
       .setLabelCardinality("A", 5)
-      .setLabelCardinality("B", 5)
+      .setLabelCardinality("B", 50)
       .setRelationshipCardinality("()-[]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[]->(:B)", 10)
       .setRelationshipCardinality("(:B)-[]->(:B)", 10)
@@ -1152,6 +1234,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       // At the time of writing, predicates do not percolate properly to quantified path patterns.
       // Here we find an overlap between MATCH () and  CREATE () even though we will not match on ().
       .eager(ListSet(EagernessReason.Unknown))
+      .filter("end:B")
       .trail(`(start)((a)-[r]->(b))*(end)`)
       .|.filter("b:B")
       .|.expandAll("(a)-[r]->(b)")
