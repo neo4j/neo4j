@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -28,16 +30,20 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
+import org.neo4j.cypher.internal.runtime.spec.rewriters.RussianRoulette
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
@@ -57,11 +63,16 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.Assertion
 
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT]
+    with RandomValuesTestSupport {
 
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
@@ -763,6 +774,178 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
           stringValue(s"blö${i + 3}")
         )
       }
+  }
+
+  private def setupComplexRhsTest(graph: ComplexGraph): (LogicalQueryBuilder, IndexedSeq[Seq[Array[Object]]]) = {
+    val expectedRhsResult = OrderedTrailTestBase.complexGraphAndPartiallyOrderedExpectedResult(graph)
+    val iterations = 3
+    val expected = Range(0, iterations).flatMap(_ => expectedRhsResult)
+    val batchSize = random.nextInt(iterations + 1) + 1
+
+    val planBuilder = new LogicalQueryBuilder(this)
+      .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
+      .transactionApply(batchSize, OnErrorFail, None)
+      .|.valueHashJoin("left=right")
+
+      // Join RHS (identical to LHS)
+      .|.|.projection("[start, middle, end, a, b, r1, c, d, r2] AS right")
+      // insert distinct to "cancel out" the effect of unioning two identical inputs together
+      .|.|.distinct(
+        "start AS start",
+        "middle AS middle",
+        "end AS end",
+        "a AS a",
+        "b AS b",
+        "r1 AS r1",
+        "c AS c",
+        "d AS d",
+        "r2 AS r2"
+      )
+      .|.|.union()
+      // (on RHS of Join) Union RHS (identical to Union LHS)
+      .|.|.|.optional("end")
+      .|.|.|.filter("end:LOOP")
+      .|.|.|.apply()
+      .|.|.|.|.trail(TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`).withLeveragedOrder()
+      .|.|.|.|.|.optional("middle")
+      .|.|.|.|.|.filter("d_inner:LOOP")
+      .|.|.|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.|.|.limit(Long.MaxValue)
+      .|.|.|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.|.|.argument("middle", "c_inner")
+      .|.|.|.|.argument("middle")
+      .|.|.|.sort(Seq(Ascending("foo")))
+      .|.|.|.projection("start.foo AS foo")
+      .|.|.|.filter("middle:MIDDLE:LOOP")
+      .|.|.|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
+      .|.|.|.|.filter("b_inner:MIDDLE")
+      .|.|.|.|.nodeHashJoin("b_inner")
+      .|.|.|.|.|.allNodeScan("b_inner")
+      .|.|.|.|.limit(Long.MaxValue)
+      .|.|.|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.|.|.optional("start")
+      .|.|.|.|.argument("firstMiddle", "a_inner")
+      .|.|.|.trail(TrailTestBase.`(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`)
+      .|.|.|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.|.|.allNodeScan("anon_end_inner")
+      .|.|.|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.|.|.argument("start", "anon_start_inner")
+      .|.|.|.nodeByLabelScan("start", "START", IndexOrderNone)
+      // (on RHS of Join) Union LHS (identical to Union RHS)
+      .|.|.filter("end:LOOP")
+      .|.|.apply()
+      .|.|.|.trail(TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`).withLeveragedOrder()
+      .|.|.|.|.filter("d_inner:LOOP")
+      .|.|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.|.argument("middle", "c_inner")
+      .|.|.|.argument("middle")
+      .|.|.sort(Seq(Ascending("foo")))
+      .|.|.projection("start.foo AS foo")
+      .|.|.filter("middle:MIDDLE:LOOP")
+      .|.|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
+      .|.|.|.filter("b_inner:MIDDLE")
+      .|.|.|.nodeHashJoin("b_inner")
+      .|.|.|.|.allNodeScan("b_inner")
+      .|.|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.|.argument("firstMiddle", "a_inner")
+      .|.|.trail(TrailTestBase.`(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`)
+      .|.|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.|.allNodeScan("anon_end_inner")
+      .|.|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.|.argument("start", "anon_start_inner")
+      .|.|.nodeByLabelScan("start", "START", IndexOrderNone)
+
+      // Join LHS (identical to RHS)
+      .|.projection("[start, middle, end, a, b, r1, c, d, r2] AS left")
+      .|.filter("end:LOOP")
+      .|.apply()
+      .|.|.trail(TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`).withLeveragedOrder()
+      .|.|.|.limit(Long.MaxValue)
+      .|.|.|.filter("d_inner:LOOP")
+      .|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.argument("middle", "c_inner")
+      .|.|.argument("middle")
+      .|.limit(Long.MaxValue)
+      .|.sort(Seq(Ascending("foo")))
+      .|.projection("start.foo AS foo")
+      .|.filter("middle:MIDDLE:LOOP")
+      .|.trail(TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
+      .|.|.filter("b_inner:MIDDLE")
+      .|.|.nodeHashJoin("b_inner")
+      .|.|.|.allNodeScan("b_inner")
+      .|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.argument("firstMiddle", "a_inner")
+      .|.trail(TrailTestBase.`(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`)
+      .|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.allNodeScan("anon_end_inner")
+      .|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.argument("start", "anon_start_inner")
+      .|.nodeByLabelScan("start", "START", IndexOrderNone)
+      .unwind(s"range(1, $iterations) as iteration")
+      .argument()
+
+    (planBuilder, expected)
+  }
+
+  test("complex case: complex RHS") {
+    // given
+    val graph = given(complexGraph())
+    val (planBuilder, expected) = setupComplexRhsTest(graph)
+
+    val query = planBuilder.build()
+
+    val result = execute(query, runtime)
+    result should
+      beColumns("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
+        .withRows(inPartialOrder(expected))
+  }
+
+  test("complex case: random failures with complex RHS") {
+    // given
+    val graph = given(complexGraph())
+    val (planBuilder, _) = setupComplexRhsTest(graph)
+
+    val query = planBuilder.build()
+
+    val rewriter = RussianRoulette(0.005, 0.25, planBuilder.idGen)
+    val rewritten = query.logicalPlan.endoRewrite(rewriter)
+
+    Try(executeAndConsume(query.copy(logicalPlan = rewritten), runtime)) match {
+      case Failure(error) =>
+        withClue(
+          s"""Unexpected error:
+             |${ExceptionUtils.getStackTrace(error)}
+             |Rewritten plan:
+             |$rewritten
+             |""".stripMargin
+        ) {
+          error.getMessage should include("/ by zero")
+          val cause = error.getCause
+          if (cause != null) {
+            cause shouldBe an[org.neo4j.exceptions.ArithmeticException]
+            cause.getMessage shouldBe "/ by zero"
+            cause.getCause shouldBe null
+            cause.getSuppressed.isEmpty shouldBe true
+          }
+          error.getSuppressed.isEmpty shouldBe true
+        }
+      case Success(_) =>
+        cancel("Query did not fail")
+    }
+  }
+
+  private def executeAndConsume(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]) = {
+    val result = execute(logicalQuery, runtime)
+    consume(result)
+    result
   }
 
   protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
