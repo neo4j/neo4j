@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -268,6 +269,9 @@ object ReadFinder {
 
       case HasLabels(_, labels) =>
         acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
+
+      case HasALabel(Variable(_)) =>
+        acc => TraverseChildren(acc.withUnknownLabelsRead())
 
       case ContainerIndex(expr, index) if (!semanticTable.isIntegerNoFail(index) && !semanticTable.isMapNoFail(expr)) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
