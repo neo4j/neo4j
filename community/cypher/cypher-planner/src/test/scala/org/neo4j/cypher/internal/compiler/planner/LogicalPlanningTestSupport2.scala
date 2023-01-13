@@ -442,14 +442,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     ): PlannerContext = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
 
-      val metrics = metricsFactory.newMetrics(
-        planContext,
-        mock[ExpressionEvaluator],
-        config.executionModel,
-        planningTextIndexesEnabled = true,
-        planningRangeIndexesEnabled = true,
-        planningPointIndexesEnabled = true
-      )
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
 
       ContextHelper.create(
         planContext = planContext,
@@ -464,28 +457,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(
-        planContext,
-        mock[ExpressionEvaluator],
-        config.executionModel,
-        planningTextIndexesEnabled = false,
-        planningRangeIndexesEnabled = false,
-        planningPointIndexesEnabled = false
-      )
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
       val planningAttributes = PlanningAttributes.newAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)
     }
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(
-        planContext,
-        mock[ExpressionEvaluator],
-        config.executionModel,
-        planningTextIndexesEnabled = false,
-        planningRangeIndexesEnabled = false,
-        planningPointIndexesEnabled = false
-      )
+      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
       val planningAttributes = newStubbedPlanningAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)

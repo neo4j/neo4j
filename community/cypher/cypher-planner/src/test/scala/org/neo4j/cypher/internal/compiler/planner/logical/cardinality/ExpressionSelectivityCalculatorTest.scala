@@ -586,23 +586,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     }
   }
 
-  test("starts with/ends with/contains length 0, one label, text index planning disabled") {
-    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
-
-      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
-
-      val labelResult = calculator(nIsPerson.expr)
-      val stringPredicateResult = calculator(stringPredicate.expr)
-
-      labelResult.factor should equal(0.1)
-      stringPredicateResult.factor should equal(
-        personPropIsNotNullSel
-          * DEFAULT_TYPE_SELECTIVITY.factor // is string
-      )
-    }
-  }
-
   test("starts with/ends with/contains length 0, one label") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
       val stringPredicate = nPredicate(mkExpr(nProp, literalString("")))
@@ -614,23 +597,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
       labelResult.factor should equal(0.1)
       stringPredicateResult.factor shouldEqual personTextPropIsNotNullSel
-    }
-  }
-
-  test("starts with/ends with/contains length 1, one label, text index planning disabled") {
-    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, literalString("1")))
-
-      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
-
-      val labelResult = calculator(nIsPerson.expr)
-      val stringPredicateResult = calculator(stringPredicate.expr)
-
-      labelResult.factor should equal(0.1)
-      stringPredicateResult.factor should equal(
-        personPropIsNotNullSel
-          * DEFAULT_RANGE_SEEK_FACTOR
-      )
     }
   }
 
@@ -666,23 +632,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     }
   }
 
-  test("starts with/ends with/contains length 2, one label, text index planning disabled") {
-    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
-
-      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
-
-      val labelResult = calculator(nIsPerson.expr)
-      val stringPredicateResult = calculator(stringPredicate.expr)
-
-      labelResult.factor should equal(0.1)
-      stringPredicateResult.factor should equal(
-        personPropIsNotNullSel
-          * DEFAULT_RANGE_SEEK_FACTOR / 2
-      )
-    }
-  }
-
   test("starts with/ends with/contains length 2, one label") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
       val stringPredicate = nPredicate(mkExpr(nProp, literalString("12")))
@@ -696,23 +645,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       stringPredicateResult.factor should equal(
         personTextPropIsNotNullSel
           * DEFAULT_RANGE_SEEK_FACTOR / 2
-      )
-    }
-  }
-
-  test("starts with/ends with/contains length unknown, one label, text index planning disabled") {
-    for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
-
-      val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningTextIndexesEnabled = false)
-
-      val labelResult = calculator(nIsPerson.expr)
-      val stringPredicateResult = calculator(stringPredicate.expr)
-
-      labelResult.factor should equal(0.1)
-      stringPredicateResult.factor should equal(
-        personPropIsNotNullSel
-          * DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
       )
     }
   }
@@ -1515,17 +1447,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     calculator(nPropDistance.expr) should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
-  test("distance with one label, point index disabled") {
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningPointIndexesEnabled = false)
-
-    val labelResult = calculator(nIsPerson.expr)
-    labelResult.factor should equal(0.1)
-    calculator(nPropDistance.expr).factor should equal(
-      personPropIsNotNullSel // n.prop IS NOT NULL
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
-    )
-  }
-
   test("distance with one label") {
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
@@ -1583,20 +1504,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     calculator(nPropDistance.expr).factor should equal(
       personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
         +- 0.00000001
-    )
-  }
-
-  test("distance in AndedPropertyInequalities, point index disabled") {
-    val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
-    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
-
-    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, planningPointIndexesEnabled = false)
-
-    val distanceResult = calculator(predicate)
-
-    distanceResult.factor should equal(
-      personPropIsNotNullSel // exists n.prop
-        * DEFAULT_RANGE_SEEK_FACTOR // point distance
     )
   }
 
@@ -1698,34 +1605,17 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     labelInfo: LabelInfo = Map.empty,
     relTypeInfo: RelTypeInfo = Map.empty,
     stats: GraphStatistics = mockStats(),
-    semanticTable: SemanticTable = setupSemanticTable(),
-    planningTextIndexesEnabled: Boolean = true,
-    planningRangeIndexesEnabled: Boolean = true,
-    planningPointIndexesEnabled: Boolean = true
+    semanticTable: SemanticTable = setupSemanticTable()
   ): Expression => Selectivity = {
     implicit val sT: SemanticTable = semanticTable
     implicit val indexCPPC: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default
 
     val combiner = IndependenceCombiner
     val planContext = mockPlanContext(stats)
-    val calculator = ExpressionSelectivityCalculator(
-      planContext.statistics,
-      combiner,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
-    )
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(
-      planContext,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
-    )
+    val calculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(planContext)
     implicit val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(
-        planContext,
-        compositeCalculator
-      ),
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, compositeCalculator),
       compositeCalculator,
       simpleExpressionEvaluator
     )

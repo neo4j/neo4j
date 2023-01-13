@@ -916,14 +916,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
     val plannerConfiguration = CypherPlannerConfiguration.withSettings(settings)
 
     val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
-    val metrics = SimpleMetricsFactory.newMetrics(
-      planContext,
-      simpleExpressionEvaluator,
-      options.executionModel,
-      planningTextIndexesEnabled = true,
-      planningRangeIndexesEnabled = true,
-      planningPointIndexesEnabled = true
-    )
+    val metrics = SimpleMetricsFactory.newMetrics(planContext, simpleExpressionEvaluator, options.executionModel)
 
     val context = ContextHelper.create(
       planContext = planContext,

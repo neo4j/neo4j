@@ -243,33 +243,15 @@ trait MetricsFactory {
     calculator: SelectivityCalculator
   ): QueryGraphCardinalityModel
 
-  def newSelectivityCalculator(
-    planContext: PlanContext,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
-  ): SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(
-      planContext,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
-    )
+  def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
+    CompositeExpressionSelectivityCalculator(planContext)
 
   def newMetrics(
     planContext: PlanContext,
     expressionEvaluator: ExpressionEvaluator,
-    executionModel: ExecutionModel,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    executionModel: ExecutionModel
   ): Metrics = {
-    val selectivityCalculator = newSelectivityCalculator(
-      planContext,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
-    )
+    val selectivityCalculator = newSelectivityCalculator(planContext)
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)

@@ -126,12 +126,7 @@ object CardinalityCalculator {
       )
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(
         planContext,
-        SimpleMetricsFactory.newSelectivityCalculator(
-          planContext,
-          planningTextIndexesEnabled = true,
-          planningRangeIndexesEnabled = true,
-          planningPointIndexesEnabled = true
-        ),
+        SimpleMetricsFactory.newSelectivityCalculator(planContext),
         IndependenceCombiner
       )
       val expandCardinality =

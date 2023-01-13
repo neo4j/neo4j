@@ -62,14 +62,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
-    factory.newMetrics(
-      planContext,
-      mock[ExpressionEvaluator],
-      ExecutionModel.default,
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
-      planningPointIndexesEnabled = false
-    )
+    factory.newMetrics(planContext, mock[ExpressionEvaluator], ExecutionModel.default)
 
   test("solve optional match with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b

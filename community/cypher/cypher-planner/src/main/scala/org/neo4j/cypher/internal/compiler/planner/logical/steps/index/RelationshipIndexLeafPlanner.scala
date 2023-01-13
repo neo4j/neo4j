@@ -67,10 +67,7 @@ case class RelationshipIndexLeafPlanner(
       context.staticComponents.planContext,
       context.plannerState.indexCompatiblePredicatesProviderContext,
       interestingOrderConfig,
-      context.providedOrderFactory,
-      planningTextIndexesEnabled = true,
-      planningRangeIndexesEnabled = true,
-      planningPointIndexesEnabled = true
+      context.providedOrderFactory
     )
 
     val result: Set[LogicalPlan] =
@@ -140,9 +137,9 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
     providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean = true,
+    findRangeIndexes: Boolean = true,
+    findPointIndexes: Boolean = true
   ): Set[RelationshipIndexMatch] = {
     def shouldIgnore(pattern: PatternRelationship) =
       qg.argumentIds.contains(pattern.name)
@@ -179,9 +176,9 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
             semanticTable,
             planContext,
             providedOrderFactory,
-            planningTextIndexesEnabled,
-            planningRangeIndexesEnabled,
-            planningPointIndexesEnabled
+            findTextIndexes,
+            findRangeIndexes,
+            findPointIndexes
           )
         } yield indexMatch
       }
@@ -235,9 +232,9 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     semanticTable: SemanticTable,
     planContext: PlanContext,
     providedOrderFactory: ProvidedOrderFactory,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean,
+    findRangeIndexes: Boolean,
+    findPointIndexes: Boolean
   ): Set[RelationshipIndexMatch] = {
     val relTypeName = patternRelationship.types.head
     val indexMatches =
@@ -246,9 +243,9 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         indexDescriptor <- indexDescriptorsForRelType(
           relTypeId,
           planContext,
-          planningTextIndexesEnabled,
-          planningRangeIndexesEnabled,
-          planningPointIndexesEnabled
+          findTextIndexes,
+          findRangeIndexes,
+          findPointIndexes
         )
         predicatesForIndex <- predicatesForIndex(
           indexDescriptor,
@@ -273,18 +270,18 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   private def indexDescriptorsForRelType(
     relTypeId: RelTypeId,
     planContext: PlanContext,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    findTextIndexes: Boolean,
+    findRangeIndexes: Boolean,
+    findPointIndexes: Boolean
   ): Iterator[IndexDescriptor] = {
     {
-      if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForRelType(relTypeId)
+      if (findRangeIndexes) planContext.rangeIndexesGetForRelType(relTypeId)
       else Iterator.empty
     } ++ {
-      if (planningTextIndexesEnabled) planContext.textIndexesGetForRelType(relTypeId)
+      if (findTextIndexes) planContext.textIndexesGetForRelType(relTypeId)
       else Iterator.empty
     } ++ {
-      if (planningPointIndexesEnabled) planContext.pointIndexesGetForRelType(relTypeId)
+      if (findPointIndexes) planContext.pointIndexesGetForRelType(relTypeId)
       else Iterator.empty
     }
   }

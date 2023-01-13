@@ -80,22 +80,12 @@ import scala.annotation.tailrec
  *
  * @see #selectivityForCompositeIndexPredicates(SelectivitiesForPredicates, SelectivityCombiner)
  */
-case class CompositeExpressionSelectivityCalculator(
-  planContext: PlanContext,
-  planningTextIndexesEnabled: Boolean,
-  planningRangeIndexesEnabled: Boolean,
-  planningPointIndexesEnabled: Boolean
-) extends SelectivityCalculator {
+case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) extends SelectivityCalculator {
 
   private val combiner: SelectivityCombiner = IndependenceCombiner
 
-  private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator = ExpressionSelectivityCalculator(
-    planContext.statistics,
-    combiner,
-    planningTextIndexesEnabled,
-    planningRangeIndexesEnabled,
-    planningPointIndexesEnabled
-  )
+  private val singleExpressionSelectivityCalculator: ExpressionSelectivityCalculator =
+    ExpressionSelectivityCalculator(planContext.statistics, combiner)
 
   private val nodeIndexMatchCache =
     CachedFunction[QueryGraph, SemanticTable, IndexCompatiblePredicatesProviderContext, Set[IndexMatch]] {
@@ -247,7 +237,7 @@ case class CompositeExpressionSelectivityCalculator(
       indexPredicateProviderContext,
       // text indexes do not support composite indexes
       findTextIndexes = false,
-      findRangeIndexes = planningRangeIndexesEnabled,
+      findRangeIndexes = true,
       // point indexes do not support composite indexes
       findPointIndexes = false
     ).toSet[IndexMatch]
@@ -264,10 +254,10 @@ case class CompositeExpressionSelectivityCalculator(
       planContext,
       indexPredicateProviderContext,
       // text indexes do not support composite indexes
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = planningRangeIndexesEnabled,
+      findTextIndexes = false,
+      findRangeIndexes = true,
       // point indexes do not support composite indexes
-      planningPointIndexesEnabled = false
+      findPointIndexes = false
     ).toSet[IndexMatch]
   }
 

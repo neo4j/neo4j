@@ -60,14 +60,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
-    factory.newMetrics(
-      planContext,
-      evaluator,
-      ExecutionModel.default,
-      planningTextIndexesEnabled = false,
-      planningRangeIndexesEnabled = false,
-      planningPointIndexesEnabled = false
-    )
+    factory.newMetrics(planContext, evaluator, ExecutionModel.default)
 
   private val planContext = notImplementedPlanContext(hardcodedStatistics)
   // NOTE: rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested

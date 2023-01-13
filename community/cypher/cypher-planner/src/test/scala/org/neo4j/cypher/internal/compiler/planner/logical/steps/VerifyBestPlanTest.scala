@@ -440,22 +440,6 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     }
   }
 
-  test("should throw when finding plan that contains unfulfillable node text index hint") {
-    val planContext = newMockedPlanContext()
-    when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
-
-    val context = newMockedLogicalPlanningContext(
-      planContext = planContext,
-      semanticTable = getSemanticTable,
-      useErrorsOverWarnings = true
-    )
-    // TODO
-
-    the[IndexHintException] thrownBy {
-      VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
-    } should have message "No such index: INDEX FOR (`a`:`User`) ON (`a`.`name`)"
-  }
-
   test("should throw when finding plan that does not contain a fulfillable node text index hint") {
     val planContext = newMockedPlanContext()
     when(planContext.textIndexExistsForLabelAndProperties(any(), any())).thenReturn(true)
@@ -469,22 +453,6 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     a[HintException] should be thrownBy {
       VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(), context)
     }
-  }
-
-  test("should throw when finding plan that contains unfulfillable relationship text index hint") {
-    val planContext = newMockedPlanContext()
-    when(planContext.textIndexExistsForRelTypeAndProperties(any(), any())).thenReturn(true)
-
-    val context = newMockedLogicalPlanningContext(
-      planContext = planContext,
-      semanticTable = getSemanticTable,
-      useErrorsOverWarnings = true
-    )
-    // TODO
-
-    the[IndexHintException] thrownBy {
-      VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(), context)
-    } should have message "No such index: INDEX FOR ()-[`r`:`User`]-() ON (`r`.`name`)"
   }
 
   test("should throw when finding plan that does not contain a fulfillable relationship text index hint") {

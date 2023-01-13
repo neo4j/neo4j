@@ -97,42 +97,36 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.StringType
 
-case class ExpressionSelectivityCalculator(
-  stats: GraphStatistics,
-  combiner: SelectivityCombiner,
-  planningTextIndexesEnabled: Boolean,
-  planningRangeIndexesEnabled: Boolean,
-  planningPointIndexesEnabled: Boolean
-) {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
   /**
    * Index type priority to be used to calculate selectivities of exists predicates, given that a substring predicate is used.
     */
   private val indexTypesPriorityForSubstringSargable: Seq[IndexType] = Seq(
-    if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
-    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None
-  ).flatten
+    IndexType.Text,
+    IndexType.Range
+  )
 
   private val indexTypesPriorityForPropertyExistence: Seq[IndexType] = Seq(
-    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
-    if (planningPointIndexesEnabled) Some(IndexType.Point) else None
-  ).flatten
+    IndexType.Range,
+    IndexType.Text,
+    IndexType.Point
+  )
 
   private def indexTypesForPropertyEquality(propertyType: CypherType): Seq[IndexType] = Seq(
-    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
+    Some(IndexType.Range),
     // We cannot use a text index for cardinality estimation unless we know that the property type is a String
-    if (planningTextIndexesEnabled && propertyType == CTString) Some(IndexType.Text) else None
+    if (propertyType == CTString) Some(IndexType.Text) else None
   ).flatten
 
   private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
-    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None
-  ).flatten
+    IndexType.Range
+  )
 
   private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
-    if (planningPointIndexesEnabled) Some(IndexType.Point) else None,
-    if (planningRangeIndexesEnabled) Some(IndexType.Range) else None
-  ).flatten
+    IndexType.Point,
+    IndexType.Range
+  )
 
   def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(
     implicit semanticTable: SemanticTable,

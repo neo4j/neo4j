@@ -44,18 +44,10 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
     stats: GraphStatistics,
-    semanticTable: SemanticTable,
-    planningTextIndexesEnabled: Boolean,
-    planningRangeIndexesEnabled: Boolean,
-    planningPointIndexesEnabled: Boolean
+    semanticTable: SemanticTable
   ): Expression => Selectivity = {
     val planContext = mockPlanContext(stats)
-    val compositeCalculator = CompositeExpressionSelectivityCalculator(
-      planContext,
-      planningTextIndexesEnabled,
-      planningRangeIndexesEnabled,
-      planningPointIndexesEnabled
-    )
+    val compositeCalculator = CompositeExpressionSelectivityCalculator(planContext)
     val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
       SimpleMetricsFactory.newQueryGraphCardinalityModel(
         planContext,

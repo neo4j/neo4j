@@ -117,14 +117,7 @@ object PlannerContext {
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
-    val metrics = metricsFactory.newMetrics(
-      planContext,
-      evaluator,
-      executionModel,
-      planningTextIndexesEnabled = true,
-      planningRangeIndexesEnabled = true,
-      planningPointIndexesEnabled = true
-    )
+    val metrics = metricsFactory.newMetrics(planContext, evaluator, executionModel)
 
     new PlannerContext(
       exceptionFactory,

@@ -172,10 +172,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     newMetricsFactory.newMetrics(
       planContext,
       newExpressionEvaluator,
-      ExecutionModel.default,
-      planningTextIndexesEnabled = true,
-      planningRangeIndexesEnabled = true,
-      planningPointIndexesEnabled = true
+      ExecutionModel.default
     )
   }
 

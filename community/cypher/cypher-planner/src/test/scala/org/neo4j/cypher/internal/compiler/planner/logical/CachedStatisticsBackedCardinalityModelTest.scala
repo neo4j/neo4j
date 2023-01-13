@@ -38,12 +38,7 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
   val config = new given()
 
   val selectivityCalculator: Metrics.SelectivityCalculator =
-    CompositeExpressionSelectivityCalculator(
-      config.planContext,
-      planningTextIndexesEnabled = true,
-      planningRangeIndexesEnabled = true,
-      planningPointIndexesEnabled = true
-    )
+    CompositeExpressionSelectivityCalculator(config.planContext)
 
   val queryGraphCardinalityModel: Metrics.QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(config.planContext, selectivityCalculator, IndependenceCombiner)

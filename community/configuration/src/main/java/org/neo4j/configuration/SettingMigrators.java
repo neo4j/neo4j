@@ -230,7 +230,14 @@ public final class SettingMigrators {
                 "fabric.stream.batch_size",
                 "fabric.stream.buffer.low_watermark",
                 "fabric.stream.buffer.size",
-                "fabric.stream.concurrency");
+                "fabric.stream.concurrency",
+                "internal.cypher.planning_point_indexes_enabled",
+                "internal.cypher.planning_text_indexes_enabled",
+                "internal.cypher.planning_range_indexes_enabled",
+                "unsupported.cypher.planning_point_indexes_enabled",
+                "unsupported.cypher.planning_range_indexes_enabled",
+                "unsupported.cypher.planning_text_indexes_enabled");
+
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
                 new Mapping("dbms.connector.bolt.tcp_keep_alive", "internal.server.bolt.tcp_keep_alive"),
@@ -330,15 +337,6 @@ public final class SettingMigrators {
                 new Mapping(
                         "unsupported.cypher.pipelined_interpreted_pipes_fallback",
                         "internal.cypher.pipelined_interpreted_pipes_fallback"),
-                new Mapping(
-                        "unsupported.cypher.planning_point_indexes_enabled",
-                        "internal.cypher.planning_point_indexes_enabled"),
-                new Mapping(
-                        "unsupported.cypher.planning_range_indexes_enabled",
-                        "internal.cypher.planning_range_indexes_enabled"),
-                new Mapping(
-                        "unsupported.cypher.planning_text_indexes_enabled",
-                        "internal.cypher.planning_text_indexes_enabled"),
                 new Mapping("unsupported.cypher.replan_algorithm", "internal.cypher.replan_algorithm"),
                 new Mapping("unsupported.cypher.runtime", "internal.cypher.runtime"),
                 new Mapping("unsupported.cypher.splitting_top_behavior", "internal.cypher.splitting_top_behavior"),
