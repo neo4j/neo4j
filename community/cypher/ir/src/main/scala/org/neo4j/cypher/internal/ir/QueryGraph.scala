@@ -177,6 +177,11 @@ case class QueryGraph(
     copy(selections = selections ++ newSelections)
   }
 
+  def addPredicates(predicates: Set[Predicate]): QueryGraph = {
+    val newSelections = Selections(selections.predicates ++ predicates)
+    copy(selections = newSelections)
+  }
+
   def removePredicates(predicates: Set[Predicate]): QueryGraph = {
     val newSelections = Selections(selections.predicates -- predicates)
     copy(selections = newSelections)
@@ -374,6 +379,10 @@ case class QueryGraph(
   def connectedComponents: Seq[QueryGraph] = {
     val visited = mutable.Set.empty[String]
 
+    val (predicatesWithLocalDependencies, strayPredicates) = selections.predicates.partition {
+      p => (p.dependencies -- argumentIds).nonEmpty
+    }
+
     def createComponentQueryGraphStartingFrom(patternNode: String) = {
       val qg = connectedComponentFor(patternNode, visited)
       val coveredIds = qg.idsWithoutOptionalMatchesOrUpdates
@@ -383,7 +392,7 @@ case class QueryGraph(
       val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
-      val predicates = selections.predicates.filter(_.dependencies.subsetOf(allIds))
+      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
       val filteredHints = hints.filter(_.variables.forall(variable => coveredIds.contains(variable.name)))
       qg.withSelections(Selections(predicates))
         .withArgumentIds(argumentIds)
@@ -405,7 +414,11 @@ case class QueryGraph(
         createComponentQueryGraphStartingFrom(patternNode)
     }
 
-    argumentComponents ++ rest
+    (argumentComponents ++ rest) match {
+      case first +: rest =>
+        first.addPredicates(strayPredicates) +: rest
+      case x => x
+    }
   }
 
   def withRemovedPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =

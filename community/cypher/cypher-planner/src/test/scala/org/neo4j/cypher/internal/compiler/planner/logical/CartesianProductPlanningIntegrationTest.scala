@@ -291,4 +291,22 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         .build()
     )
   }
+
+  test("should plan predicate without dependencies on the pattern only on one side of cartesian product") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("A", 2000)
+      .setLabelCardinality("B", 5000)
+      .build()
+
+    val q = "MATCH (a:A), (b:B) WHERE $param1 > $param2 RETURN a"
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B")
+      .filter("$param1 > $param2")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
 }
