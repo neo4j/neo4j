@@ -1443,32 +1443,7 @@ public class AbstractPageListTest {
         pageList.initBuffer(pageRef);
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, (short) 0, 0, PinPageFaultEvent.NULL));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void faultMustThrowIfSwapperIsNull(int pageId) {
-        init(pageId);
-
-        // exclusive lock implied by the constructor
-        pageList.initBuffer(pageRef);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> PageList.fault(pageRef, null, (short) 0, 0, PinPageFaultEvent.NULL));
-    }
-
-    @ParameterizedTest(name = "pageRef = {0}")
-    @MethodSource("argumentsProvider")
-    public void faultMustThrowIfFilePageIdIsUnbound(int pageId) {
-        init(pageId);
-
-        // exclusively locked from constructor
-        pageList.initBuffer(pageRef);
-        assertThrows(
-                IllegalStateException.class,
-                () -> PageList.fault(
-                        pageRef, DUMMY_SWAPPER, (short) 0, PageCursor.UNBOUND_PAGE_ID, PinPageFaultEvent.NULL));
+                () -> PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, (short) 0, 0));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1513,6 +1488,7 @@ public class AbstractPageListTest {
         int swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer(pageRef);
+        PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId);
         PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
         assertThat(PageList.getFilePageId(pageRef)).isEqualTo(filePageId);
         assertThat(PageList.getSwapperId(pageRef)).isEqualTo(swapperId);
@@ -1529,6 +1505,7 @@ public class AbstractPageListTest {
         int swapperId = 12;
         long filePageId = Integer.MAX_VALUE + 1L;
         pageList.initBuffer(pageRef);
+        PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId);
         PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
         assertThat(PageList.getFilePageId(pageRef)).isEqualTo(filePageId);
         assertThat(PageList.getSwapperId(pageRef)).isEqualTo(swapperId);
@@ -1552,6 +1529,7 @@ public class AbstractPageListTest {
         long filePageId = 42;
         pageList.initBuffer(pageRef);
         try {
+            PageList.validatePageRefAndSetFilePageId(pageRef, swapper, swapperId, filePageId);
             PageList.fault(pageRef, swapper, swapperId, filePageId, PinPageFaultEvent.NULL);
             fail();
         } catch (IOException e) {
@@ -1572,11 +1550,12 @@ public class AbstractPageListTest {
         short swapperId = 1;
         long filePageId = 42;
         pageList.initBuffer(pageRef);
+        PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId);
         PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
 
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL));
+                () -> PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId));
     }
 
     @ParameterizedTest(name = "pageRef = {0}")
@@ -1593,7 +1572,7 @@ public class AbstractPageListTest {
         // We still can't fault into a loaded page, though.
         assertThrows(
                 IllegalStateException.class,
-                () -> PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL));
+                () -> PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId));
     }
 
     private void doFailedFault(short swapperId, long filePageId) {
@@ -1606,6 +1585,7 @@ public class AbstractPageListTest {
             }
         };
         try {
+            PageList.validatePageRefAndSetFilePageId(pageRef, swapper, swapperId, filePageId);
             PageList.fault(pageRef, swapper, swapperId, filePageId, PinPageFaultEvent.NULL);
             fail("fault should have thrown");
         } catch (IOException e) {
@@ -2246,6 +2226,7 @@ public class AbstractPageListTest {
 
     private void doFault(int swapperId, long filePageId) throws IOException {
         assertTrue(PageList.tryExclusiveLock(pageRef));
+        PageList.validatePageRefAndSetFilePageId(pageRef, DUMMY_SWAPPER, swapperId, filePageId);
         pageList.initBuffer(pageRef);
         PageList.fault(pageRef, DUMMY_SWAPPER, swapperId, filePageId, PinPageFaultEvent.NULL);
     }

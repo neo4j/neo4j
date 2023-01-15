@@ -1107,6 +1107,30 @@ public class MuninnPageCache implements PageCache {
         return clockArm;
     }
 
+    @VisibleForTesting
+    String describePages() {
+        var result = new StringBuilder();
+        var pageCount = pages.getPageCount();
+        for (int pageCachePageId = 0; pageCachePageId < pageCount; pageCachePageId++) {
+            var pageRef = pages.deref(pageCachePageId);
+            result.append("[");
+            result.append("PageCachePageId: ").append(pageCachePageId).append(", ");
+            result.append("PageRef: ").append(Long.toHexString(pageRef)).append(", ");
+            result.append("LockWord: ")
+                    .append(Long.toBinaryString(UnsafeUtil.getLongVolatile(pageRef)))
+                    .append(", ");
+            result.append("Address: ")
+                    .append(Long.toHexString(UnsafeUtil.getLongVolatile(pageRef + 8)))
+                    .append(", ");
+            result.append("LastTxId: ")
+                    .append(Long.toHexString(UnsafeUtil.getLongVolatile(pageRef + 16)))
+                    .append(", ");
+            result.append("PageBinding: ").append(Long.toHexString(UnsafeUtil.getLongVolatile(pageRef + 24)));
+            result.append("]\n");
+        }
+        return result.toString();
+    }
+
     void addFreePageToFreelist(long pageRef, EvictionRunEvent evictions) {
         Object current;
         FreePage freePage = new FreePage(pageRef);

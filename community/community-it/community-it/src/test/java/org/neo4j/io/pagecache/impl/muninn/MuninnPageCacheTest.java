@@ -45,6 +45,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer.Evict;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -58,6 +59,9 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -69,6 +73,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
@@ -2490,77 +2495,132 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
     @RepeatedTest(50)
     void racePageFileTouchAndEviction() {
-        assertTimeoutPreemptively(ofMillis(SEMI_LONG_TIMEOUT_MILLIS), () -> {
-            assumeTrue(
-                    fs.getClass() == EphemeralFileSystemAbstraction.class,
-                    "This test is very slow on real file system");
-
-            var pageSize = 8 + reservedBytes;
-            try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
-                var file = file("a");
-                generateFile(pageCache, file, 10, pageSize);
-                var race = new Race();
-                race.addContestant(Race.throwing(() -> {
-                    try {
-                        for (int i = 0; i < 1000; i++) {
-                            try (var pagedFile = map(pageCache, file, pageSize)) {
-                                pagedFile.touch(0, 8, NULL_CONTEXT);
+        assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
+        var pageSize = 8 + reservedBytes;
+        var stopFlag = new AtomicBoolean(false);
+        try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            assertTimeoutPreemptively(
+                    ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
+                    () -> {
+                        var file = file("a");
+                        generateFile(pageCache, file, 10, pageSize);
+                        var race = new Race();
+                        race.addContestant(Race.throwing(() -> {
+                            while (!stopFlag.get()) {
+                                try {
+                                    try (var pagedFile = map(pageCache, file, pageSize)) {
+                                        pagedFile.touch(0, 8, NULL_CONTEXT);
+                                    }
+                                } catch (CacheLiveLockException ignore) {
+                                }
                             }
-                        }
-                    } catch (CacheLiveLockException ignore) {
-                    } finally {
-                        // to stop the other contestant
-                        pageCache.close();
-                    }
-                }));
-                race.addContestant(Race.throwing(() -> {
-                    try (var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions(1000)) {
-                        pageCache.evictPages(1000, 0, evictionRunEvent);
-                    }
-                }));
-                race.go();
-            }
-        });
+                        }));
+                        race.addContestant(Race.throwing(() -> {
+                            try (var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions(1000)) {
+                                pageCache.evictPages(1000, 0, evictionRunEvent);
+                            } finally {
+                                stopFlag.set(true);
+                            }
+                        }));
+                        race.go();
+                        assertAllPagesEvicted(pageCache);
+                    },
+                    () -> "PageCache: " + pageCache.toString()
+                            + " pages to evict to have all free: "
+                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + "\nObserved exception:\n"
+                            + pageCache.describePages());
+        }
     }
 
     @RepeatedTest(50)
     void racePageFileTouchAndClose() {
         assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
         try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            var exceptionRef = new AtomicReference<Exception>();
             assertTimeoutPreemptively(
                     ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
                     () -> {
                         var pageSize = 8 + reservedBytes;
                         var file = file("a");
-                        generateFile(pageCache, file, 10, pageSize);
+                        generateFile(pageCache, file, 16, pageSize);
+                        var pagedFile = map(pageCache, file, pageSize);
+                        var race = new Race();
+                        race.addContestant(Race.throwing(() -> {
+                            try {
+                                boolean firstPart = true;
+                                for (int i = 0; i < 10000; i++) {
+                                    pagedFile.touch(firstPart ? 0 : 8, 8, NULL_CONTEXT);
+                                    firstPart = !firstPart;
+                                }
+                            } catch (CacheLiveLockException
+                                    | FileIsNotMappedException
+                                    | ClosedChannelException exception) {
+                                exceptionRef.set(exception);
+                            }
+                        }));
+                        race.addContestant(Race.throwing(pagedFile::close));
+                        race.go();
+                        assertAllPagesEvicted(pageCache);
+                    },
+                    () -> "PageCache: " + pageCache.toString()
+                            + " pages to evict to have all free: "
+                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + "\nObserved exception:\n"
+                            + (exceptionRef.get() != null ? Exceptions.stringify(exceptionRef.get()) : "none") + "\n"
+                            + pageCache.describePages());
+        }
+    }
+
+    @RepeatedTest(50)
+    void racePageFilePinAndClose() {
+        assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
+        try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            var exceptionRef = new AtomicReference<Exception>();
+            assertTimeoutPreemptively(
+                    ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
+                    () -> {
+                        var pageSize = 8 + reservedBytes;
+                        var file = file("a");
+                        generateFile(pageCache, file, 16, pageSize);
                         var pagedFile = map(pageCache, file, pageSize);
                         var race = new Race();
                         race.addContestant(Race.throwing(() -> {
                             try {
                                 for (int i = 0; i < 10000; i++) {
-                                    pagedFile.touch(0, 8, NULL_CONTEXT);
+                                    try (var cursor = pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                                        while (cursor.next()) {}
+                                    }
                                 }
                             } catch (CacheLiveLockException
                                     | FileIsNotMappedException
-                                    | ClosedChannelException ignore) {
+                                    | ClosedChannelException exception) {
+                                exceptionRef.set(exception);
                             }
                         }));
                         race.addContestant(Race.throwing(pagedFile::close));
                         race.go();
-                        // ensure touch doesn't leave unevictable pages
-                        // first wait for the background evictor to do its job, then evict the rest
-                        //                        assertEventually(
-                        //                                () ->
-                        // pageCache.tryGetNumberOfPagesToEvict(pageCache.getKeepFree()),
-                        //                                i -> i == -1,
-                        //                                SHORT_TIMEOUT_MILLIS,
-                        //                                TimeUnit.MILLISECONDS);
-                        //                        pageCache.evictPages(pageCache.tryGetNumberOfPagesToEvict(8), 0,
-                        // EvictionRunEvent.NULL);
-                        //                        assertThat(pageCache.tryGetNumberOfPagesToEvict(8)).isEqualTo(-1);
+                        assertAllPagesEvicted(pageCache);
                     },
-                    pageCache::toString);
+                    () -> "PageCache: " + pageCache.toString()
+                            + " pages to evict to have all free: "
+                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + "\nObserved exception:\n"
+                            + (exceptionRef.get() != null ? Exceptions.stringify(exceptionRef.get()) : "none") + "\n"
+                            + pageCache.describePages());
         }
+    }
+
+    private void assertAllPagesEvicted(MuninnPageCache pageCache) {
+        // first wait for the background evictor to do its job, then evict the rest
+        assertEventually(
+                () -> pageCache.tryGetNumberOfPagesToEvict(pageCache.getKeepFree()),
+                i -> i == -1,
+                SHORT_TIMEOUT_MILLIS,
+                TimeUnit.MILLISECONDS);
+        var maxCachedPages = (int) pageCache.maxCachedPages();
+        pageCache.evictPages(pageCache.tryGetNumberOfPagesToEvict(maxCachedPages), 0, EvictionRunEvent.NULL);
+        assertThat(pageCache.tryGetNumberOfPagesToEvict(maxCachedPages)).isEqualTo(-1);
     }
 
     private void generateFile(Path file, int numberOfPages) throws IOException {

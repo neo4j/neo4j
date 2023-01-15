@@ -1039,22 +1039,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             // translation table will re-do the page fault.
             for (int i = 0; i < numberOfPages; i++) {
                 pageRefs[i] = grabFreeAndExclusivelyLockedPage(faultEvent);
-                initBuffer(pageRefs[i]);
-
-                int currentSwapper = getSwapperId(pageRefs[i]);
-                long currentFilePageId = getFilePageId(pageRefs[i]);
-                if (currentFilePageId != PageCursor.UNBOUND_PAGE_ID) {
-                    throw cannotFaultException(
-                            pageRefs[i], swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
-                }
-                // set filePageId here, so if we fail on the next iteration, pagecache pages that already grabbed
-                // are eligible for eviction
-                setFilePageId(pageRefs[i], filePageId + i); // Page now considered isLoaded()
-
-                if (!isExclusivelyLocked(pageRefs[i]) || currentSwapper != 0) {
-                    throw cannotFaultException(
-                            pageRefs[i], swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
-                }
+                PageList.validatePageRefAndSetFilePageId(pageRefs[i], swapper, swapperId, filePageId + i);
             }
 
             // Check if we're racing with unmapping. We have the page lock
@@ -1066,7 +1051,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             long[] bufferAddresses = new long[numberOfPages];
             int[] bufferLengths = new int[numberOfPages];
             for (int i = 0; i < numberOfPages; i++) {
-                bufferAddresses[i] = getAddress(pageRefs[i]);
+                bufferAddresses[i] = initBuffer(pageRefs[i]);
                 bufferLengths[i] = filePageSize;
             }
 

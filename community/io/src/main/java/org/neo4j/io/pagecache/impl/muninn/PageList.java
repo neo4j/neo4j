@@ -270,11 +270,13 @@ class PageList implements PageReferenceTranslator {
         return UnsafeUtil.getLong(offAddress(pageRef));
     }
 
-    void initBuffer(long pageRef) {
-        if (getAddress(pageRef) == 0L) {
-            long addr = memoryAllocator.allocateAligned(getCachePageSize(), bufferAlignment);
-            UnsafeUtil.putLong(offAddress(pageRef), addr);
+    long initBuffer(long pageRef) {
+        var address = getAddress(pageRef);
+        if (address == 0L) {
+            address = memoryAllocator.allocateAligned(getCachePageSize(), bufferAlignment);
+            UnsafeUtil.putLong(offAddress(pageRef), address);
         }
+        return address;
     }
 
     /**
@@ -371,20 +373,15 @@ class PageList implements PageReferenceTranslator {
         return expectedBinding == actualBinding;
     }
 
-    static void fault(long pageRef, PageSwapper swapper, int swapperId, long filePageId, PinPageFaultEvent event)
-            throws IOException {
-        if (swapper == null) {
-            throw swapperCannotBeNull();
-        }
-        int currentSwapper = getSwapperId(pageRef);
+    static void validatePageRefAndSetFilePageId(long pageRef, PageSwapper swapper, int swapperId, long filePageId) {
+        assert swapper != null;
+        assert filePageId != PageCursor.UNBOUND_PAGE_ID;
         long currentFilePageId = getFilePageId(pageRef);
-        if (filePageId == PageCursor.UNBOUND_PAGE_ID
-                || !isExclusivelyLocked(pageRef)
-                || currentSwapper != 0
-                || currentFilePageId != PageCursor.UNBOUND_PAGE_ID) {
+        int currentSwapper = getSwapperId(pageRef);
+        if (currentFilePageId != PageCursor.UNBOUND_PAGE_ID) {
             throw cannotFaultException(pageRef, swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
         }
-        // Note: It is important that we assign the filePageId before we swap
+        // Note: It is important that we assign the filePageId right after it's grabbed and before we swap
         // the page in. If the swapping fails, the page will be considered
         // loaded for the purpose of eviction, and will eventually return to
         // the freelist. However, because we don't assign the swapper until the
@@ -392,6 +389,14 @@ class PageList implements PageReferenceTranslator {
         // the file page, so any subsequent thread that finds the page in their
         // translation table will re-do the page fault.
         setFilePageId(pageRef, filePageId); // Page now considered isLoaded()
+
+        if (!isExclusivelyLocked(pageRef) || currentSwapper != 0) {
+            throw cannotFaultException(pageRef, swapper, swapperId, filePageId, currentSwapper, currentFilePageId);
+        }
+    }
+
+    static void fault(long pageRef, PageSwapper swapper, int swapperId, long filePageId, PinPageFaultEvent event)
+            throws IOException {
         long bytesRead = swapper.read(filePageId, getAddress(pageRef));
         event.addBytesRead(bytesRead);
         setSwapperId(pageRef, swapperId); // Page now considered isBoundTo( swapper, filePageId )

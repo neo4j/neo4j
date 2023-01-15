@@ -24,6 +24,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
+import static org.neo4j.io.pagecache.impl.muninn.PageList.validatePageRefAndSetFilePageId;
 import static org.neo4j.io.pagecache.impl.muninn.VersionStorage.CHECKSUM_OFFSET;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -419,6 +420,7 @@ public abstract class MuninnPageCursor extends PageCursor {
                 throw throwable;
             }
             try {
+                validatePageRefAndSetFilePageId(pageRef, swapper, swapperId, filePageId);
                 // Check if we're racing with unmapping. We have the page lock
                 // here, so the unmapping would have already happened. We do this
                 // check before page.fault(), because that would otherwise reopen
