@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.factory.KernelTransactionFactory
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.lock.LockTracer
 import org.neo4j.resources.CpuClock
 import org.neo4j.storageengine.api.cursor.StoreCursors
@@ -132,7 +133,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       Config.defaults(),
       indexingBehaviour
     ))
-    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(
+      graph,
+      outerTx,
+      statement,
+      mock[ExecutingQuery],
+      transactionFactory,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     // WHEN
@@ -162,7 +170,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       Config.defaults(),
       indexingBehaviour
     ))
-    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(
+      graph,
+      outerTx,
+      statement,
+      mock[ExecutingQuery],
+      transactionFactory,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     // WHEN
@@ -390,7 +405,14 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       Config.defaults(),
       indexingBehaviour
     ))
-    val tc = new Neo4jTransactionalContext(graph, outerTx, statement, mock[ExecutingQuery], transactionFactory)
+    val tc = new Neo4jTransactionalContext(
+      graph,
+      outerTx,
+      statement,
+      mock[ExecutingQuery],
+      transactionFactory,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
     val resource1 = new DummyResource
@@ -454,7 +476,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     transaction: InternalTransaction
   ) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseQueryService)
-    contextFactory.newContext(transaction, "no query", EMPTY_MAP)
+    contextFactory.newContext(transaction, "no query", EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG)
   }
 
   private def createMiniGraph(relTypeName: String): Node = {

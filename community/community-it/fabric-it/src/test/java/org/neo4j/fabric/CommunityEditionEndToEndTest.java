@@ -56,6 +56,7 @@ import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -153,7 +154,8 @@ class CommunityEditionEndToEndTest {
                 false,
                 Duration.ZERO,
                 Map.of(),
-                new RoutingContext(false, Map.of()));
+                new RoutingContext(false, Map.of()),
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
         var bookmarkManager = mock(TransactionBookmarkManager.class);
 
         var tx1 = transactionManager.begin(transactionInfo, bookmarkManager);

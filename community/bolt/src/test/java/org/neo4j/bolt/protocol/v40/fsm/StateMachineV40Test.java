@@ -406,7 +406,7 @@ class StateMachineV40Test {
         var transactionSPI = mock(TransactionStateMachineSPI.class);
         doThrow(new AuthorizationExpiredException("Auth expired!"))
                 .when(transactionSPI)
-                .beginTransaction(any(), any(), any(), any(), any(), any(), any());
+                .beginTransaction(any(), any(), any(), any(), any(), any(), any(), any());
 
         var machine = newMachineWithTransactionSPI(transactionSPI);
 

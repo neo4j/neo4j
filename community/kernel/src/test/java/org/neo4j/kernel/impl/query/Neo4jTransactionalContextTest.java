@@ -81,8 +81,13 @@ class Neo4jTransactionalContextTest {
         KernelTransaction kernelTransaction = mockTransaction(statement);
         when(internalTransaction.kernelTransaction()).thenReturn(kernelTransaction);
 
-        Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext(null, internalTransaction, statement, executingQuery, transactionFactory);
+        Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext(
+                null,
+                internalTransaction,
+                statement,
+                executingQuery,
+                transactionFactory,
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         transactionalContext.rollback();
 
@@ -122,7 +127,12 @@ class Neo4jTransactionalContextTest {
         when(secondStatement.queryRegistry()).thenReturn(secondQueryRegistry);
 
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
-                queryService, userTransaction, initialStatement, executingQuery, transactionFactory);
+                queryService,
+                userTransaction,
+                initialStatement,
+                executingQuery,
+                transactionFactory,
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // When
         assertThrows(RuntimeException.class, context::commitAndRestartTx);
@@ -146,8 +156,13 @@ class Neo4jTransactionalContextTest {
         when(innerTransaction.kernelTransaction()).thenThrow(error);
 
         // When
-        Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext(graph, transaction, statement, executingQuery, transactionFactory);
+        Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext(
+                graph,
+                transaction,
+                statement,
+                executingQuery,
+                transactionFactory,
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // Then
         assertThatThrownBy(transactionalContext::contextWithNewTransaction).isSameAs(error);
@@ -306,7 +321,13 @@ class Neo4jTransactionalContextTest {
     private Neo4jTransactionalContext newContext(InternalTransaction initialTx) {
         ExecutingQuery executingQuery = mock(ExecutingQuery.class);
         when(executingQuery.databaseId()).thenReturn(Optional.of(namedDatabaseId));
-        return new Neo4jTransactionalContext(queryService, initialTx, statement, executingQuery, transactionFactory);
+        return new Neo4jTransactionalContext(
+                queryService,
+                initialTx,
+                statement,
+                executingQuery,
+                transactionFactory,
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
     }
 
     private KernelTransaction mockTransaction(Statement statement) {

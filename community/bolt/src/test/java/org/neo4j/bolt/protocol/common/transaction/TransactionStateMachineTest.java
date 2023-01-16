@@ -173,7 +173,7 @@ class TransactionStateMachineTest {
                 .terminate();
         TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(transaction);
         when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
         when(stateMachineSPI.supportsNestedStatementsInTransaction()).thenReturn(true); // V4
@@ -347,7 +347,7 @@ class TransactionStateMachineTest {
         BoltTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI(transaction);
         final BoltTransaction periodicTransaction = mock(BoltTransaction.class);
-        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(periodicTransaction);
 
         TransactionStateMachine stateMachine = newTransactionStateMachine(stateMachineSPI);
@@ -360,7 +360,7 @@ class TransactionStateMachineTest {
         InOrder inOrder = inOrder(stateMachineSPI);
         // implicit transaction was started for query execution
         inOrder.verify(stateMachineSPI)
-                .beginTransaction(eq(IMPLICIT), any(LoginContext.class), any(), any(), any(), any(), any());
+                .beginTransaction(eq(IMPLICIT), any(LoginContext.class), any(), any(), any(), any(), any(), any());
         // query was executed after specific transaction started
         inOrder.verify(stateMachineSPI)
                 .executeQuery(any(BoltQueryExecutor.class), eq(CALL_IN_TRANSACTIONS_QUERY), eq(EMPTY_MAP));
@@ -429,7 +429,7 @@ class TransactionStateMachineTest {
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(transaction);
         when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
 
@@ -440,7 +440,7 @@ class TransactionStateMachineTest {
             BoltTransaction transaction, BoltResultHandle resultHandle) {
         TransactionStateMachineSPI stateMachineSPI = mock(TransactionStateMachineSPI.class);
 
-        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any()))
+        when(stateMachineSPI.beginTransaction(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(transaction);
         when(stateMachineSPI.executeQuery(any(), anyString(), any())).thenReturn(resultHandle);
 

@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.procedure.Description
 import org.neo4j.procedure.Name
 import org.neo4j.procedure.UserAggregationFunction
@@ -367,7 +368,7 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       authManager.login(SecurityTestUtils.authToken(username, password), ClientConnectionInfo.EMBEDDED_CONNECTION)
     val tx = graph.beginTransaction(Type.EXPLICIT, login)
     try {
-      val result = execute(queryText, params, tx)
+      val result = execute(queryText, params, tx, QueryExecutionConfiguration.DEFAULT_CONFIG)
       tx.commit()
       result
     } finally {

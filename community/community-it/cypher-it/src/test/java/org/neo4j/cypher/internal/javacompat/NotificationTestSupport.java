@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
@@ -53,7 +54,8 @@ public class NotificationTestSupport {
             String code,
             Condition<String> descriptionCondition,
             Condition<InputPosition> positionCondition,
-            SeverityLevel severity) {
+            SeverityLevel severity,
+            NotificationCategory category) {
         final var description = "Notification{code=%s, description=[%s], position=[%s], severity=%s}"
                 .formatted(code, descriptionCondition.description(), positionCondition.description(), severity);
 
@@ -61,7 +63,8 @@ public class NotificationTestSupport {
                 notification -> code.equals(notification.getCode())
                         && descriptionCondition.matches(notification.getDescription())
                         && positionCondition.matches(notification.getPosition())
-                        && severity.equals(notification.getSeverity()),
+                        && severity.equals(notification.getSeverity())
+                        && category.equals(notification.getCategory()),
                 description);
     }
 
@@ -137,7 +140,8 @@ public class NotificationTestSupport {
                             + "use of this cross "
                             + "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH"),
             instanceOf(InputPosition.class),
-            SeverityLevel.INFORMATION);
+            SeverityLevel.INFORMATION,
+            NotificationCategory.PERFORMANCE);
 
     Condition<Notification> largeLabelCSVNotification = notification(
             "Neo.ClientNotification.Statement.NoApplicableIndex",
@@ -145,7 +149,8 @@ public class NotificationTestSupport {
                     + "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                     + "not perform well on large data sets. Please consider using a schema index."),
             instanceOf(InputPosition.class),
-            SeverityLevel.INFORMATION);
+            SeverityLevel.INFORMATION,
+            NotificationCategory.PERFORMANCE);
 
     Condition<Notification> eagerOperatorNotification = notification(
             "Neo.ClientNotification.Statement.EagerOperator",
@@ -154,31 +159,35 @@ public class NotificationTestSupport {
                     + "See the Neo4j Manual entry on the Eager operator for more information and hints on "
                     + "how problems could be avoided."),
             instanceOf(InputPosition.class),
-            SeverityLevel.WARNING);
-
+            SeverityLevel.WARNING,
+            NotificationCategory.PERFORMANCE);
     Condition<Notification> unknownPropertyKeyNotification = notification(
             "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
             Conditions.contains("the missing property name is"),
             instanceOf(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.WARNING,
+            NotificationCategory.UNRECOGNIZED);
 
     Condition<Notification> unknownRelationshipNotification = notification(
             "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
             Conditions.contains("the missing relationship type is"),
             instanceOf(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.WARNING,
+            NotificationCategory.UNRECOGNIZED);
 
     Condition<Notification> unknownLabelNotification = notification(
             "Neo.ClientNotification.Statement.UnknownLabelWarning",
             Conditions.contains("the missing label name is"),
             instanceOf(InputPosition.class),
-            SeverityLevel.WARNING);
+            SeverityLevel.WARNING,
+            NotificationCategory.UNRECOGNIZED);
 
     Condition<Notification> dynamicPropertyNotification = notification(
             "Neo.ClientNotification.Statement.DynamicProperty",
             Conditions.contains("Using a dynamic property makes it impossible to use an index lookup for this query"),
             instanceOf(InputPosition.class),
-            SeverityLevel.INFORMATION);
+            SeverityLevel.INFORMATION,
+            NotificationCategory.PERFORMANCE);
 
     public static class ChangedResults {
         @Deprecated

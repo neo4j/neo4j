@@ -40,6 +40,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
@@ -78,7 +79,8 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         return boltGraphDatabaseServiceSPI.beginTransaction(
                 transactionType,
                 loginContext,
@@ -87,7 +89,8 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
                 txTimeout,
                 accessMode,
                 txMetadata,
-                routingContext);
+                routingContext,
+                queryExecutionConfiguration);
     }
 
     @Override
@@ -125,7 +128,8 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
         public BoltResult start() throws KernelException {
             try {
                 AdaptingBoltQuerySubscriber subscriber = new AdaptingBoltQuerySubscriber();
-                boltQueryExecution = boltQueryExecutor.executeQuery(statement, params, true, subscriber);
+                boltQueryExecution = boltQueryExecutor.executeQuery(
+                        statement, params, true, subscriber); // TODO: Driver has to update
                 QueryExecution result = boltQueryExecution.getQueryExecution();
                 subscriber.assertSucceeded();
                 return newBoltResult(result, subscriber, clock);

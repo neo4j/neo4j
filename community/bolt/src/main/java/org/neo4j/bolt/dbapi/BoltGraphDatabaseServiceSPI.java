@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
 /**
  * A database representation as seen and used by Bolt.
@@ -42,7 +43,8 @@ public interface BoltGraphDatabaseServiceSPI {
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
-            RoutingContext routingContext);
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration);
 
     DatabaseReference getDatabaseReference();
 

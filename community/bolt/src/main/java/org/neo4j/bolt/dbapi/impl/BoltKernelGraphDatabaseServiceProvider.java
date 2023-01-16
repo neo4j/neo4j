@@ -39,6 +39,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -100,7 +101,8 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         awaitUpToDate(bookmarks);
         InternalTransaction topLevelInternalTransaction =
                 beginInternalTransaction(type, loginContext, clientInfo, txTimeout, txMetadata);
@@ -112,7 +114,8 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
                     queryExecutionEngine,
                     transactionalContextFactory,
                     topLevelInternalTransaction,
-                    this::bookmarkWithTxId);
+                    this::bookmarkWithTxId,
+                    queryExecutionConfiguration);
         }
 
         memoryTracker.allocateHeap(BoltKernelTransaction.SHALLOW_SIZE);
@@ -122,7 +125,8 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
                 transactionalContextFactory,
                 kernelTransaction,
                 topLevelInternalTransaction,
-                this::bookmarkWithTxId);
+                this::bookmarkWithTxId,
+                queryExecutionConfiguration);
     }
 
     @Override

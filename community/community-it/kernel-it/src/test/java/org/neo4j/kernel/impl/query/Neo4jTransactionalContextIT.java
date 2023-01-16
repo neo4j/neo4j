@@ -147,7 +147,7 @@ class Neo4jTransactionalContextIT {
 
     private TransactionalContext createTransactionContext(InternalTransaction transaction) {
         return Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
-                .newContext(transaction, "no query", EMPTY_MAP);
+                .newContext(transaction, "no query", EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG);
     }
 
     @BeforeEach
@@ -209,7 +209,7 @@ class Neo4jTransactionalContextIT {
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
         var outerCtx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
-                .newContext(outerTx, queryText, MapValue.EMPTY);
+                .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
         var executingQuery = outerCtx.executingQuery();
 
         // When
@@ -846,7 +846,7 @@ class Neo4jTransactionalContextIT {
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
         var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
-                .newContext(outerTx, queryText, MapValue.EMPTY);
+                .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
         ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH);
@@ -883,7 +883,7 @@ class Neo4jTransactionalContextIT {
         var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
         var queryText = "<query text>";
         var ctx = Neo4jTransactionalContextFactory.create(() -> graph, transactionFactory)
-                .newContext(outerTx, queryText, MapValue.EMPTY);
+                .newContext(outerTx, queryText, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
 
         // We need to be done with parsing and provide an obfuscator to see the query text in the procedure
         ctx.executingQuery().onObfuscatorReady(QueryObfuscator.PASSTHROUGH);

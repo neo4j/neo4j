@@ -23,6 +23,7 @@ import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
@@ -35,21 +36,25 @@ public class BoltQueryExecutorImpl implements BoltQueryExecutor {
     private final TransactionalContextFactory transactionalContextFactory;
     private final InternalTransaction internalTransaction;
 
+    private final QueryExecutionConfiguration queryExecutionConfiguration;
+
     BoltQueryExecutorImpl(
             QueryExecutionEngine queryExecutionEngine,
             TransactionalContextFactory transactionalContextFactory,
-            InternalTransaction internalTransaction) {
+            InternalTransaction internalTransaction,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionalContextFactory = transactionalContextFactory;
         this.internalTransaction = internalTransaction;
+        this.queryExecutionConfiguration = queryExecutionConfiguration;
     }
 
     @Override
     public BoltQueryExecution executeQuery(
             String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber)
             throws QueryExecutionKernelException {
-        TransactionalContext transactionalContext =
-                transactionalContextFactory.newContext(internalTransaction, query, parameters);
+        TransactionalContext transactionalContext = transactionalContextFactory.newContext(
+                internalTransaction, query, parameters, queryExecutionConfiguration);
         QueryExecution queryExecution =
                 queryExecutionEngine.executeQuery(query, parameters, transactionalContext, prePopulate, subscriber);
         return new BoltQueryExecutionImpl(queryExecution, transactionalContext);

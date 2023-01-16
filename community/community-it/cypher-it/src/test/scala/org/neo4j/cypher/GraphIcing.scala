@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -624,15 +625,25 @@ trait GraphIcing {
     private def createTransactionalContext(
       tx: InternalTransaction,
       queryText: String,
-      params: Map[String, Any]
+      params: Map[String, Any],
+      queryExecutionConfiguration: QueryExecutionConfiguration
     ): TransactionalContext = {
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService)
-      contextFactory.newContext(tx, queryText, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
+      contextFactory.newContext(
+        tx,
+        queryText,
+        ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
+        queryExecutionConfiguration
+      )
     }
 
-    def transactionalContext(tx: InternalTransaction, query: (String, Map[String, Any])): TransactionalContext = {
+    def transactionalContext(
+      tx: InternalTransaction,
+      query: (String, Map[String, Any]),
+      queryExecutionConfiguration: QueryExecutionConfiguration = QueryExecutionConfiguration.DEFAULT_CONFIG
+    ): TransactionalContext = {
       val (queryText, params) = query
-      createTransactionalContext(tx, queryText, params)
+      createTransactionalContext(tx, queryText, params, queryExecutionConfiguration)
     }
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown

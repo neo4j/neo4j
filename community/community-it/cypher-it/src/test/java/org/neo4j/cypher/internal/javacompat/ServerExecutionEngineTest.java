@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -63,7 +64,8 @@ class ServerExecutionEngineTest {
             tx.createNode();
             tx.createNode();
 
-            TransactionalContext context = contextFactory.newContext(tx, query, MapValue.EMPTY);
+            TransactionalContext context =
+                    contextFactory.newContext(tx, query, MapValue.EMPTY, QueryExecutionConfiguration.DEFAULT_CONFIG);
             QueryExecution execution =
                     executionEngine.executeQuery(query, MapValue.EMPTY, context, false, DO_NOTHING_SUBSCRIBER);
             execution.request(1);

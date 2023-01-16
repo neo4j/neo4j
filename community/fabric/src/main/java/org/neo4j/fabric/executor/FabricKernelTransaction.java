@@ -35,6 +35,7 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.fabric.stream.StatementResults;
 import org.neo4j.fabric.stream.StatementResults.SubscribableExecution;
 import org.neo4j.fabric.stream.summary.Summary;
+import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -53,15 +54,19 @@ public class FabricKernelTransaction {
     private final FabricConfig config;
     private final Set<TransactionalContext> openExecutionContexts = ConcurrentHashMap.newKeySet();
 
+    private final FabricTransactionInfo transactionInfo;
+
     FabricKernelTransaction(
             ExecutionEngine queryExecutionEngine,
             TransactionalContextFactory transactionalContextFactory,
             InternalTransaction internalTransaction,
-            FabricConfig config) {
+            FabricConfig config,
+            FabricTransactionInfo transactionInfo) {
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionalContextFactory = transactionalContextFactory;
         this.internalTransaction = internalTransaction;
         this.config = config;
+        this.transactionInfo = transactionInfo;
     }
 
     public StatementResult run(
@@ -110,17 +115,20 @@ public class FabricKernelTransaction {
 
     private TransactionalContext makeChildTransactionalContext(StatementLifecycle lifecycle) {
         var parentQuery = lifecycle.getMonitoredQuery();
+        var queryExecutionConfiguration = transactionInfo.getQueryExecutionConfiguration();
 
         if (lifecycle.isParentChildMonitoringMode()) {
             // Cypher engine reports separately for each child query
             String queryText = "Internal query for parent query id: " + parentQuery.id();
             MapValue params = MapValue.EMPTY;
-            return transactionalContextFactory.newContext(internalTransaction, queryText, params);
+            return transactionalContextFactory.newContext(
+                    internalTransaction, queryText, params, queryExecutionConfiguration);
         } else {
             // Mark query as no longer in Fabric phase
             lifecycle.doneFabricPhase();
             // Cypher engine reports directly to parent query
-            return transactionalContextFactory.newContextForQuery(internalTransaction, parentQuery);
+            return transactionalContextFactory.newContextForQuery(
+                    internalTransaction, parentQuery, queryExecutionConfiguration);
         }
     }
 

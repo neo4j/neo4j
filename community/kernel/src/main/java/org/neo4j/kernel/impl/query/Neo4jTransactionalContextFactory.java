@@ -36,8 +36,13 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
             Supplier<GraphDatabaseQueryService> queryServiceSupplier, KernelTransactionFactory transactionFactory) {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton(queryServiceSupplier);
         Neo4jTransactionalContext.Creator contextCreator =
-                (tx, initialStatement, executingQuery) -> new Neo4jTransactionalContext(
-                        queryService.get(), tx, initialStatement, executingQuery, transactionFactory);
+                (tx, initialStatement, executingQuery, queryExecutionConfiguration) -> new Neo4jTransactionalContext(
+                        queryService.get(),
+                        tx,
+                        initialStatement,
+                        executingQuery,
+                        transactionFactory,
+                        queryExecutionConfiguration);
         return new Neo4jTransactionalContextFactory(contextCreator);
     }
 
@@ -45,8 +50,14 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     public static TransactionalContextFactory create(GraphDatabaseQueryService queryService) {
         var resolver = queryService.getDependencyResolver();
         var transactionFactory = resolver.resolveDependency(KernelTransactionFactory.class);
-        Neo4jTransactionalContext.Creator contextCreator = (tx, initialStatement, executingQuery) ->
-                new Neo4jTransactionalContext(queryService, tx, initialStatement, executingQuery, transactionFactory);
+        Neo4jTransactionalContext.Creator contextCreator =
+                (tx, initialStatement, executingQuery, queryExecutionConfiguration) -> new Neo4jTransactionalContext(
+                        queryService,
+                        tx,
+                        initialStatement,
+                        executingQuery,
+                        transactionFactory,
+                        queryExecutionConfiguration);
         return new Neo4jTransactionalContextFactory(contextCreator);
     }
 
@@ -57,18 +68,24 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
 
     @Override
     public final Neo4jTransactionalContext newContext(
-            InternalTransaction tx, String queryText, MapValue queryParameters) {
+            InternalTransaction tx,
+            String queryText,
+            MapValue queryParameters,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         KernelStatement initialStatement =
                 (KernelStatement) tx.kernelTransaction().acquireStatement();
         var executingQuery = initialStatement.queryRegistry().startAndBindExecutingQuery(queryText, queryParameters);
-        return contextCreator.create(tx, initialStatement, executingQuery);
+        return contextCreator.create(tx, initialStatement, executingQuery, queryExecutionConfiguration);
     }
 
     @Override
-    public TransactionalContext newContextForQuery(InternalTransaction tx, ExecutingQuery executingQuery) {
+    public TransactionalContext newContextForQuery(
+            InternalTransaction tx,
+            ExecutingQuery executingQuery,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         KernelStatement initialStatement =
                 (KernelStatement) tx.kernelTransaction().acquireStatement();
         initialStatement.queryRegistry().bindExecutingQuery(executingQuery);
-        return contextCreator.create(tx, initialStatement, executingQuery);
+        return contextCreator.create(tx, initialStatement, executingQuery, queryExecutionConfiguration);
     }
 }

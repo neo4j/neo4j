@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.kernel.impl.api.KernelTransactions
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.neo4j.test.DoubleLatch
 import org.neo4j.test.NamedFunction
@@ -1506,7 +1507,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   private def executeAs(username: String, password: String, queryText: String): RewindableExecutionResult = {
     val tx = graph.beginTransaction(Type.EXPLICIT, login(username, password))
     try {
-      val result = execute(queryText, Map.empty[String, Any], tx)
+      val result = execute(queryText, Map.empty[String, Any], tx, QueryExecutionConfiguration.DEFAULT_CONFIG)
       tx.commit()
       result
     } finally {

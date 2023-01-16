@@ -47,6 +47,7 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.time.Clocks;
 
 class TransactionManagerTest {
@@ -112,6 +113,7 @@ class TransactionManagerTest {
                 false,
                 Duration.ZERO,
                 emptyMap(),
-                new RoutingContext(true, emptyMap()));
+                new RoutingContext(true, emptyMap()),
+                QueryExecutionConfiguration.DEFAULT_CONFIG);
     }
 }

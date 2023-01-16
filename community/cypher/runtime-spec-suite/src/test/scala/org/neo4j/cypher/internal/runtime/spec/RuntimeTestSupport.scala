@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.locking.Locks
 import org.neo4j.kernel.impl.query.ChainableQuerySubscriberProbe
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.QuerySubscriberProbe
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
@@ -259,21 +260,36 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   def startTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
-    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(
+      _tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
   }
 
   def restartTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
     _txContext.close()
     _tx.commit()
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
-    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(
+      _tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
   }
 
   def rollbackAndRestartTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
     _txContext.close()
     _tx.rollback()
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
-    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(
+      _tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
   }
 
   def restartImplicitTx(): Unit = {
@@ -282,7 +298,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
       _tx.commit()
     }
     _tx = cypherGraphDb.beginTransaction(Type.IMPLICIT, LoginContext.AUTH_DISABLED)
-    _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    _txContext = contextFactory.newContext(
+      _tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
   }
 
   def stopTx(): Unit = {
@@ -569,7 +590,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     profile: Boolean
   ): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
-    val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    val txContext = contextFactory.newContext(
+      tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
     val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
@@ -601,7 +627,12 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     profile: Boolean
   ): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
-    val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    val txContext = contextFactory.newContext(
+      tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
     val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
     try {
       val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1

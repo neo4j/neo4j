@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.memory.EmptyMemoryTracker
@@ -107,7 +108,12 @@ object QueryStateHelper extends MockitoSugar {
   ): QueryState = {
     val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
-    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
+    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(
+      tx,
+      "X",
+      EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    ))
     val queryContext = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(searchMonitor)
     val resources = mock[CSVResources]
     emptyWith(

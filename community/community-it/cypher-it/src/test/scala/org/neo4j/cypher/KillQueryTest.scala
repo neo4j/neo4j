@@ -25,6 +25,7 @@ import org.neo4j.graphdb.TransientTransactionFailureException
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.TransactionalContextFactory
@@ -126,7 +127,8 @@ class KillQueryTest extends ExecutionEngineFunSuite {
       while (continue.get()) {
         val tx = graph.beginTransaction(Type.IMPLICIT, AUTH_DISABLED)
         try {
-          val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
+          val transactionalContext: TransactionalContext =
+            contextFactory.newContext(tx, query, EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG)
           tc = transactionalContext
           val result = engine.execute(
             query,

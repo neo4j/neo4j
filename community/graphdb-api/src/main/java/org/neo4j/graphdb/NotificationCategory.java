@@ -26,11 +26,38 @@ import org.neo4j.annotations.api.PublicApi;
  */
 @PublicApi
 public enum NotificationCategory {
+    /**
+     * deprecated feature/format/functionality
+     */
     DEPRECATION,
+
+    /**
+     * Unfulfillable hint warnings
+     * */
     HINT,
+
+    /**
+     * Informational notifications which suggests improvements to increase performance by making changes to query/schema
+     * */
     PERFORMANCE,
+
+    /**
+     * Warnings/info that are not part of a wider class
+     * */
     GENERIC,
+
+    /**
+     * The query or command mentions entities that are unknown to the system
+     * */
     UNRECOGNIZED,
+
+    /**
+     * Category is unknown
+     */
     UNKNOWN,
+
+    /**
+     * Unsupported feature warnings
+     */
     UNSUPPORTED
 }

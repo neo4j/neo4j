@@ -116,4 +116,6 @@ public interface TransactionalContext {
     ResourceTracker resourceTracker();
 
     ElementIdMapper elementIdMapper();
+
+    QueryExecutionConfiguration queryExecutingConfiguration();
 }

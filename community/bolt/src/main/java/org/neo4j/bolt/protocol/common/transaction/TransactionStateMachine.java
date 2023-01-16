@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.virtual.MapValue;
@@ -249,7 +250,8 @@ public class TransactionStateMachine implements StatementProcessor {
                             txTimeout,
                             accessMode,
                             txMetadata,
-                            ctx.routingContext);
+                            ctx.routingContext,
+                            QueryExecutionConfiguration.DEFAULT_CONFIG); // TODO: driver update?
                 } catch (Throwable e) {
                     // If we failed to begin a transaction for some reason such as the database is stopped, we need to
                     // release ourselves

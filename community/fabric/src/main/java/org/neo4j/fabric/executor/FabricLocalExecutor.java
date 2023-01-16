@@ -155,7 +155,7 @@ public class FabricLocalExecutor {
             var transactionalContextFactory = dependencyResolver.resolveDependency(TransactionalContextFactory.class);
 
             return new FabricKernelTransaction(
-                    executionEngine, transactionalContextFactory, internalTransaction, config);
+                    executionEngine, transactionalContextFactory, internalTransaction, config, transactionInfo);
         }
 
         private GraphDatabaseAPI getDatabaseFacade(Location.Local location) {

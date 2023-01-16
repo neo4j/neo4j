@@ -66,7 +66,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.impl.notification.NotificationCode
@@ -75,6 +74,7 @@ import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.api.query.RelationshipTypeIndexUsage
 import org.neo4j.kernel.api.query.SchemaIndexUsage
+import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -85,6 +85,7 @@ import org.neo4j.values.virtual.MapValue
 import java.util.function.Supplier
 
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
@@ -413,8 +414,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       val monitor = if (isOutermostQuery) queryMonitor else QueryExecutionMonitor.NO_OP
       monitor.startExecution(transactionalContext.executingQuery())
 
-      val allNotifications = (planningNotifications ++ executionPlan.notifications)
+      val notificationConfig =
+        transactionalContext.queryExecutingConfiguration().notificationFilters()
+      val filteredPlannerNotifications = (planningNotifications ++ executionPlan.notifications)
         .map(asKernelNotification(Some(queryOptions.offset)))
+        .filter(notificationConfig.includes(_))
       val inner =
         if (innerExecutionMode == ExplainMode) {
           taskCloser.close(success = true)
@@ -424,7 +428,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             columns,
             planDescriptionBuilder.explain(),
             internalQueryType,
-            allNotifications.toSet,
+            filteredPlannerNotifications.toSet,
             subscriber
           )
         } else {
@@ -432,6 +436,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           val runtimeResult =
             executionPlan.run(queryContext, innerExecutionMode, params, prePopulateResults, input, subscriber)
 
+          val filteredRuntimeNotifications = runtimeResult.notifications().asScala
+            .map(asKernelNotification(None))
+            .filter(filterNotifications(_, notificationConfig))
           if (isOutermostQuery) {
             transactionalContext.executingQuery().onExecutionStarted(runtimeResult)
           }
@@ -444,7 +451,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
             innerExecutionMode,
             planDescriptionBuilder,
             subscriber,
-            allNotifications ++ filterRuntimeNotifications(runtimeResult)
+            filteredPlannerNotifications ++ filteredRuntimeNotifications
           )
         }
 
@@ -456,12 +463,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       )
     }
 
-    private def filterRuntimeNotifications(runtimeResult: RuntimeResult): Set[NotificationCode#Notification] = {
-      // TODO: Filter runtime notifications based on config and return those that the caller
-      // is interested in
-      // runtimeResult.notifications().asScala.map(asKernelNotification(None))
-      Set.empty
-    }
+    private def filterNotifications(
+      notification: NotificationCode#Notification,
+      notificationConfig: NotificationConfiguration
+    ): Boolean =
+      notificationConfig.includes(notification)
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState =
       reusabilityState

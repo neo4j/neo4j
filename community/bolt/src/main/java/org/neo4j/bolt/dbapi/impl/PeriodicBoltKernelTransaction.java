@@ -26,6 +26,7 @@ import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.memory.HeapEstimator;
@@ -40,8 +41,9 @@ public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl impleme
             QueryExecutionEngine queryExecutionEngine,
             TransactionalContextFactory transactionalContextFactory,
             InternalTransaction transaction,
-            Supplier<BookmarkMetadata> bookmarkSupplier) {
-        super(queryExecutionEngine, transactionalContextFactory, transaction);
+            Supplier<BookmarkMetadata> bookmarkSupplier,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
+        super(queryExecutionEngine, transactionalContextFactory, transaction, queryExecutionConfiguration);
         this.internalTransaction = transaction;
         this.bookmarkSupplier = bookmarkSupplier;
     }

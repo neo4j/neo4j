@@ -30,6 +30,7 @@ import org.neo4j.bolt.protocol.common.message.result.BoltResultHandle;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI {
@@ -42,7 +43,8 @@ public interface TransactionStateMachineSPI {
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetaData,
-            RoutingContext routingContext);
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration);
 
     BoltResultHandle executeQuery(BoltQueryExecutor boltQueryExecutor, String statement, MapValue params);
 

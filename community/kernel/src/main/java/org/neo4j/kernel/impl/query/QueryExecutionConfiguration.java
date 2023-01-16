@@ -19,19 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.values.virtual.MapValue;
+public record QueryExecutionConfiguration(NotificationConfiguration notificationFilters) {
 
-public interface TransactionalContextFactory {
-    TransactionalContext newContext(
-            InternalTransaction tx,
-            String queryText,
-            MapValue queryParameters,
-            QueryExecutionConfiguration queryExecutionConfiguration);
-
-    TransactionalContext newContextForQuery(
-            InternalTransaction tx,
-            ExecutingQuery executingQuery,
-            QueryExecutionConfiguration queryExecutionConfiguration);
+    public static final QueryExecutionConfiguration DEFAULT_CONFIG =
+            new QueryExecutionConfiguration(NotificationConfiguration.DEFAULT_FILTER);
 }

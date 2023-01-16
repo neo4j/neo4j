@@ -81,6 +81,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -374,7 +375,7 @@ class QueryExecutionLocksIT {
     private static TransactionalContext createTransactionContext(
             GraphDatabaseQueryService graph, InternalTransaction tx, String query) {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create(graph);
-        return contextFactory.newContext(tx, query, EMPTY_MAP);
+        return contextFactory.newContext(tx, query, EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG);
     }
 
     private static class TransactionalContextWrapper implements TransactionalContext {
@@ -508,6 +509,11 @@ class QueryExecutionLocksIT {
         @Override
         public ElementIdMapper elementIdMapper() {
             return delegate.elementIdMapper();
+        }
+
+        @Override
+        public QueryExecutionConfiguration queryExecutingConfiguration() {
+            return QueryExecutionConfiguration.DEFAULT_CONFIG;
         }
     }
 

@@ -68,6 +68,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -267,7 +268,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graph)
-    contextFactory.newContext(tx, "X", EMPTY_MAP)
+    contextFactory.newContext(tx, "X", EMPTY_MAP, QueryExecutionConfiguration.DEFAULT_CONFIG)
   }
 
   // executes the provided pipes and returns execution times

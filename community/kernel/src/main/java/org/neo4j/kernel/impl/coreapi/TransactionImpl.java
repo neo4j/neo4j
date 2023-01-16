@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.CursorIterator;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -227,7 +228,8 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
     private Result execute(InternalTransaction transaction, String query, MapValue parameters)
             throws QueryExecutionException {
         checkInTransaction();
-        TransactionalContext context = contextFactory.newContext(transaction, query, parameters);
+        TransactionalContext context =
+                contextFactory.newContext(transaction, query, parameters, QueryExecutionConfiguration.DEFAULT_CONFIG);
         try {
             availabilityGuard.assertDatabaseAvailable();
             return executionEngine.executeQuery(query, parameters, context, false);

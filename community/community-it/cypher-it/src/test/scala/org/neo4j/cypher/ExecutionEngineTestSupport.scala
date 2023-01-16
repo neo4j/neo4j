@@ -40,6 +40,7 @@ import org.neo4j.kernel.DeadlockDetectedException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
@@ -154,8 +155,16 @@ trait ExecutionEngineHelper {
   }
 
   def execute(q: String, params: Map[String, Any]): RewindableExecutionResult = {
+    executeWithQueryExecutionConfiguration(q, params, QueryExecutionConfiguration.DEFAULT_CONFIG)
+  }
+
+  def executeWithQueryExecutionConfiguration(
+    q: String,
+    params: Map[String, Any],
+    queryExecutionConfiguration: QueryExecutionConfiguration
+  ): RewindableExecutionResult = {
     graph.withTx { tx =>
-      execute(q, params, tx)
+      execute(q, params, tx, queryExecutionConfiguration)
     }
   }
 
@@ -174,8 +183,17 @@ trait ExecutionEngineHelper {
   }
 
   def execute(q: String, params: Map[String, Any], tx: InternalTransaction): RewindableExecutionResult = {
+    execute(q, params, tx, QueryExecutionConfiguration.DEFAULT_CONFIG)
+  }
+
+  def execute(
+    q: String,
+    params: Map[String, Any],
+    tx: InternalTransaction,
+    queryExecutionConfiguration: QueryExecutionConfiguration
+  ): RewindableExecutionResult = {
     val subscriber = new RecordingQuerySubscriber
-    val context = graph.transactionalContext(tx, query = q -> params.toMap)
+    val context = graph.transactionalContext(tx, query = q -> params.toMap, queryExecutionConfiguration)
     val tbqc = new TransactionBoundQueryContext(TransactionalContextWrapper(context), new ResourceManager)
     RewindableExecutionResult(
       eengine.execute(

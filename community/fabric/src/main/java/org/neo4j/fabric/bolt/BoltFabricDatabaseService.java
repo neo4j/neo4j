@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -90,7 +91,8 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         memoryTracker.allocateHeap(BOLT_TRANSACTION_SHALLOW_SIZE);
 
         if (txTimeout == null) {
@@ -105,7 +107,8 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
                 KernelTransaction.Type.IMPLICIT == type,
                 txTimeout,
                 txMetadata,
-                TestOverrides.routingContext(routingContext));
+                TestOverrides.routingContext(routingContext),
+                queryExecutionConfiguration);
 
         var transactionBookmarkManager =
                 transactionBookmarkManagerFactory.createTransactionBookmarkManager(transactionIdTracker);

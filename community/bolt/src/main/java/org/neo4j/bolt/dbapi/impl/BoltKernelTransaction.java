@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.memory.HeapEstimator;
@@ -43,8 +44,9 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
             TransactionalContextFactory transactionalContextFactory,
             KernelTransaction kernelTransaction,
             InternalTransaction internalTransaction,
-            Supplier<BookmarkMetadata> bookmarkSupplier) {
-        super(queryExecutionEngine, transactionalContextFactory, internalTransaction);
+            Supplier<BookmarkMetadata> bookmarkSupplier,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
+        super(queryExecutionEngine, transactionalContextFactory, internalTransaction, queryExecutionConfiguration);
         this.kernelTransaction = kernelTransaction;
         this.topLevelInternalTransaction = internalTransaction;
         this.bookmarkSupplier = bookmarkSupplier;

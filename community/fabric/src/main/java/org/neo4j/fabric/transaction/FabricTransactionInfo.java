@@ -26,6 +26,7 @@ import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
 public class FabricTransactionInfo {
     private final AccessMode accessMode;
@@ -37,6 +38,8 @@ public class FabricTransactionInfo {
     private final RoutingContext routingContext;
     private Map<String, Object> txMetadata;
 
+    private final QueryExecutionConfiguration queryExecutionConfiguration;
+
     public FabricTransactionInfo(
             AccessMode accessMode,
             LoginContext loginContext,
@@ -45,7 +48,8 @@ public class FabricTransactionInfo {
             boolean implicitTransaction,
             Duration txTimeout,
             Map<String, Object> txMetadata,
-            RoutingContext routingContext) {
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         this.accessMode = accessMode;
         this.loginContext = loginContext;
         this.clientConnectionInfo = clientConnectionInfo;
@@ -54,6 +58,7 @@ public class FabricTransactionInfo {
         this.txTimeout = txTimeout;
         this.txMetadata = txMetadata;
         this.routingContext = routingContext;
+        this.queryExecutionConfiguration = queryExecutionConfiguration;
     }
 
     public AccessMode getAccessMode() {
@@ -90,5 +95,9 @@ public class FabricTransactionInfo {
 
     public RoutingContext getRoutingContext() {
         return routingContext;
+    }
+
+    public QueryExecutionConfiguration getQueryExecutionConfiguration() {
+        return queryExecutionConfiguration;
     }
 }

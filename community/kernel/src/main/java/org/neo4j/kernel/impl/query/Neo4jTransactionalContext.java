@@ -71,13 +71,23 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     // can be committed/restarted at any point, even during a "profiling event".
     private StatisticProvider statisticProvider;
 
+    private final QueryExecutionConfiguration queryExecutionConfiguration;
+
     public Neo4jTransactionalContext(
             GraphDatabaseQueryService graph,
             InternalTransaction transaction,
             KernelStatement initialStatement,
             ExecutingQuery executingQuery,
-            KernelTransactionFactory transactionFactory) {
-        this(graph, transaction, initialStatement, executingQuery, transactionFactory, null);
+            KernelTransactionFactory transactionFactory,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
+        this(
+                graph,
+                transaction,
+                initialStatement,
+                executingQuery,
+                transactionFactory,
+                null,
+                queryExecutionConfiguration);
     }
 
     private Neo4jTransactionalContext(
@@ -86,7 +96,8 @@ public class Neo4jTransactionalContext implements TransactionalContext {
             KernelStatement initialStatement,
             ExecutingQuery executingQuery,
             KernelTransactionFactory transactionFactory,
-            OnCloseCallback onClose) {
+            OnCloseCallback onClose,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
         this.graph = graph;
         this.transactionType = transaction.transactionType();
         this.securityContext = transaction.securityContext();
@@ -104,6 +115,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
         this.statisticProvider = new TransactionalContextStatisticProvider(kernelTransaction.executionStatistics());
         this.onClose = onClose;
+        this.queryExecutionConfiguration = queryExecutionConfiguration;
     }
 
     @Override
@@ -272,7 +284,13 @@ public class Neo4jTransactionalContext implements TransactionalContext {
             newStatement.queryRegistry().bindExecutingQuery(executingQuery);
 
             return new Neo4jTransactionalContext(
-                    graph, newTransaction, newStatement, executingQuery, transactionFactory, onClose);
+                    graph,
+                    newTransaction,
+                    newStatement,
+                    executingQuery,
+                    transactionFactory,
+                    onClose,
+                    queryExecutionConfiguration);
         } catch (Throwable outer) {
             try {
                 IOUtils.closeAll(onClose, newTransaction);
@@ -345,6 +363,11 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     @Override
+    public QueryExecutionConfiguration queryExecutingConfiguration() {
+        return queryExecutionConfiguration;
+    }
+
+    @Override
     public StatisticProvider kernelStatisticProvider() {
         return statisticProvider;
     }
@@ -360,7 +383,10 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     @FunctionalInterface
     interface Creator {
         Neo4jTransactionalContext create(
-                InternalTransaction tx, KernelStatement initialStatement, ExecutingQuery executingQuery);
+                InternalTransaction tx,
+                KernelStatement initialStatement,
+                ExecutingQuery executingQuery,
+                QueryExecutionConfiguration queryExecutionConfiguration);
     }
 
     @FunctionalInterface
