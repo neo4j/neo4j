@@ -76,7 +76,7 @@ public class LogTailInformation implements LogTailMetadata {
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
-    public boolean commitsAfterLastCheckpoint() {
+    public boolean logsAfterLastCheckpoint() {
         return recordAfterCheckpoint;
     }
 

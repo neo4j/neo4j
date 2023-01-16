@@ -385,8 +385,8 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to read first transaction of log version 0.",
                         "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart
                                 + "}",
-                        "Fail to recover all transactions. Any later transactions after position LogPosition{logVersion=0, "
-                                + "byteOffset=" + txOffsetAfterStart + "} are unreadable and will be truncated.");
+                        "Fail to recover database. Any transactional logs after position LogPosition{logVersion=0, "
+                                + "byteOffset=" + txOffsetAfterStart + "} can not be recovered and will be truncated.");
 
         logFiles = buildDefaultLogFiles(new StoreId(4, 5, "engine-1", "format-1", 1, 2));
         assertEquals(0, logFiles.getLogFile().getHighestLogVersion());
@@ -720,9 +720,9 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to read transaction log version 0.",
                         "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart
                                 + "}",
-                        "Fail to recover all transactions.",
-                        "Any later transaction after LogPosition{logVersion=0, byteOffset="
-                                + (txSizes + txOffsetAfterStart) + "} are unreadable and will be truncated.");
+                        "Fail to recover database.",
+                        "Any transactional logs after position LogPosition{logVersion=0, byteOffset="
+                                + (txSizes + txOffsetAfterStart) + "} can not be recovered and will be truncated.");
 
         assertEquals(0, logFiles.getLogFile().getHighestLogVersion());
         assertEquals(numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
@@ -767,10 +767,10 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to read transaction log version 3.",
                         "Recovery required from position LogPosition{logVersion=0, byteOffset=" + txOffsetAfterStart
                                 + "}",
-                        "Fail to recover all transactions.",
-                        "Any later transaction after LogPosition{logVersion=3, byteOffset="
+                        "Fail to recover database.",
+                        "Any transactional logs after position LogPosition{logVersion=3, byteOffset="
                                 + (txSize + additionalTxSizes + HEADER_OFFSET)
-                                + "} are unreadable and will be truncated.");
+                                + "} can not be recovered and will be truncated.");
 
         assertEquals(3, logFiles.getLogFile().getHighestLogVersion());
         assertEquals(numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions());
@@ -813,10 +813,10 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to read transaction log version 3.",
                         "Recovery required from position LogPosition{logVersion=3, byteOffset="
                                 + (txSize + HEADER_OFFSET) + "}",
-                        "Fail to recover all transactions.",
-                        "Any later transaction after LogPosition{logVersion=3, byteOffset="
+                        "Fail to recover database.",
+                        "Any transactional logs after position LogPosition{logVersion=3, byteOffset="
                                 + (txSize + additionalTxSizes + HEADER_OFFSET)
-                                + "} are unreadable and will be truncated.");
+                                + "} can not be recovered and will be truncated.");
 
         assertEquals(3, logFiles.getLogFile().getHighestLogVersion());
         assertEquals(transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions());
@@ -851,9 +851,8 @@ class RecoveryCorruptedTransactionLogIT {
                         "Fail to read first transaction of log version 5.",
                         "Recovery required from position LogPosition{logVersion=5, byteOffset="
                                 + (txSize + HEADER_OFFSET) + "}",
-                        "Fail to recover all transactions. "
-                                + "Any later transactions after position LogPosition{logVersion=5, byteOffset="
-                                + (txSize + HEADER_OFFSET) + "} " + "are unreadable and will be truncated.");
+                        "Fail to recover database. Any transactional logs after position LogPosition{logVersion=5, byteOffset="
+                                + (txSize + HEADER_OFFSET) + "} can not be recovered and will be truncated.");
 
         assertEquals(5, logFiles.getLogFile().getHighestLogVersion());
         assertEquals(originalFileLength, fileSystem.getFileSize(highestLogFile));

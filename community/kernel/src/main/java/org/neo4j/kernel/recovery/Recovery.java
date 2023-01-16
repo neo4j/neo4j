@@ -433,8 +433,8 @@ public final class Recovery {
         LifeSupport recoveryLife = new LifeSupport();
         var namedDatabaseId = createRecoveryDatabaseId(fs, pageCache, databaseLayout, storageEngineFactory);
         Monitors monitors = new Monitors(globalMonitors, logProvider);
-        DatabasePageCache databasePageCache =
-                new DatabasePageCache(pageCache, ioController, VersionStorage.EMPTY_STORAGE);
+        VersionStorage recoveryVersionStorage = VersionStorage.EMPTY_STORAGE;
+        DatabasePageCache databasePageCache = new DatabasePageCache(pageCache, ioController, recoveryVersionStorage);
         SimpleLogService logService = new SimpleLogService(logProvider);
         DatabaseReadOnlyChecker readOnlyChecker = writable();
 
@@ -473,6 +473,8 @@ public final class Recovery {
                 tracers,
                 namedDatabaseId,
                 cursorContextFactory));
+        Dependencies indexDependencies = new Dependencies(extensions);
+        indexDependencies.satisfyDependencies(recoveryVersionStorage);
 
         var indexProviderMap = recoveryLife.add(StaticIndexProviderMapFactory.create(
                 recoveryLife,
@@ -489,7 +491,7 @@ public final class Recovery {
                 scheduler,
                 cursorContextFactory,
                 tracers.getPageCacheTracer(),
-                extensions));
+                indexDependencies));
 
         LogTailMetadata logTailMetadata = providedLogTail.orElseGet(
                 () -> loadLogTail(fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, memoryTracker));

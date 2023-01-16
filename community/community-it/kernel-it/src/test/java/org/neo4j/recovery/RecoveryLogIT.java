@@ -100,6 +100,6 @@ class RecoveryLogIT {
                 .build();
         managementService.database(DEFAULT_DATABASE_NAME);
 
-        assertThat(provider).containsMessages("Recovery completed", "time spent");
+        assertThat(provider).containsMessages("Recovery completed", "Time spent");
     }
 }

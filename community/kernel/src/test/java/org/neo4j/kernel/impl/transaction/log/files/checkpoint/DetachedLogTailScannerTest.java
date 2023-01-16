@@ -502,6 +502,29 @@ class DetachedLogTailScannerTest {
         assertThat(logProvider).forLevel(INFO).containsMessageWithArguments(message, startLogVersion);
     }
 
+    @Test
+    void extractTxIdFromFirstChunkEndOnEmptyLogs() throws Exception {
+        long chunkTxId = 42;
+        setupLogFiles(10, logFile(start(), chunkEnd(chunkTxId)), logFile());
+
+        LogTailMetadata tailMetadata = logFiles.getTailMetadata();
+        assertEquals(chunkTxId, ((LogTailInformation) tailMetadata).firstTxIdAfterLastCheckPoint);
+    }
+
+    @Test
+    void extractTxIdFromFirstChunkEndOnNotEmptyLogs() throws Exception {
+        long chunkTxId = 42;
+        PositionEntry position = position();
+        setupLogFiles(
+                11,
+                logFile(start(), commit(chunkTxId - 1), position),
+                logFile(checkPoint(position)),
+                logFile(start(), chunkEnd(chunkTxId)));
+
+        LogTailMetadata tailMetadata = logFiles.getTailMetadata();
+        assertEquals(chunkTxId, ((LogTailInformation) tailMetadata).firstTxIdAfterLastCheckPoint);
+    }
+
     // === Below is code for helping the tests above ===
 
     void setupLogFiles(long endLogVersion, LogCreator... logFiles) throws Exception {
@@ -538,6 +561,8 @@ class DetachedLogTailScannerTest {
                         } else if (entry instanceof CommitEntry commitEntry) {
                             previousChecksum = writer.writeCommitEntry(version, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);
+                        } else if (entry instanceof ChunkEndEntry chunkEntry) {
+                            previousChecksum = writer.writeChunkEndEntry(version, chunkEntry.txId, 1);
                         } else if (entry instanceof CheckPointEntry checkPointEntry) {
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get(target) : currentPosition;
@@ -575,6 +600,10 @@ class DetachedLogTailScannerTest {
         return new CommitEntry(txId);
     }
 
+    static ChunkEndEntry chunkEnd(long txId) {
+        return new ChunkEndEntry(txId);
+    }
+
     static CheckPointEntry checkPoint() {
         return checkPoint(null /*means self-position*/);
     }
@@ -597,6 +626,14 @@ class DetachedLogTailScannerTest {
         }
     }
 
+    private static class ChunkEndEntry implements Entry {
+        final long txId;
+
+        ChunkEndEntry(long txId) {
+            this.txId = txId;
+        }
+    }
+
     private static class CheckPointEntry implements Entry {
         final Entry withPositionOfEntry;
 
@@ -615,7 +652,7 @@ class DetachedLogTailScannerTest {
             LogTailMetadata logTailInformation) {
         var tail = (LogTailInformation) logTailInformation;
         assertEquals(hasCheckPointEntry, tail.lastCheckPoint != null);
-        assertEquals(commitsAfterLastCheckPoint, tail.commitsAfterLastCheckpoint());
+        assertEquals(commitsAfterLastCheckPoint, tail.logsAfterLastCheckpoint());
         if (commitsAfterLastCheckPoint) {
             assertEquals(firstTxIdAfterLastCheckPoint, tail.firstTxIdAfterLastCheckPoint);
         }

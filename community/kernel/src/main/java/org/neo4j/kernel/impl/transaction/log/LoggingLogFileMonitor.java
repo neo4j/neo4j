@@ -34,11 +34,12 @@ import org.neo4j.logging.InternalLog;
 
 public class LoggingLogFileMonitor
         implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor {
-    private long minRecoveredTransaction = -1;
-    private long maxTransactionRecovered;
+    private static final int UNKNOWN_TRANSACTION = -1;
+    private long minRecoveredTransaction = UNKNOWN_TRANSACTION;
+    private long maxTransactionRecovered = -1;
     private final InternalLog log;
     private int numberOfRecoveredTransactions;
-    private int numberOfRolledbackBatches;
+    private int numberOfRolledbackTransactions;
 
     public LoggingLogFileMonitor(InternalLog log) {
         this.log = log;
@@ -51,16 +52,13 @@ public class LoggingLogFileMonitor
 
     @Override
     public void recoveryCompleted(long recoveryTimeInMilliseconds) {
-        if (numberOfRecoveredTransactions != 0) {
-            log.info(format(
-                    "Recovery completed. %d transactions, first:%d, last:%d recovered, time spent: %s",
-                    numberOfRecoveredTransactions,
-                    minRecoveredTransaction,
-                    maxTransactionRecovered,
-                    duration(recoveryTimeInMilliseconds)));
-        } else {
-            log.info("No recovery required");
-        }
+        log.info(format(
+                "Recovery completed. %d transactions applied [first:%s, last:%s], %d transactions rolled back. Time spent: %s.",
+                numberOfRecoveredTransactions,
+                valueOrDefault(minRecoveredTransaction),
+                valueOrDefault(maxTransactionRecovered),
+                numberOfRolledbackTransactions,
+                duration(recoveryTimeInMilliseconds)));
     }
 
     @Override
@@ -68,8 +66,8 @@ public class LoggingLogFileMonitor
             Throwable t, CommittedCommandBatch commandBatch, LogPosition recoveryToPosition) {
         log.warn(
                 format(
-                        "Fail to recover all transactions. Last recoverable transaction id:%d, committed "
-                                + "at:%d. Any later transaction after %s are unreadable and will be truncated.",
+                        "Fail to recover database. Highest recovered transaction id:%d, committed "
+                                + "at:%d. Any transactional logs after position %s can not be recovered and will be truncated.",
                         commandBatch.txId(), commandBatch.timeWritten(), recoveryToPosition),
                 t);
     }
@@ -84,8 +82,7 @@ public class LoggingLogFileMonitor
     public void failToRecoverTransactionsAfterPosition(Throwable t, LogPosition recoveryFromPosition) {
         log.warn(
                 format(
-                        "Fail to recover all transactions. Any later transactions after position %s are "
-                                + "unreadable and will be truncated.",
+                        "Fail to recover database. Any transactional logs after position %s can not be recovered and will be truncated.",
                         recoveryFromPosition),
                 t);
     }
@@ -108,7 +105,9 @@ public class LoggingLogFileMonitor
 
     @Override
     public void batchRolledback(CommittedCommandBatch committedBatch) {
-        numberOfRolledbackBatches++;
+        if (committedBatch.commandBatch().isFirst()) {
+            numberOfRolledbackTransactions++;
+        }
     }
 
     @Override
@@ -119,15 +118,15 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void commitsAfterLastCheckPoint(LogPosition logPosition, long firstTxIdAfterLastCheckPoint) {
+    public void logsAfterLastCheckPoint(LogPosition logPosition, long firstTxIdAfterLastCheckPoint) {
         log.info(format(
-                "Commits found after last check point (which is at %s). First txId after last checkpoint: %d ",
+                "Transaction logs entries found after the last check point (which is at %s). First observed transaction id: %d.",
                 logPosition, firstTxIdAfterLastCheckPoint));
     }
 
     @Override
     public void noCheckPointFound() {
-        log.info("No check point found in transaction log");
+        log.info("No check point found in transaction log.");
     }
 
     @Override
@@ -151,6 +150,10 @@ public class LoggingLogFileMonitor
             sb.append(", started after ").append(millisSinceLastRotation).append(" millis");
         }
         log.info(sb.append('.').toString());
+    }
+
+    private static String valueOrDefault(long value) {
+        return value == UNKNOWN_TRANSACTION ? "None" : String.valueOf(value);
     }
 
     private static String describeBatch(CommittedCommandBatch commandBatch) {

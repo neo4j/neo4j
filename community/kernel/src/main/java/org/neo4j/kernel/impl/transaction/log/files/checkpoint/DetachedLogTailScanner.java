@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -138,7 +139,7 @@ public class DetachedLogTailScanner {
         return new LogTailInformation(
                 checkpoint,
                 entries.isPresent(),
-                entries.getCommitId(),
+                entries.getTransactionId(),
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
                 entries.getEntryVersion(),
@@ -151,7 +152,7 @@ public class DetachedLogTailScanner {
         var entries = getFirstTransactionId(logFile, lowestLogVersion);
         return new LogTailInformation(
                 entries.isPresent(),
-                entries.getCommitId(),
+                entries.getTransactionId(),
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
                 entries.getEntryVersion(),
@@ -197,6 +198,7 @@ public class DetachedLogTailScanner {
         boolean corruptedTransactionLogs = false;
         LogEntryStart start = null;
         LogEntryCommit commit = null;
+        LogEntryChunkEnd chunkEnd = null;
         LogPosition lookupPosition = null;
         if (logPosition != LogPosition.UNSPECIFIED) {
             long logVersion = logPosition.getLogVersion();
@@ -214,13 +216,15 @@ public class DetachedLogTailScanner {
                             entry = cursor.get();
                             if (commit == null && entry instanceof LogEntryCommit) {
                                 commit = (LogEntryCommit) entry;
+                            } else if (chunkEnd == null && entry instanceof LogEntryChunkEnd) {
+                                chunkEnd = (LogEntryChunkEnd) entry;
                             } else if (start == null && entry instanceof LogEntryStart) {
                                 start = (LogEntryStart) entry;
                             }
                         }
                     }
-                    if ((start != null) && (commit != null)) {
-                        return new StartCommitEntries(start, commit);
+                    if ((start != null) && (commit != null || chunkEnd != null)) {
+                        return new StartCommitEntries(start, commit, chunkEnd);
                     }
                     verifyReaderPosition(logVersion, logEntryReader.lastPosition());
                     logVersion++;
@@ -236,7 +240,7 @@ public class DetachedLogTailScanner {
                 corruptedTransactionLogs = true;
             }
         }
-        return new StartCommitEntries(start, commit, corruptedTransactionLogs);
+        return new StartCommitEntries(start, commit, chunkEnd, corruptedTransactionLogs);
     }
 
     protected void verifyReaderPosition(long version, LogPosition logPosition) throws IOException {
@@ -399,24 +403,33 @@ public class DetachedLogTailScanner {
     private static class StartCommitEntries {
         private final LogEntryStart start;
         private final LogEntryCommit commit;
+        private final LogEntryChunkEnd chunkEnd;
         private final boolean corruptedLogs;
 
-        StartCommitEntries(LogEntryStart start, LogEntryCommit commit) {
-            this(start, commit, false);
+        StartCommitEntries(LogEntryStart start, LogEntryCommit commit, LogEntryChunkEnd chunkEnd) {
+            this(start, commit, chunkEnd, false);
         }
 
-        StartCommitEntries(LogEntryStart start, LogEntryCommit commit, boolean corruptedLogs) {
+        StartCommitEntries(
+                LogEntryStart start, LogEntryCommit commit, LogEntryChunkEnd chunkEnd, boolean corruptedLogs) {
             this.start = start;
             this.commit = commit;
+            this.chunkEnd = chunkEnd;
             this.corruptedLogs = corruptedLogs;
         }
 
-        public long getCommitId() {
-            return commit != null ? commit.getTxId() : NO_TRANSACTION_ID;
+        public long getTransactionId() {
+            if (commit != null) {
+                return commit.getTxId();
+            }
+            if (chunkEnd != null) {
+                return chunkEnd.getTransactionId();
+            }
+            return NO_TRANSACTION_ID;
         }
 
         public boolean isPresent() {
-            return start != null || commit != null || corruptedLogs;
+            return start != null || corruptedLogs;
         }
 
         public byte getEntryVersion() {

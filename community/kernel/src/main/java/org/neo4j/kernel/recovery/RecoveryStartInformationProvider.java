@@ -52,7 +52,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
          * check pointed transaction.
          * @param firstTxIdAfterLastCheckPoint transaction id of the first transaction after the last check point.
          */
-        default void commitsAfterLastCheckPoint(
+        default void logsAfterLastCheckPoint(
                 LogPosition logPosition, long firstTxIdAfterLastCheckPoint) { // no-op by default
         }
 
@@ -100,7 +100,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         if (logTailInformation.logsMissing()) {
             return MISSING_LOGS;
         }
-        if (logTailInformation.commitsAfterLastCheckpoint()) {
+        if (logTailInformation.logsAfterLastCheckpoint()) {
             if (lastCheckPoint == null) {
                 long lowestLogVersion = logFiles.getLogFile().getLowestLogVersion();
                 if (lowestLogVersion != INITIAL_LOG_VERSION) {
@@ -115,7 +115,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
                         txIdAfterLastCheckPoint);
             }
             LogPosition transactionLogPosition = lastCheckPoint.transactionLogPosition();
-            monitor.commitsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
+            monitor.logsAfterLastCheckPoint(transactionLogPosition, txIdAfterLastCheckPoint);
             return createRecoveryInformation(
                     transactionLogPosition, lastCheckPoint.checkpointEntryPosition(), txIdAfterLastCheckPoint);
         } else {

@@ -112,7 +112,7 @@ class RecoveryStartInformationProviderTest {
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
 
         // then
-        verify(monitor).commitsAfterLastCheckPoint(txPosition, 10L);
+        verify(monitor).logsAfterLastCheckPoint(txPosition, 10L);
         assertEquals(txPosition, recoveryStartInformation.getTransactionLogPosition());
         assertEquals(checkpointPosition, recoveryStartInformation.getCheckpointPosition());
         assertEquals(10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint());
