@@ -25,29 +25,30 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import java.util.concurrent.CopyOnWriteArrayList
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 class TestDatabaseProvider(dbBuilder: () => TestDatabaseManagementServiceBuilder) {
 
-  private val managementServices: ThreadLocal[mutable.Map[Map[Setting[_], Object], DatabaseManagementService]] =
-    ThreadLocal.withInitial(() => mutable.Map.empty)
+  private val managementServices: ThreadLocal[Option[(Map[Setting[_], Object], DatabaseManagementService)]] =
+    ThreadLocal.withInitial(() => None)
 
   private val testDbms: CopyOnWriteArrayList[DatabaseManagementService] =
     new CopyOnWriteArrayList[DatabaseManagementService]
 
   def get(config: Map[Setting[_], Object]): DatabaseManagementService = {
-    this.synchronized {
-      val servicesByConfig = managementServices.get()
-      servicesByConfig.getOrElseUpdate(config, createManagementService(config, dbBuilder))
+    managementServices.get() match {
+      case Some((cachedConfig, cachedDbms)) if config == cachedConfig => cachedDbms
+      case Some((_, oldDbms)) =>
+        oldDbms.shutdown()
+        testDbms.remove(oldDbms)
+        createManagementService(config)
+      case _ => createManagementService(config)
     }
   }
 
-  private def createManagementService(
-    config: collection.Map[Setting[_], Object],
-    graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder
-  ) = {
-    val dbms = graphDatabaseFactory.apply().impermanent().setConfig(config.asJava).build()
+  private def createManagementService(config: Map[Setting[_], Object]): DatabaseManagementService = {
+    val dbms = dbBuilder.apply().impermanent().setConfig(config.asJava).build()
+    managementServices.set(Some(config -> dbms))
     testDbms.add(dbms)
     dbms
   }

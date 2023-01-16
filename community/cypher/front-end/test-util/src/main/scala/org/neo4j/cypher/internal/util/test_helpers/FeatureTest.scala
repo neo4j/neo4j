@@ -27,7 +27,7 @@ import org.opencypher.tools.tck.api.Scenario
 
 import java.util
 
-import scala.collection.JavaConverters.asJavaCollectionConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
  * Use this class to run tests for Cucumber scenarios.
@@ -67,18 +67,22 @@ abstract class FeatureTest {
   def runTests(): util.Collection[DynamicTest] = {
     val (expectFail, expectPass) = scenarios.partition(s => denylist().exists(_.isDenylisted(s)))
 
-    val expectFailTests: Seq[DynamicTest] = for {
+    val expectFailTests = for {
       scenario <- expectFail
       name = scenario.toString()
       executable <- runDenyListedScenario(scenario)
-    } yield DynamicTest.dynamicTest("Denylisted Test: " + name, executable)
+    } yield name -> DynamicTest.dynamicTest("Denylisted Test: " + name, executable)
 
-    val expectPassTests: Seq[DynamicTest] = for {
+    val expectPassTests = for {
       scenario <- expectPass
       name = scenario.toString()
       executable <- runScenario(scenario)
-    } yield DynamicTest.dynamicTest(name, executable)
-    (expectPassTests ++ expectFailTests).asJavaCollection
+    } yield name -> DynamicTest.dynamicTest(name, executable)
+
+    (expectPassTests ++ expectFailTests)
+      .sortBy { case (name, _) => name } // Sorted to minimise number of dbmses created
+      .map { case (_, test) => test }
+      .asJava
   }
 
   @AfterAll
