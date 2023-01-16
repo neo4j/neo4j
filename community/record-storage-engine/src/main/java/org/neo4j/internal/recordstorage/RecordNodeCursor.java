@@ -397,6 +397,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
             scanCursor.close();
             scanCursor = null;
         }
+        singleCursor = null; // Cursor owned by StoreCursors cache so not closed here
         currentCursor = null;
         if (groupCursor != null) {
             groupCursor.close();

@@ -183,7 +183,11 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        // Cursors owned by StoreCursors cache so not closed here
+        page = null;
+        edgePage = null;
+    }
 
     private void ensureCursor() {
         if (page == null) {

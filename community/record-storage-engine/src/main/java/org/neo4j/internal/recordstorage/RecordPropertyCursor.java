@@ -369,6 +369,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
 
     @Override
     public void close() {
+        page = null; // Cursor owned by StoreCursors cache so not closed here
         if (stringPage != null) {
             stringPage.close();
             stringPage = null;

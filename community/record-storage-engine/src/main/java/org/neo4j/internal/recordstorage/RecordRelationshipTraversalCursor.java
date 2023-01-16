@@ -302,6 +302,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     @Override
     public void close() {
         group.close();
+        pageCursor = null; // Cursor owned by StoreCursors cache so not closed here
     }
 
     @Override

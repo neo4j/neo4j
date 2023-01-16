@@ -178,6 +178,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
             scanCursor = null;
         }
         currentCursor = null;
+        singleCursor = null; // Cursor owned by StoreCursors cache so not closed here
     }
 
     private void selectScanCursor() {
