@@ -1038,7 +1038,7 @@
       <dependency>
         <groupId>org.apache.shiro</groupId>
         <artifactId>shiro-core</artifactId>
-        <version>1.10.1</version>
+        <version>1.11.0</version>
       </dependency>
       <dependency>
         <groupId>com.github.ben-manes.caffeine</groupId>
