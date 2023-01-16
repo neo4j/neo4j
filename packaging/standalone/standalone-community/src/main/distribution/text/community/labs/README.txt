@@ -16,6 +16,5 @@ Enabling Plugins
 To enable these plugins, move the jar files to the plugins directory.
 The DBMS needs to be restarted for the jar to be activated.
 
-By default only procedures that don't use low-level APIs are enabled. To enable all APOC procedures, add the following line in $NEO4J_HOME/conf/neo4j.conf:
-
-dbms.security.procedures.unrestricted=apoc.*
+By default, only procedures and functions that don't use low-level APIs are enabled.
+For more details on loading and enablement of procedures and functions from plugins, see https://neo4j.com/docs/operations-manual/4.4/security/securing-extensions/.
