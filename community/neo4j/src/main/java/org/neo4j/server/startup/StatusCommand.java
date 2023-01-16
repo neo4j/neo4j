@@ -23,7 +23,7 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.ExecutionContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "status", description = "Get the status of the server.")
+@CommandLine.Command(name = "status", description = "Get the status of the neo4j server process.")
 public class StatusCommand extends AbstractCommand {
 
     public StatusCommand(ExecutionContext ctx) {
