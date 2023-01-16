@@ -58,11 +58,4 @@ public interface DatabaseEventListener {
      * @param eventContext context of the event, can be used to get metadata.
      */
     void databaseDrop(DatabaseEventContext eventContext);
-
-    /**
-     * This method is invoked when a database component cannot allocate as much disk space as it needs to complete some necessary operation,
-     * such as growing store files, tx-log or index files.
-     * @param event context of the event, can be used to get metadata.
-     */
-    void databaseOutOfDiskSpace(DatabaseEventContext event);
 }

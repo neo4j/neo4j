@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.neo4j.graphdb.event.DatabaseEventListener;
+import org.neo4j.graphdb.event.DatabaseEventListenerInternal;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.InternalLog;
 
@@ -85,7 +86,13 @@ public class DatabaseEventListeners {
 
     void databaseOutOfDiskSpace(NamedDatabaseId databaseId) {
         var event = new DefaultDatabaseEvent(databaseId);
-        notifyEventListeners(handler -> handler.databaseOutOfDiskSpace(event), databaseEventListeners);
+        notifyEventListeners(
+                handler -> {
+                    if (handler instanceof DatabaseEventListenerInternal internal) {
+                        internal.databaseOutOfDiskSpace(event);
+                    }
+                },
+                databaseEventListeners);
     }
 
     private <T> void notifyEventListeners(Consumer<T> consumer, List<T> listeners) {

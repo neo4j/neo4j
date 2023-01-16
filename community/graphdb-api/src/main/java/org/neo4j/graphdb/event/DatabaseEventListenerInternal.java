@@ -20,36 +20,15 @@
 package org.neo4j.graphdb.event;
 
 /**
- * Adapter for event listener interface for database lifecycle events.
+ * FIXME ODP
+ * This class is here to hide {@link #databaseOutOfDiskSpace(DatabaseEventContext)} from public API during development.
+ * Pull members up to super interface when done.
  */
-public class DatabaseEventListenerAdapter implements DatabaseEventListenerInternal {
-    @Override
-    public void databaseStart(DatabaseEventContext eventContext) {
-        // empty
-    }
-
-    @Override
-    public void databaseShutdown(DatabaseEventContext eventContext) {
-        // empty
-    }
-
-    @Override
-    public void databasePanic(DatabaseEventContext eventContext) {
-        // empty
-    }
-
-    @Override
-    public void databaseCreate(DatabaseEventContext eventContext) {
-        // empty
-    }
-
-    @Override
-    public void databaseDrop(DatabaseEventContext eventContext) {
-        // empty
-    }
-
-    @Override
-    public void databaseOutOfDiskSpace(DatabaseEventContext event) {
-        // empty
-    }
+public interface DatabaseEventListenerInternal extends DatabaseEventListener {
+    /**
+     * This method is invoked when a database component cannot allocate as much disk space as it needs to complete some necessary operation,
+     * such as growing store files, tx-log or index files.
+     * @param event context of the event, can be used to get metadata.
+     */
+    void databaseOutOfDiskSpace(DatabaseEventContext event);
 }
