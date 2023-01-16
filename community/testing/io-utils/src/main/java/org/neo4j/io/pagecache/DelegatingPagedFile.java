@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
 public class DelegatingPagedFile implements PagedFile {
-    private final PagedFile delegate;
+    protected final PagedFile delegate;
 
     public DelegatingPagedFile(PagedFile delegate) {
         this.delegate = delegate;
@@ -116,5 +116,15 @@ public class DelegatingPagedFile implements PagedFile {
     @Override
     public int touch(long pageId, int count, CursorContext cursorContext) throws IOException {
         return delegate.touch(pageId, count, cursorContext);
+    }
+
+    @Override
+    public boolean preAllocateSupported() {
+        return delegate.preAllocateSupported();
+    }
+
+    @Override
+    public void preAllocate(long newFileSizeInPages) throws IOException {
+        delegate.preAllocate(newFileSizeInPages);
     }
 }

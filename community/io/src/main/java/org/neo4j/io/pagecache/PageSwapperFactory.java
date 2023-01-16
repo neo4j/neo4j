@@ -50,7 +50,6 @@ public interface PageSwapperFactory {
      * exception.
      * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
      * Option supported only on Linux with certain limitations.
-     * @param preallocateStoreFiles when true, page cache swapper will try to preallocate requested store file on a set of supported platforms
      * @param ioController controller to report swapper io's
      * @param swappers set of already registered swappers
      * @return A working PageSwapper instance for the given file.
@@ -65,7 +64,6 @@ public interface PageSwapperFactory {
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
             boolean useDirectIO,
-            boolean preallocateStoreFiles,
             boolean checksumPages,
             IOController ioController,
             SwapperSet swappers)

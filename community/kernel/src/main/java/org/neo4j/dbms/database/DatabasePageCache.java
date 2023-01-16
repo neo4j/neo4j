@@ -305,6 +305,16 @@ public class DatabasePageCache implements PageCache {
         }
 
         @Override
+        public boolean preAllocateSupported() {
+            return delegate.preAllocateSupported();
+        }
+
+        @Override
+        public void preAllocate(long newFileSizeInPages) throws IOException {
+            delegate.preAllocate(newFileSizeInPages);
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;

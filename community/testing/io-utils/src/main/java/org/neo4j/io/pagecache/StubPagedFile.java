@@ -119,10 +119,18 @@ public class StubPagedFile implements PagedFile {
     }
 
     @Override
-    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) {}
+    public void truncate(long pagesToKeep, FileTruncateEvent truncateEvent) throws IOException {}
 
     @Override
     public int touch(long pageId, int count, CursorContext cursorContext) {
         return 0;
     }
+
+    @Override
+    public boolean preAllocateSupported() {
+        return false;
+    }
+
+    @Override
+    public void preAllocate(long newFileSizeInPages) {}
 }

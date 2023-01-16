@@ -178,7 +178,6 @@ class MuninnPageCursorTest {
                     PageEvictionCallback onEviction,
                     boolean createIfNotExist,
                     boolean useDirectIO,
-                    boolean preallocateStoreFiles,
                     boolean checksumPages,
                     IOController ioController,
                     SwapperSet swappers)
@@ -190,7 +189,6 @@ class MuninnPageCursorTest {
                         onEviction,
                         createIfNotExist,
                         useDirectIO,
-                        preallocateStoreFiles,
                         checksumPages,
                         ioController,
                         swappers);

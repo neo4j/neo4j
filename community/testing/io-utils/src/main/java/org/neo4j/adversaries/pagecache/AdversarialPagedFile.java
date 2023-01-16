@@ -21,13 +21,12 @@ package org.neo4j.adversaries.pagecache;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.Objects;
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.monitoring.PageFileCounters;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
 
@@ -39,12 +38,12 @@ import org.neo4j.io.pagecache.tracing.version.FileTruncateEvent;
  * or {@link IOException} like {@link NoSuchFileException}.
  */
 @SuppressWarnings("unchecked")
-public class AdversarialPagedFile implements PagedFile {
-    private final PagedFile delegate;
+public class AdversarialPagedFile extends DelegatingPagedFile {
     private final Adversary adversary;
 
     public AdversarialPagedFile(PagedFile delegate, Adversary adversary) {
-        this.delegate = Objects.requireNonNull(delegate);
+        super(delegate);
+        Objects.requireNonNull(delegate);
         this.adversary = Objects.requireNonNull(adversary);
     }
 
@@ -59,29 +58,9 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
-    public int pageSize() {
-        return delegate.pageSize();
-    }
-
-    @Override
-    public int payloadSize() {
-        return delegate.payloadSize();
-    }
-
-    @Override
-    public int pageReservedBytes() {
-        return delegate.pageReservedBytes();
-    }
-
-    @Override
     public long fileSize() throws IOException {
         adversary.injectFailure(IllegalStateException.class);
         return delegate.fileSize();
-    }
-
-    @Override
-    public Path path() {
-        return delegate.path();
     }
 
     @Override
@@ -97,39 +76,9 @@ public class AdversarialPagedFile implements PagedFile {
     }
 
     @Override
-    public void increaseLastPageIdTo(long newLastPageId) {
-        delegate.increaseLastPageIdTo(newLastPageId);
-    }
-
-    @Override
     public void close() {
         adversary.injectFailure(NoSuchFileException.class, SecurityException.class);
         delegate.close();
-    }
-
-    @Override
-    public void setDeleteOnClose(boolean deleteOnClose) {
-        delegate.setDeleteOnClose(deleteOnClose);
-    }
-
-    @Override
-    public boolean isDeleteOnClose() {
-        return delegate.isDeleteOnClose();
-    }
-
-    @Override
-    public String getDatabaseName() {
-        return delegate.getDatabaseName();
-    }
-
-    @Override
-    public PageFileCounters pageFileCounters() {
-        return delegate.pageFileCounters();
-    }
-
-    @Override
-    public boolean isMultiVersioned() {
-        return delegate.isMultiVersioned();
     }
 
     @Override

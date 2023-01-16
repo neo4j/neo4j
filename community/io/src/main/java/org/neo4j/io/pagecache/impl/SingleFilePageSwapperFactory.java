@@ -57,7 +57,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
             boolean useDirectIO,
-            boolean preallocateStoreFiles,
             boolean checksumPages,
             IOController ioController,
             SwapperSet swappers)
@@ -72,7 +71,6 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
                 reservedPageBytes,
                 onEviction,
                 useDirectIO,
-                preallocateStoreFiles,
                 checksumPages,
                 ioController,
                 swappers,

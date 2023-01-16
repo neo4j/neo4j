@@ -427,5 +427,13 @@ public class ByteArrayPageCursor extends PageCursor {
         public int touch(long pageId, int count, CursorContext cursorContext) {
             return 0;
         }
+
+        @Override
+        public boolean preAllocateSupported() {
+            return false;
+        }
+
+        @Override
+        public void preAllocate(long newFileSizeInPages) {}
     }
 }

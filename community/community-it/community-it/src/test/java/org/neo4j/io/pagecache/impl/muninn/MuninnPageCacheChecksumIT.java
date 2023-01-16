@@ -285,7 +285,6 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
                         onEviction,
                         createIfNotExist,
                         useDirectIO,
-                        preallocateStoreFiles,
                         checksumPages,
                         ioController,
                         swappers) -> swapperFactory.createPageSwapper(
@@ -295,7 +294,6 @@ public class MuninnPageCacheChecksumIT extends PageCacheTestSupport<MuninnPageCa
                         onEviction,
                         createIfNotExist,
                         useDirectIO,
-                        preallocateStoreFiles,
                         checksumPagesFlag.get(),
                         ioController,
                         swappers);

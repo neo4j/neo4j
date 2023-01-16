@@ -243,4 +243,26 @@ public interface PagedFile extends AutoCloseable {
      * @return number of pages touched, value that is less than requested means end of file reached
      */
     int touch(long pageId, int count, CursorContext cursorContext) throws IOException;
+
+    /**
+     * Returns {@code true} when a pre-allocation request is supported for this concrete file.
+     * This generally depends on the operating system and JVM implementation file channel, so if the operation
+     * is supported on one database file, it generally is on the rest of them, too.
+     */
+    boolean preAllocateSupported();
+
+    /**
+     * Send a hint to the file system that it may reserve at least the given number of pages worth of capacity
+     * for this file.
+     * The implementation may decide to reserve larger size based on its pre-allocation algorithm.
+     * This operation is best-effort and if it actually does anything, depends on multiple factors.
+     * Method {@link #preAllocateSupported()} can be used to enquire if the pre-allocation is supported
+     * for this concrete file.
+     * This operation cannot be used for shrinking a file. If the requested new file size is smaller that the current
+     * file size, the operation is effectively a NOOP.
+     * The operation throws {@link IOException} if the operation fails. The users may choose to specifically handle
+     * {@link OutOfDiskSpaceException} as detecting low disk space in advance is one of the main purposes
+     * of this operation.
+     */
+    void preAllocate(long newFileSizeInPages) throws IOException;
 }

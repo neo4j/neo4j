@@ -143,7 +143,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target = createPage(4);
             int numberOfReads = 12;
             for (int i = 0; i < numberOfReads; i++) {
@@ -162,7 +162,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target = createPage(4);
             int numberOfReads = 12;
             for (int i = 0; i < numberOfReads; i++) {
@@ -185,7 +185,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target1 = createPage(4);
             long target2 = createPage(4);
             long target3 = createPage(4);
@@ -211,7 +211,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target = createPage(4);
             int numberOfWrites = 42;
             for (int i = 0; i < numberOfWrites; i++) {
@@ -227,7 +227,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target = createPage(4);
             int numberOfWrites = 42;
             for (int i = 0; i < numberOfWrites; i++) {
@@ -243,7 +243,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest {
 
         PageSwapperFactory factory = createSwapperFactory(getFs());
         CountingIOController controller = new CountingIOController();
-        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, true, controller)) {
+        try (var swapper = createSwapper(factory, getPath(), 4, null, false, false, controller)) {
             long target1 = createPage(4);
             long target2 = createPage(4);
             long target3 = createPage(4);

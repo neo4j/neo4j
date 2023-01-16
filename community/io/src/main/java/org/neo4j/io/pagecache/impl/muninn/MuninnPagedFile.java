@@ -87,6 +87,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
     private final CursorFactory cursorFactory;
     final String databaseName;
     private final IOController ioController;
+    // If store files should be automatically pre-allocated,
+    // this flag does not influence explicit preAllocate() operation.
+    private final boolean automaticallyPreallocateStoreFiles;
 
     private volatile boolean deleteOnClose;
 
@@ -178,6 +181,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
         this.bufferFactory = pageCache.getBufferFactory();
         this.databaseName = requireNonNull(databaseName);
         this.ioController = requireNonNull(ioController);
+        this.automaticallyPreallocateStoreFiles = preallocateStoreFiles;
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -203,7 +207,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 onEviction,
                 createIfNotExists,
                 useDirectIo,
-                preallocateStoreFiles,
                 multiVersioned,
                 ioController,
                 getSwappers());
@@ -896,7 +899,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
                 ntt[i] = newChunk();
             }
             tt = ntt;
-            if (swapper.canAllocate()) {
+            if (automaticallyPreallocateStoreFiles && swapper.canAllocate()) {
                 // Hint to the file system that we've grown our file.
                 // This should reduce our tendency to fragment files.
                 long newFileSize = tt.length; // New number of chunks.
@@ -1023,6 +1026,34 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             }
         }
         return touched;
+    }
+
+    @Override
+    public boolean preAllocateSupported() {
+        return swapper.canAllocate();
+    }
+
+    @Override
+    public synchronized void preAllocate(long newFileSizeInPages) throws IOException {
+        if (getLastPageId() >= newFileSizeInPages) {
+            return;
+        }
+
+        int chunkId = MuninnPagedFile.computeChunkId(newFileSizeInPages - 1);
+        // If automatic pre-allocation is enabled, the file is automatically pre-allocated
+        // with each translation table extension.
+        // Let's use this mechanism as it will be used anyway when the data is actually
+        // written to the pre-allocated pages and there is no point pre-allocating x pages
+        // if this mechanism will pre-allocate y later.
+        if (automaticallyPreallocateStoreFiles && chunkId != 0) {
+            if (translationTable.length <= chunkId) {
+                expandCapacity(chunkId);
+            }
+
+            return;
+        }
+
+        swapper.allocate(newFileSizeInPages * filePageSize);
     }
 
     private int vectoredPageFault(long filePageId, int count, VectoredPageFaultEvent faultEvent) throws IOException {

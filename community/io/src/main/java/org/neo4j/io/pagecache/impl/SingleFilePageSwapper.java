@@ -48,6 +48,7 @@ import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.IOController;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -67,7 +68,6 @@ public class SingleFilePageSwapper implements PageSwapper {
     private final FileSystemAbstraction fs;
     private final Path path;
     private final IOController ioController;
-    private final boolean preallocateStoreFiles;
     private final int filePageSize;
     private final boolean checksumPages;
     private final int reservedPageBytes;
@@ -105,7 +105,6 @@ public class SingleFilePageSwapper implements PageSwapper {
             int reservedPageBytes,
             PageEvictionCallback onEviction,
             boolean useDirectIO,
-            boolean preallocateStoreFiles,
             boolean checksumPages,
             IOController ioController,
             SwapperSet swapperSet,
@@ -116,7 +115,6 @@ public class SingleFilePageSwapper implements PageSwapper {
         this.path = path;
         this.ioController = ioController;
         this.fileSwapperTracer = fileSwapperTracer;
-        this.preallocateStoreFiles = preallocateStoreFiles;
         this.checksumPages = checksumPages;
 
         var options = new ArrayList<>(WRITE_OPTIONS);
@@ -591,8 +589,7 @@ public class SingleFilePageSwapper implements PageSwapper {
 
     @Override
     public boolean canAllocate() {
-        return preallocateStoreFiles
-                && NativeAccessProvider.getNativeAccess().isAvailable()
+        return NativeAccessProvider.getNativeAccess().isAvailable()
                 // this type of operation requires the underlying channel to provide a file descriptor
                 && channel.getFileDescriptor() != INVALID_FILE_DESCRIPTOR;
     }
@@ -604,7 +601,7 @@ public class SingleFilePageSwapper implements PageSwapper {
             NativeCallResult result = access.tryPreallocateSpace(channel.getFileDescriptor(), newFileSize);
             if (result.isError()) {
                 if (access.errorTranslator().isOutOfDiskSpace(result)) {
-                    throw new IOException("System is out of disk space for store file at: " + path + ". "
+                    throw new OutOfDiskSpaceException("System is out of disk space for store file at: " + path + ". "
                             + "To be able to proceed please allocate more disk space for the database and restart."
                             + "Requested file size: " + newFileSize + ". Call error: "
                             + result);

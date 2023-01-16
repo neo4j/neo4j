@@ -459,21 +459,12 @@ public abstract class PageSwapperTest {
     }
 
     @Test
-    void swapperCantPreallocateWhenConfigured() throws IOException {
-        Path file = file("notPreallocatedFile");
-        PageSwapperFactory factory = createSwapperFactory(getFs());
-        try (PageSwapper swapper = createSwapper(factory, file, cachePageSize(), NO_CALLBACK, true, false, false)) {
-            assertFalse(swapper.canAllocate());
-        }
-    }
-
-    @Test
     void mustRunEvictionCallbackOnEviction() throws Exception {
         final AtomicLong callbackFilePageId = new AtomicLong();
         PageEvictionCallback callback = callbackFilePageId::set;
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
-        PageSwapper swapper = createSwapper(factory, file, cachePageSize(), callback, true, false, true);
+        PageSwapper swapper = createSwapper(factory, file, cachePageSize(), callback, true, false);
         swapper.evicted(42);
         assertThat(callbackFilePageId.get()).isEqualTo(42L);
     }
@@ -484,7 +475,7 @@ public abstract class PageSwapperTest {
         PageEvictionCallback callback = filePageId -> gotCallback.set(true);
         Path file = file("file");
         PageSwapperFactory factory = createSwapperFactory(getFs());
-        PageSwapper swapper = createSwapper(factory, file, cachePageSize(), callback, true, false, true);
+        PageSwapper swapper = createSwapper(factory, file, cachePageSize(), callback, true, false);
         swapper.close();
         swapper.evicted(42);
         assertFalse(gotCallback.get());
@@ -495,7 +486,7 @@ public abstract class PageSwapperTest {
         PageSwapperFactory factory = createSwapperFactory(getFs());
         assertThrows(
                 NoSuchFileException.class,
-                () -> createSwapper(factory, file("does not exist"), cachePageSize(), NO_CALLBACK, false, false, true));
+                () -> createSwapper(factory, file("does not exist"), cachePageSize(), NO_CALLBACK, false, false));
     }
 
     @Test
@@ -531,7 +522,7 @@ public abstract class PageSwapperTest {
         assertThat(swapper.getLastPageId()).isEqualTo(10L);
 
         swapper.close();
-        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false);
         clear(page);
         read(swapper, 10, page);
         assertThat(getInt(page, 0)).isEqualTo(0xcafebabe);
@@ -544,7 +535,7 @@ public abstract class PageSwapperTest {
         assertThat(swapper.getLastPageId()).isEqualTo(-1L);
 
         swapper.close();
-        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, PAYLOAD_SIZE, NO_CALLBACK, false, false);
         clear(page);
         read(swapper, 10, page);
         assertThat(getInt(page, 0)).isEqualTo(0);
@@ -797,7 +788,7 @@ public abstract class PageSwapperTest {
         write(swapper, 0, new long[] {output, output, output, output, output}, new int[] {4, 4, 4, 4, 4}, 5, 5);
         swapper.close();
 
-        swapper = createSwapper(factory, file, 8, NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, 8, NO_CALLBACK, false, false);
         long pageA = createPage(8);
         long pageB = createPage(8);
         putLong(pageA, 0, X);
@@ -833,7 +824,7 @@ public abstract class PageSwapperTest {
         write(swapper, 2, output);
         swapper.close();
 
-        swapper = createSwapper(factory, file, 8, NO_CALLBACK, false, false, true);
+        swapper = createSwapper(factory, file, 8, NO_CALLBACK, false, false);
         long pageA = createPage(8);
         long pageB = createPage(8);
         long pageC = createPage(8);
@@ -1083,7 +1074,7 @@ public abstract class PageSwapperTest {
 
         assertThrows(
                 IOException.class,
-                () -> createSwapper(factory, file, 4, NO_CALLBACK, false, false, true),
+                () -> createSwapper(factory, file, 4, NO_CALLBACK, false, false),
                 "should not have been able to create a page swapper for non-existing file");
     }
 
@@ -1112,7 +1103,7 @@ public abstract class PageSwapperTest {
             PageEvictionCallback callback,
             boolean createIfNotExist)
             throws IOException {
-        return createSwapper(factory, path, filePageSize, callback, createIfNotExist, false, true);
+        return createSwapper(factory, path, filePageSize, callback, createIfNotExist, false);
     }
 
     protected PageSwapper createSwapper(
@@ -1121,8 +1112,7 @@ public abstract class PageSwapperTest {
             int filePageSize,
             PageEvictionCallback callback,
             boolean createIfNotExist,
-            boolean useDirectIO,
-            boolean preallocateStoreFiles)
+            boolean useDirectIO)
             throws IOException {
         return createSwapper(
                 factory,
@@ -1132,7 +1122,6 @@ public abstract class PageSwapperTest {
                 callback,
                 createIfNotExist,
                 useDirectIO,
-                preallocateStoreFiles,
                 checksumPages,
                 DISABLED);
     }
@@ -1144,7 +1133,6 @@ public abstract class PageSwapperTest {
             PageEvictionCallback callback,
             boolean createIfNotExist,
             boolean useDirectIO,
-            boolean preallocateStoreFiles,
             IOController controller)
             throws IOException {
         return createSwapper(
@@ -1155,7 +1143,6 @@ public abstract class PageSwapperTest {
                 callback,
                 createIfNotExist,
                 useDirectIO,
-                preallocateStoreFiles,
                 checksumPages,
                 controller);
     }
@@ -1168,7 +1155,6 @@ public abstract class PageSwapperTest {
             PageEvictionCallback callback,
             boolean createIfNotExist,
             boolean useDirectIO,
-            boolean preallocateStoreFiles,
             boolean checksumPages,
             IOController controller)
             throws IOException {
@@ -1179,7 +1165,6 @@ public abstract class PageSwapperTest {
                 callback,
                 createIfNotExist,
                 useDirectIO,
-                preallocateStoreFiles,
                 checksumPages,
                 controller,
                 swapperSet);
@@ -1254,17 +1239,17 @@ public abstract class PageSwapperTest {
 
     private PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path, boolean useDirectIO)
             throws IOException {
-        return createSwapper(factory, path, PAYLOAD_SIZE, NO_CALLBACK, true, useDirectIO, true);
+        return createSwapper(factory, path, PAYLOAD_SIZE, NO_CALLBACK, true, useDirectIO);
     }
 
     private PageSwapper createSwapperAndFile(
             PageSwapperFactory factory, Path path, int filePageSize, boolean useDirectIO) throws IOException {
-        return createSwapper(factory, path, filePageSize, NO_CALLBACK, true, useDirectIO, true);
+        return createSwapper(factory, path, filePageSize, NO_CALLBACK, true, useDirectIO);
     }
 
     private PageSwapper createSwapperAndFile(PageSwapperFactory factory, Path path, int filePageSize)
             throws IOException {
-        return createSwapper(factory, path, filePageSize, NO_CALLBACK, true, false, true);
+        return createSwapper(factory, path, filePageSize, NO_CALLBACK, true, false);
     }
 
     private Path file(String filename) throws IOException {

@@ -2276,7 +2276,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                 PageEvictionCallback onEviction,
                 boolean createIfNotExist,
                 boolean useDirectIO,
-                boolean preallocateStoreFiles,
                 boolean checksumPages,
                 IOController ioController,
                 SwapperSet swappers)
@@ -2288,7 +2287,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                     onEviction,
                     createIfNotExist,
                     useDirectIO,
-                    preallocateStoreFiles,
                     checksumPages,
                     ioController,
                     swappers)) {
