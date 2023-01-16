@@ -329,7 +329,7 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 Eclipse Public License v2.0
-  javax.ws.rs-api
+  jakarta.ws.rs-api
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0
@@ -613,7 +613,7 @@ version(s), and exceptions or additional permissions here}."
 
 ------------------------------------------------------------------------------
 GNU General Public License, version 2 with the Classpath Exception
-  javax.ws.rs-api
+  jakarta.ws.rs-api
 ------------------------------------------------------------------------------
 
 The GNU General Public License (GPL) Version 2, June 1991 
@@ -992,7 +992,7 @@ Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
 
-javax.ws.rs-api
+jakarta.ws.rs-api
   Eclipse Public License v2.0
   GNU General Public License, version 2 with the Classpath Exception
 

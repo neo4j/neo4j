@@ -433,7 +433,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ------------------------------------------------------------------------------
 Common Development and Distribution License Version 1.1
   Java Servlet API
-  jaxb-api
 ------------------------------------------------------------------------------
 
 COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 
@@ -793,7 +792,8 @@ Eclipse Distribution License - v 1.0
   Extended StAX API
   fastinfoset
   istack common utility code runtime
-  JavaBeans Activation Framework API jar
+  Jakarta Activation API jar
+  jakarta.xml.bind-api
   JAXB Runtime
   jersey-container-servlet
   jersey-container-servlet-core
@@ -904,7 +904,6 @@ Eclipse Public License v2.0
   Jakarta Annotations API
   jakarta.ws.rs-api
   javax.inject:1 as OSGi bundle
-  javax.ws.rs-api
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
@@ -1201,8 +1200,6 @@ GNU General Public License, version 2 with the Classpath Exception
   jakarta.ws.rs-api
   Java Servlet API
   javax.inject:1 as OSGi bundle
-  javax.ws.rs-api
-  jaxb-api
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
@@ -2093,14 +2090,6 @@ jakarta.ws.rs-api
 
 javax.inject:1 as OSGi bundle
   Eclipse Public License v2.0
-  GNU General Public License, version 2 with the Classpath Exception
-
-javax.ws.rs-api
-  Eclipse Public License v2.0
-  GNU General Public License, version 2 with the Classpath Exception
-
-jaxb-api
-  Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
 jersey-container-servlet

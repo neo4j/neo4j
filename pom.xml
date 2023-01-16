@@ -151,6 +151,8 @@
     <neo4j-java-driver.version>5.3.1</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <picocli.version>4.7.0</picocli.version>
+    <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
+    <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
   </properties>
 
   <modules>
@@ -1049,6 +1051,12 @@
         <groupId>io.airlift</groupId>
         <artifactId>airline</artifactId>
         <version>0.9</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.hdrhistogram</groupId>
@@ -1440,16 +1448,17 @@
             <groupId>org.glassfish.hk2.external</groupId>
             <artifactId>javax.inject</artifactId>
           </exclusion>
-          <exclusion>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
-          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>javax.ws.rs</groupId>
-        <artifactId>javax.ws.rs-api</artifactId>
-        <version>2.1.1</version>
+        <groupId>jakarta.ws.rs</groupId>
+        <artifactId>jakarta.ws.rs-api</artifactId>
+        <version>${jakarta.ws.rs-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>${jakarta.activation-api.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -1610,9 +1619,14 @@
         <version>2.3.2</version>
       </dependency>
       <dependency>
-        <groupId>javax.xml.bind</groupId>
-        <artifactId>jaxb-api</artifactId>
-        <version>2.3.0</version>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>2.3.2</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>1.0</version>
       </dependency>
       <dependency>
         <groupId>info.picocli</groupId>
