@@ -19,7 +19,8 @@
  */
 package org.neo4j.collection.trackable;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import org.eclipse.collections.impl.list.mutable.FastList;
+import org.eclipse.collections.impl.utility.MapIterate;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -36,15 +37,18 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.eclipse.collections.impl.list.mutable.FastList;
-import org.eclipse.collections.impl.utility.MapIterate;
+
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings({"NullableProblems", "unchecked"})
 public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrackingConcurrentHash
         implements ConcurrentMap<K, V>, AutoCloseable {
 
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashMap.class);
+    private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Entry.class);
 
     private HeapTrackingConcurrentHashMap(MemoryTracker memoryTracker) {
         this(memoryTracker, DEFAULT_INITIAL_CAPACITY);
@@ -52,6 +56,12 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
 
     public HeapTrackingConcurrentHashMap(MemoryTracker memoryTracker, int initialCapacity) {
         super(memoryTracker, initialCapacity);
+    }
+
+    @VisibleForTesting
+    @Override
+    public long sizeOfWrapperObject() {
+        return SHALLOW_SIZE_WRAPPER;
     }
 
     public static <K, V> HeapTrackingConcurrentHashMap<K, V> newMap(MemoryTracker memoryTracker) {
@@ -1012,7 +1022,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    public static final class Entry<K, V> implements Map.Entry<K, V> {
+    private static final class Entry<K, V> implements Map.Entry<K, V> {
         private final K key;
         private final V value;
         private final Entry<K, V> next;

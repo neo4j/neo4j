@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.trackable;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import org.eclipse.collections.impl.list.mutable.FastList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,14 +30,19 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import org.eclipse.collections.impl.list.mutable.FastList;
+
 import org.neo4j.collection.trackable.HeapTrackingConcurrentHashMap.IteratorState;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings({"unchecked", "NullableProblems"})
 public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTrackingConcurrentHash
         implements Set<E>, AutoCloseable {
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashSet.class);
+    private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance( Node.class);
+
 
     private HeapTrackingConcurrentHashSet(MemoryTracker memoryTracker) {
         super(memoryTracker, DEFAULT_INITIAL_CAPACITY);
@@ -45,6 +50,12 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
 
     private HeapTrackingConcurrentHashSet(MemoryTracker memoryTracker, int initialCapacity) {
         super(memoryTracker, initialCapacity);
+    }
+
+    @VisibleForTesting
+    @Override
+    public long sizeOfWrapperObject() {
+        return SHALLOW_SIZE_WRAPPER;
     }
 
     public static <E> HeapTrackingConcurrentHashSet<E> newSet(MemoryTracker memoryTracker) {
@@ -498,7 +509,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
         }
     }
 
-    public static final class Node<T> {
+    private static final class Node<T> {
         private final T value;
         private final Node<T> next;
 
