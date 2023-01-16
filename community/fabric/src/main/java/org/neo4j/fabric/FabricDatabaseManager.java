@@ -19,13 +19,12 @@
  */
 package org.neo4j.fabric;
 
+import java.util.Optional;
 import java.util.function.Supplier;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.config.FabricConfig;
-import org.neo4j.fabric.config.FabricConstants;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
@@ -46,10 +45,6 @@ public class FabricDatabaseManager {
         this.databaseContextProvider = databaseContextProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
         this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
-    }
-
-    public static boolean fabricByDefault(Config config) {
-        return FabricConstants.ENABLED_BY_DEFAULT;
     }
 
     public DatabaseReferenceRepository databaseReferenceRepository() {
@@ -76,26 +71,25 @@ public class FabricDatabaseManager {
 
     private DatabaseContext getDatabaseContext(String databaseNameRaw) {
         return databaseReferenceRepo
-                .getInternalByAlias(databaseNameRaw)
-                .map(DatabaseReference.Internal::databaseId)
-                .flatMap(databaseContextProvider::getDatabaseContext)
+                .getByAlias(databaseNameRaw)
+                .flatMap(this::getDatabaseContext)
                 .orElseThrow(databaseNotFound(databaseNameRaw));
+    }
+
+    private Optional<? extends DatabaseContext> getDatabaseContext(DatabaseReference databaseReference) {
+        if (databaseReference instanceof DatabaseReference.Composite) {
+            return databaseContextProvider.getDatabaseContext(
+                    ((DatabaseReference.Composite) databaseReference).databaseId());
+        } else if (databaseReference instanceof DatabaseReference.Internal) {
+            return databaseContextProvider.getDatabaseContext(
+                    ((DatabaseReference.Internal) databaseReference).databaseId());
+        } else {
+            return Optional.empty();
+        }
     }
 
     private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
         return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
-    }
-
-    private static Supplier<UnavailableException> unavailable(String databaseNameRaw) {
-        return () -> new UnavailableException("Database " + databaseNameRaw + " is not available on current server");
-    }
-
-    private void assertInternalDatabaseAvailable(DatabaseReference.Internal databaseReference)
-            throws UnavailableException {
-        var ctx = databaseContextProvider
-                .getDatabaseContext(databaseReference.databaseId())
-                .orElseThrow(unavailable(databaseReference.alias().name()));
-        ctx.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
     }
 
     public boolean isFabricDatabase(String databaseNameRaw) {

@@ -96,7 +96,9 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     public Optional<DatabaseReference> getDatabaseRefByAlias(String databaseName) {
         // A uniqueness constraint at the Cypher level should prevent two references from ever having the same name, but
         // in case they do, we simply prefer the internal reference.
-        return CommunityTopologyGraphDbmsModelUtil.getInternalDatabaseReference(tx, databaseName)
+        return getCompositeDatabaseReferenceInRoot(databaseName)
+                .map(composite -> (DatabaseReference) composite)
+                .or(() -> CommunityTopologyGraphDbmsModelUtil.getInternalDatabaseReference(tx, databaseName))
                 .or(() -> CommunityTopologyGraphDbmsModelUtil.getExternalDatabaseReference(tx, databaseName));
     }
 
@@ -129,6 +131,15 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                         .stream());
     }
 
+    private Optional<DatabaseReference.Composite> getCompositeDatabaseReferenceInRoot(String databaseName) {
+        return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE, databaseName)
+                .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
+                        .filter(db -> db.hasLabel(COMPOSITE_DATABASE_LABEL))
+                        .flatMap(db -> createCompositeReference(alias, db))
+                        .stream())
+                .findFirst();
+    }
+
     private Optional<DatabaseReference.Composite> createCompositeReference(Node alias, Node db) {
         return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
             var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
@@ -141,6 +152,10 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
 
     private Stream<Node> getAliasNodesInNamespace(Label label, String namespace) {
         return tx.findNodes(label, NAMESPACE_PROPERTY, namespace).stream();
+    }
+
+    private Stream<Node> getAliasNodesInNamespace(Label label, String namespace, String databaseName) {
+        return tx.findNodes(label, NAMESPACE_PROPERTY, namespace, NAME_PROPERTY, databaseName).stream();
     }
 
     private Set<DatabaseReference> getAllDatabaseReferencesInComposite(NormalizedDatabaseName compositeName) {
