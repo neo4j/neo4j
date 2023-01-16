@@ -278,12 +278,12 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (nodeValueIndexCursor == null) {
             var nodeCursor = new DefaultNodeCursor(
-                    this::accept,
+                    c -> {},
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
             var propertyCursor = new DefaultPropertyCursor(
-                    this::accept,
+                    c -> {},
                     storageReader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker),
                     new FullAccessNodeCursor(c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors)),
                     new FullAccessRelationshipScanCursor(
