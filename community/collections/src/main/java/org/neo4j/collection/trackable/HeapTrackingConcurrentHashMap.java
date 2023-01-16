@@ -19,15 +19,13 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.list.mutable.FastList;
-import org.eclipse.collections.impl.utility.MapIterate;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -37,11 +35,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
+import org.eclipse.collections.impl.utility.MapIterate;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings({"NullableProblems", "unchecked"})
 public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrackingConcurrentHash
@@ -734,82 +730,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         releaseHeap();
     }
 
-    static final class IteratorState {
-        AtomicReferenceArray<Object> currentTable;
-        int start;
-        int end;
-
-        IteratorState(AtomicReferenceArray<Object> currentTable) {
-            this.currentTable = currentTable;
-            this.end = this.currentTable.length() - 1;
-        }
-
-        IteratorState(AtomicReferenceArray<Object> currentTable, int start, int end) {
-            this.currentTable = currentTable;
-            this.start = start;
-            this.end = end;
-        }
-    }
-
-    private abstract class HashIterator<E> implements Iterator<E> {
-        private List<IteratorState> todo;
-        private IteratorState currentState;
-        private Entry<K, V> next;
-        private int index;
-        private Entry<K, V> current;
-
-        protected HashIterator() {
-            this.currentState = new IteratorState(HeapTrackingConcurrentHashMap.this.table);
-            this.findNext();
-        }
-
-        private void findNext() {
-            while (this.index < this.currentState.end) {
-                Object o = this.currentState.currentTable.get(this.index);
-                if (o == RESIZED || o == RESIZING) {
-                    AtomicReferenceArray<Object> nextArray =
-                            HeapTrackingConcurrentHashMap.this.helpWithResizeWhileCurrentIndex(
-                                    this.currentState.currentTable, this.index);
-                    int endResized = this.index + 1;
-                    while (endResized < this.currentState.end) {
-                        if (this.currentState.currentTable.get(endResized) != RESIZED) {
-                            break;
-                        }
-                        endResized++;
-                    }
-                    if (this.todo == null) {
-                        this.todo = new FastList<>(4);
-                    }
-                    if (endResized < this.currentState.end) {
-                        this.todo.add(
-                                new IteratorState(this.currentState.currentTable, endResized, this.currentState.end));
-                    }
-                    int powerTwoLength = this.currentState.currentTable.length() - 1;
-                    this.todo.add(
-                            new IteratorState(nextArray, this.index + powerTwoLength, endResized + powerTwoLength));
-                    this.currentState.currentTable = nextArray;
-                    this.currentState.end = endResized;
-                    this.currentState.start = this.index;
-                } else if (o != null) {
-                    this.next = (Entry<K, V>) o;
-                    this.index++;
-                    break;
-                } else {
-                    this.index++;
-                }
-            }
-            if (this.next == null && this.index == this.currentState.end && this.todo != null && !this.todo.isEmpty()) {
-                this.currentState = this.todo.remove(this.todo.size() - 1);
-                this.index = this.currentState.start;
-                this.findNext();
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return this.next != null;
-        }
-
+    private abstract class HashMapIterator<E> extends HashIterator<Entry<K, V>> {
         final Entry<K, V> nextEntry() {
             Entry<K, V> e = this.next;
             if (e == null) {
@@ -843,7 +764,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    private final class ValueIterator extends HashIterator<V> {
+    private final class ValueIterator extends HashMapIterator<V> implements Iterator<V> {
         @Override
         public void remove() {
             this.removeByKeyValue();
@@ -855,7 +776,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    private final class KeyIterator extends HashIterator<K> {
+    private final class KeyIterator extends HashMapIterator<K> implements Iterator<K> {
         @Override
         public K next() {
             return this.nextEntry().getKey();
@@ -867,7 +788,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    private final class EntryIterator extends HashIterator<Map.Entry<K, V>> {
+    private final class EntryIterator extends HashMapIterator<Map.Entry<K, V>> implements Iterator<Map.Entry<K, V>> {
         @Override
         public Map.Entry<K, V> next() {
             return this.nextEntry();
@@ -1022,7 +943,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    private static final class Entry<K, V> implements Map.Entry<K, V> {
+    private static final class Entry<K, V> implements Map.Entry<K, V>, Wrapper<Entry<K, V>> {
         private final K key;
         private final V value;
         private final Entry<K, V> next;
@@ -1054,6 +975,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             throw new RuntimeException("not implemented");
         }
 
+        @Override
         public Entry<K, V> getNext() {
             return this.next;
         }

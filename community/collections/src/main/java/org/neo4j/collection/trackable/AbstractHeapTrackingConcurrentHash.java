@@ -19,17 +19,18 @@
  */
 package org.neo4j.collection.trackable;
 
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
+
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 /**
  * This class contains a fork of org.eclipse.collections.impl.map.mutable.ConcurrentHashMap extending
@@ -203,7 +204,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         int end = oldCapacity - 1;
         Object last = oldTable.get(end);
         int localSize = this.size();
-        if ( localSize < end && last == RESIZE_SENTINEL) {
+        if (localSize < end && last == RESIZE_SENTINEL) {
             return;
         }
         if (oldCapacity >= MAXIMUM_CAPACITY) {
@@ -217,13 +218,14 @@ public abstract class AbstractHeapTrackingConcurrentHash {
                 if (oldTable.get(end) == null) {
                     oldTable.set(end, RESIZE_SENTINEL);
                     if (this.partitionedSize == null && newSize >= PARTITIONED_SIZE_THRESHOLD) {
-                        //BEGIN MODIFICATION
+                        // BEGIN MODIFICATION
                         this.partitionedSize = allocateAtomicIntegerArray();
-                        //END MODIFICATION
+                        // END MODIFICATION
                     }
-                    //BEGIN MODIFICATION
-                    resizeContainer = new ResizeContainer(allocateAtomicReferenceArray(newSize, localSize), oldTable.length() - 1);
-                    //END MODIFICATION
+                    // BEGIN MODIFICATION
+                    resizeContainer = new ResizeContainer(
+                            allocateAtomicReferenceArray(newSize, localSize), oldTable.length() - 1);
+                    // END MODIFICATION
                     oldTable.set(end, resizeContainer);
                     ownResize = true;
                 }
@@ -304,7 +306,8 @@ public abstract class AbstractHeapTrackingConcurrentHash {
     }
 
     public void releaseHeap() {
-        memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity) + sizeOfWrapperObject() * trackedEntries );
+        memoryTracker.releaseHeap(
+                shallowSizeOfAtomicReferenceArray(trackedCapacity) + sizeOfWrapperObject() * trackedEntries);
         if (partitionedSize != null) {
             memoryTracker.releaseHeap(SIZE_INTEGER_REFERENCE_ARRAY);
         }
@@ -376,6 +379,85 @@ public abstract class AbstractHeapTrackingConcurrentHash {
 
         public void zeroOutQueuePosition() {
             this.queuePosition.set(0);
+        }
+    }
+
+    static final class IteratorState {
+        AtomicReferenceArray<Object> currentTable;
+        int start;
+        int end;
+
+        IteratorState(AtomicReferenceArray<Object> currentTable) {
+            this.currentTable = currentTable;
+            this.end = this.currentTable.length() - 1;
+        }
+
+        IteratorState(AtomicReferenceArray<Object> currentTable, int start, int end) {
+            this.currentTable = currentTable;
+            this.start = start;
+            this.end = end;
+        }
+    }
+
+    interface Wrapper<W> {
+        W getNext();
+    }
+
+    abstract class HashIterator<WRAPPER extends Wrapper<?>> {
+        private List<IteratorState> todo;
+        private IteratorState currentState;
+        WRAPPER next;
+        WRAPPER current;
+        private int index;
+
+        protected HashIterator() {
+            this.currentState = new IteratorState(table);
+            this.findNext();
+        }
+
+        final void findNext() {
+            while (this.index < this.currentState.end) {
+                Object o = this.currentState.currentTable.get(this.index);
+                if (o == RESIZED || o == RESIZING) {
+                    AtomicReferenceArray<Object> nextArray =
+                            helpWithResizeWhileCurrentIndex(this.currentState.currentTable, this.index);
+                    int endResized = this.index + 1;
+                    while (endResized < this.currentState.end) {
+                        if (this.currentState.currentTable.get(endResized) != RESIZED) {
+                            break;
+                        }
+                        endResized++;
+                    }
+                    if (this.todo == null) {
+                        this.todo = new FastList<>(4);
+                    }
+                    if (endResized < this.currentState.end) {
+                        this.todo.add(
+                                new IteratorState(this.currentState.currentTable, endResized, this.currentState.end));
+                    }
+                    int powerTwoLength = this.currentState.currentTable.length() - 1;
+                    this.todo.add(
+                            new IteratorState(nextArray, this.index + powerTwoLength, endResized + powerTwoLength));
+                    this.currentState.currentTable = nextArray;
+                    this.currentState.end = endResized;
+                    this.currentState.start = this.index;
+                } else if (o != null) {
+                    this.next = (WRAPPER) o;
+                    this.index++;
+                    break;
+                } else {
+                    this.index++;
+                }
+            }
+            if (this.next == null && this.index == this.currentState.end && this.todo != null && !this.todo.isEmpty()) {
+                this.currentState = this.todo.remove(this.todo.size() - 1);
+                this.index = this.currentState.start;
+                this.findNext();
+            }
+        }
+
+        public boolean hasNext() {
+            return this.next != null;
         }
     }
 }

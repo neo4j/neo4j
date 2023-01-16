@@ -19,30 +19,24 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.list.mutable.FastList;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import org.neo4j.collection.trackable.HeapTrackingConcurrentHashMap.IteratorState;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings({"unchecked", "NullableProblems"})
 public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTrackingConcurrentHash
         implements Set<E>, AutoCloseable {
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashSet.class);
-    private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance( Node.class);
-
+    private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Node.class);
 
     private HeapTrackingConcurrentHashSet(MemoryTracker memoryTracker) {
         super(memoryTracker, DEFAULT_INITIAL_CAPACITY);
@@ -113,7 +107,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
 
     @Override
     public Iterator<E> iterator() {
-        return new HashIterator<>();
+        return new HashSetIterator<>();
     }
 
     @Override
@@ -437,66 +431,9 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
         releaseHeap();
     }
 
-    private class HashIterator<T> implements Iterator<T> {
-        private List<IteratorState> todo;
-        private IteratorState currentState;
-        private Node<T> next;
-        private int index;
-
-        protected HashIterator() {
-            this.currentState = new IteratorState(HeapTrackingConcurrentHashSet.this.table);
-            this.findNext();
-        }
-
-        private void findNext() {
-            while (this.index < this.currentState.end) {
-                Object o = this.currentState.currentTable.get(this.index);
-                if (o == RESIZED || o == RESIZING) {
-                    AtomicReferenceArray<Object> nextArray =
-                            HeapTrackingConcurrentHashSet.this.helpWithResizeWhileCurrentIndex(
-                                    this.currentState.currentTable, this.index);
-                    int endResized = this.index + 1;
-                    while (endResized < this.currentState.end) {
-                        if (this.currentState.currentTable.get(endResized) != RESIZED) {
-                            break;
-                        }
-                        endResized++;
-                    }
-                    if (this.todo == null) {
-                        this.todo = new FastList<>(4);
-                    }
-                    if (endResized < this.currentState.end) {
-                        this.todo.add(
-                                new IteratorState(this.currentState.currentTable, endResized, this.currentState.end));
-                    }
-                    int powerTwoLength = this.currentState.currentTable.length() - 1;
-                    this.todo.add(
-                            new IteratorState(nextArray, this.index + powerTwoLength, endResized + powerTwoLength));
-                    this.currentState.currentTable = nextArray;
-                    this.currentState.end = endResized;
-                    this.currentState.start = this.index;
-                } else if (o != null) {
-                    this.next = (Node<T>) o;
-                    this.index++;
-                    break;
-                } else {
-                    this.index++;
-                }
-            }
-            if (this.next == null && this.index == this.currentState.end && this.todo != null && !this.todo.isEmpty()) {
-                this.currentState = this.todo.remove(this.todo.size() - 1);
-                this.index = this.currentState.start;
-                this.findNext();
-            }
-        }
-
+    private final class HashSetIterator<T> extends HashIterator<Node<T>> implements Iterator<T> {
         @Override
-        public final boolean hasNext() {
-            return this.next != null;
-        }
-
-        @Override
-        public final T next() {
+        public T next() {
             Node<T> e = this.next;
             if (e == null) {
                 throw new NoSuchElementException();
@@ -509,7 +446,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
         }
     }
 
-    private static final class Node<T> {
+    private static final class Node<T> implements Wrapper<Node<T>> {
         private final T value;
         private final Node<T> next;
 
@@ -523,7 +460,8 @@ public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTracking
             this.next = next;
         }
 
-        public Node<T> getNext() {
+        @Override
+        public final Node<T> getNext() {
             return this.next;
         }
     }
