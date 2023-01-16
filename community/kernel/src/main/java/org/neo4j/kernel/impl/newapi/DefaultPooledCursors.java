@@ -566,5 +566,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         relationshipValueIndexCursor = null;
         relationshipTypeIndexCursor = null;
         fullAccessRelationshipTypeIndexCursor = null;
+        fullAccessRelationshipValueIndexCursor = null;
     }
 }

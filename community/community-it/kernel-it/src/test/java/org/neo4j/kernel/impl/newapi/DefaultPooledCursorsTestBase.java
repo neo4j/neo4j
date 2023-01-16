@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DE
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
@@ -54,6 +55,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -318,6 +320,38 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
                 cursors.allocateRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
         assertThat(c1).isSameAs(c2);
         c2.close();
+    }
+
+    @Test
+    void shouldNotReuseReleasedRelationshipValueIndexCursor() throws Exception {
+        RelationshipValueIndexCursor c1;
+        KernelTransaction tx = beginTransaction();
+        try (tx) {
+            c1 = tx.cursors().allocateFullAccessRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
+            c1.close();
+            tx.commit();
+        }
+
+        // Find the same transaction again to test re-use
+        ArrayList<KernelTransaction> txs = new ArrayList<>();
+        try {
+            for (int i = 0; i < 10; i++) {
+                KernelTransaction tx1 = beginTransaction();
+                txs.add(tx1);
+                if (tx1 != tx) {
+                    continue;
+                }
+
+                RelationshipValueIndexCursor c2 = tx1.cursors()
+                        .allocateFullAccessRelationshipValueIndexCursor(NULL_CONTEXT, EmptyMemoryTracker.INSTANCE);
+                // We should not have been able to get the same cursor again, it should have been released properly
+                assertThat(c1).isNotSameAs(c2);
+                c2.close();
+                break;
+            }
+        } finally {
+            IOUtils.closeAllUnchecked(txs);
+        }
     }
 
     private static int[] array(int... elements) {
