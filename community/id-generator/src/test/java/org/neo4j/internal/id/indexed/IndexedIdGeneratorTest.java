@@ -393,6 +393,21 @@ class IndexedIdGeneratorTest {
     }
 
     @Test
+    void shouldIterateOverFreeIdsWithLimitsSpecial() throws IOException {
+        // given
+        open();
+        var id = IDS_PER_ENTRY + 10;
+        idGenerator.start(freeIds(id), NULL_CONTEXT);
+
+        // when
+        try (var freeIds = idGenerator.freeIdsIterator(20, id + 10)) {
+            assertThat(freeIds.hasNext()).isTrue();
+            assertThat(freeIds.next()).isEqualTo(id);
+            assertThat(freeIds.hasNext()).isFalse();
+        }
+    }
+
+    @Test
     void shouldRebuildFromFreeIdsIfWasCreated() throws IOException {
         // given
         open();

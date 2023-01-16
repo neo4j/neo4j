@@ -791,13 +791,15 @@ public class IndexedIdGenerator implements IdGenerator {
         long toRange = (toIdExclusive / idsPerEntry) + 1;
         CursorContext context = contextFactory.create("FreeIdIterator");
         Seeker<IdRangeKey, IdRange> scanner = tree.seek(new IdRangeKey(fromRange), new IdRangeKey(toRange), context);
+        // If fromIdInclusive == toIdExclusive then we're checking existence of a single ID
+        long compareToIdExclusive = fromIdInclusive == toIdExclusive ? toIdExclusive + 1 : toIdExclusive;
 
         return new PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator(
                 () -> closeAllUnchecked(scanner, context)) {
 
             private IdRangeKey currentKey;
             private IdRange currentRange;
-            private int nextIndex = (int) (fromIdInclusive % idsPerEntry);
+            private int nextIndex = fromIdInclusive == toIdExclusive ? (int) (fromIdInclusive % idsPerEntry) : 0;
             private boolean reachedEnd;
 
             @Override
@@ -809,23 +811,21 @@ public class IndexedIdGenerator implements IdGenerator {
                                 reachedEnd = true;
                                 return false;
                             }
-                            if (nextIndex == idsPerEntry) {
-                                nextIndex = 0;
-                            }
                             currentRange = scanner.value();
                             currentKey = scanner.key();
                         }
                         while (nextIndex < idsPerEntry) {
                             int index = nextIndex++;
                             long id = currentKey.getIdRangeIdx() * idsPerEntry + index;
-                            if (id >= toIdExclusive && id > fromIdInclusive) {
+                            if (id >= compareToIdExclusive) {
                                 return false;
                             }
-                            if (!IdRange.IdState.USED.equals(currentRange.getState(index))) {
+                            if (id >= fromIdInclusive && !IdRange.IdState.USED.equals(currentRange.getState(index))) {
                                 return next(id);
                             }
                         }
                         currentRange = null;
+                        nextIndex = 0;
                     }
 
                 } catch (IOException e) {
