@@ -74,7 +74,9 @@ Eclipse Public License - v 1.0
 
 Eclipse Public License v2.0
   JUnit Jupiter API
+  JUnit Jupiter Engine
   JUnit Platform Commons
+  JUnit Platform Engine API
 
 MIT License
   Cucumber Expressions
