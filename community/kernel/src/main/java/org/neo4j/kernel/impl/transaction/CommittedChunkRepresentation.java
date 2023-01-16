@@ -54,7 +54,7 @@ public record CommittedChunkRepresentation(
                 -1,
                 logEntryChunkStart.getTimeWritten(),
                 -1,
-                logEntryChunkStart.getKernelVersion(),
+                logEntryChunkStart.kernelVersion(),
                 Subject.AUTH_DISABLED);
         return new CommittedChunkRepresentation(
                 logEntryChunkStart, new CommandChunk(commands, chunkMetadata), logEntryChunkEnd);

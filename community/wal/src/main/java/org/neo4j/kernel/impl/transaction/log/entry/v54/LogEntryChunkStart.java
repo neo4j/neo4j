@@ -25,19 +25,13 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
-    private final KernelVersion kernelVersion;
     private final long timeWritten;
     private final long chunkId;
 
     public LogEntryChunkStart(KernelVersion kernelVersion, long timeWritten, long chunkId) {
         super(kernelVersion, CHUNK_START);
-        this.kernelVersion = kernelVersion;
         this.timeWritten = timeWritten;
         this.chunkId = chunkId;
-    }
-
-    public KernelVersion getKernelVersion() {
-        return kernelVersion;
     }
 
     public long getTimeWritten() {
@@ -51,7 +45,7 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     @Override
     public String toString() {
         return "LogEntryChunkStart{" + "kernelVersion="
-                + kernelVersion + ", timeWritten="
+                + kernelVersion() + ", timeWritten="
                 + timeWritten + ", chunkId="
                 + chunkId + '}';
     }
