@@ -66,7 +66,7 @@ public class TokenIndexImporter implements IndexImporter {
     @Override
     public void add(long entity, long[] tokens) {
         try {
-            updater.process(IndexEntryUpdate.change(entity, index, EMPTY_LONG_ARRAY, tokens));
+            updater.process(IndexEntryUpdate.change(entity, index, EMPTY_LONG_ARRAY, tokens, true));
         } catch (IndexEntryConflictException e) {
             throw new RuntimeException(e);
         }

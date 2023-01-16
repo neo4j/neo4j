@@ -19,6 +19,8 @@
  */
 package org.neo4j.token;
 
+import static org.neo4j.token.ReadOnlyTokenCreator.READ_ONLY;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.api.TokenHolder;
@@ -106,5 +108,14 @@ public class TokenHolders implements TokenNameLookup {
                 return TokenHolders.this.propertyKeyGetName(propertyKeyId) + "[" + propertyKeyId + "]";
             }
         };
+    }
+
+    public static TokenHolders readOnlyTokenHolders(TokensLoader loader, StoreCursors storeCursors) {
+        var tokenHolders = new TokenHolders(
+                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
+                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_LABEL),
+                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        tokenHolders.setInitialTokens(loader, storeCursors);
+        return tokenHolders;
     }
 }
