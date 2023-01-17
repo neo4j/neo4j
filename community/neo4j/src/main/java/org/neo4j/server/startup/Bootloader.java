@@ -65,7 +65,7 @@ import org.neo4j.util.VisibleForTesting;
 /**
  * Bootloader is used for launching either a DBMS ({@link Bootloader.Dbms}) or a forked admin command ({@link Bootloader.Admin}).
  */
-abstract class Bootloader implements AutoCloseable {
+public abstract class Bootloader implements AutoCloseable {
 
     static final int EXIT_CODE_OK = ExitCode.OK;
     static final int EXIT_CODE_RUNNING = ExitCode.FAIL;
@@ -103,7 +103,7 @@ abstract class Bootloader implements AutoCloseable {
     // inferred
     private Path home;
     private Path conf;
-    private Configuration config;
+    private FilteredConfig config;
     private boolean fullConfig;
     private BootloaderOsAbstraction os;
     private ProcessManager processManager;
@@ -160,36 +160,44 @@ abstract class Bootloader implements AutoCloseable {
         return home;
     }
 
-    Path confDir() {
+    public Path confDir() {
         if (conf == null) {
             conf = getEnv(ENV_NEO4J_CONF, home().resolve(DEFAULT_CONFIG_LOCATION), PATH);
         }
         return conf;
     }
 
-    void validateConfig() {
-        config(true);
+    public Path confFile() {
+        return confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+    }
+
+    public FilteredConfig validateConfigThrow() {
+        return config(true, true);
+    }
+
+    public FilteredConfig validateConfig() {
+        return config(true, false);
     }
 
     void rebuildConfig(List<Path> additionalConfigs) {
-        this.config = buildConfig(true, additionalConfigs);
+        this.config = buildConfig(true, additionalConfigs, confFile(), false);
         this.fullConfig = true;
     }
 
-    Configuration config() {
-        return config(false);
+    public FilteredConfig config() {
+        return config(false, false);
     }
 
-    private Configuration config(boolean full) {
+    private FilteredConfig config(boolean full, boolean allowThrow) {
         if (config == null || !fullConfig && full) {
-            this.config = buildConfig(full, List.of());
+            this.config = buildConfig(full, List.of(), confFile(), allowThrow);
             this.fullConfig = full;
         }
         return config;
     }
 
-    private Configuration buildConfig(boolean full, List<Path> additionalConfigs) {
-        Path mainConfFile = confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
+    private FilteredConfig buildConfig(
+            boolean full, List<Path> additionalConfigs, Path mainConfFile, boolean allowThrow) {
         try {
             Predicate<String> filter = full ? alwaysTrue() : settingsUsedByBootloader()::contains;
 
@@ -197,24 +205,12 @@ abstract class Bootloader implements AutoCloseable {
                     .commandExpansion(expandCommands)
                     .setDefaults(overriddenDefaultsValues())
                     .set(GraphDatabaseSettings.neo4j_home, home())
-                    .fromFile(mainConfFile, false, filter);
+                    .fromFile(mainConfFile, allowThrow, filter);
 
             Collections.reverse(additionalConfigs);
             additionalConfigs.forEach(additionalConfig -> builder.fromFile(additionalConfig, false, filter));
-            Configuration config = builder.build();
 
-            return new Configuration() {
-                @Override
-                public <T> T get(Setting<T> setting) {
-                    if (filter.test(setting.name())) {
-                        return config.get(setting);
-                    }
-                    // This is to prevent silent error and should only be encountered while developing. Just add the
-                    // setting to the filter!
-                    throw new IllegalArgumentException(
-                            "Not allowed to read this setting " + setting.name() + ". It has been filtered out");
-                }
-            };
+            return new FilteredConfig(builder.build(), filter);
         } catch (RuntimeException e) {
             if (additionalConfigs.isEmpty()) {
                 throw new CommandFailedException("Failed to read config " + mainConfFile + ": " + e.getMessage(), e);
@@ -258,7 +254,7 @@ abstract class Bootloader implements AutoCloseable {
         }
     }
 
-    private Set<String> settingsUsedByBootloader() {
+    private static Set<String> settingsUsedByBootloader() {
         // These settings are the that might be used by the bootloader minor commands (stop/status etc..)
         // Additional settings are used on the start/console path, but they use the full config anyway so not added
         // here.
@@ -326,6 +322,40 @@ abstract class Bootloader implements AutoCloseable {
     @Override
     public void close() throws IOException {
         IOUtils.closeAll(closeableResources);
+    }
+
+    public static class FilteredConfig implements Configuration {
+        private final Config config;
+        private final Predicate<String> filter;
+
+        public FilteredConfig(Config config, Predicate<String> filter) {
+            this.config = config;
+            this.filter = filter;
+        }
+
+        public Object configStringLookup(String name) {
+            throwIfNotInFilter(name);
+            return config.configStringLookup(name);
+        }
+
+        public Config getUnfiltered() {
+            return config;
+        }
+
+        @Override
+        public <T> T get(Setting<T> setting) {
+            throwIfNotInFilter(setting.name());
+            return config.get(setting);
+        }
+
+        private void throwIfNotInFilter(String name) {
+            if (!filter.test(name)) {
+                // This is to prevent silent error and should only be encountered while developing. Just add the
+                // setting to the filter!
+                throw new IllegalArgumentException(
+                        "Not allowed to read this setting " + name + ". It has been filtered out");
+            }
+        }
     }
 
     public static class Dbms extends Bootloader {

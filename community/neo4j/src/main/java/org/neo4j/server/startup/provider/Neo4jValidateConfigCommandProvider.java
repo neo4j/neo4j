@@ -17,33 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.log4j;
+package org.neo4j.server.startup.provider;
 
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.lookup.StrLookup;
+import static org.neo4j.cli.CommandType.NEO4J_VALIDATE_CONFIG;
 
-/**
- * Injects a context for lookups during the log4j configuration phase.
- */
-public abstract class AbstractLookup implements StrLookup {
-    private static final ThreadLocal<LookupContext> LOOKUP_CONTEXT = ThreadLocal.withInitial(() -> null);
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.cli.CommandProvider;
+import org.neo4j.cli.CommandType;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.server.startup.ValidateConfigCommand;
 
-    final LookupContext context;
-
-    public static void setLookupContext(LookupContext context) {
-        LOOKUP_CONTEXT.set(context);
-    }
-
-    public static void removeLookupContext() {
-        LOOKUP_CONTEXT.remove();
-    }
-
-    AbstractLookup() {
-        context = LOOKUP_CONTEXT.get();
+@ServiceProvider
+public class Neo4jValidateConfigCommandProvider implements CommandProvider {
+    @Override
+    public ValidateConfigCommand createCommand(ExecutionContext ctx) {
+        return new ValidateConfigCommand(ctx);
     }
 
     @Override
-    public String lookup(LogEvent event, String key) {
-        return lookup(key);
+    public CommandType commandType() {
+        return NEO4J_VALIDATE_CONFIG;
     }
 }

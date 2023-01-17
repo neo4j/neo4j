@@ -136,12 +136,12 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
     }
 
     private ExecutionInfo getExecutionInfo(CommandLine.ParseResult parseResult) {
-        return parseResult.asCommandLineList().stream()
-                .map(CommandLine::getCommand)
-                .filter(command -> command instanceof AbstractAdminCommand)
-                .map(adminCommand -> new ExecutionInfo(true, ((AbstractAdminCommand) adminCommand).getCommandConfigs()))
-                .findFirst()
-                .orElseGet(() -> new ExecutionInfo(false, List.of()));
+        for (CommandLine commandLine : parseResult.asCommandLineList()) {
+            if (commandLine.getCommand() instanceof AbstractAdminCommand adminCommand) {
+                return new ExecutionInfo(true, adminCommand.getCommandConfigs());
+            }
+        }
+        return new ExecutionInfo(false, List.of());
     }
 
     protected CommandLine getActualAdminCommand(ExecutionContext executionContext) {

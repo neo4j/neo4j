@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging.log4j;
+package org.neo4j.server.startup.validation;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-import org.neo4j.logging.InternalLog;
+import java.io.IOException;
+import java.util.List;
+import org.neo4j.server.startup.Bootloader;
 
-public record LookupContext(
-        Consumer<InternalLog> headerLogger, String headerClassName, Function<String, Object> configLookup) {}
+public interface ConfigValidator {
+    List<ConfigValidationIssue> validate() throws IOException;
+
+    String getLabel();
+
+    interface Factory {
+        ConfigValidator getNeo4jValidator(Bootloader bootloader);
+
+        ConfigValidator getLog4jUserValidator(Bootloader bootloader);
+
+        ConfigValidator getLog4jServerValidator(Bootloader bootloader);
+    }
+}
