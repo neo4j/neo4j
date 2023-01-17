@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
 import org.neo4j.io.fs.WritableChecksumChannel;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 
@@ -34,8 +33,6 @@ public interface CommittedCommandBatch {
     int checksum();
 
     long timeWritten();
-
-    KernelVersion kernelVersion();
 
     long txId();
 }

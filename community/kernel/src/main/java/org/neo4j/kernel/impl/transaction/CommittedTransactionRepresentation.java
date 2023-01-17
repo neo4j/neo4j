@@ -24,7 +24,6 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import java.io.IOException;
 import java.util.List;
 import org.neo4j.io.fs.WritableChecksumChannel;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -80,11 +79,6 @@ public record CommittedTransactionRepresentation(
     @Override
     public long timeWritten() {
         return commitEntry.getTimeWritten();
-    }
-
-    @Override
-    public KernelVersion kernelVersion() {
-        return startEntry.kernelVersion();
     }
 
     @Override

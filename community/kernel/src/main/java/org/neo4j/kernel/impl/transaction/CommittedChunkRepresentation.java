@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.List;
 import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChecksumChannel;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -77,11 +76,6 @@ public record CommittedChunkRepresentation(
     @Override
     public long timeWritten() {
         return chunkStart.getTimeWritten();
-    }
-
-    @Override
-    public KernelVersion kernelVersion() {
-        return chunkStart.kernelVersion();
     }
 
     @Override
