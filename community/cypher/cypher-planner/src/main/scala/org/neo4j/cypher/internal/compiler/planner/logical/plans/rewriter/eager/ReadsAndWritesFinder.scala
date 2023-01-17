@@ -293,10 +293,10 @@ object ReadsAndWritesFinder {
       copy(readLabels = readLabels.withUnknownSymbolsRead(plan))
 
     def includePlanReads(plan: LogicalPlan, planReads: PlanReads): Reads = {
-      Option(this)
-        .map(acc => planReads.readProperties.foldLeft(acc)(_.withPropertyRead(_, plan)))
-        .map(acc => planReads.readLabels.foldLeft(acc)(_.withLabelRead(_, plan)))
-        .map(acc => {
+      Function.chain[Reads](Seq(
+        acc => planReads.readProperties.foldLeft(acc)(_.withPropertyRead(_, plan)),
+        acc => planReads.readLabels.foldLeft(acc)(_.withLabelRead(_, plan)),
+        acc => {
           planReads.filterExpressions.foldLeft(acc) {
             case (acc, (variable, expressions)) =>
               if (expressions.isEmpty) {
@@ -306,10 +306,10 @@ object ReadsAndWritesFinder {
                 expressions.foldLeft(acc)(_.withAddedFilterExpression(variable, plan, _))
               }
           }
-        })
-        .map(acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc)
-        .map(acc => if (planReads.readsUnknownProperties) acc.withUnknownPropertiesRead(plan) else acc)
-        .get
+        },
+        acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
+        acc => if (planReads.readsUnknownProperties) acc.withUnknownPropertiesRead(plan) else acc
+      ))(this)
     }
 
     /**
@@ -354,11 +354,11 @@ object ReadsAndWritesFinder {
     }
 
     def includePlanSets(plan: LogicalPlan, planSets: PlanSets): Sets = {
-      Option(this)
-        .map(acc => planSets.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)))
-        .map(acc => if (planSets.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc)
-        .map(acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan)))
-        .get
+      Function.chain[Sets](Seq(
+        acc => planSets.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)),
+        acc => if (planSets.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc,
+        acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan))
+      ))(this)
     }
 
     def ++(other: Sets): Sets = {
@@ -431,12 +431,10 @@ object ReadsAndWritesFinder {
       planWrites: PlanWrites,
       filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Writes = {
-      Option(this)
-        .map(acc => acc.withSets(acc.sets.includePlanSets(plan, planWrites.sets)))
-        .map(acc =>
-          acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, filterExpressionsSnapshot))
-        )
-        .get
+      Function.chain[Writes](Seq(
+        acc => acc.withSets(acc.sets.includePlanSets(plan, planWrites.sets)),
+        acc => acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, filterExpressionsSnapshot))
+      ))(this)
     }
 
     def ++(other: Writes): Writes = {
@@ -489,13 +487,13 @@ object ReadsAndWritesFinder {
       val planReads = collectReads(plan, semanticTable)
       val planWrites = collectWrites(plan)
 
-      Option(acc)
-        .map(acc => acc.withReads(acc.reads.includePlanReads(plan, planReads)))
-        .map {
+      Function.chain[ReadsAndWrites](Seq(
+        acc => acc.withReads(acc.reads.includePlanReads(plan, planReads)),
+        acc => {
           val filterExpressionsSnapshot = acc.reads.filterExpressions
-          acc => acc.withWrites(acc.writes.includePlanWrites(plan, planWrites, filterExpressionsSnapshot))
+          acc.withWrites(acc.writes.includePlanWrites(plan, planWrites, filterExpressionsSnapshot))
         }
-        .get
+      ))(acc)
     }
 
     LogicalPlans.foldPlan(ReadsAndWrites())(
