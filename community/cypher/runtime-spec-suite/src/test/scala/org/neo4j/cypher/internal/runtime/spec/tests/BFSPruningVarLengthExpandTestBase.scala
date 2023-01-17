@@ -863,7 +863,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   // EXPANSION FILTERING, NODE AND RELATIONSHIP PREDICATE
 
   test("should filter on node predicate") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -917,7 +916,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -937,7 +935,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -957,7 +954,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node from reference") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -978,7 +974,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node from reference, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1088,7 +1083,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node and relationship predicate") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1115,7 +1109,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node and relationship predicate, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1144,7 +1137,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1171,7 +1163,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1198,7 +1189,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node including start node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1225,7 +1215,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node including start node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1252,7 +1241,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1280,7 +1268,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1308,7 +1295,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context and including start node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1336,7 +1322,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context and including start node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1364,7 +1349,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1392,7 +1376,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1420,7 +1403,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context and including start node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1448,7 +1430,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context and including start node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val n = closestMultipleOf(10, 4)
@@ -1524,7 +1505,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("var-length-expand should only find start node once with node filtering") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val nodes = given {
@@ -1550,7 +1530,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("var-length-expand should only find start node once with node filtering, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val nodes = given {
@@ -1576,7 +1555,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1604,7 +1582,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1633,7 +1610,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply including start node") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }
@@ -1661,7 +1637,6 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply including start node, undirected") {
-    assume(!(isParallel && runOnlySafeScenarios))
 
     // given
     val g = given { sineGraph() }

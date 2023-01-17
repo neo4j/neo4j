@@ -282,9 +282,6 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile time with pruning var expand") {
-    // TODO: flaky because of unsafe kernel access
-    assume(!(isParallel && runOnlySafeScenarios))
-
     val size = sizeHint / 10
     given { circleGraph(size) }
 

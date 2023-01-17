@@ -536,7 +536,6 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("with column introduced after apply") {
     // flaky
-    assume(!(isParallel && runOnlySafeScenarios))
     val (nodes, _) = given {
       circleGraph(sizeHint)
     }

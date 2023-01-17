@@ -364,7 +364,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of directed all relationships scan") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
@@ -384,7 +383,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of undirected all relationships scan") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
@@ -402,7 +400,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of directed relationship type scan") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
@@ -425,7 +422,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of undirected relationship type scan") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
@@ -715,7 +711,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbhits with optional expand into") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val n = Math.sqrt(sizeHint).toInt
     val extraNodes = 20
@@ -1011,7 +1006,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of cartesian product") {
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val size = Math.sqrt(sizeHint).toInt
     given { nodeGraph(size) }

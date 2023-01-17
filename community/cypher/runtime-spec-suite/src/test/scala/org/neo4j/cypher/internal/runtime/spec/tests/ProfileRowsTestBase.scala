@@ -902,7 +902,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with limit + expand on RHS of Apply") {
-    assume(!(isParallel && runOnlySafeScenarios))
     val nodeCount = sizeHint * 10
     given {
       circleGraph(nodeCount)
@@ -932,7 +931,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with limit + expand on RHS of ConditionalApply non-nullable") {
-    assume(!(isParallel && runOnlySafeScenarios))
     val nodeCount = sizeHint
     given {
       circleGraph(nodeCount)
@@ -1106,9 +1104,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with pruning var-expand") {
-    // NOTE: create card for this, slotted pipe profiling uses an unsafe stack for profiling
-    // TODO failing because of pruningVarExpand
-    assume(!(isParallel && runOnlySafeScenarios))
     // given
     val nodesPerLabel = 100
     given {
@@ -1918,7 +1913,6 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of cartesian product") {
-    assume(!(isParallel && runOnlySafeScenarios))
     val size = Math.sqrt(sizeHint).toInt
     given { nodeGraph(size) }
 
@@ -1937,7 +1931,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * size // cartesian product
     val rhsAllNodesScan = result.runtimeResult.queryProfile().operatorProfile(2).rows().toInt // all node scan b
     if (isParallel) {
-      //for parallel scans on the RHS the number of rows can vary depending how much the scan can be parallelized
+      // for parallel scans on the RHS the number of rows can vary depending how much the scan can be parallelized
       rhsAllNodesScan should (be >= size and be <= size * size)
     } else {
       val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toLong

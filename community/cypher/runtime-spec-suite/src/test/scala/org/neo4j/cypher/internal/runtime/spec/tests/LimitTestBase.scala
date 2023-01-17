@@ -648,8 +648,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support single-nodeByIdSeek + limit under apply") {
-    // TODO flaky because of interaction with kernel transaction
-    assume(!(isParallel && runOnlySafeScenarios))
     val nodes = given {
       nodeGraph(sizeHint, "A")
     }
@@ -671,8 +669,6 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support multi-nodeByIdSeek + limit under apply") {
-    // TODO flaky because of interaction with kernel transaction
-    assume(!(isParallel && runOnlySafeScenarios))
     val nodes = given {
       nodeGraph(sizeHint, "A")
     }

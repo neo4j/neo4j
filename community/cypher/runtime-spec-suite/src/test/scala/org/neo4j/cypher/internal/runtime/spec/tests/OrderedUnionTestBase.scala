@@ -891,9 +891,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union with reducers") {
-    // flaky
-    assume(!(isParallel && runOnlySafeScenarios))
-
     val size = sizeHint / 3
     // given
     val (as, bs) = given {
