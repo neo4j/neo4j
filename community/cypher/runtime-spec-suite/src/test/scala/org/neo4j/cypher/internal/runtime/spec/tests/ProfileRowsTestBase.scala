@@ -1934,9 +1934,15 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     consume(result)
 
     // then
-    val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
     result.runtimeResult.queryProfile().operatorProfile(1).rows() shouldBe size * size // cartesian product
-    result.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe numberOfChunks * size // all node scan b
+    val rhsAllNodesScan = result.runtimeResult.queryProfile().operatorProfile(2).rows().toInt // all node scan b
+    if (isParallel) {
+      //for parallel scans on the RHS the number of rows can vary depending how much the scan can be parallelized
+      rhsAllNodesScan should (be >= size and be <= size * size)
+    } else {
+      val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toLong
+      rhsAllNodesScan shouldBe numberOfChunks * size
+    }
     result.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe size // all node scan a
   }
 
