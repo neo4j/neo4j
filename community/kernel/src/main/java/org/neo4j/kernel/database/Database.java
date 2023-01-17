@@ -179,6 +179,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
@@ -616,26 +617,27 @@ public class Database extends AbstractDatabase {
 
     private void registerUpgradeListener() {
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
-                storageEngine,
                 globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
                 metadataCache,
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
                 internalLogProvider);
 
-        handler.registerUpgradeListener((commands, version) -> {
+        handler.registerUpgradeListener((fromKernelVersion, toKernelVersion) -> {
             long time = clock.millis();
             LeaseClient leaseClient = leaseService.newClient();
             leaseClient.ensureValid();
             TransactionIdStore transactionIdStore = storageEngine.metadataProvider();
+            List<StorageCommand> upgradeCommands =
+                    storageEngine.createUpgradeCommands(fromKernelVersion, toKernelVersion);
             CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                    commands,
+                    upgradeCommands,
                     EMPTY_BYTE_ARRAY,
                     time,
                     transactionIdStore.getLastClosedTransactionId(),
                     time,
                     leaseClient.leaseId(),
-                    version,
+                    toKernelVersion,
                     Subject.AUTH_DISABLED);
             try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
                 TransactionToApply toApply = new TransactionToApply(

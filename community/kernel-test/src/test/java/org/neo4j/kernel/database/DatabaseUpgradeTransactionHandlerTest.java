@@ -28,8 +28,6 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,7 +40,6 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -51,8 +48,6 @@ import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 
 class DatabaseUpgradeTransactionHandlerTest {
@@ -208,15 +203,6 @@ class DatabaseUpgradeTransactionHandlerTest {
         setKernelVersion(initialKernelVersion);
         setDbmsRuntime(initialDbmsRuntimeVersion);
 
-        StorageEngine storageEngine = mock(StorageEngine.class);
-        doAnswer(inv -> {
-                    KernelVersion fromKernelVersion = inv.getArgument(0, KernelVersion.class);
-                    KernelVersion toKernelVersion = inv.getArgument(1, KernelVersion.class);
-                    registeredTransactions.add(new RegisteredTransaction(toKernelVersion, true));
-                    return List.of(new FakeKernelVersionUpgradeCommand(fromKernelVersion, toKernelVersion));
-                })
-                .when(storageEngine)
-                .createUpgradeCommands(any(), any());
         DbmsRuntimeRepository dbmsRuntimeRepository = mock(DbmsRuntimeRepository.class);
         doAnswer(inv -> currentDbmsRuntimeVersion).when(dbmsRuntimeRepository).getVersion();
         KernelVersionProvider kernelVersionProvider = this::getKernelVersion;
@@ -230,14 +216,11 @@ class DatabaseUpgradeTransactionHandlerTest {
                 .unregisterTransactionEventListener(any());
 
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
-                storageEngine,
-                dbmsRuntimeRepository,
-                kernelVersionProvider,
-                databaseTransactionEventListeners,
-                lock,
-                logProvider);
-        handler.registerUpgradeListener((commands, version) ->
-                setKernelVersion(commands.iterator().next().kernelVersion()));
+                dbmsRuntimeRepository, kernelVersionProvider, databaseTransactionEventListeners, lock, logProvider);
+        handler.registerUpgradeListener((fromKernelVersion, toKernelVersion) -> {
+            registeredTransactions.add(new RegisteredTransaction(toKernelVersion, true));
+            setKernelVersion(toKernelVersion);
+        });
     }
 
     private synchronized void setKernelVersion(KernelVersion newKernelVersion) {
@@ -280,24 +263,6 @@ class DatabaseUpgradeTransactionHandlerTest {
                 ExceptionUtils.throwAsUncheckedException(e);
             }
         }
-    }
-
-    private static class FakeKernelVersionUpgradeCommand implements StorageCommand {
-        KernelVersion versionToUpgradeFrom;
-        KernelVersion versionToUpgradeTo;
-
-        FakeKernelVersionUpgradeCommand(KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
-            this.versionToUpgradeFrom = versionToUpgradeFrom;
-            this.versionToUpgradeTo = versionToUpgradeTo;
-        }
-
-        @Override
-        public KernelVersion kernelVersion() {
-            return versionToUpgradeTo;
-        }
-
-        @Override
-        public void serialize(WritableChannel channel) throws IOException {}
     }
 
     private static class RegisteredTransaction {

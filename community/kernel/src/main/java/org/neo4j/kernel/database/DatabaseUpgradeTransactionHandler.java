@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,11 +34,8 @@ import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
 
 class DatabaseUpgradeTransactionHandler {
-    private final StorageEngine storageEngine;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final KernelVersionProvider kernelVersionProvider;
     private final DatabaseTransactionEventListeners transactionEventListeners;
@@ -65,13 +61,11 @@ class DatabaseUpgradeTransactionHandler {
     private final InternalLog log;
 
     DatabaseUpgradeTransactionHandler(
-            StorageEngine storageEngine,
             DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionProvider kernelVersionProvider,
             DatabaseTransactionEventListeners transactionEventListeners,
             UpgradeLocker locker,
             InternalLogProvider logProvider) {
-        this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionProvider = kernelVersionProvider;
         this.transactionEventListeners = transactionEventListeners;
@@ -79,8 +73,8 @@ class DatabaseUpgradeTransactionHandler {
         this.log = logProvider.getLog(this.getClass());
     }
 
-    interface InternalTransactionCommitHandler {
-        void commit(List<StorageCommand> commands, KernelVersion version) throws TransactionFailureException;
+    interface InternalUpgradeTransactionHandler {
+        void upgrade(KernelVersion from, KernelVersion to) throws TransactionFailureException;
     }
 
     /**
@@ -93,18 +87,18 @@ class DatabaseUpgradeTransactionHandler {
      * In the rare event of the "internal" upgrade transaction failing, it will stay on the old version and fail all transactions for this db
      * until it succeeds.
      */
-    void registerUpgradeListener(InternalTransactionCommitHandler internalTransactionCommitHandler) {
+    void registerUpgradeListener(InternalUpgradeTransactionHandler internalUpgradeTransactionHandler) {
         if (!kernelVersionProvider.kernelVersion().isLatest()) {
             transactionEventListeners.registerTransactionEventListener(
-                    new DatabaseUpgradeListener(internalTransactionCommitHandler));
+                    new DatabaseUpgradeListener(internalUpgradeTransactionHandler));
         }
     }
 
     private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock> {
-        private final InternalTransactionCommitHandler internalTransactionCommitHandler;
+        private final InternalUpgradeTransactionHandler internalUpgradeTransactionHandler;
 
-        DatabaseUpgradeListener(InternalTransactionCommitHandler internalTransactionCommitHandler) {
-            this.internalTransactionCommitHandler = internalTransactionCommitHandler;
+        DatabaseUpgradeListener(InternalUpgradeTransactionHandler internalUpgradeTransactionHandler) {
+            this.internalUpgradeTransactionHandler = internalUpgradeTransactionHandler;
         }
 
         @Override
@@ -122,9 +116,7 @@ class DatabaseUpgradeTransactionHandler {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
-                            internalTransactionCommitHandler.commit(
-                                    storageEngine.createUpgradeCommands(currentKernelVersion, kernelVersionToUpgradeTo),
-                                    kernelVersionToUpgradeTo);
+                            internalUpgradeTransactionHandler.upgrade(currentKernelVersion, kernelVersionToUpgradeTo);
                             log.info(
                                     "Upgrade transaction from %s to %s completed",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
