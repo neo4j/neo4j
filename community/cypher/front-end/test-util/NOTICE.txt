@@ -30,6 +30,7 @@ Apache Software License, Version 2.0
   Scala Reflect
   scala-collection-compat
   scala-xml
+  scalacheck-1.16
   scalactic
   scalatest
   scalatest-compatible
@@ -49,6 +50,10 @@ Apache Software License, Version 2.0
 
 BSD - Scala License
   Scala Library
+
+BSD License
+  scalacheck
+  test-interface
 
 Eclipse Public License v2.0
   JUnit Jupiter API
