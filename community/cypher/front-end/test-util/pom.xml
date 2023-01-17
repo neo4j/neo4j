@@ -74,6 +74,11 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>org.scalatestplus</groupId>
+            <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>co.helmethair</groupId>
             <artifactId>scalatest-junit-runner</artifactId>
             <scope>compile</scope>
