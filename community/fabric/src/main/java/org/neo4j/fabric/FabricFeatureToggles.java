@@ -46,5 +46,5 @@ public class FabricFeatureToggles {
         }
     }
 
-    public static final Toggle NEW_STACK = new Toggle("new_stack", true);
+    public static final Toggle NEW_COMPOSITE_STACK = new Toggle("new_composite_stack", true);
 }
