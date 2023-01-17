@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.DoubleValue
@@ -33,9 +34,8 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
 import org.scalatest.Inspectors
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class ToFloatListFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
+class ToFloatListFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   test("should return null if argument is null") {
     assert(toFloatList(null) === NO_VALUE)

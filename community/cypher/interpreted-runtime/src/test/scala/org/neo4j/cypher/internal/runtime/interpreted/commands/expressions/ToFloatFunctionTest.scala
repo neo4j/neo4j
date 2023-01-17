@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.doubleValue
 import org.scalacheck.Gen
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class ToFloatFunctionTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
+class ToFloatFunctionTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   val tests: Seq[(Any => AnyValue, String)] =
     Seq((toFloat, "toFloat"), (toFloatOrNull, "toFloatOrNull"))

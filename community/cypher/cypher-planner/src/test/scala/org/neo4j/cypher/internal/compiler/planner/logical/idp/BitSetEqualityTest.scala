@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
 import org.scalacheck.Gen.listOf
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.immutable.BitSet
 
-class BitSetEqualityTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
+class BitSetEqualityTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 500)
 

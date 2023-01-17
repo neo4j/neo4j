@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.ast.generator
 
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class AstGeneratorTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
+class AstGeneratorTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   private val astGenerator = new AstGenerator()
 
