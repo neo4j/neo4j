@@ -670,11 +670,22 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val result = execute(logicalQuery, runtime)
 
-    result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
-      .withRows(inOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
+    val supportsOrder = runtime.name != "Parallel"
+    if (supportsOrder) {
+      result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
+        .withRows(inOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
 
-    probe.seenRows.map(_.toSeq).toSeq shouldBe
-      Range(0, size)
-        .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
+      probe.seenRows.map(_.toSeq).toSeq shouldBe
+        Range(0, size)
+          .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
+    } else {
+      result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
+        .withRows(inAnyOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
+
+      probe.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
+        Range(0, size)
+          .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
+
+    }
   }
 }
