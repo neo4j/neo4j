@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -48,6 +49,7 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
                            cypherExceptionFactory: CypherExceptionFactory,
                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Rewriter = {
     normalizeMatchPredicates(normalizeInlinedWhereClauses) andThen
+    normalizeMatchPredicatesInExists(normalizeInlinedWhereClauses) andThen
     normalizeMatchPredicates(normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator))
   }
 
@@ -96,6 +98,31 @@ case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extend
         where = newWhere
       )(m.position)
   }
+
+  private val instance = topDown(rewriter, _.isInstanceOf[Expression])
+}
+
+// Normalize pattern predicates inside EXISTS {} to make sure that later rewriters handle them correctly
+case class normalizeMatchPredicatesInExists(normalizer: MatchPredicateNormalizer) extends Rewriter {
+  override def apply(that: AnyRef): AnyRef = instance(that)
+
+  private val rewriter = Rewriter.lift {
+    case w@Where(expression) =>
+      val newExpression = expression.endoRewrite(topDown(Rewriter.lift {
+        case e@ExistsSubClause(pattern, optionalWhereExpression) =>
+          val predicates = normalizer.extractAllFrom(pattern)
+          val rewrittenPredicates = predicates ++ optionalWhereExpression
+          val newOptionalWhereExpression: Option[Expression] = rewrittenPredicates.reduceOption(And(_, _)(e.position))
+
+          e.copy(
+            pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+            optionalWhereExpression = newOptionalWhereExpression
+          )(e.position, e.outerScope)
+      }))
+
+      w.copy(newExpression)(w.position)
+  }
+
 
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])
 }

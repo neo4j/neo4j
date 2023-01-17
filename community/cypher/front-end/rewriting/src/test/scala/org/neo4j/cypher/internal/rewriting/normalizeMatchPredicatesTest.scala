@@ -236,6 +236,107 @@ class normalizeMatchPredicatesTest extends CypherFunSuite {
       s"MATCH (n)-[$rel]->(m) WHERE n.prop > 123 AND (m.prop < 42 AND m.otherProp = 'hello') AND n.prop <> m.prop RETURN n")
   }
 
+  test("should move pattern predicates out of node in EXISTS clause") {
+    assertRewrite("MATCH (n) WHERE EXISTS {MATCH (n WHERE n.prop = 1)} RETURN *",
+    "MATCH (n) WHERE EXISTS { MATCH (n) WHERE n.prop = 1} RETURN *")
+  }
+
+  test("should move pattern predicates out of node in EXISTS clause without MATCH keyword") {
+    assertRewrite("MATCH (n) WHERE EXISTS {(n WHERE n.prop = 1)} RETURN *",
+    "MATCH (n) WHERE EXISTS {(n) WHERE n.prop = 1} RETURN *")
+  }
+
+    test("should move pattern predicates to correct scope in EXISTS clause") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
+    val original =
+      """
+        |MATCH (a
+        | WHERE EXISTS {
+        |   MATCH (n WHERE n.prop = a.prop)-[r]->()
+        | }
+        |)
+        |RETURN *
+        | """.stripMargin
+
+    val rewritten =
+      s"""
+        |MATCH (a)
+        |WHERE EXISTS {
+        | MATCH (n)-[r]->($node)
+        | WHERE n.prop = a.prop
+        |}
+        |RETURN *
+        | """.stripMargin
+
+    assertRewrite(original, rewritten)
+  }
+
+  test("should move pattern predicates to correct scope in double EXISTS clause") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
+    val original =
+      """
+        |MATCH (a
+        | WHERE EXISTS {
+        |   MATCH (n WHERE n.prop = a.prop)-[r]->()
+        | } AND EXISTS {
+        |   MATCH (n WHERE n.prop = 1)
+        | }
+        |)
+        |RETURN *
+        | """.stripMargin
+
+    val rewritten =
+      s"""
+        |MATCH (a)
+        |WHERE EXISTS {
+        | MATCH (n)-[r]->($node)
+        | WHERE n.prop = a.prop
+        |} AND EXISTS {
+        | MATCH (n)
+        | WHERE n.prop = 1
+        |}
+        |RETURN *
+        | """.stripMargin
+
+    assertRewrite(original, rewritten)
+  }
+
+  test("should move pattern predicates to correct scope in nested EXISTS clause") {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node = s"`${anonVarNameGen.nextName}`"
+
+    val original =
+      """
+        |MATCH (a
+        | WHERE EXISTS {
+        |   MATCH (n WHERE EXISTS {
+        |     MATCH (n WHERE n.prop = 1)-[r]->()
+        |   } XOR true)
+        | }
+        |)
+        |RETURN *
+        | """.stripMargin
+
+    val rewritten =
+      s"""
+        |MATCH (a)
+        |WHERE EXISTS {
+        | MATCH (n)
+        | WHERE EXISTS {
+        |   MATCH (n)-[r]->($node)
+        |   WHERE n.prop = 1
+        | } XOR true
+        |}
+        |RETURN *
+        |""".stripMargin
+
+    assertRewrite(original, rewritten)
+  }
+
   test("should not move label expression in EXISTS clause") {
     val anonVarNameGen = new AnonymousVariableNameGenerator
     val node = s"`${anonVarNameGen.nextName}`"
