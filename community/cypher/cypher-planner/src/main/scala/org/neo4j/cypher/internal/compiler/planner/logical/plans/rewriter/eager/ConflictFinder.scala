@@ -23,15 +23,20 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
-import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
-import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
+import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
+import org.neo4j.cypher.internal.label_expressions.NodeLabels
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 
 import scala.collection.mutable
@@ -51,7 +56,7 @@ object ConflictFinder {
   private[eager] case class ConflictingPlanPair(
     first: Ref[LogicalPlan],
     second: Ref[LogicalPlan],
-    reasons: Set[EagernessReason.Reason]
+    reasons: Set[Reason]
   )
 
   /**
@@ -63,18 +68,18 @@ object ConflictFinder {
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan
   ): Seq[ConflictingPlanPair] = {
-    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[EagernessReason.Reason]]()
+    val map = mutable.Map[Set[Ref[LogicalPlan]], Set[Reason]]()
 
-    def addConflict(plan1: LogicalPlan, plan2: LogicalPlan, reasons: Set[EagernessReason.Reason]): Unit =
+    def addConflict(plan1: LogicalPlan, plan2: LogicalPlan, reasons: Set[Reason]): Unit =
       map(Set(Ref(plan1), Ref(plan2))) = map.getOrElse(
         Set(Ref(plan1), Ref(plan2)),
-        Set.empty[EagernessReason.Reason]
+        Set.empty[Reason]
       ) ++ reasons
 
     // Conflict between a property read and a property write
     for {
       (prop, writePlans) <-
-        readsAndWrites.writes.sets.writtenProperties.entries ++ readsAndWrites.writes.creates.writtenProperties.entries
+        readsAndWrites.writes.sets.writtenProperties.entries
       readPlan <- readsAndWrites.reads.plansReadingProperty(prop)
       writePlan <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
@@ -83,7 +88,7 @@ object ConflictFinder {
       addConflict(
         writePlan,
         readPlan,
-        Set(prop.map(EagernessReason.PropertyReadSetConflict(_, conflict))
+        Set(prop.map(PropertyReadSetConflict(_, conflict))
           .getOrElse(UnknownPropertyReadSetConflict(conflict)))
       )
     }
@@ -96,20 +101,22 @@ object ConflictFinder {
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      addConflict(writePlan, readPlan, Set(EagernessReason.LabelReadSetConflict(label, conflict)))
+      addConflict(writePlan, readPlan, Set(LabelReadSetConflict(label, conflict)))
     }
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     for {
-      (writePlan, labelCombinations) <- readsAndWrites.writes.creates.writtenLabels
+      (writePlan, createdNodes) <- readsAndWrites.writes.creates.createdNodes
       (variable, FilterExpressions(readPlans, expression)) <-
         // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
         // But we have to include other filterExpressions that are not in the snapshot, to also cover write-read conflicts.
         readsAndWrites.writes.creates.filterExpressionsSnapshots(writePlan).fuse(
           readsAndWrites.reads.filterExpressions
         )((x, _) => x)
-      labelSet <- labelCombinations
-      if (CreateOverlaps.overlap(Seq(expression), labelSet.map(_.name), CreatesNoPropertyKeys) match {
+      createdNode <- createdNodes
+      labelSet = createdNode.createdLabels
+      overlap = CreateOverlaps.overlap(Seq(expression), labelSet.map(_.name), createdNode.createdProperties)
+      if (overlap match {
         case CreateOverlaps.NoPropertyOverlap => false
         case CreateOverlaps.NoLabelOverlap    => false
         case _: CreateOverlaps.Overlap        => true
@@ -120,9 +127,24 @@ object ConflictFinder {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
       val emptyFilterExpressions = FilterExpressions(Set.empty)
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
-      val reasons: Set[EagernessReason.Reason] =
-        if (labelSet.isEmpty || expression == emptyFilterExpressions.expression) Set(ReadCreateConflict(conflict))
-        else labelSet.map(EagernessReason.LabelReadSetConflict(_, conflict))
+      val reasons: Set[Reason] = overlap match {
+        // Other cases have been filtered out above
+        case CreateOverlaps.Overlap(_, propertiesOverlap, labelsOverlap) =>
+          val labelReasons: Set[Reason] = labelsOverlap match {
+            case NodeLabels.KnownLabels(labelNames) => labelNames
+                .map(ln => LabelReadSetConflict(LabelName(ln)(InputPosition.NONE), conflict))
+            // SomeUnknownLabels is not possible for a CREATE conflict
+          }
+          val propertyReasons = propertiesOverlap match {
+            case PropertiesOverlap.Overlap(properties) =>
+              properties.map(PropertyReadSetConflict(_, conflict))
+            case PropertiesOverlap.UnknownOverlap =>
+              Set(UnknownPropertyReadSetConflict(conflict))
+          }
+          val allReasons = labelReasons ++ propertyReasons
+          if (allReasons.isEmpty) Set(ReadCreateConflict(conflict))
+          else allReasons
+      }
       addConflict(writePlan, readPlan, reasons)
     }
 

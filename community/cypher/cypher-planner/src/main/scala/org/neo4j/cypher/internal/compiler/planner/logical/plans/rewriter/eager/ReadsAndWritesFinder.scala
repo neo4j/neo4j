@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.PlanReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.collectReads
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedNode
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanCreates
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanSets
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanWrites
@@ -371,39 +372,28 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of CREATEs in the logical plan tree.
    *
-   * @param writtenProperties          a provider to find out which plans create which properties.
-   * @param writtenLabels              for each plan, the labels that it creates. We cannot use the label as key for this map,
-   *                                   because we need to view the composite label expressions when checking against
-   *                                   filterExpressions.
-   *                                   This is a Set of a Set because we need to group the writes by which node they happen on.
+   * @param createdNodes               for each plan, the created nodes.
    * @param filterExpressionsSnapshots for each plan (that will need to look at that later), a snapshot of the current filterExpressions.
    */
   private[eager] case class Creates(
-    writtenProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
-    writtenLabels: Map[LogicalPlan, Set[Set[LabelName]]] = Map.empty,
+    createdNodes: Map[LogicalPlan, Set[CreatedNode]] = Map.empty,
     filterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
 
-    def withPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Creates =
-      copy(writtenProperties = writtenProperties.withPropertyWritten(property, plan))
-
-    def withUnknownPropertyWritten(plan: LogicalPlan): Creates =
-      copy(writtenProperties = writtenProperties.withUnknownPropertyWritten(plan))
-
     /**
-     * Save that `plan` writes `label`.
+     * Save that `plan` creates `createdNode`.
      * Since CREATE plans need to look for conflicts in the _current_ filterExpressions, we save a snapshot of the current filterExpressions,
      * associated with the CREATE plan. If we were to include all filterExpressions, we might think that Eager is not needed, even though it is.
      * See test "inserts eager between Create and NodeByLabelScan if label overlap, and other label in Filter after create".
      */
-    def withLabelsWritten(
-      labels: Set[LabelName],
+    def withCreatedNode(
+      createdNode: CreatedNode,
       plan: LogicalPlan,
       filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      val prevLabels = writtenLabels.getOrElse(plan, Set.empty)
+      val prevCreatedNodes = createdNodes.getOrElse(plan, Set.empty)
       copy(
-        writtenLabels = writtenLabels.updated(plan, prevLabels + labels),
+        createdNodes = createdNodes.updated(plan, prevCreatedNodes + createdNode),
         filterExpressionsSnapshots = filterExpressionsSnapshots + (plan -> filterExpressionsSnapshot)
       )
     }
@@ -413,17 +403,12 @@ object ReadsAndWritesFinder {
       planCreates: PlanCreates,
       filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      Option(this)
-        .map(acc => planCreates.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)))
-        .map(acc => if (planCreates.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc)
-        .map(acc => planCreates.writtenLabels.foldLeft(acc)(_.withLabelsWritten(_, plan, filterExpressionsSnapshot)))
-        .get
+      planCreates.createdNodes.foldLeft(this)(_.withCreatedNode(_, plan, filterExpressionsSnapshot))
     }
 
     def ++(other: Creates): Creates = {
       copy(
-        writtenProperties = this.writtenProperties ++ other.writtenProperties,
-        writtenLabels = this.writtenLabels.fuse(other.writtenLabels)(_ ++ _),
+        createdNodes = this.createdNodes.fuse(other.createdNodes)(_ ++ _),
         filterExpressionsSnapshots = this.filterExpressionsSnapshots ++ other.filterExpressionsSnapshots
       )
     }

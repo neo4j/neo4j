@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
+import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
+import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
+import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -47,78 +51,47 @@ import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 object WriteFinder {
 
   /**
-   * Write operations of a certain kind of a single plan.
+   * Set write operations of a single plan
+   * Labels written on the same node for sets does not need to differentiated
+   * since there can be a situation where another label already exists on the node.
+   *
+   * @param writtenProperties       all properties written by this plan
+   * @param writesUnknownProperties `true` if this plan writes unknown properties, e.g. by doing SET m = n
    */
-  abstract private[eager] class PlanWriteOperations {
+  private[eager] case class PlanSets(
+    writtenProperties: Seq[PropertyKeyName] = Seq.empty,
+    writesUnknownProperties: Boolean = false,
+    writtenLabels: Set[LabelName] = Set.empty
+  ) {
 
-    /**
-     * @return all properties written by this plan
-     */
-    def writtenProperties: Seq[PropertyKeyName]
+    def withPropertyWritten(property: PropertyKeyName): PlanSets =
+      copy(writtenProperties = writtenProperties :+ property)
 
-    /**
-     * @return `true` if this plan writes unknown properties, e.g. by doing SET m = n
-     */
-    def writesUnknownProperties: Boolean
-
-    def withPropertyWritten(property: PropertyKeyName): PlanWriteOperations
-    def withUnknownPropertiesWritten: PlanWriteOperations
+    def withUnknownPropertiesWritten: PlanSets = copy(writesUnknownProperties = true)
 
     /**
      * Call this to signal that this plan writes some labels.
      * The method should be called once for each node, with all the labels that are written for that node.
      * If a plan writes labels on multiple nodes, it should call this method multiple times.
-     * 
+     *
      * @param labels labels written on the same node for each write
      */
-    def withLabelsWritten(labels: Set[LabelName]): PlanWriteOperations
-
-    /**
-     * @return A `Seq` of all writtem properties.
-     *         For a known `PropertyKeyName` (`Some`) and for an unknown `PropertyKeyName` (`None`).
-     */
-    def writtenPropertiesIncludingUnknown: Seq[Option[PropertyKeyName]] = {
-      val concrete = writtenProperties.map(Some(_))
-      if (writesUnknownProperties) concrete :+ None else concrete
-    }
+    def withLabelsWritten(labels: Set[LabelName]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
   }
 
   /**
-   * Set write operations of a single plan
-   * Labels written on the same node for sets does not need to differentiated
-   * since there can be a situation where another label already exists on the node.
+   * A single node from a CREATE or MERGE
+   *
+   * @param createdLabels     the created labels on that node
+   * @param createdProperties the properties that get created
    */
-  private[eager] case class PlanSets(
-    override val writtenProperties: Seq[PropertyKeyName] = Seq.empty,
-    override val writesUnknownProperties: Boolean = false,
-    writtenLabels: Set[LabelName] = Set.empty
-  ) extends PlanWriteOperations {
-
-    override def withPropertyWritten(property: PropertyKeyName): PlanSets =
-      copy(writtenProperties = writtenProperties :+ property)
-
-    override def withUnknownPropertiesWritten: PlanSets = copy(writesUnknownProperties = true)
-
-    override def withLabelsWritten(labels: Set[LabelName]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
-  }
+  private[eager] case class CreatedNode(createdLabels: Set[LabelName], createdProperties: CreatesPropertyKeys)
 
   /**
    * Create write operations of a single plan
-   * Labels needs to be differentiated based on each create
-   * since we can then assume that no other label is on that node since it was just created.
    */
-  private[eager] case class PlanCreates(
-    override val writtenProperties: Seq[PropertyKeyName] = Seq.empty,
-    override val writesUnknownProperties: Boolean = false,
-    writtenLabels: Set[Set[LabelName]] = Set.empty
-  ) extends PlanWriteOperations {
-
-    override def withPropertyWritten(property: PropertyKeyName): PlanCreates =
-      copy(writtenProperties = writtenProperties :+ property)
-
-    override def withUnknownPropertiesWritten: PlanCreates = copy(writesUnknownProperties = true)
-
-    override def withLabelsWritten(labels: Set[LabelName]): PlanCreates = copy(writtenLabels = writtenLabels + labels)
+  private[eager] case class PlanCreates(createdNodes: Set[CreatedNode] = Set.empty) {
+    def withCreatedNode(createdNode: CreatedNode): PlanCreates = copy(createdNodes = createdNodes + createdNode)
   }
 
   /**
@@ -159,12 +132,12 @@ object WriteFinder {
       PlanWrites(creates = creates)
 
     case Merge(_, nodes, relationships, onMatch, onCreate, _) =>
-      val setPart = processSetMutatingPatterns(PlanSets(), onMatch)
+      val setPart = Function.chain[PlanSets](Seq(
+        processSetMutatingPatterns(_, onMatch),
+        processSetMutatingPatterns(_, onCreate)
+      ))(PlanSets())
 
-      val createPart = Option(PlanCreates())
-        .map(acc => processCreateNodes(acc, nodes))
-        .map(acc => processSetMutatingPatterns(acc, onCreate))
-        .get
+      val createPart = processCreateNodes(PlanCreates(), nodes)
 
       PlanWrites(setPart, createPart)
 
@@ -183,34 +156,33 @@ object WriteFinder {
     case _ => PlanWrites()
   }
 
-  private def processPropertyMap[OP <: PlanWriteOperations](acc: OP, properties: MapExpression): OP = {
-    val res = properties.items.foldLeft[PlanWriteOperations](acc) {
+  private def processPropertyMap(acc: PlanSets, properties: MapExpression): PlanSets = {
+    properties.items.foldLeft[PlanSets](acc) {
       case (acc, (propertyName, _)) => acc.withPropertyWritten(propertyName)
     }
-    res.asInstanceOf[OP]
   }
 
   private def processCreateNodes(acc: PlanCreates, nodes: Seq[CreateNode]): PlanCreates = {
     nodes.foldLeft(acc) {
       case (acc, CreateNode(_, labels, maybeProperties)) =>
         Option(acc)
-          .map(acc => acc.withLabelsWritten(labels))
           .map(acc =>
             maybeProperties match {
-              case None                            => acc
-              case Some(properties: MapExpression) => processPropertyMap(acc, properties)
-              case Some(_)                         => acc.withUnknownPropertiesWritten
+              case None => acc.withCreatedNode(CreatedNode(labels, CreatesNoPropertyKeys))
+              case Some(MapExpression(properties)) =>
+                acc.withCreatedNode(CreatedNode(labels, CreatesKnownPropertyKeys(properties.map(_._1).toSet)))
+              case Some(_) => acc.withCreatedNode(CreatedNode(labels, CreatesUnknownPropertyKeys))
             }
           )
           .get
     }
   }
 
-  private def processSetMutatingPatterns[OP <: PlanWriteOperations](
-    acc: OP,
+  private def processSetMutatingPatterns(
+    acc: PlanSets,
     setMutatingPatterns: Seq[SetMutatingPattern]
-  ): OP = {
-    val res = setMutatingPatterns.foldLeft[PlanWriteOperations](acc) {
+  ): PlanSets = {
+    setMutatingPatterns.foldLeft[PlanSets](acc) {
       case (acc, SetNodePropertyPattern(_, propertyName, _)) => acc.withPropertyWritten(propertyName)
       case (acc, SetNodePropertiesPattern(_, assignments)) =>
         assignments.foldLeft(acc) {
@@ -232,7 +204,6 @@ object WriteFinder {
           s"Eagerness support for mutating pattern ${mutatingPattern.productPrefix} not implemented yet."
         )
     }
-    res.asInstanceOf[OP]
   }
 
   private def processCreateMutatingPatterns(

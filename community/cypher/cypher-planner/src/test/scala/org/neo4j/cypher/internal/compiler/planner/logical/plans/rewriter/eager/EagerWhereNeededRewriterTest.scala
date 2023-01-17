@@ -731,7 +731,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .create(createNode("o", "O"))
-        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
@@ -758,7 +758,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("m")
         .create(createNode("o", "O"))
-        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("O"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(None))
         .nodeByLabelScan("m", "M")
@@ -1712,7 +1712,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts no eager between Create and IndexScan if no property overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .create(createNodeWithProperties("o", Seq.empty, "{foo: 5}"))
+      .create(createNodeWithProperties("o", Seq("M"), "{foo: 5}"))
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -1728,7 +1728,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Create and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .create(createNodeWithProperties("o", Seq.empty, "{prop: 5}"))
+      .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -1741,8 +1741,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .create(createNodeWithProperties("o", Seq.empty, "{prop: 5}"))
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1753,7 +1756,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Create and IndexScan if unknown property created") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .create(createNodeWithProperties("o", Seq.empty, "$foo"))
+      .create(createNodeWithProperties("o", Seq("M"), "$foo"))
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -1766,8 +1769,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .create(createNodeWithProperties("o", Seq.empty, "$foo"))
-        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(1), Id(3))))))
+        .create(createNodeWithProperties("o", Seq("M"), "$foo"))
+        .eager(ListSet(
+          UnknownPropertyReadSetConflict(Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2047,7 +2053,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge with ON CREATE and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(nodes = Seq(createNode("m")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
+      .merge(nodes = Seq(createNode("m", "M")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -2060,7 +2066,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(nodes = Seq(createNode("m")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
+        .merge(nodes = Seq(createNode("m", "M")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
         .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
@@ -3143,7 +3149,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .apply()
       .|.nodeIndexOperator("d:D(foo>0)")
       .foreachApply("num", "[1]")
-      .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
+      .|.create(createNodeWithProperties("n", Seq("D"), "{foo: num}"))
       .|.argument("num")
       .argument()
 
@@ -3158,9 +3164,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("d")
         .apply()
         .|.nodeIndexOperator("d:D(foo>0)")
-        .eager(ListSet(PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(4), Id(2))))))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(4), Id(2)))),
+          LabelReadSetConflict(labelName("D"), Some(Conflict(Id(4), Id(2))))
+        ))
         .foreachApply("num", "[1]")
-        .|.create(createNodeWithProperties("n", Seq(), "{foo: num}"))
+        .|.create(createNodeWithProperties("n", Seq("D"), "{foo: num}"))
         .|.argument("num")
         .argument()
         .build()
@@ -3242,6 +3251,34 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts eager between Create and NodeIndexSeek if property overlap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
+      .cartesianProduct()
+      .|.nodeIndexOperator("m:M(prop>0)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .cartesianProduct()
+        .|.nodeIndexOperator("m:M(prop>0)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test(
     "inserts eager between property set and property read (NodeUniqueIndexSeek) if property read through unstable iterator"
   ) {
@@ -3265,6 +3302,34 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .apply()
         .|.nodeIndexOperator("n:N(prop = 5)", unique = true)
         .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test("inserts eager between Create and NodeUniqueIndexSeek if property overlap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
+      .cartesianProduct()
+      .|.nodeIndexOperator("m:M(prop>0)", unique = true)
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNodeWithProperties("o", Seq("M"), "{prop: 5}"))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .cartesianProduct()
+        .|.nodeIndexOperator("m:M(prop>0)", unique = true)
+        .allNodeScan("n")
         .build()
     )
   }
@@ -3296,6 +3361,34 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts eager between Create and NodeIndexContainsScan if property overlap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("o", Seq("M"), "{prop: '1'}"))
+      .cartesianProduct()
+      .|.nodeIndexOperator("m:M(prop CONTAINS '1')")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNodeWithProperties("o", Seq("M"), "{prop: '1'}"))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .cartesianProduct()
+        .|.nodeIndexOperator("m:M(prop CONTAINS '1')")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test(
     "inserts eager between property set and property read (NodeIndexEndsWithScan) if property read through unstable iterator"
   ) {
@@ -3319,6 +3412,34 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .apply()
         .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
         .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test("inserts eager between Create and NodeIndexEndsWithScan if property overlap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("o", Seq("M"), "{prop: '1'}"))
+      .cartesianProduct()
+      .|.nodeIndexOperator("m:M(prop ENDS WITH '1')")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .create(createNodeWithProperties("o", Seq("M"), "{prop: '1'}"))
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3)))),
+          LabelReadSetConflict(labelName("M"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .cartesianProduct()
+        .|.nodeIndexOperator("m:M(prop ENDS WITH '1')")
+        .allNodeScan("n")
         .build()
     )
   }

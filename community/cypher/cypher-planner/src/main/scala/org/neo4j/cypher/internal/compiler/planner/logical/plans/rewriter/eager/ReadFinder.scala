@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -167,87 +168,35 @@ object ReadFinder {
             }
 
           case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val lN = LabelName(labelName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
-
-            val r = PlanReads()
-              .withLabelRead(lN)
-              .withIntroducedVariable(variable)
-              .withAddedFilterExpression(variable, hasLabels)
-
-            properties.foldLeft(r) {
-              case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
-                acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
-            }
+            processIndexPlan(varName, labelName, properties)
 
           case NodeIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val lN = LabelName(labelName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
-
-            val r = PlanReads()
-              .withLabelRead(lN)
-              .withIntroducedVariable(variable)
-              .withAddedFilterExpression(variable, hasLabels)
-
-            properties.foldLeft(r) {
-              case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
-                acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
-            }
+            processIndexPlan(varName, labelName, properties)
 
           case NodeUniqueIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val lN = LabelName(labelName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
-
-            val r = PlanReads()
-              .withLabelRead(lN)
-              .withIntroducedVariable(variable)
-              .withAddedFilterExpression(variable, hasLabels)
-
-            properties.foldLeft(r) {
-              case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
-                acc.withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
-            }
+            processIndexPlan(varName, labelName, properties)
 
           case NodeIndexContainsScan(
               varName,
               LabelToken(labelName, _),
-              IndexedProperty(PropertyKeyToken(property, _), _, _),
+              property,
               _,
               _,
               _,
               _
             ) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val lN = LabelName(labelName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
-
-            PlanReads()
-              .withLabelRead(lN)
-              .withIntroducedVariable(variable)
-              .withAddedFilterExpression(variable, hasLabels)
-              .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+            processIndexPlan(varName, labelName, Seq(property))
 
           case NodeIndexEndsWithScan(
               varName,
               LabelToken(labelName, _),
-              IndexedProperty(PropertyKeyToken(property, _), _, _),
+              property,
               _,
               _,
               _,
               _
             ) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val lN = LabelName(labelName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
-
-            PlanReads()
-              .withLabelRead(lN)
-              .withIntroducedVariable(variable)
-              .withAddedFilterExpression(variable, hasLabels)
-              .withPropertyRead(PropertyKeyName(property)(InputPosition.NONE))
+            processIndexPlan(varName, labelName, Seq(property))
 
           case NodeByIdSeek(varName, _, _) =>
             // We could avoid eagerness when we have IdSeeks with a single ID.
@@ -304,6 +253,27 @@ object ReadFinder {
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc => SkipChildren(acc.withUnknownPropertiesRead())
+    }
+  }
+
+  private def processIndexPlan(varName: String, labelName: String, properties: Seq[IndexedProperty]): PlanReads = {
+    val variable = Variable(varName)(InputPosition.NONE)
+    val lN = LabelName(labelName)(InputPosition.NONE)
+    val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
+
+    val r = PlanReads()
+      .withLabelRead(lN)
+      .withIntroducedVariable(variable)
+      .withAddedFilterExpression(variable, hasLabels)
+
+    properties.foldLeft(r) {
+      case (acc, IndexedProperty(PropertyKeyToken(property, _), _, _)) =>
+        val propName = PropertyKeyName(property)(InputPosition.NONE)
+        val propPredicate = IsNotNull(Property(variable, propName)(InputPosition.NONE))(InputPosition.NONE)
+
+        acc
+          .withPropertyRead(propName)
+          .withAddedFilterExpression(variable, propPredicate)
     }
   }
 
