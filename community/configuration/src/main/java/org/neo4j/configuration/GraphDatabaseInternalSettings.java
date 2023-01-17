@@ -1056,4 +1056,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("A feature toggle behind which change data capture feature is developed")
     public static final Setting<Boolean> change_data_capture =
             newBuilder("internal.dbms.change_data_capture", BOOL, false).build();
+
+    @Internal
+    @Description("A feature toggle behind which show configuration feature is developed")
+    public static final Setting<Boolean> show_configuration =
+            newBuilder("internal.dbms.show_configuration", BOOL, false).build();
 }
