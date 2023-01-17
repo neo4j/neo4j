@@ -47,7 +47,7 @@ import org.neo4j.token.api.TokenHolder;
  */
 public class RelationshipImporter extends EntityImporter {
     private final TokenHolder relationshipTypeTokenRepository;
-    private final IdMapper idMapper;
+    private final IdMapper.Getter idMapper;
     private final RelationshipStore relationshipStore;
     private final RelationshipRecord relationshipRecord;
     private final BatchingIdGetter relationshipIds;
@@ -81,7 +81,7 @@ public class RelationshipImporter extends EntityImporter {
         super(stores, monitor, contextFactory, memoryTracker, schemaMonitor);
         this.doubleRecordUnits = doubleRecordUnits;
         this.relationshipTypeTokenRepository = stores.getTokenHolders().relationshipTypeTokens();
-        this.idMapper = idMapper;
+        this.idMapper = idMapper.newGetter();
         this.badCollector = badCollector;
         this.validateRelationshipData = validateRelationshipData;
         this.relationshipStore = stores.getRelationshipStore();
@@ -240,6 +240,7 @@ public class RelationshipImporter extends EntityImporter {
         monitor.relationshipsImported(relationshipCount);
         relationshipUpdateCursor.close();
         cursorContext.close();
+        idMapper.close();
     }
 
     @Override

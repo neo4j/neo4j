@@ -60,10 +60,10 @@ import org.neo4j.util.VisibleForTesting;
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
  * but {@link #needsPreparation() needs} {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener) preparation}
  *
- * in order to {@link #get(Object, Group) get} ids back later.
+ * in order to {@link Getter#get(Object, Group) get} ids back later.
  *
  * In the {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener) preparation phase} the added entries are
- * sorted according to a number representation of each input value and {@link #get(Object, Group)} does simple
+ * sorted according to a number representation of each input value and {@link Getter#get(Object, Group)} does simple
  * binary search to find the correct one.
  *
  * The implementation is space-efficient, much more so than using, say, a {@link HashMap}.
@@ -223,13 +223,27 @@ public class EncodingIdMapper implements IdMapper {
         this.radix = radixFactory.newInstance();
     }
 
-    /**
-     * Returns the data index (i.e. node id) if found, or {@code -1} if not found.
-     */
     @Override
-    public long get(Object inputId, Group group) {
-        assert readyForUse;
-        return binarySearch(inputId, group.id());
+    public Getter newGetter() {
+        return new LocalGetter();
+    }
+
+    private class LocalGetter implements Getter {
+        private final PropertyValueLookup.Lookup lookup = inputIdLookup.newLookup();
+
+        /**
+         * Returns the data index (i.e. node id) if found, or {@code -1} if not found.
+         */
+        @Override
+        public long get(Object inputId, Group group) {
+            assert readyForUse;
+            return binarySearch(inputId, group.id(), lookup);
+        }
+
+        @Override
+        public void close() {
+            lookup.close();
+        }
     }
 
     @Override
@@ -288,7 +302,9 @@ public class EncodingIdMapper implements IdMapper {
 
             long pessimisticNumberOfCollisions = detectAndMarkCollisions(progress);
             if (pessimisticNumberOfCollisions > 0) {
-                buildCollisionInfo(inputIdLookup, pessimisticNumberOfCollisions, collector, progress);
+                try (var lookup = inputIdLookup.newLookup()) {
+                    buildCollisionInfo(lookup, pessimisticNumberOfCollisions, collector, progress);
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -296,10 +312,7 @@ public class EncodingIdMapper implements IdMapper {
                     + "onwards will cause a chain reaction which will cause a panic in the whole import, "
                     + "so mission accomplished");
         }
-        if (strictNodeCheck) {
-            // Need this for strict checkup
-            this.inputIdLookup = inputIdLookup;
-        }
+        this.inputIdLookup = inputIdLookup;
         readyForUse = true;
     }
 
@@ -313,7 +326,7 @@ public class EncodingIdMapper implements IdMapper {
         return radix.calculator().radixOf(value);
     }
 
-    private long binarySearch(Object inputId, int groupId) {
+    private long binarySearch(Object inputId, int groupId, PropertyValueLookup.Lookup lookup) {
         long low = 0;
         long high = highestSetTrackerIndex;
         long x = encode(inputId);
@@ -334,8 +347,8 @@ public class EncodingIdMapper implements IdMapper {
             nodeId = binarySearch(x, inputId, low, high, groupId);
         }
         // Strict check needed?
-        if (nodeId != ID_NOT_FOUND && inputIdLookup != null) {
-            var referenceInputId = inputIdLookup.lookupProperty(nodeId);
+        if (nodeId != ID_NOT_FOUND && strictNodeCheck) {
+            var referenceInputId = lookup.lookupProperty(nodeId);
             if (!inputId.equals(referenceInputId)) {
                 nodeId = ID_NOT_FOUND;
             }
@@ -515,7 +528,7 @@ public class EncodingIdMapper implements IdMapper {
     }
 
     private void buildCollisionInfo(
-            PropertyValueLookup inputIdLookup,
+            PropertyValueLookup.Lookup inputIdLookup,
             long pessimisticNumberOfCollisions,
             Collector collector,
             ProgressListener progress)

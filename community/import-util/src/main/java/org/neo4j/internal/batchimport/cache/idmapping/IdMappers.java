@@ -44,7 +44,7 @@ import org.neo4j.memory.MemoryTracker;
  * Place to instantiate common {@link IdMapper} implementations.
  */
 public class IdMappers {
-    private static class ActualIdMapper implements IdMapper {
+    private static class ActualIdMapper implements IdMapper, IdMapper.Getter {
         @Override
         public void put(Object inputId, long actualId, Group group) { // No need to remember anything
         }
@@ -64,6 +64,11 @@ public class IdMappers {
         @Override
         public long get(Object inputId, Group group) {
             return (Long) inputId;
+        }
+
+        @Override
+        public Getter newGetter() {
+            return this;
         }
 
         @Override

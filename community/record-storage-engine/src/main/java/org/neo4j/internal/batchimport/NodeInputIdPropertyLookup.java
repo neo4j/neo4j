@@ -22,9 +22,9 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
+import java.util.function.Supplier;
 import org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -37,25 +37,35 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  */
 class NodeInputIdPropertyLookup implements PropertyValueLookup {
     private final PropertyStore propertyStore;
-    private final PropertyRecord propertyRecord;
-    private final StoreCursors storeCursors;
+    private final Supplier<StoreCursors> storeCursors;
 
-    NodeInputIdPropertyLookup(PropertyStore propertyStore, StoreCursors storeCursors) {
+    NodeInputIdPropertyLookup(PropertyStore propertyStore, Supplier<StoreCursors> storeCursors) {
         this.propertyStore = propertyStore;
-        this.propertyRecord = propertyStore.newRecord();
         this.storeCursors = storeCursors;
     }
 
     @Override
-    public Object lookupProperty(long nodeId) {
-        propertyStore.getRecordByCursor(nodeId, propertyRecord, CHECK, storeCursors.readCursor(PROPERTY_CURSOR));
-        if (!propertyRecord.inUse()) {
-            return null;
-        }
-        return propertyRecord
-                .iterator()
-                .next()
-                .newPropertyValue(propertyStore, storeCursors)
-                .asObject();
+    public Lookup newLookup() {
+        var cursors = storeCursors.get();
+        var propertyRecord = propertyStore.newRecord();
+        return new Lookup() {
+            @Override
+            public Object lookupProperty(long nodeId) {
+                propertyStore.getRecordByCursor(nodeId, propertyRecord, CHECK, cursors.readCursor(PROPERTY_CURSOR));
+                if (!propertyRecord.inUse()) {
+                    return null;
+                }
+                return propertyRecord
+                        .iterator()
+                        .next()
+                        .newPropertyValue(propertyStore, cursors)
+                        .asObject();
+            }
+
+            @Override
+            public void close() {
+                cursors.close();
+            }
+        };
     }
 }

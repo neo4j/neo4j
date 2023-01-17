@@ -21,5 +21,12 @@ package org.neo4j.internal.batchimport;
 
 @FunctionalInterface
 public interface PropertyValueLookup {
-    Object lookupProperty(long nodeId);
+    Lookup newLookup();
+
+    interface Lookup extends AutoCloseable {
+        Object lookupProperty(long nodeId);
+
+        @Override
+        void close();
+    }
 }

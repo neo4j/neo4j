@@ -92,7 +92,20 @@ class IndexIdMapperIT {
     private static final int ID_THRESHOLD = 1_000;
     private static final LongToObjectFunction<Object> ID_FUNCTION =
             id -> id < ID_THRESHOLD ? String.valueOf(id) : String.valueOf(id - ID_THRESHOLD);
-    private static final PropertyValueLookup ID_LOOKUP = ID_FUNCTION::valueOf;
+    private static final PropertyValueLookup ID_LOOKUP = new PropertyValueLookup() {
+        @Override
+        public Lookup newLookup() {
+            return new Lookup() {
+                @Override
+                public Object lookupProperty(long nodeId) {
+                    return ID_FUNCTION.valueOf(nodeId);
+                }
+
+                @Override
+                public void close() {}
+            };
+        }
+    };
 
     @Inject
     private PageCache pageCache;
@@ -289,7 +302,9 @@ class IndexIdMapperIT {
     }
 
     private void assertId(long nodeId, Group group) {
-        assertThat(idMapper.get(ID_FUNCTION.valueOf(nodeId), group)).isEqualTo(nodeId);
+        try (var getter = idMapper.newGetter()) {
+            assertThat(getter.get(ID_FUNCTION.valueOf(nodeId), group)).isEqualTo(nodeId);
+        }
     }
 
     private Map<Object, Long> sequentialNodes(long startId, int count) {

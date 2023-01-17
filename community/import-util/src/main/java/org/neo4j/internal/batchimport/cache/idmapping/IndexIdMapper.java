@@ -71,7 +71,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -188,13 +187,10 @@ public class IndexIdMapper implements IdMapper {
     }
 
     private IndexEntryConflictHandler conflictHandler(Collector collector, Map.Entry<String, Populator> entry) {
-        return new IndexEntryConflictHandler() {
-            @Override
-            public IndexEntryConflictAction indexEntryConflict(long firstEntityId, long otherEntityId, Value[] values) {
-                duplicateNodeIds.add(otherEntityId);
-                collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, groups.get(entry.getKey()));
-                return IndexEntryConflictAction.DELETE;
-            }
+        return (firstEntityId, otherEntityId, values) -> {
+            duplicateNodeIds.add(otherEntityId);
+            collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, groups.get(entry.getKey()));
+            return IndexEntryConflictHandler.IndexEntryConflictAction.DELETE;
         };
     }
 
@@ -262,23 +258,29 @@ public class IndexIdMapper implements IdMapper {
     }
 
     @Override
-    public long get(Object inputId, Group group) {
-        try {
-            // TODO somehow reuse client/progressor per thread?
-            try (var client = new NodeValueIterator()) {
-                // TODO do we need a proper QueryContext?
-                var index = index(group);
-                index.reader.query(
-                        client,
-                        NULL_CONTEXT,
-                        FULL,
-                        unconstrained(),
-                        exact(index.schemaDescriptor.getPropertyId(), inputId));
-                return client.hasNext() ? client.next() : -1;
+    public Getter newGetter() {
+        return new Getter() {
+            @Override
+            public long get(Object inputId, Group group) {
+                // TODO somehow reuse client/progressor per thread?
+                try (var client = new NodeValueIterator()) {
+                    // TODO do we need a proper QueryContext?
+                    var index = index(group);
+                    index.reader.query(
+                            client,
+                            NULL_CONTEXT,
+                            FULL,
+                            unconstrained(),
+                            exact(index.schemaDescriptor.getPropertyId(), inputId));
+                    return client.hasNext() ? client.next() : -1;
+                } catch (IndexNotApplicableKernelException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        } catch (IndexNotApplicableKernelException e) {
-            throw new RuntimeException(e);
-        }
+
+            @Override
+            public void close() {}
+        };
     }
 
     @Override

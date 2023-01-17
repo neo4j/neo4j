@@ -277,9 +277,10 @@ public class ImportLogic implements Closeable {
     public void prepareIdMapper() {
         if (idMapper.needsPreparation()) {
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider(neoStore, idMapper);
-            try (var cursorContext = contextFactory.create(ID_MAPPER_PREPARATION_TAG);
-                    var cursors = new CachedStoreCursors(neoStore.getTemporaryNeoStores(), cursorContext)) {
-                var inputIdLookup = new NodeInputIdPropertyLookup(neoStore.getTemporaryPropertyStore(), cursors);
+            try (var cursorContext = contextFactory.create(ID_MAPPER_PREPARATION_TAG)) {
+                var inputIdLookup = new NodeInputIdPropertyLookup(
+                        neoStore.getTemporaryPropertyStore(),
+                        () -> new CachedStoreCursors(neoStore.getTemporaryNeoStores(), cursorContext));
                 executeStage(
                         new IdMapperPreparationStage(config, idMapper, inputIdLookup, badCollector, memoryUsageStats));
             }
