@@ -106,8 +106,8 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
       .updated(varFor("b", position000), ExpressionTypeInfo(TypeSpec.all, None))
       .updated(varFor("c", position000), ExpressionTypeInfo(CTInteger.invariant | CTString.invariant, None)))
 
-    table.isInteger(varFor("a", position000)) should be(true)
-    table.isInteger(varFor("b", position000)) should be(false)
-    table.isInteger(varFor("c", position000)) should be(false)
+    table.isIntegerNoFail(varFor("a", position000)) should be(true)
+    table.isIntegerNoFail(varFor("b", position000)) should be(false)
+    table.isIntegerNoFail(varFor("c", position000)) should be(false)
   }
 }

@@ -481,7 +481,7 @@ trait UpdateGraph {
       case ContainerIndex(_, index) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
-        !semanticTable.isInteger(index)
+        !semanticTable.isIntegerNoFail(index)
     }
     val hasPropertyFunctionRead = this != qgWithInfo.queryGraph && qgWithInfo.queryGraph.folder.treeExists {
       case Properties(expr) if !semanticTable.isMapNoFail(expr) =>

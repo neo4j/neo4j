@@ -269,7 +269,7 @@ object ReadFinder {
       case HasLabels(_, labels) =>
         acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
 
-      case ContainerIndex(expr, index) if (!semanticTable.isInteger(index) && !semanticTable.isMapNoFail(expr)) =>
+      case ContainerIndex(expr, index) if (!semanticTable.isIntegerNoFail(index) && !semanticTable.isMapNoFail(expr)) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc => SkipChildren(acc.withUnknownPropertiesRead())

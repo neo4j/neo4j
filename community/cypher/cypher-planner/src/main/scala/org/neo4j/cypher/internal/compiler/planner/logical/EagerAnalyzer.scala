@@ -485,13 +485,13 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
 
   private def deletedRelationshipsOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
     val relsToRead = to.allPatternRelationshipsRead
-    val relsDeleted = deleted.filter(id => semanticTable.isRelationship(id))
+    val relsDeleted = deleted.filter(id => semanticTable.isRelationshipNoFail(id))
     relsToRead.nonEmpty && relsDeleted.nonEmpty
   }
 
   private def deletedNodesOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
     val nodesToRead = to.allPatternNodesRead
-    val nodesDeleted = deleted.filter(id => semanticTable.isNode(id))
+    val nodesDeleted = deleted.filter(id => semanticTable.isNodeNoFail(id))
     nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
 

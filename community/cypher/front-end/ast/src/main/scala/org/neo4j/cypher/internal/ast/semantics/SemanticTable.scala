@@ -125,13 +125,15 @@ class SemanticTable(
   def isRelationshipNoFail(variableName: String): Boolean =
     getOptionalActualTypeFor(variableName).contains(CTRelationship.invariant)
 
-  def isRelationshipCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTRelationship).invariant
+  def isRelationshipCollectionNoFail(expr: String): Boolean =
+    getOptionalActualTypeFor(expr).contains(CTList(CTRelationship).invariant)
 
-  def isNodeCollection(expr: String): Boolean = getTypeFor(expr) == CTList(CTNode).invariant
+  def isNodeCollectionNoFail(expr: String): Boolean = getOptionalActualTypeFor(expr).contains(CTList(CTNode).invariant)
 
   def isNode(expr: Expression): Boolean = types(expr).specified == CTNode.invariant
 
-  def isInteger(expression: Expression): Boolean = types(expression).specified == CTInteger.invariant
+  def isIntegerNoFail(expression: Expression): Boolean =
+    types.get(expression).map(_.specified).contains(CTInteger.invariant)
 
   /**
    * Same as isNode, but will simply return false if no semantic information is available instead of failing.

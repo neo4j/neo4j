@@ -260,8 +260,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def areRelationships(semanticTable: SemanticTable, lhs: Variable, rhs: Variable): Boolean = {
-    val l = semanticTable.isRelationship(lhs)
-    val r = semanticTable.isRelationship(rhs)
+    val l = semanticTable.isRelationshipNoFail(lhs)
+    val r = semanticTable.isRelationshipNoFail(rhs)
     l && r
   }
 
@@ -545,7 +545,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def calculateSelectivityForIdSeekable(seekable: IdSeekable)(implicit
   semanticTable: SemanticTable): Selectivity = {
     val lookups = seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS)
-    if (semanticTable.isNode(seekable.ident)) {
+    if (semanticTable.isNodeNoFail(seekable.ident)) {
       (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
     } else {
       (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE

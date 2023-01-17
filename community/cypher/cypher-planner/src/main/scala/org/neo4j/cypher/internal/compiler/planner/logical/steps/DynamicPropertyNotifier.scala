@@ -76,8 +76,8 @@ object DynamicPropertyNotifier {
     context: LogicalPlanningContext
   ): Set[Variable] = {
     val isExpectedEntity = expectedType match {
-      case NODE_TYPE         => (variable: Variable) => context.semanticTable.isNode(variable)
-      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationship(variable)
+      case NODE_TYPE         => (variable: Variable) => context.semanticTable.isNodeNoFail(variable)
+      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationshipNoFail(variable)
     }
 
     predicates.flatMap {

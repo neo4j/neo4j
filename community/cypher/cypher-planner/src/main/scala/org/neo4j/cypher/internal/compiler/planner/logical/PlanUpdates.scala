@@ -244,11 +244,11 @@ case object PlanUpdates extends UpdatesPlanner {
       case p: DeleteExpression =>
         val delete = p.expression match {
           // DELETE user
-          case Variable(n) if context.semanticTable.isNode(n) =>
+          case Variable(n) if context.semanticTable.isNodeNoFail(n) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rel
-          case Variable(r) if context.semanticTable.isRelationship(r) =>
+          case Variable(r) if context.semanticTable.isRelationshipNoFail(r) =>
             context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE path
@@ -256,11 +256,11 @@ case object PlanUpdates extends UpdatesPlanner {
             context.staticComponents.logicalPlanProducer.planDeletePath(source, p, context)
 
           // DELETE users[{i}]
-          case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollection(n) =>
+          case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollectionNoFail(n) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rels[{i}]
-          case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollection(r) =>
+          case ContainerIndex(Variable(r), _) if context.semanticTable.isRelationshipCollectionNoFail(r) =>
             context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE expr
