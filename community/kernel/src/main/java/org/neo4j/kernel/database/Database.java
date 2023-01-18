@@ -266,7 +266,6 @@ public class Database extends AbstractDatabase {
         this.otherMemoryPool = context.getOtherMemoryPool();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.tokenHolders = context.getTokenHolders();
-        this.locks = context.getLocks();
         this.transactionEventListeners = context.getTransactionEventListeners();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
@@ -289,6 +288,7 @@ public class Database extends AbstractDatabase {
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.storageEngineFactory = context.getStorageEngineFactory();
+        this.locks = storageEngineFactory.createLocks(context.getDatabaseConfig(), this.clock);
 
         this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseAvailabilityGuard);
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);

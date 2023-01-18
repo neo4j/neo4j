@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -88,7 +87,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final JobScheduler scheduler;
     private final DependencyResolver globalDependencies;
     private final TokenHolders tokenHolders;
-    private final Locks locks;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final Factory<DatabaseHealth> databaseHealthFactory;
@@ -141,7 +139,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             Predicate<String> databaseFileFilter,
             AccessCapabilityFactory accessCapabilityFactory,
             ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
-            Locks locks,
             DatabaseIdContext databaseIdContext,
             CommitProcessFactory commitProcessFactory,
             TokenHolders tokenHolders,
@@ -163,7 +160,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.scheduler = globalModule.getJobScheduler();
         this.globalDependencies = globalDependencies;
         this.tokenHolders = tokenHolders;
-        this.locks = locks;
         this.transactionEventListeners = globalModule.getTransactionEventListeners();
         this.parentMonitors = parentMonitors;
         this.fs = globalModule.getFileSystem();
@@ -236,11 +232,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     @Override
     public TokenHolders getTokenHolders() {
         return tokenHolders;
-    }
-
-    @Override
-    public Locks getLocks() {
-        return locks;
     }
 
     @Override

@@ -99,7 +99,6 @@ public class DefaultDatabaseContextFactory
                     ModularDatabaseCreationContext.defaultFileWatcherFilter(),
                     AccessCapabilityFactory.configDependent(),
                     ExternalIdReuseConditionProvider.NONE,
-                    storageEngineFactory.createLocks(globalModule.getGlobalConfig(), globalModule.getGlobalClock()),
                     idContextFactory.createIdContext(namedDatabaseId, contextFactory),
                     commitProcessFactory,
                     createTokenHolderProvider(this::kernel),
