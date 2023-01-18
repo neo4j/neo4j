@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case object selectCovered extends SelectionCandidateGenerator with SelectionCandidateGeneratorFactory {
-
-  override def generator(): SelectionCandidateGenerator = this
+case object selectCovered extends SelectionCandidateGenerator {
 
   override def apply(
     input: LogicalPlan,

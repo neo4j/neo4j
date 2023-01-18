@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CandidateSelectorFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicatesWithCaching
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allRelationshipsScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
@@ -119,7 +119,7 @@ object QueryPlannerConfiguration {
   val default: QueryPlannerConfiguration = {
     val predicateSelector = steps.Selector(
       pickBestPlanUsingHintsAndCost,
-      SelectPatternPredicatesWithCaching,
+      SelectPatternPredicates,
       triadicSelectionFinder,
       selectCovered,
       selectHasLabelWithJoin

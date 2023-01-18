@@ -44,9 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 
-case object triadicSelectionFinder extends SelectionCandidateGenerator with SelectionCandidateGeneratorFactory {
-
-  override def generator(): SelectionCandidateGenerator = this
+case object triadicSelectionFinder extends SelectionCandidateGenerator {
 
   override def apply(
     input: LogicalPlan,

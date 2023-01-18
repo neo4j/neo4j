@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 
-trait SelectPatternPredicates extends SelectionCandidateGenerator {
+case object SelectPatternPredicates extends SelectionCandidateGenerator {
 
   override def apply(
     lhs: LogicalPlan,
@@ -198,14 +198,4 @@ trait SelectPatternPredicates extends SelectionCandidateGenerator {
     val name = anonymousVariableNameGenerator.nextName
     (name, Variable(name)(existsExpression.position))
   }
-}
-
-case object SelectPatternPredicates extends SelectPatternPredicates with SelectionCandidateGeneratorFactory {
-  override def generator(): SelectionCandidateGenerator = this
-}
-
-final case class SelectPatternPredicatesWithCaching() extends SelectPatternPredicates {}
-
-case object SelectPatternPredicatesWithCaching extends SelectionCandidateGeneratorFactory {
-  override def generator(): SelectionCandidateGenerator = SelectPatternPredicatesWithCaching()
 }

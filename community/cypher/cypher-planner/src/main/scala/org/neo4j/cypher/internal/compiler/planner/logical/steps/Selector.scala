@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
 case class Selector(
   pickBestFactory: CandidateSelectorFactory,
-  candidateGeneratorFactories: SelectionCandidateGeneratorFactory*
+  candidateGenerators: SelectionCandidateGenerator*
 ) extends PlanSelector {
 
   /**
@@ -45,7 +45,6 @@ case class Selector(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val pickBest = pickBestFactory(context)
-    val candidateGenerators = candidateGeneratorFactories.map(_.generator())
 
     val unsolvedPredicates =
       unsolvedPreds(context.staticComponents.planningAttributes.solveds, queryGraph.selections, input)
@@ -105,10 +104,6 @@ case class Selector(
       )
       .toSet
 
-}
-
-trait SelectionCandidateGeneratorFactory {
-  def generator(): SelectionCandidateGenerator
 }
 
 trait SelectionCandidateGenerator extends {
