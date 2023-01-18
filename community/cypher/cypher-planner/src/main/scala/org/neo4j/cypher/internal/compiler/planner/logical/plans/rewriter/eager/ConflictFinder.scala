@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOv
 import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.util.InputPosition
@@ -158,14 +159,25 @@ object ConflictFinder {
 
   private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
     // A plan can never conflict with itself
-    writePlan != readPlan &&
+    def conflictsWithItself = writePlan == readPlan
+
+    // a merge plan can never conflict with its children
+    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && writePlan.folder.treeExists {
+      case `readPlan` => true
+    }
+
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
-    (readPlan != wholePlan.leftmostLeaf ||
-      !readPlan.isInstanceOf[StableLeafPlan] ||
-      isInTransactionalApply(
-        writePlan,
-        wholePlan
-      ))
+    def conflictsWithUnstablePlan =
+      readPlan != wholePlan.leftmostLeaf ||
+        !readPlan.isInstanceOf[StableLeafPlan] ||
+        isInTransactionalApply(
+          writePlan,
+          wholePlan
+        )
+
+    !conflictsWithItself &&
+    !mergeConflictWithChild &&
+    conflictsWithUnstablePlan
   }
 
   private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {

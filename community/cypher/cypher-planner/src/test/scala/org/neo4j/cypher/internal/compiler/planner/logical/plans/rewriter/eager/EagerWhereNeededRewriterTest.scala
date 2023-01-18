@@ -1903,8 +1903,23 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts no eager between Merge and AllNodeScan if read through stable iterator") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
-      .merge(nodes = Seq(createNode("m")))
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test("inserts no eager between Merge and and its child plans") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n", "N")))
+      .filter("n", "N")
       .allNodeScan("n")
     val plan = planBuilder.build()
 
@@ -1918,7 +1933,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge and AllNodeScan if read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(nodes = Seq(createNode("m")))
+      .apply()
+      .|.merge(nodes = Seq(createNode("o")))
+      .|.allNodeScan("o")
       .cartesianProduct()
       .|.allNodeScan("m")
       .allNodeScan("n")
@@ -1931,8 +1948,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(nodes = Seq(createNode("m")))
-        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.merge(nodes = Seq(createNode("o")))
+        .|.allNodeScan("o")
+        .eager(ListSet(ReadCreateConflict(Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.allNodeScan("m")
         .allNodeScan("n")
@@ -1959,7 +1978,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperty("m", "prop", "42")))
+      .apply()
+      .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperty("o", "prop", "42")))
+      .|.allNodeScan("o")
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -1972,8 +1993,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperty("m", "prop", "42")))
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperty("o", "prop", "42")))
+        .|.allNodeScan("o")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -1984,7 +2007,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap (setting multiple properties)") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperties("m", ("prop", "42"), ("foo", "42"))))
+      .apply()
+      .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperties("o", ("prop", "42"), ("foo", "42"))))
+      .|.allNodeScan("o")
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -1997,8 +2022,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(nodes = Seq(createNode("m")), onMatch = Seq(setNodeProperties("m", ("prop", "42"), ("foo", "42"))))
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperties("o", ("prop", "42"), ("foo", "42"))))
+        .|.allNodeScan("o")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2009,10 +2036,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap (setting properties from map)") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(
-        nodes = Seq(createNode("m")),
-        onMatch = Seq(setNodePropertiesFromMap("m", "{prop: 42}", removeOtherProps = false))
+      .apply()
+      .|.merge(
+        nodes = Seq(createNode("o")),
+        onMatch = Seq(setNodePropertiesFromMap("o", "{prop: 42}", removeOtherProps = false))
       )
+      .|.allNodeScan("o")
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -2025,11 +2054,13 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(
-          nodes = Seq(createNode("m")),
-          onMatch = Seq(setNodePropertiesFromMap("m", "{prop: 42}", removeOtherProps = false))
+        .apply()
+        .|.merge(
+          nodes = Seq(createNode("o")),
+          onMatch = Seq(setNodePropertiesFromMap("o", "{prop: 42}", removeOtherProps = false))
         )
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .|.allNodeScan("o")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2042,10 +2073,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(
-        nodes = Seq(createNode("m")),
-        onMatch = Seq(setNodePropertiesFromMap("m", "{foo: 42}", removeOtherProps = true))
+      .apply()
+      .|.merge(
+        nodes = Seq(createNode("o")),
+        onMatch = Seq(setNodePropertiesFromMap("o", "{foo: 42}", removeOtherProps = true))
       )
+      .|.allNodeScan("o")
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -2058,11 +2091,13 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(
-          nodes = Seq(createNode("m")),
-          onMatch = Seq(setNodePropertiesFromMap("m", "{foo: 42}", removeOtherProps = true))
+        .apply()
+        .|.merge(
+          nodes = Seq(createNode("o")),
+          onMatch = Seq(setNodePropertiesFromMap("o", "{foo: 42}", removeOtherProps = true))
         )
-        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(1), Id(3))))))
+        .|.allNodeScan("o")
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2073,7 +2108,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts eager between Merge with ON CREATE and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .merge(nodes = Seq(createNode("m", "M")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
+      .apply()
+      .|.merge(nodes = Seq(createNode("o", "M")), onCreate = Seq(setNodeProperty("o", "prop", "42")))
+      .|.nodeByLabelScan("o", "M")
       .cartesianProduct()
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
@@ -2086,8 +2123,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
-        .merge(nodes = Seq(createNode("m", "M")), onCreate = Seq(setNodeProperty("m", "prop", "42")))
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.merge(nodes = Seq(createNode("o", "M")), onCreate = Seq(setNodeProperty("o", "prop", "42")))
+        .|.nodeByLabelScan("o", "M")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
