@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
+import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
@@ -115,7 +116,10 @@ object ConflictFinder {
         )((x, _) => x)
       createdNode <- createdNodes
       labelSet = createdNode.createdLabels
-      overlap = CreateOverlaps.overlap(Seq(expression), labelSet.map(_.name), createdNode.createdProperties)
+      expressionsDependantOnlyOnVariable =
+        Expressions.splitExpression(expression).filter(_.dependencies == Set(variable))
+      overlap =
+        CreateOverlaps.overlap(expressionsDependantOnlyOnVariable, labelSet.map(_.name), createdNode.createdProperties)
       if (overlap match {
         case CreateOverlaps.NoPropertyOverlap => false
         case CreateOverlaps.NoLabelOverlap    => false
