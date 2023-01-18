@@ -225,7 +225,9 @@ object ReadFinder {
 
       case Selection(Ands(expressions), _) =>
         expressions.foldLeft(PlanReads()) {
-          case (acc, expression) => expression.dependencies.foldLeft(acc)(_.withAddedFilterExpression(_, expression))
+          case (acc, expression) => expression.dependencies
+              .filter(semanticTable.isNodeNoFail)
+              .foldLeft(acc)(_.withAddedFilterExpression(_, expression))
         }
 
       case _ => PlanReads()

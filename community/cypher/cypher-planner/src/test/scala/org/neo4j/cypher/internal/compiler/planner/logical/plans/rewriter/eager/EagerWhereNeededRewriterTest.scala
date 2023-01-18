@@ -1879,6 +1879,26 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .build())
   }
 
+  test(
+    "inserts no eager between Create and MATCH with a different label but same property, when other operand is a variable"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .filter("m.prop = x")
+      .apply()
+      .|.nodeByLabelScan("m", "M")
+      .create(createNodeWithProperties("n", Seq("N"), "{prop: 5}"))
+      .unwind("[1,2] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
   // Read vs Merge conflicts
 
   test("inserts no eager between Merge and AllNodeScan if read through stable iterator") {

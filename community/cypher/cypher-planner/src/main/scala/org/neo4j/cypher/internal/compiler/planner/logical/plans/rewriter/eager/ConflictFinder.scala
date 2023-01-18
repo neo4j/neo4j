@@ -125,7 +125,6 @@ object ConflictFinder {
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      val emptyFilterExpressions = FilterExpressions(Set.empty)
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
       val reasons: Set[Reason] = overlap match {
         // Other cases have been filtered out above
