@@ -22,6 +22,8 @@ package org.neo4j.internal.recordstorage;
 import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.function.ThrowingAction.executeAll;
+import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.ID;
+import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.NAME;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.util.Preconditions.checkState;
@@ -382,6 +384,16 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         } catch (IOException e) {
             throw new UnderlyingStorageException(e);
         }
+    }
+
+    @Override
+    public String name() {
+        return NAME;
+    }
+
+    @Override
+    public byte id() {
+        return ID;
     }
 
     @Override

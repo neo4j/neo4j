@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.pagecache.CommunityVersionStorageFactory;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class DefaultDatabaseContextFactory
         extends AbstractDatabaseContextFactory<StandaloneDatabaseContext, Optional<?>> {
@@ -83,8 +82,6 @@ public class DefaultDatabaseContextFactory
         private Creator(NamedDatabaseId namedDatabaseId) {
             var databaseConfig = new DatabaseConfig(Map.of(), globalModule.getGlobalConfig());
             var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
-            StorageEngineFactory storageEngineFactory = DatabaseCreationContext.selectStorageEngine(
-                    globalModule.getFileSystem(), globalModule.getNeo4jLayout(), databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
                     HostedOnMode.SINGLE,
                     serverIdentity,
@@ -97,7 +94,11 @@ public class DefaultDatabaseContextFactory
                     databaseConfig,
                     globalModule.getGlobalMonitors(),
                     LeaseService.NO_LEASES,
-                    storageEngineFactory,
+                    () -> DatabaseCreationContext.selectStorageEngine(
+                            globalModule.getFileSystem(),
+                            globalModule.getNeo4jLayout(),
+                            databaseConfig,
+                            namedDatabaseId),
                     new StandardConstraintSemantics(),
                     new CommunityCypherEngineProvider(),
                     transactionStatsFactory.create(),

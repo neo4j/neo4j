@@ -49,6 +49,16 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
  */
 public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
+     * @return the name of this storage engine, which will be used in e.g. storage engine selection and settings.
+     */
+    String name();
+
+    /**
+     * @return the unique id of this storage engine which can be used in e.g. storage engine selection
+     */
+    byte id();
+
+    /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(ReadableTransactionState, StorageReader, CommandCreationContext, LockTracer, Decorator, CursorContext, StoreCursors, MemoryTracker)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.

@@ -128,7 +128,7 @@ public interface DatabaseCreationContext {
 
     DatabaseEventListeners getDatabaseEventListeners();
 
-    StorageEngineFactory getStorageEngineFactory();
+    StorageEngineFactorySupplier getStorageEngineFactorySupplier();
 
     FileLockerService getFileLockerService();
 

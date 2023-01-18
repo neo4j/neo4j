@@ -217,21 +217,22 @@ public class Database extends AbstractDatabase {
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
-    private final Locks locks;
     private final DatabaseTracers tracers;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
     private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
+    private final StorageEngineFactorySupplier storageEngineFactorySupplier;
 
     private TransactionIdSequence transactionIdSequence;
     private IndexProviderMap indexProviderMap;
-    private final DatabaseLayout databaseLayout;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
     private final HostedOnMode mode;
     private MetadataCache metadataCache;
-    private final StorageEngineFactory storageEngineFactory;
+    private StorageEngineFactory storageEngineFactory;
+    private Locks locks;
+    private DatabaseLayout databaseLayout;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
     private DatabaseKernelModule kernelModule;
@@ -297,8 +298,7 @@ public class Database extends AbstractDatabase {
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
-        this.storageEngineFactory = context.getStorageEngineFactory();
-        this.locks = storageEngineFactory.createLocks(context.getDatabaseConfig(), this.clock);
+        this.storageEngineFactorySupplier = context.getStorageEngineFactorySupplier();
 
         this.databaseFacade = new GraphDatabaseFacade(this, databaseConfig, dbmsInfo, mode, databaseAvailabilityGuard);
         this.kernelTransactionFactory = new FacadeKernelTransactionFactory(databaseConfig, databaseFacade);
@@ -316,6 +316,9 @@ public class Database extends AbstractDatabase {
      */
     @Override
     protected void specificInit() throws IOException {
+        this.storageEngineFactory = storageEngineFactorySupplier.create();
+        this.locks = storageEngineFactory.createLocks(databaseConfig, this.clock);
+        this.databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(databaseLayout);
         new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
         ioController = ioControllerService.createIOController(databaseConfig, clock);
         transactionIdSequence = new TransactionIdSequence();

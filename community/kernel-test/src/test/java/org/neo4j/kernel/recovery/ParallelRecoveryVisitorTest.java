@@ -320,6 +320,16 @@ class ParallelRecoveryVisitorTest {
         // vvv these methods are not used by the recovery visitor vvv
 
         @Override
+        public String name() {
+            return getClass().getSimpleName();
+        }
+
+        @Override
+        public byte id() {
+            return -1;
+        }
+
+        @Override
         public CommandCreationContext newCommandCreationContext() {
             throw new UnsupportedOperationException();
         }

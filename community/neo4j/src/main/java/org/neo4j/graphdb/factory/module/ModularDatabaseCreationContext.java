@@ -47,6 +47,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.StorageEngineFactorySupplier;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
@@ -74,7 +75,6 @@ import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
@@ -114,7 +114,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
-    private final StorageEngineFactory storageEngineFactory;
+    private final StorageEngineFactorySupplier storageEngineFactorySupplier;
     private final FileLockerService fileLockerService;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final LeaseService leaseService;
@@ -135,7 +135,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseConfig databaseConfig,
             Monitors parentMonitors,
             LeaseService leaseService,
-            StorageEngineFactory storageEngineFactory,
+            StorageEngineFactorySupplier storageEngineFactorySupplier,
             ConstraintSemantics constraintSemantics,
             QueryEngineProvider queryEngineProvider,
             DatabaseTransactionStats transactionStats,
@@ -189,8 +189,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.databaseAvailabilityGuardFactory = databaseTimeoutMillis ->
                 databaseAvailabilityGuardFactory(namedDatabaseId, globalModule, databaseTimeoutMillis);
         Neo4jLayout neo4jLayout = globalModule.getNeo4jLayout();
-        this.storageEngineFactory = storageEngineFactory;
-        this.databaseLayout = storageEngineFactory.databaseLayout(neo4jLayout, namedDatabaseId.name());
+        this.storageEngineFactorySupplier = storageEngineFactorySupplier;
+        this.databaseLayout = neo4jLayout.databaseLayout(namedDatabaseId.name());
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.leaseService = leaseService;
@@ -354,8 +354,8 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
     }
 
     @Override
-    public StorageEngineFactory getStorageEngineFactory() {
-        return storageEngineFactory;
+    public StorageEngineFactorySupplier getStorageEngineFactorySupplier() {
+        return storageEngineFactorySupplier;
     }
 
     @Override
