@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
@@ -52,8 +53,10 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
+import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -229,6 +232,21 @@ object ReadFinder {
               .filter(semanticTable.isNodeNoFail)
               .foldLeft(acc)(_.withAddedFilterExpression(_, expression))
         }
+
+      case Expand(_, _, _, _, to, _, _) =>
+        val variable = Variable(to)(InputPosition.NONE)
+        PlanReads()
+          .withIntroducedVariable(variable)
+
+      case OptionalExpand(_, _, _, _, to, _, _, _) =>
+        val variable = Variable(to)(InputPosition.NONE)
+        PlanReads()
+          .withIntroducedVariable(variable)
+
+      case VarExpand(_, _, _, _, _, to, _, _, _, _, _) =>
+        val variable = Variable(to)(InputPosition.NONE)
+        PlanReads()
+          .withIntroducedVariable(variable)
 
       case _ => PlanReads()
     }
