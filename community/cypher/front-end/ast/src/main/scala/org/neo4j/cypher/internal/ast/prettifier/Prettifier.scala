@@ -47,14 +47,14 @@ import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateNodeUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
@@ -398,7 +398,7 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire ${propertiesToString(properties)} IS RELATIONSHIP KEY${asString(options)}"
 
-      case CreateNodeUniquePropertyConstraint(
+      case CreateNodePropertyUniquenessConstraint(
           Variable(variable),
           LabelName(label),
           properties,
@@ -414,7 +414,7 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
 
-      case CreateRelationshipUniquePropertyConstraint(
+      case CreateRelationshipPropertyUniquenessConstraint(
           Variable(variable),
           RelTypeName(relType),
           properties,

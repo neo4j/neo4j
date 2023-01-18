@@ -79,7 +79,7 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateNodeUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
@@ -87,8 +87,8 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
-import org.neo4j.cypher.internal.ast.CreateRelationshipUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateRoleAction
@@ -1686,7 +1686,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    nodeUniqueness = CreateNodeUniquePropertyConstraint(
+    nodeUniqueness = CreateNodePropertyUniquenessConstraint(
       variable,
       labelName,
       Seq(prop),
@@ -1697,7 +1697,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    compositeUniqueness = CreateNodeUniquePropertyConstraint(
+    compositeUniqueness = CreateNodePropertyUniquenessConstraint(
       variable,
       labelName,
       props,
@@ -1708,7 +1708,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    relUniqueness = CreateRelationshipUniquePropertyConstraint(
+    relUniqueness = CreateRelationshipPropertyUniquenessConstraint(
       variable,
       relTypeName,
       props,

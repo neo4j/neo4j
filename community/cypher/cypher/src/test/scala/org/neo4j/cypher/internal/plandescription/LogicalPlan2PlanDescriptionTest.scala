@@ -172,12 +172,12 @@ import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
@@ -2524,7 +2524,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateNodeUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateNodePropertyUniquenessConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -2538,7 +2538,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(
+        CreateNodePropertyUniquenessConstraint(
           None,
           "x",
           label("Label"),
@@ -2559,7 +2559,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(
+        CreateNodePropertyUniquenessConstraint(
           None,
           "x",
           label("Label"),
@@ -2580,7 +2580,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(
+        CreateNodePropertyUniquenessConstraint(
           None,
           "x",
           label("Label"),
@@ -2603,7 +2603,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(
+        CreateNodePropertyUniquenessConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
             scala.util.Left(label("Label")),
@@ -2639,7 +2639,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeUniquePropertyConstraint(
+        CreateNodePropertyUniquenessConstraint(
           None,
           " x",
           label("Label"),
@@ -2662,7 +2662,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           None,
           " x",
           relType("REL_TYPE"),
@@ -2683,7 +2683,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           None,
           "x",
           relType("REL_TYPE"),
@@ -2704,7 +2704,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           None,
           "x",
           relType("REL_TYPE"),
@@ -2725,7 +2725,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           None,
           "x",
           relType("REL_TYPE"),
@@ -2748,7 +2748,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
             scala.util.Right(relType("REL_TYPE")),
@@ -2784,7 +2784,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipUniquePropertyConstraint(
+        CreateRelationshipPropertyUniquenessConstraint(
           None,
           " x",
           relType("REL_TYPE"),

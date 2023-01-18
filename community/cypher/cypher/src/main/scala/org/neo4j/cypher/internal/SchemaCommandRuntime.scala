@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
@@ -128,9 +128,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateNodeUniquePropertyConstraint(source, _, label, props, name, options) => context =>
+    case CreateNodePropertyUniquenessConstraint(source, _, label, props, name, options) => context =>
         SchemaExecutionPlan(
-          "CreateUniqueConstraint",
+          "CreateNodePropertyUniquenessConstraint",
           (ctx, params) => {
             val indexProvider =
               IndexBackedConstraintsOptionsConverter("uniqueness constraint", ctx)
@@ -146,9 +146,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateRelationshipUniquePropertyConstraint(source, _, relType, props, name, options) => context =>
+    case CreateRelationshipPropertyUniquenessConstraint(source, _, relType, props, name, options) => context =>
         SchemaExecutionPlan(
-          "CreateUniqueConstraint",
+          "CreateRelationshipPropertyUniquenessConstraint",
           (ctx, params) => {
             val indexProvider =
               IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)

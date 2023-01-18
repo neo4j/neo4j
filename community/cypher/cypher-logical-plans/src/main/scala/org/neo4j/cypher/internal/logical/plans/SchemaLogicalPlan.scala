@@ -58,7 +58,7 @@ case class CreateRelationshipKeyConstraint(
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateNodeUniquePropertyConstraint(
+case class CreateNodePropertyUniquenessConstraint(
   source: Option[DoNothingIfExistsForConstraint],
   node: String,
   label: LabelName,
@@ -69,7 +69,7 @@ case class CreateNodeUniquePropertyConstraint(
   override def lhs: Option[LogicalPlan] = source
 }
 
-case class CreateRelationshipUniquePropertyConstraint(
+case class CreateRelationshipPropertyUniquenessConstraint(
   source: Option[DoNothingIfExistsForConstraint],
   rel: String,
   typeName: RelTypeName,

@@ -510,7 +510,7 @@ case class DropNodeKeyConstraint(
   )
 }
 
-case class CreateNodeUniquePropertyConstraint(
+case class CreateNodePropertyUniquenessConstraint(
   variable: Variable,
   label: LabelName,
   properties: Seq[Property],
@@ -522,13 +522,13 @@ case class CreateNodeUniquePropertyConstraint(
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateNodeUniquePropertyConstraint = copy(name = name)(position)
+  override def withName(name: Option[String]): CreateNodePropertyUniquenessConstraint = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkSemantics("uniqueness", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
 }
 
-case class CreateRelationshipUniquePropertyConstraint(
+case class CreateRelationshipPropertyUniquenessConstraint(
   variable: Variable,
   relType: RelTypeName,
   properties: Seq[Property],
@@ -541,7 +541,7 @@ case class CreateRelationshipUniquePropertyConstraint(
 )(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[String]): CreateRelationshipUniquePropertyConstraint =
+  override def withName(name: Option[String]): CreateRelationshipPropertyUniquenessConstraint =
     copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
@@ -554,7 +554,7 @@ case class CreateRelationshipUniquePropertyConstraint(
     ) chain super.semanticCheck
 }
 
-case class DropUniquePropertyConstraint(
+case class DropPropertyUniquenessConstraint(
   variable: Variable,
   label: LabelName,
   properties: Seq[Property],

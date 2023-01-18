@@ -236,7 +236,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -251,7 +251,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -266,7 +266,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -281,7 +281,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -296,7 +296,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -311,7 +311,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -327,7 +327,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
               s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0]}, indexProvider : 'native-btree-1.0'}"
             ) {
               // will fail in options converter
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -348,7 +348,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS $$options"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -487,7 +487,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -502,7 +502,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -517,7 +517,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -532,7 +532,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -547,7 +547,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -562,7 +562,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -577,7 +577,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -592,7 +592,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -896,7 +896,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -911,7 +911,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -926,7 +926,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -941,7 +941,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -956,7 +956,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -971,7 +971,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -986,7 +986,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'range-1.0'}"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -1002,7 +1002,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}"
             ) {
               // will fail in options converter
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -1023,7 +1023,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {indexConfig : {someConfig: 'toShowItCanBeParsed' }}"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -1038,7 +1038,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS $nodeKeyword UNIQUE OPTIONS {nonValidOption : 42}"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop")),
@@ -1053,7 +1053,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop1,node.prop2) IS $nodeKeyword UNIQUE OPTIONS {}"
             ) {
-              yields(ast.CreateNodeUniquePropertyConstraint(
+              yields(ast.CreateNodePropertyUniquenessConstraint(
                 varFor("node"),
                 labelName("Label"),
                 Seq(prop("node", "prop1"), prop("node", "prop2")),
@@ -1194,7 +1194,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1209,7 +1209,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]->() $requireOrAssertString (r2.prop1, r3.prop2) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop1"), prop("r3", "prop2")),
@@ -1224,7 +1224,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1239,7 +1239,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString ()<-[r1:R]->() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1254,7 +1254,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1269,7 +1269,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1284,7 +1284,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1299,7 +1299,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             test(
               s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r1:R]-() $requireOrAssertString (r2.prop) IS $relKeyWord UNIQUE OPTIONS {key: 'value'}"
             ) {
-              yields(ast.CreateRelationshipUniquePropertyConstraint(
+              yields(ast.CreateRelationshipPropertyUniquenessConstraint(
                 varFor("r1"),
                 relTypeName("R"),
                 Seq(prop("r2", "prop")),
@@ -1975,7 +1975,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR FOR (node:Label) REQUIRE (node.prop) IS UNIQUE") {
-    assertAst(ast.CreateNodeUniquePropertyConstraint(
+    assertAst(ast.CreateNodePropertyUniquenessConstraint(
       varFor("node", (1, 28, 27)),
       labelName("Label", (1, 33, 32)),
       Seq(prop("node", "prop", (1, 49, 48))),
@@ -2127,15 +2127,15 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
+    yields(ast.DropPropertyUniquenessConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop) IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
+    yields(ast.DropPropertyUniquenessConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(
+    yields(ast.DropPropertyUniquenessConstraint(
       varFor("node"),
       labelName("Label"),
       Seq(prop("node", "prop1"), prop("node", "prop2"))
@@ -2205,7 +2205,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT (node.EXISTS) IS UNIQUE") {
-    yields(ast.DropUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS"))))
+    yields(ast.DropPropertyUniquenessConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "EXISTS"))))
   }
 
   test("DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.EXISTS)") {

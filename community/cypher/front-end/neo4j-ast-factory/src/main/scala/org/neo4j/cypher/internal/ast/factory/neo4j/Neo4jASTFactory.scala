@@ -126,11 +126,11 @@ import org.neo4j.cypher.internal.ast.DropIndexAction
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.DropPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DropServer
-import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DropUserAction
 import org.neo4j.cypher.internal.ast.DumpData
@@ -1443,7 +1443,7 @@ class Neo4jASTFactory(query: String)
 
     val properties = javaProperties.asScala.toSeq
     constraintType match {
-      case ConstraintType.NODE_UNIQUE => ast.CreateNodeUniquePropertyConstraint(
+      case ConstraintType.NODE_UNIQUE => ast.CreateNodePropertyUniquenessConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties,
@@ -1453,7 +1453,7 @@ class Neo4jASTFactory(query: String)
           containsOn,
           constraintVersionScala
         )(p)
-      case ConstraintType.REL_UNIQUE => ast.CreateRelationshipUniquePropertyConstraint(
+      case ConstraintType.REL_UNIQUE => ast.CreateRelationshipPropertyUniquenessConstraint(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
@@ -1523,7 +1523,7 @@ class Neo4jASTFactory(query: String)
     val properties = javaProperties.asScala.toSeq
     constraintType match {
       case ConstraintType.NODE_UNIQUE =>
-        DropUniquePropertyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
+        DropPropertyUniquenessConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
       case ConstraintType.NODE_KEY => DropNodeKeyConstraint(variable, LabelName(label.string)(label.pos), properties)(p)
       case ConstraintType.NODE_EXISTS =>
         validateSingleProperty(properties, constraintType)

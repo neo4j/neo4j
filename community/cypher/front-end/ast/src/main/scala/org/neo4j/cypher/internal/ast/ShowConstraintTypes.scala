@@ -54,13 +54,13 @@ case class ExistsConstraints(syntax: ExistenceConstraintSyntax) extends ShowCons
 
 case class NodeExistsConstraints(syntax: ExistenceConstraintSyntax = ValidSyntax) extends ShowConstraintType {
   override val output: String = "NODE_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"NODE PROPERTY EXISTENCE"
+  override val prettyPrint: String = "NODE PROPERTY EXISTENCE"
   override val description: String = "nodeExistenceConstraints"
 }
 
 case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = ValidSyntax) extends ShowConstraintType {
   override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"RELATIONSHIP PROPERTY EXISTENCE"
+  override val prettyPrint: String = "RELATIONSHIP PROPERTY EXISTENCE"
   override val description: String = "relationshipExistenceConstraints"
 }
 

@@ -789,6 +789,18 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     )
   }
 
+  test("SHOW PROPERTY CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW PROP CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW PROPERTY EXISTS CONSTRAINTS") {
+    failsToParse
+  }
+
   test("SHOW CONSTRAINTS OUTPUT") {
     failsToParse
   }

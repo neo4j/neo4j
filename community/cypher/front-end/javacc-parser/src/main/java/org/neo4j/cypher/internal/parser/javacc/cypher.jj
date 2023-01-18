@@ -3580,8 +3580,7 @@ STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFil
     STATEMENT statement = null;
 }
 {
-    ( <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
-    | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+    ( (<EXISTENCE> | <EXIST>) statement=ShowConstraintsAllowYield( start, useClause, constraintType )
     ) { return statement; }
 }
 

@@ -98,12 +98,12 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodeUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipUniquePropertyConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -1017,7 +1017,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateNodeUniquePropertyConstraint(
+      case CreateNodePropertyUniquenessConstraint(
           _,
           node,
           label,
@@ -1035,7 +1035,7 @@ case class LogicalPlan2PlanDescription(
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
-      case CreateRelationshipUniquePropertyConstraint(
+      case CreateRelationshipPropertyUniquenessConstraint(
           _,
           rel,
           relType,
@@ -1887,7 +1887,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateNodeUniquePropertyConstraint(
+      case CreateNodePropertyUniquenessConstraint(
           _,
           node,
           label,
@@ -1905,7 +1905,7 @@ case class LogicalPlan2PlanDescription(
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
 
-      case CreateRelationshipUniquePropertyConstraint(
+      case CreateRelationshipPropertyUniquenessConstraint(
           _,
           rel,
           relType,
