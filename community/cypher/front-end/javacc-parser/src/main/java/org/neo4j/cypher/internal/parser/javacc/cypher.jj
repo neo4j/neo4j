@@ -2331,17 +2331,30 @@ NODE_PATTERN NodePattern() throws Exception:
 {
     t=<LPAREN>
     (
-       ( LOOKAHEAD(3) v=Variable() <WHERE> predicate=Expression() // Needed to support (WHERE WHERE expr) i.e variable name WHERE with an inlined WHERE clause
-       | LOOKAHEAD(2) v=Variable() properties=Properties() ( <WHERE> predicate=Expression() )? // Needed to support (WHERE {prop:1} WHERE expr)
-       | LOOKAHEAD(2) <WHERE> predicate=Expression() // Needed to support (WHERE expr) i.e. no variable name with an inlined WHERE expr
-       // Despite solving the above issues, this will still produce a choice conflict warning, as the below option overlaps with the above ones.
-       // To cover all 2^4 possible combinations except the three ones above is possible but makes the parser code very verbose and hard to read,
-       // so it was considered better to leave the false positive warning.
-       | ( v=Variable() )?
-            ( labelExpression = LabelExpression(astFactory.nodeType()) )?
+       // The general node pattern is  (variable? labelExpression? properties? WHERE?),
+       // but since 'IS' and 'WHERE' can be both node variables, labels and keywords,
+       // we must check the 2^4 combinations in a certain order to avoid ambiguity.
+       // The below is a trial and error solution to make all tests in IsWhereNodePatternParserTest work
+       // while also have each combination in exactly one branch below.
+       (
+       LOOKAHEAD(LabelExpression(astFactory.nodeType()) <WHERE> Expression() <RPAREN>)
+            labelExpression = LabelExpression(astFactory.nodeType())
+            <WHERE> predicate=Expression()
+       | LOOKAHEAD(2) v=Variable() properties=Properties() ( <WHERE> predicate=Expression() )?
+       | LOOKAHEAD(Variable() <WHERE> Expression() <RPAREN>) v=Variable() <WHERE> predicate=Expression()
+       | LOOKAHEAD(<WHERE> Expression() <RPAREN>) <WHERE> predicate=Expression()
+       | LOOKAHEAD(3) v=Variable()
+            labelExpression = LabelExpression(astFactory.nodeType())
             ( properties=Properties() )?
             ( <WHERE> predicate=Expression() )?
-        )
+       | LOOKAHEAD(LabelExpression(astFactory.nodeType()) <RPAREN>)
+            labelExpression = LabelExpression(astFactory.nodeType())
+       | LOOKAHEAD(2) labelExpression = LabelExpression(astFactory.nodeType())
+            properties=Properties()
+            ( <WHERE> predicate=Expression() )?
+       | properties=Properties() ( <WHERE> predicate=Expression() )?
+       | ( v=Variable() )?
+       )
     )
     <RPAREN>
     {
@@ -2515,7 +2528,7 @@ LABEL_EXPRESSION LabelExpression( ENTITY_TYPE type ) :
     LABEL_EXPRESSION e;
 }
 {
-    ":" (
+    (":" | <IS>)  (
             LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
             e = LabelExpression4ExpectingBar(type)
             |
