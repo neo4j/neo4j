@@ -257,13 +257,13 @@ object ReadFinder {
         // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
         acc => SkipChildren(acc)
 
-      case Property(_, propertyName) =>
+      case Property(expr, propertyName) if !semanticTable.isMapNoFail(expr) =>
         acc => SkipChildren(acc.withPropertyRead(propertyName))
 
       case f: FunctionInvocation if f.function == Labels =>
         acc => TraverseChildren(acc.withUnknownLabelsRead())
 
-      case f: FunctionInvocation if f.function == Properties =>
+      case f: FunctionInvocation if f.function == Properties && !semanticTable.isMapNoFail(f.args(0)) =>
         acc => TraverseChildren(acc.withUnknownPropertiesRead())
 
       case HasLabels(_, labels) =>
