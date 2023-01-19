@@ -24,13 +24,13 @@ public interface HealthEventGenerator {
 
     void panic(Throwable causeOfPanic);
 
-    void outOfDiskSpace();
+    void outOfDiskSpace(Throwable cause);
 
     class Adaptor implements HealthEventGenerator {
         @Override
         public void panic(Throwable causeOfPanic) {}
 
         @Override
-        public void outOfDiskSpace() {}
+        public void outOfDiskSpace(Throwable cause) {}
     }
 }

@@ -37,7 +37,7 @@ public class DatabaseHealthEventGenerator implements HealthEventGenerator {
     }
 
     @Override
-    public void outOfDiskSpace() {
-        databaseEventListeners.databaseOutOfDiskSpace(databaseId);
+    public void outOfDiskSpace(Throwable cause) {
+        databaseEventListeners.databaseOutOfDiskSpace(databaseId, cause);
     }
 }

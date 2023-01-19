@@ -21,5 +21,5 @@ package org.neo4j.monitoring;
 
 @FunctionalInterface
 public interface OutOfDiskSpace {
-    void outOfDiskSpace();
+    void outOfDiskSpace(Throwable cause);
 }

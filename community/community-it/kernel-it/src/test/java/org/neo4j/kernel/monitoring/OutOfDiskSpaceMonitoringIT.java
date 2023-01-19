@@ -22,12 +22,15 @@ package org.neo4j.kernel.monitoring;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -45,8 +48,10 @@ public class OutOfDiskSpaceMonitoringIT {
             }
         };
         builder.addDatabaseListener(listener);
+        builder.setInternalLogProvider(logProvider);
     }
 
+    private final AssertableLogProvider logProvider = new AssertableLogProvider(true);
     private DatabaseEventContext eventContext;
 
     @Inject
@@ -58,7 +63,7 @@ public class OutOfDiskSpaceMonitoringIT {
     @Test
     void shouldPropagateOutOfDiskSpaceEventToRegisteredListener() {
         // When
-        databaseHealth.outOfDiskSpace();
+        databaseHealth.outOfDiskSpace(new RuntimeException("Leeeroooy!"));
 
         // Then
         assertThat(eventContext).isNotNull();
@@ -68,7 +73,7 @@ public class OutOfDiskSpaceMonitoringIT {
     @Test
     void shouldPutDatabaseIntoReadOnlyState() {
         // When
-        databaseHealth.outOfDiskSpace();
+        databaseHealth.outOfDiskSpace(new RuntimeException("C'mon Leroy, it's not funny!"));
 
         // Then
         try (Transaction tx = db.beginTx()) {
@@ -77,5 +82,36 @@ public class OutOfDiskSpaceMonitoringIT {
                             "No write operations are allowed on this database. The database is in read-only mode on this Neo4j instance.");
             tx.commit();
         }
+    }
+
+    @Test
+    void shouldLogAboutOutOfDiskSpace() {
+        // When
+        var cause = new RuntimeException("Again Leroy?!");
+        databaseHealth.outOfDiskSpace(cause);
+
+        // Then
+        LogAssertions.assertThat(logProvider)
+                .containsMessages("Database out of disk space: ")
+                .containsMessages(DatabaseHealth.outOfDiskSpaceMessage)
+                .containsException(cause);
+    }
+
+    @Test
+    void shouldLogAboutReadOnly() {
+        // When
+        var cause = new RuntimeException("Leroy, please...");
+        databaseHealth.outOfDiskSpace(cause);
+
+        // Then
+        LogAssertions.assertThat(logProvider)
+                .containsMessages(
+                        "As a result of the database failing to allocate enough disk space, it has been put into read-only mode to protect from system failure and ensure data integrity. ",
+                        "Please free up more disk space before changing access mode for database back to read-write state. ",
+                        "Making database writable again can be done by:",
+                        "    CALL dbms.listConfig(\"" + read_only_databases.name() + "\") YIELD value",
+                        "    WITH value",
+                        "    CALL dbms.setConfigValue(\"" + read_only_databases.name()
+                                + "\", replace(value, \"<databaseName>\", \"\"))");
     }
 }

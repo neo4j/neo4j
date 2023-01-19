@@ -29,6 +29,7 @@ import org.neo4j.kernel.monitoring.DatabaseHealthEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.OutOfDiskSpace;
 import org.neo4j.monitoring.Panic;
 
 class DatabaseHealthTest {
@@ -68,5 +69,24 @@ class DatabaseHealthTest {
                         "Database panic: The database has encountered a critical error, "
                                 + "and needs to be restarted. Please see database logs for more details.",
                         exception);
+    }
+
+    @Test
+    void shouldLogDatabaseOutOfDiskSpaceEvent() {
+        // GIVEN
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        OutOfDiskSpace databaseOutOfDiskSpace =
+                new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), logProvider.getLog(DatabaseHealth.class));
+
+        // WHEN
+        String message = "Listen everybody... out of disk space!";
+        Exception exception = new Exception(message);
+        databaseOutOfDiskSpace.outOfDiskSpace(exception);
+
+        // THEN
+        assertThat(logProvider)
+                .forClass(DatabaseHealth.class)
+                .forLevel(ERROR)
+                .containsMessageWithException("The database was unable to allocate enough disk space.", exception);
     }
 }

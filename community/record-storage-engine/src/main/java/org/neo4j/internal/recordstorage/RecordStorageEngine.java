@@ -712,7 +712,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     batch = batch.next();
                 }
             } catch (OutOfDiskSpaceException e) {
-                databaseHealth.outOfDiskSpace();
+                databaseHealth.outOfDiskSpace(e);
                 throw e;
             }
         }

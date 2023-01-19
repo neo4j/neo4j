@@ -80,12 +80,12 @@ public class DatabaseEventListeners {
     }
 
     void databasePanic(NamedDatabaseId databaseId, Throwable causeOfPanic) {
-        var event = new PanicDatabaseEvent(databaseId, causeOfPanic);
+        var event = new ExceptionalDatabaseEvent(databaseId, causeOfPanic);
         notifyEventListeners(handler -> handler.databasePanic(event), databaseEventListeners);
     }
 
-    void databaseOutOfDiskSpace(NamedDatabaseId databaseId) {
-        var event = new DefaultDatabaseEvent(databaseId);
+    void databaseOutOfDiskSpace(NamedDatabaseId databaseId, Throwable cause) {
+        var event = new ExceptionalDatabaseEvent(databaseId, cause);
         notifyEventListeners(
                 handler -> {
                     if (handler instanceof DatabaseEventListenerInternal internal) {

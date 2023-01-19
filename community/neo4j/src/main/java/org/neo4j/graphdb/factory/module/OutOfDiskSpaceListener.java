@@ -25,18 +25,21 @@ import java.util.HashSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
-import org.neo4j.kernel.monitoring.DefaultDatabaseEvent;
+import org.neo4j.kernel.monitoring.ExceptionalDatabaseEvent;
+import org.neo4j.logging.InternalLog;
 
 public class OutOfDiskSpaceListener extends DatabaseEventListenerAdapter {
     private final Config globalConfig;
+    private final InternalLog log;
 
-    public OutOfDiskSpaceListener(Config globalConfig) {
+    public OutOfDiskSpaceListener(Config globalConfig, InternalLog log) {
         this.globalConfig = globalConfig;
+        this.log = log;
     }
 
     @Override
     public void databaseOutOfDiskSpace(DatabaseEventContext event) {
-        var databaseEvent = (DefaultDatabaseEvent) event;
+        var databaseEvent = (ExceptionalDatabaseEvent) event;
         var databaseName = databaseEvent.getDatabaseName();
         makeReadOnly(databaseName);
     }
@@ -52,6 +55,16 @@ public class OutOfDiskSpaceListener extends DatabaseEventListenerAdapter {
                     read_only_databases,
                     readOnlyDatabases,
                     "Dynamic failover to read-only mode because of failure to allocate disk space.");
+            // FIXME ODP If this is the recommended way of resetting the read-only state,
+            //  we need to make it available in community edition as well
+            log.error(String.format(
+                    "As a result of the database failing to allocate enough disk space, it has been put into read-only mode to protect from system failure and ensure data integrity. "
+                            + "Please free up more disk space before changing access mode for database back to read-write state. "
+                            + "Making database writable again can be done by:%n"
+                            + "    CALL dbms.listConfig(\"%s\") YIELD value%n"
+                            + "    WITH value%n"
+                            + "    CALL dbms.setConfigValue(\"%s\", replace(value, \"<databaseName>\", \"\"))",
+                    read_only_databases.name(), read_only_databases.name()));
         }
     }
 }
