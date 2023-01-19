@@ -42,6 +42,18 @@ class CountExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
+  test(
+    """MATCH (a)
+      |WHERE COUNT {
+      |  MATCH (a)
+      |  RETURN *
+      |} > 3
+      |RETURN a
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
   test("""MATCH (m)
          |WHERE COUNT { MATCH (a:A)-[r]->(b) USING SCAN a:A } > 1
          |RETURN m

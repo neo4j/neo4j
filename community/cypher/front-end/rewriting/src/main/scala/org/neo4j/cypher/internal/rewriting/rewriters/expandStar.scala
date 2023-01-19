@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -63,7 +62,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
       expandedAstNode
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  private val instance = bottomUp(rewriter)
 
   private def returnItems(
     clause: Clause,

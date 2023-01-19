@@ -42,6 +42,16 @@ class ExistsExpressionSemanticAnalysisTest
     runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
+  test("""MATCH (a)
+         |WHERE EXISTS {
+         |  MATCH (a)
+         |  RETURN *
+         |}
+         |RETURN a
+         |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe empty
+  }
+
   test("""MATCH (m)
          |WHERE EXISTS { MATCH (a:A)-[r]->(b) USING SCAN a:A }
          |RETURN m

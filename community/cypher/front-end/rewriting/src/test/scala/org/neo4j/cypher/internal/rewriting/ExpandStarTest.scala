@@ -74,6 +74,27 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       "match p=(a:Start)-->(b) return *",
       "match p=(a:Start)-->(b) return a, b, p"
     )
+
+    assertRewrite(
+      "MATCH (a) WHERE EXISTS { MATCH (b) RETURN * } RETURN a",
+      "MATCH (a) WHERE EXISTS { MATCH (b) RETURN b } RETURN a"
+    )
+
+    assertRewrite(
+      "MATCH (a) WHERE COUNT { MATCH (b) RETURN * } = 3 RETURN a",
+      "MATCH (a) WHERE COUNT { MATCH (b) RETURN b } = 3 RETURN a"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r]->(b) WHERE EXISTS { MATCH (c)-[r1]->(d) RETURN * } RETURN a",
+      "MATCH (a)-[r]->(b) WHERE EXISTS { MATCH (c)-[r1]->(d) RETURN c, d, r1 } RETURN a"
+    )
+
+    assertRewrite(
+      "MATCH (a)-[r]->(b) WHERE COUNT { MATCH (c)-[r1]->(d) RETURN * } = 3 RETURN a",
+      "MATCH (a)-[r]->(b) WHERE COUNT { MATCH (c)-[r1]->(d) RETURN c, d, r1 } = 3 RETURN a"
+    )
+
   }
 
   test("rewrites * in with") {

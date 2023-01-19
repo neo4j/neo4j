@@ -65,6 +65,37 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: Exists with RETURN *
+    Given any graph
+    When executing query:
+      """
+      MATCH (person:Person)
+      WHERE EXISTS {
+       MATCH (person)-[:HAS_DOG]->(:Dog)
+       RETURN *
+      }
+      RETURN person.name AS name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Standalone Exists with RETURN *
+    Given any graph
+    When executing query:
+      """
+      RETURN EXISTS {
+       MATCH (person)-[:HAS_DOG]->(:Dog)
+       RETURN *
+      } as someoneHasADog
+      """
+    Then the result should be, in any order:
+      | someoneHasADog |
+      | true           |
+    And no side effects
+
   Scenario: Exists with shadowing of an outer variable should result in error
     Given any graph
     When executing query:

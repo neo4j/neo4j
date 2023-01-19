@@ -89,6 +89,34 @@ Feature: CountExpressionAcceptance
       | 'Erika' |
     And no side effects
 
+  Scenario: COUNT with RETURN *
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (p:Person)
+      WHERE COUNT { MATCH (p) RETURN * } = 1
+      RETURN p.name AS name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Ada'   |
+      | 'Bob'   |
+      | 'Cat'   |
+      | 'Deb'   |
+      | 'Erika' |
+    And no side effects
+
+  Scenario: Standalone COUNT with RETURN *
+    Given an empty graph
+    When executing query:
+      """
+      RETURN COUNT { MATCH (p) RETURN * } AS countOfNodes
+      """
+    Then the result should be, in any order:
+      | countOfNodes |
+      | 6            |
+    And no side effects
+
   Scenario: Simple COUNT without where clause
     Given an empty graph
     When executing query:
