@@ -69,7 +69,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
@@ -105,7 +104,6 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -655,7 +653,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     @Test
     void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruption() throws IOException {
-        addCorruptedCommandsToLastLogFile(new CorruptedLogEntryWrapper());
+        addCorruptedCommandsToLastLogFile(CorruptedLogEntryWriter::new);
 
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
@@ -673,7 +671,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     @Test
     void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruptionVersion() throws IOException {
-        addCorruptedCommandsToLastLogFile(new CorruptedLogEntryVersionWrapper());
+        addCorruptedCommandsToLastLogFile(CorruptedLogEntryVersionWriter::new);
 
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
@@ -1198,27 +1196,23 @@ class RecoveryCorruptedTransactionLogIT {
 
     private static Stream<Arguments> corruptedLogEntryWriters() {
         return Stream.of(
-                Arguments.of("CorruptedLogEntryWriterFactory", new CorruptedLogEntryWrapper()),
-                Arguments.of("CorruptedLogEntryVersionWriter", new CorruptedLogEntryVersionWrapper()));
+                Arguments.of("CorruptedLogEntryWriter", (LogEntryWriterWrapper) CorruptedLogEntryWriter::new),
+                Arguments.of(
+                        "CorruptedLogEntryVersionWriter", (LogEntryWriterWrapper) CorruptedLogEntryVersionWriter::new));
     }
 
     @FunctionalInterface
     private interface LogEntryWriterWrapper {
-        <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter);
-    }
-
-    private static class CorruptedLogEntryWrapper implements LogEntryWriterWrapper {
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
-            return new CorruptedLogEntryWriter<>(logEntryWriter);
+        default <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
+            return to(logEntryWriter.getChannel());
         }
+
+        <T extends WritableChecksumChannel> LogEntryWriter<T> to(T channel);
     }
 
-    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel>
-            extends DelegatingLogEntryWriter<T> {
-
-        CorruptedLogEntryWriter(LogEntryWriter<T> writer) {
-            super(writer);
+    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
+        CorruptedLogEntryWriter(T channel) {
+            super(channel);
         }
 
         @Override
@@ -1233,17 +1227,9 @@ class RecoveryCorruptedTransactionLogIT {
         }
     }
 
-    private static class CorruptedLogEntryVersionWrapper implements LogEntryWriterWrapper {
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
-            return new CorruptedLogEntryVersionWriter<>(logEntryWriter);
-        }
-    }
-
-    private static class CorruptedLogEntryVersionWriter<T extends WritableChecksumChannel>
-            extends DelegatingLogEntryWriter<T> {
-        CorruptedLogEntryVersionWriter(LogEntryWriter<T> delegate) {
-            super(delegate);
+    private static class CorruptedLogEntryVersionWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
+        CorruptedLogEntryVersionWriter(T channel) {
+            super(channel);
         }
 
         /**
@@ -1369,52 +1355,6 @@ class RecoveryCorruptedTransactionLogIT {
 
         public List<Byte> getCapturedBytes() {
             return capturedBytes;
-        }
-    }
-
-    private static class DelegatingLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
-        private final LogEntryWriter<T> delegate;
-
-        DelegatingLogEntryWriter(LogEntryWriter<T> logEntryWriter) {
-            super(logEntryWriter.getChannel());
-            this.delegate = logEntryWriter;
-        }
-
-        @Override
-        public void writeLogEntryHeader(byte version, byte type, WritableChannel channel) throws IOException {
-            delegate.writeLogEntryHeader(version, type, channel);
-        }
-
-        @Override
-        public void writeStartEntry(
-                byte version,
-                long timeWritten,
-                long latestCommittedTxWhenStarted,
-                int previousChecksum,
-                byte[] additionalHeaderData)
-                throws IOException {
-            delegate.writeStartEntry(
-                    version, timeWritten, latestCommittedTxWhenStarted, previousChecksum, additionalHeaderData);
-        }
-
-        @Override
-        public int writeCommitEntry(byte version, long transactionId, long timeWritten) throws IOException {
-            return delegate.writeCommitEntry(version, transactionId, timeWritten);
-        }
-
-        @Override
-        public void serialize(CommandBatch tx) throws IOException {
-            delegate.serialize(tx);
-        }
-
-        @Override
-        public void serialize(CommittedCommandBatch tx) throws IOException {
-            delegate.serialize(tx);
-        }
-
-        @Override
-        public T getChannel() {
-            return delegate.getChannel();
         }
     }
 }
