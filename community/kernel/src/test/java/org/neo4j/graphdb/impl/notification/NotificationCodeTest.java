@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.impl.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.CODE_GENERATION_FAILED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DATABASE_NAME;
@@ -59,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -618,5 +620,39 @@ class NotificationCodeTest {
         Arrays.stream(NotificationCode.values()).forEach(notification -> assertThat(
                         notification.notification(InputPosition.empty).getCategory())
                 .isNotEqualTo(NotificationCategory.UNKNOWN));
+    }
+
+    /**
+     * If this test fails, you have added, changed or removed a notification.
+     * To get it approved, follow the instructions on
+     * https://trello.com/c/9L3lbeSY/27-update-to-notification-name
+     * When your changes have been approved, please change the expected byte[] below.
+     */
+    @Test
+    void verifyNotificationsHaveNotChanged() {
+        StringBuilder notificationBuilder = new StringBuilder();
+        Arrays.stream(NotificationCode.values()).forEach(notificationCode -> {
+            Notification notification = notificationCode.notification(InputPosition.empty);
+
+            // Covers all notification information except NotificationDetail and position, which are query dependent
+            notificationBuilder.append(notification.getTitle());
+            notificationBuilder.append(notification.getDescription());
+            notificationBuilder.append(notification.getCode());
+            notificationBuilder.append(notification.getSeverity());
+            notificationBuilder.append(notification.getCategory());
+        });
+
+        byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
+
+        byte[] expectedHash = new byte[] {
+            12, 57, 66, 36, -64, 99, -47, 83, 20, -72, -70, -12, -111, -90, -107, 24, -102, -91, -119, -27, 92, 15, -1,
+            85, -79, -58, 106, 5, 87, -78, -60, -8
+        };
+
+        if (!Arrays.equals(notificationHash, expectedHash)) {
+            fail("Expected: " + Arrays.toString(expectedHash) + " \n Actual: " + Arrays.toString(notificationHash)
+                    + "\n If you have added, changed or removed a notification, "
+                    + "please follow the process on https://trello.com/c/9L3lbeSY/27-update-to-notification-name");
+        }
     }
 }
