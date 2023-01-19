@@ -1447,5 +1447,92 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     // TODO This test assertion fails but should work
     // .withStatistics(nodesCreated = sizeHint / 2, propertiesSet = sizeHint)
   }
+
+  test("merge should create nodes and relationship with empty undirected relationship type scan") {
+    given {
+      relationshipIndex("R", "prop")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipTypeScan("(n)-[r:R]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val allRelationships = tx.getAllRelationships
+    try {
+      val r =
+        Iterators.single(allRelationships.stream().filter(r => r.isType(RelationshipType.withName("R"))).iterator())
+      runtimeResult should beColumns("r").withSingleRow(r).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+    } finally {
+      allRelationships.close()
+    }
+  }
+
+  test("merge should match nodes and relationship with undirected relationship type scan") {
+    val (_, rels) = given {
+      relationshipIndex("R", "prop")
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "S", "m")))
+      .relationshipTypeScan("(n)-[r:R]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r)))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationship with empty undirected all relationship scan") {
+    // given empty database
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .filter("r:R")
+      .allRelationshipsScan("(n)-[r]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val allRelationships = tx.getAllRelationships
+    try {
+      val r =
+        Iterators.single(allRelationships.stream().filter(r => r.isType(RelationshipType.withName("R"))).iterator())
+      runtimeResult should beColumns("r").withSingleRow(r).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+    } finally {
+      allRelationships.close()
+    }
+  }
+
+  test("merge should match nodes and relationship with undirected all relationship scan") {
+    val (_, rels) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "S", "m")))
+      .filter("r:R")
+      .allRelationshipsScan("(n)-[r]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r)))).withNoUpdates()
+  }
 }
 
