@@ -217,19 +217,6 @@ public interface StorageEngineFactory {
     Set<String> supportedFormats(boolean includeFormatsUnderDevelopment);
 
     /**
-     * Instantiates a read-only {@link TransactionIdStore} to be used outside of a {@link StorageEngine}.
-     * @return the read-only {@link TransactionIdStore}.
-     * @throws IOException on I/O error or if the store doesn't exist.
-     */
-    TransactionIdStore readOnlyTransactionIdStore(LogTailMetadata logTailMetadata) throws IOException;
-
-    /**
-     * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.
-     * @return the read-only {@link LogVersionRepository}.
-     */
-    LogVersionRepository readOnlyLogVersionRepository(LogTailMetadata logTailMetadata);
-
-    /**
      * Instantiates a fully functional {@link MetadataProvider}, which is a union of {@link TransactionIdStore}
      * and {@link LogVersionRepository}.
      * @return a fully functional {@link MetadataProvider}.

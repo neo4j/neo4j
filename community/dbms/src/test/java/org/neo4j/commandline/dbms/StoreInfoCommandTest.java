@@ -83,7 +83,6 @@ class StoreInfoCommandTest {
 
         out = mock(PrintStream.class);
         storageEngineFactory = mock(StorageEngineFactory.class);
-        doReturn(transactionIdStore).when(storageEngineFactory).readOnlyTransactionIdStore(any());
         doReturn(fooDbLayout).when(storageEngineFactory).formatSpecificDatabaseLayout(any());
         storageEngineSelector = mock(StorageEngineFactory.Selector.class);
         when(storageEngineSelector.selectStorageEngine(any(), any())).thenReturn(Optional.empty());

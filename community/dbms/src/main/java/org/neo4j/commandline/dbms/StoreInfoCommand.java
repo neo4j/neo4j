@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.ReadOnlyTransactionIdStore;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -203,7 +204,7 @@ public class StoreInfoCommand extends AbstractAdminCommand {
             var logTail = getLogTail(fs, databaseLayout, pageCache, config, memoryTracker, storageEngineFactory);
             var recoveryRequired =
                     checkRecoveryState(fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory);
-            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore(logTail);
+            var txIdStore = new ReadOnlyTransactionIdStore(logTail);
             var lastTxId =
                     txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be
             // behind

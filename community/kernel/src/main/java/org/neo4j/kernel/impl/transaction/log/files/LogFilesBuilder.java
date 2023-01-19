@@ -53,6 +53,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.storageengine.ReadOnlyLogVersionRepository;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -415,7 +416,7 @@ public class LogFilesBuilder {
         if (readOnly) {
             requireNonNull(pageCache, "Read only log files require page cache to be able to read current log version.");
             requireNonNull(databaseLayout, "Store directory is required.");
-            return new ReadOnlyLogVersionRepositoryProvider(storageEngineFactory());
+            return new ReadOnlyLogVersionRepositoryProvider();
         } else {
             requireNonNull(
                     dependencies,
@@ -571,15 +572,9 @@ public class LogFilesBuilder {
     }
 
     private static class ReadOnlyLogVersionRepositoryProvider implements LogVersionRepositoryProvider {
-        private final StorageEngineFactory storageEngineFactory;
-
-        ReadOnlyLogVersionRepositoryProvider(StorageEngineFactory storageEngineFactory) {
-            this.storageEngineFactory = storageEngineFactory;
-        }
-
         @Override
         public LogVersionRepository logVersionRepository(LogFiles logFiles) {
-            return storageEngineFactory.readOnlyLogVersionRepository(logFiles.getTailMetadata());
+            return new ReadOnlyLogVersionRepository(logFiles.getTailMetadata());
         }
     }
 

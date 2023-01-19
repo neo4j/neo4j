@@ -130,12 +130,9 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.ReadOnlyLogVersionRepository;
-import org.neo4j.storageengine.ReadOnlyTransactionIdStore;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogFilesInitializer;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -145,7 +142,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.StoreVersionIdentifier;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -303,16 +299,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 .filter(not(RecordFormats::onlyForMigration))
                 .map(RecordFormats::name)
                 .collect(Collectors.toUnmodifiableSet());
-    }
-
-    @Override
-    public TransactionIdStore readOnlyTransactionIdStore(LogTailMetadata logTailMetadata) throws IOException {
-        return new ReadOnlyTransactionIdStore(logTailMetadata);
-    }
-
-    @Override
-    public LogVersionRepository readOnlyLogVersionRepository(LogTailMetadata logTailMetadata) {
-        return new ReadOnlyLogVersionRepository(logTailMetadata);
     }
 
     @Override
