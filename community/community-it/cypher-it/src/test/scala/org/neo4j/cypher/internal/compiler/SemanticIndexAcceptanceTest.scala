@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.DateTimeValue
 import org.neo4j.values.storable.DateValue
@@ -39,7 +40,6 @@ import org.scalacheck.Gen
 import org.scalacheck.Shrink
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -60,7 +60,7 @@ import scala.jdk.CollectionConverters.SetHasAsScala
  * }}}
  *
  */
-class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with ScalaCheckPropertyChecks {
+class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
   // we don't want scala check to shrink strings since it hides the actual error
   implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)

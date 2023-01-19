@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.label_expressions
 
 import org.neo4j.cypher.internal.label_expressions.NodeLabels.KnownLabels
 import org.neo4j.cypher.internal.label_expressions.NodeLabels.SomeUnknownLabels
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalatest.Inspectors
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class SolvableLabelExpressionTest extends AnyFunSuite with Matchers with ScalaCheckPropertyChecks
+class SolvableLabelExpressionTest extends AnyFunSuite with Matchers with CypherScalaCheckDrivenPropertyChecks
     with SolvableLabelExpressionGenerators {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =

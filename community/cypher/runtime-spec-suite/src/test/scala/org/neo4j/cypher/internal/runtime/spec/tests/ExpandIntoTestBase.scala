@@ -31,12 +31,12 @@ import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandAllTestBase.smallTestGraph
 import org.neo4j.cypher.internal.runtime.spec.tests.ExpandIntoRandomTest.ThinRelationship
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.scalacheck.Gen
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -1049,7 +1049,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 /**
  * Tests expand into with random graphs.
  */
-trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends ScalaCheckPropertyChecks {
+trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends CypherScalaCheckDrivenPropertyChecks {
   self: RuntimeTestSuite[CONTEXT] =>
 
   test("expand into should handle random graphs") {

@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class CoalesceTest extends FunctionTestBase("coalesce") with ScalaCheckPropertyChecks {
+class CoalesceTest extends FunctionTestBase("coalesce") with CypherScalaCheckDrivenPropertyChecks {
 
   test("n: CTNode, r: CTRelationship => coalesce(n, r): CTNode | CTRelationship") {
     testValidTypes(CTString, CTBoolean, CTString)(TypeSpec.union(CTBoolean, CTString))

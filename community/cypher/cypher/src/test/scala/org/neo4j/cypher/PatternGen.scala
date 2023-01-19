@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Gen
 import org.scalacheck.Gen.alphaLowerChar
 import org.scalacheck.Gen.alphaUpperChar
@@ -30,13 +31,12 @@ import org.scalacheck.Shrink
 import org.scalactic.anyvals.PosInt
 import org.scalactic.anyvals.PosZDouble
 import org.scalactic.anyvals.PosZInt
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
 
-trait PatternGen extends ScalaCheckPropertyChecks {
+trait PatternGen extends CypherScalaCheckDrivenPropertyChecks {
   protected def minPatternLength = 2
   protected def maxPatternLength = 8
   protected def numberOfTestRuns: PosInt = PosInt(100)

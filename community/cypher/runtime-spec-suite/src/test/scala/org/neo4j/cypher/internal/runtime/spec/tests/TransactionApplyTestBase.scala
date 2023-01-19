@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
@@ -55,7 +56,6 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.Assertion
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -810,7 +810,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
  * - Transaction batch size
  */
 trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
-    extends ScalaCheckPropertyChecks { self: RuntimeTestSuite[CONTEXT] =>
+    extends CypherScalaCheckDrivenPropertyChecks { self: RuntimeTestSuite[CONTEXT] =>
 
   def sizeHint: Int
 

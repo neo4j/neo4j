@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.graphdb.schema.IndexType
 import org.scalacheck.Gen
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -45,7 +45,7 @@ class OrLeafPlanningIntegrationTest
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport
     with LogicalPlanConstructionTestSupport
-    with ScalaCheckPropertyChecks {
+    with CypherScalaCheckDrivenPropertyChecks {
 
   private def plannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()

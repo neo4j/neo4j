@@ -41,10 +41,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosZInt
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.tailrec
 
@@ -424,7 +424,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
   )
 }
 
-class AddUniquenessPredicatesPropertyTest extends CypherFunSuite with ScalaCheckPropertyChecks
+class AddUniquenessPredicatesPropertyTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks
     with RelationshipTypeExpressionGenerators {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
