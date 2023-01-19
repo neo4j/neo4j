@@ -132,6 +132,7 @@ public enum Group {
 
     // SECURITY
     AUTH_CACHE("AuthCache", ExecutorServiceFactory.workStealing()),
+    SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
     // TESTING
     TESTING("TestingGroup", ExecutorServiceFactory.callingThread());
