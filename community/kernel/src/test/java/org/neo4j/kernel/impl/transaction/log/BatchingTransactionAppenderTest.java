@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
+import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
@@ -52,12 +53,15 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -109,9 +113,39 @@ class BatchingTransactionAppenderTest {
     }
 
     @Test
+    void shouldBeAbleToAppendTransactionWithoutKernelVersion()
+            throws IOException, ExecutionException, InterruptedException {
+        CountingVersionProvider versionProvider = new CountingVersionProvider();
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, versionProvider));
+
+        long txId = 15;
+        when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
+        when(transactionIdStore.getLastCommittedTransaction())
+                .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+        TransactionAppender appender = life.add(createTransactionAppender());
+        CommandBatch transaction = new CompleteTransaction(
+                singleTestCommand(), new byte[] {1, 2, 5}, 12345, 7896, 123456, -1, null, ANONYMOUS);
+
+        assertEquals(0, versionProvider.getVersionLookedUp());
+
+        appender.append(
+                new TransactionToApply(
+                        transaction, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, TransactionIdGenerator.EMPTY),
+                logAppendEvent);
+
+        assertEquals(1, versionProvider.getVersionLookedUp());
+        final LogEntryReader logEntryReader = logEntryReader();
+        try (var reader = new CommittedCommandBatchCursor(channel, logEntryReader)) {
+            reader.next();
+            CommittedCommandBatch commandBatch = reader.get();
+            assertEquals(LATEST, commandBatch.commandBatch().kernelVersion());
+        }
+    }
+
+    @Test
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -142,7 +176,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
-        TransactionLogWriter logWriter = new TransactionLogWriter(channel);
+        TransactionLogWriter logWriter = new TransactionLogWriter(channel, LATEST_VERSION);
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -165,7 +199,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -211,7 +245,7 @@ class BatchingTransactionAppenderTest {
     void shouldNotAppendCommittedTransactionsWhenTooFarAhead() {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -251,7 +285,7 @@ class BatchingTransactionAppenderTest {
                 new HeapScopedBuffer(Long.BYTES * 2, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -297,7 +331,7 @@ class BatchingTransactionAppenderTest {
                 .when(channel)
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel));
+        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -387,5 +421,19 @@ class BatchingTransactionAppenderTest {
             }
         }
         return first;
+    }
+
+    private static class CountingVersionProvider implements KernelVersionProvider {
+        private int versionLookedUp;
+
+        @Override
+        public KernelVersion kernelVersion() {
+            versionLookedUp++;
+            return LATEST;
+        }
+
+        public int getVersionLookedUp() {
+            return versionLookedUp;
+        }
     }
 }

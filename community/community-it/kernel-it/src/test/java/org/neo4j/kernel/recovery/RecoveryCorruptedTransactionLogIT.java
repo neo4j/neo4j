@@ -28,6 +28,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_l
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -1086,7 +1087,7 @@ class RecoveryCorruptedTransactionLogIT {
             LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
             TransactionLogWriter writer =
-                    new TransactionLogWriter(realLogEntryWriter.getChannel(), wrappedLogEntryWriter);
+                    new TransactionLogWriter(realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_VERSION);
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));

@@ -141,7 +141,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
-        transactionLogWriter = new TransactionLogWriter(writer);
+        transactionLogWriter = new TransactionLogWriter(writer, context.getKernelVersionProvider());
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

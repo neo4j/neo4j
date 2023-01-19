@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
@@ -247,7 +248,8 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private void appendCorruptedTransaction() throws IOException {
         var channel = logFile.getTransactionLogWriter().getChannel();
-        TransactionLogWriter writer = new TransactionLogWriter(channel, new CorruptedLogEntryWriter<>(channel));
+        TransactionLogWriter writer =
+                new TransactionLogWriter(channel, new CorruptedLogEntryWriter<>(channel), LATEST_VERSION);
         writer.append(tx(random.intBetween(100, 1000)), ++txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
     }
 

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -29,17 +31,20 @@ import org.neo4j.util.VisibleForTesting;
 public class TransactionLogWriter {
     private final FlushablePositionAwareChecksumChannel channel;
     private final LogEntryWriter<FlushablePositionAwareChecksumChannel> writer;
+    private final KernelVersionProvider versionProvider;
 
-    public TransactionLogWriter(FlushablePositionAwareChecksumChannel channel) {
-        this(channel, new LogEntryWriter<>(channel));
+    public TransactionLogWriter(FlushablePositionAwareChecksumChannel channel, KernelVersionProvider versionProvider) {
+        this(channel, new LogEntryWriter<>(channel), versionProvider);
     }
 
     @VisibleForTesting
     public TransactionLogWriter(
             FlushablePositionAwareChecksumChannel channel,
-            LogEntryWriter<FlushablePositionAwareChecksumChannel> writer) {
+            LogEntryWriter<FlushablePositionAwareChecksumChannel> writer,
+            KernelVersionProvider versionProvider) {
         this.channel = channel;
         this.writer = writer;
+        this.versionProvider = versionProvider;
     }
 
     /*
@@ -56,7 +61,11 @@ public class TransactionLogWriter {
     * The last chunk in the chunked transaction comes with a commit entry at the end.
     */
     public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
-        byte version = batch.kernelVersion().version();
+        KernelVersion kernelVersion = batch.kernelVersion();
+        if (kernelVersion == null) {
+            kernelVersion = versionProvider.kernelVersion();
+        }
+        byte version = kernelVersion.version();
 
         if (batch.isFirst()) {
             writer.writeStartEntry(
@@ -70,7 +79,7 @@ public class TransactionLogWriter {
         }
 
         // Write all the commands to the log channel
-        writer.serialize(batch);
+        writer.serialize(batch, kernelVersion);
 
         if (batch.isLast()) {
             return writer.writeCommitEntry(version, transactionId, batch.getTimeCommitted());
