@@ -62,9 +62,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDisk
         this.causeOfPanic = cause;
         this.hasPanic = true;
         log.error("Database panic: " + panicMessage, cause);
-        if (healthEventGenerator != null) {
-            healthEventGenerator.panic(cause);
-        }
+        healthEventGenerator.panic(cause);
     }
 
     @Override
@@ -79,8 +77,6 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDisk
 
     @Override
     public void outOfDiskSpace() {
-        if (healthEventGenerator != null) {
-            healthEventGenerator.outOfDiskSpace();
-        }
+        healthEventGenerator.outOfDiskSpace();
     }
 }
