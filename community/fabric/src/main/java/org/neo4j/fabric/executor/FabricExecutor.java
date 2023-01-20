@@ -158,29 +158,19 @@ public class FabricExecutor {
 
             var resultWithErrorMapping = withErrorMapping(
                     statementResult, FabricSecondaryException.class, FabricSecondaryException::getPrimaryException);
-            return new FabricExecutionStatementResultImpl(
-                    resultWithErrorMapping, failure -> rollbackOnFailure(fabricTransaction, failure));
+            return new FabricExecutionStatementResultImpl(resultWithErrorMapping, failure -> {
+                // Do nothing here. The transaction will be rolled back anyway,
+                // but that should happen after all active statements/queries have been closed
+            });
         } catch (RuntimeException e) {
             lifecycle.endFailure(e);
-            rollbackOnFailure(fabricTransaction, e);
+            // NOTE: We should not rollback the transaction here, since that is the responsibility of outer layers
             throw e;
         }
     }
 
     public long clearQueryCachesForDatabase(String databaseName) {
         return planner.queryCache().clearByContext(databaseName);
-    }
-
-    private static void rollbackOnFailure(FabricTransaction fabricTransaction, Throwable failure) {
-        try {
-            fabricTransaction.rollback();
-        } catch (Exception rollbackFailure) {
-            // some components like throwing the original exception
-            // upon any further interaction
-            if (rollbackFailure != failure) {
-                failure.addSuppressed(rollbackFailure);
-            }
-        }
     }
 
     private class FabricStatementExecution {

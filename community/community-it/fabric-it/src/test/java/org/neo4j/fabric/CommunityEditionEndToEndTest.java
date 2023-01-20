@@ -20,9 +20,7 @@
 package org.neo4j.fabric;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -135,10 +133,8 @@ class CommunityEditionEndToEndTest {
     }
 
     @Test
-    void testRollbackOnStatementFailure() {
+    void testNoRollbackOnStatementFailure() {
         // this is intentionally not using the driver, because the driver closes transactions on any failure
-        // and this test verifies that the server does the same (we should not rely on the drivers with this behaviour
-        // as all the drivers might not come from us)
 
         var dependencyResolver = graphDatabase.getDependencyResolver();
         var transactionManager = dependencyResolver.resolveDependency(TransactionManager.class);
@@ -179,7 +175,13 @@ class CommunityEditionEndToEndTest {
                 .collectList()
                 .block());
 
-        assertTrue(transactionManager.getOpenTransactions().isEmpty());
+        // The Fabric layer should not rollback transactions automatically on failure
+        assertTrue(tx1.isOpen());
+        assertTrue(tx2.isOpen());
+        assertFalse(transactionManager.getOpenTransactions().isEmpty());
+
+        tx1.rollback();
+        tx2.rollback();
     }
 
     private static void doTestUse(String database) {
