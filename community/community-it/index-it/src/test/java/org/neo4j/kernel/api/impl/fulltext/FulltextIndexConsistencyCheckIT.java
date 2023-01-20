@@ -42,7 +42,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
@@ -66,6 +65,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -672,7 +672,7 @@ class FulltextIndexConsistencyCheckIT {
             indexDescriptor = getFulltextIndexDescriptor(tx.schema().getIndexes());
             Node node = tx.createNode(Label.label("Label"));
             node.setProperty("prop", "value");
-            nodeId = node.getId();
+            nodeId = getNodeId(tx, node);
             tx.commit();
         }
         IndexingService indexes = getIndexingService(db);
@@ -702,7 +702,7 @@ class FulltextIndexConsistencyCheckIT {
             indexDescriptor = getFulltextIndexDescriptor(tx.schema().getIndexes());
             Node node = tx.createNode(Label.label("Label"));
             node.setProperty("prop", array("value1", "value2"));
-            nodeId = node.getId();
+            nodeId = getNodeId(tx, node);
             tx.commit();
         }
         IndexingService indexes = getIndexingService(db);
@@ -779,7 +779,7 @@ class FulltextIndexConsistencyCheckIT {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
             rel.setProperty("prop", "value");
-            relId = rel.getId();
+            relId = getId(tx, rel);
             tx.commit();
         }
         IndexingService indexes = getIndexingService(db);
@@ -810,7 +810,7 @@ class FulltextIndexConsistencyCheckIT {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo(node, RelationshipType.withName("REL"));
             rel.setProperty("prop", array("value1", "value2"));
-            relId = rel.getId();
+            relId = getId(tx, rel);
             tx.commit();
         }
         IndexingService indexes = getIndexingService(db);
@@ -825,9 +825,6 @@ class FulltextIndexConsistencyCheckIT {
         assertFalse(result.isSuccessful());
     }
 
-    @Disabled(
-            "Turns out that this is not something that the consistency checker actually looks for, currently. "
-                    + "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency.")
     @Test
     void mustDiscoverNodeInIndexWithMissingPropertyInStore() throws Exception {
         GraphDatabaseService db = createDatabase();
@@ -836,6 +833,14 @@ class FulltextIndexConsistencyCheckIT {
                     .close();
             tx.commit();
         }
+        String nodeId;
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
+            Node node = tx.createNode(Label.label("Label"));
+            nodeId = node.getElementId();
+            tx.commit();
+        }
+
         managementService.shutdown();
         Path copyRoot = testDirectory.directory("cpy");
         copyStoreFiles(copyRoot);
@@ -843,7 +848,7 @@ class FulltextIndexConsistencyCheckIT {
 
         try (Transaction tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES);
-            Node node = tx.createNode();
+            Node node = tx.getNodeByElementId(nodeId);
             node.setProperty("prop", "value");
             tx.commit();
         }
@@ -929,6 +934,14 @@ class FulltextIndexConsistencyCheckIT {
         final var result = checkConsistency();
         assertThat(result.isSuccessful()).isFalse();
         assertThat(result.summary().getInconsistencyCountForRecordType("INDEX")).isEqualTo(1);
+    }
+
+    private static long getNodeId(Transaction tx, Node node) {
+        return ((TransactionImpl) tx).elementIdMapper().nodeId(node.getElementId());
+    }
+
+    private static long getId(Transaction tx, Relationship rel) {
+        return ((TransactionImpl)tx).elementIdMapper().relationshipId(rel.getElementId());
     }
 
     private void copyStoreFiles(Path into) throws IOException {
