@@ -28,7 +28,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -118,19 +117,6 @@ class ProduceNoopCommandsIT {
 
         // when
         onNode(id, (tx, node) -> node.setProperty(KEY, 123));
-    }
-
-    @Disabled("This no-op prevention is still not implemented")
-    @Test
-    void removeAndSetNodePropertyToSameValue() {
-        // given
-        String id = node().withProperty(KEY, 123).build();
-
-        // when
-        onNode(id, (tx, node) -> {
-            node.removeProperty(KEY);
-            node.setProperty(KEY, 123);
-        });
     }
 
     @Test
