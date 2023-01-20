@@ -73,6 +73,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult {
     @Override
     public void close() {
         queryExecution.cancel();
+        queryExecution.awaitCleanup();
     }
 
     @Override
