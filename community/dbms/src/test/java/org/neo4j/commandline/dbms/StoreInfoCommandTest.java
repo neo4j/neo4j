@@ -49,7 +49,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -71,7 +70,6 @@ class StoreInfoCommandTest {
     private Path databasesRoot;
     private StorageEngineFactory storageEngineFactory;
     private StorageEngineFactory.Selector storageEngineSelector;
-    private final TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -200,10 +198,10 @@ class StoreInfoCommandTest {
         var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
         fileSystem.mkdirs(barDbDirectory);
 
-        prepareStore(fooDbLayout, "A", "v1", null, null, 4);
-        prepareStore(barDbLayout, "A", "v1", null, null, 5);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        prepareStore(barDbLayout, "A", "v1", null, null, 1);
 
-        var expectedBar = expectedStructuredResult("bar", false, "A", "v1", null, 5);
+        var expectedBar = expectedStructuredResult("bar", false, "A", "v1", null, 1);
 
         var expectedFoo = expectedStructuredResult("foo", true, null, null, null, -1);
 
@@ -227,13 +225,11 @@ class StoreInfoCommandTest {
         var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
         fileSystem.mkdirs(barDbDirectory);
 
-        prepareStore(fooDbLayout, "A", "v1", null, null, 9);
-        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 9);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 1);
 
-        prepareStore(barDbLayout, "A", "v1", null, null, 10);
-        var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 10);
-
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(10L, 9L);
+        prepareStore(barDbLayout, "A", "v1", null, null, 1);
+        var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 1);
 
         var expected = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
 
@@ -252,13 +248,11 @@ class StoreInfoCommandTest {
         var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
         fileSystem.mkdirs(barDbDirectory);
 
-        prepareStore(fooDbLayout, "A", "v1", null, null, 9);
-        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 9);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 1);
 
-        prepareStore(barDbLayout, "A", "v1", null, null, 10);
-        var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 10);
-
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(10L, 9L);
+        prepareStore(barDbLayout, "A", "v1", null, null, 1);
+        var expectedBar = expectedPrettyResult("bar", false, "A", "v1", null, 1);
 
         var expected = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
 
@@ -277,12 +271,10 @@ class StoreInfoCommandTest {
         var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
         fileSystem.mkdirs(barDbDirectory);
 
-        prepareStore(fooDbLayout, "A", "v1", null, null, 9);
-        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 9);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 1);
 
-        prepareStore(barDbLayout, "A", "v1", null, null, 10);
-
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(9L);
+        prepareStore(barDbLayout, "A", "v1", null, null, 1);
 
         // when
         CommandLine.populateCommand(command, args(databasesRoot, true, "f*"));
@@ -295,8 +287,8 @@ class StoreInfoCommandTest {
     @Test
     void returnsInfoStructuredAsJson() throws IOException {
         // given
-        prepareStore(fooDbLayout, "A", "v1", null, null, 13);
-        var expectedFoo = expectedStructuredResult("foo", false, "A", "v1", null, 13);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        var expectedFoo = expectedStructuredResult("foo", false, "A", "v1", null, 1);
 
         // when
         CommandLine.populateCommand(command, args(databasesRoot, true, "foo", true, "json"));
@@ -309,8 +301,8 @@ class StoreInfoCommandTest {
     @Test
     void returnsInfoInTextFormat() throws IOException {
         // given
-        prepareStore(fooDbLayout, "A", "v1", null, null, 13);
-        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 13);
+        prepareStore(fooDbLayout, "A", "v1", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "A", "v1", null, 1);
 
         // when
         CommandLine.populateCommand(command, args(databasesRoot, true, "foo", true, "text"));
@@ -327,11 +319,10 @@ class StoreInfoCommandTest {
         var barDbLayout = DatabaseLayout.ofFlat(barDbDirectory);
         fileSystem.mkdirs(barDbDirectory);
 
-        prepareStore(fooDbLayout, "B", "v2", null, null, 2);
-        var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 2);
-        prepareStore(barDbLayout, "B", "v2", null, null, 3);
-        var expectedBar = expectedPrettyResult("bar", false, "B", "v2", null, 3);
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(3L, 2L);
+        prepareStore(fooDbLayout, "B", "v2", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 1);
+        prepareStore(barDbLayout, "B", "v2", null, null, 1);
+        var expectedBar = expectedPrettyResult("bar", false, "B", "v2", null, 1);
 
         var expectedMulti = expectedBar + System.lineSeparator() + System.lineSeparator() + expectedFoo;
 
@@ -345,8 +336,8 @@ class StoreInfoCommandTest {
     @Test
     void prettySingleStoreInfoResultHasTrailingLineSeparator() throws IOException {
         // given
-        prepareStore(fooDbLayout, "B", "v2", null, null, 8);
-        var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 8);
+        prepareStore(fooDbLayout, "B", "v2", null, null, 1);
+        var expectedFoo = expectedPrettyResult("foo", false, "B", "v2", null, 1);
 
         // when
         CommandLine.populateCommand(command, args(databasesRoot, true, "foo"));
@@ -426,7 +417,6 @@ class StoreInfoCommandTest {
         StoreVersion storeVersion1 = mockedStoreVersion(storeVersion, introducedInVersion, storeVersion2);
 
         when(storageEngineFactory.versionInformation(storeId)).thenReturn(Optional.of(storeVersion1));
-        when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(lastCommittedTxId);
     }
 
     private StoreVersion mockedStoreVersion(
