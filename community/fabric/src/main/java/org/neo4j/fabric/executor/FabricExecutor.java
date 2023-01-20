@@ -156,15 +156,12 @@ public class FabricExecutor {
                 return execution.run();
             });
 
-            var resultWithErrorMapping = withErrorMapping(
+            return withErrorMapping(
                     statementResult, FabricSecondaryException.class, FabricSecondaryException::getPrimaryException);
-            return new FabricExecutionStatementResultImpl(resultWithErrorMapping, failure -> {
-                // Do nothing here. The transaction will be rolled back anyway,
-                // but that should happen after all active statements/queries have been closed
-            });
         } catch (RuntimeException e) {
             lifecycle.endFailure(e);
-            // NOTE: We should not rollback the transaction here, since that is the responsibility of outer layers
+            // NOTE: We should not rollback the transaction here, since that is the responsibility of outer layers,
+            //       and it should happen after all active statements/queries have been closed.
             throw e;
         }
     }
