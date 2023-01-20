@@ -1736,4 +1736,110 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r)))).withNoUpdates()
   }
+
+  test("merge should create nodes and relationship with empty undirected relationship index scan") {
+    given {
+      relationshipIndex("R", "prop")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 42}")))
+      )
+      .filter("r.prop = 42")
+      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val allRelationships = tx.getAllRelationships
+    try {
+      val r =
+        Iterators.single(allRelationships.stream().filter(r => r.isType(RelationshipType.withName("R"))).iterator())
+      runtimeResult should beColumns("r").withSingleRow(r).withStatistics(
+        nodesCreated = 2,
+        relationshipsCreated = 1,
+        propertiesSet = 1
+      )
+    } finally {
+      allRelationships.close()
+    }
+  }
+
+  test("merge should match nodes and relationship with undirected relationship index scan") {
+    val rels = given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 42}")))
+      )
+      .filter("r.prop = 42")
+      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withRows(Seq(Array(rels(42)), Array(rels(42)))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationship with empty undirected relationship index seek") {
+    given {
+      relationshipIndex("R", "prop")
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipIndexOperator("(n)-[r:R(prop=42)]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val allRelationships = tx.getAllRelationships
+    try {
+      val r =
+        Iterators.single(allRelationships.stream().filter(r => r.isType(RelationshipType.withName("R"))).iterator())
+      runtimeResult should beColumns("r").withSingleRow(r).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+    } finally {
+      allRelationships.close()
+    }
+  }
+
+  test("merge should match nodes and relationship with undirected relationship index seek scan") {
+    val rels = given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipIndexOperator("(n)-[r:R(prop=42)]-(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withRows(Seq(Array(rels(42)), Array(rels(42)))).withNoUpdates()
+  }
 }
