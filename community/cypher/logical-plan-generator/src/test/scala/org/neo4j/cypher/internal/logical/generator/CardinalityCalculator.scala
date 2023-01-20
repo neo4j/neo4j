@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.generator
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel

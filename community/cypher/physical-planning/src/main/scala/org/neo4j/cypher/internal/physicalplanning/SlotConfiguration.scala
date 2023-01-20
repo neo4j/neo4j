@@ -23,7 +23,6 @@ import org.eclipse.collections.api.list.primitive.MutableIntList
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
@@ -33,7 +32,6 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyA
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlotKey
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityById
-import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -45,7 +43,6 @@ import org.neo4j.values.AnyValue
 import java.util.Objects
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object SlotConfiguration {
   def empty = new SlotConfiguration(mutable.Map.empty, 0, 0, new mutable.BitSet(0))
