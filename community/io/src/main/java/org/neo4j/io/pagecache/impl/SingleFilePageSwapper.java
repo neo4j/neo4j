@@ -41,7 +41,6 @@ import net.jpountz.xxhash.XXHashFactory;
 import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.nativeimpl.NativeAccess;
-import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.ChecksumMismatchException;
@@ -79,6 +78,7 @@ public class SingleFilePageSwapper implements PageSwapper {
     private final int swapperId;
     private final PageFileSwapperTracer fileSwapperTracer;
     private final BlockSwapper blockSwapper;
+    private final NativeAccess nativeAccess;
     private final XXHash64 xxHash64 = XXHashFactory.fastestInstance().hash64();
 
     // Guarded by synchronized(this). See tryReopen() and close().
@@ -109,7 +109,8 @@ public class SingleFilePageSwapper implements PageSwapper {
             IOController ioController,
             SwapperSet swapperSet,
             PageFileSwapperTracer fileSwapperTracer,
-            BlockSwapper blockSwapper)
+            BlockSwapper blockSwapper,
+            NativeAccess nativeAccess)
             throws IOException {
         this.fs = fs;
         this.path = path;
@@ -143,6 +144,7 @@ public class SingleFilePageSwapper implements PageSwapper {
         this.canDoVectorizedIO = channel.hasPositionLock() && UnsafeUtil.unsafeByteBufferAccessAvailable();
         this.swapperId = swapperSet.allocate(this);
         this.blockSwapper = blockSwapper;
+        this.nativeAccess = nativeAccess;
     }
 
     private StoreChannel createStoreChannel() throws IOException {
@@ -589,18 +591,17 @@ public class SingleFilePageSwapper implements PageSwapper {
 
     @Override
     public boolean canAllocate() {
-        return NativeAccessProvider.getNativeAccess().isAvailable()
+        return nativeAccess.isAvailable()
                 // this type of operation requires the underlying channel to provide a file descriptor
                 && channel.getFileDescriptor() != INVALID_FILE_DESCRIPTOR;
     }
 
     @Override
     public void allocate(long newFileSize) throws IOException {
-        NativeAccess access = NativeAccessProvider.getNativeAccess();
-        if (access.isAvailable()) {
-            NativeCallResult result = access.tryPreallocateSpace(channel.getFileDescriptor(), newFileSize);
+        if (nativeAccess.isAvailable()) {
+            NativeCallResult result = nativeAccess.tryPreallocateSpace(channel.getFileDescriptor(), newFileSize);
             if (result.isError()) {
-                if (access.errorTranslator().isOutOfDiskSpace(result)) {
+                if (nativeAccess.errorTranslator().isOutOfDiskSpace(result)) {
                     throw new OutOfDiskSpaceException("System is out of disk space for store file at: " + path + ". "
                             + "To be able to proceed please allocate more disk space for the database and restart."
                             + "Requested file size: " + newFileSize + ". Call error: "

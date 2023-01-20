@@ -22,6 +22,8 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOController;
@@ -31,6 +33,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * A factory for SingleFilePageSwapper instances.
@@ -75,7 +78,8 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
                 ioController,
                 swappers,
                 pageCacheTracer.createFileSwapperTracer(),
-                blockSwapper);
+                blockSwapper,
+                nativeAccess());
     }
 
     private static BlockSwapper createBlockSwapper(MemoryTracker memoryTracker) {
@@ -83,5 +87,10 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
             return new UnsafeBlockSwapper();
         }
         return new FallbackBlockSwapper(memoryTracker);
+    }
+
+    @VisibleForTesting
+    protected NativeAccess nativeAccess() {
+        return NativeAccessProvider.getNativeAccess();
     }
 }
