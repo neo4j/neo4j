@@ -27,10 +27,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Consumer;
 import java.util.function.LongFunction;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings({"NullableProblems", "unchecked"})
 public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrackingConcurrentHash
@@ -373,6 +373,14 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
 
     public Iterator<V> values() {
         return new ValueIterator();
+    }
+
+    public void forEachValue(Consumer<? super V> action) {
+        if (action == null) throw new NullPointerException();
+        var values = values();
+        while (values.hasNext()) {
+            action.accept(values.next());
+        }
     }
 
     private Entry<V> getEntry(long key) {

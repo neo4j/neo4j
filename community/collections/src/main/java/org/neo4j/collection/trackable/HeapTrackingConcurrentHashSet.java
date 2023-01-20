@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings({"unchecked", "NullableProblems"})
 public final class HeapTrackingConcurrentHashSet<E> extends AbstractHeapTrackingConcurrentHash

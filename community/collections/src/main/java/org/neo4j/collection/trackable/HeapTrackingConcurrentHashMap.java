@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.eclipse.collections.impl.utility.MapIterate;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings({"NullableProblems", "unchecked"})
 public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrackingConcurrentHash

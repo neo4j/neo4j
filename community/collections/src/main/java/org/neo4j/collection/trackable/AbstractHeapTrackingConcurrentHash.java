@@ -19,7 +19,9 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.impl.list.mutable.FastList;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,12 +29,8 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
+import org.eclipse.collections.impl.list.mutable.FastList;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 /**
  * This class contains a fork of org.eclipse.collections.impl.map.mutable.ConcurrentHashMap extending
@@ -220,8 +218,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
                         // END MODIFICATION
                     }
                     // BEGIN MODIFICATION
-                    resizeContainer = new ResizeContainer(
-                            allocateAtomicReferenceArray(newSize), oldTable.length() - 1);
+                    resizeContainer = new ResizeContainer(allocateAtomicReferenceArray(newSize), oldTable.length() - 1);
                     // END MODIFICATION
                     oldTable.set(end, resizeContainer);
                     ownResize = true;
@@ -303,8 +300,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
     }
 
     public void releaseHeap() {
-        memoryTracker.releaseHeap(
-                shallowSizeOfAtomicReferenceArray(trackedCapacity));
+        memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity));
         if (partitionedSize != null) {
             memoryTracker.releaseHeap(SIZE_INTEGER_REFERENCE_ARRAY);
         }

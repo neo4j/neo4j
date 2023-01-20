@@ -26,7 +26,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings({"unchecked", "NullableProblems"})
 public final class HeapTrackingConcurrentLongHashSet extends AbstractHeapTrackingConcurrentHash
