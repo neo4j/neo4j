@@ -19,9 +19,7 @@
  */
 package org.neo4j.collection.trackable;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
+import org.eclipse.collections.impl.list.mutable.FastList;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,8 +27,12 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import org.eclipse.collections.impl.list.mutable.FastList;
+
 import org.neo4j.memory.MemoryTracker;
+
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 /**
  * This class contains a fork of org.eclipse.collections.impl.map.mutable.ConcurrentHashMap extending
@@ -43,8 +45,8 @@ import org.neo4j.memory.MemoryTracker;
  *   //END MODIFICATION
  * }</pre>
  *
- * NOTE: memory tracking is exact at the point of a resize event but will not be exact in between these events.
- * This is a compromize since we don't want to interact with the memory tracker on evert pyt/add.
+ * NOTE: this class only tracks the memory of the internal structures, it will not track the individual entries.
+ * The user of this class can use {@link #sizeOfWrapperObject()} to improve the estimation.
  */
 public abstract class AbstractHeapTrackingConcurrentHash {
 
@@ -88,7 +90,6 @@ public abstract class AbstractHeapTrackingConcurrentHash {
 
     final MemoryTracker memoryTracker;
     private volatile int trackedCapacity;
-    private volatile int trackedEntries;
 
     AbstractHeapTrackingConcurrentHash(MemoryTracker memoryTracker, int initialCapacity) {
         if (initialCapacity < 0) {
@@ -111,23 +112,19 @@ public abstract class AbstractHeapTrackingConcurrentHash {
             this.partitionedSize = allocateAtomicIntegerArray();
         }
         this.memoryTracker = memoryTracker;
-        this.table = allocateAtomicReferenceArray(capacity + 1, 0);
+        this.table = allocateAtomicReferenceArray(capacity + 1);
     }
 
     static int indexFor(int h, int length) {
         return h & length - 2;
     }
 
-    abstract long sizeOfWrapperObject();
+    public abstract long sizeOfWrapperObject();
 
-    private AtomicReferenceArray<Object> allocateAtomicReferenceArray(int newSize, int numberOfEntries) {
-        long wrapperSize = sizeOfWrapperObject();
-        long toAllocate = shallowSizeOfAtomicReferenceArray(newSize) + numberOfEntries * wrapperSize;
-        long toRelease = shallowSizeOfAtomicReferenceArray(trackedCapacity) + trackedEntries * wrapperSize;
-        memoryTracker.allocateHeap(toAllocate);
-        memoryTracker.releaseHeap(toRelease);
+    private AtomicReferenceArray<Object> allocateAtomicReferenceArray(int newSize) {
+        memoryTracker.allocateHeap(shallowSizeOfAtomicReferenceArray(newSize));
+        memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity));
         trackedCapacity = newSize;
-        trackedEntries = numberOfEntries;
         return new AtomicReferenceArray<>(newSize);
     }
 
@@ -224,7 +221,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
                     }
                     // BEGIN MODIFICATION
                     resizeContainer = new ResizeContainer(
-                            allocateAtomicReferenceArray(newSize, localSize), oldTable.length() - 1);
+                            allocateAtomicReferenceArray(newSize), oldTable.length() - 1);
                     // END MODIFICATION
                     oldTable.set(end, resizeContainer);
                     ownResize = true;
@@ -307,7 +304,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
 
     public void releaseHeap() {
         memoryTracker.releaseHeap(
-                shallowSizeOfAtomicReferenceArray(trackedCapacity) + sizeOfWrapperObject() * trackedEntries);
+                shallowSizeOfAtomicReferenceArray(trackedCapacity));
         if (partitionedSize != null) {
             memoryTracker.releaseHeap(SIZE_INTEGER_REFERENCE_ARRAY);
         }

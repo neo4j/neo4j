@@ -54,7 +54,6 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         super(memoryTracker, initialCapacity);
     }
 
-    @VisibleForTesting
     @Override
     public long sizeOfWrapperObject() {
         return SHALLOW_SIZE_WRAPPER;
