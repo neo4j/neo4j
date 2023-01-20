@@ -319,9 +319,8 @@ public interface TopologyGraphDbmsModel {
      * Fetches the {@link ExternalDatabaseCredentials} corresponding to the provided database name
      * if the name exists and is associated with a {@link DatabaseReference.External}
      *
-     * @param databaseName - the remote database alias to resolve driver settings for
-     * @param namespace    - the namespace of the remote database alias to resolve driver settings for
+     * @param databaseReference - the remote database reference to resolve driver settings for
      * @return the corresponding {@link ExternalDatabaseCredentials}
      */
-    Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName, String namespace);
+    Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(DatabaseReference.External databaseReference);
 }

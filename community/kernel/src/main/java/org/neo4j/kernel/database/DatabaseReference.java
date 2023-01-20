@@ -22,9 +22,11 @@ package org.neo4j.kernel.database;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.neo4j.configuration.helpers.RemoteUri;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 
 /**
  * Implementations of this interface represent different kinds of Database reference.
@@ -40,11 +42,17 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             Comparator.comparing(a -> a.alias().name(), String::compareToIgnoreCase);
     private static final Comparator<DatabaseReference> nullSafeReferenceComparator =
             Comparator.nullsLast(referenceComparator);
-
+    private static final NormalizedDatabaseName defaultNamespace =
+            new NormalizedDatabaseName(TopologyGraphDbmsModel.DEFAULT_NAMESPACE);
     /**
      * @return the alias associated with this database reference
      */
     public abstract NormalizedDatabaseName alias();
+
+    /**
+     * @return the namespace that the alias is in, or empty if it is in the default namespace
+     */
+    public abstract Optional<NormalizedDatabaseName> namespace();
 
     /**
      * @return whether the alias associated with this reference is the database's original/true name
@@ -61,19 +69,42 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         return nullSafeReferenceComparator.compare(this, that);
     }
 
+    public String toPrettyString() {
+        var namespace = namespace().map(ns -> ns.name() + ".").orElse("");
+        var name = alias().name();
+        return namespace + name;
+    }
+
     /**
      * External references point to databases which are not stored within this DBMS.
      */
     public static final class External extends DatabaseReference {
         private final NormalizedDatabaseName targetAlias;
         private final NormalizedDatabaseName alias;
+        private final NormalizedDatabaseName namespace;
         private final RemoteUri externalUri;
         private final UUID uuid;
 
+        /**
+         * Creates an external database reference with no namespace (default namespace)
+         */
         public External(
                 NormalizedDatabaseName targetAlias, NormalizedDatabaseName alias, RemoteUri externalUri, UUID uuid) {
+            this(targetAlias, alias, null, externalUri, uuid);
+        }
+
+        /**
+         * Creates an external database reference
+         */
+        public External(
+                NormalizedDatabaseName targetAlias,
+                NormalizedDatabaseName alias,
+                NormalizedDatabaseName namespace,
+                RemoteUri externalUri,
+                UUID uuid) {
             this.targetAlias = targetAlias;
             this.alias = alias;
+            this.namespace = Objects.equals(namespace, defaultNamespace) ? null : namespace;
             this.externalUri = externalUri;
             this.uuid = uuid;
         }
@@ -81,6 +112,11 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         @Override
         public NormalizedDatabaseName alias() {
             return alias;
+        }
+
+        @Override
+        public Optional<NormalizedDatabaseName> namespace() {
+            return Optional.ofNullable(namespace);
         }
 
         @Override
@@ -103,31 +139,30 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            External remote = (External) o;
-            return Objects.equals(targetAlias, remote.targetAlias)
-                    && Objects.equals(alias, remote.alias)
-                    && Objects.equals(externalUri, remote.externalUri)
-                    && Objects.equals(uuid, remote.uuid);
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            External external = (External) o;
+            return Objects.equals(targetAlias, external.targetAlias)
+                    && Objects.equals(alias, external.alias)
+                    && Objects.equals(namespace, external.namespace)
+                    && Objects.equals(externalUri, external.externalUri)
+                    && Objects.equals(uuid, external.uuid);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(targetAlias, alias, externalUri, uuid);
+            return Objects.hash(targetAlias, alias, namespace, externalUri, uuid);
         }
 
         @Override
         public String toString() {
-            return "DatabaseReference.External{" + "remoteName="
-                    + targetAlias + ", name="
-                    + alias + ", remoteUri="
-                    + externalUri + ", uuid="
-                    + uuid + '}';
+            return "External{"
+                    + "alias=" + alias
+                    + ", namespace=" + namespace
+                    + ", remoteUri=" + externalUri
+                    + ", remoteName=" + targetAlias
+                    + ", uuid=" + uuid
+                    + '}';
         }
     }
 
@@ -136,13 +171,29 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
      *
      * Note, however, that a local reference may point to databases not stored on this physical instance.
      */
-    public static final class Internal extends DatabaseReference {
-        private final NormalizedDatabaseName alias;
-        private final NamedDatabaseId namedDatabaseId;
-        private final boolean primary;
+    public static sealed class Internal extends DatabaseReference {
+        protected final NormalizedDatabaseName alias;
+        protected final NormalizedDatabaseName namespace;
+        protected final NamedDatabaseId namedDatabaseId;
+        protected final boolean primary;
 
+        /**
+         * Creates an internal database reference with no namespace (default namespace)
+         */
         public Internal(NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, boolean primary) {
+            this(alias, null, namedDatabaseId, primary);
+        }
+
+        /**
+         * Creates an internal database reference
+         */
+        public Internal(
+                NormalizedDatabaseName alias,
+                NormalizedDatabaseName namespace,
+                NamedDatabaseId namedDatabaseId,
+                boolean primary) {
             this.alias = alias;
+            this.namespace = Objects.equals(namespace, defaultNamespace) ? null : namespace;
             this.namedDatabaseId = namedDatabaseId;
             this.primary = primary;
         }
@@ -154,6 +205,11 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         @Override
         public NormalizedDatabaseName alias() {
             return alias;
+        }
+
+        @Override
+        public Optional<NormalizedDatabaseName> namespace() {
+            return Optional.ofNullable(namespace);
         }
 
         @Override
@@ -173,52 +229,40 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             Internal internal = (Internal) o;
             return primary == internal.primary
                     && Objects.equals(alias, internal.alias)
+                    && Objects.equals(namespace, internal.namespace)
                     && Objects.equals(namedDatabaseId, internal.namedDatabaseId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(alias, namedDatabaseId, primary);
+            return Objects.hash(alias, namespace, namedDatabaseId, primary);
         }
 
         @Override
         public String toString() {
-            return "DatabaseReference.Internal{" + "alias="
-                    + alias + ", namedDatabaseId="
+            return "Internal{" + "alias="
+                    + alias + ", namespace="
+                    + namespace + ", namedDatabaseId="
                     + namedDatabaseId + ", primary="
                     + primary + '}';
         }
     }
 
-    public static final class Composite extends DatabaseReference {
-        private final NormalizedDatabaseName alias;
-        private final NamedDatabaseId namedDatabaseId;
+    public static final class Composite extends DatabaseReference.Internal {
         private final List<DatabaseReference> constituents;
 
+        /**
+         * Creates a composite database reference
+         */
         public Composite(
                 NormalizedDatabaseName alias, NamedDatabaseId namedDatabaseId, Set<DatabaseReference> constituents) {
-            this.alias = alias;
-            this.namedDatabaseId = namedDatabaseId;
+            super(alias, namedDatabaseId, true);
             this.constituents = constituents.stream().sorted().toList();
         }
 
-        public NamedDatabaseId databaseId() {
-            return namedDatabaseId;
-        }
-
         @Override
-        public NormalizedDatabaseName alias() {
-            return alias;
-        }
-
-        @Override
-        public boolean isPrimary() {
-            return Objects.equals(alias.name(), namedDatabaseId.name());
-        }
-
-        @Override
-        public UUID id() {
-            return namedDatabaseId.databaseId().uuid();
+        public Optional<NormalizedDatabaseName> namespace() {
+            return Optional.empty();
         }
 
         public List<DatabaseReference> constituents() {
@@ -229,22 +273,23 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
             Composite composite = (Composite) o;
-            return Objects.equals(alias, composite.alias)
-                    && Objects.equals(namedDatabaseId, composite.namedDatabaseId)
-                    && Objects.equals(constituents, composite.constituents);
+            return Objects.equals(constituents, composite.constituents);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(alias, namedDatabaseId, constituents);
+            return Objects.hash(super.hashCode(), constituents);
         }
 
         @Override
         public String toString() {
-            return "DatabaseReference.Composite{" + "alias="
-                    + alias + ", namedDatabaseId="
-                    + namedDatabaseId + ", components="
+            return "Composite{" + "alias="
+                    + alias + ", namespace="
+                    + namespace + ", namedDatabaseId="
+                    + namedDatabaseId + ", primary="
+                    + primary + ", constituents="
                     + constituents + '}';
         }
     }

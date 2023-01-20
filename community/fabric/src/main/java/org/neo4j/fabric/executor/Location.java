@@ -19,65 +19,31 @@
  */
 package org.neo4j.fabric.executor;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.configuration.helpers.RemoteUri;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 
-public class Location {
-    private final long graphId;
-    private final UUID uuid;
-    private final String databaseName;
+public interface Location {
 
-    private Location(long graphId, UUID uuid, String databaseName) {
-        this.graphId = graphId;
-        this.uuid = uuid;
-        this.databaseName = databaseName;
-    }
+    DatabaseReference databaseReference();
 
-    public long getGraphId() {
-        return graphId;
-    }
+    long graphId();
 
-    public UUID getUuid() {
-        return uuid;
-    }
+    String getDatabaseName();
 
-    public String getDatabaseName() {
-        return databaseName;
+    default UUID getUuid() {
+        return databaseReference().id();
     }
 
     /**
      * A Local location refers to a graph/database running on this instance of Neo4j.
      */
-    public static class Local extends Location {
-        public Local(long id, UUID uuid, String databaseName) {
-            super(id, uuid, databaseName);
-        }
-
+    record Local(long graphId, DatabaseReference.Internal databaseReference) implements Location {
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Local local = (Local) o;
-            return getGraphId() == local.getGraphId()
-                    && Objects.equals(getUuid(), local.getUuid())
-                    && Objects.equals(getDatabaseName(), local.getDatabaseName());
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getGraphId(), getUuid(), getDatabaseName());
-        }
-
-        @Override
-        public String toString() {
-            return "Local{" + "graphId=" + getGraphId() + ", uuid=" + getUuid() + ", databaseName='" + getDatabaseName()
-                    + '\'' + '}';
+        public String getDatabaseName() {
+            return databaseReference.databaseId().name();
         }
     }
 
@@ -85,121 +51,49 @@ public class Location {
      * A Remote location refers to a graph/database running on another instance of Neo4j.
      * This instance may or may not be part of the same DBMS.
      */
-    public abstract static class Remote extends Location {
-        private final RemoteUri uri;
+    interface Remote extends Location {
 
-        protected Remote(long id, UUID uuid, RemoteUri uri, String databaseName) {
-            super(id, uuid, databaseName);
-            this.uri = uri;
-        }
-
-        public RemoteUri getUri() {
-            return uri;
-        }
+        RemoteUri getUri();
 
         /**
          * A Remote.Internal location refers to a graph/database running on another instance of Neo4j within
          * the same DBMS.
          */
-        public static class Internal extends Remote {
+        record Internal(long graphId, DatabaseReference.Internal databaseReference, RemoteUri uri)
+                implements Location.Remote {
 
-            public Internal(long id, UUID uuid, RemoteUri uri, String databaseName) {
-                super(id, uuid, uri, databaseName);
+            @Override
+            public String getDatabaseName() {
+                return databaseReference.databaseId().name();
             }
 
             @Override
-            public boolean equals(Object o) {
-                if (this == o) {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass()) {
-                    return false;
-                }
-                Remote remote = (Remote) o;
-                return Objects.equals(getUri(), remote.getUri())
-                        || (getGraphId() == remote.getGraphId())
-                                && Objects.equals(getUuid(), remote.getUuid())
-                                && Objects.equals(getDatabaseName(), remote.getDatabaseName());
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(getUri(), getGraphId(), getUuid(), getDatabaseName());
-            }
-
-            @Override
-            public String toString() {
-                return "Internal{" + "graphId=" + getGraphId() + ", uuid=" + getUuid() + ", databaseName='"
-                        + getDatabaseName() + '\'' + ", uri=" + getUri() + '}';
+            public RemoteUri getUri() {
+                return uri;
             }
         }
 
         /**
          * A Remote.External location refers to a graph/database running on another instance of Neo4j, in another DBMS.
          */
-        public static class External extends Remote {
+        record External(long graphId, DatabaseReference.External databaseReference) implements Location.Remote {
 
-            public External(long id, UUID uuid, RemoteUri uri, String databaseName) {
-                super(id, uuid, uri, databaseName);
+            @Override
+            public String getDatabaseName() {
+                return databaseReference.targetAlias().name();
             }
 
             @Override
-            public boolean equals(Object o) {
-                if (this == o) {
-                    return true;
-                }
-                if (!(o instanceof External)) {
-                    return false;
-                }
-                Remote remote = (Remote) o;
-                return Objects.equals(getUri(), remote.getUri())
-                        || (getGraphId() == remote.getGraphId())
-                                && Objects.equals(getUuid(), remote.getUuid())
-                                && Objects.equals(getDatabaseName(), remote.getDatabaseName());
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(getUri(), getGraphId(), getUuid(), getDatabaseName());
-            }
-
-            @Override
-            public String toString() {
-                return "External{" + "graphId=" + getGraphId() + ", uuid=" + getUuid() + ", databaseName='"
-                        + getDatabaseName() + '\'' + ", uri=" + getUri() + '}';
-            }
-        }
-
-        /**
-         * When connecting to an external neo4j instance via an internal driver, we need to authenticate with that remote instance.
-         *
-         * When a location is {@link External} we will attempt to connect with the credentials of the current authenticated user on this instance.
-         * When a location is {@link ExternalWithCredentials} we will look up specific credentials for that remote instance and use those, rather
-         * than the credentials of the current authenticated user.
-         */
-        public static class ExternalWithCredentials extends External {
-            private final String locationName;
-
-            private final String locationNamespace;
-
-            public ExternalWithCredentials(
-                    long id,
-                    UUID uuid,
-                    RemoteUri uri,
-                    String databaseName,
-                    String locationName,
-                    String locationNamespace) {
-                super(id, uuid, uri, databaseName);
-                this.locationName = locationName;
-                this.locationNamespace = locationNamespace;
+            public RemoteUri getUri() {
+                return databaseReference.externalUri();
             }
 
             public String locationName() {
-                return locationName;
+                return databaseReference.alias().name();
             }
 
-            public Optional<String> getLocationNamespace() {
-                return Optional.ofNullable(locationNamespace);
+            public Optional<String> locationNamespace() {
+                return databaseReference.namespace().map(NormalizedDatabaseName::name);
             }
         }
     }

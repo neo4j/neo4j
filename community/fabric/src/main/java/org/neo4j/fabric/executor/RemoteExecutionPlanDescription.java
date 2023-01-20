@@ -42,7 +42,7 @@ public class RemoteExecutionPlanDescription implements ExecutionPlanDescription 
 
     @Override
     public String getName() {
-        return "RemoteExecution@graph(" + location.getGraphId() + ")";
+        return "RemoteExecution@graph(" + location.graphId() + ")";
     }
 
     @Override

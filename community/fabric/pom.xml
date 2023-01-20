@@ -108,6 +108,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast-generator</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.scalatestplus</groupId>
             <artifactId>scalacheck-1-16_${scala.binary.version}</artifactId>
             <scope>test</scope>

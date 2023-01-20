@@ -117,7 +117,11 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
-    public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(String databaseName, String namespace) {
+    public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(
+            DatabaseReference.External databaseReference) {
+        String databaseName = databaseReference.alias().name();
+        String namespace =
+                databaseReference.namespace().map(NormalizedDatabaseName::name).orElse(DEFAULT_NAMESPACE);
         return tx.findNodes(REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName, NAMESPACE_PROPERTY, namespace).stream()
                 .findFirst()
                 .flatMap(CommunityTopologyGraphDbmsModelUtil::getDatabaseCredentials);

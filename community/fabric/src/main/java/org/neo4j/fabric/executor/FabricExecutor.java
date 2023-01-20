@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.GraphSelection;
@@ -61,6 +62,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.AnyValue;
@@ -306,7 +308,8 @@ public class FabricExecutor {
 
             validateCanUseGraph(graph, ctx.getSessionDatabaseReference());
 
-            var transactionMode = getTransactionMode(fragment.queryType(), graph.toString());
+            var transactionMode =
+                    getTransactionMode(fragment.queryType(), graph.reference().toPrettyString());
 
             MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
 
@@ -378,7 +381,7 @@ public class FabricExecutor {
                 Flux<Record> input) {
 
             ExecutionOptions executionOptions = plan.inCompositeContext() && !targetsComposite
-                    ? new ExecutionOptions(location.getGraphId())
+                    ? new ExecutionOptions(location.graphId())
                     : new ExecutionOptions();
 
             StatementResult localStatementResult = ctx.getLocal()
@@ -405,7 +408,7 @@ public class FabricExecutor {
         FragmentResult runRemoteQueryAt(
                 Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters) {
             ExecutionOptions executionOptions =
-                    plan.inCompositeContext() ? new ExecutionOptions(location.getGraphId()) : new ExecutionOptions();
+                    plan.inCompositeContext() ? new ExecutionOptions(location.graphId()) : new ExecutionOptions();
 
             lifecycle.startExecution(true);
             Mono<StatementResult> statementResult =
@@ -578,7 +581,7 @@ public class FabricExecutor {
                 boolean targetsComposite,
                 Flux<Record> input) {
             String id = executionId();
-            trace(id, "local " + location.getGraphId(), compact(query.description()));
+            trace(id, "local " + nameString(location), compact(query.description()));
             return traceRecords(
                     id, super.runLocalQueryAt(location, transactionMode, query, parameters, targetsComposite, input));
         }
@@ -587,8 +590,14 @@ public class FabricExecutor {
         FragmentResult runRemoteQueryAt(
                 Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters) {
             String id = executionId();
-            trace(id, "remote " + location.getGraphId(), compact(queryString));
+            trace(id, "remote " + nameString(location), compact(queryString));
             return traceRecords(id, super.runRemoteQueryAt(location, transactionMode, queryString, parameters));
+        }
+
+        private static String nameString(Location location) {
+            var namespace = location.databaseReference().namespace().map(NormalizedDatabaseName::name).stream();
+            var name = Stream.of(location.databaseReference().alias().name());
+            return Stream.concat(namespace, name).collect(Collectors.joining("."));
         }
 
         private String compact(String in) {

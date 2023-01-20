@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Function.identity;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
@@ -62,28 +63,61 @@ public final class TestDatabaseReferenceRepository {
     }
 
     public static DatabaseReference.Internal internalDatabaseReference(String databaseName) {
-        return internalDatabaseReference(databaseName, databaseName);
+        return internalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE);
     }
 
     public static DatabaseReference.Internal internalDatabaseReference(String databaseName, String aliasName) {
+        return internalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE);
+    }
+
+    public static DatabaseReference.Internal internalDatabaseReferenceIn(String databaseName, String namespace) {
+        return internalDatabaseReferenceIn(databaseName, databaseName, namespace);
+    }
+
+    public static DatabaseReference.Internal internalDatabaseReferenceIn(
+            String databaseName, String aliasName, String namespace) {
         var normalizedAlias = new NormalizedDatabaseName(aliasName);
+        var normalizedNamespace = new NormalizedDatabaseName(namespace);
         var dbId = DatabaseIdFactory.from(databaseName, UUID.nameUUIDFromBytes(databaseName.getBytes(UTF_8)));
         return new DatabaseReference.Internal(
-                normalizedAlias, dbId, Objects.equals(normalizedAlias.name(), dbId.name()));
+                normalizedAlias, normalizedNamespace, dbId, Objects.equals(normalizedAlias.name(), dbId.name()));
     }
 
     public static DatabaseReference.External externalDatabaseReference(String databaseName) {
-        return externalDatabaseReference(databaseName, databaseName);
+        return externalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE);
+    }
+
+    public static DatabaseReference.External externalDatabaseReference(String databaseName, RemoteUri uri) {
+        return externalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE, uri);
+    }
+
+    public static DatabaseReference.External externalDatabaseReference(String databaseName, String aliasName) {
+        return externalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE);
     }
 
     public static DatabaseReference.External externalDatabaseReference(
-            String localAliasName, String targetDatabaseName) {
-        var normalizedAlias = new NormalizedDatabaseName(localAliasName);
-        var normalizedTarget = new NormalizedDatabaseName(targetDatabaseName);
+            String databaseName, String aliasName, RemoteUri uri) {
+        return externalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE, uri);
+    }
+
+    public static DatabaseReference.External externalDatabaseReferenceIn(String localAliasName, String namespace) {
+        return externalDatabaseReferenceIn(localAliasName, localAliasName, namespace);
+    }
+
+    public static DatabaseReference.External externalDatabaseReferenceIn(
+            String localAliasName, String targetDatabaseName, String namespace) {
         var addr = List.of(new SocketAddress(localAliasName, BoltConnector.DEFAULT_PORT));
         var uri = new RemoteUri("neo4j", addr, null);
+        return externalDatabaseReferenceIn(localAliasName, targetDatabaseName, namespace, uri);
+    }
+
+    public static DatabaseReference.External externalDatabaseReferenceIn(
+            String localAliasName, String targetDatabaseName, String namespace, RemoteUri uri) {
+        var normalizedAlias = new NormalizedDatabaseName(localAliasName);
+        var normalizedTarget = new NormalizedDatabaseName(targetDatabaseName);
+        var normalizedNamespace = new NormalizedDatabaseName(namespace);
         var uuid = UUID.randomUUID();
-        return new DatabaseReference.External(normalizedTarget, normalizedAlias, uri, uuid);
+        return new DatabaseReference.External(normalizedTarget, normalizedAlias, normalizedNamespace, uri, uuid);
     }
 
     public static DatabaseReference.Composite compositeDatabaseReference(

@@ -54,6 +54,9 @@ import org.neo4j.fabric.planning.Fragment.Leaf
 import org.neo4j.fabric.planning.Fragment.Union
 import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
+import org.neo4j.kernel.database.DatabaseIdFactory
+import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
@@ -133,13 +136,14 @@ trait FragmentTestUtils {
   val defaultGraph: UseGraph = use(defaultGraphName)
   val defaultUse: Use.Inherited = Use.Inherited(Use.Default(defaultGraph))(InputPosition.NONE)
 
-  val defaultInternalGraph: Catalog.InternalGraph = Catalog.InternalGraph(
-    0,
-    UUID.randomUUID(),
-    new NormalizedGraphName(defaultGraphName),
-    new NormalizedDatabaseName(defaultGraphName)
+  val defaultRef = new DatabaseReference.Internal(
+    new NormalizedDatabaseName(defaultGraphName),
+    DatabaseIdFactory.from(defaultGraphName, UUID.randomUUID()),
+    true
   )
-  val defaultCatalog: Catalog = Catalog.byQualifiedName(Seq(defaultInternalGraph))
+
+  val defaultGraphAlias: Catalog.InternalAlias = Catalog.InternalAlias(0, defaultRef)
+  val defaultCatalog: Catalog = Catalog.byQualifiedName(Seq(defaultGraphAlias))
   val params: MapValue = MapValue.EMPTY
 
   def signatures: ProcedureSignatureResolver

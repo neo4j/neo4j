@@ -28,6 +28,8 @@ import org.neo4j.fabric.ProcedureSignatureResolverTestSupport
 import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
+import org.neo4j.kernel.database.DatabaseIdFactory
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.Inside
 
@@ -246,13 +248,13 @@ class FabricStitcherTest
   }
 
   "Multi-graph:" - {
-
+    val fabricRef = new DatabaseReference.Composite(
+      new NormalizedDatabaseName(defaultGraphName),
+      DatabaseIdFactory.from(defaultGraphName, UUID.randomUUID()),
+      java.util.Set.of()
+    )
     val catalog =
-      Catalog.byQualifiedName(Seq(Catalog.Composite(
-        0,
-        UUID.randomUUID(),
-        new NormalizedDatabaseName(defaultGraphName)
-      )))
+      Catalog.byQualifiedName(Seq(Catalog.Composite(0, fabricRef)))
 
     def stitching(fragment: Fragment) =
       FabricStitcher(

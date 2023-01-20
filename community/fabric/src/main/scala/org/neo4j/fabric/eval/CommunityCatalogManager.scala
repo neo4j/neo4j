@@ -25,8 +25,6 @@ import org.neo4j.fabric.eval.Catalog.Composite
 import org.neo4j.fabric.eval.Catalog.ExternalAlias
 import org.neo4j.fabric.eval.Catalog.Graph
 import org.neo4j.fabric.eval.Catalog.InternalAlias
-import org.neo4j.fabric.eval.Catalog.InternalGraph
-import org.neo4j.fabric.eval.Catalog.NamespacedGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.event.TransactionData
@@ -86,34 +84,21 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
 
   protected def createCatalog(): Catalog = {
     val idProvider = new IdProvider
-    val internals = getInternals(idProvider)
     val aliases = getAliases(idProvider)
     val composites = getComposites(idProvider)
-    Catalog.create(internals, Seq.empty, aliases, composites, None)
-  }
-
-  protected def getInternals(ids: IdProvider): Seq[InternalGraph] = {
-    val references = databaseLookup.databaseReferences.toSeq
-    val primaryRefs = references.collect {
-      case int: DatabaseReference.Internal if int.isPrimary => int
-    }
-    for {
-      (ref, idx) <- primaryRefs.zip(ids.sequence)
-      databaseId = ref.databaseId
-      graphName = new NormalizedGraphName(databaseId.name)
-      databaseName = new NormalizedDatabaseName(databaseId.name)
-    } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
+    Catalog.create(aliases, composites)
   }
 
   protected def getAliases(ids: IdProvider): Seq[Graph] = {
-    val references = databaseLookup.databaseReferences.toSeq
-    val nonPrimaryRefs = references.collect {
-      case int: DatabaseReference.Internal if !int.isPrimary => int
-      case ext: DatabaseReference.External if !ext.isPrimary => ext
+    val references = databaseLookup.databaseReferences.toSeq.filter {
+      case _: DatabaseReference.Composite => false
+      case _                              => true
     }
+    // Give low ids to primary aliases
+    val (primary, nonPrimary) = references.partition(_.isPrimary)
     for {
-      (ref, idx) <- nonPrimaryRefs.zip(ids.sequence)
-      alias <- aliasFactory(ref, idx, None)
+      (ref, idx) <- (primary ++ nonPrimary).zip(ids.sequence)
+      alias <- aliasFactory(ref, idx)
     } yield alias
   }
 
@@ -126,37 +111,22 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
       (compositeRef, idx) <- compositeRefs.zip(ids.sequence)
       compositeAliases = for {
         (componentRef, idx) <- compositeRef.constituents.asScala.toSeq.zip(ids.sequence)
-        alias <- aliasFactory(componentRef, idx, Some(compositeRef.databaseId().name()))
-      } yield NamespacedGraph(compositeRef.alias().name(), alias)
+        alias <- aliasFactory(componentRef, idx)
+      } yield alias
     } yield (
-      Composite(idx, compositeRef.databaseId.databaseId.uuid, databaseName(compositeRef.databaseId)),
+      Composite(idx, compositeRef),
       compositeAliases
     )
-
   }
 
-  private def aliasFactory(ref: DatabaseReference, idx: Long, namespace: Option[String]): Option[Alias] = ref match {
-    case i: DatabaseReference.Internal if i.isPrimary =>
-      None // ignore primary aliases
-    case i: DatabaseReference.Internal =>
-      Some(InternalAlias(
-        idx,
-        i.databaseId.databaseId.uuid,
-        graphName(i.alias()),
-        graphName(namespace),
-        databaseName(i.databaseId())
-      ))
-    case e: DatabaseReference.External =>
-      Some(ExternalAlias(idx, e.id, graphName(e.alias), graphName(namespace), e.alias, e.targetAlias, e.externalUri))
+  private def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
+    case ref: DatabaseReference.Internal =>
+      Some(InternalAlias(idx, ref))
+    case ref: DatabaseReference.External =>
+      Some(ExternalAlias(idx, ref))
     case other =>
       None // ignore unexpected reference types
   }
-
-  private def graphName(databaseName: Option[String]): Option[NormalizedGraphName] =
-    databaseName.map(new NormalizedGraphName(_))
-
-  private def graphName(databaseName: NormalizedDatabaseName): NormalizedGraphName =
-    new NormalizedGraphName(databaseName.name)
 
   private def databaseName(databaseId: NamedDatabaseId): NormalizedDatabaseName =
     new NormalizedDatabaseName(databaseId.name)
@@ -167,10 +137,8 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
     requireWritable: Boolean,
     canRoute: Boolean
   ): Location = graph match {
-    case Catalog.InternalGraph(id, uuid, _, databaseName) =>
-      new Location.Local(id, uuid, databaseName.name())
-    case Catalog.InternalAlias(id, uuid, _, _, databaseName) =>
-      new Location.Local(id, uuid, databaseName.name())
+    case i: Catalog.InternalAlias =>
+      new Location.Local(i.id, i.reference)
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }
 

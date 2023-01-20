@@ -58,6 +58,8 @@ import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
+import org.neo4j.kernel.database.DatabaseIdFactory
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.string.UTF8
 import org.neo4j.values.storable.Values
@@ -90,8 +92,14 @@ class FabricPlannerTest
   private val fabricName = "fabric"
   private val sessionGraphName = "session"
 
+  val fabricRef = new DatabaseReference.Composite(
+    new NormalizedDatabaseName(fabricName),
+    DatabaseIdFactory.from(fabricName, UUID.randomUUID()),
+    java.util.Set.of()
+  )
+
   private val fabricCatalog =
-    Catalog.byQualifiedName(Seq(Catalog.Composite(0, UUID.randomUUID(), new NormalizedDatabaseName(fabricName))))
+    Catalog.byQualifiedName(Seq(Catalog.Composite(0, fabricRef)))
 
   private def instance(
     query: String,

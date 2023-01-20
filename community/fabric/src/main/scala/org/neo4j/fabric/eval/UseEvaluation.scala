@@ -107,8 +107,8 @@ object UseEvaluation {
         case (c1: Catalog.Composite, c2: Catalog.Composite) =>
           c1 == c2
 
-        case (n: Catalog.NamespacedGraph, c: Catalog.Composite) =>
-          n.namespace == c.databaseName.name()
+        case (a: Catalog.Alias, c: Catalog.Composite) =>
+          a.namespace.contains(c.name)
 
         case _ =>
           false
@@ -117,12 +117,10 @@ object UseEvaluation {
     def isSystem(graph: Catalog.Graph): Boolean =
       qualifiedNameString(graph) == GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
-    def isDatabaseOrAliasInRoot(graph: Catalog.Graph): Boolean =
-      graph match {
-        case _: Catalog.Composite       => false
-        case _: Catalog.NamespacedGraph => false
-        case _                          => true
-      }
+    def isDatabaseOrAliasInRoot(graph: Catalog.Graph): Boolean = graph match {
+      case _: Catalog.Composite => false
+      case alias: Catalog.Alias => alias.namespace.isEmpty
+    }
 
     def qualifiedNameString(graph: Catalog.Graph): String =
       Catalog.catalogName(graph).qualifiedNameString

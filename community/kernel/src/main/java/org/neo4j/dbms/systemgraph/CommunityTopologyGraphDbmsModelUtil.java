@@ -78,12 +78,17 @@ public final class CommunityTopologyGraphDbmsModelUtil {
         return ignoreConcurrentDeletes(() -> {
             var aliasName = new NormalizedDatabaseName(getPropertyOnNode(
                     TopologyGraphDbmsModel.DATABASE_NAME, alias, TopologyGraphDbmsModel.NAME_PROPERTY, String.class));
+            var namespace = new NormalizedDatabaseName(getPropertyOnNode(
+                    TopologyGraphDbmsModel.DATABASE_NAME,
+                    alias,
+                    TopologyGraphDbmsModel.NAMESPACE_PROPERTY,
+                    String.class));
             var primary = getPropertyOnNode(
                     TopologyGraphDbmsModel.DATABASE_NAME,
                     alias,
                     TopologyGraphDbmsModel.PRIMARY_PROPERTY,
                     Boolean.class);
-            return Optional.of(new Internal(aliasName, targetedDatabase, primary));
+            return Optional.of(new Internal(aliasName, namespace, targetedDatabase, primary));
         });
     }
 
@@ -104,6 +109,11 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                     ref,
                     TopologyGraphDbmsModel.NAME_PROPERTY,
                     String.class));
+            var namespace = new NormalizedDatabaseName(getPropertyOnNode(
+                    TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL_DESCRIPTION,
+                    ref,
+                    TopologyGraphDbmsModel.NAMESPACE_PROPERTY,
+                    String.class));
 
             var uri = URI.create(uriString);
             var host = SocketAddressParser.socketAddress(uri, BoltConnector.DEFAULT_PORT, SocketAddress::new);
@@ -113,7 +123,8 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                     ref,
                     TopologyGraphDbmsModel.VERSION_PROPERTY,
                     String.class);
-            return Optional.of(new DatabaseReference.External(targetName, aliasName, remoteUri, UUID.fromString(uuid)));
+            return Optional.of(
+                    new DatabaseReference.External(targetName, aliasName, namespace, remoteUri, UUID.fromString(uuid)));
         });
     }
 

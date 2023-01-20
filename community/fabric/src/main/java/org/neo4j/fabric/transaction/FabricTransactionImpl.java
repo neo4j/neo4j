@@ -530,8 +530,8 @@ public class FabricTransactionImpl
         return new FabricException(
                 Status.Statement.AccessMode,
                 "Writing to more than one database per transaction is not allowed. Attempted write to %s, currently writing to %s",
-                attempt,
-                writingTransaction.getLocation());
+                attempt.databaseReference().toPrettyString(),
+                writingTransaction.getLocation().databaseReference().toPrettyString());
     }
 
     private FabricException commitFailedError() {
