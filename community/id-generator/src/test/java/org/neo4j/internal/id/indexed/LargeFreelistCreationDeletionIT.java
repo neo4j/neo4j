@@ -54,7 +54,7 @@ import org.neo4j.util.concurrent.WorkSync;
  * This test is great to have during development of transactional IDs. Although it's ignored because it's not clear what the assertions
  * should be. Now it can be used to see what happens in concurrent allocations, especially how free id scanner behaves in that regard.
  */
-@Disabled
+@Disabled("for manual testing during development")
 @PageCacheExtension
 class LargeFreelistCreationDeletionIT {
     private static final int THREADS = Runtime.getRuntime().availableProcessors();
