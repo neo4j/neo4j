@@ -941,7 +941,7 @@ class FulltextIndexConsistencyCheckIT {
     }
 
     private static long getId(Transaction tx, Relationship rel) {
-        return ((TransactionImpl)tx).elementIdMapper().relationshipId(rel.getElementId());
+        return ((TransactionImpl) tx).elementIdMapper().relationshipId(rel.getElementId());
     }
 
     private void copyStoreFiles(Path into) throws IOException {
