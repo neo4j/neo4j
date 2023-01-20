@@ -41,7 +41,7 @@ final class FallbackBlockSwapper implements BlockSwapper {
     @Override
     public int swapIn(StoreChannel channel, long bufferAddress, long fileOffset, int bufferSize) throws IOException {
         int readTotal = 0;
-        try (var scopedBuffer = new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+        try (var scopedBuffer = new HeapScopedBuffer(bufferSize, ByteOrder.nativeOrder(), memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
             int read;
             do {
@@ -49,7 +49,16 @@ final class FallbackBlockSwapper implements BlockSwapper {
             } while (read != -1 && (readTotal += read) < bufferSize);
 
             buffer.flip();
-            for (int i = 0; i < readTotal; i++) {
+
+            int i = 0;
+            // Copy as many longs as we can
+            for (; i < readTotal - 8; i += 8) {
+                long l = buffer.getLong();
+                UnsafeUtil.putLong(bufferAddress + i, l);
+            }
+
+            // Copy any remaining bytes
+            for (; i < readTotal; i++) {
                 byte b = buffer.get();
                 UnsafeUtil.putByte(bufferAddress + i, b);
             }
@@ -74,13 +83,22 @@ final class FallbackBlockSwapper implements BlockSwapper {
     @Override
     public void swapOut(StoreChannel channel, long bufferAddress, long fileOffset, int bufferLength)
             throws IOException {
-        try (var scopedBuffer = new HeapScopedBuffer(bufferLength, ByteOrder.LITTLE_ENDIAN, memoryTracker)) {
+        try (var scopedBuffer = new HeapScopedBuffer(bufferLength, ByteOrder.nativeOrder(), memoryTracker)) {
             var buffer = scopedBuffer.getBuffer();
+            int i = 0;
 
-            for (int i = 0; i < bufferLength; i++) {
+            // Copy as many longs as we can
+            for (; i < bufferLength - 8; i += 8) {
+                long l = UnsafeUtil.getLong(bufferAddress + i);
+                buffer.putLong(l);
+            }
+
+            // Copy any remaining bytes
+            for (; i < bufferLength; i++) {
                 byte b = UnsafeUtil.getByte(bufferAddress + i);
                 buffer.put(b);
             }
+
             buffer.flip();
             channel.writeAll(buffer, fileOffset);
         } catch (IOException e) {
