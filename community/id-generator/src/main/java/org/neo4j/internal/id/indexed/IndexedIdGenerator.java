@@ -748,7 +748,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 System.out.println("Number of IDs deleted, but not yet available for reuse: " + numDeletedNotFreed);
                 System.out.printf(
                         "NOTE: A deleted ID not yet available for reuse is buffered until all transactions that were open%n"
-                                + "at the time of its deletion have been closed, or the database is restarted");
+                                + "at the time of its deletion have been closed, or the database is restarted%n");
             } else {
                 try (var cursorContext = contextFactory.create("IndexDump")) {
                     tree.visit(
