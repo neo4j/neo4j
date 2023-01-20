@@ -154,7 +154,7 @@ case object pruningVarExpander extends Rewriter {
   }
 
   private def validLength(expand: VarExpand): Boolean = expand.length.max match {
-    case Some(i) => i > 1
+    case Some(i) => i > 1 && i >= expand.length.min
     case _       => false
   }
 

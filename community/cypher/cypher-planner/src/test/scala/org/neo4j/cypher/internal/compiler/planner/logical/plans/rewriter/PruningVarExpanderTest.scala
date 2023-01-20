@@ -584,6 +584,16 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(original) should equal(rewritten)
   }
 
+  test("do not use pruning-varexpand when upper bound < lower bound") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .expandAll("(a)-[r*3..2]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(plan)
+  }
+
   private def assertNotRewritten(p: LogicalPlan): Unit = {
     rewrite(p) should equal(p)
   }
