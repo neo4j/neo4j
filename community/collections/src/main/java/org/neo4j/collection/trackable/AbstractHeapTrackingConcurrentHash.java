@@ -111,6 +111,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         }
         this.memoryTracker = memoryTracker;
         this.table = allocateAtomicReferenceArray(capacity + 1);
+        // END MODIFICATION
     }
 
     static int indexFor(int h, int length) {
