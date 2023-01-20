@@ -41,7 +41,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.configuration.Config;
@@ -699,22 +698,6 @@ class Neo4jTransactionalContextIT {
                 TransactionFailureException.class,
                 // When
                 outerTx::rollback);
-    }
-
-    @Disabled(
-            "Strictly speaking this does not need to work, but it would protect us from our own programming mistakes in Cypher")
-    @Test
-    void contextWithNewTransactionCloseInnerContextOnOuterContextRollback() {
-        // Given
-        var outerTx = graph.beginTransaction(IMPLICIT, LoginContext.AUTH_DISABLED);
-        var ctx = createTransactionContext(outerTx);
-        var innerCtx = ctx.contextWithNewTransaction();
-
-        // When
-        ctx.rollback();
-
-        // Then
-        assertFalse(innerCtx.isOpen());
     }
 
     @Test
