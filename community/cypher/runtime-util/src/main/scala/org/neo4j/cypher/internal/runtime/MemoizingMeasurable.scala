@@ -42,6 +42,10 @@ trait MemoizingMeasurable extends Measurable {
     cachedEstimatedHeapUsage
   }
 
+  def copyCachedEstimatedHeapUsageFrom(other: MemoizingMeasurable): Unit = {
+    cachedEstimatedHeapUsage = other.cachedEstimatedHeapUsage
+  }
+
   /**
    * Clear a previously cached estimatedHeapUsage
    */
