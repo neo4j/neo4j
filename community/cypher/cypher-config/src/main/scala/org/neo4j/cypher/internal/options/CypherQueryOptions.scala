@@ -427,6 +427,8 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
 
   def withOptionEnabled(option: CypherDebugOption): CypherDebugOptions = copy(enabledOptions + option)
 
+  def withOptionDisabled(option: CypherDebugOption): CypherDebugOptions = copy(enabledOptions - option)
+
   def enabledOptionsSeq: Seq[CypherDebugOption] = enabledOptions.toSeq.sortBy(_.name)
 
   def render: String = enabledOptionsSeq.map(_.render).mkString(" ")

@@ -134,7 +134,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
-  val debugOptions: CypherDebugOptions = CypherDebugOptions.default
+  def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
