@@ -26,37 +26,57 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statements
 
   private val labelExpressions = Seq(
-    ("A", labelLeaf("A"), labelOrRelTypeLeaf("A")),
+    (
+      "A",
+      labelLeaf("A"),
+      labelRelTypeLeaf("A"),
+      labelOrRelTypeLeaf("A")
+    ),
     (
       "A&B",
       labelConjunction(labelLeaf("A"), labelLeaf("B")),
+      labelConjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B")),
       labelConjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))
     ),
     (
       "A|B",
       labelDisjunction(labelLeaf("A"), labelLeaf("B")),
+      labelDisjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B")),
       labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))
     ),
-    ("%", labelWildcard(), labelWildcard()),
-    ("!A", labelNegation(labelLeaf("A")), labelNegation(labelOrRelTypeLeaf("A"))),
+    (
+      "%",
+      labelWildcard(),
+      labelWildcard(),
+      labelWildcard()
+    ),
+    (
+      "!A",
+      labelNegation(labelLeaf("A")),
+      labelNegation(labelRelTypeLeaf("A")),
+      labelNegation(labelOrRelTypeLeaf("A"))
+    ),
     (
       "!(A|B)",
       labelNegation(labelDisjunction(labelLeaf("A"), labelLeaf("B"))),
+      labelNegation(labelDisjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B"))),
       labelNegation(labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B")))
     ),
     (
       "A&!B",
       labelConjunction(labelLeaf("A"), labelNegation(labelLeaf("B"))),
+      labelConjunction(labelRelTypeLeaf("A"), labelNegation(labelRelTypeLeaf("B"))),
       labelConjunction(labelOrRelTypeLeaf("A"), labelNegation(labelOrRelTypeLeaf("B")))
     )
   )
 
   private val variable = Seq(("", None), ("x", Some("x")))
   private val properties = Seq(("", None), ("{prop:1}", Some(mapOf(("prop", literalInt(1))))))
+  private val pathLength = Seq(("", None), ("*1..5", Some(Some(range(Some(1), Some(5))))))
   private val where = Seq(("", None), ("WHERE x.prop = 1", Some(equals(prop("x", "prop"), literalInt(1)))))
 
   for {
-    (expr, exprAst, exprAstWhere) <- labelExpressions
+    (expr, exprAstNode, exprAstRel, exprAstBoth) <- labelExpressions
   } yield {
 
     for {
@@ -72,7 +92,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             match_(
               nodePat(
                 maybeVariableAst,
-                Some(exprAst),
+                Some(exprAstNode),
                 maybePropertiesAst,
                 maybeWhereAst
               )
@@ -88,13 +108,61 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             optionalMatch(
               nodePat(
                 maybeVariableAst,
-                Some(exprAst),
+                Some(exprAstNode),
                 maybePropertiesAst,
                 maybeWhereAst
               )
             )
           )
         )
+      }
+
+      for {
+        (maybePathLength, maybePathLengthAst) <- pathLength
+      } yield {
+        // MATCH
+        test(s"MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+          gives(
+            singleQuery(
+              match_(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
+
+        // OPTIONAL MATCH
+        test(
+          s"OPTIONAL MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()"
+        ) {
+          gives(
+            singleQuery(
+              optionalMatch(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
       }
     }
 
@@ -112,7 +180,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
                 maybeVariableAst,
                 None,
                 maybePropertiesAst,
-                Some(labelExpressionPredicate("x", exprAstWhere))
+                Some(labelExpressionPredicate("x", exprAstBoth))
               )
             )
           )
@@ -125,13 +193,57 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             match_(
               nodePat(
                 maybeVariableAst,
-                Some(exprAst),
+                Some(exprAstNode),
                 maybePropertiesAst,
-                Some(labelExpressionPredicate("x", exprAstWhere))
+                Some(labelExpressionPredicate("x", exprAstBoth))
               )
             )
           )
         )
+      }
+
+      for {
+        (maybePathLength, maybePathLengthAst) <- pathLength
+      } yield {
+        test(s"MATCH ()-[$maybeVariable $maybePathLength $maybeProperties WHERE x IS $expr]->()") {
+          gives(
+            singleQuery(
+              match_(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    None,
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    Some(labelExpressionPredicate("x", exprAstBoth))
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
+
+        test(s"MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties WHERE x IS $expr]->()") {
+          gives(
+            singleQuery(
+              match_(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    Some(labelExpressionPredicate("x", exprAstBoth))
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
       }
     }
 
@@ -142,7 +254,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         singleQuery(
           match_(
             nodePat(Some("n")),
-            Some(where(labelExpressionPredicate("n", exprAstWhere)))
+            Some(where(labelExpressionPredicate("n", exprAstBoth)))
           )
         )
       )
@@ -156,7 +268,42 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             Some(where(
               and(
                 equals(prop("n", "prop"), literalInt(1)),
-                labelExpressionPredicate("n", exprAstWhere)
+                labelExpressionPredicate("n", exprAstBoth)
+              )
+            ))
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[r]->()  WHERE r IS $expr") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(Some("r")),
+              nodePat()
+            ),
+            Some(where(labelExpressionPredicate("r", exprAstBoth)))
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[r]->() WHERE r.prop = 1 AND r IS $expr") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(Some("r")),
+              nodePat()
+            ),
+            Some(where(
+              and(
+                equals(prop("r", "prop"), literalInt(1)),
+                labelExpressionPredicate("r", exprAstBoth)
               )
             ))
           )
@@ -174,8 +321,28 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
           ),
           return_(
             aliasedReturnItem(
-              labelExpressionPredicate("n", exprAstWhere),
+              labelExpressionPredicate("n", exprAstBoth),
               "node"
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[r]->() RETURN r IS $expr AS rel") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(Some("r")),
+              nodePat()
+            )
+          ),
+          return_(
+            aliasedReturnItem(
+              labelExpressionPredicate("r", exprAstBoth),
+              "rel"
             )
           )
         )
@@ -189,6 +356,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
     s"""MATCH (n)-[r]->(m)
        |RETURN CASE
        |WHEN n IS A&B THEN 1
+       |WHEN r IS A|B THEN 2
        |ELSE -1
        |END
        |AS value
@@ -211,6 +379,10 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
               (
                 labelExpressionPredicate("n", labelConjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))),
                 literalInt(1)
+              ),
+              (
+                labelExpressionPredicate("r", labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))),
+                literalInt(2)
               )
             ),
             "value"
@@ -256,6 +428,58 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             Some("WHERE"),
             labelExpression = Some(labelDisjunction(labelLeaf("IS"), labelLeaf("WHERE"))),
             predicates = Some(equals(prop("WHERE", "IS"), prop("IS", "WHERE")))
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[r IS IS]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("r"),
+              Some(labelRelTypeLeaf("IS"))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[IS:IS]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("IS"),
+              Some(labelRelTypeLeaf("IS"))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[WHERE IS IS|WHERE WHERE WHERE.IS = IS.WHERE]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("WHERE"),
+              labelExpression = Some(labelDisjunction(labelRelTypeLeaf("IS"), labelRelTypeLeaf("WHERE"))),
+              predicates = Some(equals(prop("WHERE", "IS"), prop("IS", "WHERE")))
+            ),
+            nodePat()
           )
         )
       )

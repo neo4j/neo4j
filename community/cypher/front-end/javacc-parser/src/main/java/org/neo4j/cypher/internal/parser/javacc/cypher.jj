@@ -2454,18 +2454,41 @@ REL_PATTERN RelationshipPattern() throws Exception:
 {
     ( LeftArrow() { left = true; })? ArrowLine()
     ( <LBRACKET>
-       ( LOOKAHEAD(3) v=Variable() <WHERE> predicate=Expression() // Needed to support [WHERE WHERE expr] i.e variable name WHERE with an inlined WHERE clause
-       | LOOKAHEAD(2) v=Variable() properties=Properties() ( <WHERE> predicate=Expression() )? // Needed to support [WHERE {prop:1} WHERE expr]
-       | LOOKAHEAD(2) <WHERE> predicate=Expression() // Needed to support [WHERE expr] i.e. no variable name with an inlined WHERE expression
-       // Despite solving the above issues, this will still produce a choice conflict warning, as the below option overlaps with the above ones.
-       // To cover all 2^5 possible combinations except the three ones above is possible but makes the parser code very verbose and hard to read,
-       // so it was considered better to leave the false positive warning.
-       | ( v=Variable() )?
-            ( labelExpression = LabelExpression(astFactory.relationshipType()) )?
+    (
+       // The general relationship pattern is  [variable? labelExpression? pathLength? properties? WHERE?],
+       // but since 'IS' and 'WHERE' can be both relationship variables, types and keywords,
+       // we must check the 2^5 combinations in a certain order to avoid ambiguity.
+       // The below is a trial and error solution to make all tests in IsWhereRelationshipPatternParserTest work
+       // while also have each combination in exactly one branch below.
+       (
+       LOOKAHEAD(LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )? <WHERE> Expression() <RBRACKET>)
+            labelExpression = LabelExpression(astFactory.relationshipType())
+            ( pathLength=PathLength() )?
+            <WHERE> predicate=Expression()
+       | LOOKAHEAD(v=Variable() ( PathLength() )? properties=Properties()) v=Variable()
+            ( pathLength=PathLength() )?
+            properties=Properties()
+            ( <WHERE> predicate=Expression() )?
+       | LOOKAHEAD(Variable() ( PathLength() )? <WHERE> Expression() <RBRACKET>) v=Variable() ( pathLength=PathLength() )? <WHERE> predicate=Expression()
+       | LOOKAHEAD((PathLength())? <WHERE> Expression() <RBRACKET>) ( pathLength=PathLength() )? <WHERE> predicate=Expression()
+       | LOOKAHEAD(3) v=Variable()
+            labelExpression = LabelExpression(astFactory.relationshipType())
             ( pathLength=PathLength() )?
             ( properties=Properties() )?
             ( <WHERE> predicate=Expression() )?
-        )
+       | LOOKAHEAD(LabelExpression(astFactory.relationshipType()) (PathLength() )? <RBRACKET>)
+            labelExpression = LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )?
+       | LOOKAHEAD(2) labelExpression = LabelExpression(astFactory.relationshipType())
+            ( pathLength=PathLength() )?
+            properties=Properties()
+            ( <WHERE> predicate=Expression() )?
+       | LOOKAHEAD(( PathLength() )? properties=Properties())( pathLength=PathLength() )? properties=Properties() ( <WHERE> predicate=Expression() )?
+       | pathLength=PathLength()
+       | LOOKAHEAD(2) v=Variable() pathLength=PathLength()
+       | ( v=Variable() )?
+       )
+    )
+
         <RBRACKET>
     )?
     ArrowLine() ( RightArrow() { right = true; } )?
