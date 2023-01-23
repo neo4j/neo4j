@@ -9,6 +9,7 @@
 
     <name>Neo4j - Build resources</name>
     <description>Build resources for community build.</description>
+    <url>https://neo4j.com/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

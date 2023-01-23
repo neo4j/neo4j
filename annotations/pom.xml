@@ -16,6 +16,7 @@
 
     <name>Neo4j - Annotation processors</name>
     <description>Annotations and annotation processors used to build Neo4j project.</description>
+    <url>https://neo4j.com/</url>
 
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
