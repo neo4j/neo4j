@@ -83,10 +83,15 @@ public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> ex
 
     @Override
     public void closeInternal() {
-        if (map != null) {
-            map = null;
-            scopedMemoryTracker.close();
-        }
+        scopedMemoryTracker.close();
+        // TODO: this close should do
+        // if (map != null) {
+        //    scopeMemoryTracker.close()
+        //    map = null;
+        // }
+        // However there is a bug in (at least) for RightOrderHashJoin where we sometimes call close before get ending
+        // up in
+        // a NPE
     }
 
     @Override
