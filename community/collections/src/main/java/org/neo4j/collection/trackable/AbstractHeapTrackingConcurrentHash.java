@@ -154,11 +154,11 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         return hash(key.hashCode());
     }
 
-    int hash(long key) {
+    final int hash(long key) {
         return hash(Long.hashCode(key));
     }
 
-    int hash(int h) {
+    final int hash(int h) {
         h ^= h >>> 20 ^ h >>> 12;
         h ^= h >>> 7 ^ h >>> 4;
         return h;
