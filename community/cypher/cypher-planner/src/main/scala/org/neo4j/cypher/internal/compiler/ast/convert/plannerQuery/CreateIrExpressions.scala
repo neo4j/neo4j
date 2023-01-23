@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.ASTNode
@@ -71,6 +72,7 @@ case class CreateIrExpressions(
   private val LabelAndPropertyNormalizer =
     PredicateNormalizer.normalizeLabelAndPropertyPredicates(anonymousVariableNameGenerator)
   private val addUniquenessPredicates = AddUniquenessPredicates
+  private val addVarLengthPredicates = AddVarLengthPredicates
 
   /**
    * MatchPredicateNormalizer invalidates some conditions that are usually fixed by later rewriters.
@@ -114,6 +116,10 @@ case class CreateIrExpressions(
     // Create predicates for relationship uniqueness
     val uniqueRels = addUniquenessPredicates.collectRelationships(pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, pattern.position)
+
+    val varLengthRels = addVarLengthPredicates.collectVarLengthRelationships(pattern)
+    val varLengthPredicates = addVarLengthPredicates.createPredicateFor(varLengthRels, pattern.position)
+
     // Extract inlined predicates
     val extractedPredicates: Seq[Expression] = {
       (inlinedWhereClausesNormalizer.extractAllFrom(pattern) ++
@@ -127,7 +133,7 @@ case class CreateIrExpressions(
       quantifiedPathPatterns = patternContent.quantifiedPathPatterns.toSet,
       shortestPathPatterns =
         patternContent.shortestPaths.toSet, // Not really needed, PatternExpressions/PatternComprehension can't express shortestPath
-      selections = Selections.from(uniquePredicates ++ extractedPredicates ++ maybePredicate)
+      selections = Selections.from(uniquePredicates ++ varLengthPredicates ++ extractedPredicates ++ maybePredicate)
     )
 
     val query = RegularSinglePlannerQuery(

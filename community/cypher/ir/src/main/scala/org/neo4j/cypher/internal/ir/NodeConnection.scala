@@ -98,14 +98,24 @@ object PatternRelationship {
 
 sealed trait PatternLength {
   def isSimple: Boolean
+  def intersect(patternLength: PatternLength): PatternLength
 }
 
 case object SimplePatternLength extends PatternLength {
   def isSimple = true
+
+  override def intersect(patternLength: PatternLength): PatternLength = SimplePatternLength
 }
 
 final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
+
+  override def intersect(patternLength: PatternLength): PatternLength = patternLength match {
+    case VarPatternLength(otherMin, otherMax) =>
+      val newMax = Seq(max, otherMax).flatten.reduceOption(_ min _)
+      VarPatternLength(min.max(otherMin), newMax)
+    case _ => throw new IllegalArgumentException("VarPatternLength may only be intersected with VarPatternLength")
+  }
 }
 
 object VarPatternLength {

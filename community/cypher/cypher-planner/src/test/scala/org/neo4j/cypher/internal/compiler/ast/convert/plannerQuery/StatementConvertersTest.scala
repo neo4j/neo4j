@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -38,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
@@ -603,7 +601,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(1, None))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      unique(varFor("r")),
+      varLengthLowerLimitPredicate("r", 1)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -620,7 +621,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq(relTypeName("FRIEND")), VarPatternLength(0, Some(1)))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    query.queryGraph.selections should equal(Selections.from(Seq(Unique(varFor("r1"))(pos), Unique(varFor("r2"))(pos))))
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      unique(varFor("r1")),
+      unique(varFor("r2")),
+      varLengthLowerLimitPredicate("r1", 0),
+      varLengthLowerLimitPredicate("r2", 0),
+      varLengthUpperLimitPredicate("r1", 1),
+      varLengthUpperLimitPredicate("r2", 1)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -637,7 +645,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(3, None))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      unique(varFor("r")),
+      varLengthLowerLimitPredicate("r", 3)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -653,7 +664,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength.fixed(5))
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections.from(Unique(varFor("r"))(pos)))
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      unique(varFor("r")),
+      varLengthLowerLimitPredicate("r", 5),
+      varLengthUpperLimitPredicate("r", 5)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -672,9 +687,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
 
     query.queryGraph.selections should equal(Selections.from(Seq(
-      Unique(varFor("r"))(pos),
-      Unique(varFor("r2"))(pos),
-      Disjoint(varFor("r2"), varFor("r"))(pos)
+      unique(varFor("r")),
+      unique(varFor("r2")),
+      disjoint(varFor("r2"), varFor("r")),
+      varLengthLowerLimitPredicate("r", 1),
+      varLengthLowerLimitPredicate("r2", 1)
     )))
     query.horizon should equal(RegularQueryProjection(
       Map(

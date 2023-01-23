@@ -69,9 +69,50 @@ import scala.util.control.TailCalls.TailRec
 
 case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
 
-case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
+trait AddRelationshipPredicates extends Step with ASTRewriterFactory {
 
-  val rewriter: Rewriter = bottomUp(Rewriter.lift {
+  protected def addPredicateToWhere(
+    where: Option[Where],
+    pos: InputPosition,
+    maybePredicate: Option[Expression]
+  ): Option[Where] = {
+    val newWhere: Option[Where] = (where, maybePredicate) match {
+      case (Some(oldWhere), Some(newPredicate)) =>
+        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(pos))(pos))
+
+      case (None, Some(newPredicate)) =>
+        Some(Where(expression = newPredicate)(pos))
+
+      case (oldWhere, None) => oldWhere
+    }
+
+    newWhere
+  }
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedNodesAndRelationships
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
+  )
+
+  val rewriter: Rewriter
+
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = rewriter
+}
+
+case object AddUniquenessPredicates extends AddRelationshipPredicates {
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
+
+  override val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case m @ Match(_, pattern: Pattern, _, where) =>
       val rels: Seq[NodeConnection] = collectRelationships(pattern)
       val newWhere = withPredicates(m, rels, where)
@@ -99,18 +140,9 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
   })
 
   private def withPredicates(pattern: ASTNode, rels: Seq[NodeConnection], where: Option[Where]): Option[Where] = {
-    val maybePredicate: Option[Expression] = createPredicateFor(rels, pattern.position)
-    val newWhere: Option[Where] = (where, maybePredicate) match {
-      case (Some(oldWhere), Some(newPredicate)) =>
-        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(pattern.position))(pattern.position))
-
-      case (None, Some(newPredicate)) =>
-        Some(Where(expression = newPredicate)(pattern.position))
-
-      case (oldWhere, None) => oldWhere
-    }
-
-    newWhere
+    val pos = pattern.position
+    val maybePredicate: Option[Expression] = createPredicateFor(rels, pos)
+    addPredicateToWhere(where, pos, maybePredicate)
   }
 
   def canBeEmpty(range: Option[Range]): Boolean =
@@ -234,24 +266,6 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
       !overlaps(relTypesToConsider, labelExpression, other.labelExpression)
     }
   }
-
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedNodesAndRelationships
-  )
-
-  override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
-  )
-
-  override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = rewriter
 
   private[rewriters] def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     expression match {

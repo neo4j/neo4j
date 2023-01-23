@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -215,7 +216,11 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             argumentIds = Set(n.name),
             patternRelationships =
               Set(PatternRelationship(r.name, (n.name, m.name), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
-            selections = Selections.from(Unique(varFor("r"))(pos))
+            selections = Selections.from(Seq(
+              unique(varFor("r")),
+              varLengthLowerLimitPredicate("r", 2),
+              varLengthUpperLimitPredicate("r", 5)
+            ))
           ),
           Some(RegularQueryProjection(Map(variableToCollectName -> pathExpression)))
         ),

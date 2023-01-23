@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -296,6 +297,10 @@ object expandSolverStep {
           context
         )
       case _ =>
+        val maybeVarLength = nodeConnection match {
+          case PatternRelationship(_, _, _, _, length: VarPatternLength) => Some(length)
+          case _                                                         => None
+        }
         val availablePredicates: collection.Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternName + otherSide)
         val (
@@ -308,7 +313,8 @@ object expandSolverStep {
             originalRelationshipName = patternName,
             originalNodeName = nodeId,
             targetNodeName = otherSide,
-            targetNodeIsBound = mode.equals(ExpandInto)
+            targetNodeIsBound = mode.equals(ExpandInto),
+            maybeVarLength = maybeVarLength
           )
 
         context.staticComponents.logicalPlanProducer.planVarExpand(

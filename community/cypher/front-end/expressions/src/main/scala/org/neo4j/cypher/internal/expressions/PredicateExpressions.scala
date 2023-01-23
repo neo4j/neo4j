@@ -388,3 +388,51 @@ case class Disjoint(lhs: Expression, rhs: Expression)(val position: InputPositio
 case class Unique(rhs: Expression)(val position: InputPosition) extends BooleanExpression {
   override def isConstantForQuery: Boolean = rhs.isConstantForQuery
 }
+
+/**
+ * Implicit predicate generated for size constraints on the list of relationships matched by variable-length relationships.
+ */
+abstract class VarLengthBound(val relName: Variable, val bound: Long) extends BooleanExpression {
+  // We always depend on the relationship referenced
+  override def isConstantForQuery: Boolean = false
+
+  def getRewrittenPredicate: InequalityExpression = {
+    val pos = position
+    val size: Expression => FunctionInvocation = FunctionInvocation(FunctionName("size")(pos), _)(pos)
+    val literal = SignedDecimalIntegerLiteral(bound.toString)(pos)
+
+    getInequalityExpression(size(relName), literal, pos)
+  }
+
+  def getInequalityExpression(
+    relationshipExpression: Expression,
+    boundExpression: Expression,
+    position: InputPosition
+  ): InequalityExpression
+}
+
+/**
+ * The implicit predicate that the list of relationships matched by a variable-length relationship is at least as long as the lower bound of the var-length relationship. 
+ */
+case class VarLengthLowerBound(override val relName: Variable, override val bound: Long)(val position: InputPosition)
+    extends VarLengthBound(relName, bound) {
+
+  override def getInequalityExpression(
+    relationshipExpression: Expression,
+    boundExpression: Expression,
+    position: InputPosition
+  ): InequalityExpression = GreaterThanOrEqual(relationshipExpression, boundExpression)(position)
+}
+
+/**
+ * The implicit predicate that the list of relationships matched by a variable-length relationship is at most as long as the upper bound of the var-length relationship. 
+ */
+case class VarLengthUpperBound(override val relName: Variable, override val bound: Long)(val position: InputPosition)
+    extends VarLengthBound(relName, bound) {
+
+  override def getInequalityExpression(
+    relationshipExpression: Expression,
+    boundExpression: Expression,
+    position: InputPosition
+  ): InequalityExpression = LessThanOrEqual(relationshipExpression, boundExpression)(position)
+}

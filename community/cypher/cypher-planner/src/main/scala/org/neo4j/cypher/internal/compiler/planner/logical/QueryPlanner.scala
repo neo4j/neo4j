@@ -154,6 +154,7 @@ case object QueryPlanner
     UnnecessaryOptionalMatchesRemoved,
     ExpressionsRewrittenToGetDegree,
     UnfulfillableQueryGraphsRemoved,
+    VarLengthQuantifierMerged,
     TokensResolved,
     QuantifiedPathPatternPredicatesMovedToConnectedNodes
   )

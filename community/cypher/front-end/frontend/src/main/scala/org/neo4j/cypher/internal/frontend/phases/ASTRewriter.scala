@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
@@ -73,6 +74,7 @@ object ASTRewriter {
         normalizeNotEquals,
         normalizeArgumentOrder,
         AddUniquenessPredicates,
+        AddVarLengthPredicates,
         simplifyIterablePredicates,
         replaceLiteralDynamicPropertyLookups,
         inlineNamedPathsInPatternComprehensions,

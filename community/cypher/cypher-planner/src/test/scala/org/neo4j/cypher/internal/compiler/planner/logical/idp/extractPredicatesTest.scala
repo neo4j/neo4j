@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -274,7 +275,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   // "MATCH (a:A)-[r* {aProp: a.prop, bProp: b.prop}]->(b)"
   test("p = (a)-[r*]->(b) WHERE ALL (x IN relationships(p) WHERE x.aProp = a.prop AND x.bProp = b.prop)") {
-    val pathExpression = PathExpression(
+    PathExpression(
       NodePathStep(
         varFor("n"),
         MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
@@ -306,7 +307,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test(
     "p = (a)-[r*]->(b) WHERE ALL (x IN relationships(p) WHERE x.aProp = a.prop) AND ALL (x IN relationships(p) WHERE x.bProp = b.prop)"
   ) {
-    val pathExpression = PathExpression(
+    PathExpression(
       NodePathStep(
         varFor("n"),
         MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
@@ -375,5 +376,88 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(unique(varFor("r")))
+  }
+
+  // Extracting VarLengthBound predicates
+  test("should not extract VarLengthBound predicates if there is no var-length relationship solved") {
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(
+        Seq(varLengthLowerLimitPredicate("rel", 42), varLengthUpperLimitPredicate("rel", 42)),
+        "rel",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        maybeVarLength = None
+      )
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("should extract VarLengthBound predicates on exact match") {
+    val varLengthPredicates = Seq(varLengthLowerLimitPredicate("rel", 42), varLengthUpperLimitPredicate("rel", 42))
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(
+        varLengthPredicates,
+        "rel",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        maybeVarLength = Some(VarPatternLength(42, Some(42)))
+      )
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe varLengthPredicates.toSet
+  }
+
+  test("should not extract VarLengthBound predicates if on other relationship") {
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(
+        Seq(varLengthLowerLimitPredicate("rel", 42), varLengthUpperLimitPredicate("rel", 42)),
+        "rel2",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        maybeVarLength = Some(VarPatternLength(42, Some(42)))
+      )
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("should not extract more specific VarLengthBound predicates") {
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(
+        Seq(varLengthLowerLimitPredicate("rel", 42), varLengthUpperLimitPredicate("rel", 42)),
+        "rel",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        maybeVarLength = Some(VarPatternLength(40, Some(45)))
+      )
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe empty
+  }
+
+  test("should extract only VarLengthBound predicates which would be satisfied by the var-length relationship given") {
+    val lowerBoundPredicate = varLengthLowerLimitPredicate("rel", 40)
+    val (nodePredicates, relationshipPredicates, solvedPredicates) =
+      extractPredicates(
+        Seq(lowerBoundPredicate, varLengthUpperLimitPredicate("rel", 42)),
+        "rel",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        maybeVarLength = Some(VarPatternLength(42, Some(45)))
+      )
+
+    nodePredicates shouldBe empty
+    relationshipPredicates shouldBe empty
+    solvedPredicates shouldBe ListSet(lowerBoundPredicate)
   }
 }

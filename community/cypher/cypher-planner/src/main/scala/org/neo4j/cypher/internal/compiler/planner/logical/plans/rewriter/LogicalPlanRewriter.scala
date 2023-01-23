@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardina
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.rewriters.UniquenessRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.VarLengthRewriter
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -89,7 +90,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         ),
         combineHasLabels,
         truncateDatabaseDeeagerizer,
-        UniquenessRewriter(anonymousVariableNameGenerator)
+        UniquenessRewriter(anonymousVariableNameGenerator),
+        VarLengthRewriter
       )
     )
 

@@ -32,7 +32,10 @@ import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 
 import scala.collection.immutable.ListSet
@@ -49,7 +52,8 @@ object extractPredicates {
     originalRelationshipName: String,
     originalNodeName: String,
     targetNodeName: String,
-    targetNodeIsBound: Boolean
+    targetNodeIsBound: Boolean,
+    maybeVarLength: Option[VarPatternLength] = None
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
@@ -115,6 +119,24 @@ object extractPredicates {
 
       // Inserted by AddUniquenessPredicates
       case ((n, e, s), p @ Unique(Variable(`originalRelationshipName`))) =>
+        (n, e, s + p)
+
+      // Inserted by AddVarLengthPredicates. We solve these predicates, iff the var-length expand we are about to plan is more restrictive
+      case (
+          (n, e, s),
+          p @ VarLengthLowerBound(
+            Variable(`originalRelationshipName`),
+            predicateLowerBound
+          )
+        ) if predicateLowerBound <= maybeVarLength.map(_.min).getOrElse(Int.MinValue) =>
+        (n, e, s + p)
+      case (
+          (n, e, s),
+          p @ VarLengthUpperBound(
+            Variable(`originalRelationshipName`),
+            predicateUpperBound
+          )
+        ) if predicateUpperBound >= maybeVarLength.flatMap(_.max).getOrElse(Int.MaxValue) =>
         (n, e, s + p)
 
       case (acc, _) =>

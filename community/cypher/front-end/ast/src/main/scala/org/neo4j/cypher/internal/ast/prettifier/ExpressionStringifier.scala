@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -91,6 +92,9 @@ import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
@@ -370,6 +374,13 @@ private class DefaultExpressionStringifier(
             "elementIdListToRelationshipIdList"
         }
         s"$prefix(${apply(elementIdExpr)})"
+
+      case Disjoint(Variable(rel1), Variable(rel2)) => s"disjoint(`$rel1`, `$rel2`)"
+
+      case Unique(Variable(rel)) => s"unique(`$rel`)"
+
+      case VarLengthLowerBound(Variable(relName), bound) => s"size(`$relName`) >= $bound"
+      case VarLengthUpperBound(Variable(relName), bound) => s"size(`$relName`) <= $bound"
 
       case _ =>
         extension(this)(ast)

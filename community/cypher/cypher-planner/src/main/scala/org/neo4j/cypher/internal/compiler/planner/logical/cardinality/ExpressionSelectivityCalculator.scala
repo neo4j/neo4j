@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.Unique
+import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
@@ -215,6 +216,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       // These are currently only generated for var-length or QPP uniqueness predicates and
       // those are already included in the calculations in PatternRelationshipMultiplierCalculator.
       // We should revisit this when doing Cardinality estimation for QPPs.
+      Selectivity.ONE
+
+    case _: VarLengthBound =>
+      // These are inserted by AddVarLengthPredicates and taken care of in the cardinality estimation of the referenced var-length relationship.
       Selectivity.ONE
 
     // WHERE NOT [...]

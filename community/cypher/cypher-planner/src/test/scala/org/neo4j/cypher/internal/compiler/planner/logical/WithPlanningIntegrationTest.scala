@@ -193,7 +193,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("r")
         .apply()
         .|.projectEndpoints("(a)-[r*1..]->(b2)", startInScope = true, endInScope = false)
-        .|.filter("all(anon_0 IN r WHERE single(anon_1 IN r WHERE anon_0 = anon_1))")
+        .|.filter("size(r) >= 1", "all(anon_0 IN r WHERE single(anon_1 IN r WHERE anon_0 = anon_1))")
         .|.argument("a", "r")
         .limit(1)
         .expand("(a)-[r*1..]->(b)")
@@ -211,7 +211,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .produceResults("a", "b")
         .apply()
         .|.projectEndpoints("(a)-[rs*1..]->(b)", startInScope = false, endInScope = false)
-        .|.filter("all(anon_4 IN rs WHERE single(anon_5 IN rs WHERE anon_4 = anon_5))")
+        .|.filter("size(rs) >= 1", "all(anon_4 IN rs WHERE single(anon_5 IN rs WHERE anon_4 = anon_5))")
         .|.argument("rs")
         .projection(
           project = Seq("[r, q] AS rs"),

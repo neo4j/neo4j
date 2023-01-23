@@ -129,6 +129,8 @@ import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.Xor
@@ -832,6 +834,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def disjoint(lhs: Expression, rhs: Expression): Disjoint =
     Disjoint(lhs, rhs)(pos)
+
+  def varLengthLowerLimitPredicate(relVar: String, limit: Long): VarLengthLowerBound =
+    VarLengthLowerBound(varFor(relVar), limit)(pos)
+
+  def varLengthUpperLimitPredicate(relVar: String, limit: Long): VarLengthUpperBound =
+    VarLengthUpperBound(varFor(relVar), limit)(pos)
 
   def foreach(variable: String, listExpr: Expression, updates: Clause*): Foreach =
     Foreach(varFor(variable), listExpr, updates)(pos)

@@ -48,7 +48,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .enablePlanningIntersectionScans()
     .setAllNodesCardinality(100)
     .setAllRelationshipsCardinality(40)
-    .setLabelCardinality("User", 5)
+    .setLabelCardinality("User", 4)
     .setLabelCardinality("N", 6)
     .setLabelCardinality("NN", 5)
     .setRelationshipCardinality("()-[:R]->()", 10)
