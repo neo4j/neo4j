@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -44,5 +47,10 @@ trait LogicalPlanMatchers {
       failureMessageArgs = IndexedSeq(plan),
       negatedFailureMessageArgs = IndexedSeq(plan),
     )
+
+  def containSelectionMatching(pf: PartialFunction[Expression, Unit]): Matcher[LogicalPlan] =
+    containPlanMatching {
+      case Selection(Ands(predicates), _) if predicates.exists(pf.isDefinedAt) =>
+    }
 
 }

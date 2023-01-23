@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.VarLengthQuantifierMerger
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
@@ -89,7 +90,7 @@ object CompilationPhases {
         ResolveTokens,
         CreatePlannerQuery,
         OptionalMatchRemover,
-        QueryPlanner,
+        VarLengthQuantifierMerger,QueryPlanner,
         PlanRewriter,
         InsertCachedProperties,
         CardinalityRewriter,

@@ -510,6 +510,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       case SemanticDirection.OUTGOING => true
       case SemanticDirection.BOTH => false
     }
+    newNode(varFor(p.from))
+    newNode(varFor(p.to))
     appendAtCurrentIndent(UnaryOperator(lp => ProjectEndpoints(lp, p.relName, p.from, startInScope, p.to, endInScope,
                                                                relTypesAsNonEmptyOption, directed, p.length)(_)))
   }

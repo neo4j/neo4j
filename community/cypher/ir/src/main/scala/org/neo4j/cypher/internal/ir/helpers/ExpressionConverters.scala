@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
@@ -80,8 +81,10 @@ object ExpressionConverters {
     val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+    val varLengthRels = AddVarLengthPredicates.collectVarLengthRelationships(exp.pattern)
+    val varLengthPredicates = AddVarLengthPredicates.createPredicateFor(varLengthRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
+    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq ++ varLengthPredicates.toIndexedSeq) {
       case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     }
@@ -158,8 +161,10 @@ object ExpressionConverters {
     val addUniquenessPredicates = AddUniquenessPredicates(anonymousVariableNameGenerator)
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+    val varLengthRels = AddVarLengthPredicates.collectVarLengthRelationships(exp.pattern)
+    val varLengthPredicates = AddVarLengthPredicates.createPredicateFor(varLengthRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
+    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq ++ varLengthPredicates.toIndexedSeq) {
       case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     } ++ exp.predicate

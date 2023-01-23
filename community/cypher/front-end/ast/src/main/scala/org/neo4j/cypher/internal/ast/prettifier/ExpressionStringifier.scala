@@ -87,6 +87,8 @@ import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
@@ -330,6 +332,9 @@ case class ExpressionStringifier(
 
       case AssertIsNode(argument) =>
         s"assertIsNode(${apply(argument)})"
+
+      case VarLengthLowerBound(Variable(relName), bound) => s"size(`$relName`) >= $bound"
+      case VarLengthUpperBound(Variable(relName), bound) => s"size(`$relName`) <= $bound"
 
       case _ =>
         extension(this)(ast)

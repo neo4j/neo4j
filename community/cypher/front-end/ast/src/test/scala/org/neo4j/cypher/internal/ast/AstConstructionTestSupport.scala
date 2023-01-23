@@ -98,6 +98,8 @@ import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
+import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Avg
@@ -518,6 +520,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     Length3_5(argument)(pos)
 
   def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
+
+  def varLengthLowerLimitPredicate(relVar: String, limit: Long): VarLengthLowerBound =
+    VarLengthLowerBound(varFor(relVar), limit)(pos)
+
+  def varLengthUpperLimitPredicate(relVar: String, limit: Long): VarLengthUpperBound =
+    VarLengthUpperBound(varFor(relVar), limit)(pos)
 
   def foreach(variable: String, listExpr: Expression, updates: Clause*): Foreach =
     Foreach(varFor(variable), listExpr, updates)(pos)

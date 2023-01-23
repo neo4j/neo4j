@@ -127,7 +127,8 @@ case object QueryPlanner
     // This works on the IR
     CompilationContains[UnionQuery],
     UnnecessaryOptionalMatchesRemoved,
-    TokensResolved
+    TokensResolved,
+    VarLengthQuantifierMerged
   )
 
   override def postConditions = Set(

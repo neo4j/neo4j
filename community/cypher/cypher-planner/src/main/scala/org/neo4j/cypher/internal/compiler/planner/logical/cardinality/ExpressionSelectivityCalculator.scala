@@ -67,6 +67,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -160,6 +161,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case Not(Equals(lhs: Variable, rhs: Variable))
       if areRelationships(semanticTable, lhs, rhs) =>
       DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+
+    case _: VarLengthBound =>
+      // These are inserted by AddVarLengthPredicates and taken care of in the cardinality estimation of the referenced var-length relationship.
+      Selectivity.ONE
 
     // WHERE NOT [...]
     case Not(inner) =>

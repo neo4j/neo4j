@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
-import org.neo4j.cypher.internal.util.NonEmptyList.canBuildFrom
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 

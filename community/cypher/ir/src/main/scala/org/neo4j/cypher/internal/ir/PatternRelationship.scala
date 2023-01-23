@@ -69,26 +69,29 @@ object PatternRelationship {
   implicit val byName = Ordering.by { patternRel: PatternRelationship => patternRel.name }
 }
 
-trait PatternLength {
-  def implicitPatternNodeCount: Int
+sealed trait PatternLength {
   def isSimple: Boolean
+  def intersect(patternLength: PatternLength): PatternLength
 }
 
 case object SimplePatternLength extends PatternLength {
   def isSimple = true
 
-  def implicitPatternNodeCount: Int = 0
+  override def intersect(patternLength: PatternLength): PatternLength = SimplePatternLength
 }
 
 final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
 
-  def implicitPatternNodeCount = max.getOrElse(VarPatternLength.STAR_LENGTH)
+  override def intersect(patternLength: PatternLength): PatternLength = patternLength match {
+    case VarPatternLength(otherMin, otherMax) =>
+      val newMax = Seq(max, otherMax).flatten.reduceOption(_ min _)
+      VarPatternLength(min.max(otherMin), newMax)
+    case _ => throw new IllegalArgumentException("VarPatternLength may only be intersected with VarPatternLength")
+  }
 }
 
 object VarPatternLength {
-  val STAR_LENGTH = 16
-
   def unlimited = VarPatternLength(1, None)
 
   def fixed(length: Int) = VarPatternLength(length, Some(length))

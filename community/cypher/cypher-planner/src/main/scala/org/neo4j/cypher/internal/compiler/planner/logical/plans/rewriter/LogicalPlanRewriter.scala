@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.rewriting.rewriters.VarLengthRewriter
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -71,7 +72,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         skipInPartialSort,
         simplifySelections,
         limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)),
-        combineHasLabels
+        combineHasLabels,
+        VarLengthRewriter
       )
     )
 

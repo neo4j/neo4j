@@ -54,6 +54,37 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 
 case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
 
+trait AddRelationshipPredicates extends Step with ASTRewriterFactory {
+
+  protected def addPredicateToWhere(
+                                     where: Option[Where],
+                                     pos: InputPosition,
+                                     maybePredicate: Option[Expression]
+                                   ): Option[Where] = {
+    val newWhere: Option[Where] = (where, maybePredicate) match {
+      case (Some(oldWhere), Some(newPredicate)) =>
+        Some(oldWhere.copy(expression = And(oldWhere.expression, newPredicate)(pos))(pos))
+
+      case (None, Some(newPredicate)) =>
+        Some(Where(expression = newPredicate)(pos))
+
+      case (oldWhere, None) => oldWhere
+    }
+
+    newWhere
+  }
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedPatternElementsInMatch,
+    noUnnamedPatternElementsInPatternComprehension
+  )
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
+}
+
 case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
@@ -144,18 +175,9 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
   }
 }
 
-object AddUniquenessPredicates extends Step with ASTRewriterFactory {
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedPatternElementsInMatch,
-    noUnnamedPatternElementsInPatternComprehension
-  )
+object AddUniquenessPredicates extends AddRelationshipPredicates {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(RelationshipUniquenessPredicatesInMatchAndMerge)
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
-  )
 
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],

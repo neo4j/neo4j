@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnaryAdd
 import org.neo4j.cypher.internal.expressions.UnarySubtract
+import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
@@ -129,7 +130,7 @@ import scala.util.Try
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
   val crashOnUnknownExpression: (SemanticContext, Expression) => SemanticCheck =
-    (ctx, e) => throw new UnsupportedOperationException(s"Error in semantic analysis: Unknown expression $e")
+    (_, e) => throw new UnsupportedOperationException(s"Error in semantic analysis: Unknown expression $e")
 
   /**
    * This fallback allow for a testing backdoor to insert custom Expressions. Do not use in production.
@@ -267,6 +268,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:GreaterThanOrEqual =>
         check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
+
+      case x: VarLengthBound =>
+        check(ctx, x.arguments, x +: parents) chain
+          expectType(CTList(CTRelationship).covariant, x.relName) chain
+          specifyType(CTBoolean, x)
 
       case x:PartialPredicate[_] =>
         check(ctx, x.coveredPredicate, x +: parents)

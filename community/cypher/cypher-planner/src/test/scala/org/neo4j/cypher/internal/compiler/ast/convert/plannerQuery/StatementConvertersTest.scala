@@ -552,7 +552,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternRelationships should equal(Set(
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(1, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      varLengthLowerLimitPredicate("r", 1)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -568,7 +570,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r1", ("a", "b"), OUTGOING, Seq(relTypeName("CONTAINS")), VarPatternLength(0, Some(1))),
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq(relTypeName("FRIEND")), VarPatternLength(0, Some(1)))))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      varLengthLowerLimitPredicate("r1", 0),
+      varLengthLowerLimitPredicate("r2", 0),
+      varLengthUpperLimitPredicate("r1", 1),
+      varLengthUpperLimitPredicate("r2", 1)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -584,7 +591,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternRelationships should equal(Set(
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength(3, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      varLengthLowerLimitPredicate("r", 3)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -599,7 +608,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternRelationships should equal(Set(
       PatternRelationship("r", ("a", "b"), BOTH, Seq(relTypeName("Type")), VarPatternLength.fixed(5))))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections())
+    query.queryGraph.selections should equal(Selections.from(Seq(
+      varLengthLowerLimitPredicate("r", 5),
+      varLengthUpperLimitPredicate("r", 5)
+    )))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -618,9 +630,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val inner = anyInList(varFor("anon_1"), varFor("r"), equals(varFor("anon_0"), varFor("anon_1")))
     val outer = noneInList(varFor("anon_0"), varFor("r2"), inner)
-    val predicate = Predicate(Set("r2", "r"), outer)
 
-    query.queryGraph.selections should equal(Selections(Set(predicate)))
+    query.queryGraph.selections should equal(Selections.from(Set(outer,
+      varLengthLowerLimitPredicate("r", 1),
+      varLengthLowerLimitPredicate("r2", 1))))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),

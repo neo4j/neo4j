@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
@@ -51,7 +53,16 @@ import org.neo4j.cypher.internal.logical.plans.SelectionMatcher
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
+                                  with LogicalPlanningIntegrationTestSupport
+                                  with AstConstructionTestSupport {
+
+  private val planner = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setAllRelationshipsCardinality(100)
+    .setRelationshipCardinality("()-[]->()", 10)
+    .build()
+
   test("should build plans for simple WITH that adds a constant to the rows") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")._2
     val expected =
@@ -188,41 +199,40 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")._2
-    val expected = Apply(
-      Limit(
-        Expand(
-          AllNodesScan("a", Set()),
-          "a", OUTGOING, List(), "b", "r", ExpandAll
-        ),
-        literalInt(1)
-      ),
-      ProjectEndpoints(
-        Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = false, SimplePatternLength
-      )
-    )
 
-    result should equal(expected)
+    val plan = planner.plan("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .apply()
+        .|.projectEndpoints("(a)-[r]-(b2)", startInScope = true, endInScope = false)
+        .|.argument("a", "r")
+        .limit(1)
+        .expandAll("(a)-[r]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
   }
 
-  test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
-    val result = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._2
-    val expected = Apply(
-      Limit(
-        VarExpand(
-          AllNodesScan("a", Set()),
-          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll
-        ),
-        literalInt(1)
-      ),
-      ProjectEndpoints(
-        Argument(Set("a", "r")),
-        "r", "a", startInScope = true, "b2", endInScope = false, None, directed = true, VarPatternLength(1, None)
-      )
-    )
+  test(
+    "should build plans that project and verify endpoints of re-matched directed var length relationship arguments"
+  ) {
 
-    result should equal(expected)
+    val plan = planner.plan("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("r")
+        .apply()
+        .|.projectEndpoints("(a)-[r*1..]->(b2)", startInScope = true, endInScope = false)
+        .|.filter("size(r) >= 1")
+        .|.argument("a", "r")
+        .limit(1)
+        .expand("(a)-[r*1..]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
   }
 
   test("WHERE clause on WITH uses argument from previous WITH"){
