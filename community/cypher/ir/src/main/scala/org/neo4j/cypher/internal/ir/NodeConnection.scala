@@ -97,25 +97,18 @@ object PatternRelationship {
 }
 
 sealed trait PatternLength {
-  def implicitPatternNodeCount: Int
   def isSimple: Boolean
 }
 
 case object SimplePatternLength extends PatternLength {
   def isSimple = true
-
-  def implicitPatternNodeCount: Int = 0
 }
 
 final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
-
-  def implicitPatternNodeCount: Int = max.getOrElse(VarPatternLength.STAR_LENGTH)
 }
 
 object VarPatternLength {
-  val STAR_LENGTH = 16
-
   def unlimited: VarPatternLength = VarPatternLength(1, None)
 
   def fixed(length: Int): VarPatternLength = VarPatternLength(length, Some(length))
