@@ -80,17 +80,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
+            <groupId>org.neo4j.community</groupId>
+            <artifactId>kernel-it</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.neo4j.community</groupId>
-            <artifactId>kernel-it</artifactId>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel-test-utils</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>

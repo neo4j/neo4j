@@ -119,13 +119,6 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-logical-plan-builder</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -197,6 +190,12 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-kernel-test-utils</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
@@ -227,23 +226,5 @@
       </build>
     </profile>
   </profiles>
-
-  <build>
-      <plugins>
-          <!-- Temporarily allows this module to depend on test-jars in compile scope -->
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-enforcer-plugin</artifactId>
-              <executions>
-                  <execution>
-                      <id>ban-test-dependencies-in-compile</id>
-                      <configuration>
-                          <skip>true</skip>
-                      </configuration>
-                  </execution>
-              </executions>
-          </plugin>
-      </plugins>
-  </build>
 
 </project>
