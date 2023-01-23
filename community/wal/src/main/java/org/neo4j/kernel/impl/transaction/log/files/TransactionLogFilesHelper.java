@@ -24,6 +24,7 @@ import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -84,6 +85,14 @@ public class TransactionLogFilesHelper {
         }
         Arrays.sort(files, Comparator.comparingLong(TransactionLogFilesHelper::getLogVersion));
         return files;
+    }
+
+    public boolean isLogFile(Path path) {
+        try {
+            return filenameFilter.accept(path);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void accept(LogVersionVisitor visitor) throws IOException {
