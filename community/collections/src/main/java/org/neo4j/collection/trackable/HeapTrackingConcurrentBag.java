@@ -47,6 +47,10 @@ public final class HeapTrackingConcurrentBag<E> extends HeapTrackingConcurrentHa
         return new HeapTrackingConcurrentBag<>(memoryTracker, size);
     }
 
+    public static long staticSizeOfWrapperObject() {
+        return SHALLOW_SIZE_WRAPPER;
+    }
+
     @Override
     int hash(Object key) {
         return this.hash(System.identityHashCode(key));

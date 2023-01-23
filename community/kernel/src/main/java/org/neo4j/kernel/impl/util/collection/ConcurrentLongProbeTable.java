@@ -24,7 +24,8 @@ import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.collection.trackable.HeapTrackingConcurrentBag;
 import org.neo4j.collection.trackable.HeapTrackingConcurrentLongHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
@@ -34,8 +35,7 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentLongProbeTable.class);
 
     private final MemoryTracker scopedMemoryTracker;
-    // TODO: change to heap tracking collection instead of queue
-    private HeapTrackingConcurrentLongHashMap<ConcurrentLinkedQueue<V>> map;
+    private HeapTrackingConcurrentLongHashMap<HeapTrackingConcurrentBag<V>> map;
 
     public static <V extends Measurable> ConcurrentLongProbeTable<V> createLongProbeTable(MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
@@ -49,12 +49,14 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
     }
 
     public void put(long key, V value) {
+        MutableLong heapUsage =
+                new MutableLong(value.estimatedHeapUsage() + HeapTrackingConcurrentBag.staticSizeOfWrapperObject());
         map.computeIfAbsent(key, p -> {
-                    scopedMemoryTracker.allocateHeap(map.sizeOfWrapperObject());
-                    return new ConcurrentLinkedQueue<>();
+                    heapUsage.add(map.sizeOfWrapperObject());
+                    return HeapTrackingConcurrentBag.newBag(scopedMemoryTracker);
                 })
                 .add(value);
-        scopedMemoryTracker.allocateHeap(value.estimatedHeapUsage());
+        scopedMemoryTracker.allocateHeap(heapUsage.longValue());
     }
 
     public Iterator<V> get(long key) {

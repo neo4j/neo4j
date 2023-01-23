@@ -30,7 +30,7 @@ import org.neo4j.memory.MemoryTracker;
 abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrackingConcurrentHash
         implements AutoCloseable {
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashCollection.class);
-    private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Node.class);
+    static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Node.class);
 
     HeapTrackingConcurrentHashCollection(MemoryTracker memoryTracker, int initialCapacity) {
         super(memoryTracker, initialCapacity);

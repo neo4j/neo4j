@@ -25,7 +25,8 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import org.apache.commons.lang3.mutable.MutableLong;
+import org.neo4j.collection.trackable.HeapTrackingConcurrentBag;
 import org.neo4j.collection.trackable.HeapTrackingConcurrentHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
@@ -39,8 +40,7 @@ import org.neo4j.memory.MemoryTracker;
 public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> extends DefaultCloseListenable {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentProbeTable.class);
     private final MemoryTracker scopedMemoryTracker;
-    // TODO: implement heap tracking variant of the queue
-    private HeapTrackingConcurrentHashMap<K, ConcurrentLinkedQueue<V>> map;
+    private HeapTrackingConcurrentHashMap<K, HeapTrackingConcurrentBag<V>> map;
 
     public static <K extends Measurable, V extends Measurable> ConcurrentProbeTable<K, V> createProbeTable(
             MemoryTracker memoryTracker) {
@@ -55,12 +55,14 @@ public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> ex
     }
 
     public void put(K key, V value) {
+        MutableLong heapUsage =
+                new MutableLong(value.estimatedHeapUsage() + HeapTrackingConcurrentBag.staticSizeOfWrapperObject());
         map.computeIfAbsent(key, p -> {
-                    scopedMemoryTracker.allocateHeap(key.estimatedHeapUsage() + map.sizeOfWrapperObject());
-                    return new ConcurrentLinkedQueue<>();
+                    heapUsage.add(key.estimatedHeapUsage() + map.sizeOfWrapperObject());
+                    return HeapTrackingConcurrentBag.newBag(scopedMemoryTracker);
                 })
                 .add(value);
-        scopedMemoryTracker.allocateHeap(value.estimatedHeapUsage());
+        scopedMemoryTracker.allocateHeap(heapUsage.longValue());
     }
 
     public Iterator<V> get(K key) {
