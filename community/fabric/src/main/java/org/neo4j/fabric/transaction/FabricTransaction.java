@@ -33,6 +33,7 @@ import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseReference;
 
 public interface FabricTransaction {
@@ -78,4 +79,6 @@ public interface FabricTransaction {
     Catalog getCatalogSnapshot();
 
     CancellationChecker cancellationChecker();
+
+    ExecutingQuery.TransactionBinding transactionBinding();
 }

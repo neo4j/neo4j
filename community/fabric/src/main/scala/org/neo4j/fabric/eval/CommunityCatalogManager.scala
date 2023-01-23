@@ -173,6 +173,8 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }
+
+  override def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean = databaseLookup.isVirtualDatabase(databaseId)
 }
 
 class IdProvider(startingFrom: Long = 0) {

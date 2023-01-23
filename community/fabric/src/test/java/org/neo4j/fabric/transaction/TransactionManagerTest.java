@@ -35,7 +35,6 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
-import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
@@ -70,12 +69,10 @@ class TransactionManagerTest {
         var securityLog = mock(AbstractSecurityLog.class);
         var catalogManager = mock(CatalogManager.class);
         var config = Config.defaults(shutdown_transaction_end_timeout, Duration.ZERO);
-        var fabricConfig = FabricConfig.from(config);
         var transactionManager = new TransactionManager(
                 fabricRemoteExecutor,
                 localExecutor,
                 catalogManager,
-                fabricConfig,
                 transactionMonitor,
                 securityLog,
                 Clocks.nanoClock(),

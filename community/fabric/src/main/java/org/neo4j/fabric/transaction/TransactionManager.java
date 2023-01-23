@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
-import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
@@ -51,7 +50,6 @@ public class TransactionManager extends LifecycleAdapter {
     private final FabricLocalExecutor localExecutor;
     private final Config config;
     private final ErrorReporter errorReporter;
-    private final FabricConfig fabricConfig;
     private final FabricTransactionMonitor transactionMonitor;
     private final AbstractSecurityLog securityLog;
     private final SystemNanoClock clock;
@@ -65,7 +63,6 @@ public class TransactionManager extends LifecycleAdapter {
             FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
             CatalogManager catalogManager,
-            FabricConfig fabricConfig,
             FabricTransactionMonitor transactionMonitor,
             AbstractSecurityLog securityLog,
             SystemNanoClock clock,
@@ -77,7 +74,6 @@ public class TransactionManager extends LifecycleAdapter {
         this.catalogManager = catalogManager;
         this.config = config;
         this.errorReporter = errorReporter;
-        this.fabricConfig = fabricConfig;
         this.transactionMonitor = transactionMonitor;
         this.securityLog = securityLog;
         this.clock = clock;
@@ -108,9 +104,9 @@ public class TransactionManager extends LifecycleAdapter {
                 localExecutor,
                 errorReporter,
                 this,
-                fabricConfig,
                 catalogManager.currentCatalog(),
                 catalogManager,
+                sessionDb instanceof DatabaseReference.Composite,
                 clock,
                 TraceProviderFactory.getTraceProvider(config));
 

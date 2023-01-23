@@ -90,8 +90,9 @@ public class FabricLocalExecutor {
                 FullyParsedQuery query,
                 MapValue params,
                 Flux<Record> input,
-                ExecutionOptions executionOptions) {
-            var kernelTransaction = getOrCreateTx(location, transactionMode);
+                ExecutionOptions executionOptions,
+                Boolean targetsComposite) {
+            var kernelTransaction = getOrCreateTx(location, transactionMode, targetsComposite);
             return kernelTransaction.run(query, params, input, parentLifecycle, executionOptions);
         }
 
@@ -102,9 +103,10 @@ public class FabricLocalExecutor {
             return internalTransactions;
         }
 
-        public FabricKernelTransaction getOrCreateTx(Location.Local location, TransactionMode transactionMode) {
+        public FabricKernelTransaction getOrCreateTx(
+                Location.Local location, TransactionMode transactionMode, Boolean targetsComposite) {
             var existingTx = kernelTransactions.get(location.getUuid());
-            if (existingTx != null) {
+            if (!targetsComposite && existingTx != null) {
                 maybeUpgradeToWritingTransaction(existingTx, transactionMode);
                 return existingTx.fabricKernelTransaction;
             }

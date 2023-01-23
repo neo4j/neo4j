@@ -67,7 +67,11 @@ public class FabricStatementLifecycles {
         return cpuClock;
     }
 
-    StatementLifecycle create(FabricTransactionInfo transactionInfo, String statement, MapValue params) {
+    StatementLifecycle create(
+            FabricTransactionInfo transactionInfo,
+            String statement,
+            MapValue params,
+            ExecutingQuery.TransactionBinding transactionBinding) {
         var executingQuery = executingQueryFactory.createUnbound(
                 statement,
                 params,
@@ -75,6 +79,10 @@ public class FabricStatementLifecycles {
                 transactionInfo.getLoginContext().subject().executingUser(),
                 transactionInfo.getLoginContext().subject().authenticatedUser(),
                 transactionInfo.getTxMetadata());
+
+        if (transactionBinding != null) {
+            executingQuery.onTransactionBound(transactionBinding);
+        }
 
         return new StatementLifecycle(executingQuery);
     }

@@ -21,8 +21,11 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.fabric.executor.Location
 import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.NamedDatabaseId
 
 trait CatalogManager {
+
+  def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
 
   def currentCatalog(): Catalog
 

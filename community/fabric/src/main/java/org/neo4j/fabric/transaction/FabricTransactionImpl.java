@@ -36,11 +36,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
-import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.executor.FabricException;
+import org.neo4j.fabric.executor.FabricKernelTransaction;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
@@ -51,7 +51,10 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -73,7 +76,6 @@ public class FabricTransactionImpl
     private final SystemNanoClock clock;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
-    private final FabricConfig fabricConfig;
     private final long id;
     private final FabricRemoteExecutor.RemoteTransactionContext remoteTransactionContext;
     private final FabricLocalExecutor.LocalTransactionContext localTransactionContext;
@@ -83,9 +85,11 @@ public class FabricTransactionImpl
     private StatementLifecycle lastSubmittedStatement;
 
     private SingleDbTransaction writingTransaction;
-    private LocationCache locationCache;
+    private final LocationCache locationCache;
 
     private final TransactionInitializationTrace initializationTrace;
+
+    private final FabricKernelTransaction kernelTransaction;
 
     FabricTransactionImpl(
             FabricTransactionInfo transactionInfo,
@@ -94,15 +98,14 @@ public class FabricTransactionImpl
             FabricLocalExecutor localExecutor,
             ErrorReporter errorReporter,
             TransactionManager transactionManager,
-            FabricConfig fabricConfig,
             Catalog catalogSnapshot,
             CatalogManager catalogManager,
+            Boolean inCompositeContext,
             SystemNanoClock clock,
             TraceProvider traceProvider) {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
-        this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
         this.catalogSnapshot = catalogSnapshot;
         this.clock = clock;
@@ -114,6 +117,16 @@ public class FabricTransactionImpl
         try {
             remoteTransactionContext = remoteExecutor.startTransactionContext(this, transactionInfo, bookmarkManager);
             localTransactionContext = localExecutor.startTransactionContext(this, transactionInfo, bookmarkManager);
+            DatabaseReference sessionDatabaseReference = getSessionDatabaseReference();
+            if (inCompositeContext) {
+                var graph = catalogSnapshot.resolveGraphByNameString(
+                        sessionDatabaseReference.alias().name());
+                var location = this.locationOf(graph, false);
+                kernelTransaction = localTransactionContext.getOrCreateTx(
+                        (Location.Local) location, TransactionMode.DEFINITELY_READ, true);
+            } else {
+                kernelTransaction = null;
+            }
         } catch (RuntimeException e) {
             // the exception with stack trace will be logged by Bolt's ErrorReporter
             throw Exceptions.transform(Status.Transaction.TransactionStartFailed, e);
@@ -429,6 +442,18 @@ public class FabricTransactionImpl
         return startReadingTransaction(location, true, readingTransactionSupplier);
     }
 
+    public ExecutingQuery.TransactionBinding transactionBinding() throws FabricException {
+        if (kernelTransaction == null) {
+            return null;
+        }
+        DatabaseReference sessionDatabaseReference = getSessionDatabaseReference();
+        NamedDatabaseId namedDbId =
+                DatabaseIdFactory.from(sessionDatabaseReference.alias().name(), sessionDatabaseReference.id());
+
+        Long transactionId = kernelTransaction.transactionId();
+        return new ExecutingQuery.TransactionBinding(namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionId);
+    }
+
     private <TX extends SingleDbTransaction> TX startReadingTransaction(
             Location location, boolean readOnly, Supplier<TX> readingTransactionSupplier) throws FabricException {
         nonExclusiveLock.lock();
@@ -531,6 +556,11 @@ public class FabricTransactionImpl
         OPEN,
         CLOSED,
         TERMINATED
+    }
+
+    @Override
+    public FabricKernelTransaction kernelTransaction() {
+        return this.kernelTransaction;
     }
 
     private record ErrorRecord(String message, Throwable error) {}

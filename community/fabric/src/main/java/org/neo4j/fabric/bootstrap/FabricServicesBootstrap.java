@@ -152,7 +152,6 @@ public abstract class FabricServicesBootstrap {
                         remoteExecutor,
                         localExecutor,
                         catalogManager,
-                        fabricConfig,
                         transactionMonitor,
                         securityLog,
                         systemNanoClock,
@@ -178,13 +177,7 @@ public abstract class FabricServicesBootstrap {
 
         Executor fabricWorkerExecutor = jobScheduler.executor(FABRIC_WORKER);
         var fabricExecutor = new FabricExecutor(
-                fabricConfig,
-                planner,
-                useEvaluation,
-                catalogManager,
-                internalLogProvider,
-                statementLifecycles,
-                fabricWorkerExecutor);
+                fabricConfig, planner, useEvaluation, internalLogProvider, statementLifecycles, fabricWorkerExecutor);
         register(fabricExecutor, FabricExecutor.class);
 
         register(new TransactionBookmarkManagerFactory(fabricDatabaseManager), TransactionBookmarkManagerFactory.class);

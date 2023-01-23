@@ -171,6 +171,10 @@ public class FabricKernelTransaction {
         return internalTransaction;
     }
 
+    public Long transactionId() {
+        return internalTransaction.kernelTransaction().getTransactionId();
+    }
+
     private class ContextClosingResultInterceptor implements StatementResult {
         private final StatementResult wrappedResult;
         private final TransactionalContext executionContext;

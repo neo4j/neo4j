@@ -33,13 +33,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.GraphSelection;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
-import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.planning.FabricPlan;
@@ -82,7 +80,6 @@ public class FabricExecutor {
     private final FabricConfig.DataStream dataStreamConfig;
     private final FabricPlanner planner;
     private final UseEvaluation useEvaluation;
-    private final CatalogManager catalogManager;
     private final InternalLog log;
     private final FabricStatementLifecycles statementLifecycles;
     private final Executor fabricWorkerExecutor;
@@ -91,21 +88,22 @@ public class FabricExecutor {
             FabricConfig config,
             FabricPlanner planner,
             UseEvaluation useEvaluation,
-            CatalogManager catalogManager,
             InternalLogProvider internalLog,
             FabricStatementLifecycles statementLifecycles,
             Executor fabricWorkerExecutor) {
         this.dataStreamConfig = config.getDataStream();
         this.planner = planner;
         this.useEvaluation = useEvaluation;
-        this.catalogManager = catalogManager;
         this.log = internalLog.getLog(getClass());
         this.statementLifecycles = statementLifecycles;
         this.fabricWorkerExecutor = fabricWorkerExecutor;
     }
 
     public StatementResult run(FabricTransaction fabricTransaction, String statement, MapValue parameters) {
-        var lifecycle = statementLifecycles.create(fabricTransaction.getTransactionInfo(), statement, parameters);
+        var transactionBinding = fabricTransaction.transactionBinding();
+        var lifecycle = statementLifecycles.create(
+                fabricTransaction.getTransactionInfo(), statement, parameters, transactionBinding);
+
         lifecycle.startProcessing();
 
         fabricTransaction.setLastSubmittedStatement(lifecycle);
@@ -126,7 +124,6 @@ public class FabricExecutor {
             lifecycle.doneFabricProcessing(plan);
 
             var accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
-            var routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
 
             if (plan.debugOptions().logPlan()) {
                 log.debug(String.format("Fabric plan: %s", Fragment.pretty().asString(query)));
@@ -141,7 +138,6 @@ public class FabricExecutor {
                             useEvaluator,
                             parameters,
                             accessMode,
-                            routingContext,
                             ctx,
                             log,
                             lifecycle,
@@ -153,7 +149,6 @@ public class FabricExecutor {
                             useEvaluator,
                             parameters,
                             accessMode,
-                            routingContext,
                             ctx,
                             lifecycle,
                             dataStreamConfig);
@@ -199,7 +194,6 @@ public class FabricExecutor {
         private final StatementLifecycle lifecycle;
         private final Prefetcher prefetcher;
         private final AccessMode accessMode;
-        private final RoutingContext routingContext;
 
         FabricStatementExecution(
                 FabricPlan plan,
@@ -207,7 +201,6 @@ public class FabricExecutor {
                 UseEvaluation.Instance useEvaluator,
                 MapValue queryParams,
                 AccessMode accessMode,
-                RoutingContext routingContext,
                 FabricTransaction.FabricExecutionContext ctx,
                 StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig) {
@@ -219,7 +212,6 @@ public class FabricExecutor {
             this.lifecycle = lifecycle;
             this.prefetcher = new Prefetcher(dataStreamConfig);
             this.accessMode = accessMode;
-            this.routingContext = routingContext;
         }
 
         StatementResult run() {
@@ -403,7 +395,15 @@ public class FabricExecutor {
                     : new ExecutionOptions();
 
             StatementResult localStatementResult = ctx.getLocal()
-                    .run(location, transactionMode, lifecycle, query, parameters, input, executionOptions);
+                    .run(
+                            location,
+                            transactionMode,
+                            lifecycle,
+                            query,
+                            parameters,
+                            input,
+                            executionOptions,
+                            targetsComposite);
             Flux<Record> records = localStatementResult
                     .records()
                     .doOnComplete(() -> localStatementResult.summary().subscribe(this::updateSummary));
@@ -573,21 +573,11 @@ public class FabricExecutor {
                 UseEvaluation.Instance useEvaluator,
                 MapValue params,
                 AccessMode accessMode,
-                RoutingContext routingContext,
                 FabricTransaction.FabricExecutionContext ctx,
                 InternalLog log,
                 StatementLifecycle lifecycle,
                 FabricConfig.DataStream dataStreamConfig) {
-            super(
-                    plan,
-                    plannerInstance,
-                    useEvaluator,
-                    params,
-                    accessMode,
-                    routingContext,
-                    ctx,
-                    lifecycle,
-                    dataStreamConfig);
+            super(plan, plannerInstance, useEvaluator, params, accessMode, ctx, lifecycle, dataStreamConfig);
             this.step = new AtomicInteger(0);
             this.log = log;
         }
