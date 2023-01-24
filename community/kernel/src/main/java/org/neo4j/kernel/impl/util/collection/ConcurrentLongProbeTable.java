@@ -73,13 +73,10 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
 
     @Override
     public void closeInternal() {
-        scopedMemoryTracker.close();
-        // TODO we should do
-        // if (map != null) {
-        //      map = null;
-        //      scopedMemoryTracker.close();
-        //  }
-        // but there is a bug for joins where we close too early
+        if (map != null) {
+            map = null;
+            scopedMemoryTracker.close();
+        }
     }
 
     @Override

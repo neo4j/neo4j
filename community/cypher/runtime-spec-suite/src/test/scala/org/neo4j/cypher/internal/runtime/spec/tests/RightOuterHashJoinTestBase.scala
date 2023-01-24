@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
@@ -57,7 +58,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     val expectedResultRows = nodes.filter(_.hasLabel(Label.label("Right"))).map(Array(_))
 
     runtimeResult should beColumns("n").withRows(expectedResultRows)
-
   }
 
   test("should work when LHS is empty") {
@@ -619,7 +619,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
   test("should join under Apply with alias on non-join-key on RHS") {
     // given
     val (nodes, _) = given { circleGraph(sizeHint) }
-    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -633,7 +632,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
     val expectedResultRows = for {
