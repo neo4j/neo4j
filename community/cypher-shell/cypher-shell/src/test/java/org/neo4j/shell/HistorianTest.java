@@ -19,13 +19,48 @@
  */
 package org.neo4j.shell;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.shell.Historian.defaultHistoryFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import org.junit.jupiter.api.Test;
 
 class HistorianTest {
     @Test
     void getHistory() {
         assertTrue(Historian.empty.getHistory().isEmpty());
+    }
+
+    @Test
+    void shouldCreateHistoryFileIfDoesntExists() throws IOException {
+        // given
+        var tempDir = Files.createTempDirectory("temp-dir");
+        Path notThere = Path.of(tempDir.toString(), "notThere");
+
+        // when
+        assertFalse(Files.exists(notThere));
+        Path created = defaultHistoryFile(notThere);
+
+        // then
+        assertEquals("notThere", created.getFileName().toString());
+        assertTrue(Files.exists(created));
+        assertFalse(Files.isDirectory(created));
+    }
+
+    @Test
+    void shouldNotCreateHistoryFileIExists() throws IOException {
+        var existing = Files.createTempFile("temp-file", null);
+        FileTime lastModifiedTime = Files.getLastModifiedTime(existing);
+        assertTrue(Files.exists(existing));
+        Path actual = defaultHistoryFile(existing);
+
+        // then
+        assertTrue(Files.exists(actual));
+        assertFalse(Files.isDirectory(actual));
     }
 }

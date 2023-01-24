@@ -52,9 +52,12 @@ public interface Historian {
     static Path defaultHistoryFile() {
         // Storing in same directory as driver uses
         var path = Path.of(getProperty("user.home"), ".neo4j", ".cypher_shell_history");
+        return defaultHistoryFile(path);
+    }
 
+    static Path defaultHistoryFile(Path path) {
         try {
-            var historyFile = Files.exists(path) ? path : Files.createDirectories(path);
+            var historyFile = Files.exists(path) ? path : createFileAndDirectories(path);
             if (isPosix) {
                 Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
             }
@@ -62,6 +65,11 @@ public interface Historian {
         } catch (IOException e) {
             throw new CypherShellIOException(e);
         }
+    }
+
+    private static Path createFileAndDirectories(Path path) throws IOException {
+        var directories = Files.createDirectories(path.getParent());
+        return Files.createFile(path);
     }
 
     class EmptyHistory implements Historian {
