@@ -720,6 +720,39 @@ Feature: ExistsExpressionAcceptance
       | 'Bosse' |
     And no side effects
 
+  Scenario: Exists on the right side of an XOR should work
+    Given an empty graph
+    When executing query:
+    """
+      MATCH (a:Person), (b:Dog { name:'Ozzy' })
+      WHERE a.id = 0
+      XOR EXISTS {
+        MATCH (a)-[:HAS_DOG]->(b)
+      }
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Alice' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Exists on the right side of an XOR with a NOT should work
+    Given an empty graph
+    When executing query:
+    """
+      MATCH (a:Person), (b:Dog { name:'Ozzy' })
+      WHERE a.id = 0
+      XOR NOT EXISTS {
+        MATCH (a)-[:HAS_DOG]->(b)
+      }
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+    And no side effects
+
   Scenario: Exists with unrelated inner pattern should work
     Given any graph
     When executing query:
@@ -1183,6 +1216,22 @@ Feature: ExistsExpressionAcceptance
       | 1 |
     And no side effects
 
+  Scenario: WHERE NOT EXISTS WITH XOR and horizon should work
+    Given an empty graph
+    When executing query:
+      """
+      WITH 1 AS x
+      WHERE x = 42 XOR NOT EXISTS {
+      MATCH (:Badger)
+      }
+      RETURN x
+      """
+    Then the result should be, in any order:
+      | x |
+      | 1 |
+    And no side effects
+
+
   Scenario: WHERE NOT EXISTS WITH OR, AND and horizon should work
     Given any graph
     When executing query:
@@ -1418,6 +1467,39 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: Nested inlined exists in node pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (a
+      WHERE EXISTS {
+        MATCH (n WHERE n.name = a.name)-[r:HAS_DOG]->()
+      }
+    )
+    RETURN a.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Bosse' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Nested inlined XOR between exists and other predicate in node pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+      MATCH (n WHERE EXISTS { MATCH (n)-[r]->() } XOR true)
+    }
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Alice' |
+    And no side effects
+
   Scenario: Exists function inlined in node pattern with label expression should be supported
     Given any graph
     When executing query:
@@ -1464,6 +1546,38 @@ Feature: ExistsExpressionAcceptance
       | 'Bosse' |
       | 'Chris' |
       | 'Chris' |
+    And no side effects
+
+  Scenario: Nested inlined exists in relationship pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (a)-[
+      WHERE EXISTS {
+        MATCH (n:Person)-[r WHERE n.name = a.name]->()
+      }
+    ]->()
+    RETURN a.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Bosse' |
+      | 'Chris' |
+      | 'Chris' |
+    And no side effects
+
+  Scenario: Nested inlined XOR between exists and other predicate in relationship pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+      MATCH (n)-[WHERE EXISTS { MATCH (n)-[r]->() } XOR true]->()
+    }
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
     And no side effects
 
   Scenario: Exists function inlined in relationship pattern with label expression should be supported

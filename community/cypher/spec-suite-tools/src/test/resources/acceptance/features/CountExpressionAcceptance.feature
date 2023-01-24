@@ -275,6 +275,78 @@ Feature: CountExpressionAcceptance
       | 0      |
     And no side effects
 
+  Scenario: COUNT on the right side of an OR should work
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (a:Person), (b:Person { name:'Bob' })
+      WHERE a.name = "Ada"
+      OR COUNT {
+        MATCH (a)-[:FOLLOWS]->(b)
+      } = 1
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name  |
+      | 'Ada' |
+      | 'Cat' |
+    And no side effects
+
+  Scenario: COUNT on the right side of an OR with a NOT should work
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (a:Person), (b:Person { name:'Bob' })
+      WHERE a.name = "Ada"
+      OR NOT COUNT {
+        MATCH (a)-[:FOLLOWS]->(b)
+      } = 1
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Ada'   |
+      | 'Bob'   |
+      | 'Deb'   |
+      | 'Erika' |
+    And no side effects
+
+  Scenario: COUNT on the right side of an XOR should work
+    Given an empty graph
+    When executing query:
+    """
+      MATCH (a:Person), (b:Person { name:'Bob' })
+      WHERE a.name = "Ada"
+      XOR COUNT {
+        MATCH (a)-[:FOLLOWS]->(b)
+      } = 1
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name  |
+      | 'Cat' |
+    And no side effects
+
+  Scenario: COUNT on the right side of an XOR with a NOT should work
+    Given an empty graph
+    When executing query:
+    """
+      MATCH (a:Person), (b:Person { name:'Bob' })
+      WHERE a.name = "Ada"
+      XOR NOT COUNT {
+        MATCH (a)-[:FOLLOWS]->(b)
+      } = 1
+      RETURN a.name as name
+      """
+    Then the result should be, in any order:
+      | name    |
+      | 'Ada'   |
+      | 'Bob'   |
+      | 'Deb'   |
+      | 'Erika' |
+    And no side effects
+
+
   Scenario: Inner query with create should fail with syntax error
     Given an empty graph
     When executing query:
@@ -978,6 +1050,40 @@ Feature: CountExpressionAcceptance
       | 'Cat' |
     And no side effects
 
+  Scenario: Nested inlined count in node pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (a
+      WHERE COUNT {
+        MATCH (n WHERE n.name = a.name)-[r]->()
+      } > 2
+    )
+    RETURN a.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Bob' |
+    And no side effects
+
+  Scenario: Nested inlined XOR between count and other predicate in node pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+      MATCH (n WHERE COUNT { MATCH (n)-[r]->() } > 2 XOR true)
+    } = 1
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Ada'   |
+      | 'Cat'   |
+      | 'Deb'   |
+      | 'Erika' |
+    And no side effects
+
   Scenario: Count inlined in relationship pattern with label expression on unnamed node should be supported
     Given any graph
     When executing query:
@@ -1020,6 +1126,41 @@ Feature: CountExpressionAcceptance
       | 'Bob' |
       | 'Cat' |
       | 'Cat' |
+    And no side effects
+
+  Scenario: Nested inlined count in relationship pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (a)-[
+      WHERE COUNT {
+        MATCH (n)-[r WHERE n.name = a.name]->()
+      } > 2
+    ]->()
+    RETURN a.name AS name
+    """
+    Then the result should be, in any order:
+      | name  |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+      | 'Bob' |
+    And no side effects
+
+  Scenario: Nested inlined XOR between count and other predicate in relationship pattern should be supported
+    Given an empty graph
+    When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+      MATCH (n)-[WHERE COUNT { MATCH (n)-[r]->() } > 2 XOR true]->()
+    } = 1
+    RETURN n.name AS name
+    """
+    Then the result should be, in any order:
+      | name    |
+      | 'Deb'   |
+      | 'Erika' |
     And no side effects
 
   Scenario: Full count subquery with update clause should fail

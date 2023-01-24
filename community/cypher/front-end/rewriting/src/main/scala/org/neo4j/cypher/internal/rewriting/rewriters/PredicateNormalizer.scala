@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -43,10 +45,11 @@ trait PredicateNormalizer {
 
   /**
    * Traverse into pattern and extract not normalized predicates from its elements.
+   * Patterns inside EXISTS and COUNT must be handled separately due to scoping.
    */
   final def extractAllFrom(pattern: AnyRef): Seq[Expression] =
     pattern.folder.treeFold(Vector.empty[Expression]) {
-      case _: QuantifiedPath => acc => SkipChildren(acc)
+      case _: QuantifiedPath | _: ExistsExpression | _: CountExpression => acc => SkipChildren(acc)
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>
         acc => TraverseChildren(acc ++ extract(patternElement))
       case _ => acc => TraverseChildren(acc)

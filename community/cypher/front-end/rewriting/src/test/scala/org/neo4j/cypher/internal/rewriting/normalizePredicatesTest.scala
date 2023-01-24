@@ -295,6 +295,219 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
     assertRewrite("MATCH (a) ((n)--() WHERE n.foo = 'bar')+ () WHERE a:A RETURN n")
   }
 
+  // should move pattern predicates out of node/rel in subclause
+
+  test("MATCH (n) WHERE EXISTS {MATCH (n WHERE n.prop = 1)} RETURN *") {
+    assertRewrite("MATCH (n) WHERE EXISTS { MATCH (n) WHERE n.prop = 1} RETURN *")
+  }
+
+  test("MATCH (n) WHERE COUNT {MATCH (n WHERE n.prop = 1)} > 1 RETURN *") {
+    assertRewrite("MATCH (n) WHERE COUNT { MATCH (n) WHERE n.prop = 1} > 1 RETURN *")
+  }
+
+  test("MATCH (n) WHERE EXISTS {MATCH (n)-[r WHERE r.prop = 1]->()} RETURN *") {
+    assertRewrite("MATCH (n) WHERE EXISTS { MATCH (n)-[r]->() WHERE r.prop = 1} RETURN *")
+  }
+
+  test("MATCH (n) WHERE COUNT {MATCH (n)-[r WHERE r.prop = 1]->()} > 1 RETURN *") {
+    assertRewrite("MATCH (n) WHERE COUNT { MATCH (n)-[r]->() WHERE r.prop = 1} > 1 RETURN *")
+  }
+
+  // should move pattern predicates out of node/rel in subclause without MATCH keyword
+
+  test("MATCH (n) WHERE EXISTS {(n WHERE n.prop = 1)} RETURN *") {
+    assertRewrite("MATCH (n) WHERE EXISTS {(n) WHERE n.prop = 1} RETURN *")
+  }
+
+  test("MATCH (n) WHERE COUNT {(n WHERE n.prop = 1)} > 1 RETURN *") {
+    assertRewrite("MATCH (n) WHERE COUNT {(n) WHERE n.prop = 1} > 1 RETURN *")
+  }
+
+  test("MATCH (n) WHERE EXISTS {(n)-[r WHERE r.prop = 1]->()} RETURN *") {
+    assertRewrite("MATCH (n) WHERE EXISTS {(n)-[r]->() WHERE r.prop = 1} RETURN *")
+  }
+
+  test("MATCH (n) WHERE COUNT {(n)-[r WHERE r.prop = 1]->()} > 1 RETURN *") {
+    assertRewrite("MATCH (n) WHERE COUNT {(n)-[r]->() WHERE r.prop = 1} > 1 RETURN *")
+  }
+
+  // should move pattern predicates to correct scope for subclauses
+
+  test(
+    """
+      |MATCH (a
+      |  WHERE EXISTS {
+      |    MATCH (n WHERE n.prop = a.prop)-[r WHERE r.prop = 42]->()
+      |  }
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE EXISTS {
+         | MATCH (n)-[r]->()
+         | WHERE n.prop = a.prop AND r.prop = 42
+         |}
+         |RETURN *
+         | """.stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  test(
+    """
+      |MATCH (a
+      |  WHERE COUNT {
+      |    MATCH (n WHERE n.prop = a.prop)-[r WHERE r.prop = 42]->()
+      |  } > 1
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE COUNT {
+         | MATCH (n)-[r]->()
+         | WHERE n.prop = a.prop AND r.prop = 42
+         |} > 1
+         |RETURN *
+         | """.stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  test(
+    """
+      |MATCH (a
+      | WHERE EXISTS {
+      |   MATCH (n WHERE n.prop = a.prop)-[r]->()
+      | } AND EXISTS {
+      |   MATCH ()-[r WHERE r.prop = 1]->()
+      | }
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+    val node3 = s"`${anonVarNameGen.nextName}`"
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE EXISTS {
+         | MATCH (n)-[r]->($node1)
+         | WHERE n.prop = a.prop
+         |} AND EXISTS {
+         | MATCH ($node2)-[r]->($node3)
+         | WHERE r.prop = 1
+         |}
+         |RETURN *
+         | """.stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  test(
+    """
+      |MATCH (a
+      | WHERE COUNT {
+      |   MATCH (n WHERE n.prop = a.prop)-[r]->()
+      | } > 1 AND COUNT {
+      |   MATCH ()-[r WHERE r.prop = 1]->()
+      | } > 1
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+
+    val anonVarNameGen = new AnonymousVariableNameGenerator
+    val node1 = s"`${anonVarNameGen.nextName}`"
+    val node2 = s"`${anonVarNameGen.nextName}`"
+    val node3 = s"`${anonVarNameGen.nextName}`"
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE COUNT {
+         | MATCH (n)-[r]->($node1)
+         | WHERE n.prop = a.prop
+         |} > 1 AND COUNT {
+         | MATCH ($node2)-[r]->($node3)
+         | WHERE r.prop = 1
+         |} > 1
+         |RETURN *
+         | """.stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  test(
+    """
+      |MATCH (a
+      |  WHERE EXISTS {
+      |    MATCH (n WHERE EXISTS {
+      |      MATCH (n WHERE n.prop = 1)-[r WHERE r.prop = a.prop]->()
+      |    } XOR true)
+      |  }
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE EXISTS {
+         | MATCH (n)
+         | WHERE EXISTS {
+         |   MATCH (n)-[r]->()
+         |   WHERE n.prop = 1 AND r.prop = a.prop
+         | } XOR true
+         |}
+         |RETURN *
+         |""".stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  test(
+    """
+      |MATCH (a
+      |  WHERE COUNT {
+      |    MATCH (n WHERE COUNT {
+      |      MATCH (n WHERE n.prop = 1)-[r WHERE r.prop = a.prop]->()
+      |    } > 1 XOR true)
+      |  } > 1
+      |)
+      |RETURN *
+      |""".stripMargin
+  ) {
+
+    val rewritten =
+      s"""
+         |MATCH (a)
+         |WHERE COUNT {
+         | MATCH (n)
+         | WHERE COUNT {
+         |   MATCH (n)-[r]->()
+         |   WHERE n.prop = 1 AND r.prop = a.prop
+         | } > 1 XOR true
+         |} > 1
+         |RETURN *
+         |""".stripMargin
+
+    assertRewrite(rewritten)
+  }
+
+  // should move label expressions to correct scope for subclauses
+
   test("MATCH (a WHERE EXISTS {(:A)}) RETURN *") {
     val anonVarNameGen = new AnonymousVariableNameGenerator
     val node = s"`${anonVarNameGen.nextName}`"
