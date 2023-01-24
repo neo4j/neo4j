@@ -32,13 +32,14 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter.NoRewrites
 import org.neo4j.cypher.internal.util.UpperBound.Limited
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.ResourceMonitor
-import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode
@@ -50,6 +51,38 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int,
   cartesianProductChunkSize: Int // The size of a LHS chunk for cartesian product
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test(
+    "should profile rows of filter under limit correctly when there are downstream cardinality increasing operators"
+  ) {
+    given {
+      val a = runtimeTestSupport.tx.createNode(Label.label("A"))
+      val b1 = runtimeTestSupport.tx.createNode(Label.label("B"))
+      val b2 = runtimeTestSupport.tx.createNode(Label.label("B"))
+
+      a.createRelationshipTo(b1, RelationshipType.withName("R"))
+      a.createRelationshipTo(b2, RelationshipType.withName("R"))
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .limit(1)
+      .expandAll("(a)--(b)")
+      .filter("a: A")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // limit
+    queryProfile.operatorProfile(2).rows() should (be >= 1L and be <= 2L) // expand all
+    queryProfile.operatorProfile(3).rows() shouldBe 1 // filter
+    queryProfile.operatorProfile(4).rows() should (be >= 1L and be <= 3L) // all node scan
+  }
 
   test("should profile rows of all nodes scan + aggregation + produce results") {
     given { nodeGraph(sizeHint) }
