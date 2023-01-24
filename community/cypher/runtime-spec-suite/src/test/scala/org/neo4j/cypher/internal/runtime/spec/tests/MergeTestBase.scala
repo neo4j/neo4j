@@ -1821,7 +1821,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
     }
   }
 
-  test("merge should match nodes and relationship with undirected relationship index seek scan") {
+  test("merge should match nodes and relationship with undirected relationship index seek") {
     val rels = given {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
