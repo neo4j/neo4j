@@ -53,9 +53,9 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey> {
     }
 
     @Override
-    public ValueIndexReader newValueReader() {
+    public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
         assertOpen();
-        return new RangeIndexReader(tree, layout, descriptor);
+        return new RangeIndexReader(tree, layout, descriptor, usageTracker);
     }
 
     @Override

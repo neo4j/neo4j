@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.AbstractTextIndexReader;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -220,12 +221,14 @@ class DatabaseIndexIntegrationTest {
         }
 
         @Override
-        protected AbstractTextIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) {
+        protected AbstractTextIndexReader createSimpleReader(
+                List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) {
             return null;
         }
 
         @Override
-        protected AbstractTextIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions) {
+        protected AbstractTextIndexReader createPartitionedReader(
+                List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) {
             return null;
         }
     }

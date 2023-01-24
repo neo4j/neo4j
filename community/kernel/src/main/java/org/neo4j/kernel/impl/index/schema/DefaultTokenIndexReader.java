@@ -45,9 +45,11 @@ import org.neo4j.util.VisibleForTesting;
 public class DefaultTokenIndexReader implements TokenIndexReader {
 
     private final GBPTree<TokenScanKey, TokenScanValue> index;
+    private final IndexUsageTracker usageTracker;
 
-    public DefaultTokenIndexReader(GBPTree<TokenScanKey, TokenScanValue> index) {
+    public DefaultTokenIndexReader(GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracker usageTracker) {
         this.index = index;
+        this.usageTracker = usageTracker;
     }
 
     @Override
@@ -56,6 +58,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             IndexQueryConstraints constraints,
             TokenPredicate query,
             CursorContext cursorContext) {
+        usageTracker.queried();
         query(client, constraints, query, EntityRange.FULL, cursorContext);
     }
 
@@ -80,6 +83,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     @Override
     public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
         try {
+            usageTracker.queried();
             long highestEntityIdForToken = highestEntityIdForToken(tokenId, cursorContext);
             return new NativeTokenScan(tokenId, highestEntityIdForToken);
         } catch (IOException e) {
@@ -91,6 +95,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     public PartitionedTokenScan entityTokenScan(
             int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
         try {
+            usageTracker.queried();
             return new NativePartitionedTokenScan(desiredNumberOfPartitions, context, query);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -99,6 +104,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
 
     @Override
     public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
+        usageTracker.queried();
         return new NativePartitionedTokenScan((NativePartitionedTokenScan) leadingPartition, query);
     }
 
@@ -131,7 +137,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
 
     @Override
     public void close() {
-        // nothing
+        usageTracker.close();
     }
 
     @VisibleForTesting

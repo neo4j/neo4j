@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.TokenHolder;
@@ -63,6 +64,7 @@ public class FulltextIndexReader implements ValueIndexReader {
     private final Analyzer analyzer;
     private final String[] propertyNames;
     private final FulltextIndexTransactionState transactionState;
+    private final IndexUsageTracker usageTracker;
 
     FulltextIndexReader(
             List<SearcherReference> searchers,
@@ -70,12 +72,14 @@ public class FulltextIndexReader implements ValueIndexReader {
             IndexDescriptor descriptor,
             Config config,
             Analyzer analyzer,
-            String[] propertyNames) {
+            String[] propertyNames,
+            IndexUsageTracker usageTracker) {
         this.searchers = searchers;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.index = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
+        this.usageTracker = usageTracker;
         this.transactionState = new FulltextIndexTransactionState(descriptor, config, analyzer, propertyNames);
     }
 
@@ -111,6 +115,7 @@ public class FulltextIndexReader implements ValueIndexReader {
             }
         }
         Query query = queryBuilder.build();
+        usageTracker.queried();
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());
         IndexProgressor progressor = new FulltextIndexProgressor(itr, client, constraints);
@@ -153,9 +158,10 @@ public class FulltextIndexReader implements ValueIndexReader {
 
     @Override
     public void close() {
-        List<AutoCloseable> resources = new ArrayList<>(searchers.size() + 1);
+        List<AutoCloseable> resources = new ArrayList<>(searchers.size() + 2);
         resources.addAll(searchers);
         resources.add(transactionState);
+        resources.add(usageTracker);
         IOUtils.close(IndexReaderCloseException::new, resources);
     }
 

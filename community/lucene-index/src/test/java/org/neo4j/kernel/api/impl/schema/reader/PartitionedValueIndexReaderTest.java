@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
@@ -264,7 +265,7 @@ class PartitionedValueIndexReaderTest {
     }
 
     private PartitionedValueIndexReader createPartitionedReaderFromReaders() {
-        return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders());
+        return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders(), NO_USAGE_TRACKER);
     }
 
     private List<ValueIndexReader> getPartitionReaders() {
@@ -272,7 +273,7 @@ class PartitionedValueIndexReaderTest {
     }
 
     private PartitionedValueIndexReader createPartitionedReader() {
-        return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders());
+        return new PartitionedValueIndexReader(schemaIndexDescriptor, getPartitionReaders(), NO_USAGE_TRACKER);
     }
 
     private static class SimpleSampler implements IndexSampler {

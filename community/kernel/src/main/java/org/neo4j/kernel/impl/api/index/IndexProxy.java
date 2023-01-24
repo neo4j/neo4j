@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -122,4 +123,9 @@ public interface IndexProxy extends MinimalIndexAccessor {
     void validateBeforeCommit(Value[] tuple, long entityId);
 
     ResourceIterator<Path> snapshotFiles() throws IOException;
+
+    /**
+     * Reports usage statistics since last reported, to the {@code consumer}.
+     */
+    void reportUsageStatistics(IndexUsageStatsConsumer consumer);
 }

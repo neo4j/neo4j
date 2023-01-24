@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
 import org.neo4j.values.storable.Value;
 
 public class IndexProxyAdapter implements IndexProxy {
@@ -110,4 +111,7 @@ public class IndexProxyAdapter implements IndexProxy {
     public PopulationProgress getIndexPopulationProgress() {
         return PopulationProgress.NONE;
     }
+
+    @Override
+    public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {}
 }

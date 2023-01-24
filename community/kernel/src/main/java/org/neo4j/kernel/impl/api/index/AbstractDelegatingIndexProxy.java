@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.IncompleteConstraintValidationExce
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
 import org.neo4j.values.storable.Value;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
@@ -135,5 +136,10 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy {
     @Override
     public Map<String, Value> indexConfig() {
         return getDelegate().indexConfig();
+    }
+
+    @Override
+    public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {
+        getDelegate().reportUsageStatistics(consumer);
     }
 }

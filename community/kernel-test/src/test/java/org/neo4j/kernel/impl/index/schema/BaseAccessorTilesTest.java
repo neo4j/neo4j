@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 
 import java.util.ArrayList;
@@ -210,7 +211,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
 
         processAll(updates);
 
-        try (var indexReader = accessor.newValueReader()) {
+        try (var indexReader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
 
             var boundingBox = PropertyIndexQuery.boundingBox(
@@ -258,7 +259,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
     }
 
     void exactMatchOnAllValues(List<Value> values) throws IndexNotApplicableKernelException {
-        try (var indexReader = accessor.newValueReader()) {
+        try (var indexReader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
             for (Value value : values) {
                 PropertyIndexQuery.ExactPredicate exact =

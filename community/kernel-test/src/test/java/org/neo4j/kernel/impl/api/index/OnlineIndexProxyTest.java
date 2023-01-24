@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -45,7 +46,7 @@ class OnlineIndexProxyTest {
     @Test
     void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy(indexProxyStrategy, accessor, false);
+        OnlineIndexProxy index = new OnlineIndexProxy(indexProxyStrategy, accessor, false, NO_USAGE_TRACKING);
 
         // when
         index.drop();

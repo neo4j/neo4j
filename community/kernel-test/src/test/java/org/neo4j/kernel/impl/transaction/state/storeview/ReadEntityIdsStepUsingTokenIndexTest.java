@@ -28,6 +28,7 @@ import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -107,7 +108,9 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                             control(),
                             configuration,
                             (cursorContext, storeCursors) -> new TokenIndexScanIdIterator(
-                                    indexAccessor.newTokenReader(), new int[] {TOKEN_ID}, CursorContext.NULL_CONTEXT),
+                                    indexAccessor.newTokenReader(NO_USAGE_TRACKER),
+                                    new int[] {TOKEN_ID},
+                                    CursorContext.NULL_CONTEXT),
                             any -> StoreCursors.NULL,
                             new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                             new ControlledUpdatesCheck(indexAccessor, expectedEntityIds),

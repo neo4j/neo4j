@@ -31,6 +31,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.TOKENS;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateRandomTokens;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.generateSomeRandomUpdates;
@@ -153,7 +154,8 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
 
     @Test
     void newValueReaderShouldThrow() {
-        assertThatThrownBy(accessor::newValueReader).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> accessor.newValueReader(NO_USAGE_TRACKER))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -237,7 +239,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         addToIndex(outerTokenId, outerIds);
         addToIndex(innerTokenId, innerIds);
 
-        try (var reader = accessor.newTokenReader()) {
+        try (var reader = accessor.newTokenReader(NO_USAGE_TRACKER)) {
             assertReaderFindsExpected(
                     reader,
                     outerOrder,
@@ -271,7 +273,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         // given
         accessor.drop();
 
-        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader());
+        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader(NO_USAGE_TRACKER));
     }
 
     @Test
@@ -279,7 +281,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         // given
         accessor.close();
 
-        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader());
+        assertThrows(IllegalStateException.class, () -> accessor.newTokenReader(NO_USAGE_TRACKER));
     }
 
     @Test
@@ -430,7 +432,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private void assertReaderFindsExpected(IndexOrder indexOrder, long tokenId, LongList expectedIds) throws Exception {
-        try (var indexReader = accessor.newTokenReader()) {
+        try (var indexReader = accessor.newTokenReader(NO_USAGE_TRACKER)) {
             assertReaderFindsExpected(indexReader, indexOrder, tokenId, expectedIds, ThrowingConsumer.noop());
         }
     }

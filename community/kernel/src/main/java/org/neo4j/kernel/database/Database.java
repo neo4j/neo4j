@@ -36,6 +36,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -796,7 +797,8 @@ public class Database extends AbstractDatabase {
                 cursorContextFactory,
                 memoryTracker,
                 namedDatabaseId.name(),
-                readOnlyDatabaseChecker));
+                readOnlyDatabaseChecker,
+                clock));
     }
 
     /**
@@ -816,7 +818,8 @@ public class Database extends AbstractDatabase {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
-            DatabaseReadOnlyChecker readOnlyChecker) {
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Clock clock) {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
@@ -832,7 +835,8 @@ public class Database extends AbstractDatabase {
                 contextFactory,
                 memoryTracker,
                 databaseName,
-                readOnlyChecker);
+                readOnlyChecker,
+                clock);
         storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }

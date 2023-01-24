@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -59,7 +60,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
     public ControlledPopulationIndexProvider() {
         super(PROVIDER_DESCRIPTOR, IndexDirectoryStructure.NONE);
         setInitialIndexState(initialIndexState);
-        when(mockedWriter.newValueReader()).thenReturn(ValueIndexReader.EMPTY);
+        when(mockedWriter.newValueReader(any())).thenReturn(ValueIndexReader.EMPTY);
     }
 
     public Barrier.Control installPopulationLatch(PopulationLatchMethod method) {

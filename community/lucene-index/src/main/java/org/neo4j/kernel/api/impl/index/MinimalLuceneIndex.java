@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 /**
  * Used by {@link MinimalDatabaseIndex}
@@ -44,12 +45,12 @@ public class MinimalLuceneIndex<READER extends IndexReader> extends AbstractLuce
     }
 
     @Override
-    protected READER createSimpleReader(List<AbstractIndexPartition> partitions) {
+    protected READER createSimpleReader(List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) {
         throw new UnsupportedOperationException("Cannot create readers for index that can only be dropped.");
     }
 
     @Override
-    protected READER createPartitionedReader(List<AbstractIndexPartition> partitions) {
+    protected READER createPartitionedReader(List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) {
         throw new UnsupportedOperationException("Cannot create readers for index that can only be dropped.");
     }
 

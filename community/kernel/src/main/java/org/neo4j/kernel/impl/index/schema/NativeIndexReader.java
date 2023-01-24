@@ -48,17 +48,25 @@ import org.neo4j.values.storable.Value;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements ValueIndexReader {
     protected final IndexDescriptor descriptor;
+    private final IndexUsageTracker usageTracker;
     final IndexLayout<KEY> layout;
     final GBPTree<KEY, NullValue> tree;
 
-    NativeIndexReader(GBPTree<KEY, NullValue> tree, IndexLayout<KEY> layout, IndexDescriptor descriptor) {
+    NativeIndexReader(
+            GBPTree<KEY, NullValue> tree,
+            IndexLayout<KEY> layout,
+            IndexDescriptor descriptor,
+            IndexUsageTracker usageTracker) {
         this.tree = tree;
         this.layout = layout;
         this.descriptor = descriptor;
+        this.usageTracker = usageTracker;
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        usageTracker.close();
+    }
 
     @Override
     public IndexSampler createSampler() {
@@ -118,6 +126,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
             PropertyIndexQuery... predicates) {
         validateQuery(constraints, predicates);
         context.monitor().queried(descriptor);
+        usageTracker.queried();
 
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();
@@ -224,6 +233,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
                 throws IOException {
             Preconditions.requirePositive(desiredNumberOfPartitions);
             validateQuery(IndexQueryConstraints.unorderedValues(), query);
+            usageTracker.queried();
             this.query = query;
 
             final var fromInclusive = layout.newKey();

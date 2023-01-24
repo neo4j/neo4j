@@ -26,6 +26,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
@@ -198,7 +199,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                         Group.INDEX_POPULATION_WORK,
                         new JobMonitoringParams(Subject.AUTH_DISABLED, databaseName, "insertFrom"),
                         () -> {
-                            try (var reader = newValueReader()) {
+                            try (var reader = newValueReader(NO_USAGE_TRACKER)) {
                                 var propertyKeyIds = descriptor.schema().getPropertyIds();
                                 while (fromReader.hasNext()) {
                                     var entityId = fromReader.next();
@@ -271,7 +272,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     }
 
     @Override
-    public abstract ValueIndexReader newValueReader();
+    public abstract ValueIndexReader newValueReader(IndexUsageTracker usageTracker);
 
     @Override
     public BoundedIterable<Long> newAllEntriesValueReader(

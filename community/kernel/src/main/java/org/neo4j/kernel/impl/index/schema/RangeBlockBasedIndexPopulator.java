@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
@@ -59,7 +61,7 @@ class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey> {
 
     @Override
     NativeIndexReader<RangeKey> newReader() {
-        return new RangeIndexReader(tree, layout, descriptor);
+        return new RangeIndexReader(tree, layout, descriptor, NO_USAGE_TRACKER);
     }
 
     @Override

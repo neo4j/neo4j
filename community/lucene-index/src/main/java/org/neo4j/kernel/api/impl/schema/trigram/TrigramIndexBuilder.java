@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
-class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder> {
+public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder> {
     private final IndexDescriptor descriptor;
     private final Config config;
     private IndexSamplingConfig samplingConfig;
@@ -55,7 +55,7 @@ class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder
      * @return {@link TrigramIndexBuilder} that can be used to build trigram based Text index built on Lucene
      * @param descriptor The descriptor for this index
      */
-    static TrigramIndexBuilder create(
+    public static TrigramIndexBuilder create(
             IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config) {
         return new TrigramIndexBuilder(descriptor, readOnlyChecker, config);
     }
@@ -87,7 +87,7 @@ class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndexBuilder
      *
      * @return lucene schema index
      */
-    DatabaseIndex<ValueIndexReader> build() {
+    public DatabaseIndex<ValueIndexReader> build() {
         PartitionedIndexStorage storage = storageBuilder.build();
         var index = new TrigramIndex(
                 storage, descriptor, samplingConfig, new WritableIndexPartitionFactory(writerConfigFactory), config);

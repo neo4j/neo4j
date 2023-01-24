@@ -36,7 +36,7 @@ import org.neo4j.values.storable.ValueCategory;
 public class TestIndexDescriptorFactory {
     private TestIndexDescriptorFactory() {}
 
-    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
+    public static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
 
     public static IndexDescriptor forSchema(SchemaDescriptor schema) {
         return forSchema(IndexType.RANGE, schema);

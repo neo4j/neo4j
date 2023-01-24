@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracking.NO_USAGE_TRACKING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.function.IntPredicate;
@@ -96,7 +97,7 @@ class IndexPopulationTest {
     }
 
     private OnlineIndexProxy onlineIndexProxy() {
-        return new OnlineIndexProxy(dummyIndex(), IndexAccessor.EMPTY, false);
+        return new OnlineIndexProxy(dummyIndex(), IndexAccessor.EMPTY, false, NO_USAGE_TRACKING);
     }
 
     private FailedIndexProxy failedIndexProxy(MinimalIndexAccessor minimalIndexAccessor) {

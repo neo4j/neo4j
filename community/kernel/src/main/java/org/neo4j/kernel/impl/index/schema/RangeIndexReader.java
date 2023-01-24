@@ -36,8 +36,12 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class RangeIndexReader extends NativeIndexReader<RangeKey> {
-    RangeIndexReader(GBPTree<RangeKey, NullValue> tree, IndexLayout<RangeKey> layout, IndexDescriptor descriptor) {
-        super(tree, layout, descriptor);
+    RangeIndexReader(
+            GBPTree<RangeKey, NullValue> tree,
+            IndexLayout<RangeKey> layout,
+            IndexDescriptor descriptor,
+            IndexUsageTracker usageTracker) {
+        super(tree, layout, descriptor, usageTracker);
     }
 
     @Override

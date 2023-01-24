@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy {
     private final IndexDescriptor indexDescriptor;
@@ -81,4 +82,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy {
     public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {}
 }

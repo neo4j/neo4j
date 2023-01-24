@@ -33,12 +33,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -47,16 +49,19 @@ public abstract class AbstractTextIndexReader implements ValueIndexReader {
     protected final SearcherReference searcherReference;
     protected final IndexSamplingConfig samplingConfig;
     protected final TaskCoordinator taskCoordinator;
+    protected final IndexUsageTracker usageTracker;
 
     protected AbstractTextIndexReader(
             IndexDescriptor descriptor,
             SearcherReference searcherReference,
             IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator) {
+            TaskCoordinator taskCoordinator,
+            IndexUsageTracker usageTracker) {
         this.descriptor = descriptor;
         this.searcherReference = searcherReference;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
+        this.usageTracker = usageTracker;
     }
 
     @Override
@@ -69,6 +74,7 @@ public abstract class AbstractTextIndexReader implements ValueIndexReader {
             throws IndexNotApplicableKernelException {
         validateQuery(predicates);
         context.monitor().queried(descriptor);
+        usageTracker.queried();
 
         PropertyIndexQuery predicate = predicates[0];
         Query query = toLuceneQuery(predicate);
@@ -92,7 +98,7 @@ public abstract class AbstractTextIndexReader implements ValueIndexReader {
     @Override
     public void close() {
         try {
-            searcherReference.close();
+            IOUtils.closeAll(searcherReference, usageTracker);
         } catch (IOException e) {
             throw new IndexReaderCloseException(e);
         }

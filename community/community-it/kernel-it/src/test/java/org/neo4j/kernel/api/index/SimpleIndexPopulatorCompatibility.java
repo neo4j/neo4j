@@ -30,6 +30,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -164,7 +165,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         // THEN
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
-            try (ValueIndexReader reader = accessor.newValueReader();
+            try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
                     NodeValueIterator nodes = new NodeValueIterator()) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 reader.query(
@@ -243,7 +244,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             }
 
             // THEN
-            try (ValueIndexReader reader = accessor.newValueReader()) {
+            try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for (NodeAndValue entry : Iterables.concat(valueSet1, valueSet2)) {
                     try (NodeValueIterator nodes = new NodeValueIterator()) {
@@ -331,7 +332,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             }
 
             // THEN
-            try (ValueIndexReader reader = accessor.newValueReader()) {
+            try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for (NodeAndValue nodeAndValue : toRemove) {
                     NodeValueIterator nodes = new NodeValueIterator();
@@ -357,7 +358,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     private void assertHasAllValues(List<NodeAndValue> values) throws IOException, IndexNotApplicableKernelException {
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                 descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
-            try (ValueIndexReader reader = accessor.newValueReader()) {
+            try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for (NodeAndValue entry : values) {
                     try (NodeValueIterator nodes = new NodeValueIterator()) {
@@ -400,7 +401,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             // then
             try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
                     descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
-                try (ValueIndexReader reader = accessor.newValueReader()) {
+                try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for (NodeAndValue entry : valueSet1) {
                         try (NodeValueIterator nodes = new NodeValueIterator()) {

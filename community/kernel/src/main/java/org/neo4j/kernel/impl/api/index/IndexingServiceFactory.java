@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.time.Clock;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -56,7 +57,8 @@ public final class IndexingServiceFactory {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             String databaseName,
-            DatabaseReadOnlyChecker readOnlyChecker) {
+            DatabaseReadOnlyChecker readOnlyChecker,
+            Clock clock) {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
@@ -75,7 +77,8 @@ public final class IndexingServiceFactory {
                 providerMap,
                 tokenNameLookup,
                 internalLogProvider,
-                storageEngine.getOpenOptions());
+                storageEngine.getOpenOptions(),
+                clock);
 
         return new IndexingService(
                 storageEngine,

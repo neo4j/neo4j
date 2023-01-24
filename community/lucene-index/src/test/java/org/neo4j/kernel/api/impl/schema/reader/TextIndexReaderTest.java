@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
@@ -138,6 +139,6 @@ class TextIndexReaderTest {
 
     private TextIndexReader getNonUniqueSimpleReader() {
         IndexDescriptor index = IndexPrototype.forSchema(SCHEMA).withName("a").materialise(0);
-        return new TextIndexReader(partitionSearcher, index, samplingConfig, taskCoordinator);
+        return new TextIndexReader(partitionSearcher, index, samplingConfig, taskCoordinator, NO_USAGE_TRACKER);
     }
 }

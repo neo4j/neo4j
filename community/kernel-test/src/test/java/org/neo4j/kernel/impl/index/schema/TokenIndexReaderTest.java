@@ -28,6 +28,7 @@ import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADE
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -96,7 +97,7 @@ class TokenIndexReaderTest {
         var cacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
         var cursorContext = contextFactory.create("tracePageCache");
-        var reader = new DefaultTokenIndexReader(tree);
+        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER);
         var tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), cursorContext);
         int actualNodes = 0;
@@ -147,7 +148,7 @@ class TokenIndexReaderTest {
         long fromId = random.nextInt(highNodeId);
         int nextExpectedId = expected.nextSetBit(toIntExact(fromId));
 
-        var reader = new DefaultTokenIndexReader(tree);
+        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER);
         var tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), EntityRange.from(fromId), NULL_CONTEXT);
         while (nextExpectedId != -1) {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
@@ -117,7 +119,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
     public IndexSample sample(CursorContext cursorContext) {
         try {
             luceneIndex.maybeRefreshBlocking();
-            try (var reader = luceneIndex.getIndexReader();
+            try (var reader = luceneIndex.getIndexReader(NO_USAGE_TRACKER);
                     var sampler = reader.createSampler()) {
                 return sampler.sampleIndex(cursorContext);
             }

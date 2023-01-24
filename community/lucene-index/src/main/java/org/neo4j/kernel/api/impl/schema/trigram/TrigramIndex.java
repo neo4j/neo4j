@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
     private final IndexSamplingConfig samplingConfig;
@@ -58,18 +59,20 @@ class TrigramIndex extends AbstractLuceneIndex<ValueIndexReader> {
     }
 
     @Override
-    protected TrigramIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
+    protected TrigramIndexReader createSimpleReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         AbstractIndexPartition searcher = getFirstPartition(partitions);
-        return new TrigramIndexReader(searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator);
+        return new TrigramIndexReader(
+                searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator, usageTracker);
     }
 
     @Override
-    protected PartitionedValueIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions)
-            throws IOException {
+    protected PartitionedValueIndexReader createPartitionedReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
-                .map(partitionSearcher -> (ValueIndexReader)
-                        new TrigramIndexReader(partitionSearcher, descriptor, samplingConfig, taskCoordinator))
+                .map(partitionSearcher -> (ValueIndexReader) new TrigramIndexReader(
+                        partitionSearcher, descriptor, samplingConfig, taskCoordinator, usageTracker))
                 .toList();
-        return new PartitionedValueIndexReader(descriptor, readers);
+        return new PartitionedValueIndexReader(descriptor, readers, usageTracker);
     }
 }

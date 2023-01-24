@@ -61,7 +61,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * The store is accessible after {@link #init()} has been called.
  */
 public class IndexStatisticsStore extends LifecycleAdapter
-        implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable {
+        implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable, IndexUsageStatsConsumer {
     private static final IndexStatisticsValue EMPTY_STATISTICS = new IndexStatisticsValue();
 
     private final PageCache pageCache;
@@ -156,6 +156,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
      * - queryCount: use the sum of current and added count
      * - trackedSinceTime: use the lowest value (oldest in time) between current and added
      */
+    @Override
     public void addUsageStats(long indexId, IndexUsageStats added) {
         var newValue = new IndexStatisticsValue();
         newValue.set(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED, added.lastUsedTime());

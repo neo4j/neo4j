@@ -33,6 +33,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -174,7 +175,8 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
 
     @Test
     void tokenReaderShouldThrow() {
-        assertThatThrownBy(accessor::newTokenReader).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> accessor.newTokenReader(NO_USAGE_TRACKER))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -182,7 +184,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // given
         accessor.drop();
 
-        assertThatThrownBy(() -> accessor.newValueReader()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> accessor.newValueReader(NO_USAGE_TRACKER)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -190,13 +192,13 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // given
         accessor.close();
 
-        assertThatThrownBy(() -> accessor.newValueReader()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> accessor.newValueReader(NO_USAGE_TRACKER)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void shouldReturnZeroCountForEmptyIndex() {
         // given
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             // when
             ValueIndexEntryUpdate<IndexDescriptor> update =
                     valueCreatorUtil.randomUpdateGenerator(random).next();
@@ -218,7 +220,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
                 long count = reader.countIndexedEntities(
                         update.getEntityId(),
@@ -251,7 +253,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
             int[] propKeys = valueCreatorUtil.indexDescriptor().schema().getPropertyIds();
@@ -278,7 +280,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         final var expectedIds =
                 Stream.of(updates).mapToLong(ValueIndexEntryUpdate::getEntityId).toArray();
         // when
-        try (var reader = accessor.newValueReader();
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER);
                 var result = query(reader, PropertyIndexQuery.allEntries())) {
             // then
             assertEntityIdHits(expectedIds, result);
@@ -292,7 +294,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
         for (ValueIndexEntryUpdate<IndexDescriptor> update : updates) {
             Value value = update.values()[0];
             try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
@@ -308,7 +310,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
         Object value = generateUniqueValue(updates);
         try (NodeValueIterator result = query(reader, PropertyIndexQuery.exact(0, value))) {
             assertEntityIdHits(EMPTY_LONG_ARRAY, result);
@@ -365,7 +367,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         // given
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll(updates);
-        try (var reader = accessor.newValueReader();
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER);
                 IndexSampler sampler = reader.createSampler()) {
             // when
             IndexSample sample = sampler.sampleIndex(NULL_CONTEXT);

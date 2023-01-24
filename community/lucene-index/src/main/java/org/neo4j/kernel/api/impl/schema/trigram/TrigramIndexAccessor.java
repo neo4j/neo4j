@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema.trigram;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.apache.lucene.document.Document;
@@ -35,10 +37,11 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.Value;
 
-class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
+public class TrigramIndexAccessor
+        extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
     private final IndexValueValidator validator;
 
-    TrigramIndexAccessor(
+    public TrigramIndexAccessor(
             DatabaseIndex<ValueIndexReader> luceneIndex,
             IndexDescriptor descriptor,
             IndexUpdateIgnoreStrategy ignoreStrategy,
@@ -56,7 +59,7 @@ class TrigramIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,
     public BoundedIterable<Long> newAllEntriesValueReader(
             long fromIdInclusive, long toIdExclusive, CursorContext cursorContext) {
         try {
-            return ((TrigramIndexReader) luceneIndex.getIndexReader())
+            return ((TrigramIndexReader) luceneIndex.getIndexReader(NO_USAGE_TRACKER))
                     .newAllEntriesValueReader(fromIdInclusive, toIdExclusive);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.values.storable.Value;
 
 public class TextIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader, DatabaseIndex<ValueIndexReader>> {
-
     private final LuceneIndexValueValidator valueValidator;
 
     public TextIndexAccessor(

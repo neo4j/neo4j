@@ -28,6 +28,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValue
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
 import java.util.Arrays;
@@ -93,7 +94,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 1, 1),
                 Values.pointValue(CoordinateReferenceSystem.CARTESIAN, 2, 2));
 
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             assertThatThrownBy(() -> reader.query(
                             new SimpleEntityValueClient(),
                             NULL_CONTEXT,
@@ -112,7 +113,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
         PropertyIndexQuery.StringSuffixPredicate suffixPredicate =
                 PropertyIndexQuery.stringSuffix(0, Values.stringValue("myValue"));
 
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             assertThatThrownBy(() -> reader.query(
                             new SimpleEntityValueClient(),
                             NULL_CONTEXT,
@@ -131,7 +132,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
         PropertyIndexQuery.StringContainsPredicate containsPredicate =
                 PropertyIndexQuery.stringContains(0, Values.stringValue("myValue"));
 
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             assertThatThrownBy(() -> reader.query(
                             new SimpleEntityValueClient(),
                             NULL_CONTEXT,
@@ -161,7 +162,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
         Value[] allValues = ValueCreatorUtil.extractValuesFromUpdates(someUpdates);
 
         // when
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             final PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists(0);
 
             expectIndexOrder(allValues, reader, IndexOrder.ASCENDING, exists);

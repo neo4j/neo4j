@@ -33,12 +33,15 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.api.index.stats.IndexUsageStatsConsumer;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy {
     private final IndexProxyStrategy indexProxyStrategy;
     final IndexAccessor accessor;
+    private final IndexUsageTracking usageTracking;
     private boolean started;
 
     // About this flag: there are two online "modes", you might say...
@@ -67,7 +70,12 @@ public class OnlineIndexProxy implements IndexProxy {
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy(IndexProxyStrategy indexProxyStrategy, IndexAccessor accessor, boolean forcedIdempotentMode) {
+    OnlineIndexProxy(
+            IndexProxyStrategy indexProxyStrategy,
+            IndexAccessor accessor,
+            boolean forcedIdempotentMode,
+            IndexUsageTracking usageTracking) {
+        this.usageTracking = usageTracking;
         assert accessor != null;
         this.indexProxyStrategy = indexProxyStrategy;
         this.accessor = accessor;
@@ -135,12 +143,12 @@ public class OnlineIndexProxy implements IndexProxy {
 
     @Override
     public ValueIndexReader newValueReader() {
-        return accessor.newValueReader();
+        return accessor.newValueReader(usageTracking.track());
     }
 
     @Override
     public TokenIndexReader newTokenReader() {
-        return accessor.newTokenReader();
+        return accessor.newTokenReader(usageTracking.track());
     }
 
     @Override
@@ -192,5 +200,10 @@ public class OnlineIndexProxy implements IndexProxy {
     @VisibleForTesting
     public IndexAccessor accessor() {
         return accessor;
+    }
+
+    @Override
+    public void reportUsageStatistics(IndexUsageStatsConsumer consumer) {
+        consumer.addUsageStats(getDescriptor().getId(), usageTracking.getAndReset());
     }
 }

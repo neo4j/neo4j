@@ -83,11 +83,14 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -108,9 +111,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
     private static final String INIT_TAG = "Initialize IndexingService";
     private static final String START_TAG = "Start index population";
+    static final int USAGE_REPORT_FREQUENCY_SECONDS = 10;
 
     private final IndexSamplingController samplingController;
-    private final ReadableStorageEngine storageEngine;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
@@ -131,6 +134,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexPopulationJobController populationJobController;
     private final IndexStoreView storeView;
     private final StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
+
+    private volatile JobHandle<?> usageReportJob;
 
     enum State {
         NOT_STARTED,
@@ -160,7 +165,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
             Config config) {
-        this.storageEngine = storageEngine;
         this.storageEngineIndexingBehaviour = storageEngine.indexingBehaviour();
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -181,8 +185,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
         this.openOptions = storageEngine.getOpenOptions();
-        this.storeView =
-                indexStoreViewFactory.createTokenIndexStoreView(descriptor -> indexMapRef.getIndexProxy(descriptor));
+        this.storeView = indexStoreViewFactory.createTokenIndexStoreView(indexMapRef::getIndexProxy);
     }
 
     /**
@@ -312,6 +315,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             awaitOnlineAfterRecovery(proxy);
         });
 
+        this.usageReportJob = jobScheduler.scheduleRecurring(
+                Group.STORAGE_MAINTENANCE,
+                this::reportUsageStatistics,
+                USAGE_REPORT_FREQUENCY_SECONDS,
+                USAGE_REPORT_FREQUENCY_SECONDS,
+                TimeUnit.SECONDS);
+
         state = State.RUNNING;
     }
 
@@ -363,7 +373,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     /**
      * Polls the {@link IndexProxy#getState() state of the index} and waits for it to be either {@link InternalIndexState#ONLINE},
      * in which case the wait is over, or {@link InternalIndexState#FAILED}, in which an exception is logged.
-     *
+     * <p>
      * This method is only called during startup, and might be called as part of recovery. If we threw an exception here, it could
      * render the database unrecoverable. That's why we only log a message about failed indexes.
      */
@@ -403,6 +413,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // races between checkpoint flush and index jobs
     @Override
     public void stop() throws Exception {
+        usageReportJob.cancel();
         samplingController.stop();
         populationJobController.stop();
     }
@@ -511,7 +522,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     /**
      * Creates one or more indexes. They will all be populated by one and the same store scan.
-     *
+     * <p>
      * This code is called from the transaction infrastructure during transaction commits, which means that
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
@@ -725,6 +736,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
         internalLog.info(format(
                 "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState));
+    }
+
+    @VisibleForTesting
+    public void reportUsageStatistics() {
+        indexMapRef.getAllIndexProxies().forEach(p -> p.reportUsageStatistics(indexStatisticsStore));
     }
 
     private final class IndexPopulationStarter implements UnaryOperator<IndexMap> {

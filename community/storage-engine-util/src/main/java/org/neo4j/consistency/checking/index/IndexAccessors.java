@@ -19,6 +19,8 @@
  */
 package org.neo4j.consistency.checking.index;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -205,7 +207,7 @@ public class IndexAccessors implements Closeable {
             long indexId = index.getId();
             var reader = readers.get(indexId);
             if (reader == null) {
-                reader = propertyIndexAccessors.get(indexId).newValueReader();
+                reader = propertyIndexAccessors.get(indexId).newValueReader(NO_USAGE_TRACKER);
                 readers.put(indexId, reader);
             }
             return reader;

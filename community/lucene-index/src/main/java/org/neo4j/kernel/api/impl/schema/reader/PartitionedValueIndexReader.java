@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.values.storable.Value;
 
@@ -45,10 +47,13 @@ import org.neo4j.values.storable.Value;
 public class PartitionedValueIndexReader implements ValueIndexReader {
     private final IndexDescriptor descriptor;
     private final List<ValueIndexReader> indexReaders;
+    private final IndexUsageTracker usageTracker;
 
-    public PartitionedValueIndexReader(IndexDescriptor descriptor, List<ValueIndexReader> readers) {
+    public PartitionedValueIndexReader(
+            IndexDescriptor descriptor, List<ValueIndexReader> readers, IndexUsageTracker usageTracker) {
         this.descriptor = descriptor;
         this.indexReaders = readers;
+        this.usageTracker = usageTracker;
     }
 
     @Override
@@ -69,6 +74,7 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
                     throw new InnerException(e);
                 }
             });
+            usageTracker.queried();
             boolean needStoreFilter = bridgingIndexProgressor.needStoreFilter();
             client.initialize(
                     descriptor, bridgingIndexProgressor, accessMode, false, needStoreFilter, constraints, query);
@@ -114,7 +120,10 @@ public class PartitionedValueIndexReader implements ValueIndexReader {
     @Override
     public void close() {
         try {
-            IOUtils.closeAll(indexReaders);
+            List<AutoCloseable> resources = new ArrayList<>();
+            resources.addAll(indexReaders);
+            resources.add(usageTracker);
+            IOUtils.closeAll(resources);
         } catch (IOException e) {
             throw new IndexReaderCloseException(e);
         }

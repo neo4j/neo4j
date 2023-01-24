@@ -26,6 +26,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.nio.file.Path;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -93,7 +94,7 @@ class TextIndexPopulationIT {
                 // now index is online and should contain updates data
                 assertTrue(index.isOnline());
 
-                try (var indexReader = indexAccessor.newValueReader();
+                try (var indexReader = indexAccessor.newValueReader(NO_USAGE_TRACKER);
                         NodeValueIterator results = new NodeValueIterator();
                         IndexSampler indexSampler = indexReader.createSampler()) {
                     indexReader.query(

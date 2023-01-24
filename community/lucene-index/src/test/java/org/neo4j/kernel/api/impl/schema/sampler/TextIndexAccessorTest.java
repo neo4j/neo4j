@@ -40,6 +40,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.test.extension.Threading.waitingWhileIn;
 
 import java.io.IOException;
@@ -150,7 +151,7 @@ public class TextIndexAccessorTest {
         init(index, accessorFactory);
         // GIVEN
         updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // WHEN
         Set<Long> results = resultSet(reader, allEntries());
@@ -166,7 +167,7 @@ public class TextIndexAccessorTest {
             throws Exception {
         init(index, accessorFactory);
         // GIVEN
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             // WHEN
             var query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
@@ -182,7 +183,7 @@ public class TextIndexAccessorTest {
         init(index, accessorFactory);
         // GIVEN
         updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // WHEN
         Set<Long> results = resultSet(reader, exact(PROP_ID, value));
@@ -199,7 +200,7 @@ public class TextIndexAccessorTest {
         init(index, accessorFactory);
 
         // GIVEN
-        try (var reader = accessor.newValueReader()) {
+        try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             // WHEN
             var query = exists(PROP_ID);
             assertThatThrownBy(() -> resultsArray(reader, query))
@@ -216,7 +217,7 @@ public class TextIndexAccessorTest {
 
         updateAndCommit(asList(add(1, "1"), add(2, "2"), add(3, "3"), add(4, "4"), add(5, "Double.NaN")));
 
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
         var query = range(PROP_ID, 2, true, 3, true);
         assertThatThrownBy(() -> resultsArray(reader, query))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -231,7 +232,7 @@ public class TextIndexAccessorTest {
 
         // GIVEN
         updateAndCommit(singletonList(add(nodeId, value)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // WHEN
         updateAndCommit(singletonList(remove(nodeId, value)));
@@ -249,9 +250,9 @@ public class TextIndexAccessorTest {
 
         // WHEN
         updateAndCommit(singletonList(add(nodeId, value)));
-        var firstReader = accessor.newValueReader();
+        var firstReader = accessor.newValueReader(NO_USAGE_TRACKER);
         updateAndCommit(singletonList(add(nodeId2, value2)));
-        var secondReader = accessor.newValueReader();
+        var secondReader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // THEN
         assertEquals(asSet(nodeId), resultSet(firstReader, exact(PROP_ID, value)));
@@ -270,7 +271,7 @@ public class TextIndexAccessorTest {
 
         // WHEN
         updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // THEN
         assertEquals(asSet(nodeId), resultSet(reader, exact(PROP_ID, value)));
@@ -288,7 +289,7 @@ public class TextIndexAccessorTest {
 
         // WHEN
         updateAndCommit(singletonList(change(nodeId, value, value2)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // THEN
         assertEquals(asSet(nodeId), resultSet(reader, exact(PROP_ID, value2)));
@@ -307,7 +308,7 @@ public class TextIndexAccessorTest {
 
         // WHEN
         updateAndCommit(singletonList(remove(nodeId, value)));
-        var reader = accessor.newValueReader();
+        var reader = accessor.newValueReader(NO_USAGE_TRACKER);
 
         // THEN
         assertEquals(asSet(nodeId2), resultSet(reader, exact(PROP_ID, value2)));
@@ -325,7 +326,7 @@ public class TextIndexAccessorTest {
         updateAndCommit(asList(add(nodeId, value), add(nodeId2, value2)));
 
         // when
-        var indexReader = accessor.newValueReader();
+        var indexReader = accessor.newValueReader(NO_USAGE_TRACKER);
         BinaryLatch dropLatch = new BinaryLatch();
         BinaryLatch sampleLatch = new BinaryLatch();
 

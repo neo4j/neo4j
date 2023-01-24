@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
+
 import java.io.IOException;
 import java.util.List;
 import org.neo4j.configuration.Config;
@@ -31,6 +33,7 @@ import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.impl.schema.reader.TextIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 /**
  * Implementation of Lucene text index that support multiple partitions.
@@ -63,18 +66,20 @@ class TextIndex extends AbstractLuceneIndex<ValueIndexReader> {
     }
 
     @Override
-    protected TextIndexReader createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException {
+    protected TextIndexReader createSimpleReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         AbstractIndexPartition searcher = getFirstPartition(partitions);
-        return new TextIndexReader(searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator);
+        return new TextIndexReader(
+                searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator, usageTracker);
     }
 
     @Override
-    protected PartitionedValueIndexReader createPartitionedReader(List<AbstractIndexPartition> partitions)
-            throws IOException {
+    protected PartitionedValueIndexReader createPartitionedReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException {
         List<ValueIndexReader> readers = acquireSearchers(partitions).stream()
-                .map(partitionSearcher -> (ValueIndexReader)
-                        new TextIndexReader(partitionSearcher, descriptor, samplingConfig, taskCoordinator))
+                .map(partitionSearcher -> (ValueIndexReader) new TextIndexReader(
+                        partitionSearcher, descriptor, samplingConfig, taskCoordinator, NO_USAGE_TRACKER))
                 .toList();
-        return new PartitionedValueIndexReader(descriptor, readers);
+        return new PartitionedValueIndexReader(descriptor, readers, usageTracker);
     }
 }

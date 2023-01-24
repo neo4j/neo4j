@@ -23,6 +23,7 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.time.Clock;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.DefaultIndexUsageTracking;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -46,6 +48,7 @@ class IndexProxyCreator {
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
     private final ImmutableSet<OpenOption> openOptions;
+    private final Clock clock;
 
     IndexProxyCreator(
             IndexSamplingConfig samplingConfig,
@@ -53,13 +56,15 @@ class IndexProxyCreator {
             IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            Clock clock) {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.providerMap = providerMap;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
         this.openOptions = openOptions;
+        this.clock = clock;
     }
 
     IndexProxy createPopulatingIndexProxy(
@@ -82,8 +87,9 @@ class IndexProxyCreator {
         // Prepare for flipping to online mode
         flipper.setFlipTarget(() -> {
             monitor.populationCompleteOn(index);
+            var usageTracking = new DefaultIndexUsageTracking(clock);
             IndexAccessor accessor = onlineAccessorFromProvider(index, samplingConfig);
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(indexProxyStrategy, accessor, true);
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy(indexProxyStrategy, accessor, true, usageTracking);
             if (flipToTentative) {
                 // This TentativeConstraintIndexProxy will exist between flipping the index to online and the constraint
                 // transaction
@@ -108,9 +114,10 @@ class IndexProxyCreator {
 
     IndexProxy createOnlineIndexProxy(IndexDescriptor descriptor) {
         try {
+            var usageTracking = new DefaultIndexUsageTracking(clock);
             IndexAccessor onlineAccessor = onlineAccessorFromProvider(descriptor, samplingConfig);
             IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
-            IndexProxy proxy = new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false);
+            IndexProxy proxy = new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false, usageTracking);
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy(proxy);
         } catch (IOException | RuntimeException e) {

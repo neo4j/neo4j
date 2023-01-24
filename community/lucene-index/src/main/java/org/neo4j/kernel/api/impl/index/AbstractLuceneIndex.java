@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 
 /**
  * Abstract implementation of a partitioned index.
@@ -176,10 +177,12 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
         return new PartitionedIndexWriter(writableDatabaseIndex, config);
     }
 
-    public READER getIndexReader() throws IOException {
+    public READER getIndexReader(IndexUsageTracker usageTracker) throws IOException {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
-        return hasSinglePartition(partitions) ? createSimpleReader(partitions) : createPartitionedReader(partitions);
+        return hasSinglePartition(partitions)
+                ? createSimpleReader(partitions, usageTracker)
+                : createPartitionedReader(partitions, usageTracker);
     }
 
     public IndexDescriptor getDescriptor() {
@@ -393,9 +396,11 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader> {
         indexStorage.storeIndexFailure(failure);
     }
 
-    protected abstract READER createSimpleReader(List<AbstractIndexPartition> partitions) throws IOException;
+    protected abstract READER createSimpleReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException;
 
-    protected abstract READER createPartitionedReader(List<AbstractIndexPartition> partitions) throws IOException;
+    protected abstract READER createPartitionedReader(
+            List<AbstractIndexPartition> partitions, IndexUsageTracker usageTracker) throws IOException;
 
     /**
      * Allows the visitor to access the underlying directories that makes up this index.

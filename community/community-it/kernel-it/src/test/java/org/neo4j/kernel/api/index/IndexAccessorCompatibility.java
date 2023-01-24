@@ -25,6 +25,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
@@ -121,7 +122,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     }
 
     protected List<Long> queryNoSort(PropertyIndexQuery... predicates) throws Exception {
-        try (ValueIndexReader reader = accessor.newValueReader()) {
+        try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
             reader.query(
                     nodeValueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), predicates);
@@ -138,7 +139,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
 
     protected AutoCloseable query(SimpleEntityValueClient client, IndexOrder order, PropertyIndexQuery... predicates)
             throws Exception {
-        ValueIndexReader reader = accessor.newValueReader();
+        ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
         reader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, constrained(order, false), predicates);
         return reader;
     }

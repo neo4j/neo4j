@@ -103,15 +103,22 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -126,17 +133,25 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexUsageStats;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracker;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
+import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
+import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
+import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.scheduler.GroupedDaemonThreadFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
@@ -149,10 +164,15 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.FakeClockJobScheduler;
 import org.neo4j.test.InMemoryTokens;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.FakeClock;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -172,6 +192,10 @@ class IndexingServiceTest {
     private final IndexPrototype uniqueIndex = uniqueForSchema(forLabel(labelId, uniquePropertyKeyId))
             .withIndexProvider(PROVIDER_DESCRIPTOR)
             .withName("constraint");
+    private final IndexDescriptor tokenIndex = forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+            .withIndexProvider(PROVIDER_DESCRIPTOR)
+            .withName("tokenIndex")
+            .materialise(21);
     private final IndexPopulator populator = mock(IndexPopulator.class);
     private final IndexUpdater updater = mock(IndexUpdater.class);
     private final IndexProvider indexProvider = mock(IndexProvider.class);
@@ -183,6 +207,7 @@ class IndexingServiceTest {
     private final IndexStatisticsStore indexStatisticsStore = mock(IndexStatisticsStore.class);
     private final JobScheduler scheduler = JobSchedulerFactory.createScheduler();
     private final StorageEngine storageEngine = mock(StorageEngine.class);
+    private final FakeClock clock = Clocks.fakeClock();
 
     @BeforeEach
     void setUp() throws IndexNotFoundKernelException {
@@ -193,7 +218,7 @@ class IndexingServiceTest {
         IndexSampler indexSampler = mock(IndexSampler.class);
         when(indexSampler.sampleIndex(any())).thenReturn(new IndexSample());
         when(indexReader.createSampler()).thenReturn(indexSampler);
-        when(accessor.newValueReader()).thenReturn(indexReader);
+        when(accessor.newValueReader(any())).thenReturn(indexReader);
         when(storageEngine.getOpenOptions()).thenReturn(immutable.empty());
     }
 
@@ -337,7 +362,7 @@ class IndexingServiceTest {
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
         ValueIndexReader indexReader = mock(ValueIndexReader.class);
-        when(accessor.newValueReader()).thenReturn(indexReader);
+        when(accessor.newValueReader(any())).thenReturn(indexReader);
         doAnswer(new NodeIdsIndexReaderQueryAnswer(index)).when(indexReader).query(any(), any(), any(), any(), any());
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies(populator, accessor, withData());
@@ -412,7 +437,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable()));
+                writable(),
+                Clocks.nanoClock()));
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -461,7 +487,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable());
+                writable(),
+                Clocks.nanoClock());
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -601,7 +628,7 @@ class IndexingServiceTest {
         IndexPrototype prototype =
                 forSchema(forLabel(0, 1)).withIndexProvider(PROVIDER_DESCRIPTOR).withName("index");
         IndexDescriptor index = prototype.materialise(indexId);
-        when(accessor.newValueReader()).thenReturn(ValueIndexReader.EMPTY);
+        when(accessor.newValueReader(any())).thenReturn(ValueIndexReader.EMPTY);
         IndexingService indexingService =
                 newIndexingServiceWithMockedDependencies(populator, accessor, withData(), index);
         life.init();
@@ -1099,7 +1126,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable()));
+                writable(),
+                Clocks.nanoClock()));
 
         nameLookup.propertyKey(1, "prop");
 
@@ -1155,7 +1183,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable());
+                writable(),
+                Clocks.nanoClock());
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample(100, 32, 32));
         nameLookup.propertyKey(1, "prop");
 
@@ -1242,7 +1271,7 @@ class IndexingServiceTest {
 
         IndexAccessor accessor = mock(IndexAccessor.class);
         IndexUpdater updater = mock(IndexUpdater.class);
-        when(accessor.newValueReader()).thenReturn(ValueIndexReader.EMPTY);
+        when(accessor.newValueReader(any())).thenReturn(ValueIndexReader.EMPTY);
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
         when(indexProvider.getOnlineAccessor(
@@ -1470,7 +1499,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable()));
+                writable(),
+                Clocks.nanoClock()));
 
         // when
         life.init();
@@ -1488,6 +1518,89 @@ class IndexingServiceTest {
         // then
         assertThat(populationStarted.get()).isTrue();
         assertThat(populationCompleted.get()).isTrue();
+    }
+
+    @Test
+    void shouldGetUsageStatisticsFromOnlineValueIndexReader() throws Exception {
+        // given
+        when(accessor.newValueReader(any()))
+                .thenAnswer(invocationOnMock -> new UsageReportingIndexReader(invocationOnMock.getArgument(0)));
+        var indexingService = newIndexingServiceWithMockedDependencies(populator, accessor, withData());
+        life.start();
+        clock.forward(10, SECONDS);
+        var creationTimeMillis = clock.millis();
+        indexingService.createIndexes(AUTH_DISABLED, index);
+        waitForIndexesToComeOnline(indexingService, index);
+
+        // when
+        var proxy = indexingService.getIndexProxy(index);
+        clock.forward(1, SECONDS);
+        var readerTimeMillis = clock.millis();
+        try (var reader = proxy.newValueReader()) {
+            reader.query(
+                    new SimpleEntityValueClient(),
+                    QueryContext.NULL_CONTEXT,
+                    AccessMode.Static.FULL,
+                    IndexQueryConstraints.unconstrained(),
+                    PropertyIndexQuery.allEntries());
+        }
+        indexingService.reportUsageStatistics();
+        var statsCaptor = ArgumentCaptor.forClass(IndexUsageStats.class);
+        verify(indexStatisticsStore).addUsageStats(eq(index.getId()), statsCaptor.capture());
+        assertThat(statsCaptor.getValue().trackedSinceTime()).isEqualTo(creationTimeMillis);
+        assertThat(statsCaptor.getValue().queryCount()).isEqualTo(1);
+        assertThat(statsCaptor.getValue().lastUsedTime()).isEqualTo(readerTimeMillis);
+    }
+
+    @Test
+    void shouldGetUsageStatisticsFromOnlineTokenIndexReader() throws Exception {
+        // given
+        when(accessor.newTokenReader(any()))
+                .thenAnswer(invocationOnMock -> new UsageReportingIndexReader(invocationOnMock.getArgument(0)));
+        var indexingService = newIndexingServiceWithMockedDependencies(populator, accessor, withData());
+        life.start();
+        clock.forward(10, SECONDS);
+        var creationTimeMillis = clock.millis();
+        indexingService.createIndexes(AUTH_DISABLED, tokenIndex);
+        waitForIndexesToComeOnline(indexingService, tokenIndex);
+
+        // when
+        var proxy = indexingService.getIndexProxy(tokenIndex);
+        clock.forward(1, SECONDS);
+        var readerTimeMillis = clock.millis();
+        try (var reader = proxy.newTokenReader()) {
+            reader.query(
+                    new SimpleEntityTokenClient(),
+                    IndexQueryConstraints.unconstrained(),
+                    new TokenPredicate(0),
+                    NULL_CONTEXT);
+        }
+        indexingService.reportUsageStatistics();
+        var statsCaptor = ArgumentCaptor.forClass(IndexUsageStats.class);
+        verify(indexStatisticsStore).addUsageStats(eq(tokenIndex.getId()), statsCaptor.capture());
+        assertThat(statsCaptor.getValue().trackedSinceTime()).isEqualTo(creationTimeMillis);
+        assertThat(statsCaptor.getValue().queryCount()).isEqualTo(1);
+        assertThat(statsCaptor.getValue().lastUsedTime()).isEqualTo(readerTimeMillis);
+    }
+
+    @Test
+    void shouldScheduleAndRunIndexUsageReportingInTheBackground() throws Exception {
+        // given
+        var fakeClockScheduler = new FakeClockJobScheduler();
+        var indexingService = newIndexingServiceWithMockedDependencies(
+                populator, accessor, withData(), IndexMonitor.NO_MONITOR, fakeClockScheduler);
+        life.start();
+        indexingService.createIndexes(AUTH_DISABLED, index, tokenIndex);
+        waitForIndexesToComeOnline(indexingService, tokenIndex);
+        verify(indexStatisticsStore, times(0)).addUsageStats(eq(index.getId()), any());
+        verify(indexStatisticsStore, times(0)).addUsageStats(eq(tokenIndex.getId()), any());
+
+        // when
+        fakeClockScheduler.forward(IndexingService.USAGE_REPORT_FREQUENCY_SECONDS + 1, SECONDS);
+
+        // then
+        verify(indexStatisticsStore, times(1)).addUsageStats(eq(index.getId()), any());
+        verify(indexStatisticsStore, times(1)).addUsageStats(eq(tokenIndex.getId()), any());
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation() {
@@ -1580,6 +1693,17 @@ class IndexingServiceTest {
             IndexMonitor monitor,
             IndexDescriptor... rules)
             throws IOException {
+        return newIndexingServiceWithMockedDependencies(populator, accessor, data, monitor, life.add(scheduler), rules);
+    }
+
+    private IndexingService newIndexingServiceWithMockedDependencies(
+            IndexPopulator populator,
+            IndexAccessor accessor,
+            DataUpdates data,
+            IndexMonitor monitor,
+            JobScheduler scheduler,
+            IndexDescriptor... rules)
+            throws IOException {
         when(indexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
                 .thenReturn(ONLINE);
         when(indexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
@@ -1603,7 +1727,7 @@ class IndexingServiceTest {
         return life.add(IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 Config.defaults(),
-                life.add(scheduler),
+                scheduler,
                 providerMap,
                 storeViewFactory,
                 nameLookup,
@@ -1615,7 +1739,8 @@ class IndexingServiceTest {
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",
-                writable()));
+                writable(),
+                clock));
     }
 
     private static DataUpdates withData(Update... updates) {
@@ -1704,7 +1829,7 @@ class IndexingServiceTest {
         }
 
         @Override
-        public ValueIndexReader newValueReader() {
+        public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
             throw new UnsupportedOperationException("Not required");
         }
 
@@ -1797,6 +1922,82 @@ class IndexingServiceTest {
             this.labels = labels;
             this.propertyId = propertyId;
             this.propertyValue = propertyValue;
+        }
+    }
+
+    private static class UsageReportingIndexReader implements ValueIndexReader, TokenIndexReader {
+        private final IndexUsageTracker tracker;
+
+        UsageReportingIndexReader(IndexUsageTracker tracker) {
+            this.tracker = tracker;
+        }
+
+        @Override
+        public long countIndexedEntities(
+                long entityId, CursorContext cursorContext, int[] propertyKeyIds, Value... propertyValues) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public IndexSampler createSampler() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void query(
+                IndexProgressor.EntityValueClient client,
+                QueryContext context,
+                AccessMode accessMode,
+                IndexQueryConstraints constraints,
+                PropertyIndexQuery... query)
+                throws IndexNotApplicableKernelException {
+            tracker.queried();
+        }
+
+        @Override
+        public PartitionedValueSeek valueSeek(
+                int desiredNumberOfPartitions, QueryContext queryContext, PropertyIndexQuery... query) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void close() {
+            tracker.close();
+        }
+
+        @Override
+        public void query(
+                IndexProgressor.EntityTokenClient client,
+                IndexQueryConstraints constraints,
+                TokenPredicate query,
+                CursorContext cursorContext) {
+            tracker.queried();
+        }
+
+        @Override
+        public void query(
+                IndexProgressor.EntityTokenClient client,
+                IndexQueryConstraints constraints,
+                TokenPredicate query,
+                EntityRange range,
+                CursorContext cursorContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TokenScan entityTokenScan(int tokenId, CursorContext cursorContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public PartitionedTokenScan entityTokenScan(
+                int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
+            throw new UnsupportedOperationException();
         }
     }
 }

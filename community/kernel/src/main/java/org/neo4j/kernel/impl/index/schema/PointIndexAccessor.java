@@ -53,9 +53,9 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey> {
     }
 
     @Override
-    public ValueIndexReader newValueReader() {
+    public ValueIndexReader newValueReader(IndexUsageTracker usageTracker) {
         assertOpen();
-        return new PointIndexReader(tree, layout, descriptor, spaceFillingCurveSettings, configuration);
+        return new PointIndexReader(tree, layout, descriptor, spaceFillingCurveSettings, configuration, usageTracker);
     }
 
     @Override
