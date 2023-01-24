@@ -207,16 +207,6 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public TransactionIdStore readOnlyTransactionIdStore(LogTailMetadata logTailMetadata) throws IOException {
-        return delegate.readOnlyTransactionIdStore(logTailMetadata);
-    }
-
-    @Override
-    public LogVersionRepository readOnlyLogVersionRepository(LogTailMetadata logTailMetadata) {
-        return delegate.readOnlyLogVersionRepository(logTailMetadata);
-    }
-
-    @Override
     public MetadataProvider transactionMetaDataStore(
             FileSystemAbstraction fs,
             DatabaseLayout databaseLayout,
