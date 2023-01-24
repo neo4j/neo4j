@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,9 +43,13 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.CommandTestUtils;
 import org.neo4j.cli.ContextInjectingFactory;
+import org.neo4j.configuration.BootloaderSettings;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -345,6 +350,39 @@ class DiagnosticsReportCommandIT {
         // Default should be empty
         Path reports = testDirectory.homePath().resolve("reports");
         assertThat(fs.fileExists(reports)).isEqualTo(false);
+    }
+
+    @Test
+    void shouldNotListProfileCommand() {
+        String[] args = {"--list"};
+
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
+            diagnosticsReportCommand.execute();
+
+            assertThat(ctx.outAsString()).doesNotContain("profile");
+        });
+    }
+
+    @Test
+    void shouldRunProfileAsASubCommand() throws IOException {
+        Path pidFile =
+                Config.defaults(GraphDatabaseSettings.neo4j_home, homeDir).get(BootloaderSettings.pid_file);
+        fs.mkdirs(pidFile.getParent());
+        FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
+
+        Path output = homeDir.resolve("profile");
+        String[] args = {"profile", output.toString(), "3s"};
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            CommandLine commandLine =
+                    new CommandLine(new DiagnosticsReportCommand(ctx), new ContextInjectingFactory(ctx));
+            commandLine.execute(args);
+            assertThat(ctx.outAsString()).contains("jfr/ [1 file]").contains("threads");
+        });
+        assertThat(fs.listFiles(
+                        output.resolve("jfr"),
+                        path -> path.getFileName().toString().endsWith(".jfr")))
+                .hasSize(1);
     }
 
     private DiagnosticsReportCommand populateCommand(CommandTestUtils.CapturingExecutionContext ctx, String... args) {
