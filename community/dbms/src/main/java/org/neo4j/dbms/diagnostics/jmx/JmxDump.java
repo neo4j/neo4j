@@ -58,6 +58,7 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 public class JmxDump {
     private final MBeanServerConnection mBeanServer;
     private Properties systemProperties;
+    public static String THREAD_DUMP_FAILURE = "ERROR: Unable to produce any thread dump";
 
     private JmxDump(MBeanServerConnection mBeanServer) {
         this.mBeanServer = mBeanServer;
@@ -115,7 +116,7 @@ public class JmxDump {
         try {
             threadMxBean = ManagementFactory.getPlatformMXBean(mBeanServer, ThreadMXBean.class);
         } catch (IOException e) {
-            return "ERROR: Unable to produce any thread dump";
+            return THREAD_DUMP_FAILURE;
         }
 
         return DumpUtils.threadDump(threadMxBean, systemProperties);
@@ -196,10 +197,6 @@ public class JmxDump {
     }
 
     public static class JfrProfileConnection {
-
-        /**
-         * See <a href="https://docs.oracle.com/en/java/javase/17/docs/api/jdk.management.jfr/jdk/management/jfr/FlightRecorderMXBean.html">...</a>
-         */
         private final FlightRecorderMXBean bean;
         private final Map<String, String> settings;
         private boolean hasRecording;
@@ -249,10 +246,15 @@ public class JmxDump {
 
         public boolean isRunning() {
             if (hasRecording) {
-                // Valid return values are "NEW", "DELAYED", "STARTING", "RUNNING", "STOPPING", "STOPPED" and "CLOSED".
-                return bean.getRecordings().stream()
-                        .anyMatch(info ->
-                                info.getId() == recordingId && info.getState().equals("RUNNING"));
+                try {
+                    // Valid return values are "NEW", "DELAYED", "STARTING", "RUNNING", "STOPPING", "STOPPED" and
+                    // "CLOSED".
+                    return bean.getRecordings().stream()
+                            .anyMatch(info -> info.getId() == recordingId
+                                    && info.getState().equals("RUNNING"));
+                } catch (RuntimeException ignored) {
+                    // Exception here likely means there is a connection issue with the server
+                }
             }
             return false;
         }

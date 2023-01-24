@@ -30,17 +30,17 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
-public class JfrProfiler extends Profiler {
-    static final String RECORDING_NAME = "Neo4j-Profiler-Recording";
-
+public class JfrProfiler extends PeriodicProfiler {
     private final Path dir;
     private final Duration maxDuration;
     private final SystemNanoClock clock;
     private final JmxDump.JfrProfileConnection jfr;
 
-    JfrProfiler(JmxDump dump, FileSystemAbstraction fs, Path dir, Duration maxDuration, SystemNanoClock clock) {
+    JfrProfiler(JmxDump dump, FileSystemAbstraction fs, Path dir, Duration duration, SystemNanoClock clock) {
+        super(Duration.ofSeconds(3), clock); // Check JFR status heartbeat
         this.dir = dir;
-        this.maxDuration = maxDuration;
+        this.maxDuration =
+                duration.plus(Duration.ofMinutes(1)); // It will die at most 1 minute after duration, if we fail to stop
         this.clock = clock;
         try {
             fs.mkdirs(dir);
@@ -52,13 +52,22 @@ public class JfrProfiler extends Profiler {
 
     @Override
     protected void start() {
-        String fileName = format("jfr-%s.jfr", clock.instant().toString());
+        String fileName = format("recording-%s.jfr", clock.instant().toString());
         jfr.start("Neo4j-Profiler-Recording", maxDuration, dir.resolve(fileName));
+        super.start();
     }
 
     @Override
     protected void stop() {
+        super.stop();
         jfr.stop();
+    }
+
+    @Override
+    protected void tick() {
+        if (!hasRunningRecording()) {
+            throw new IllegalStateException("No JFR found running. Did server die?");
+        }
     }
 
     @Override

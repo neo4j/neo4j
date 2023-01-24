@@ -21,6 +21,7 @@ package org.neo4j.dbms.diagnostics.profile;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
@@ -28,6 +29,8 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
@@ -55,23 +58,54 @@ public class ProfileCommand extends AbstractAdminCommand {
     @Override
     protected void execute() throws Exception {
         Config config = createPrefilledConfigBuilder().build();
-        JMXDumper jmxDumper = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose);
-        JmxDump jxmpDump = jmxDumper
+        JmxDump jmxDump = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose)
                 .getJMXDump()
-                .orElseThrow(
-                        () -> new CommandFailedException("Can not connect to running JVM. Profiling can not be done"));
+                .orElseThrow(() ->
+                        new CommandFailedException("Can not connect to running Neo4j. Profiling can not be done"));
         // TODO improve output from dumper, its designed only for report command
         SystemNanoClock clock = Clocks.nanoClock();
 
         try (ProfileTool tool = new ProfileTool()) {
-            // TODO add profilers
+            addProfiler(tool, new JfrProfiler(jmxDump, ctx.fs(), output.resolve("jfr"), duration, clock));
+            addProfiler(
+                    tool,
+                    new JstackProfiler(jmxDump, ctx.fs(), output.resolve("threads"), Duration.ofSeconds(1), clock));
             tool.start();
             Stopwatch stopwatch = Stopwatch.start();
             while (!stopwatch.hasTimedOut(duration) && tool.hasRunningProfilers()) {
                 Thread.sleep(10);
             }
             tool.stop();
-            tool.profilers().forEach(this::printFailedProfiler);
+            List<Profiler> profilers = Iterators.asList(tool.profilers().iterator());
+            if (!stopwatch.hasTimedOut(duration)) {
+                ctx.out().println("Profiler stopped before expected duration.");
+            }
+            if (!profilers.isEmpty()) {
+                profilers.forEach(this::printFailedProfiler);
+                if (profilers.stream().allMatch(profiler -> profiler.failure() != null)) {
+                    ctx.out().println("All profilers failed.");
+                } else {
+                    ctx.out().println("Profiler results:");
+                    for (Path path : ctx.fs().listFiles(output)) {
+                        try (var fileStream = ctx.fs().streamFilesRecursive(path, false)) {
+                            List<Path> files =
+                                    fileStream.map(FileHandle::getRelativePath).toList();
+                            ctx.out()
+                                    .printf(
+                                            "%s/ [%d %s]%n",
+                                            output.relativize(path), files.size(), files.size() > 1 ? "files" : "file");
+                            int numFilesToPrint = 3;
+                            for (int i = 0; i < files.size() && i <= numFilesToPrint; i++) {
+                                if (i < numFilesToPrint) {
+                                    ctx.out().printf("\t%s%n", files.get(i));
+                                } else {
+                                    ctx.out().printf("\t...%n");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

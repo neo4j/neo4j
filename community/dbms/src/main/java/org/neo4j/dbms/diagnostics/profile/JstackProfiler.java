@@ -48,7 +48,10 @@ class JstackProfiler extends PeriodicProfiler {
     @Override
     protected void tick() {
         String threadDump = dump.threadDump();
-        String name = String.format("threads-%s", clock.instant().toString());
+        if (threadDump.equals(JmxDump.THREAD_DUMP_FAILURE)) {
+            throw new IllegalStateException("Failed to retrieve thread dump");
+        }
+        String name = String.format("threads-%s.txt", clock.instant().toString());
         try (OutputStream os = fs.openAsOutputStream(dir.resolve(name), false)) {
             os.write(threadDump.getBytes());
         } catch (IOException e) {
