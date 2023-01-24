@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.DefaultIndexUsageTracking;
+import org.neo4j.kernel.impl.index.schema.IndexUsageTracking;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -49,6 +50,7 @@ class IndexProxyCreator {
     private final InternalLogProvider logProvider;
     private final ImmutableSet<OpenOption> openOptions;
     private final Clock clock;
+    private final boolean enableIndexUsageStatistics;
 
     IndexProxyCreator(
             IndexSamplingConfig samplingConfig,
@@ -57,7 +59,8 @@ class IndexProxyCreator {
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
             ImmutableSet<OpenOption> openOptions,
-            Clock clock) {
+            Clock clock,
+            boolean enableIndexUsageStatistics) {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.providerMap = providerMap;
@@ -65,6 +68,7 @@ class IndexProxyCreator {
         this.logProvider = logProvider;
         this.openOptions = openOptions;
         this.clock = clock;
+        this.enableIndexUsageStatistics = enableIndexUsageStatistics;
     }
 
     IndexProxy createPopulatingIndexProxy(
@@ -87,7 +91,7 @@ class IndexProxyCreator {
         // Prepare for flipping to online mode
         flipper.setFlipTarget(() -> {
             monitor.populationCompleteOn(index);
-            var usageTracking = new DefaultIndexUsageTracking(clock);
+            var usageTracking = createIndexUsageTracking();
             IndexAccessor accessor = onlineAccessorFromProvider(index, samplingConfig);
             OnlineIndexProxy onlineProxy = new OnlineIndexProxy(indexProxyStrategy, accessor, true, usageTracking);
             if (flipToTentative) {
@@ -114,7 +118,7 @@ class IndexProxyCreator {
 
     IndexProxy createOnlineIndexProxy(IndexDescriptor descriptor) {
         try {
-            var usageTracking = new DefaultIndexUsageTracking(clock);
+            var usageTracking = createIndexUsageTracking();
             IndexAccessor onlineAccessor = onlineAccessorFromProvider(descriptor, samplingConfig);
             IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
             IndexProxy proxy = new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false, usageTracking);
@@ -168,5 +172,9 @@ class IndexProxyCreator {
             throws IOException {
         IndexProvider provider = providerMap.lookup(index.getIndexProvider());
         return provider.getOnlineAccessor(index, samplingConfig, tokenNameLookup, openOptions);
+    }
+
+    private IndexUsageTracking createIndexUsageTracking() {
+        return enableIndexUsageStatistics ? new DefaultIndexUsageTracking(clock) : IndexUsageTracking.NO_USAGE_TRACKING;
     }
 }

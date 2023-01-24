@@ -235,6 +235,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LocalConfig config;
     private volatile long transactionHeapBytesLimit;
     private final ExecutionContextFactory executionContextFactory;
+    private final boolean enableIndexUsageStatistics;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -336,6 +337,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
         var kernelToken = new KernelToken(storageReader, commandCreationContext, this, tokenHolders);
+        this.enableIndexUsageStatistics = config.get(GraphDatabaseInternalSettings.enable_index_usage_statistics);
         this.allStoreHolder = new AllStoreHolder.ForTransactionScope(
                 storageReader,
                 kernelToken,
@@ -347,7 +349,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexingService,
                 indexStatisticsStore,
                 dependencies,
-                memoryTracker);
+                memoryTracker,
+                enableIndexUsageStatistics);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -363,7 +366,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 globalProcedures,
                 dependencies,
                 securityAuthorizationHandler,
-                elementIdMapper);
+                elementIdMapper,
+                enableIndexUsageStatistics);
         this.operations = new Operations(
                 allStoreHolder,
                 storageReader,
@@ -455,7 +459,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             GlobalProcedures globalProcedures,
             Dependencies dependencies,
             SecurityAuthorizationHandler securityAuthorizationHandler,
-            ElementIdMapper elementIdMapper) {
+            ElementIdMapper elementIdMapper,
+            boolean enableIndexUsageStatistics) {
         return (securityContext, transactionId, transactionCursorContext, clockContextSupplier, assertOpen) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
@@ -499,7 +504,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     elementIdMapper,
                     assertOpen,
                     clockContextSupplier,
-                    List.of(executionContextStorageReader, executionContextLockClient));
+                    List.of(executionContextStorageReader, executionContextLockClient),
+                    enableIndexUsageStatistics);
         };
     }
 

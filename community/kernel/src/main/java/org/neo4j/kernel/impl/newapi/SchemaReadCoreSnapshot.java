@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
 class SchemaReadCoreSnapshot implements SchemaReadCore {
@@ -135,5 +136,10 @@ class SchemaReadCoreSnapshot implements SchemaReadCore {
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAllNonLocking() {
         return constraintsGetAll();
+    }
+
+    @Override
+    public IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException {
+        return stores.indexUsageStats(index);
     }
 }

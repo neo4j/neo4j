@@ -1081,4 +1081,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             + "Can be useful for writing upgrade tests for coming versions")
     public static final Setting<Byte> latest_kernel_version =
             newBuilder("internal.dbms.latest_kernel_version", BYTE, null).build();
+
+    @Internal
+    @Description("A feature toggle behind which index usage statistics feature is developed")
+    public static final Setting<Boolean> enable_index_usage_statistics =
+            newBuilder("internal.dbms.index_usage_statistics", BOOL, false).build();
 }

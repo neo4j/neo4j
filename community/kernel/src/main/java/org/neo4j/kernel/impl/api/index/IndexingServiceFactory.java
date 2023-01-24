@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.time.Clock;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -78,7 +79,8 @@ public final class IndexingServiceFactory {
                 tokenNameLookup,
                 internalLogProvider,
                 storageEngine.getOpenOptions(),
-                clock);
+                clock,
+                config.get(GraphDatabaseInternalSettings.enable_index_usage_statistics));
 
         return new IndexingService(
                 storageEngine,

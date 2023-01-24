@@ -106,6 +106,7 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -1724,9 +1725,10 @@ class IndexingServiceTest {
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
 
         MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));
+        var config = Config.defaults(GraphDatabaseInternalSettings.enable_index_usage_statistics, true);
         return life.add(IndexingServiceFactory.createIndexingService(
                 storageEngine,
-                Config.defaults(),
+                config,
                 scheduler,
                 providerMap,
                 storeViewFactory,

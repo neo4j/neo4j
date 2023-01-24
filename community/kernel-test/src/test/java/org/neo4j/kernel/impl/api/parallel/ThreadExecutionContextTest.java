@@ -79,7 +79,8 @@ class ThreadExecutionContextTest {
                 mock(ElementIdMapper.class),
                 mock(ExtendedAssertOpen.class),
                 mock(Supplier.class),
-                List.of(storageReader, lockClient))) {
+                List.of(storageReader, lockClient),
+                false)) {
             executionContext.complete();
         }
 

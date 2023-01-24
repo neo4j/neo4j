@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.lock.LockTracer;
@@ -88,12 +89,13 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             GlobalProcedures globalProcedures,
             Dependencies databaseDependencies,
             StorageLocks storageLocks,
-            org.neo4j.kernel.impl.locking.Locks.Client lockClient,
+            Client lockClient,
             LockTracer lockTracer,
             ElementIdMapper elementIdMapper,
             ExtendedAssertOpen assertOpen,
             Supplier<ClockContext> clockContextSupplier,
-            List<AutoCloseable> otherResources) {
+            List<AutoCloseable> otherResources,
+            boolean enableIndexUsageStatistics) {
         this.cursors = cursors;
         this.context = context;
         this.overridableSecurityContext = overridableSecurityContext;
@@ -124,7 +126,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 overridableSecurityContext,
                 assertOpen,
                 securityAuthorizationHandler,
-                clockContextSupplier);
+                clockContextSupplier,
+                enableIndexUsageStatistics);
     }
 
     @Override

@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -39,10 +40,12 @@ import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension(configurationCallback = "configuration")
 class IndexUsageStatsIT {
     private static final String LABEL = "Label";
     private static final String KEY = "key";
@@ -56,6 +59,11 @@ class IndexUsageStatsIT {
 
     private long beforeCreateTime;
     private long beforeQueryTime;
+
+    @ExtensionCallback
+    void configuration(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.enable_index_usage_statistics, true);
+    }
 
     @BeforeEach
     void createIndex() {

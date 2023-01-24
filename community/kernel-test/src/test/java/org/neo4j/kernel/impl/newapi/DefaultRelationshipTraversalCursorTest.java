@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -763,6 +764,11 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public boolean hasTxStateWithChanges() {
             return ktx.hasTxStateWithChanges();
+        }
+
+        @Override
+        public IndexUsageStats indexUsageStats(IndexDescriptor index) {
+            return null;
         }
     }
 }

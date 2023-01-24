@@ -25,6 +25,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexUsageStats;
 
 /**
  * The reduced core set of schema read methods
@@ -168,4 +169,12 @@ public interface SchemaReadCore {
      * @return An iterator of all the constraints in the database.
      */
     Iterator<ConstraintDescriptor> constraintsGetAllNonLocking();
+
+    /**
+     * Returns last reported {@link IndexUsageStats} for the given index.
+     * @param index the index to return the usage stats for.
+     * @return usage statistics for the given {@code index}.
+     * @throws IndexNotFoundKernelException if the index couldn't be found.
+     */
+    IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException;
 }

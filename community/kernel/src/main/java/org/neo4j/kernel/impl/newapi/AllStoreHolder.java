@@ -71,6 +71,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -84,6 +85,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
@@ -118,6 +120,7 @@ public abstract class AllStoreHolder extends Read {
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
     private final GlobalProcedures globalProcedures;
+    private final boolean enableIndexUsageStatistics;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
@@ -133,7 +136,8 @@ public abstract class AllStoreHolder extends Read {
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
             StorageLocks storageLocks,
-            LockTracer lockTracer) {
+            LockTracer lockTracer,
+            boolean enableIndexUsageStatistics) {
         super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
@@ -144,6 +148,7 @@ public abstract class AllStoreHolder extends Read {
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
         this.globalProcedures = globalProcedures;
+        this.enableIndexUsageStatistics = enableIndexUsageStatistics;
     }
 
     @Override
@@ -754,6 +759,18 @@ public abstract class AllStoreHolder extends Read {
     }
 
     @Override
+    public IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException {
+        performCheckBeforeOperation();
+        assertValidIndex(index);
+        if (!enableIndexUsageStatistics) {
+            throw new UnsupportedOperationException("Index usage statistics are not supported yet");
+        }
+
+        acquireSharedSchemaLock(index);
+        return indexStatisticsStore.usageStats(index.getId());
+    }
+
+    @Override
     public long nodesGetCount() {
         return countsForNode(TokenRead.ANY_LABEL);
     }
@@ -1005,7 +1022,8 @@ public abstract class AllStoreHolder extends Read {
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
                 Dependencies databaseDependencies,
-                MemoryTracker memoryTracker) {
+                MemoryTracker memoryTracker,
+                boolean enableIndexUsageStatistics) {
             super(
                     storageReader,
                     tokenRead,
@@ -1017,7 +1035,8 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     ktx.storeCursors(),
                     storageLocks,
-                    ktx.lockTracer());
+                    ktx.lockTracer(),
+                    enableIndexUsageStatistics);
 
             this.ktx = ktx;
             this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, globalProcedures, databaseDependencies);
@@ -1083,12 +1102,13 @@ public abstract class AllStoreHolder extends Read {
                 StoreCursors storageCursors,
                 CursorContext cursorContext,
                 StorageLocks storageLocks,
-                Locks.Client lockClient,
+                Client lockClient,
                 LockTracer lockTracer,
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
-                Supplier<ClockContext> clockContextSupplier) {
+                Supplier<ClockContext> clockContextSupplier,
+                boolean enableIndexUsageStatistics) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
@@ -1100,7 +1120,8 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     storageCursors,
                     storageLocks,
-                    lockTracer);
+                    lockTracer,
+                    enableIndexUsageStatistics);
             this.overridableSecurityContext = overridableSecurityContext;
             this.cursorContext = cursorContext;
             this.lockClient = lockClient;
