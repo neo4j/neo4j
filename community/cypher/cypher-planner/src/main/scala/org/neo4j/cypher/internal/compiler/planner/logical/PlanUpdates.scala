@@ -243,19 +243,21 @@ case object PlanUpdates extends UpdatesPlanner {
       // DELETE a
       case p: DeleteExpression =>
         val delete = p.expression match {
-          // DELETE user
-          case Variable(n) if context.semanticTable.isNodeNoFail(n) =>
+          // DELETE node
+          case expression if context.semanticTable.isNodeNoFail(expression) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
           // DELETE rel
-          case Variable(r) if context.semanticTable.isRelationshipNoFail(r) =>
+          case expression if context.semanticTable.isRelationshipNoFail(expression) =>
             context.staticComponents.logicalPlanProducer.planDeleteRelationship(source, p, context)
 
           // DELETE path
           case PathExpression(_) =>
             context.staticComponents.logicalPlanProducer.planDeletePath(source, p, context)
 
-          // DELETE users[{i}]
+          // These 2 cases are not really needed, but sometimes we have semantic info for the variable
+          // But not the ContainerIndex, so they don't hurt either.
+          // DELETE nodes[{i}]
           case ContainerIndex(Variable(n), _) if context.semanticTable.isNodeCollectionNoFail(n) =>
             context.staticComponents.logicalPlanProducer.planDeleteNode(source, p, context)
 
