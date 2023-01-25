@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.B
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.CandidateListFinder.findCandidateLists
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.findConflictingPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.truncateDatabaseDeeagerizer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Rewriter
@@ -50,9 +51,14 @@ case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: At
     val plansToEagerize = pickPlansToEagerize(cardinalities, candidateLists)
 
     // Step 5: Actually insert Eager operators
-    plan.endoRewrite(bottomUp(Rewriter.lift {
+    val eagerizedPlan = plan.endoRewrite(bottomUp(Rewriter.lift {
       case p: LogicalPlan if plansToEagerize.contains(p.id) =>
         eagerOnTopOf(p, plansToEagerize(p.id))
     }))
+
+    // Step 6: Hackily remove one case of Eager in Call-In-Transactions that is actually not needed.
+    // This rewriter is part of PlanRewriter, but that Phase must run before EagerRewriter, so we
+    // invoke it manually here
+    eagerizedPlan.endoRewrite(truncateDatabaseDeeagerizer)
   }
 }

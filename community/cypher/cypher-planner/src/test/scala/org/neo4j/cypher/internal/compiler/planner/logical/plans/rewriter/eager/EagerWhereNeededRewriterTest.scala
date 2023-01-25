@@ -2660,6 +2660,23 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts no eager for DETACH DELETE in transactions") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.detachDeleteNode("n")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
   test("insert eager when apply plan is conflicting with the outside") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults()
