@@ -1425,25 +1425,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.glassfish.jersey.core</groupId>
-        <artifactId>jersey-server</artifactId>
-        <version>${jersey.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.glassfish.hk2</groupId>
-            <artifactId>osgi-resource-locator</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.glassfish.hk2.external</groupId>
-            <artifactId>javax.inject</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.glassfish.jersey.containers</groupId>
         <artifactId>jersey-container-servlet</artifactId>
         <version>${jersey.version}</version>
@@ -1470,6 +1451,10 @@
           <exclusion>
             <groupId>org.glassfish.hk2.external</groupId>
             <artifactId>javax.inject</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.glassfish.hk2</groupId>
+            <artifactId>osgi-resource-locator</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
