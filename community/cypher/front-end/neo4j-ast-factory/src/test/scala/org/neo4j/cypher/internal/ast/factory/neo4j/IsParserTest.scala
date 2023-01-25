@@ -485,4 +485,127 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       )
     )
   }
+
+  test(s"MATCH (n) WHERE n IS NOT AND n IS NOT NULL") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(Some("n")),
+          where = Some(where(and(labelExpressionPredicate("n", labelOrRelTypeLeaf("NOT")), isNotNull(varFor("n")))))
+        )
+      )
+    )
+  }
+
+  test(s"MATCH (n) WHERE n IS NULL AND n.prop IS NOT NULL") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(Some("n")),
+          where = Some(where(and(isNull(varFor("n")), isNotNull(prop("n", "prop")))))
+        )
+      )
+    )
+  }
+
+  test(s"MATCH (n WHERE n IS NULL)") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            Some("n"),
+            predicates = Some(isNull(varFor("n")))
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH (n IS NULL WHERE n IS NULL)") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            Some("n"),
+            labelExpression = Some(labelLeaf("NULL")),
+            predicates = Some(isNull(varFor("n")))
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH (n WHERE n IS NOT NULL)") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            Some("n"),
+            predicates = Some(isNotNull(varFor("n")))
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH (n IS NOT NULL WHERE n IS NOT NULL)") {
+    failsToParse
+  }
+
+  test(s"MATCH ()-[r WHERE r IS NULL]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("r"),
+              predicates = Some(isNull(varFor("r")))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[r IS NULL WHERE r IS NULL]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("r"),
+              labelExpression = Some(labelRelTypeLeaf("NULL")),
+              predicates = Some(isNull(varFor("r")))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[r WHERE r IS NOT NULL]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              Some("r"),
+              predicates = Some(isNotNull(varFor("r")))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test(s"MATCH ()-[r IS NOT NULL WHERE r IS NOT NULL]->()") {
+    failsToParse
+  }
+
 }

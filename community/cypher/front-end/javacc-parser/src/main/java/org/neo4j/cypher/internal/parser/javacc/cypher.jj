@@ -2878,6 +2878,8 @@ EXPRESSION PostFix1( EXPRESSION subject ) throws Exception:
 {
     (
         ret=Property( subject )
+        | LOOKAHEAD(<IS> <NULL>) t=<IS> <NULL> { ret = astFactory.isNull( pos( t ), subject ); }
+        | LOOKAHEAD(<IS> <NOT> <NULL>) t=<IS> <NOT> <NULL> { ret = astFactory.isNotNull( pos( t ), subject ); }
         | ret=LabelExpressionPredicate( subject )
         | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup( subject, e1 ); }
         | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice( pos( t ), subject, e1, e2 ); }
