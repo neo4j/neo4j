@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Arrays;
 import java.util.List;
 import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
 import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
@@ -60,9 +59,9 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = GLORIOUS_FUTURE;
-    public static final List<KernelVersion> VERSIONS = Arrays.asList(KernelVersion.values());
+    public static final List<KernelVersion> VERSIONS = List.of(values());
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
-            ByteObjectMaps.immutable.from(List.of(values()), KernelVersion::version, v -> v);
+            ByteObjectMaps.immutable.from(VERSIONS, KernelVersion::version, v -> v);
 
     private final byte version;
 
