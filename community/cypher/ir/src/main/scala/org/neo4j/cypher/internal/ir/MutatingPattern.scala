@@ -50,6 +50,8 @@ sealed trait SimpleMutatingPattern extends MutatingPattern
 
 sealed trait SetMutatingPattern extends SimpleMutatingPattern with NoSymbols
 
+sealed trait DeleteMutatingPattern extends SimpleMutatingPattern with NoSymbols
+
 case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression)
     extends SetMutatingPattern
     with HasMappableExpressions[SetPropertyPattern] {
@@ -175,7 +177,7 @@ case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelati
   }
 }
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends SimpleMutatingPattern with NoSymbols
+case class DeleteExpression(expression: Expression, forced: Boolean) extends DeleteMutatingPattern with NoSymbols
     with HasMappableExpressions[DeleteExpression] {
   override def dependencies: Set[String] = expression.dependencies.map(_.name)
 

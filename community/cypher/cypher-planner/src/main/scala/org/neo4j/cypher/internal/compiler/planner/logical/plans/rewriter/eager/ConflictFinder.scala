@@ -21,19 +21,27 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanThatIntroducesVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PossibleDeleteConflictPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
+import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
@@ -109,16 +117,22 @@ object ConflictFinder {
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     for {
       (writePlan, createdNodes) <- readsAndWrites.writes.creates.createdNodes
+
       (variable, FilterExpressions(readPlans, expression)) <-
         // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
         // But we have to include other filterExpressions that are not in the snapshot, to also cover write-read conflicts.
-        readsAndWrites.writes.creates.filterExpressionsSnapshots(writePlan).fuse(
-          readsAndWrites.reads.filterExpressions
+        readsAndWrites.writes.creates.nodeFilterExpressionsSnapshots(writePlan).fuse(
+          readsAndWrites.reads.nodeFilterExpressions
         )((x, _) => x)
+
       createdNode <- createdNodes
+
       labelSet = createdNode.createdLabels
+      // We need to split the expression in order to filter single predicates.
+      // We only want to keep the predicates that depend on only variable, since that is a requirement of CreateOverlaps.overlap
       expressionsDependantOnlyOnVariable =
         Expressions.splitExpression(expression).filter(_.dependencies == Set(variable))
+
       overlap =
         CreateOverlaps.overlap(expressionsDependantOnlyOnVariable, labelSet.map(_.name), createdNode.createdProperties)
       if (overlap match {
@@ -126,6 +140,7 @@ object ConflictFinder {
         case CreateOverlaps.NoLabelOverlap    => false
         case _: CreateOverlaps.Overlap        => true
       })
+
       readPlan <- readPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
@@ -152,6 +167,101 @@ object ConflictFinder {
       addConflict(writePlan, readPlan, reasons)
     }
 
+    // Conflicts between a MATCH and a DELETE
+    sealed trait DeleteConflictType
+    case object MatchDeleteConflict extends DeleteConflictType
+    case object DeleteMatchConflict extends DeleteConflictType
+
+    /**
+     * Add a DELETE conflict
+     */
+    def deleteConflict(readNodeVariable: LogicalVariable, readPlan: LogicalPlan, writePlan: LogicalPlan): Unit = {
+      val conflict = Some(Conflict(writePlan.id, readPlan.id))
+      val reasons: Set[Reason] = Set(ReadDeleteConflict(readNodeVariable.name, conflict))
+      addConflict(writePlan, readPlan, reasons)
+    }
+
+    /**
+     * Check if there is a DELETE overlap
+     *
+     * @param plansThatIntroduceVariable all plans that introduce the variable, with their predicates if they are leaf plans
+     * @param predicatesOnDeletedNode all predicates on the deleted node
+     */
+    def deleteOverlaps(
+      plansThatIntroduceVariable: Seq[PlanThatIntroducesVariable],
+      predicatesOnDeletedNode: Seq[Expression]
+    ): Boolean = {
+      val readNodePredicateCombinations =
+        if (plansThatIntroduceVariable.isEmpty) {
+          // Variable was not introduced by a leaf plan
+          Seq(Seq.empty[Expression])
+        } else {
+          plansThatIntroduceVariable.map(_.predicates)
+        }
+      readNodePredicateCombinations.exists(DeleteOverlaps.overlap(_, predicatesOnDeletedNode) match {
+        case DeleteOverlaps.NoLabelOverlap => false
+        case _: DeleteOverlaps.Overlap     => true
+      })
+    }
+
+    /**
+     * The read variables for DELETE conflicts
+     */
+    def deleteReadVariables(writePlan: LogicalPlan)
+      : Map[LogicalVariable, (PossibleDeleteConflictPlans, DeleteConflictType)] = {
+      // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
+      // But we have to include other possibleDeleteConflictPlans that are not in the snapshot, to also cover write-read conflicts.
+      readsAndWrites.writes.deletes.possibleDeleteConflictPlanSnapshots(writePlan)
+        .view.mapValues[(PossibleDeleteConflictPlans, DeleteConflictType)](x => (x, MatchDeleteConflict)).toMap
+        .fuse(readsAndWrites.reads.possibleDeleteConflictPlans.view.mapValues(x => (x, DeleteMatchConflict)).toMap)(
+          (x, _) => x
+        )
+    }
+
+    // Conflicts between a MATCH and a DELETE with a node variable
+    for {
+      (writePlan, deletedNodes) <- readsAndWrites.writes.deletes.deletedNodeVariables
+
+      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, lastPlansToReferenceVar), conflictType)) <-
+        deleteReadVariables(writePlan)
+
+      deletedNode <- deletedNodes
+
+      FilterExpressions(_, deletedNodeExpression) =
+        readsAndWrites.reads.nodeFilterExpressions.getOrElse(deletedNode, FilterExpressions(Set.empty))
+      if deleteOverlaps(plansThatIntroduceVar, Seq(deletedNodeExpression))
+
+      // For a MatchDeleteConflict we need to place the Eager between the last plan to reference the variable and the Delete plan.
+      // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
+      readPlan <- conflictType match {
+        case MatchDeleteConflict => lastPlansToReferenceVar
+        case DeleteMatchConflict => plansThatIntroduceVar.map(_.plan)
+      }
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } {
+      deleteConflict(variable, readPlan, writePlan)
+    }
+
+    // Conflicts between a MATCH and a DELETE with an expression
+    for {
+      writePlan <-
+        readsAndWrites.writes.deletes.plansThatDeleteNodeExpressions ++ readsAndWrites.writes.deletes.plansThatDeleteUnknownTypeExpressions
+
+      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, lastPlansToReferenceVar), conflictType)) <-
+        deleteReadVariables(writePlan)
+      if deleteOverlaps(plansThatIntroduceVar, Seq.empty)
+
+      // For a MatchDeleteConflict we need to place the Eager between the last plan to reference the variable and the Delete plan.
+      // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
+      readPlan <- conflictType match {
+        case MatchDeleteConflict => lastPlansToReferenceVar
+        case DeleteMatchConflict => plansThatIntroduceVar.map(_.plan)
+      }
+      if isValidConflict(readPlan, writePlan, wholePlan)
+    } {
+      deleteConflict(variable, readPlan, writePlan)
+    }
+
     map.map {
       case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)
     }.toSeq
@@ -175,6 +285,13 @@ object ConflictFinder {
           wholePlan
         )
 
+    def deletingPlan(plan: LogicalPlan) =
+      plan.isInstanceOf[DeleteNode] || plan.isInstanceOf[DetachDeleteNode]
+
+    def deletingPlansConflict =
+      deletingPlan(writePlan) && deletingPlan(readPlan)
+
+    !deletingPlansConflict &&
     !conflictsWithItself &&
     !mergeConflictWithChild &&
     conflictsWithUnstablePlan

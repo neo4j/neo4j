@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
+import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -3629,6 +3631,423 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .create(createNode("l", "Label"))
         .unwind("[1, 2] AS y")
         .argument()
+        .build()
+    )
+  }
+
+  // DELETE Tests
+
+  test("Should not be eager between two deletes") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .deleteNode("m")
+      .cartesianProduct()
+      .|.nodeByLabelScan("m", "M")
+      .nodeByLabelScan("n", "N")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .deleteNode("m")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(3), Id(5))))))
+        .cartesianProduct()
+        .|.nodeByLabelScan("m", "M")
+        .nodeByLabelScan("n", "N")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node is unstable") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .apply()
+      .|.allNodeScan("n")
+      .unwind("[0,1] AS i")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("n")
+        .unwind("[0,1] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager if deleted node is unstable, but not protect projection after DELETE that will crash regardless"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .projection("n.prop AS p")
+      .deleteNode("n")
+      .apply()
+      .|.allNodeScan("n")
+      .unwind("[0,1] AS i")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .projection("n.prop AS p")
+        .deleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(3), Id(5))))))
+        .apply()
+        .|.allNodeScan("n")
+        .unwind("[0,1] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should not be eager if deleted node is stable") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test("Should be eager if deleted node conflicts with unstable node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .apply()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node (DeleteNode with expression) conflicts with unstable node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode(Head(listOf(varFor("n")))(pos))
+      .apply()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode(Head(listOf(varFor("n")))(pos))
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node (DeleteExpression) conflicts with unstable node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteExpression(Head(listOf(varFor("n")))(pos))
+      .apply()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteExpression(Head(listOf(varFor("n")))(pos))
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node (DetachDeleteNode with expression) conflicts with unstable node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("head(n)")
+      .apply()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("head(n)")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node (DetachDeleteExpression) conflicts with unstable node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteExpression("head([n])")
+      .apply()
+      .|.allNodeScan("m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteExpression("head([n])")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node conflicts with node that is introduced in Expand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "Eager for DELETE conflict must be placed after the last predicate on matched node, even if higher cardinality"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n").withCardinality(30)
+      .filter("m:M").withCardinality(30) // Filter can crash if executed on deleted node.
+      .unwind("[1,2,3] AS i").withCardinality(60)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .filter("m:M")
+        .unwind("[1,2,3] AS i")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "Eager for DELETE conflict must be placed after the last reference to matched node, even if higher cardinality"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n").withCardinality(60)
+      .projection("m.prop AS prop").withCardinality(60) // Property projection can crash if executed on deleted node.
+      .unwind("[1,2,3] AS i").withCardinality(60)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .projection("m.prop AS prop")
+        .unwind("[1,2,3] AS i")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .apply()
+      .|.nodeByLabelScan("a", "A")
+      .deleteNode("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .apply()
+        .|.nodeByLabelScan("a", "A")
+        .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(4), Id(3))))))
+        .deleteNode("n")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict, place eager before plan that introduces read node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .filter("a.prop2 > 0").withCardinality(3)
+      .filter("a.prop > 0").withCardinality(5)
+      .apply().withCardinality(100)
+      .|.nodeByLabelScan("a", "A").withCardinality(100)
+      .deleteNode("n").withCardinality(10)
+      .nodeByLabelScan("n", "A").withCardinality(10)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .filter("a.prop2 > 0")
+        .filter("a.prop > 0")
+        .apply()
+        .|.nodeByLabelScan("a", "A")
+        .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(6), Id(5))))))
+        .deleteNode("n")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict, if not overlapping bt no predicates on read node leaf plan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .filter("a:!A")
+      .apply()
+      .|.allNodeScan("a")
+      .deleteNode("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .filter("a:!A")
+        .apply()
+        .|.allNodeScan("a")
+        .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(5), Id(4))))))
+        .deleteNode("n")
+        .nodeByLabelScan("n", "A")
         .build()
     )
   }

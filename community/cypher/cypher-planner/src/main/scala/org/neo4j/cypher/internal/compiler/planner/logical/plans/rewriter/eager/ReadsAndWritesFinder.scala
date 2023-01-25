@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.R
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.collectReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedNode
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanCreates
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanDeletes
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanSets
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.collectWrites
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SymbolicName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
@@ -48,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -227,19 +230,56 @@ object ReadsAndWritesFinder {
   }
 
   /**
+   * A variable can either be introduced by one (or more) leaf plans, or by some inner plan.
+   * For DELETE conflicts, only the predicates from leaf plans can be included.
+   *
+   * This trait tracks the plans that introduce a variable (potentially multiple in the case of UNION),
+   * together with the predicates solved in the plans.
+   * It also tracks the plans that last references the variable (potentially multiple in the case of UNION).
+   *
+   * The variable itself is not tracked here, but is the key in [[Reads.possibleDeleteConflictPlans]].
+   *
+   * @param plansThatIntroduceVariable  a list of plans that introduce the variable
+   *                                     or have a filter on the variable. The plan is bundled with
+   *                                     a list of predicates that all depend on the variable.
+   * @param lastPlansToReferenceVariable the last plans that reference the variable. These are the read plans that must be used to define
+   *                                     the Conflict on. We cannot use an earlier plan (e.g. where the variable was introduced), like in
+   *                                     CREATE/MATCH conflicts, because evaluating any expression on a deleted node might crash.
+   */
+  case class PossibleDeleteConflictPlans(
+    plansThatIntroduceVariable: Seq[PlanThatIntroducesVariable],
+    lastPlansToReferenceVariable: Seq[LogicalPlan]
+  ) {
+
+    def ++(other: PossibleDeleteConflictPlans): PossibleDeleteConflictPlans = {
+      PossibleDeleteConflictPlans(
+        this.plansThatIntroduceVariable ++ other.plansThatIntroduceVariable,
+        this.lastPlansToReferenceVariable ++ other.lastPlansToReferenceVariable
+      )
+    }
+  }
+
+  /**
+   * A plan that introduces a variable together with the predicates for that variable solved by that plan.
+   */
+  case class PlanThatIntroducesVariable(plan: LogicalPlan, predicates: Seq[Expression])
+
+  /**
    * An accumulator of reads in the logical plan tree.
    *
-   * @param readProperties a provider to find out which plans read which properties.
-   * @param readLabels a provider to find out which plans read which labels.
-   * @param filterExpressions for each variable the expressions that filter on that variable.
-   *                          This also tracks if a variable is introduced by a plan. 
-   *                          If a variable is introduced by a plan, and no predicates are applied on that variable,
-   *                          it is still present as a key in this map.
+   * @param readProperties              a provider to find out which plans read which properties.
+   * @param readLabels                  a provider to find out which plans read which labels.
+   * @param nodeFilterExpressions       for each node variable the expressions that filter on that variable.
+   *                                    This also tracks if a variable is introduced by a plan.
+   *                                    If a variable is introduced by a plan, and no predicates are applied on that variable,
+   *                                    it is still present as a key in this map.
+   * @param possibleDeleteConflictPlans for each node variable, the [[PossibleDeleteConflictPlans]]
    */
   private[eager] case class Reads(
     readProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
     readLabels: ReadingPlansProvider[LabelName] = ReadingPlansProvider(),
-    filterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty
+    nodeFilterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
+    possibleDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
   ) {
 
     /**
@@ -269,42 +309,102 @@ object ReadsAndWritesFinder {
       copy(readLabels = readLabels.withSymbolRead(label, plan))
     }
 
-    def withIntroducedVariable(
+    /**
+     * Save that the plan introduces a variable.
+     * This is done by saving an empty filter expressions.
+     */
+    def withIntroducedNodeVariable(
       variable: LogicalVariable,
       plan: LogicalPlan
     ): Reads = {
-      val newExpressions = filterExpressions.getOrElse(variable, FilterExpressions(Set(plan)))
-      copy(filterExpressions = filterExpressions + (variable -> newExpressions))
+      val newExpressions = nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(plan)))
+      copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
     }
 
-    def withAddedFilterExpression(
+    def withAddedNodeFilterExpression(
       variable: LogicalVariable,
       plan: LogicalPlan,
       filterExpression: Expression
     ): Reads = {
       val newExpressions =
-        filterExpressions.getOrElse(variable, FilterExpressions(Set(plan))).withAddedExpression(
+        nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(plan))).withAddedExpression(
           filterExpression
         )
-      copy(filterExpressions = filterExpressions + (variable -> newExpressions))
+      copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
     }
 
     def withUnknownLabelsRead(plan: LogicalPlan): Reads =
       copy(readLabels = readLabels.withUnknownSymbolsRead(plan))
 
+    /**
+     * Update [[PossibleDeleteConflictPlans]].
+     * This should be called if `plan` references `variable`.
+     *
+     * If `plan` filters on `variable`, the `expressions` should be all filters on `variable`.
+     *
+     * @param expressions all expressions in `plan` that filter on `variable`.
+     */
+    def withUpdatedPossibleDeleteConflictPlans(
+      plan: LogicalPlan,
+      variable: LogicalVariable,
+      expressions: Seq[Expression]
+    ): Reads = {
+      val prev = possibleDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
+
+      val plansThatIntroduceVariable =
+        if (prev.plansThatIntroduceVariable.isEmpty) {
+          // This plan introduces the variable.
+
+          // We should take predicates on leaf plans into account.
+          val expressionsToInclude = plan match {
+            case _: LogicalLeafPlan => expressions
+            case _                  => Seq.empty[Expression]
+          }
+          Seq(PlanThatIntroducesVariable(plan, expressionsToInclude))
+        } else {
+          prev.plansThatIntroduceVariable
+        }
+
+      val lastPlansToReferenceVariable = Seq(plan)
+
+      copy(possibleDeleteConflictPlans =
+        possibleDeleteConflictPlans
+          .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, lastPlansToReferenceVariable))
+      )
+    }
+
+    /**
+     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]]. 
+     * This should be called if a plan references a variable.
+     */
+    def updateLastPlansToReferenceVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
+      val prev = possibleDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
+      val next = prev.copy(lastPlansToReferenceVariable = Seq(plan))
+      copy(possibleDeleteConflictPlans = possibleDeleteConflictPlans.updated(variable, next))
+    }
+
+    /**
+     * Return a copy that included the given [[PlanReads]] for the given [[LogicalPlan]]
+     */
     def includePlanReads(plan: LogicalPlan, planReads: PlanReads): Reads = {
       Function.chain[Reads](Seq(
         acc => planReads.readProperties.foldLeft(acc)(_.withPropertyRead(_, plan)),
         acc => planReads.readLabels.foldLeft(acc)(_.withLabelRead(_, plan)),
         acc => {
-          planReads.filterExpressions.foldLeft(acc) {
+          planReads.nodeFilterExpressions.foldLeft(acc) {
             case (acc, (variable, expressions)) =>
+              val acc2 = acc.withUpdatedPossibleDeleteConflictPlans(plan, variable, expressions)
               if (expressions.isEmpty) {
                 // The plan introduces the variable but has no filter expressions
-                acc.withIntroducedVariable(variable, plan)
+                acc2.withIntroducedNodeVariable(variable, plan)
               } else {
-                expressions.foldLeft(acc)(_.withAddedFilterExpression(variable, plan, _))
+                expressions.foldLeft(acc2)(_.withAddedNodeFilterExpression(variable, plan, _))
               }
+          }
+        },
+        acc => {
+          planReads.referencedVariables.foldLeft(acc) {
+            case (acc, variable) => acc.updateLastPlansToReferenceVariable(plan, variable)
           }
         },
         acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
@@ -316,9 +416,9 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other ++ (this, mergePlan)`.
      */
-    def mergeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
+    def mergeNodeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
-        filterExpressions = other.filterExpressions.fuse(this.filterExpressions)(_ ++ (_, mergePlan))
+        nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_ ++ (_, mergePlan))
       )
     }
 
@@ -326,7 +426,9 @@ object ReadsAndWritesFinder {
       copy(
         readProperties = this.readProperties ++ other.readProperties,
         readLabels = this.readLabels ++ other.readLabels,
-        filterExpressions = this.filterExpressions.fuse(other.filterExpressions)(_ ++ (_, mergePlan))
+        nodeFilterExpressions = this.nodeFilterExpressions.fuse(other.nodeFilterExpressions)(_ ++ (_, mergePlan)),
+        possibleDeleteConflictPlans =
+          this.possibleDeleteConflictPlans.fuse(other.possibleDeleteConflictPlans)(_ ++ _)
       )
     }
   }
@@ -372,12 +474,12 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of CREATEs in the logical plan tree.
    *
-   * @param createdNodes               for each plan, the created nodes.
-   * @param filterExpressionsSnapshots for each plan (that will need to look at that later), a snapshot of the current filterExpressions.
+   * @param createdNodes                   for each plan, the created nodes.
+   * @param nodeFilterExpressionsSnapshots for each plan (that we will need to look at the snapshot later), a snapshot of the current nodeFilterExpressions.
    */
   private[eager] case class Creates(
     createdNodes: Map[LogicalPlan, Set[CreatedNode]] = Map.empty,
-    filterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
+    nodeFilterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
 
     /**
@@ -389,27 +491,95 @@ object ReadsAndWritesFinder {
     def withCreatedNode(
       createdNode: CreatedNode,
       plan: LogicalPlan,
-      filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
+      nodeFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
       val prevCreatedNodes = createdNodes.getOrElse(plan, Set.empty)
       copy(
         createdNodes = createdNodes.updated(plan, prevCreatedNodes + createdNode),
-        filterExpressionsSnapshots = filterExpressionsSnapshots + (plan -> filterExpressionsSnapshot)
+        nodeFilterExpressionsSnapshots = nodeFilterExpressionsSnapshots + (plan -> nodeFilterExpressionsSnapshot)
       )
     }
 
     def includePlanCreates(
       plan: LogicalPlan,
       planCreates: PlanCreates,
-      filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
+      nodeFilterExpressionsSnapshots: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      planCreates.createdNodes.foldLeft(this)(_.withCreatedNode(_, plan, filterExpressionsSnapshot))
+      planCreates.createdNodes.foldLeft(this)(_.withCreatedNode(_, plan, nodeFilterExpressionsSnapshots))
     }
 
     def ++(other: Creates): Creates = {
       copy(
         createdNodes = this.createdNodes.fuse(other.createdNodes)(_ ++ _),
-        filterExpressionsSnapshots = this.filterExpressionsSnapshots ++ other.filterExpressionsSnapshots
+        nodeFilterExpressionsSnapshots = this.nodeFilterExpressionsSnapshots ++ other.nodeFilterExpressionsSnapshots
+      )
+    }
+  }
+
+  /**
+   * An accumulator of DELETEs in the logical plan tree.
+   *
+   * @param deletedNodeVariables                  for each plan, the nodes that are deleted by variable name
+   * @param plansThatDeleteNodeExpressions        all plans that delete non-variable expressions of type node
+   * @param plansThatDeleteUnknownTypeExpressions all plans that delete expressions of unknown type
+   * @param possibleDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleDeleteConflictPlans
+   */
+  private[eager] case class Deletes(
+    deletedNodeVariables: Map[LogicalPlan, Set[Variable]] = Map.empty,
+    plansThatDeleteNodeExpressions: Seq[LogicalPlan] = Seq.empty,
+    plansThatDeleteUnknownTypeExpressions: Seq[LogicalPlan] = Seq.empty,
+    possibleDeleteConflictPlanSnapshots: Map[LogicalPlan, Map[LogicalVariable, PossibleDeleteConflictPlans]] = Map.empty
+  ) {
+
+    /**
+     * Save that `plan` deletes the variable `deletedNode`.
+     */
+    def withDeletedNodeVariable(deletedNode: Variable, plan: LogicalPlan): Deletes = {
+      val prevDeletedNodes = deletedNodeVariables.getOrElse(plan, Set.empty)
+      copy(deletedNodeVariables = deletedNodeVariables.updated(plan, prevDeletedNodes + deletedNode))
+    }
+
+    def withPlanThatDeletesNodeExpressions(plan: LogicalPlan): Deletes = {
+      copy(plansThatDeleteNodeExpressions = plansThatDeleteNodeExpressions :+ plan)
+    }
+
+    def withPlanThatDeletesUnknownTypeExpressions(plan: LogicalPlan): Deletes = {
+      copy(plansThatDeleteUnknownTypeExpressions = plansThatDeleteUnknownTypeExpressions :+ plan)
+    }
+
+    /**
+     * Since DELETE plans need to look for the latest plan that references a variable _before_ the DELETE plan itself,
+     * we save a snapshot of the current possibleDeleteConflictPlanSnapshots, associated with the DELETE plan.
+     */
+    def withPossibleDeleteConflictPlanSnapshot(
+      plan: LogicalPlan,
+      snapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+    ): Deletes = {
+      copy(possibleDeleteConflictPlanSnapshots = possibleDeleteConflictPlanSnapshots.updated(plan, snapshot))
+    }
+
+    def includePlanDeletes(
+      plan: LogicalPlan,
+      planDeletes: PlanDeletes,
+      possibleDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+    ): Deletes = {
+      Function.chain[Deletes](Seq(
+        acc => planDeletes.deletedNodeVariables.foldLeft(acc)(_.withDeletedNodeVariable(_, plan)),
+        acc => if (planDeletes.deletesNodeExpressions) acc.withPlanThatDeletesNodeExpressions(plan) else acc,
+        acc =>
+          if (planDeletes.deletesUnknownTypeExpressions) acc.withPlanThatDeletesUnknownTypeExpressions(plan) else acc,
+        acc =>
+          if (!planDeletes.isEmpty) acc.withPossibleDeleteConflictPlanSnapshot(plan, possibleDeleteConflictPlanSnapshot)
+          else acc
+      ))(this)
+    }
+
+    def ++(other: Deletes): Deletes = {
+      copy(
+        deletedNodeVariables = this.deletedNodeVariables.fuse(other.deletedNodeVariables)(_ ++ _),
+        plansThatDeleteNodeExpressions = this.plansThatDeleteNodeExpressions ++ other.plansThatDeleteNodeExpressions,
+        plansThatDeleteUnknownTypeExpressions =
+          this.plansThatDeleteUnknownTypeExpressions ++ other.plansThatDeleteUnknownTypeExpressions
       )
     }
   }
@@ -419,28 +589,35 @@ object ReadsAndWritesFinder {
    */
   private[eager] case class Writes(
     sets: Sets = Sets(),
-    creates: Creates = Creates()
+    creates: Creates = Creates(),
+    deletes: Deletes = Deletes()
   ) {
 
     def withSets(sets: Sets): Writes = copy(sets = sets)
 
     def withCreates(creates: Creates): Writes = copy(creates = creates)
 
+    def withDeletes(deletes: Deletes): Writes = copy(deletes = deletes)
+
     def includePlanWrites(
       plan: LogicalPlan,
       planWrites: PlanWrites,
-      filterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
+      nodeFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions],
+      possibleDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Writes = {
       Function.chain[Writes](Seq(
         acc => acc.withSets(acc.sets.includePlanSets(plan, planWrites.sets)),
-        acc => acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, filterExpressionsSnapshot))
+        acc => acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, nodeFilterExpressionsSnapshot)),
+        acc =>
+          acc.withDeletes(acc.deletes.includePlanDeletes(plan, planWrites.deletes, possibleDeleteConflictPlanSnapshot))
       ))(this)
     }
 
     def ++(other: Writes): Writes = {
       copy(
         sets = this.sets ++ other.sets,
-        creates = this.creates ++ other.creates
+        creates = this.creates ++ other.creates,
+        deletes = this.deletes ++ other.deletes
       )
     }
   }
@@ -462,9 +639,9 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other ++ (this, mergePlan)`.
      */
-    def mergeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
+    def mergeNodeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
       copy(
-        reads = this.reads.mergeFilterExpressions(other.reads, mergePlan)
+        reads = this.reads.mergeNodeFilterExpressions(other.reads, mergePlan)
       )
     }
 
@@ -488,11 +665,19 @@ object ReadsAndWritesFinder {
       val planWrites = collectWrites(plan)
 
       Function.chain[ReadsAndWrites](Seq(
-        acc => acc.withReads(acc.reads.includePlanReads(plan, planReads)),
+        // We update the writes first, because they take snapshots of the reads,
+        // and that should happen before the reads of this plan are processed.
         acc => {
-          val filterExpressionsSnapshot = acc.reads.filterExpressions
-          acc.withWrites(acc.writes.includePlanWrites(plan, planWrites, filterExpressionsSnapshot))
-        }
+          val nodeFilterExpressionsSnapshot = acc.reads.nodeFilterExpressions
+          val possibleDeleteConflictPlanSnapshot = acc.reads.possibleDeleteConflictPlans
+          acc.withWrites(acc.writes.includePlanWrites(
+            plan,
+            planWrites,
+            nodeFilterExpressionsSnapshot,
+            possibleDeleteConflictPlanSnapshot
+          ))
+        },
+        acc => acc.withReads(acc.reads.includePlanReads(plan, planReads))
       ))(acc)
     }
 
@@ -504,7 +689,7 @@ object ReadsAndWritesFinder {
           case _: ApplyPlan =>
             // The RHS was initialized with the LHS in LogicalPlans.foldPlan,
             // but lhsAcc filterExpressions still need to be merged into rhsAcc by some rules defined FilterExpressions.
-            val acc = rhsAcc.mergeFilterExpressions(lhsAcc, plan)
+            val acc = rhsAcc.mergeNodeFilterExpressions(lhsAcc, plan)
             processPlan(acc, plan)
           case _ =>
             // We need to merge LHS and RHS

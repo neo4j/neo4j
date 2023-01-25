@@ -22,12 +22,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
+import org.neo4j.cypher.internal.ir.DeleteMutatingPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -35,6 +37,10 @@ import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
@@ -95,12 +101,35 @@ object WriteFinder {
   }
 
   /**
+   * Delete write operations of a single plan
+   *
+   * @param deletedNodeVariables nodes that are deleted by variable name
+   * @param deletesNodeExpressions non-variable expressions of type node are deleted
+   * @param deletesUnknownTypeExpressions expressions that are not nodes are deleted
+   */
+  private[eager] case class PlanDeletes(
+    deletedNodeVariables: Set[Variable] = Set.empty,
+    deletesNodeExpressions: Boolean = false,
+    deletesUnknownTypeExpressions: Boolean = false
+  ) {
+
+    def withDeletedNodeVariable(deletedNode: Variable): PlanDeletes =
+      copy(deletedNodeVariables = deletedNodeVariables + deletedNode)
+    def withDeletedNodeExpression: PlanDeletes = copy(deletesNodeExpressions = true)
+    def withDeletedUnknownTypeExpression: PlanDeletes = copy(deletesUnknownTypeExpressions = true)
+
+    def isEmpty: Boolean =
+      deletedNodeVariables.isEmpty && !deletesNodeExpressions && !deletesUnknownTypeExpressions
+  }
+
+  /**
    * Writes of a single plan.
    * The Seqs nested in this class may contain duplicates. These are filtered out later in [[ConflictFinder]].
    */
   private[eager] case class PlanWrites(
     sets: PlanSets = PlanSets(),
-    creates: PlanCreates = PlanCreates()
+    creates: PlanCreates = PlanCreates(),
+    deletes: PlanDeletes = PlanDeletes()
   )
 
   /**
@@ -144,10 +173,37 @@ object WriteFinder {
     case Foreach(_, _, _, mutations) =>
       val (setMutatingPatterns: Seq[SetMutatingPattern], otherMutatingPatterns) =
         mutations.toSeq.partition(mutation => mutation.isInstanceOf[SetMutatingPattern])
+      val (deleteMutatingPatterns: Seq[DeleteMutatingPattern], restMutatingPatterns) =
+        otherMutatingPatterns.partition(mutation => mutation.isInstanceOf[DeleteMutatingPattern])
       val setPart = processSetMutatingPatterns(PlanSets(), setMutatingPatterns)
-      val createPart = processCreateMutatingPatterns(PlanCreates(), otherMutatingPatterns)
+      val createPart = processCreateMutatingPatterns(PlanCreates(), restMutatingPatterns)
+      val deletePart = processDeleteMutatingPatterns(PlanDeletes(), deleteMutatingPatterns)
 
-      PlanWrites(setPart, createPart)
+      PlanWrites(setPart, createPart, deletePart)
+
+    case DeleteNode(_, v: Variable) =>
+      val deletes = PlanDeletes().withDeletedNodeVariable(v)
+      PlanWrites(deletes = deletes)
+
+    case _: DeleteNode =>
+      val deletes = PlanDeletes().withDeletedNodeExpression
+      PlanWrites(deletes = deletes)
+
+    case _: DeleteExpression =>
+      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+      PlanWrites(deletes = deletes)
+
+    case DetachDeleteNode(_, v: Variable) =>
+      val deletes = PlanDeletes().withDeletedNodeVariable(v)
+      PlanWrites(deletes = deletes)
+
+    case _: DetachDeleteNode =>
+      val deletes = PlanDeletes().withDeletedNodeExpression
+      PlanWrites(deletes = deletes)
+
+    case _: DetachDeleteExpression =>
+      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+      PlanWrites(deletes = deletes)
 
     case plan: UpdatingPlan =>
       throw new UnsupportedOperationException(
@@ -210,7 +266,7 @@ object WriteFinder {
     acc: PlanCreates,
     setMutatingPatterns: Seq[SimpleMutatingPattern]
   ): PlanCreates = {
-    val res = setMutatingPatterns.foldLeft[PlanCreates](acc) {
+    setMutatingPatterns.foldLeft[PlanCreates](acc) {
       case (acc, CreatePattern(nodes, relationships)) =>
         processCreateNodes(acc, nodes)
 
@@ -219,6 +275,20 @@ object WriteFinder {
           s"Eagerness support for mutating pattern ${mutatingPattern.productPrefix} not implemented yet."
         )
     }
-    res
+  }
+
+  private def processDeleteMutatingPatterns(
+    acc: PlanDeletes,
+    setMutatingPatterns: Seq[SimpleMutatingPattern]
+  ): PlanDeletes = {
+    setMutatingPatterns.foldLeft[PlanDeletes](acc) {
+      case (acc, _: DeleteMutatingPattern) =>
+        acc.withDeletedUnknownTypeExpression
+
+      case (_, mutatingPattern) =>
+        throw new UnsupportedOperationException(
+          s"Eagerness support for mutating pattern ${mutatingPattern.productPrefix} not implemented yet."
+        )
+    }
   }
 }
