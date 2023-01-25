@@ -34,4 +34,9 @@ public interface DatabaseState {
     boolean hasFailed();
 
     Optional<Throwable> failure();
+
+    default Optional<String> statusMessage() {
+        return failure().map(t -> Optional.ofNullable(t.getMessage())
+                .orElseGet(() -> "Exception without message thrown: " + t.getClass()));
+    }
 }
