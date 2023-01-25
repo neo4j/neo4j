@@ -23,9 +23,13 @@ import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetProperty
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.UnionAll
+import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -47,6 +51,7 @@ import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
+import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 
 object Deprecations {
 
@@ -69,6 +74,16 @@ object Deprecations {
             labelExpression.folder.treeFindByClass[ColonDisjunction].get.position,
             s":${stringifier.stringifyLabelExpression(rewrittenExpression)}"
           ))
+        )
+      case UnionAll(lhs: Query, rhs: SingleQuery) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
+        Deprecation(
+          None,
+          Some(UnionReturnItemsInDifferentOrder(lhs.position))
+        )
+      case UnionDistinct(lhs: Query, rhs: SingleQuery) if unionReturnItemsInDifferentOrder(lhs, rhs) =>
+        Deprecation(
+          None,
+          Some(UnionReturnItemsInDifferentOrder(lhs.position))
         )
       case s @ SetExactPropertiesFromMapItem(_, e: Variable) =>
         Deprecation(
@@ -127,6 +142,11 @@ object Deprecations {
       distinct = false,
       args = Vector(e)
     )(s.position)
+  }
+
+  private def unionReturnItemsInDifferentOrder(lhs: Query, rhs: SingleQuery): Boolean = {
+    rhs.returnColumns.nonEmpty && lhs.returnColumns.nonEmpty &&
+    !rhs.returnColumns.map(v => v.name).equals(lhs.returnColumns.map(v => v.name))
   }
 
   // add new semantically deprecated features here

@@ -200,6 +200,12 @@ public enum NotificationCode {
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
                     + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause.",
             NotificationCategory.GENERIC),
+    UNION_RETURN_ORDER(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "All subqueries in a UNION [ALL] should have the same ordering for the return columns. "
+                    + "Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
+            NotificationCategory.DEPRECATION),
     HOME_DATABASE_NOT_PRESENT(
             SeverityLevel.INFORMATION,
             Status.Database.HomeDatabaseNotFound,

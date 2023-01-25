@@ -51,6 +51,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_IN
 import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBQUERY_VARIABLE_SHADOWING;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.UNION_RETURN_ORDER;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
@@ -593,6 +594,19 @@ class NotificationCodeTest {
                 NotificationCategory.GENERIC);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_UNION_RETURN_ORDER() {
+        Notification notification = UNION_RETURN_ORDER.notification(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "All subqueries in a UNION [ALL] should have the same ordering for the return columns. Using differently ordered return items in a UNION [ALL] clause is deprecated and will be removed in a future version.",
+                NotificationCategory.DEPRECATION);
+    }
+
     private void verifyNotification(
             Notification notification,
             String title,
@@ -645,8 +659,8 @@ class NotificationCodeTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            12, 57, 66, 36, -64, 99, -47, 83, 20, -72, -70, -12, -111, -90, -107, 24, -102, -91, -119, -27, 92, 15, -1,
-            85, -79, -58, 106, 5, 87, -78, -60, -8
+            -86, -2, -31, 42, 124, 55, 109, -39, -73, -67, 61, 104, 114, -30, -2, -128, -115, 110, 73, -35, -2, -86,
+            -114, -9, -68, 30, -84, -115, -68, -12, -66, 67
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

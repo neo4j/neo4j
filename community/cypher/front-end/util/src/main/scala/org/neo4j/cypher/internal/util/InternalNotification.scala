@@ -39,6 +39,8 @@ case class DeprecatedNodesOrRelationshipsInSetClauseNotification(position: Input
 
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
+case class UnionReturnItemsInDifferentOrder(position: InputPosition) extends InternalNotification
+
 case class HomeDatabaseNotPresent(databaseName: String) extends InternalNotification
 
 case class FixedLengthRelationshipInShortestPath(position: InputPosition) extends InternalNotification

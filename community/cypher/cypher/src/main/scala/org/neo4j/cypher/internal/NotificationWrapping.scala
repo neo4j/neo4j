@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCode
@@ -208,6 +209,10 @@ object NotificationWrapping {
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.shadowingVariable(varName)
+      )
+    case UnionReturnItemsInDifferentOrder(pos) =>
+      NotificationCode.UNION_RETURN_ORDER.notification(
+        pos.withOffset(offset).asInputPosition
       )
     case HomeDatabaseNotPresent(name) => NotificationCode.HOME_DATABASE_NOT_PRESENT.notification(
         InputPosition.NONE.asInputPosition,
