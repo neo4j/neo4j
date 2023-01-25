@@ -57,13 +57,30 @@ public interface Historian {
 
     static Path defaultHistoryFile(Path path) {
         try {
-            var historyFile = Files.exists(path) ? path : createFileAndDirectories(path);
+            var historyFile = safeExists(path) ? path : createFileAndDirectories(path);
             if (isPosix) {
                 Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
             }
             return historyFile;
         } catch (IOException e) {
             throw new CypherShellIOException(e);
+        }
+    }
+
+    private static boolean safeExists(Path path) throws IOException {
+        if (Files.exists(path)) {
+            if (Files.isDirectory(path)) {
+                if (Files.list(path).findFirst().isEmpty()) {
+                    Files.delete(path);
+                    return false;
+                } else {
+                    throw new CypherShellIOException("History file cannot be a directory, please delete " + path);
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return false;
         }
     }
 

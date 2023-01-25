@@ -25,4 +25,8 @@ public class CypherShellIOException extends RuntimeException {
     public CypherShellIOException(IOException ioException) {
         super(ioException);
     }
+
+    public CypherShellIOException(String msg) {
+        super(msg);
+    }
 }

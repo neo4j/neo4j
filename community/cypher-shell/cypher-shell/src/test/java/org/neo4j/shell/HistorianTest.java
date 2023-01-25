@@ -21,6 +21,7 @@ package org.neo4j.shell;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.shell.Historian.defaultHistoryFile;
 
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import org.junit.jupiter.api.Test;
+import org.neo4j.shell.exception.CypherShellIOException;
 
 class HistorianTest {
     @Test
@@ -62,5 +64,32 @@ class HistorianTest {
         // then
         assertTrue(Files.exists(actual));
         assertFalse(Files.isDirectory(actual));
+    }
+
+    @Test
+    void shouldRecreateIfFileIsEmptyDirectory() throws IOException {
+        // given
+        var tempDir = Files.createTempDirectory("temp-dir");
+
+        // when
+        assertTrue(Files.isDirectory(tempDir));
+        Path created = defaultHistoryFile(tempDir);
+
+        // then
+        assertFalse(Files.isDirectory(created));
+    }
+
+    @Test
+    void shouldFailIfFileIsNonEmptyDirectory() throws IOException {
+        // given
+        var tempDir = Files.createTempDirectory("temp-dir");
+        Files.createTempFile(tempDir, "temp-file", "tmp");
+
+        // when
+        assertTrue(Files.isDirectory(tempDir));
+
+        // then
+        var error = assertThrows(CypherShellIOException.class, () -> defaultHistoryFile(tempDir));
+        assertEquals("History file cannot be a directory, please delete " + tempDir, error.getMessage());
     }
 }
