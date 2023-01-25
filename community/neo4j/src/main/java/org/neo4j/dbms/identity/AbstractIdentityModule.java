@@ -64,7 +64,7 @@ public abstract class AbstractIdentityModule extends LifecycleAdapter implements
     }
 
     protected static SimpleStorage<ServerId> createServerIdStorage(FileSystemAbstraction fs, Path serverIdFile) {
-        return new SimpleFileStorage<>(fs, serverIdFile, ServerId.Marshal.INSTANCE);
+        return new SimpleFileStorage<>(fs, serverIdFile, ServerIdMarshal.INSTANCE);
     }
 
     @Override

@@ -19,12 +19,8 @@
  */
 package org.neo4j.dbms.identity;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
-import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.marshal.SafeStateMarshal;
 import org.neo4j.util.Id;
 
 /**
@@ -58,46 +54,5 @@ public final class ServerId extends Id {
     @Override
     public String toString() {
         return "ServerId{" + shortName() + '}';
-    }
-
-    public static class Marshal extends SafeStateMarshal<ServerId> {
-        public static final Marshal INSTANCE = new Marshal();
-
-        private Marshal() {
-            // use INSTANCE
-        }
-
-        @Override
-        public void marshal(ServerId serverId, WritableChannel channel) throws IOException {
-            if (serverId == null) {
-                channel.put((byte) 0);
-            } else {
-                channel.put((byte) 1);
-                channel.putLong(serverId.uuid().getMostSignificantBits());
-                channel.putLong(serverId.uuid().getLeastSignificantBits());
-            }
-        }
-
-        @Override
-        public ServerId unmarshal0(ReadableChannel channel) throws IOException {
-            byte nullMarker = channel.get();
-            if (nullMarker == 0) {
-                return null;
-            } else {
-                long mostSigBits = channel.getLong();
-                long leastSigBits = channel.getLong();
-                return new ServerId(new UUID(mostSigBits, leastSigBits));
-            }
-        }
-
-        @Override
-        public ServerId startState() {
-            return null;
-        }
-
-        @Override
-        public long ordinal(ServerId serverId) {
-            return serverId == null ? 0 : 1;
-        }
     }
 }
