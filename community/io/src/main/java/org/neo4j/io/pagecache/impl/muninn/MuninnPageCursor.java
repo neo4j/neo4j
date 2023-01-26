@@ -362,6 +362,12 @@ public abstract class MuninnPageCursor extends PageCursor {
                     return;
                 }
             }
+            // Assert that file still mapped before another attempt.
+            // When file and swapper are closed, swapper forgets the reference to the eviction callback, and evictor
+            // is unable to clean translation table entry. This leaves record of the pagecache page id
+            // that is not bounded to the current swapper and filePageId, making pin loop indefinitely unless we fail
+            // here.
+            assertCursorOpenFileMappedAndGetIdOfLastPage();
         }
     }
 

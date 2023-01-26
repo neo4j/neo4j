@@ -2492,21 +2492,24 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @RepeatedTest(50)
-    void racePageFileTouchAndEviction() {
+    void racePageFileTouchAndEviction() throws IOException {
         assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
-        var pageSize = 8 + reservedBytes;
         var stopFlag = new AtomicBoolean(false);
-        try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+        var pageSize = 8 + reservedBytes;
+        var file = file("a");
+        try (var tempPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            generateFile(tempPageCache, file, 10, pageSize);
+        }
+        // use new instance of page cache so it's pages are allocated as part of the concurrent test
+        try (var localPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
             assertTimeoutPreemptively(
                     ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
                     () -> {
-                        var file = file("a");
-                        generateFile(pageCache, file, 10, pageSize);
                         var race = new Race();
                         race.addContestant(Race.throwing(() -> {
                             while (!stopFlag.get()) {
                                 try {
-                                    try (var pagedFile = map(pageCache, file, pageSize)) {
+                                    try (var pagedFile = map(localPageCache, file, pageSize)) {
                                         pagedFile.touch(0, 8, NULL_CONTEXT);
                                     }
                                 } catch (CacheLiveLockException ignore) {
@@ -2515,34 +2518,37 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         }));
                         race.addContestant(Race.throwing(() -> {
                             try (var evictionRunEvent = PageCacheTracer.NULL.beginPageEvictions(1000)) {
-                                pageCache.evictPages(1000, 0, evictionRunEvent);
+                                localPageCache.evictPages(1000, 0, evictionRunEvent);
                             } finally {
                                 stopFlag.set(true);
                             }
                         }));
                         race.go();
-                        assertAllPagesEvicted(pageCache);
+                        assertAllPagesEvicted(localPageCache);
                     },
-                    () -> "PageCache: " + pageCache.toString()
+                    () -> "PageCache: " + localPageCache.toString()
                             + " pages to evict to have all free: "
-                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + localPageCache.tryGetNumberOfPagesToEvict((int) localPageCache.maxCachedPages())
                             + "\nObserved exception:\n"
-                            + pageCache.describePages());
+                            + localPageCache.describePages());
         }
     }
 
     @RepeatedTest(50)
-    void racePageFileTouchAndClose() {
+    void racePageFileTouchAndClose() throws IOException {
         assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
-        try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+        var pageSize = 8 + reservedBytes;
+        var file = file("a");
+        try (var tempPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            generateFile(tempPageCache, file, 16, pageSize);
+        }
+        // use new instance of page cache so it's pages are allocated as part of the concurrent test
+        try (var localPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
             var exceptionRef = new AtomicReference<Exception>();
             assertTimeoutPreemptively(
                     ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
                     () -> {
-                        var pageSize = 8 + reservedBytes;
-                        var file = file("a");
-                        generateFile(pageCache, file, 16, pageSize);
-                        var pagedFile = map(pageCache, file, pageSize);
+                        var pagedFile = map(localPageCache, file, pageSize);
                         var race = new Race();
                         race.addContestant(Race.throwing(() -> {
                             try {
@@ -2559,29 +2565,32 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         }));
                         race.addContestant(Race.throwing(pagedFile::close));
                         race.go();
-                        assertAllPagesEvicted(pageCache);
+                        assertAllPagesEvicted(localPageCache);
                     },
-                    () -> "PageCache: " + pageCache.toString()
+                    () -> "PageCache: " + localPageCache.toString()
                             + " pages to evict to have all free: "
-                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + localPageCache.tryGetNumberOfPagesToEvict((int) localPageCache.maxCachedPages())
                             + "\nObserved exception:\n"
                             + (exceptionRef.get() != null ? Exceptions.stringify(exceptionRef.get()) : "none") + "\n"
-                            + pageCache.describePages());
+                            + localPageCache.describePages());
         }
     }
 
     @RepeatedTest(50)
-    void racePageFilePinAndClose() {
+    void racePageFilePinAndClose() throws IOException {
         assumeTrue(fs.getClass() == EphemeralFileSystemAbstraction.class, "This test is very slow on real file system");
-        try (var pageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+        var pageSize = 8 + reservedBytes;
+        var file = file("a");
+        try (var tempPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
+            generateFile(tempPageCache, file, 16, pageSize);
+        }
+        // use new instance of page cache so it's pages are allocated as part of the concurrent test
+        try (var localPageCache = createPageCache(fs, 8, PageCacheTracer.NULL)) {
             var exceptionRef = new AtomicReference<Exception>();
             assertTimeoutPreemptively(
                     ofMillis(SEMI_LONG_TIMEOUT_MILLIS),
                     () -> {
-                        var pageSize = 8 + reservedBytes;
-                        var file = file("a");
-                        generateFile(pageCache, file, 16, pageSize);
-                        var pagedFile = map(pageCache, file, pageSize);
+                        var pagedFile = map(localPageCache, file, pageSize);
                         var race = new Race();
                         race.addContestant(Race.throwing(() -> {
                             try {
@@ -2598,14 +2607,14 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
                         }));
                         race.addContestant(Race.throwing(pagedFile::close));
                         race.go();
-                        assertAllPagesEvicted(pageCache);
+                        assertAllPagesEvicted(localPageCache);
                     },
-                    () -> "PageCache: " + pageCache.toString()
+                    () -> "PageCache: " + localPageCache.toString()
                             + " pages to evict to have all free: "
-                            + pageCache.tryGetNumberOfPagesToEvict((int) pageCache.maxCachedPages())
+                            + localPageCache.tryGetNumberOfPagesToEvict((int) localPageCache.maxCachedPages())
                             + "\nObserved exception:\n"
                             + (exceptionRef.get() != null ? Exceptions.stringify(exceptionRef.get()) : "none") + "\n"
-                            + pageCache.describePages());
+                            + localPageCache.describePages());
         }
     }
 

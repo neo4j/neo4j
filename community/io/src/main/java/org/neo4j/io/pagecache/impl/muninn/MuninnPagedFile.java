@@ -1110,7 +1110,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
             throw throwable;
         } finally {
             for (int i = 0; i < numberOfPages; i++) {
-                if (pageRefs[i] != 0 && getAddress(pageRefs[i]) != 0L) {
+                if (pageRefs[i] != 0) {
                     PageList.unlockExclusive(pageRefs[i]);
                 }
             }
