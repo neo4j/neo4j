@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal;
 
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -87,7 +88,7 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
   test("databaseNameFields should convert parameter to namespaced parameter") {
     val databaseNameFields = AdministrationCommandRuntime.getDatabaseNameFields(
       "name",
-      ParameterName(Parameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
+      ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
       "__internal_param",
@@ -106,7 +107,7 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
   test("databaseNameFields should convert parameter to default namespaced parameter") {
     val databaseNameFields = AdministrationCommandRuntime.getDatabaseNameFields(
       "name",
-      ParameterName(Parameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
+      ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
       "__internal_param",
@@ -125,7 +126,7 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
   test("databaseNameFields should convert parameter to default namespaced parameter if it is specified explicitly") {
     val databaseNameFields = AdministrationCommandRuntime.getDatabaseNameFields(
       "name",
-      ParameterName(Parameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
+      ParameterName(ExplicitParameter("param", CTString)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
       "__internal_param",
@@ -146,7 +147,7 @@ class AdministrationCommandRuntimeTest extends CypherFunSuite {
   test("databaseNameFields should fail convert parameter with incorrect type") {
     val databaseNameFields = AdministrationCommandRuntime.getDatabaseNameFields(
       "name",
-      ParameterName(Parameter("param", CTInteger)(InputPosition.NONE))(InputPosition.NONE)
+      ParameterName(ExplicitParameter("param", CTInteger)(InputPosition.NONE))(InputPosition.NONE)
     )
     databaseNameFields.keys shouldBe Array(
       "__internal_param",

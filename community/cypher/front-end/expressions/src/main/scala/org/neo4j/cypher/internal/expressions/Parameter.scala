@@ -46,13 +46,6 @@ sealed trait Parameter extends Expression {
 
 object Parameter {
   def unapply(p: Parameter): Option[(String, CypherType, BucketSize)] = Some((p.name, p.parameterType, p.sizeHint))
-
-  def apply(
-    name: String,
-    parameterType: CypherType,
-    sizeHint: BucketSize = UnknownSize
-  )(position: InputPosition): Parameter =
-    ExplicitParameter(name, parameterType, sizeHint)(position)
 }
 
 case class ExplicitParameter(name: String, parameterType: CypherType, sizeHint: BucketSize = UnknownSize)(

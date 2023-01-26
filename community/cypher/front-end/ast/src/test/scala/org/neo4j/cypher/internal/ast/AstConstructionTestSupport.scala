@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -474,7 +475,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def pow(lhs: Expression, rhs: Expression): Pow = Pow(lhs, rhs)(pos)
 
   def parameter(key: String, typ: CypherType, sizeHint: Option[Int] = None, position: InputPosition = pos): Parameter =
-    Parameter(key, typ, sizeHint.map(i => SizeBucket.computeBucket(i)).getOrElse(UnknownSize))(position)
+    ExplicitParameter(key, typ, sizeHint.map(i => SizeBucket.computeBucket(i)).getOrElse(UnknownSize))(position)
 
   def autoParameter(
     key: String,

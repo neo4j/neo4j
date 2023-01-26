@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -344,7 +345,7 @@ private object Ast {
             varName <- columns
             parName = Columns.paramName(varName)
           } yield AliasedReturnItem(
-            expression = Parameter(parName, CTAny)(pos),
+            expression = ExplicitParameter(parName, CTAny)(pos),
             variable = variable(varName, pos)
           )(pos, isAutoAliased = false)
       )(pos))(pos)

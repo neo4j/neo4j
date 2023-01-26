@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.expressions.ConstantExpression
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -28,7 +29,7 @@ class ConstantExpressionTest extends CypherFunSuite {
 
   test("tests") {
     assertIsConstant(SignedDecimalIntegerLiteral("42")(null))
-    assertIsConstant(Parameter("42", CTAny)(null))
+    assertIsConstant(ExplicitParameter("42", CTAny)(null))
     assertIsConstant(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")(null)))(null))
   }
 

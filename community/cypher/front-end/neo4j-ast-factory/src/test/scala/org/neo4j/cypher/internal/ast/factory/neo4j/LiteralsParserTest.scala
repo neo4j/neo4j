@@ -114,9 +114,9 @@ class LiteralsParserTest extends JavaccParserTestBase[Any, Any] with AstConstruc
   test("can parse parameter syntax") {
     implicit val parserToTest: JavaccRule[Parameter] = JavaccRule.Parameter
 
-    parsing("$p") shouldGive expressions.Parameter("p", CTAny)(t)
-    parsing("$`the funny horse`") shouldGive expressions.Parameter("the funny horse", CTAny)(t)
-    parsing("$0") shouldGive expressions.Parameter("0", CTAny)(t)
+    parsing("$p") shouldGive expressions.ExplicitParameter("p", CTAny)(t)
+    parsing("$`the funny horse`") shouldGive expressions.ExplicitParameter("the funny horse", CTAny)(t)
+    parsing("$0") shouldGive expressions.ExplicitParameter("0", CTAny)(t)
 
     // parameter number boundaries
 

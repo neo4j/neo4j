@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -43,7 +44,7 @@ object QueryRenderer {
   private object exprExtension extends ExpressionStringifier.Extension {
 
     override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
-      case p: ParameterFromSlot => ctx.apply(Parameter(p.name, p.parameterType)(p.position))
+      case p: ParameterFromSlot => ctx.apply(ExplicitParameter(p.name, p.parameterType)(p.position))
       case _                    => throw new IllegalStateException("Expected type: ParameterFromSlot")
     }
   }

@@ -957,11 +957,11 @@ class Neo4jASTFactory(query: String)
   override def newVariable(p: InputPosition, name: String): Variable = Variable(name)(p)
 
   override def newParameter(p: InputPosition, v: Variable, t: ParameterType): Parameter = {
-    Parameter(v.name, transformParameterType(t))(p)
+    ExplicitParameter(v.name, transformParameterType(t))(p)
   }
 
   override def newParameter(p: InputPosition, offset: String, t: ParameterType): Parameter = {
-    Parameter(offset, transformParameterType(t))(p)
+    ExplicitParameter(offset, transformParameterType(t))(p)
   }
 
   private def transformParameterType(t: ParameterType) = {

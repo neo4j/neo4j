@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.Topology
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Null
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -413,7 +413,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
       ast.CreateDatabase(
         NamespacedName("foo")((1, 17, 16)),
         ast.IfExistsThrowError,
-        ast.OptionsParam(Parameter("param", CTMap)((1, 29, 28))),
+        ast.OptionsParam(ExplicitParameter("param", CTMap)((1, 29, 28))),
         ast.NoWait,
         None
       )(defaultPos)

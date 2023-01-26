@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -66,7 +67,7 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: RelTypeName          => RelTypeName(anonymizer.relationshipType(x.name))(x.position)
     case x: LabelOrRelTypeName   => LabelOrRelTypeName(anonymizer.labelOrRelationshipType(x.name))(x.position)
     case x: PropertyKeyName      => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
-    case x: Parameter            => Parameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
+    case x: Parameter            => ExplicitParameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
     case x: StringLiteral        => StringLiteral(anonymizer.literal(x.value))(x.position)
     case x: CreateIndex          => x.withName(x.name.map(anonymizer.indexName))
     case x: DropIndexOnName      => x.copy(name = anonymizer.indexName(x.name))(x.position)

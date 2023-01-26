@@ -621,11 +621,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     Arbitrary.arbDouble.arbitrary.map(_.toString).map(DecimalDoubleLiteral(_)(pos))
 
   def _parameter: Gen[Parameter] =
-    _identifier.map(Parameter(_, AnyType.instance)(pos))
+    _identifier.map(ExplicitParameter(_, AnyType.instance)(pos))
 
-  def _stringParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTString)(pos))
+  def _stringParameter: Gen[Parameter] = _identifier.map(ExplicitParameter(_, CTString)(pos))
 
-  def _mapParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTMap)(pos))
+  def _mapParameter: Gen[Parameter] = _identifier.map(ExplicitParameter(_, CTMap)(pos))
 
   def _sensitiveStringParameter: Gen[Parameter with SensitiveParameter] =
     _identifier.map(new ExplicitParameter(_, CTString)(pos) with SensitiveParameter)

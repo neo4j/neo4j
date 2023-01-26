@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
@@ -56,7 +55,9 @@ object ResolvedCall {
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
     def implicitArguments = signature.inputSignature.map(s =>
-      s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(Parameter(s.name, s.typ)(position))
+      s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(
+        ExplicitParameter(s.name, s.typ)(position)
+      )
     )
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
