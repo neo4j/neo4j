@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
@@ -87,9 +87,9 @@ case object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewr
   )
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = normalizeHasLabelsAndHasType(semanticState)
 }

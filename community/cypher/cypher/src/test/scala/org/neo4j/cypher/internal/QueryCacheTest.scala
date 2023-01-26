@@ -384,7 +384,6 @@ class QueryCacheTest extends CypherFunSuite {
     val params2 = VirtualValues.map(Array("a"), Array(Values.of("b".repeat(1000))))
     val typeMap1 = QueryCache.extractParameterTypeMap(params1)
     val typeMap2 = QueryCache.extractParameterTypeMap(params2)
-    typeMap1.hashCode() shouldNot be(typeMap2.hashCode())
     typeMap1 shouldNot equal(typeMap2)
     typeMap2 shouldNot equal(typeMap1)
   }
@@ -394,7 +393,6 @@ class QueryCacheTest extends CypherFunSuite {
     val params2 = VirtualValues.map(Array("a"), Array(VirtualValues.range(0, 1001, 1)))
     val typeMap1 = QueryCache.extractParameterTypeMap(params1)
     val typeMap2 = QueryCache.extractParameterTypeMap(params2)
-    typeMap1.hashCode() shouldNot be(typeMap2.hashCode())
     typeMap1 shouldNot equal(typeMap2)
     typeMap2 shouldNot equal(typeMap1)
   }

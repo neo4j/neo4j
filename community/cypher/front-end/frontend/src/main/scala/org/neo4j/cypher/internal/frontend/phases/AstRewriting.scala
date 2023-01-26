@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Normalize the AST into a form easier for the planner to work with.
  */
-case class AstRewriting(parameterTypeMapping: Map[String, CypherTypeInfo] = Map.empty)
+case class AstRewriting(parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty)
     extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {

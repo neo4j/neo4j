@@ -57,7 +57,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
@@ -256,9 +256,9 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 }

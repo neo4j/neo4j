@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.BOOL
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.INT
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.BOOL
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.INT
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ParameterTypeValueReplacementTest extends CypherFunSuite {
@@ -40,15 +40,15 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
   }
 
   test("single string parameter should be rewritten") {
-    val params = Map("param" -> CypherTypeInfo.info(CTString, 11))
+    val params = Map("param" -> ParameterTypeInfo.info(CTString, 11))
     assertRewrite("MATCH (n) WHERE n.foo > $param RETURN n", params)
   }
 
   test("multiple string parameters should be rewritten") {
     val params = Map(
-      "param1" -> CypherTypeInfo.info(CTString, 11),
-      "param2" -> CypherTypeInfo.info(CTString, 111),
-      "param3" -> CypherTypeInfo.info(CTString, 1111)
+      "param1" -> ParameterTypeInfo.info(CTString, 11),
+      "param2" -> ParameterTypeInfo.info(CTString, 111),
+      "param3" -> ParameterTypeInfo.info(CTString, 1111)
     )
     assertRewrite(
       "MATCH (n) WHERE n.foo STARTS WITH $param1 AND n.bar ENDS WITH $param2 AND n.baz = $param3 RETURN n",
@@ -57,11 +57,11 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite {
   }
 
   test("mixed parameters should be rewritten") {
-    val params = Map("param1" -> CypherTypeInfo.info(CTString, 11), "param2" -> BOOL, "param3" -> INT)
+    val params = Map("param1" -> ParameterTypeInfo.info(CTString, 11), "param2" -> BOOL, "param3" -> INT)
     assertRewrite("MATCH (n) WHERE n.foo STARTS WITH $param1 AND n.bar = $param2 AND n.baz = $param3 RETURN n", params)
   }
 
-  private def assertRewrite(originalQuery: String, parameterTypes: Map[String, CypherTypeInfo]): Unit = {
+  private def assertRewrite(originalQuery: String, parameterTypes: Map[String, ParameterTypeInfo]): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original: Statement = JavaCCParser.parse(originalQuery, exceptionFactory)
 

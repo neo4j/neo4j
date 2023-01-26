@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.symbols.ListType
 
 case object IterablePredicatesRewrittenToIn extends StepSequencer.Condition
@@ -65,10 +65,10 @@ case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewrit
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 }
 

@@ -45,7 +45,7 @@ case object slottedParameters {
     }
 
     val rewriter = bottomUp(Rewriter.lift {
-      case Parameter(name, typ, sizeHint)          => ParameterFromSlot(mapping.offsetFor(name), name, typ)
+      case Parameter(name, typ, _)          => ParameterFromSlot(mapping.offsetFor(name), name, typ)
       case ImplicitProcedureArgument(name, typ, _) => ParameterFromSlot(mapping.offsetFor(name), name, typ)
     })
 

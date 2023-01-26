@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object ParenthesizedPathUnwrapped extends Condition
 
@@ -48,10 +48,10 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = {
     unwrapParenthesizedPath.instance
   }

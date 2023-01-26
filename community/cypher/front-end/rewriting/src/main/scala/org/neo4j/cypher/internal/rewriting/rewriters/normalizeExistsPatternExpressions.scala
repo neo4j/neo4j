@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Adds an exists() around any pattern expression that is expected to produce a boolean e.g.
@@ -116,10 +116,10 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
   )
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = normalizeExistsPatternExpressions(semanticState)
 }
 

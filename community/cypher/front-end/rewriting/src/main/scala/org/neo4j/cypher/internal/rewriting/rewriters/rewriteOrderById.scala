@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object OrderByIdRewritten extends StepSequencer.Condition
 
@@ -64,9 +64,9 @@ case object rewriteOrderById extends Step with ASTRewriterFactory {
   )
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = rewriteOrderById(semanticState)
 }

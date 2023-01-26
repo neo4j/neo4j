@@ -20,14 +20,14 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 trait ASTRewriterFactory {
 
   def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                   semanticState: SemanticState,
+                   parameterTypeMapping: Map[String, ParameterTypeInfo],
+                   cypherExceptionFactory: CypherExceptionFactory,
+                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter
 }

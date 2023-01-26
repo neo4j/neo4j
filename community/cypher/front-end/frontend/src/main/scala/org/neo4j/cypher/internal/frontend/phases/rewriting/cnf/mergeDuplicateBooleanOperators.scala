@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSequencer.Condition] = Set.empty)
@@ -44,10 +44,10 @@ case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSeque
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
 
   override def getRewriter(from: BaseState, context: BaseContext): Rewriter =

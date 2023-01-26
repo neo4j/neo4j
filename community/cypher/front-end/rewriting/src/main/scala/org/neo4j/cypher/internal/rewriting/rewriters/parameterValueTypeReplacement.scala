@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.ANY
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.ANY
 
 case object ExplicitParametersKnowTheirTypes extends StepSequencer.Condition
 
-case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherTypeInfo]) extends Rewriter {
+case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, ParameterTypeInfo]) extends Rewriter {
 
   private val rewriter: Rewriter = bottomUp(Rewriter.lift {
     case p @ ExplicitParameter(name, CTAny, _) =>
@@ -54,9 +54,9 @@ case object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
   )
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = parameterValueTypeReplacement(parameterTypeMapping)
 }

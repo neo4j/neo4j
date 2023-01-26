@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case object QppsHavePaddedNodes extends StepSequencer.Condition
@@ -43,10 +43,10 @@ case object QppsHavePaddedNodes extends StepSequencer.Condition
 case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+                            semanticState: SemanticState,
+                            parameterTypeMapping: Map[String, ParameterTypeInfo],
+                            cypherExceptionFactory: CypherExceptionFactory,
+                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 
   private val filler = NodePattern(None, None, None, None)(InputPosition.NONE)

@@ -53,7 +53,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 object ASTRewriter {
 
@@ -89,11 +89,11 @@ object ASTRewriter {
     )
 
   def rewrite(
-    statement: Statement,
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+               statement: Statement,
+               semanticState: SemanticState,
+               parameterTypeMapping: Map[String, ParameterTypeInfo],
+               cypherExceptionFactory: CypherExceptionFactory,
+               anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Statement = {
     val rewriters = orderedSteps.map { step =>
       val rewriter =

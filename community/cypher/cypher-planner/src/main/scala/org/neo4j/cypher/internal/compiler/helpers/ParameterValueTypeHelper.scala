@@ -22,20 +22,20 @@ package org.neo4j.cypher.internal.compiler.helpers
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.ANY
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.BOOL
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.DATE
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.DATE_TIME
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.DURATION
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.FLOAT
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.INT
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.LOCAL_DATE_TIME
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.LOCAL_TIME
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.MAP
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.POINT
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.TIME
-import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.info
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.ANY
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.BOOL
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.DATE
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.DATE_TIME
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.DURATION
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.FLOAT
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.INT
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.LOCAL_DATE_TIME
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.LOCAL_TIME
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.MAP
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.POINT
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.TIME
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.info
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DateTimeValue
@@ -54,13 +54,13 @@ import org.neo4j.values.virtual.MapValue
 
 object ParameterValueTypeHelper {
 
-  def asCypherTypeMap(map: MapValue): Map[String, CypherTypeInfo] = {
-    val builder = collection.immutable.Map.newBuilder[String, CypherTypeInfo]
+  def asCypherTypeMap(map: MapValue): Map[String, ParameterTypeInfo] = {
+    val builder = collection.immutable.Map.newBuilder[String, ParameterTypeInfo]
     map.keySet.forEach((key: String) => builder += (key -> deriveCypherType(map.get(key))))
     builder.result()
   }
 
-  def deriveCypherType(obj: AnyValue): CypherTypeInfo = { // for scala reasons, we need the cast
+  def deriveCypherType(obj: AnyValue): ParameterTypeInfo = { // for scala reasons, we need the cast
     obj match {
       case v: TextValue          => info(CTString, v.length())
       case _: BooleanValue       => BOOL
