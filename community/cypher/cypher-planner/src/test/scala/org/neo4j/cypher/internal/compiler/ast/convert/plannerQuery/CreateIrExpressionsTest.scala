@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.Namespacer

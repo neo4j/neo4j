@@ -999,7 +999,7 @@ case class LogicalPlanProducer(
 
         (simpleQuantifiedPathPatternToPatternRelationship(qpp), solvedQpp)
 
-      case qpp: QuantifiedPathPattern =>
+      case _: QuantifiedPathPattern =>
         throw new InternalException("Tried to solve a non-simple quantified path pattern with a VarExpand")
       case pr: PatternRelationship => (pr, pr)
     }
