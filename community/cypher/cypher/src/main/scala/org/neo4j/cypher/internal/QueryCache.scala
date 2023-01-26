@@ -346,8 +346,8 @@ object QueryCache {
     * is much faster to pre-compute the hash than to call `resultMap.hashCode()`.
     */
   class ParameterTypeMap private[QueryCache] (
-                                               private val resultMap: java.util.Map[String, ParameterTypeInfo],
-                                               _hashCode: Int
+    private val resultMap: java.util.Map[String, ParameterTypeInfo],
+    _hashCode: Int
   ) {
     override def hashCode(): Int = _hashCode
 

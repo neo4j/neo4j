@@ -113,10 +113,10 @@ object CompilationPhases {
       )
 
   case class ParsingConfig(
-                            extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
-                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-                            obfuscateLiterals: Boolean = false
+    extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
+    parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
+    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
+    obfuscateLiterals: Boolean = false
   ) {
 
     def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {

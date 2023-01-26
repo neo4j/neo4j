@@ -105,9 +105,9 @@ case object expandStar extends StepSequencer.Step with ASTRewriterFactory {
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = expandStar(semanticState)
 }

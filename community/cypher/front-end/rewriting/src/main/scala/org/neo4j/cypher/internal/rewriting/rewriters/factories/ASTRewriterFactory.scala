@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 trait ASTRewriterFactory {
 
   def getRewriter(
-                   semanticState: SemanticState,
-                   parameterTypeMapping: Map[String, ParameterTypeInfo],
-                   cypherExceptionFactory: CypherExceptionFactory,
-                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter
 }

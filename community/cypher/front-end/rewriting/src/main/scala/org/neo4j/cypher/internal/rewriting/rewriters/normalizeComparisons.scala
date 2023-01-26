@@ -43,10 +43,10 @@ case object OnlySingleHasLabels extends StepSequencer.Condition
 case object normalizeComparisons extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

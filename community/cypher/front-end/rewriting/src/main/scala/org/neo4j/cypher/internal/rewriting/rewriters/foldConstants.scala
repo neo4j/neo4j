@@ -177,9 +177,9 @@ case object foldConstants extends StepSequencer.Step with ASTRewriterFactory {
   )
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = foldConstants(cypherExceptionFactory)
 }

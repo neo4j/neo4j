@@ -85,9 +85,9 @@ case object desugarMapProjection extends StepSequencer.Step with ASTRewriterFact
   )
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = desugarMapProjection(semanticState)
 }

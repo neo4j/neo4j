@@ -42,10 +42,10 @@ case object combineSetProperty extends StepSequencer.Step with ASTRewriterFactor
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 
   private def onSameEntity(setItem: SetItem, entity: Expression) = setItem match {

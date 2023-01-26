@@ -153,6 +153,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.nio.charset.StandardCharsets
+
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 

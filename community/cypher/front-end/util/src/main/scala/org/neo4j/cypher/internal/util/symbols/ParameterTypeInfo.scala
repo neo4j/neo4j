@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.UnknownSize
  * @param typ the type of the parameter
  * @param sizeHint a sizeHint, will be [[UnknownSize]] for all but CTList and CTSTring
  */
-case class ParameterTypeInfo private(typ: CypherType, sizeHint: BucketSize)
+case class ParameterTypeInfo private (typ: CypherType, sizeHint: BucketSize)
 
 object ParameterTypeInfo {
   final val BOOL = ParameterTypeInfo(CTBoolean, UnknownSize)
@@ -45,6 +45,6 @@ object ParameterTypeInfo {
 
   def info(typ: CypherType, size: Int): ParameterTypeInfo = typ match {
     case CTString | ListType(_) => ParameterTypeInfo(typ, SizeBucket.computeBucket(size))
-    case _ => throw new IllegalArgumentException(s"size is only supported for List and String")
+    case _                      => throw new IllegalArgumentException(s"size is only supported for List and String")
   }
 }

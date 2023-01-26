@@ -35,9 +35,9 @@ sealed trait Parameter extends Expression {
 
   override def equals(obj: Any): Boolean = obj match {
     case that: Parameter => that.canEqual(this) &&
-      this.name == that.name &&
-      this.parameterType == that.parameterType &&
-      this.sizeHint == that.sizeHint
+        this.name == that.name &&
+        this.parameterType == that.parameterType &&
+        this.sizeHint == that.sizeHint
     case _ => false
   }
 

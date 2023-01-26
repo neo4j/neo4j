@@ -55,10 +55,10 @@ case class nameAllPatternElements(anonymousVariableNameGenerator: AnonymousVaria
 case object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = nameAllPatternElements(anonymousVariableNameGenerator)
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty

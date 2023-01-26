@@ -48,10 +48,10 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = {
     unwrapParenthesizedPath.instance
   }

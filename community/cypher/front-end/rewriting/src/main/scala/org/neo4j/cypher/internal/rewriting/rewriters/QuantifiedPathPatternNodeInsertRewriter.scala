@@ -43,10 +43,10 @@ case object QppsHavePaddedNodes extends StepSequencer.Condition
 case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step with ASTRewriterFactory {
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
 
   private val filler = NodePattern(None, None, None, None)(InputPosition.NONE)

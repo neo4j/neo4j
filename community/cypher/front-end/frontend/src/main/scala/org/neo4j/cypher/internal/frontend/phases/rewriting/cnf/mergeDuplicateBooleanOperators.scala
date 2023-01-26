@@ -44,10 +44,10 @@ case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSeque
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def getRewriter(
-                            semanticState: SemanticState,
-                            parameterTypeMapping: Map[String, ParameterTypeInfo],
-                            cypherExceptionFactory: CypherExceptionFactory,
-                            anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
 
   override def getRewriter(from: BaseState, context: BaseContext): Rewriter =

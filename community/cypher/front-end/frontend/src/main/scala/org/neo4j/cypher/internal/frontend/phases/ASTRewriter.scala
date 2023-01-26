@@ -89,11 +89,11 @@ object ASTRewriter {
     )
 
   def rewrite(
-               statement: Statement,
-               semanticState: SemanticState,
-               parameterTypeMapping: Map[String, ParameterTypeInfo],
-               cypherExceptionFactory: CypherExceptionFactory,
-               anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+    statement: Statement,
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Statement = {
     val rewriters = orderedSteps.map { step =>
       val rewriter =
