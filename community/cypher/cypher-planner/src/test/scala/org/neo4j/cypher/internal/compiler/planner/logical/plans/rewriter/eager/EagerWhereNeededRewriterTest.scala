@@ -227,7 +227,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read of same property when read appears in second set property"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("n")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("n", "prop", "n.prop + 1")
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
@@ -239,9 +240,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("n")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("n", "prop", "n.prop + 1")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(2))))))
         .setNodeProperty("n", "prop", "5")
         .allNodeScan("n")
         .build()
@@ -278,7 +280,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts no eager between property set and property read (NodeIndexScan) if property read through stable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.allNodeScan("m")
@@ -296,7 +299,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeIndexScan) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop)")
@@ -309,9 +313,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop)")
         .allNodeScan("m")
@@ -439,7 +444,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts no eager between label set and label read if label read through stable iterator") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.allNodeScan("m")
@@ -455,7 +461,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between label set and NodeByIdSeek with label filter if read through stable iterator") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.allNodeScan("m")
@@ -469,11 +476,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("m", "N")
         .apply()
         .|.allNodeScan("m")
-        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(4))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(5))))))
         .filter("n:N")
         .nodeByIdSeek("n", Set.empty, 1)
         .build()
@@ -482,7 +490,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between label set and label read (NodeByLabelScan) if label read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.nodeByLabelScan("n", "N")
@@ -495,9 +504,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("m", "N")
-        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeByLabelScan("n", "N")
         .allNodeScan("m")
@@ -509,7 +519,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between label set and label read (UnionNodeByLabelScan) if label read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.unionNodeByLabelsScan("n", Seq("N", "M"))
@@ -522,9 +533,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("m", "N")
-        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.unionNodeByLabelsScan("n", Seq("N", "M"))
         .allNodeScan("m")
@@ -534,7 +546,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between label set and label read (NodeIndexScan) if label read through unstable iterator") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.nodeIndexOperator("n:N(prop)")
@@ -547,9 +560,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("m", "N")
-        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop)")
         .allNodeScan("m")
@@ -615,7 +629,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between label set and label read (NodeCountFromCountStore) if label read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.nodeCountFromCountStore("count", Seq(Some("N")))
@@ -628,9 +643,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("m", "N")
-        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(Some("N")))
         .allNodeScan("m")
@@ -642,7 +658,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts no eager between label set and label read (NodeCountFromCountStore) if label read through stable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("m", "N")
       .apply()
       .|.allNodeScan("m")
@@ -1977,7 +1994,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperty("o", "prop", "42")))
       .|.allNodeScan("o")
@@ -1992,11 +2010,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("o")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperty("o", "prop", "42")))
         .|.allNodeScan("o")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(6))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2006,7 +2025,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap (setting multiple properties)") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperties("o", ("prop", "42"), ("foo", "42"))))
       .|.allNodeScan("o")
@@ -2021,11 +2041,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("o")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.merge(nodes = Seq(createNode("o")), onMatch = Seq(setNodeProperties("o", ("prop", "42"), ("foo", "42"))))
         .|.allNodeScan("o")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(6))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2035,7 +2056,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between Merge with ON MATCH and IndexScan if property overlap (setting properties from map)") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.merge(
         nodes = Seq(createNode("o")),
@@ -2053,14 +2075,15 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("o")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.merge(
           nodes = Seq(createNode("o")),
           onMatch = Seq(setNodePropertiesFromMap("o", "{prop: 42}", removeOtherProps = false))
         )
         .|.allNodeScan("o")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(6))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2072,7 +2095,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between Merge with ON MATCH and IndexScan if all property removed (setting properties from map)"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.merge(
         nodes = Seq(createNode("o")),
@@ -2090,14 +2114,15 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("o")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.merge(
           nodes = Seq(createNode("o")),
           onMatch = Seq(setNodePropertiesFromMap("o", "{foo: 42}", removeOtherProps = true))
         )
         .|.allNodeScan("o")
-        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(3), Id(6))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2107,7 +2132,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("inserts eager between Merge with ON CREATE and IndexScan if property overlap") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("o")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.merge(nodes = Seq(createNode("o", "M")), onCreate = Seq(setNodeProperty("o", "prop", "42")))
       .|.nodeByLabelScan("o", "M")
@@ -2122,11 +2148,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("o")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.merge(nodes = Seq(createNode("o", "M")), onCreate = Seq(setNodeProperty("o", "prop", "42")))
         .|.nodeByLabelScan("o", "M")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(5))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(6))))))
         .cartesianProduct()
         .|.nodeIndexOperator("m:M(prop)")
         .allNodeScan("n")
@@ -2822,7 +2849,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
   test("eagerize nested cartesian products") {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("n")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("n", "Two")
       .cartesianProduct()
       .|.cartesianProduct()
@@ -2837,11 +2865,12 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("n")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("n", "Two")
         .eager(ListSet(
-          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(1), Id(4)))),
-          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(1), Id(5))))
+          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(2), Id(5)))),
+          LabelReadSetConflict(labelName("Two"), Some(Conflict(Id(2), Id(6))))
         ))
         .cartesianProduct()
         .|.cartesianProduct()
@@ -3128,7 +3157,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "Should only reference the conflicting label when there is an eagerness conflict between a write within a forEach and a read after"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("d")
+      .produceResults("result")
+      .projection("1 AS result")
       .apply()
       .|.nodeByLabelScan("d", "Event")
       .foreach(
@@ -3152,10 +3182,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("d")
+        .produceResults("result")
+        .projection("1 AS result")
         .apply()
         .|.nodeByLabelScan("d", "Event")
-        .eager(ListSet(LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3))))))
         .foreach(
           "x",
           "[1]",
@@ -3260,7 +3291,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeIndexSeekByRange) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop>5)")
@@ -3273,9 +3305,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop > 5)")
         .allNodeScan("m")
@@ -3287,7 +3320,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeIndexSeek) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop=5)")
@@ -3300,9 +3334,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop = 5)")
         .allNodeScan("m")
@@ -3342,7 +3377,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeUniqueIndexSeek) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop=5)", unique = true)
@@ -3355,9 +3391,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop = 5)", unique = true)
         .allNodeScan("m")
@@ -3397,7 +3434,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeIndexContainsScan) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
@@ -3410,9 +3448,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
         .allNodeScan("m")
@@ -3452,7 +3491,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "inserts eager between property set and property read (NodeIndexEndsWithScan) if property read through unstable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("m")
+      .produceResults("result")
+      .projection("1 AS result")
       .setNodeProperty("m", "prop", "5")
       .apply()
       .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
@@ -3465,9 +3505,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("m")
+        .produceResults("result")
+        .projection("1 AS result")
         .setNodeProperty("m", "prop", "5")
-        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
         .allNodeScan("m")
@@ -3507,7 +3548,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     "Conflicts in when traversing the right hand side of a plan should be found and eagerized."
   ) {
     val planBuilder = new LogicalPlanBuilder()
-      .produceResults("p", "o")
+      .produceResults("result")
+      .projection("1 AS result")
       .setLabels("p", "B")
       .apply()
       .|.cartesianProduct()
@@ -3523,14 +3565,15 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
     result should equal(
       new LogicalPlanBuilder()
-        .produceResults("p", "o")
+        .produceResults("result")
+        .projection("1 AS result")
         .setLabels("p", "B")
-        .eager(ListSet(LabelReadSetConflict(labelName("B"), Some(EagernessReason.Conflict(Id(1), Id(5))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("B"), Some(EagernessReason.Conflict(Id(2), Id(6))))))
         .apply()
         .|.cartesianProduct()
         .|.|.nodeByLabelScan("p", "C")
         .|.nodeByLabelScan("o", "B")
-        .eager(ListSet(LabelReadSetConflict(labelName("C"), Some(EagernessReason.Conflict(Id(6), Id(4))))))
+        .eager(ListSet(LabelReadSetConflict(labelName("C"), Some(EagernessReason.Conflict(Id(7), Id(5))))))
         .create(createNode("m", "C"))
         .nodeByLabelScan("n", "A")
         .build()
