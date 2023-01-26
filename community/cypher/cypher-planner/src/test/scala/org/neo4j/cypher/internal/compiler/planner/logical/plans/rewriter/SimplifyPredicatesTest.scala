@@ -93,6 +93,27 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
     shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamString)), argument))
   }
 
+  test("should rewrite WHERE x.prop in $p to WHERE x.prop = $p[0] is size is 1") {
+    val argument: LogicalPlan = Argument(Set("a"))
+
+    val autoParamList0 = parameter("p", CTList(CTInteger), Some(0))
+    val autoParamList1 = parameter("p", CTList(CTInteger), Some(1))
+    val autoParamList10 = parameter("p", CTList(CTInteger), Some(10))
+    val autoParamListUnknown = parameter("p", CTList(CTInteger), sizeHint = None)
+    val autoParamString = parameter("p", CTString, Some(1))
+
+    // should rewrite
+    Selection(Seq(in(prop("x", "prop"), autoParamList1)), argument).endoRewrite(simplifyPredicates) should equal(
+      Selection(Seq(propEquality("x", "prop", containerIndex(autoParamList1, 0))), argument)
+    )
+
+    // should not rewrite
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamList0)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamList10)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamListUnknown)), argument))
+    shouldNotRewrite(Selection(Seq(in(prop("x", "prop"), autoParamString)), argument))
+  }
+
   private def shouldNotRewrite(plan: LogicalPlan): Unit = {
     plan.endoRewrite(simplifyPredicates) should equal(plan)
   }

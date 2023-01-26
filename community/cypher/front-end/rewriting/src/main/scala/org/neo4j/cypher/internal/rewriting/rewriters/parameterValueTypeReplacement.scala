@@ -27,16 +27,17 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo.ANY
 
 case object ExplicitParametersKnowTheirTypes extends StepSequencer.Condition
 
-case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherType]) extends Rewriter {
+case class parameterValueTypeReplacement(parameterTypeMapping: Map[String, CypherTypeInfo]) extends Rewriter {
 
   private val rewriter: Rewriter = bottomUp(Rewriter.lift {
-    case p @ ExplicitParameter(name, CTAny) =>
-      val cypherType = parameterTypeMapping.getOrElse(name, CTAny)
-      ExplicitParameter(name, cypherType)(p.position)
+    case p @ ExplicitParameter(name, CTAny, _) =>
+      val cypherTypeInfo = parameterTypeMapping.getOrElse(name, ANY)
+      ExplicitParameter(name, cypherTypeInfo.typ, cypherTypeInfo.sizeHint)(p.position)
   })
 
   override def apply(that: AnyRef): AnyRef = rewriter(that)
@@ -54,7 +55,7 @@ case object parameterValueTypeReplacement extends Step with ASTRewriterFactory {
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = parameterValueTypeReplacement(parameterTypeMapping)

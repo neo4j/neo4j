@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.One
@@ -53,9 +54,9 @@ case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
 case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
 
   val sizeHint: Option[Int] = expr match {
-    case coll: ListLiteral             => Some(coll.expressions.size)
-    case param: AutoExtractedParameter => param.sizeHint.toOption
-    case _                             => None
+    case coll: ListLiteral => Some(coll.expressions.size)
+    case param: Parameter  => param.sizeHint.toOption
+    case _                 => None
   }
 
   override def mapValues(f: Expression => Expression): ManySeekableArgs = expr match {
@@ -70,7 +71,7 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
         case _          => ManyQueryExpression(coll)
       }
 
-    case p @ AutoExtractedParameter(_, ListType(_), _, ExactSize(1)) =>
+    case p @ Parameter(_, ListType(_), ExactSize(1)) =>
       SingleQueryExpression(ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position))
 
     case _ =>

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 
 case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
 
@@ -67,7 +67,7 @@ case object inlineNamedPathsInPatternComprehensions extends Step with ASTRewrite
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance

@@ -143,6 +143,20 @@ class simplifyIterablePredicatesTest extends CypherFunSuite with Matchers with R
     shouldNotRewrite(expr(autoParameter("autoList", CTString, Some(1))))
   }
 
+  test("should rewrite any(x in list WHERE x IN $p) to $p IN list when possible") {
+    def expr(innerList: Expression) = anyInList(
+      varFor("x"),
+      varFor("list"),
+      in(varFor("x"), innerList)
+    )
+
+    rewrite(expr(parameter("p", CTList(CTInteger), Some(1)))) shouldBe
+      in(containerIndex(parameter("p", CTList(CTInteger), Some(1)), 0), varFor("list"))
+    shouldNotRewrite(expr(parameter("p", CTList(CTInteger), Some(11))))
+    shouldNotRewrite(expr(parameter("p", CTList(CTInteger), Some(0))))
+    shouldNotRewrite(expr(parameter("p", CTString, Some(1))))
+  }
+
   override def rewriterUnderTest: Rewriter = simplifyIterablePredicates.instance
 
   private def rewrite(e: Expression): Expression = e.endoRewrite(rewriterUnderTest)

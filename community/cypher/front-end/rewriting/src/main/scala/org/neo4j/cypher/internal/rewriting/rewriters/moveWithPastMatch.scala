@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case object IndependentWithsMovedAfterMatch extends StepSequencer.Condition
@@ -49,7 +49,7 @@ case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance

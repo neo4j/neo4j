@@ -191,7 +191,7 @@ private class DefaultExpressionStringifier(
           case (k, i) => s"${apply(k)}: ${apply(i)}"
         }).mkString("{", ", ", "}")
 
-      case Parameter(name, _) =>
+      case Parameter(name, _, _) =>
         s"$$${backtick(name)}"
 
       case _: CountStar =>

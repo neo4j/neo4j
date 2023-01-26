@@ -33,6 +33,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import java.time.Duration
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.IterableHasAsJava
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 
@@ -252,15 +253,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // second
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // third
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -321,15 +322,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // params2
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // params3
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // recompilation limit reached
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -350,14 +351,70 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> String),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> String),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(String,ApproximateSize(10))),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(String,ApproximateSize(10))),false)"
+    ))
+  }
+
+  test("repeating query with same parameters types but different string lengths should not hit the caches") {
+    val cacheListener = new LoggingTracer()
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> "a")
+    val params2: Map[String, AnyRef] = Map("n" -> "a".repeat(1001))
+
+    graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
+    graph.withTx(tx => tx.execute(query, params2.asJava).resultAsString())
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(String,ExactSize(1))),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(String,ExactSize(1))),false)",
+      // params2
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(String,ApproximateSize(10000))),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(String,ApproximateSize(10000))),false)"
+    ))
+  }
+
+  test("repeating query with same parameters types but different list lengths should not hit the caches") {
+    val cacheListener = new LoggingTracer()
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> List(42).asJava)
+    val params2: Map[String, AnyRef] = Map("n" -> List.fill(1001)(42).asJava)
+
+    graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
+    graph.withTx(tx => tx.execute(query, params2.asJava).resultAsString())
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(List<Any>,ExactSize(1))),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(List<Any>,ExactSize(1))),false)",
+      // params2
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(List<Any>,ApproximateSize(10000))),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(List<Any>,ApproximateSize(10000))),false)"
     ))
   }
 
@@ -380,11 +437,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -412,11 +469,11 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"String: cacheFlushDetected",
       s"AST:    cacheFlushDetected",
       // 1st run
-      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
-      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($actualQuery,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -436,15 +493,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($actualQuery,Map(m -> CypherTypeInfo(Integer,UnknownSize), n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($actualQuery,Map(m -> CypherTypeInfo(Integer,UnknownSize), n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheHit: CacheKey($actualQuery,Map(m -> CypherTypeInfo(Integer,UnknownSize), n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)",
+      s"String: cacheHit: CacheKey($actualQuery,Map(m -> CypherTypeInfo(Integer,UnknownSize), n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($actualQuery,Map(m -> Integer, n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($actualQuery,Map(m -> CypherTypeInfo(Integer,UnknownSize), n -> CypherTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -546,15 +603,15 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss, // JIT compilation forces us to miss here
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)" // String cache JIT compiles on the first hit
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)" // String cache JIT compiles on the first hit
     ))
   }
 
@@ -572,8 +629,8 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)"
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -598,19 +655,19 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      s"String: cacheMiss: CacheKey($query,Map(n -> Integer),false)",
-      s"String: cacheCompile: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheMiss: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 3rd run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       s"AST:    cacheHit",
       executionPlanCacheKeyMiss,
-      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheCompileWithExpressionCodeGen: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 4th run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)",
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 5th run
-      s"String: cacheHit: CacheKey($query,Map(n -> Integer),false)"
+      s"String: cacheHit: CacheKey($query,Map(n -> CypherTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 
@@ -718,13 +775,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
       executionPlanCacheKeyMiss,
-      "String: cacheMiss: CacheKey(RETURN 42 + $p AS n,Map(p -> Integer),false)",
-      "String: cacheCompile: CacheKey(RETURN 42 + $p AS n,Map(p -> Integer),false)",
+      "String: cacheMiss: CacheKey(RETURN 42 + $p AS n,Map(p -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      "String: cacheCompile: CacheKey(RETURN 42 + $p AS n,Map(p -> CypherTypeInfo(Integer,UnknownSize)),false)",
       // 2nd run
       s"AST:    cacheHit", // no logical planning
       executionPlanCacheKeyHit,
-      "String: cacheMiss: CacheKey(RETURN 43 + $p AS n,Map(p -> Integer),false)",
-      "String: cacheCompile: CacheKey(RETURN 43 + $p AS n,Map(p -> Integer),false)"
+      "String: cacheMiss: CacheKey(RETURN 43 + $p AS n,Map(p -> CypherTypeInfo(Integer,UnknownSize)),false)",
+      "String: cacheCompile: CacheKey(RETURN 43 + $p AS n,Map(p -> CypherTypeInfo(Integer,UnknownSize)),false)"
     ))
   }
 

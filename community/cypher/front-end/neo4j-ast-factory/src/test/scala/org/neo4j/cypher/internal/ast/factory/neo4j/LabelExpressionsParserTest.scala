@@ -70,7 +70,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite with JavaccParserAst
       nodePat(
         name = Some("n"),
         labelExpression = Some(labelLeaf("A", (1, 4, 3))),
-        properties = Some(parameter("param", CTAny, (1, 6, 5))),
+        properties = Some(parameter("param", CTAny, position = (1, 6, 5))),
         namePos = (1, 2, 1),
         position = (1, 1, 0)
       )

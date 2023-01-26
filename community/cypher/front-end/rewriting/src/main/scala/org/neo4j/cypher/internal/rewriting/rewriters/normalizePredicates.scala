@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
 case object NoNodeOrRelationshipPredicates extends StepSequencer.Condition
@@ -51,7 +51,7 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = normalizePredicates(PredicateNormalizer.normalizeInlinedWhereClauses) andThen

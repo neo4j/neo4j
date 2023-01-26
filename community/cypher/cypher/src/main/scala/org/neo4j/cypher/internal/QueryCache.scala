@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -345,7 +346,7 @@ object QueryCache {
     * is much faster to pre-compute the hash than to call `resultMap.hashCode()`.
     */
   class ParameterTypeMap private[QueryCache] (
-    private val resultMap: java.util.Map[String, CypherType],
+    private val resultMap: java.util.Map[String, CypherTypeInfo],
     _hashCode: Int
   ) {
     override def hashCode(): Int = _hashCode
@@ -383,7 +384,7 @@ object QueryCache {
    * Use this method to extract ParameterTypeMap from MapValue that represents parameters
    */
   def extractParameterTypeMap(mapValue: MapValue): ParameterTypeMap = {
-    val resultMap = new java.util.HashMap[String, CypherType]
+    val resultMap = new java.util.HashMap[String, CypherTypeInfo]
     var hashCode = 0
     mapValue.foreach((key, value) => {
       val valueType = ParameterValueTypeHelper.deriveCypherType(value)

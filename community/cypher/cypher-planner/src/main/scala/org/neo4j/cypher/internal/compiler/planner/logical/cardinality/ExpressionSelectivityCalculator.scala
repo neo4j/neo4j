@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AssertIsNode
-import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -70,6 +69,7 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -579,9 +579,9 @@ object ExpressionSelectivityCalculator {
 
   def getStringLength(stringExpression: Expression): Int = {
     stringExpression match {
-      case StringLiteral(value)                                                => value.length
-      case AutoExtractedParameter(_, _: StringType, _, WithSizeHint(sizeHint)) => sizeHint
-      case _                                                                   => DEFAULT_STRING_LENGTH
+      case StringLiteral(value)                                => value.length
+      case Parameter(_, _: StringType, WithSizeHint(sizeHint)) => sizeHint
+      case _                                                   => DEFAULT_STRING_LENGTH
     }
   }
 

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 
 case class nameAllPatternElements(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
@@ -56,7 +56,7 @@ case object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFa
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = nameAllPatternElements(anonymousVariableNameGenerator)

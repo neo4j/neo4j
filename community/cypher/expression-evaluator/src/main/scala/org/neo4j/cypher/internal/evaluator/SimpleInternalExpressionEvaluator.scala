@@ -91,11 +91,11 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
   private def withSlottedParams(input: Expression, params: MapValue): (Expression, Array[AnyValue]) = {
     val mapping: ParameterMapping = input.folder.treeFold(ParameterMapping.empty) {
-      case Parameter(name, _) => acc => TraverseChildren(acc.updated(name))
+      case Parameter(name, _, _) => acc => TraverseChildren(acc.updated(name))
     }
 
     val rewritten = input.endoRewrite(bottomUp(Rewriter.lift {
-      case Parameter(name, typ) => ParameterFromSlot(mapping.offsetFor(name), name, typ)
+      case Parameter(name, typ, _) => ParameterFromSlot(mapping.offsetFor(name), name, typ)
     }))
 
     val paramArray = createParameterArray(params, mapping)

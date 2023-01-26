@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanExpression
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -1218,6 +1219,42 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val literalWriters = (1 to sizeHint).map(literalInt(_))
     val param =
       AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), bucketSize)(pos)
+    val equals = nPredicate(in(nProp, param))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val eqResult = calculator(equals.expr)
+
+    val existsSel = Selectivity(200.0 / 1000.0)
+    val equal1Sel = Selectivity(1.0 / 180.0)
+    val inSel = IndependenceCombiner.orTogetherSelectivities(Seq.fill(sizeHint)(equal1Sel)).get
+    eqResult should equal(existsSel * inSel)
+  }
+
+  test("equality with one label, explicit parameter of size 2") {
+    val param = ExplicitParameter(
+      "PARAM",
+      CTList(CTAny),
+      ApproximateSize(2)
+    )(pos)
+    val equals = nPredicate(in(nProp, param))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val eqResult = calculator(equals.expr)
+
+    val existsSel = 200.0 / 1000.0
+    val equal1Sel = 1.0 / 180.0
+    val inSel = existsSel * (equal1Sel + equal1Sel - equal1Sel * equal1Sel)
+    eqResult.factor should equal(inSel)
+  }
+
+  test("equality with one label, explicit parameter of size 42") {
+    val bucketSize = SizeBucket.computeBucket(42)
+    val sizeHint = bucketSize.toOption.get
+    val literalWriters = (1 to sizeHint).map(literalInt(_))
+    val param =
+      ExplicitParameter("PARAM", CTList(CTAny), bucketSize)(pos)
     val equals = nPredicate(in(nProp, param))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)

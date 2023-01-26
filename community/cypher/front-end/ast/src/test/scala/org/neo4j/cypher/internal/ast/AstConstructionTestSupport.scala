@@ -153,7 +153,6 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.nio.charset.StandardCharsets
-
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 
@@ -473,7 +472,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def pow(lhs: Expression, rhs: Expression): Pow = Pow(lhs, rhs)(pos)
 
-  def parameter(key: String, typ: CypherType, position: InputPosition = pos): Parameter = Parameter(key, typ)(position)
+  def parameter(key: String, typ: CypherType, sizeHint: Option[Int] = None, position: InputPosition = pos): Parameter =
+    Parameter(key, typ, sizeHint.map(i => SizeBucket.computeBucket(i)).getOrElse(UnknownSize))(position)
 
   def autoParameter(
     key: String,

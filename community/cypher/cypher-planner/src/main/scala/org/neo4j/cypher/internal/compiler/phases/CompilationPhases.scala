@@ -72,7 +72,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 
 object CompilationPhases {
 
@@ -114,7 +114,7 @@ object CompilationPhases {
 
   case class ParsingConfig(
     extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
-    parameterTypeMapping: Map[String, CypherType] = Map.empty,
+    parameterTypeMapping: Map[String, CypherTypeInfo] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
     obfuscateLiterals: Boolean = false
   ) {

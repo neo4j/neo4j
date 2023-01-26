@@ -196,8 +196,8 @@ object Metrics {
 trait ExpressionEvaluator {
 
   def hasParameters(expr: Expression): Boolean = expr.folder.findAllByClass[Expression].exists {
-    case Parameter(_, _) => true
-    case _               => false
+    case Parameter(_, _, _) => true
+    case _                  => false
   }
 
   def isDeterministic(expr: Expression): Boolean = {

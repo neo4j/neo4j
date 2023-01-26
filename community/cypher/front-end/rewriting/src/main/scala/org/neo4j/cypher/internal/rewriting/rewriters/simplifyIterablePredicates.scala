@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
-import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.symbols.CypherTypeInfo
 import org.neo4j.cypher.internal.util.symbols.ListType
 
 case object IterablePredicatesRewrittenToIn extends StepSequencer.Condition
@@ -66,7 +66,7 @@ case object simplifyIterablePredicates extends StepSequencer.Step with ASTRewrit
 
   override def getRewriter(
     semanticState: SemanticState,
-    parameterTypeMapping: Map[String, CypherType],
+    parameterTypeMapping: Map[String, CypherTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = instance
@@ -88,7 +88,7 @@ object EqualEquivalent {
   def unapply(expression: Expression): Option[(Expression, Expression)] = expression match {
     case Equals(lhs, rhs)                      => Some((lhs, rhs))
     case In(lhs, ListLiteral(Seq(singleItem))) => Some((lhs, singleItem))
-    case In(lhs, p @ AutoExtractedParameter(_, _: ListType, _, ExactSize(1))) =>
+    case In(lhs, p @ Parameter(_, _: ListType, ExactSize(1))) =>
       Some((lhs, ContainerIndex(p, SignedDecimalIntegerLiteral("0")(p.position))(p.position)))
     case _ => None
   }
