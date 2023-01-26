@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,6 +51,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -504,6 +506,8 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnEmptyLogs() throws Exception {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         long chunkTxId = 42;
         setupLogFiles(10, logFile(start(), chunkEnd(chunkTxId)), logFile());
 
@@ -513,6 +517,8 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnNotEmptyLogs() throws Exception {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         long chunkTxId = 42;
         PositionEntry position = position();
         setupLogFiles(

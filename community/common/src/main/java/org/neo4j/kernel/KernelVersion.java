@@ -55,7 +55,10 @@ public enum KernelVersion {
     GLORIOUS_FUTURE((byte) 99);
 
     public static final KernelVersion EARLIEST = V4_2;
-    public static final KernelVersion LATEST = V5_4;
+    // Kernel version should be 5_0 for now, bump is not an option
+    // when upgrade will be available several tests
+    // with "assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);" should be cleaned up
+    public static final KernelVersion LATEST = V5_0;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = GLORIOUS_FUTURE;

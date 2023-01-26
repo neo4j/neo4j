@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -70,6 +71,7 @@ class LogEntryParserDispatcherTest {
 
     @Test
     void writeAndParseChunksEntries() throws IOException {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);

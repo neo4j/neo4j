@@ -22,6 +22,7 @@ package org.neo4j.kernel.database;
 import static java.lang.Integer.max;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.allow_single_automatic_upgrade;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
@@ -121,6 +122,8 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransaction() throws Exception {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         // Given
         long startTransaction = lastCommittedTransactionId();
 
@@ -148,6 +151,8 @@ public class DatabaseUpgradeTransactionIT {
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction(
             DbmsRuntimeVersion dbmsRuntimeVersion) throws Exception {
         // Given
+        assumeThat(dbmsRuntimeVersion).isLessThan(DbmsRuntimeVersion.V5_4);
+
         long startTransaction = lastCommittedTransactionId();
 
         // Then
@@ -171,6 +176,8 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransactionStressTest() throws Throwable {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         long startTransaction = lastCommittedTransactionId();
 
         // Then
@@ -196,6 +203,8 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         long startTransaction = lastCommittedTransactionId();
 
         // Then
@@ -266,6 +275,8 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldHandleDeadlocksOnUpgradeTransaction() throws Exception {
+        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+
         // This test tries to simulate a rare but possible deadlock scenario where one ongoing transaction (in commit
         // phase) is waiting for a lock held by the
         // transaction doing the upgrade. Since the first transaction has a shared upgrade lock, and the upgrade
