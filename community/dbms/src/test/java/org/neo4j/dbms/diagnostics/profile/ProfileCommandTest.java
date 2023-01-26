@@ -73,8 +73,6 @@ class ProfileCommandTest {
         output = dir.directory("output");
         jfrDir = output.resolve("jfr");
         threadDumpDir = output.resolve("threads");
-        fs.mkdirs(jfrDir);
-        fs.mkdirs(threadDumpDir);
         setPid(ProcessHandle.current().pid());
         ctxOut = new ByteArrayOutputStream();
         context = new ExecutionContext(
@@ -115,6 +113,14 @@ class ProfileCommandTest {
         execute(Duration.ofSeconds(1), "JFR", "THREADS");
         assertThat(hasJfr()).isTrue();
         assertThat(hasThreadDumps()).isTrue();
+    }
+
+    @Test
+    void shouldBeAbleToCompressResult() throws Exception {
+        execute(Duration.ofSeconds(1), "--compress");
+        Path[] paths = fs.listFiles(output);
+        assertThat(paths).hasSize(1);
+        assertThat(paths[0].getFileName().toString()).endsWith(".gzip");
     }
 
     @Test

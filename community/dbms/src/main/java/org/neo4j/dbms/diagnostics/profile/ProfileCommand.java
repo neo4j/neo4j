@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.diagnostics.profile;
 
+import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -30,10 +32,12 @@ import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingValueParsers;
+import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.Stopwatch;
@@ -58,6 +62,9 @@ public class ProfileCommand extends AbstractAdminCommand {
     @CommandLine.Parameters(description = "The selected profilers to run. Valid values: ${COMPLETION-CANDIDATES}")
     private Set<ProfilerSource> profilers = Set.of(ProfilerSource.values());
 
+    @CommandLine.Option(names = "--compress", description = "Compress the result into a gzip-file")
+    private boolean compress;
+
     public enum ProfilerSource {
         JFR,
         THREADS,
@@ -73,11 +80,16 @@ public class ProfileCommand extends AbstractAdminCommand {
             ctx.out().println("Duration needs to be positive");
             return;
         }
+        FileSystemAbstraction fs = ctx.fs();
+        if (fs.isDirectory(output) && fs.listFiles(output).length > 0) {
+            ctx.out().println("Output directory needs to be empty");
+            return;
+        }
         if (profilers.isEmpty()) {
             profilers = Set.of(ProfilerSource.values());
         }
         Config config = createPrefilledConfigBuilder().build();
-        JmxDump jmxDump = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose)
+        JmxDump jmxDump = new JMXDumper(config, fs, ctx.out(), ctx.err(), verbose)
                 .getJMXDump()
                 .orElseThrow(() ->
                         new CommandFailedException("Can not connect to running Neo4j. Profiling can not be done"));
@@ -89,14 +101,12 @@ public class ProfileCommand extends AbstractAdminCommand {
                         "Profilers %s selected. Duration %s. Output directory %s%n",
                         profilers, SettingValueParsers.DURATION.valueToString(duration), output.toAbsolutePath());
         try (ProfileTool tool = new ProfileTool()) {
-
             if (profilers.contains(ProfilerSource.JFR)) {
-                addProfiler(tool, new JfrProfiler(jmxDump, ctx.fs(), output.resolve("jfr"), duration, clock));
+                addProfiler(tool, new JfrProfiler(jmxDump, fs, output.resolve("jfr"), duration, clock));
             }
             if (profilers.contains(ProfilerSource.THREADS)) {
                 addProfiler(
-                        tool,
-                        new JstackProfiler(jmxDump, ctx.fs(), output.resolve("threads"), Duration.ofSeconds(1), clock));
+                        tool, new JstackProfiler(jmxDump, fs, output.resolve("threads"), Duration.ofSeconds(1), clock));
             }
 
             tool.start();
@@ -118,8 +128,8 @@ public class ProfileCommand extends AbstractAdminCommand {
                     ctx.out().println("All profilers failed.");
                 } else {
                     ctx.out().println("Profiler results:");
-                    for (Path path : ctx.fs().listFiles(output)) {
-                        try (var fileStream = ctx.fs().streamFilesRecursive(path, false)) {
+                    for (Path path : fs.listFiles(output)) {
+                        try (var fileStream = fs.streamFilesRecursive(path, false)) {
                             List<Path> files =
                                     fileStream.map(FileHandle::getRelativePath).toList();
                             ctx.out()
@@ -134,6 +144,16 @@ public class ProfileCommand extends AbstractAdminCommand {
                                     ctx.out().printf("\t...%n");
                                 }
                             }
+                        }
+                    }
+
+                    if (compress) {
+                        Path archive = output.resolve(String.format("profile-%s.gzip", clock.instant()));
+                        ctx.out().printf("%nCompressing result into %s", archive.getFileName());
+                        Dumper dumper = new Dumper(ctx.out());
+                        dumper.dump(output, output, dumper.openForDump(archive), GZIP, path -> path.equals(archive));
+                        for (Path path : fs.listFiles(output, fs::isDirectory)) {
+                            fs.deleteRecursively(path);
                         }
                     }
                 }
