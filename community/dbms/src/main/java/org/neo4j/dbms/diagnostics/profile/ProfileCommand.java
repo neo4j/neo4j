@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
@@ -33,6 +34,7 @@ import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileHandle;
+import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.time.SystemNanoClock;
@@ -99,10 +101,13 @@ public class ProfileCommand extends AbstractAdminCommand {
 
             tool.start();
             Stopwatch stopwatch = Stopwatch.start();
+            NonInteractiveProgress progress = new NonInteractiveProgress(ctx.out(), true);
             while (!stopwatch.hasTimedOut(duration) && tool.hasRunningProfilers()) {
                 Thread.sleep(10);
+                progress.percentChanged((int) (stopwatch.elapsed(TimeUnit.MILLISECONDS) * 100 / duration.toMillis()));
             }
             tool.stop();
+            progress.finished();
             List<Profiler> profilers = Iterators.asList(tool.profilers().iterator());
             if (!stopwatch.hasTimedOut(duration)) {
                 ctx.out().println("Profiler stopped before expected duration.");
