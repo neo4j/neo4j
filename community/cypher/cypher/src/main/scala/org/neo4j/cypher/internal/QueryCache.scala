@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.impl.query.TransactionalContext

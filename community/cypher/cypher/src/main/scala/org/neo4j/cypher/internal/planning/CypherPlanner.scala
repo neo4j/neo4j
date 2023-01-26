@@ -508,7 +508,7 @@ case class CypherPlanner(
         names += name
         writer.writeTo(extractor)
         mapBuilder.add(name, extractor.value)
-      case ExplicitParameter(name, _) =>
+      case ExplicitParameter(name, _, _) =>
         names += name
     }
     (names.distinct, mapBuilder.build())

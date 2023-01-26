@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.Unspecified
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.HasLabels

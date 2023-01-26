@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelations
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
