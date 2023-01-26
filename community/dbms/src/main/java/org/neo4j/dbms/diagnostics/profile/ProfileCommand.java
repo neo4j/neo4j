@@ -22,11 +22,13 @@ package org.neo4j.dbms.diagnostics.profile;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -51,12 +53,27 @@ public class ProfileCommand extends AbstractAdminCommand {
             converter = Converters.DurationConverter.class)
     private Duration duration;
 
+    @CommandLine.Parameters(description = "The selected profilers to run. Valid values: ${COMPLETION-CANDIDATES}")
+    private Set<ProfilerSource> profilers = Set.of(ProfilerSource.values());
+
+    public enum ProfilerSource {
+        JFR,
+        THREADS,
+    }
+
     public ProfileCommand(ExecutionContext ctx) {
         super(ctx);
     }
 
     @Override
     protected void execute() throws Exception {
+        if (duration.isNegative() || duration.isZero()) {
+            ctx.out().println("Duration needs to be positive");
+            return;
+        }
+        if (profilers.isEmpty()) {
+            profilers = Set.of(ProfilerSource.values());
+        }
         Config config = createPrefilledConfigBuilder().build();
         JmxDump jmxDump = new JMXDumper(config, ctx.fs(), ctx.out(), ctx.err(), verbose)
                 .getJMXDump()
@@ -65,11 +82,21 @@ public class ProfileCommand extends AbstractAdminCommand {
         // TODO improve output from dumper, its designed only for report command
         SystemNanoClock clock = Clocks.nanoClock();
 
+        ctx.out()
+                .printf(
+                        "Profilers %s selected. Duration %s. Output directory %s%n",
+                        profilers, SettingValueParsers.DURATION.valueToString(duration), output.toAbsolutePath());
         try (ProfileTool tool = new ProfileTool()) {
-            addProfiler(tool, new JfrProfiler(jmxDump, ctx.fs(), output.resolve("jfr"), duration, clock));
-            addProfiler(
-                    tool,
-                    new JstackProfiler(jmxDump, ctx.fs(), output.resolve("threads"), Duration.ofSeconds(1), clock));
+
+            if (profilers.contains(ProfilerSource.JFR)) {
+                addProfiler(tool, new JfrProfiler(jmxDump, ctx.fs(), output.resolve("jfr"), duration, clock));
+            }
+            if (profilers.contains(ProfilerSource.THREADS)) {
+                addProfiler(
+                        tool,
+                        new JstackProfiler(jmxDump, ctx.fs(), output.resolve("threads"), Duration.ofSeconds(1), clock));
+            }
+
             tool.start();
             Stopwatch stopwatch = Stopwatch.start();
             while (!stopwatch.hasTimedOut(duration) && tool.hasRunningProfilers()) {

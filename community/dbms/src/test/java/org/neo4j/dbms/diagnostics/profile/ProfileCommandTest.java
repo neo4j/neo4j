@@ -32,7 +32,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -88,14 +88,33 @@ class ProfileCommandTest {
     @Test
     void shouldExecuteForSomeTimeAndGenerateProfiles() throws Exception {
         execute(Duration.ofSeconds(1));
-        assertHasJfr();
-        assertHasThreadDumps();
+        assertThat(hasJfr()).isTrue();
+        assertThat(hasThreadDumps()).isTrue();
     }
 
     @Test
     void shouldThrowWhenNoProcessIsFound() throws Exception {
         setPid(Long.MAX_VALUE);
         assertThatThrownBy(() -> execute(Duration.ofSeconds(1))).hasMessageContaining("Can not connect");
+    }
+
+    @Test
+    void shouldBeAbleToSelectProfiles() throws Exception {
+        execute(Duration.ofSeconds(1), "JFR");
+        assertThat(hasJfr()).isTrue();
+        assertThat(hasThreadDumps()).isFalse();
+
+        fs.deleteRecursively(output);
+
+        execute(Duration.ofSeconds(1), "THREADS");
+        assertThat(hasJfr()).isFalse();
+        assertThat(hasThreadDumps()).isTrue();
+
+        fs.deleteRecursively(output);
+
+        execute(Duration.ofSeconds(1), "JFR", "THREADS");
+        assertThat(hasJfr()).isTrue();
+        assertThat(hasThreadDumps()).isTrue();
     }
 
     @Test
@@ -116,22 +135,18 @@ class ProfileCommandTest {
         assertThat(ctxOut.toString()).contains("All profilers failed");
     }
 
-    private void assertHasJfr() throws IOException {
-        List<Path> files = Arrays.stream(fs.listFiles(
-                        jfrDir, path -> path.getFileName().toString().endsWith(".jfr")))
-                .toList();
-        assertThat(files).hasSize(1);
-    }
-
-    private void assertHasThreadDumps() throws IOException {
-        assertThat(hasThreadDumps()).isTrue();
+    private boolean hasJfr() throws IOException {
+        return fs.isDirectory(jfrDir)
+                && fs.listFiles(jfrDir, path -> path.getFileName().toString().endsWith(".jfr")).length == 1;
     }
 
     private boolean hasThreadDumps() throws IOException {
-        List<Path> files = Arrays.stream(fs.listFiles(
-                        threadDumpDir, path -> path.getFileName().toString().startsWith("threads")))
-                .toList();
-        return files.size() > 0;
+        return fs.isDirectory(threadDumpDir)
+                && fs.listFiles(
+                                        threadDumpDir,
+                                        path -> path.getFileName().toString().startsWith("threads"))
+                                .length
+                        > 0;
     }
 
     private void setPid(long pid) throws IOException {
@@ -141,9 +156,14 @@ class ProfileCommandTest {
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", pid), EmptyMemoryTracker.INSTANCE);
     }
 
-    private Void execute(Duration duration) throws Exception {
+    private Void execute(Duration duration, String... additionalArgs) throws Exception {
         ProfileCommand cmd = new ProfileCommand(context);
-        CommandLine.populateCommand(cmd, output.toString(), duration.getSeconds() + "s");
+        List<String> args = new ArrayList<>();
+        args.add(output.toString());
+        args.add(duration.getSeconds() + "s");
+        Collections.addAll(args, additionalArgs);
+
+        CommandLine.populateCommand(cmd, args.toArray(new String[0]));
         cmd.execute();
         return null;
     }
