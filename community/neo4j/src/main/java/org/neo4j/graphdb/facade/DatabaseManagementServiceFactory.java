@@ -173,11 +173,13 @@ public class DatabaseManagementServiceFactory {
                         globalModule.getGlobalMonitors(),
                         globalModule.getGlobalClock(),
                         logService);
-        globalLife.add(createBoltServer(
+        var boltServer = createBoltServer(
                 globalModule,
                 edition,
                 boltGraphDatabaseManagementServiceSPI,
-                databaseContextProvider.databaseIdRepository()));
+                databaseContextProvider.databaseIdRepository());
+        globalLife.add(boltServer);
+        globalDependencies.satisfyDependency(boltServer);
         var webServer = createWebServer(
                 edition,
                 managementService,

@@ -231,6 +231,11 @@ public class BoltServer extends LifecycleAdapter {
         return config.get(BoltConnector.enabled);
     }
 
+    @VisibleForTesting
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
     @Override
     public void init() {
         if (!isEnabled()) {

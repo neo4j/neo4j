@@ -19,13 +19,11 @@
  */
 package org.neo4j.bolt;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
@@ -41,6 +39,7 @@ import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -60,6 +59,11 @@ public class SchedulerBusyIT {
 
     @Inject
     private Neo4jWithSocket server;
+
+    private BoltServer boltServer() {
+        var gdb = (GraphDatabaseAPI) server.graphDatabaseService();
+        return gdb.getDependencyResolver().resolveDependency(BoltServer.class);
+    }
 
     @FactoryFunction
     void customizeDatabase(TestDatabaseManagementServiceBuilder factory) {
@@ -91,26 +95,9 @@ public class SchedulerBusyIT {
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
-    private static void eventuallyEstablishNewConnection(
-            BoltWire wire, TransportConnection connection, Duration retryDuration) throws Exception {
-        var success = false;
-        var timeout = Instant.now().toEpochMilli() + retryDuration.toMillis();
-
-        while (!success && Instant.now().toEpochMilli() < timeout) {
-            try {
-                connection.send(wire.hello());
-                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-                success = true;
-            } catch (AssertionError error) {
-                connection.send(wire.reset());
-                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
-                Thread.sleep(500);
-            }
-        }
-
-        if (!success) {
-            fail("Failed to establish connection within timeout " + retryDuration);
-        }
+    private static void establishNewConnection(BoltWire wire, TransportConnection connection) throws Exception {
+        connection.send(wire.hello());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
     }
 
     @TransportTest
@@ -153,6 +140,8 @@ public class SchedulerBusyIT {
             @Negotiated TransportConnection connection3,
             @Negotiated TransportConnection connection4)
             throws Exception {
+        var executor = (ThreadPoolExecutor) boltServer().getExecutorService();
+
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
         enterStreaming(wire, connection1);
@@ -161,14 +150,22 @@ public class SchedulerBusyIT {
         // free up a slot for the new connection
         exitStreaming(wire, connection1);
 
+        while (!Thread.interrupted() && executor.getActiveCount() == 2) {
+            Thread.sleep(10);
+        }
+
         // send another request on a third connection in order to generate a new job submission
-        eventuallyEstablishNewConnection(wire, connection3, Duration.ofMinutes(2));
+        establishNewConnection(wire, connection3);
 
         // free up another slot for the new connection
         exitStreaming(wire, connection2);
 
+        while (!Thread.interrupted() && executor.getActiveCount() == 2) {
+            Thread.sleep(10);
+        }
+
         // send another request on a fourth connection in order to generate a new job submission
-        eventuallyEstablishNewConnection(wire, connection4, Duration.ofMinutes(2));
+        establishNewConnection(wire, connection4);
     }
 
     @TransportTest
