@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api.index.stats;
 
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
+import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsKey.TYPE_SAMPLE;
+import static org.neo4j.kernel.impl.api.index.stats.IndexStatisticsKey.TYPE_USAGE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -27,15 +29,14 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,6 +49,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -60,11 +62,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class IndexStatisticsStore extends LifecycleAdapter
         implements IndexStatisticsVisitor.Visitable, ConsistencyCheckable {
-    private static final ImmutableIndexStatistics EMPTY_STATISTICS = new ImmutableIndexStatistics(0, 0, 0, 0);
-
-    // Used in GBPTree.seek. Please don't use for writes
-    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey(Long.MIN_VALUE);
-    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey(Long.MAX_VALUE);
+    private static final IndexStatisticsValue EMPTY_STATISTICS = new IndexStatisticsValue();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fileSystem;
@@ -76,9 +74,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
     private final boolean readOnly;
     private GBPTree<IndexStatisticsKey, IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent
-    // writers
-    // It's assumed that the data in this map will be so small that everything can just be in it always.
-    private final ConcurrentHashMap<Long, ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
+    // writers. It's assumed that the data in this map will be so small that everything can just be in it always.
+    private final ConcurrentHashMap<IndexStatisticsKey, IndexStatisticsValue> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore(
             PageCache pageCache,
@@ -142,9 +139,7 @@ public class IndexStatisticsStore extends LifecycleAdapter
                     contextFactory,
                     pageCacheTracer);
             try (var cursorContext = contextFactory.create("indexStatisticScan")) {
-                scanTree(
-                        (key, value) -> cache.put(key.getIndexId(), new ImmutableIndexStatistics(value)),
-                        cursorContext);
+                scanTree(cache::put, cursorContext);
             }
         } catch (TreeFileNotFoundException e) {
             throw new IllegalStateException(
@@ -154,42 +149,108 @@ public class IndexStatisticsStore extends LifecycleAdapter
         }
     }
 
-    public IndexSample indexSample(long indexId) {
-        ImmutableIndexStatistics value = cache.getOrDefault(indexId, EMPTY_STATISTICS);
-        return new IndexSample(value.indexSize, value.sampleUniqueValues, value.sampleSize, value.updatesCount);
+    /**
+     * Incrementally add usage stats. If no previous usage statistics for given index exist, the added stats will be used
+     * as is. If there is a current value, the added stats will be added to it like this:
+     * - timeLastUsed: use the highest time value (most resent in time) between current and added
+     * - queryCount: use the sum of current and added count
+     * - trackedSinceTime: use the lowest value (oldest in time) between current and added
+     */
+    public void addUsageStats(long indexId, IndexUsageStats added) {
+        var newValue = new IndexStatisticsValue();
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED, added.lastUsedTime());
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT, added.queryCount());
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED, added.trackedSinceTime());
+        cache.compute(new IndexStatisticsKey(indexId, TYPE_USAGE), (key, currentValue) -> {
+            if (currentValue != null) {
+                newValue.set(
+                        IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT,
+                        added.queryCount() + currentValue.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT));
+                newValue.set(
+                        IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED,
+                        Long.min(
+                                currentValue.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED),
+                                added.trackedSinceTime()));
+                newValue.set(
+                        IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED,
+                        Long.max(
+                                currentValue.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
+                                added.lastUsedTime()));
+            }
+            return newValue;
+        });
     }
 
-    public void replaceStats(long indexId, IndexSample sample) {
-        cache.put(
+    public IndexUsageStats usageStats(long indexId) {
+        return get(
                 indexId,
-                new ImmutableIndexStatistics(
-                        sample.uniqueValues(), sample.sampleSize(), sample.updates(), sample.indexSize()));
+                TYPE_USAGE,
+                stats -> new IndexUsageStats(
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT),
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED)));
+    }
+
+    public IndexSample indexSample(long indexId) {
+        return get(
+                indexId,
+                TYPE_SAMPLE,
+                stats -> new IndexSample(
+                        stats.get(IndexStatisticsValue.INDEX_SAMPLE_INDEX_SIZE),
+                        stats.get(IndexStatisticsValue.INDEX_SAMPLE_UNIQUE_VALUES),
+                        stats.get(IndexStatisticsValue.INDEX_SAMPLE_SIZE),
+                        stats.get(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT)));
+    }
+
+    private <T> T get(long indexId, byte type, Function<IndexStatisticsValue, T> converter) {
+        var value = cache.getOrDefault(new IndexStatisticsKey(indexId, type), EMPTY_STATISTICS);
+        return converter.apply(value);
+    }
+
+    public void setSampleStats(long indexId, IndexSample sample) {
+        var value = new IndexStatisticsValue();
+        value.set(IndexStatisticsValue.INDEX_SAMPLE_UNIQUE_VALUES, sample.uniqueValues());
+        value.set(IndexStatisticsValue.INDEX_SAMPLE_SIZE, sample.sampleSize());
+        value.set(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT, sample.updates());
+        value.set(IndexStatisticsValue.INDEX_SAMPLE_INDEX_SIZE, sample.indexSize());
+        cache.put(new IndexStatisticsKey(indexId, TYPE_SAMPLE), value);
     }
 
     public void removeIndex(long indexId) {
-        cache.remove(indexId);
+        cache.remove(new IndexStatisticsKey(indexId, TYPE_SAMPLE));
+        cache.remove(new IndexStatisticsKey(indexId, TYPE_USAGE));
     }
 
     public void incrementIndexUpdates(long indexId, long delta) {
-        cache.computeIfPresent(
-                indexId,
-                (id, existing) -> new ImmutableIndexStatistics(
-                        existing.sampleUniqueValues,
-                        existing.sampleSize,
-                        existing.updatesCount + delta,
-                        existing.indexSize));
+        cache.computeIfPresent(new IndexStatisticsKey(indexId, TYPE_SAMPLE), (key, existing) -> {
+            var copy = existing.copy();
+            copy.set(
+                    IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT,
+                    copy.get(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT) + delta);
+            return copy;
+        });
     }
 
     @Override
     public void visit(IndexStatisticsVisitor visitor, CursorContext cursorContext) {
         try {
             scanTree(
-                    (key, value) -> visitor.visitIndexStatistics(
-                            key.getIndexId(),
-                            value.getSampleUniqueValues(),
-                            value.getSampleSize(),
-                            value.getUpdatesCount(),
-                            value.getIndexSize()),
+                    (key, value) -> {
+                        switch (key.getType()) {
+                            case TYPE_SAMPLE -> visitor.visitSampleStatistics(
+                                    key.getIndexId(),
+                                    value.get(IndexStatisticsValue.INDEX_SAMPLE_UNIQUE_VALUES),
+                                    value.get(IndexStatisticsValue.INDEX_SAMPLE_SIZE),
+                                    value.get(IndexStatisticsValue.INDEX_SAMPLE_UPDATES_COUNT),
+                                    value.get(IndexStatisticsValue.INDEX_SAMPLE_INDEX_SIZE));
+                            case TYPE_USAGE -> visitor.visitUsageStatistics(
+                                    key.getIndexId(),
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT),
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED));
+                            default -> throw new IllegalArgumentException("Unknown key type for " + key);
+                        }
+                    },
                     cursorContext);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -221,11 +282,14 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     private void scanTree(BiConsumer<IndexStatisticsKey, IndexStatisticsValue> consumer, CursorContext cursorContext)
             throws IOException {
-        try (Seeker<IndexStatisticsKey, IndexStatisticsValue> seek =
-                tree.seek(LOWEST_KEY, HIGHEST_KEY, cursorContext)) {
+        var high = layout.newKey();
+        var low = layout.newKey();
+        layout.initializeAsHighest(high);
+        layout.initializeAsLowest(low);
+        try (var seek = tree.seek(low, high, cursorContext)) {
             while (seek.next()) {
-                IndexStatisticsKey key = layout.copyKey(seek.key(), new IndexStatisticsKey());
-                IndexStatisticsValue value = seek.value();
+                var key = layout.copyKey(seek.key(), new IndexStatisticsKey());
+                var value = seek.value().copy();
                 consumer.accept(key, value);
             }
         }
@@ -249,12 +313,8 @@ public class IndexStatisticsStore extends LifecycleAdapter
     private void writeCacheContentsIntoTree(CursorContext cursorContext) throws IOException {
         try (Writer<IndexStatisticsKey, IndexStatisticsValue> writer =
                 tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
-            for (Map.Entry<Long, ImmutableIndexStatistics> entry : cache.entrySet()) {
-                ImmutableIndexStatistics stats = entry.getValue();
-                writer.put(
-                        new IndexStatisticsKey(entry.getKey()),
-                        new IndexStatisticsValue(
-                                stats.sampleUniqueValues, stats.sampleSize, stats.updatesCount, stats.indexSize));
+            for (var entry : cache.entrySet()) {
+                writer.put(entry.getKey(), entry.getValue());
             }
         }
     }
@@ -267,24 +327,6 @@ public class IndexStatisticsStore extends LifecycleAdapter
     public void shutdown() throws IOException {
         if (tree != null) {
             tree.close();
-        }
-    }
-
-    private static class ImmutableIndexStatistics {
-        private final long sampleUniqueValues;
-        private final long sampleSize;
-        private final long updatesCount;
-        private final long indexSize;
-
-        ImmutableIndexStatistics(long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize) {
-            this.sampleUniqueValues = sampleUniqueValues;
-            this.sampleSize = sampleSize;
-            this.updatesCount = updatesCount;
-            this.indexSize = indexSize;
-        }
-
-        ImmutableIndexStatistics(IndexStatisticsValue value) {
-            this(value.getSampleUniqueValues(), value.getSampleSize(), value.getUpdatesCount(), value.getIndexSize());
         }
     }
 }

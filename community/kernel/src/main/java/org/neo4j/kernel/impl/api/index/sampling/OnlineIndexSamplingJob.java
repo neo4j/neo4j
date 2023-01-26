@@ -80,7 +80,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob {
 
                     // check again if the index is online before saving the counts in the store
                     if (indexProxy.getState() == ONLINE) {
-                        indexStatisticsStore.replaceStats(indexId, sample);
+                        indexStatisticsStore.setSampleStats(indexId, sample);
                         durationLogger.markAsFinished();
                         log.debug(format(
                                 "Sampled index %s with %d unique values in sample of avg size %d taken from "

@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.stats;
+package org.neo4j.kernel.api.index;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-
-public interface IndexStatisticsVisitor {
-    interface Visitable {
-        void visit(IndexStatisticsVisitor visitor, CursorContext cursorContext);
-    }
-
-    void visitSampleStatistics(
-            long indexId, long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize);
-
-    void visitUsageStatistics(long indexId, long lastUsedTime, long queryCount, long trackedSinceTime);
-}
+/**
+ * Used to hold usage statistics of an index.
+ *
+ * @param lastUsedTime {@link System#currentTimeMillis()} of last query made to the index
+ * @param queryCount Number of queries since {@link #trackedSinceTime}
+ * @param trackedSinceTime {@link System#currentTimeMillis()} when tracking of usage in index started
+ */
+public record IndexUsageStats(long lastUsedTime, long queryCount, long trackedSinceTime) {}

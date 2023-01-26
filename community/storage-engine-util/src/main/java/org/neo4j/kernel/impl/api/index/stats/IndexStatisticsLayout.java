@@ -38,7 +38,7 @@ public class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey, In
 
     @Override
     public IndexStatisticsKey copyKey(IndexStatisticsKey key, IndexStatisticsKey into) {
-        into.setIndexId(key.getIndexId());
+        into.copyFrom(key);
         return into;
     }
 
@@ -59,42 +59,36 @@ public class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey, In
 
     @Override
     public void writeKey(PageCursor cursor, IndexStatisticsKey key) {
-        cursor.putLong(key.getIndexId());
+        key.write(cursor);
     }
 
     @Override
     public void writeValue(PageCursor cursor, IndexStatisticsValue value) {
-        cursor.putLong(value.getSampleUniqueValues());
-        cursor.putLong(value.getSampleSize());
-        cursor.putLong(value.getUpdatesCount());
-        cursor.putLong(value.getIndexSize());
+        value.write(cursor);
     }
 
     @Override
     public void readKey(PageCursor cursor, IndexStatisticsKey into, int keySize) {
-        into.setIndexId(cursor.getLong());
+        into.read(cursor);
     }
 
     @Override
     public void readValue(PageCursor cursor, IndexStatisticsValue into, int valueSize) {
-        into.setSampleUniqueValues(cursor.getLong());
-        into.setSampleSize(cursor.getLong());
-        into.setUpdatesCount(cursor.getLong());
-        into.setIndexSize(cursor.getLong());
+        into.read(cursor);
     }
 
     @Override
     public int compare(IndexStatisticsKey o1, IndexStatisticsKey o2) {
-        return Long.compare(o1.getIndexId(), o2.getIndexId());
+        return o1.compareTo(o2);
     }
 
     @Override
     public void initializeAsLowest(IndexStatisticsKey key) {
-        key.setIndexId(Long.MIN_VALUE);
+        key.initializeAsLowest();
     }
 
     @Override
     public void initializeAsHighest(IndexStatisticsKey key) {
-        key.setIndexId(Long.MAX_VALUE);
+        key.initializeAsHighest();
     }
 }

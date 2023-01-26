@@ -175,7 +175,7 @@ public class IndexIdMapper implements IdMapper {
                     var populator = entry.getValue();
                     populator.populator.scanCompleted(
                             PhaseTracker.nullInstance, workScheduler, conflictHandler, CursorContext.NULL_CONTEXT);
-                    indexStatisticsStore.replaceStats(
+                    indexStatisticsStore.setSampleStats(
                             populator.descriptor.getId(), populator.populator.sample(CursorContext.NULL_CONTEXT));
                     populator.populator.close(true, CursorContext.NULL_CONTEXT);
                 } catch (IndexEntryConflictException e) {

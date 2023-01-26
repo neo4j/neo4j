@@ -53,7 +53,7 @@ class ValueIndexProxyStrategy implements IndexProxyStrategy {
 
     @Override
     public void replaceStatisticsForIndex(IndexSample sample) {
-        statisticsStore.replaceStats(indexDescriptor.getId(), sample);
+        statisticsStore.setSampleStats(indexDescriptor.getId(), sample);
     }
 
     @Override

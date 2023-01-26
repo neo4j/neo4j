@@ -375,7 +375,7 @@ class MultipleIndexPopulatorTest {
 
         multipleIndexPopulator.stop(NULL_CONTEXT);
 
-        verify(indexStatisticsStore, times(2)).replaceStats(anyLong(), eq(new IndexSample(0, 0, 0)));
+        verify(indexStatisticsStore, times(2)).setSampleStats(anyLong(), eq(new IndexSample(0, 0, 0)));
         verify(indexPopulator1).close(false, NULL_CONTEXT);
         verify(indexPopulator2).close(false, NULL_CONTEXT);
     }
@@ -402,7 +402,7 @@ class MultipleIndexPopulatorTest {
 
         verify(indexPopulator2).close(true, NULL_CONTEXT);
         verify(indexPopulator2).sample(NULL_CONTEXT);
-        verify(indexStatisticsStore).replaceStats(anyLong(), any());
+        verify(indexStatisticsStore).setSampleStats(anyLong(), any());
         verify(schemaState).clear();
     }
 
@@ -502,7 +502,7 @@ class MultipleIndexPopulatorTest {
 
         verify(indexPopulator).close(true, NULL_CONTEXT);
 
-        verify(indexStatisticsStore).replaceStats(1, sample);
+        verify(indexStatisticsStore).setSampleStats(1, sample);
         verify(schemaState).clear();
     }
 

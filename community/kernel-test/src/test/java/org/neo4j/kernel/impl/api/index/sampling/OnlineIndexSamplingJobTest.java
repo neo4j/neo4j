@@ -82,7 +82,7 @@ class OnlineIndexSamplingJobTest {
         job.run();
 
         // then
-        verify(indexStatisticsStore).replaceStats(indexId, sample);
+        verify(indexStatisticsStore).setSampleStats(indexId, sample);
         verifyNoMoreInteractions(indexStatisticsStore);
     }
 

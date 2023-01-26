@@ -19,52 +19,48 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-class IndexStatisticsValue {
-    static final int SIZE = Long.SIZE * 4;
+import org.neo4j.io.pagecache.PageCursor;
 
-    private long sampleUniqueValues;
-    private long sampleSize;
-    private long updatesCount;
-    private long indexSize;
+class IndexStatisticsValue {
+    static final int NUM_LONGS = 4;
+    static final int SIZE = Long.SIZE * NUM_LONGS;
+
+    static final int INDEX_SAMPLE_UNIQUE_VALUES = 0;
+    static final int INDEX_SAMPLE_SIZE = 1;
+    static final int INDEX_SAMPLE_UPDATES_COUNT = 2;
+    static final int INDEX_SAMPLE_INDEX_SIZE = 3;
+
+    static final int INDEX_USAGE_TIME_LAST_USED = 0;
+    static final int INDEX_USAGE_QUERY_COUNT = 1;
+    static final int INDEX_USAGE_TIME_FIRST_TRACKED = 2;
+
+    final long[] data = new long[NUM_LONGS];
 
     IndexStatisticsValue() {}
 
-    IndexStatisticsValue(long sampleUniqueValues, long sampleSize, long updatesCount, long indexSize) {
-        this.sampleUniqueValues = sampleUniqueValues;
-        this.sampleSize = sampleSize;
-        this.updatesCount = updatesCount;
-        this.indexSize = indexSize;
+    void set(int dataIndex, long value) {
+        this.data[dataIndex] = value;
     }
 
-    long getSampleUniqueValues() {
-        return sampleUniqueValues;
+    long get(int dataIndex) {
+        return data[dataIndex];
     }
 
-    void setSampleUniqueValues(long sampleUniqueValues) {
-        this.sampleUniqueValues = sampleUniqueValues;
+    IndexStatisticsValue copy() {
+        var copy = new IndexStatisticsValue();
+        System.arraycopy(data, 0, copy.data, 0, NUM_LONGS);
+        return copy;
     }
 
-    public long getSampleSize() {
-        return sampleSize;
+    void write(PageCursor cursor) {
+        for (int i = 0; i < IndexStatisticsValue.NUM_LONGS; i++) {
+            cursor.putLong(data[i]);
+        }
     }
 
-    public void setSampleSize(long sampleSize) {
-        this.sampleSize = sampleSize;
-    }
-
-    long getUpdatesCount() {
-        return updatesCount;
-    }
-
-    void setUpdatesCount(long updatesCount) {
-        this.updatesCount = updatesCount;
-    }
-
-    public long getIndexSize() {
-        return indexSize;
-    }
-
-    public void setIndexSize(long indexSize) {
-        this.indexSize = indexSize;
+    void read(PageCursor cursor) {
+        for (int i = 0; i < IndexStatisticsValue.NUM_LONGS; i++) {
+            data[i] = cursor.getLong();
+        }
     }
 }

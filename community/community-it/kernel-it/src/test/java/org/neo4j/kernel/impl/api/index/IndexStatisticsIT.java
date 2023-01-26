@@ -153,7 +153,7 @@ class IndexStatisticsIT {
     }
 
     private void resetIndexCounts(long indexId) {
-        indexStatistics().replaceStats(indexId, new IndexSample(0, 0, 0));
+        indexStatistics().setSampleStats(indexId, new IndexSample(0, 0, 0));
     }
 
     private <T> T resolveDependency(Class<T> clazz) {
