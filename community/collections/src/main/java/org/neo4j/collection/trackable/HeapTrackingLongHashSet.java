@@ -30,7 +30,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable {
+public final class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingLongHashSet.class);
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
