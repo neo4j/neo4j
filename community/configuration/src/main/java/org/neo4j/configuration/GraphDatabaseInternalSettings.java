@@ -164,6 +164,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("The maximum size in bytes of methods generated for compiled expressions")
+    public static final Setting<Integer> cypher_expression_compiled_method_limit = newBuilder(
+                    "internal.cypher.expression.method_limit", INT, 8000)
+            .addConstraint(min(0))
+            .addConstraint(max(65535))
+            .build();
+
+    @Internal
     @Description("Number of uses before an expression is considered for compilation")
     public static final Setting<Integer> cypher_expression_recompilation_limit = newBuilder(
                     "internal.cypher.expression_recompilation_limit", INT, 10)
@@ -347,6 +355,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.pipelined.operator_engine",
                     ofEnum(CypherOperatorEngine.class),
                     CypherOperatorEngine.DEFAULT)
+            .build();
+
+    @Internal
+    @Description("The maximum size in bytes of methods generated for fused operators")
+    public static final Setting<Integer> cypher_operator_compiled_method_limit = newBuilder(
+                    "internal.cypher.pipelined.method_limit", INT, 65535)
+            .addConstraint(min(0))
+            .addConstraint(max(65535))
             .build();
 
     public enum CypherPipelinedInterpretedPipesFallback {

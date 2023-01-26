@@ -87,6 +87,10 @@ class CypherConfiguration private (val config: Config) {
   val recompilationLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit)
   val operatorEngine: CypherOperatorEngineOption = CypherOperatorEngineOption.fromConfig(config)
 
+  val compiledExpressionMethodLimit: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_expression_compiled_method_limit)
+  val operatorFusingMethodLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_operator_compiled_method_limit)
+
   val interpretedPipesFallback: CypherInterpretedPipesFallbackOption =
     CypherInterpretedPipesFallbackOption.fromConfig(config)
 

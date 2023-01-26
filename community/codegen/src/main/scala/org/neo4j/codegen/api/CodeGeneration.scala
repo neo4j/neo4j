@@ -38,6 +38,12 @@ import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.TypeReference.OBJECT
+import org.neo4j.codegen.api.CodeGeneration.ByteCodeGeneration
+import org.neo4j.codegen.api.CodeGeneration.CodeGenerationMode
+import org.neo4j.codegen.api.CodeGeneration.CodeGenerationMode.modeFromDebugOptions
+import org.neo4j.codegen.api.CodeGeneration.DEBUG_PRINT_BYTECODE
+import org.neo4j.codegen.api.CodeGeneration.DEBUG_PRINT_SOURCE
+import org.neo4j.codegen.api.CodeGeneration.SourceCodeGeneration
 import org.neo4j.codegen.api.SizeEstimation.estimateByteCodeSize
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
@@ -61,6 +67,9 @@ import scala.language.existentials
  */
 object CodeGeneration {
 
+  // the jvm doesn't allow methods bigger than 65535 bytes,
+  final val MAX_METHOD_LIMIT: Int = 65535
+
   // Use these options for Debugging. They will print generated code to stdout
   private val DEBUG_PRINT_SOURCE = false
   private val DEBUG_PRINT_BYTECODE = false
@@ -68,15 +77,26 @@ object CodeGeneration {
   final val GENERATE_JAVA_SOURCE_DEBUG_OPTION = CypherDebugOption.generateJavaSource.name
   final val GENERATED_SOURCE_LOCATION_PROPERTY = "org.neo4j.cypher.DEBUG.generated_source_location"
 
+  def fromDebugOptions(methodLimit: Int = MAX_METHOD_LIMIT, debugOptions: CypherDebugOptions): CodeGeneration =
+    codeGeneration(methodLimit, modeFromDebugOptions(debugOptions))
+
+  def codeGeneration(
+    methodLimit: Int = MAX_METHOD_LIMIT,
+    mode: CodeGenerationMode =
+      ByteCodeGeneration(new CodeSaver(false, false))
+  ): CodeGeneration = new CodeGeneration(methodLimit, mode)
+
   sealed trait CodeGenerationMode {
     def saver: CodeSaver
   }
+
   case class ByteCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
+
   case class SourceCodeGeneration(saver: CodeSaver) extends CodeGenerationMode
 
   object CodeGenerationMode {
 
-    def fromDebugOptions(debugOptions: CypherDebugOptions): CodeGenerationMode = {
+    def modeFromDebugOptions(debugOptions: CypherDebugOptions): CodeGenerationMode = {
       if (debugOptions.generateJavaSourceEnabled) {
         val saveSourceToFileLocation = Option(System.getProperty(GENERATED_SOURCE_LOCATION_PROPERTY)).map(Paths.get(_))
         val saver =
@@ -110,6 +130,21 @@ object CodeGeneration {
     def sourceCode: Seq[(String, String)] = _source.toSeq
 
     def bytecode: Seq[(String, String)] = _bytecode.toSeq
+  }
+}
+
+class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMode) {
+
+  def createGenerator(): CodeGenerator = {
+    var (strategy, options) = (codeGenerationMode, DEBUG_PRINT_SOURCE) match {
+      case (SourceCodeGeneration(saver), _)   => (SOURCECODE, saver.options)
+      case (ByteCodeGeneration(saver), true)  => (SOURCECODE, saver.options)
+      case (ByteCodeGeneration(saver), false) => (BYTECODE, saver.options)
+    }
+    if (DEBUG_PRINT_SOURCE) options ::= PRINT_SOURCE
+    if (DEBUG_PRINT_BYTECODE) options ::= PRINT_BYTECODE
+
+    generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
 
   def compileClass[T](c: ClassDeclaration[T], generator: CodeGenerator): ClassHandle = {
@@ -180,18 +215,6 @@ object CodeGeneration {
       }
       initializationCode(block)
     }
-  }
-
-  def createGenerator(codeGenerationMode: CodeGenerationMode): CodeGenerator = {
-    var (strategy, options) = (codeGenerationMode, DEBUG_PRINT_SOURCE) match {
-      case (SourceCodeGeneration(saver), _)   => (SOURCECODE, saver.options)
-      case (ByteCodeGeneration(saver), true)  => (SOURCECODE, saver.options)
-      case (ByteCodeGeneration(saver), false) => (BYTECODE, saver.options)
-    }
-    if (DEBUG_PRINT_SOURCE) options ::= PRINT_SOURCE
-    if (DEBUG_PRINT_BYTECODE) options ::= PRINT_BYTECODE
-
-    generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
 
   private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression =
@@ -507,9 +530,7 @@ object CodeGeneration {
 
   private def compileMethodDeclaration(clazz: codegen.ClassGenerator, m: MethodDeclaration): Unit = {
 
-    // the jvm doesn't allow methods bigger than 65535 bytes, this would have failed later
-    // before actually loading the code, however it is faster to fail early here.
-    if (estimateByteCodeSize(m) > 65535) {
+    if (estimateByteCodeSize(m) > methodLimit) {
       throw new CantCompileQueryException(s"Method '${m.methodName}' is too big")
     }
 

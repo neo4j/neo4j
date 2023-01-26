@@ -21,8 +21,6 @@ package org.neo4j.codegen.api
 
 import org.neo4j.codegen.ByteCodeVisitor
 import org.neo4j.codegen.TypeReference
-import org.neo4j.codegen.api.CodeGeneration.ByteCodeGeneration
-import org.neo4j.codegen.api.CodeGeneration.CodeSaver
 import org.neo4j.codegen.api.IntermediateRepresentation.add
 import org.neo4j.codegen.api.IntermediateRepresentation.and
 import org.neo4j.codegen.api.IntermediateRepresentation.arrayLength
@@ -79,8 +77,9 @@ import java.nio.ByteBuffer
 import scala.util.Random
 
 class SizeEstimationTest extends CypherFunSuite {
-  private val generator = CodeGeneration.createGenerator(ByteCodeGeneration(new CodeSaver(false, false)))
+  private val codeGeneration = CodeGeneration.codeGeneration()
   private val sizeComputer = new ByteSizeComputer
+  val generator = codeGeneration.createGenerator()
   generator.setByteCodeVisitor(sizeComputer)
 
   private val callBooleanMethod: IntermediateRepresentation =
@@ -1139,7 +1138,7 @@ class SizeEstimationTest extends CypherFunSuite {
   private def computeSize(ir: IntermediateRepresentation) = SizeEstimation.estimateByteCodeSize(ir, 1)
 
   private def sizeOf(ir: IntermediateRepresentation) = {
-    val handle = CodeGeneration.compileClass(clazz(ir), generator)
+    val handle = codeGeneration.compileClass(clazz(ir), generator)
     handle.loadClass()
     sizeComputer.byteSize
   }
