@@ -530,8 +530,11 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
 
   private def compileMethodDeclaration(clazz: codegen.ClassGenerator, m: MethodDeclaration): Unit = {
 
-    if (estimateByteCodeSize(m) > methodLimit) {
-      throw new CantCompileQueryException(s"Method '${m.methodName}' is too big")
+    val estimatedSize = estimateByteCodeSize(m)
+    if (estimatedSize > methodLimit) {
+      throw new CantCompileQueryException(
+        s"Method '${m.methodName}' is too big, estimated size $estimatedSize is bigger than $methodLimit"
+      )
     }
 
     val method = codegen.MethodDeclaration.method(
