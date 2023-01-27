@@ -28,7 +28,6 @@ import static org.neo4j.shell.Historian.defaultHistoryFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileTime;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.exception.CypherShellIOException;
 
@@ -55,9 +54,8 @@ class HistorianTest {
     }
 
     @Test
-    void shouldNotCreateHistoryFileIExists() throws IOException {
+    void shouldNotCreateHistoryFileIfExists() throws IOException {
         var existing = Files.createTempFile("temp-file", null);
-        FileTime lastModifiedTime = Files.getLastModifiedTime(existing);
         assertTrue(Files.exists(existing));
         Path actual = defaultHistoryFile(existing);
 
@@ -67,23 +65,9 @@ class HistorianTest {
     }
 
     @Test
-    void shouldRecreateIfFileIsEmptyDirectory() throws IOException {
+    void shouldFailIfFileIsDirectory() throws IOException {
         // given
         var tempDir = Files.createTempDirectory("temp-dir");
-
-        // when
-        assertTrue(Files.isDirectory(tempDir));
-        Path created = defaultHistoryFile(tempDir);
-
-        // then
-        assertFalse(Files.isDirectory(created));
-    }
-
-    @Test
-    void shouldFailIfFileIsNonEmptyDirectory() throws IOException {
-        // given
-        var tempDir = Files.createTempDirectory("temp-dir");
-        Files.createTempFile(tempDir, "temp-file", "tmp");
 
         // when
         assertTrue(Files.isDirectory(tempDir));

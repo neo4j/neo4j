@@ -70,12 +70,7 @@ public interface Historian {
     private static boolean safeExists(Path path) throws IOException {
         if (Files.exists(path)) {
             if (Files.isDirectory(path)) {
-                if (Files.list(path).findFirst().isEmpty()) {
-                    Files.delete(path);
-                    return false;
-                } else {
-                    throw new CypherShellIOException("History file cannot be a directory, please delete " + path);
-                }
+                throw new CypherShellIOException("History file cannot be a directory, please delete " + path);
             } else {
                 return true;
             }
@@ -85,7 +80,7 @@ public interface Historian {
     }
 
     private static Path createFileAndDirectories(Path path) throws IOException {
-        var directories = Files.createDirectories(path.getParent());
+        Files.createDirectories(path.getParent());
         return Files.createFile(path);
     }
 
