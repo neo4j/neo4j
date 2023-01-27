@@ -26,7 +26,7 @@ import org.neo4j.util.VisibleForTesting;
 
 public abstract class DbmsRuntimeRepository {
     private final DatabaseContextProvider<?> databaseContextProvider;
-    final DbmsRuntimeSystemGraphComponent component;
+    protected final DbmsRuntimeSystemGraphComponent component;
 
     private volatile DbmsRuntimeVersion currentVersion;
 

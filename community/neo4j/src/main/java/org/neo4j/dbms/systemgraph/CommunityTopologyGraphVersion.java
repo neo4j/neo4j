@@ -21,6 +21,7 @@ package org.neo4j.dbms.systemgraph;
 
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.SystemGraphComponent;
 
@@ -71,7 +72,7 @@ public enum CommunityTopologyGraphVersion implements ComponentVersion {
     }
 
     @Override
-    public boolean isCurrent() {
+    public boolean isCurrent(Config config) {
         return version == LATEST_COMMUNITY_TOPOLOGY_VERSION;
     }
 

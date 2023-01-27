@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.configuration.Config;
+
 /**
  * Describes the version scheme of those system components that needs versioning.
  * Also keeps track of the current versions and for which versions runtime and migration are supported.
@@ -48,7 +50,7 @@ public interface ComponentVersion {
 
     String getDescription();
 
-    boolean isCurrent();
+    boolean isCurrent(Config config);
 
     boolean migrationSupported();
 

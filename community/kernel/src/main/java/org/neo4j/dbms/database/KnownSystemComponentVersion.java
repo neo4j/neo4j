@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -50,8 +51,8 @@ public abstract class KnownSystemComponentVersion {
         this.debugLog = debugLog;
     }
 
-    public boolean isCurrent() {
-        return componentVersion.isCurrent();
+    public boolean isCurrent(Config config) {
+        return componentVersion.isCurrent(config);
     }
 
     public boolean migrationSupported() {
@@ -89,10 +90,10 @@ public abstract class KnownSystemComponentVersion {
         return new UnsupportedOperationException(message);
     }
 
-    public SystemGraphComponent.Status getStatus() {
+    public SystemGraphComponent.Status getStatus(Config config) {
         if (this.version == UNKNOWN_VERSION) {
             return SystemGraphComponent.Status.UNINITIALIZED;
-        } else if (this.isCurrent()) {
+        } else if (this.isCurrent(config)) {
             return SystemGraphComponent.Status.CURRENT;
         } else if (this.migrationSupported()) {
             return this.runtimeSupported()

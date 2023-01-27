@@ -613,7 +613,7 @@ public class Database extends AbstractDatabase {
                         databaseLayout,
                         fs,
                         new DbmsRuntimeFallbackKernelVersionProvider(
-                                databaseDependencies, databaseLayout.getDatabaseName()))
+                                databaseDependencies, databaseLayout.getDatabaseName(), databaseConfig))
                 .withConfig(databaseConfig)
                 .withDependencies(databaseDependencies)
                 .withLogProvider(internalLogProvider)
@@ -744,7 +744,7 @@ public class Database extends AbstractDatabase {
                                 databaseLayout,
                                 memoryTracker,
                                 new DbmsRuntimeFallbackKernelVersionProvider(
-                                        databaseDependencies, databaseLayout.getDatabaseName()));
+                                        databaseDependencies, databaseLayout.getDatabaseName(), databaseConfig));
             } catch (Exception e) {
                 throw new UnableToMigrateException("Fail to load log tail during upgrade.", e);
             }

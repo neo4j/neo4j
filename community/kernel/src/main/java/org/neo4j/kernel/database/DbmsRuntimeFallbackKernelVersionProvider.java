@@ -22,6 +22,7 @@ package org.neo4j.kernel.database;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.kernel.KernelVersion;
@@ -30,7 +31,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 public class DbmsRuntimeFallbackKernelVersionProvider implements KernelVersionProvider {
     private final KernelVersionProvider kernelVersionProvider;
 
-    public DbmsRuntimeFallbackKernelVersionProvider(Dependencies dependencies, String databaseName) {
+    public DbmsRuntimeFallbackKernelVersionProvider(Dependencies dependencies, String databaseName, Config config) {
         // Use the kernel version provider if we have one.
         // If for some reason we don't have access to a kernel version provider, we have to
         // fall back to something else. This provider tries to use the version from the system database.
@@ -43,7 +44,7 @@ public class DbmsRuntimeFallbackKernelVersionProvider implements KernelVersionPr
             this.kernelVersionProvider = dependencies.resolveDependency(KernelVersionProvider.class);
         } else if (SYSTEM_DATABASE_NAME.equals(databaseName)
                 || !dependencies.containsDependency(DbmsRuntimeRepository.class)) {
-            this.kernelVersionProvider = DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
+            this.kernelVersionProvider = DbmsRuntimeVersion.getLatestVersion(config);
         } else {
             DbmsRuntimeRepository dbmsRuntimeRepository = dependencies.resolveDependency(DbmsRuntimeRepository.class);
             this.kernelVersionProvider =

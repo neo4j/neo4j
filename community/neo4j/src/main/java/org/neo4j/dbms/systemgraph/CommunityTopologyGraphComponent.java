@@ -70,7 +70,7 @@ public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponen
     public Status detect(Transaction tx) {
         return knownCommunityTopologyComponentVersions
                 .detectCurrentComponentVersion(tx)
-                .getStatus();
+                .getStatus(config);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponen
                     knownCommunityTopologyComponentVersions.detectCurrentComponentVersion(tx);
             log.debug(String.format(
                     "Trying to upgrade component '%s' with version %d and status %s to latest version",
-                    COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, currentVersion.version, currentVersion.getStatus()));
+                    COMMUNITY_TOPOLOGY_GRAPH_COMPONENT, currentVersion.version, currentVersion.getStatus(config)));
             if (currentVersion.version == UNKNOWN_VERSION) {
                 log.debug("The current version does not have a community topology graph, doing a full initialization");
                 initializeSystemGraphModel(tx, system);

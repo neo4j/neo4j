@@ -1082,4 +1082,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> out_of_disk_space_protection = newBuilder(
                     "internal.dbms.out_of_disk_space_protection", BOOL, false)
             .build();
+
+    @Internal
+    @Description("Just to be used in tests: A way to set the latest dbms runtime component version. "
+            + "Can be useful for writing upgrade tests for coming versions")
+    public static final Setting<Integer> latest_runtime_version =
+            newBuilder("internal.dbms.latest_runtime_version", INT, null).build();
 }

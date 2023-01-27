@@ -25,10 +25,13 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
@@ -63,6 +66,33 @@ class DbmsRuntimeVersionTest {
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
         assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
+    }
+
+    @Test
+    void latestVersionIsRealLatestVersionByDefault() {
+        // The system DB will be initialised with the default version for this binary
+        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
+    }
+
+    @Test
+    @DbmsExtension(configurationCallback = "configuration")
+    void latestVersionCanBeSetThroughConfigForTests() {
+        // The system DB should be initialised with what we think is latest
+        assertSame(DbmsRuntimeVersion.V4_4, dbmsRuntimeRepository.getVersion());
+
+        // And will not get upgraded past that "latest" version
+        // BTW this should never be manipulated directly outside tests
+        setRuntimeVersion(DbmsRuntimeVersion.V4_2);
+        assertSame(DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion());
+
+        systemDb.executeTransactionally("CALL dbms.upgrade()");
+
+        assertSame(DbmsRuntimeVersion.V4_4, dbmsRuntimeRepository.getVersion());
+    }
+
+    @ExtensionCallback
+    void configuration(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.latest_runtime_version, DbmsRuntimeVersion.V4_4.getVersion());
     }
 
     private void setRuntimeVersion(DbmsRuntimeVersion runtimeVersion) {

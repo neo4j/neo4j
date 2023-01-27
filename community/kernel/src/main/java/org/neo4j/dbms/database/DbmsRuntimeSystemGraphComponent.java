@@ -36,7 +36,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     public DbmsRuntimeSystemGraphComponent(Config config) {
         super(
                 DBMS_RUNTIME_COMPONENT,
-                DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION,
+                DbmsRuntimeVersion.getLatestVersion(config),
                 config,
                 DbmsRuntimeVersion::fromVersionNumber);
     }
@@ -64,5 +64,9 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
             Iterators.forEachRemaining(tx.findNodes(OLD_COMPONENT_LABEL), Node::delete);
             setToLatestVersion(tx);
         });
+    }
+
+    public Config config() {
+        return config;
     }
 }

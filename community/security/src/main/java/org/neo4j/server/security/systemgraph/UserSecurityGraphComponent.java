@@ -94,7 +94,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
     public Status detect(Transaction tx) {
         return knownUserSecurityComponentVersions
                 .detectCurrentComponentVersion(tx)
-                .getStatus();
+                .getStatus(config);
     }
 
     @Override
@@ -103,13 +103,13 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
                 knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
         debugLog.info(String.format(
                 "Initializing system graph model for component '%s' with version %d and status %s",
-                SECURITY_USER_COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus()));
+                SECURITY_USER_COMPONENT, componentBeforeInit.version, componentBeforeInit.getStatus(config)));
         initializeLatestSystemGraph(tx);
         KnownCommunitySecurityComponentVersion componentAfterInit =
                 knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
         debugLog.info(String.format(
                 "After initialization of system graph model component '%s' have version %d and status %s",
-                SECURITY_USER_COMPONENT, componentAfterInit.version, componentAfterInit.getStatus()));
+                SECURITY_USER_COMPONENT, componentAfterInit.version, componentAfterInit.getStatus(config)));
     }
 
     @Override
@@ -134,7 +134,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
                     knownUserSecurityComponentVersions.detectCurrentComponentVersion(tx);
             debugLog.info(String.format(
                     "Performing postInitialization step for component '%s' with version %d and status %s",
-                    SECURITY_USER_COMPONENT, component.version, component.getStatus()));
+                    SECURITY_USER_COMPONENT, component.version, component.getStatus(config)));
 
             // Do not need to setup initial password when initialized, because that is already done by the
             // initialization code in `setupUsers`
@@ -160,7 +160,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
 
         debugLog.debug(String.format(
                 "Trying to upgrade component '%s' with version %d and status %s to latest version",
-                SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus()));
+                SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus(config)));
         if (currentVersion.version == UNKNOWN_VERSION) {
             debugLog.debug("The current version does not have a security graph, doing a full initialization");
             SystemGraphComponent.executeWithFullAccess(system, this::initializeLatestSystemGraph);

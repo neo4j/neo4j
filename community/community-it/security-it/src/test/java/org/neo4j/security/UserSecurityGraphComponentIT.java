@@ -278,7 +278,7 @@ class UserSecurityGraphComponentIT {
 
     private static Stream<Arguments> supportedPreviousVersions() {
         return Arrays.stream(UserSecurityGraphComponentVersion.values())
-                .filter(version -> version.runtimeSupported() && !version.isCurrent())
+                .filter(version -> version.runtimeSupported() && !version.isCurrent(Config.defaults()))
                 .map(Arguments::of);
     }
 

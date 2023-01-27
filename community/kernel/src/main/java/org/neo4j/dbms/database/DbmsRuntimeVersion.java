@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 
@@ -56,6 +58,11 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION =
             V5_0; // version should be fixed to 5_0, bump is not an option
 
+    public static DbmsRuntimeVersion getLatestVersion(Config config) {
+        Integer version = config.get(GraphDatabaseInternalSettings.latest_runtime_version);
+        return version != null ? DbmsRuntimeVersion.fromVersionNumber(version) : LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
+    }
+
     DbmsRuntimeVersion(
             int version, SystemGraphComponent.Name componentName, String description, KernelVersion kernelVersion) {
         this.version = version;
@@ -85,8 +92,8 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     }
 
     @Override
-    public boolean isCurrent() {
-        return version == LATEST_DBMS_RUNTIME_COMPONENT_VERSION.version;
+    public boolean isCurrent(Config config) {
+        return version == getLatestVersion(config).version;
     }
 
     @Override

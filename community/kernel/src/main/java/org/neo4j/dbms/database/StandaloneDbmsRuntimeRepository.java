@@ -48,7 +48,7 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
     @Override
     public void afterCommit(TransactionData transactionData, Object state, GraphDatabaseService databaseService) {
         // no check is needed if we are at the latest version, because downgrade is not supported
-        if (transactionData == null || getVersion().isCurrent()) {
+        if (transactionData == null || getVersion().isCurrent(component.config)) {
             return;
         }
 
