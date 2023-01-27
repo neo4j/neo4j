@@ -201,7 +201,7 @@ public class FabricTransactionImpl
         try {
             if (state == State.TERMINATED) {
                 // Wait for all children to be rolled back. Ignore errors
-                doOnChildren(readingTransactions, writingTransaction, SingleDbTransaction::rollback);
+                doRollbackAndIgnoreErrors(SingleDbTransaction::rollback);
                 throw new TransactionTerminatedException(terminationMark.getReason());
             }
 
@@ -230,9 +230,7 @@ public class FabricTransactionImpl
             } catch (Exception e) {
                 allFailures.add(new ErrorRecord("Failed to commit composite transaction", commitFailedError()));
             } finally {
-                remoteTransactionContext.close();
-                localTransactionContext.close();
-                transactionManager.removeTransaction(this);
+                closeContextsAndRemoveTransaction();
             }
 
             throwIfNonEmpty(allFailures, this::commitFailedError);
@@ -252,7 +250,7 @@ public class FabricTransactionImpl
 
             if (state == State.TERMINATED) {
                 // Wait for all children to be rolled back. Ignore errors
-                doOnChildren(readingTransactions, writingTransaction, SingleDbTransaction::rollback);
+                doRollbackAndIgnoreErrors(SingleDbTransaction::rollback);
                 return;
             }
 
@@ -277,12 +275,24 @@ public class FabricTransactionImpl
         } catch (Exception e) {
             allFailures.add(new ErrorRecord("Failed to rollback composite transaction", rollbackFailedError()));
         } finally {
-            remoteTransactionContext.close();
-            localTransactionContext.close();
-            transactionManager.removeTransaction(this);
+            closeContextsAndRemoveTransaction();
         }
 
         throwIfNonEmpty(allFailures, this::rollbackFailedError);
+    }
+
+    private void doRollbackAndIgnoreErrors(Function<SingleDbTransaction, Mono<Void>> operation) {
+        try {
+            doOnChildren(readingTransactions, writingTransaction, operation);
+        } finally {
+            closeContextsAndRemoveTransaction();
+        }
+    }
+
+    private void closeContextsAndRemoveTransaction() {
+        remoteTransactionContext.close();
+        localTransactionContext.close();
+        transactionManager.removeTransaction(this);
     }
 
     private void terminateChildren(Status reason) {
