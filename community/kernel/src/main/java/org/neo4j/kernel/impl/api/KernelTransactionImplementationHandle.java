@@ -73,7 +73,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.transactionSequenceNumber = tx.getTransactionSequenceNumber();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
-        databaseName = tx.getDatabaseName();
+        this.databaseName = tx.getDatabaseName();
         this.tx = tx;
         this.clock = clock;
     }

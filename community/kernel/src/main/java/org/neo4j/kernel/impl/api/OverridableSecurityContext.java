@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 public class OverridableSecurityContext {
 
     private final SecurityContext originalSecurityContext;
-    private SecurityContext currentSecurityContext;
+    private volatile SecurityContext currentSecurityContext;
 
     OverridableSecurityContext(SecurityContext securityContext) {
         this.originalSecurityContext = securityContext;
@@ -36,7 +36,7 @@ public class OverridableSecurityContext {
     }
 
     /**
-     * Get the security context not influenced by calls to {@link  #overrideWith(SecurityContext)}.
+     * Get the security context not influenced by calls to {@link #overrideWith(SecurityContext)}.
      */
     SecurityContext originalSecurityContext() {
         return originalSecurityContext;
@@ -48,10 +48,10 @@ public class OverridableSecurityContext {
 
     /**
      * Temporarily override this  SecurityContext. The override should be reverted using
-     * the returned {@link OverridableSecurityContext.Revertable}.
+     * the returned {@link Revertable}.
      *
      * @param context the temporary SecurityContext.
-     * @return {@link OverridableSecurityContext.Revertable} which reverts to the SecurityContext before the override.
+     * @return {@link Revertable} which reverts to the SecurityContext before the override.
      */
     public Revertable overrideWith(SecurityContext context) {
         SecurityContext contextBeforeOverride = currentSecurityContext;

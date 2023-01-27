@@ -205,7 +205,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TransactionWriteState writeState;
     private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
-    private OverridableSecurityContext overridableSecurityContext;
+    private volatile OverridableSecurityContext overridableSecurityContext;
     private final Locks.Client lockClient;
     private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;
@@ -222,8 +222,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Statistics statistics;
     private TransactionEvent transactionEvent;
     private Type type;
-    private long transactionId;
-    private long commitTime;
+    private volatile long transactionId;
+    private volatile long commitTime;
     private volatile ClientConnectionInfo clientInfo;
     private volatile Map<String, Object> userMetaData;
     private volatile String statusDetails;
@@ -666,18 +666,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public SecurityContext securityContext() {
-        if (overridableSecurityContext == null) {
+        var ctx = overridableSecurityContext;
+        if (ctx == null) {
             throw new NotInTransactionException();
         }
-        return overridableSecurityContext.currentSecurityContext();
+        return ctx.currentSecurityContext();
     }
 
     @Override
     public AuthSubject subjectOrAnonymous() {
-        if (overridableSecurityContext == null) {
+        var ctx = overridableSecurityContext;
+        if (ctx == null) {
             return AuthSubject.ANONYMOUS;
         }
-        return this.overridableSecurityContext.currentSecurityContext().subject();
+        return ctx.currentSecurityContext().subject();
     }
 
     @Override
@@ -1348,26 +1350,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public long getTransactionId() {
-        if (transactionId == NOT_COMMITTED_TRANSACTION_ID) {
+        long txId = transactionId;
+        if (txId == NOT_COMMITTED_TRANSACTION_ID) {
             throw new IllegalStateException(
                     "Transaction id is not assigned yet. " + "It will be assigned during transaction commit.");
         }
-        return transactionId;
+        return txId;
     }
 
     @Override
     public long getCommitTime() {
-        if (commitTime == NOT_COMMITTED_TRANSACTION_COMMIT_TIME) {
+        long time = commitTime;
+        if (time == NOT_COMMITTED_TRANSACTION_COMMIT_TIME) {
             throw new IllegalStateException(
                     "Transaction commit time is not assigned yet. " + "It will be assigned during transaction commit.");
         }
-        return commitTime;
+        return time;
     }
 
     @Override
     public Revertable overrideWith(SecurityContext context) {
-        var revertable = overridableSecurityContext.overrideWith(context);
-        return () -> revertable.close();
+        return overridableSecurityContext.overrideWith(context)::close;
     }
 
     @Override
@@ -1446,7 +1449,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public InnerTransactionHandlerImpl getInnerTransactionHandler() {
-        if (innerTransactionHandler != null) {
+        var handle = innerTransactionHandler;
+        if (handle != null) {
             return this.innerTransactionHandler;
         }
         throw new IllegalStateException("Called getInnerTransactionHandler on inactive transaction");
