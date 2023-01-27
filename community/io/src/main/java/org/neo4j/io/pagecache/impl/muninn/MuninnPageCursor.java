@@ -82,7 +82,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected final boolean eagerFlush;
     private final boolean noFault;
     protected final boolean noGrow;
-    protected final boolean updateUsage;
+    private final boolean updateUsage;
     protected final boolean multiVersioned;
     protected final boolean littleEndian;
 
@@ -177,6 +177,9 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.payloadSize = filePayloadSize;
         this.pointer = PageList.getAddress(pageRef);
         pinEvent.setCachePageId(pagedFile.toId(pageRef));
+        if (updateUsage) {
+            PageList.incrementUsage(pageRef);
+        }
     }
 
     protected boolean shouldLoadSnapshot() {

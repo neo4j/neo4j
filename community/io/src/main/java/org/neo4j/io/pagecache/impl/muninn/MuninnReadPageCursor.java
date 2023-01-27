@@ -76,9 +76,6 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         if (multiVersioned && shouldLoadSnapshot()) {
             versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
         }
-        if (updateUsage) {
-            PageList.incrementUsage(pageRef);
-        }
     }
 
     @Override

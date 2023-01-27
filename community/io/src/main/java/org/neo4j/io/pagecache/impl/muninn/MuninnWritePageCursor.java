@@ -200,9 +200,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         if (multiVersioned && olderVersionRequired(pointer)) {
             versionStorage.loadWriteSnapshot(this, versionContext, pinEvent);
         }
-        if (updateUsage) {
-            PageList.incrementUsage(pageRef);
-        }
         if (!multiVersioned) {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
