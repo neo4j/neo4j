@@ -55,12 +55,14 @@ import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 /**
  * Encapsulates remoting functionality for collecting diagnostics information on running instances.
  */
-public class JmxDump {
+public class JmxDump implements AutoCloseable {
+    private final JMXConnector connector;
     private final MBeanServerConnection mBeanServer;
     private Properties systemProperties;
     public static String THREAD_DUMP_FAILURE = "ERROR: Unable to produce any thread dump";
 
-    private JmxDump(MBeanServerConnection mBeanServer) {
+    private JmxDump(JMXConnector connector, MBeanServerConnection mBeanServer) {
+        this.connector = connector;
         this.mBeanServer = mBeanServer;
     }
 
@@ -68,7 +70,7 @@ public class JmxDump {
         JMXServiceURL url = new JMXServiceURL(jmxAddress);
         JMXConnector connect = JMXConnectorFactory.connect(url);
 
-        return new JmxDump(connect.getMBeanServerConnection());
+        return new JmxDump(connect, connect.getMBeanServerConnection());
     }
 
     public void attachSystemProperties(Properties systemProperties) {
@@ -194,6 +196,14 @@ public class JmxDump {
     public JfrProfileConnection jfrConnection() throws IOException {
         FlightRecorderMXBean bean = ManagementFactory.getPlatformMXBean(mBeanServer, FlightRecorderMXBean.class);
         return new JfrProfileConnection(bean);
+    }
+
+    @Override
+    public void close() {
+        try {
+            connector.close();
+        } catch (IOException ignored) {
+        }
     }
 
     public static class JfrProfileConnection {

@@ -32,14 +32,14 @@ class ProfileTool implements AutoCloseable {
         return profiler.available() && profilers.add(profiler);
     }
 
-    void start() {
+    synchronized void start() {
         if (!running) {
             running = true;
             safeProfilerOperation(Profiler::startProfiling);
         }
     }
 
-    void stop() {
+    synchronized void stop() {
         if (running) {
             running = false;
             safeProfilerOperation(Profiler::stopProfiling);

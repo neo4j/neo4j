@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.diagnostics.profile;
 
+import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 
 import java.nio.file.Path;
@@ -31,7 +32,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
@@ -89,76 +89,92 @@ public class ProfileCommand extends AbstractAdminCommand {
             profilers = Set.of(ProfilerSource.values());
         }
         Config config = createPrefilledConfigBuilder().build();
-        JmxDump jmxDump = new JMXDumper(config, fs, ctx.out(), ctx.err(), verbose)
-                .getJMXDump()
-                .orElseThrow(() ->
-                        new CommandFailedException("Can not connect to running Neo4j. Profiling can not be done"));
-        // TODO improve output from dumper, its designed only for report command
-        SystemNanoClock clock = Clocks.nanoClock();
+        try (JmxDump jmxDump = getJmxDump(fs, config)) {
+            // TODO improve output from dumper, its designed only for report command
+            SystemNanoClock clock = Clocks.nanoClock();
 
-        ctx.out()
-                .printf(
-                        "Profilers %s selected. Duration %s. Output directory %s%n",
-                        profilers, SettingValueParsers.DURATION.valueToString(duration), output.toAbsolutePath());
-        try (ProfileTool tool = new ProfileTool()) {
-            if (profilers.contains(ProfilerSource.JFR)) {
-                addProfiler(tool, new JfrProfiler(jmxDump, fs, output.resolve("jfr"), duration, clock));
-            }
-            if (profilers.contains(ProfilerSource.THREADS)) {
-                addProfiler(
-                        tool, new JstackProfiler(jmxDump, fs, output.resolve("threads"), Duration.ofSeconds(1), clock));
-            }
-
-            tool.start();
-            Stopwatch stopwatch = Stopwatch.start();
-            NonInteractiveProgress progress = new NonInteractiveProgress(ctx.out(), true);
-            while (!stopwatch.hasTimedOut(duration) && tool.hasRunningProfilers()) {
-                Thread.sleep(10);
-                progress.percentChanged((int) (stopwatch.elapsed(TimeUnit.MILLISECONDS) * 100 / duration.toMillis()));
-            }
-            tool.stop();
-            progress.finished();
-            List<Profiler> profilers = Iterators.asList(tool.profilers().iterator());
-            if (!stopwatch.hasTimedOut(duration)) {
-                ctx.out().println("Profiler stopped before expected duration.");
-            }
-            if (!profilers.isEmpty()) {
-                profilers.forEach(this::printFailedProfiler);
-                if (profilers.stream().allMatch(profiler -> profiler.failure() != null)) {
-                    ctx.out().println("All profilers failed.");
-                } else {
-                    ctx.out().println("Profiler results:");
-                    for (Path path : fs.listFiles(output)) {
-                        try (var fileStream = fs.streamFilesRecursive(path, false)) {
-                            List<Path> files =
-                                    fileStream.map(FileHandle::getRelativePath).toList();
-                            ctx.out()
-                                    .printf(
-                                            "%s/ [%d %s]%n",
-                                            output.relativize(path), files.size(), files.size() > 1 ? "files" : "file");
-                            int numFilesToPrint = 3;
-                            for (int i = 0; i < files.size() && i <= numFilesToPrint; i++) {
-                                if (i < numFilesToPrint) {
-                                    ctx.out().printf("\t%s%n", files.get(i));
-                                } else {
-                                    ctx.out().printf("\t...%n");
+            ctx.out()
+                    .printf(
+                            "Profilers %s selected. Duration %s. Output directory %s%n",
+                            profilers, DURATION.valueToString(duration), output.toAbsolutePath());
+            try (ProfileTool tool = new ProfileTool()) {
+                if (profilers.contains(ProfilerSource.JFR)) {
+                    addProfiler(tool, new JfrProfiler(jmxDump, fs, output.resolve("jfr"), duration, clock));
+                }
+                if (profilers.contains(ProfilerSource.THREADS)) {
+                    addProfiler(
+                            tool,
+                            new JstackProfiler(jmxDump, fs, output.resolve("threads"), Duration.ofSeconds(1), clock));
+                }
+                installShutdownHook(tool);
+                tool.start();
+                Stopwatch stopwatch = Stopwatch.start();
+                NonInteractiveProgress progress = new NonInteractiveProgress(ctx.out(), true);
+                while (!stopwatch.hasTimedOut(duration) && tool.hasRunningProfilers()) {
+                    Thread.sleep(10);
+                    progress.percentChanged(
+                            (int) (stopwatch.elapsed(TimeUnit.MILLISECONDS) * 100 / duration.toMillis()));
+                }
+                tool.stop();
+                progress.finished();
+                List<Profiler> profilers = Iterators.asList(tool.profilers().iterator());
+                if (!stopwatch.hasTimedOut(duration)) {
+                    ctx.out().println("Profiler stopped before expected duration.");
+                }
+                if (!profilers.isEmpty()) {
+                    profilers.forEach(this::printFailedProfiler);
+                    if (profilers.stream().allMatch(profiler -> profiler.failure() != null)) {
+                        ctx.out().println("All profilers failed.");
+                    } else {
+                        ctx.out().println("Profiler results:");
+                        for (Path path : fs.listFiles(output)) {
+                            try (var fileStream = fs.streamFilesRecursive(path, false)) {
+                                List<Path> files = fileStream
+                                        .map(FileHandle::getRelativePath)
+                                        .toList();
+                                ctx.out()
+                                        .printf(
+                                                "%s/ [%d %s]%n",
+                                                output.relativize(path),
+                                                files.size(),
+                                                files.size() > 1 ? "files" : "file");
+                                int numFilesToPrint = 3;
+                                for (int i = 0; i < files.size() && i <= numFilesToPrint; i++) {
+                                    if (i < numFilesToPrint) {
+                                        ctx.out().printf("\t%s%n", files.get(i));
+                                    } else {
+                                        ctx.out().printf("\t...%n");
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (compress) {
-                        Path archive = output.resolve(String.format("profile-%s.gzip", clock.instant()));
-                        ctx.out().printf("%nCompressing result into %s", archive.getFileName());
-                        Dumper dumper = new Dumper(ctx.out());
-                        dumper.dump(output, output, dumper.openForDump(archive), GZIP, path -> path.equals(archive));
-                        for (Path path : fs.listFiles(output, fs::isDirectory)) {
-                            fs.deleteRecursively(path);
+                        if (compress) {
+                            Path archive = output.resolve(String.format("profile-%s.gzip", clock.instant()));
+                            ctx.out().printf("%nCompressing result into %s", archive.getFileName());
+                            Dumper dumper = new Dumper(ctx.out());
+                            dumper.dump(
+                                    output, output, dumper.openForDump(archive), GZIP, path -> path.equals(archive));
+                            for (Path path : fs.listFiles(output, fs::isDirectory)) {
+                                fs.deleteRecursively(path);
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private JmxDump getJmxDump(FileSystemAbstraction fs, Config config) {
+        return new JMXDumper(config, fs, ctx.out(), ctx.err(), verbose)
+                .getJMXDump()
+                .orElseThrow(() ->
+                        new CommandFailedException("Can not connect to running Neo4j. Profiling can not be done"));
+    }
+
+    private void installShutdownHook(ProfileTool tool) {
+        // Ensure we stop the tool when the JVM dies. (Mostly in case of CTRL-C)
+        Runtime.getRuntime().addShutdownHook(new Thread(tool::stop));
     }
 
     private void addProfiler(ProfileTool tool, Profiler profiler) {
