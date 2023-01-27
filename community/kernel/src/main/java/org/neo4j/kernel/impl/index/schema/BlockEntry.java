@@ -20,11 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
+import static org.neo4j.util.Preconditions.checkState;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
@@ -34,22 +30,9 @@ import org.neo4j.io.pagecache.PageCursor;
  * container class for key-value pairs, it also provide static methods for serializing and deserializing {@link BlockEntry} instances and calculating total
  * store size of them.
  */
-class BlockEntry<KEY, VALUE> {
-    private final KEY key;
-    private final VALUE value;
+record BlockEntry<KEY, VALUE>(KEY key, VALUE value) {
 
-    BlockEntry(KEY key, VALUE value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    KEY key() {
-        return key;
-    }
-
-    VALUE value() {
-        return value;
-    }
+    private static final int ENTRY_OVERHEAD = Short.BYTES * 2;
 
     @Override
     public String toString() {
@@ -59,12 +42,12 @@ class BlockEntry<KEY, VALUE> {
     static <VALUE, KEY> int entrySize(Layout<KEY, VALUE> layout, KEY key, VALUE value) {
         int keySize = layout.keySize(key);
         int valueSize = layout.valueSize(value);
-        return keySize + valueSize + getOverhead(keySize, valueSize, false);
+        return keySize + valueSize + ENTRY_OVERHEAD;
     }
 
     static <VALUE, KEY> int keySize(Layout<KEY, VALUE> layout, KEY key) {
         int keySize = layout.keySize(key);
-        return keySize + getOverhead(keySize, 0, false);
+        return keySize + ENTRY_OVERHEAD;
     }
 
     static <KEY, VALUE> BlockEntry<KEY, VALUE> read(PageCursor pageCursor, Layout<KEY, VALUE> layout) {
@@ -75,27 +58,35 @@ class BlockEntry<KEY, VALUE> {
     }
 
     static <KEY, VALUE> void read(PageCursor pageCursor, Layout<KEY, VALUE> layout, KEY key, VALUE value) {
-        long entrySize = readKeyValueSize(pageCursor, false);
-        layout.readKey(pageCursor, key, extractKeySize(entrySize));
-        layout.readValue(pageCursor, value, extractValueSize(entrySize));
+        var keySize = pageCursor.getShort();
+        var valueSize = pageCursor.getShort();
+        layout.readKey(pageCursor, key, keySize);
+        layout.readValue(pageCursor, value, valueSize);
     }
 
     static <KEY, VALUE> void read(PageCursor pageCursor, Layout<KEY, VALUE> layout, KEY key) {
-        long entrySize = readKeyValueSize(pageCursor, false);
-        layout.readKey(pageCursor, key, extractKeySize(entrySize));
+        var keySize = pageCursor.getShort();
+        var valueSize = pageCursor.getShort();
+        checkState(valueSize == 0, "Expected 0 value size");
+        layout.readKey(pageCursor, key, keySize);
     }
 
     static <KEY, VALUE> void write(PageCursor pageCursor, Layout<KEY, VALUE> layout, KEY key, VALUE value) {
         int keySize = layout.keySize(key);
         int valueSize = layout.valueSize(value);
-        putKeyValueSize(pageCursor, keySize, valueSize, false);
+        checkState(((short) keySize) == keySize, "Key size overflow");
+        checkState(((short) valueSize) == valueSize, "Value size overflow");
+        pageCursor.putShort((short) keySize);
+        pageCursor.putShort((short) valueSize);
         layout.writeKey(pageCursor, key);
         layout.writeValue(pageCursor, value);
     }
 
     static <KEY, VALUE> void write(PageCursor pageCursor, Layout<KEY, VALUE> layout, KEY key) {
         int keySize = layout.keySize(key);
-        putKeyValueSize(pageCursor, keySize, 0, false);
+        checkState(((short) keySize) == keySize, "Key size overflow");
+        pageCursor.putShort((short) keySize);
+        pageCursor.putShort((short) 0);
         layout.writeKey(pageCursor, key);
     }
 }

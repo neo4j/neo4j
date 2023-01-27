@@ -137,7 +137,7 @@ public class RangeIndexKeySizeValidationIT {
         List<String> failureMessages = new ArrayList<>();
         NamedDynamicValueGenerator[] dynamicValueGenerators = NamedDynamicValueGenerator.values();
         for (NamedDynamicValueGenerator generator : dynamicValueGenerators) {
-            int expectedMax = pageSize == PAGE_SIZE_16K ? generator.expectedMax16k : generator.expectedMax;
+            int expectedMax = generator.expectedMax;
             String propKey = PROP_KEYS[0] + generator.name();
             createIndex(propKey);
 
@@ -378,78 +378,61 @@ public class RangeIndexKeySizeValidationIT {
     }
 
     private enum NamedDynamicValueGenerator {
-        string(Byte.BYTES, 8164, 8132, (random, i) -> random.randomValues()
+        string(Byte.BYTES, 8164, (random, i) -> random.randomValues()
                 .nextAlphaNumericTextValue(i, i)
                 .stringValue()),
-        byteArray(SIZE_NUMBER_BYTE, 8163, 8131, (random, i) -> random.randomValues()
-                .nextByteArrayRaw(i, i)),
-        shortArray(SIZE_NUMBER_SHORT, 4081, 4065, (random, i) -> random.randomValues()
-                .nextShortArrayRaw(i, i)),
-        intArray(SIZE_NUMBER_INT, 2040, 2032, (random, i) -> random.randomValues()
-                .nextIntArrayRaw(i, i)),
-        longArray(SIZE_NUMBER_LONG, 1020, 1016, (random, i) -> random.randomValues()
-                .nextLongArrayRaw(i, i)),
-        floatArray(SIZE_NUMBER_FLOAT, 2040, 2032, (random, i) -> random.randomValues()
-                .nextFloatArrayRaw(i, i)),
-        doubleArray(SIZE_NUMBER_DOUBLE, 1020, 1016, (random, i) -> random.randomValues()
-                .nextDoubleArrayRaw(i, i)),
-        booleanArray(
-                SIZE_BOOLEAN, 8164, 8132, (random, i) -> random.randomValues().nextBooleanArrayRaw(i, i)),
-        charArray(Byte.BYTES, 2721, 2710, (random, i) -> random.randomValues()
+        byteArray(SIZE_NUMBER_BYTE, 8163, (random, i) -> random.randomValues().nextByteArrayRaw(i, i)),
+        shortArray(SIZE_NUMBER_SHORT, 4081, (random, i) -> random.randomValues().nextShortArrayRaw(i, i)),
+        intArray(SIZE_NUMBER_INT, 2040, (random, i) -> random.randomValues().nextIntArrayRaw(i, i)),
+        longArray(SIZE_NUMBER_LONG, 1020, (random, i) -> random.randomValues().nextLongArrayRaw(i, i)),
+        floatArray(SIZE_NUMBER_FLOAT, 2040, (random, i) -> random.randomValues().nextFloatArrayRaw(i, i)),
+        doubleArray(
+                SIZE_NUMBER_DOUBLE, 1020, (random, i) -> random.randomValues().nextDoubleArrayRaw(i, i)),
+        booleanArray(SIZE_BOOLEAN, 8164, (random, i) -> random.randomValues().nextBooleanArrayRaw(i, i)),
+        charArray(Byte.BYTES, 2721, (random, i) -> random.randomValues()
                 .nextAlphaNumericTextValue(i, i)
                 .stringValue()
                 .toCharArray()),
-        stringArray1(SIZE_STRING_LENGTH + 1, 2721, 2710, (random, i) -> random.randomValues()
+        stringArray1(SIZE_STRING_LENGTH + 1, 2721, (random, i) -> random.randomValues()
                 .nextAlphaNumericStringArrayRaw(i, i, 1, 1)),
-        stringArray10(SIZE_STRING_LENGTH + 10, 680, 677, (random, i) -> random.randomValues()
+        stringArray10(SIZE_STRING_LENGTH + 10, 680, (random, i) -> random.randomValues()
                 .nextAlphaNumericStringArrayRaw(i, i, 10, 10)),
-        stringArray100(SIZE_STRING_LENGTH + 100, 80, 79, (random, i) -> random.randomValues()
+        stringArray100(SIZE_STRING_LENGTH + 100, 80, (random, i) -> random.randomValues()
                 .nextAlphaNumericStringArrayRaw(i, i, 100, 100)),
-        stringArray1000(SIZE_STRING_LENGTH + 1000, 8, 8, (random, i) -> random.randomValues()
+        stringArray1000(SIZE_STRING_LENGTH + 1000, 8, (random, i) -> random.randomValues()
                 .nextAlphaNumericStringArrayRaw(i, i, 1000, 1000)),
-        dateArray(SIZE_DATE, 1020, 1016, (random, i) -> random.randomValues().nextDateArrayRaw(i, i)),
-        timeArray(
-                SIZE_ZONED_TIME, 680, 677, (random, i) -> random.randomValues().nextTimeArrayRaw(i, i)),
-        localTimeArray(SIZE_LOCAL_TIME, 1020, 1016, (random, i) -> random.randomValues()
-                .nextLocalTimeArrayRaw(i, i)),
-        dateTimeArray(SIZE_ZONED_DATE_TIME, 510, 508, (random, i) -> random.randomValues()
-                .nextDateTimeArrayRaw(i, i)),
-        localDateTimeArray(SIZE_LOCAL_DATE_TIME, 680, 677, (random, i) -> random.randomValues()
-                .nextLocalDateTimeArrayRaw(i, i)),
-        durationArray(
-                SIZE_DURATION, 291, 290, (random, i) -> random.randomValues().nextDurationArrayRaw(i, i)),
-        periodArray(
-                SIZE_DURATION, 291, 290, (random, i) -> random.randomValues().nextPeriodArrayRaw(i, i)),
-        cartesianPointArray(
-                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, 508, (random, i) -> random.randomValues()
-                        .nextCartesianPointArray(i, i)
-                        .asObjectCopy()),
-        cartesian3DPointArray(
-                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338, (random, i) -> random.randomValues()
-                        .nextCartesian3DPointArray(i, i)
-                        .asObjectCopy()),
-        geographicPointArray(
-                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, 508, (random, i) -> random.randomValues()
-                        .nextGeographicPointArray(i, i)
-                        .asObjectCopy()),
+        dateArray(SIZE_DATE, 1020, (random, i) -> random.randomValues().nextDateArrayRaw(i, i)),
+        timeArray(SIZE_ZONED_TIME, 680, (random, i) -> random.randomValues().nextTimeArrayRaw(i, i)),
+        localTimeArray(
+                SIZE_LOCAL_TIME, 1020, (random, i) -> random.randomValues().nextLocalTimeArrayRaw(i, i)),
+        dateTimeArray(
+                SIZE_ZONED_DATE_TIME, 510, (random, i) -> random.randomValues().nextDateTimeArrayRaw(i, i)),
+        localDateTimeArray(
+                SIZE_LOCAL_DATE_TIME, 680, (random, i) -> random.randomValues().nextLocalDateTimeArrayRaw(i, i)),
+        durationArray(SIZE_DURATION, 291, (random, i) -> random.randomValues().nextDurationArrayRaw(i, i)),
+        periodArray(SIZE_DURATION, 291, (random, i) -> random.randomValues().nextPeriodArrayRaw(i, i)),
+        cartesianPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, (random, i) -> random.randomValues()
+                .nextCartesianPointArray(i, i)
+                .asObjectCopy()),
+        cartesian3DPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, (random, i) -> random.randomValues()
+                .nextCartesian3DPointArray(i, i)
+                .asObjectCopy()),
+        geographicPointArray(SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, (random, i) -> random.randomValues()
+                .nextGeographicPointArray(i, i)
+                .asObjectCopy()),
         geographic3DPointArray(
-                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338, (random, i) -> random.randomValues()
+                SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, (random, i) -> random.randomValues()
                         .nextGeographic3DPointArray(i, i)
                         .asObjectCopy());
 
         private final int singleArrayEntrySize;
         private final DynamicValueGenerator generator;
         private final int expectedMax;
-        private final int expectedMax16k;
 
         NamedDynamicValueGenerator(
-                int singleArrayEntrySize,
-                int expectedLongestArrayLength,
-                int expectedLongestArrayLength_16k,
-                DynamicValueGenerator generator) {
+                int singleArrayEntrySize, int expectedLongestArrayLength, DynamicValueGenerator generator) {
             this.singleArrayEntrySize = singleArrayEntrySize;
             this.expectedMax = expectedLongestArrayLength;
-            this.expectedMax16k = expectedLongestArrayLength_16k;
             this.generator = generator;
         }
 

@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MASK_ONE_BYTE_KEY_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MASK_ONE_BYTE_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_TWO_BYTE_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
@@ -41,7 +40,6 @@ class DynamicSizeUtilTest {
     private static final int KEY_ONE_BYTE_MAX = MASK_ONE_BYTE_KEY_SIZE;
     private static final int KEY_TWO_BYTE_MIN = KEY_ONE_BYTE_MAX + 1;
     private static final int KEY_TWO_BYTE_MAX = MAX_TWO_BYTE_KEY_SIZE;
-    private static final int KEY_TWO_BYTE_NO_OFFLOAD_MAX = MAX_TWO_BYTE_KEY_SIZE_NO_OFFLOAD;
     private static final int VAL_ONE_BYTE_MIN = 1;
     private static final int VAL_ONE_BYTE_MAX = MASK_ONE_BYTE_VALUE_SIZE;
     private static final int VAL_TWO_BYTE_MIN = VAL_ONE_BYTE_MAX + 1;
@@ -77,11 +75,6 @@ class DynamicSizeUtilTest {
         shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_MAX, VAL_ONE_BYTE_MAX, 3);
         shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_MAX, VAL_TWO_BYTE_MIN, 4);
         shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_MAX, VAL_TWO_BYTE_MAX, 4);
-        shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, 0, 2);
-        shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, VAL_ONE_BYTE_MIN, 3);
-        shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, VAL_ONE_BYTE_MAX, 3);
-        shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, VAL_TWO_BYTE_MIN, 4);
-        shouldPutAndGetKeyValueSize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, VAL_TWO_BYTE_MAX, 4);
     }
 
     @Test
@@ -91,16 +84,15 @@ class DynamicSizeUtilTest {
         shouldPutAndGetKeySize(KEY_ONE_BYTE_MAX, 1);
         shouldPutAndGetKeySize(KEY_TWO_BYTE_MIN, 2);
         shouldPutAndGetKeySize(KEY_TWO_BYTE_MAX, 2);
-        shouldPutAndGetKeySize(KEY_TWO_BYTE_NO_OFFLOAD_MAX, 2);
     }
 
     @Test
     void shouldPreventWritingKeyLargerThanMaxPossible() {
         // given
-        int keySize = KEY_TWO_BYTE_NO_OFFLOAD_MAX;
+        int keySize = KEY_TWO_BYTE_MAX;
 
         // when
-        assertThrows(IllegalArgumentException.class, () -> putKeyValueSize(cursor, keySize + 1, 0, false));
+        assertThrows(IllegalArgumentException.class, () -> putKeyValueSize(cursor, keySize + 1, 0));
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize(keySize, 0, 2);
@@ -109,10 +101,10 @@ class DynamicSizeUtilTest {
     @Test
     void shouldPreventWritingValueLargerThanMaxPossible() {
         // given
-        int valueSize = 0x7FFF;
+        int valueSize = VAL_TWO_BYTE_MAX;
 
         // when
-        assertThrows(IllegalArgumentException.class, () -> putKeyValueSize(cursor, 1, valueSize + 1, false));
+        assertThrows(IllegalArgumentException.class, () -> putKeyValueSize(cursor, 1, valueSize + 1));
 
         // whereas when size is one less than that
         shouldPutAndGetKeyValueSize(1, valueSize, 3);
@@ -121,10 +113,10 @@ class DynamicSizeUtilTest {
     @Test
     void shouldPutAndGetKeySizeOffload() {
         int offsetBefore = cursor.getOffset();
-        DynamicSizeUtil.putKeySize(cursor, 0, true);
+        DynamicSizeUtil.putOffloadMarker(cursor);
         int offsetAfter = cursor.getOffset();
         cursor.setOffset(offsetBefore);
-        long readKeySize = readKeyValueSize(cursor, true);
+        long readKeySize = readKeyValueSize(cursor);
         assertTrue(DynamicSizeUtil.extractOffload(readKeySize));
         assertEquals(2, offsetAfter - offsetBefore);
     }
@@ -132,10 +124,11 @@ class DynamicSizeUtilTest {
     @Test
     void shouldPutAndGetKeyValueSizeOffload() {
         int offsetBefore = cursor.getOffset();
-        DynamicSizeUtil.putKeyValueSize(cursor, 0, 0, true);
+        DynamicSizeUtil.putOffloadMarker(cursor);
+
         int offsetAfter = cursor.getOffset();
         cursor.setOffset(offsetBefore);
-        long readKeySize = readKeyValueSize(cursor, true);
+        long readKeySize = readKeyValueSize(cursor);
         assertTrue(DynamicSizeUtil.extractOffload(readKeySize));
         assertEquals(2, offsetAfter - offsetBefore);
     }
@@ -147,10 +140,10 @@ class DynamicSizeUtilTest {
 
     private int putAndGetKey(int keySize) {
         int offsetBefore = cursor.getOffset();
-        DynamicSizeUtil.putKeySize(cursor, keySize, false);
+        putKeyValueSize(cursor, keySize, 0);
         int offsetAfter = cursor.getOffset();
         cursor.setOffset(offsetBefore);
-        long readKeySize = readKeyValueSize(cursor, false);
+        long readKeySize = readKeyValueSize(cursor);
         assertEquals(keySize, extractKeySize(readKeySize));
         return offsetAfter - offsetBefore;
     }
@@ -162,10 +155,11 @@ class DynamicSizeUtilTest {
 
     private int putAndGetKeyValue(int keySize, int valueSize) {
         int offsetBefore = cursor.getOffset();
-        putKeyValueSize(cursor, keySize, valueSize, false);
+        putKeyValueSize(cursor, keySize, valueSize);
+
         int offsetAfter = cursor.getOffset();
         cursor.setOffset(offsetBefore);
-        long readKeyValueSize = readKeyValueSize(cursor, false);
+        long readKeyValueSize = readKeyValueSize(cursor);
         int readKeySize = extractKeySize(readKeyValueSize);
         int readValueSize = extractValueSize(readKeyValueSize);
         assertEquals(keySize, readKeySize);

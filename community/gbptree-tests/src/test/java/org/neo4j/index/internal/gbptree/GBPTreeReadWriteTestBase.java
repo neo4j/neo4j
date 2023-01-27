@@ -55,8 +55,6 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
     private static final int PAGE_SIZE_8K = (int) ByteUnit.kibiBytes(8);
     private static final int PAGE_SIZE_16K = (int) ByteUnit.kibiBytes(16);
     private static final int PAGE_SIZE_32K = (int) ByteUnit.kibiBytes(32);
-    private static final int PAGE_SIZE_64K = (int) ByteUnit.kibiBytes(64);
-    private static final int PAGE_SIZE_4M = (int) ByteUnit.mebiBytes(4);
 
     @Inject
     private TestDirectory testDirectory;
@@ -173,7 +171,7 @@ abstract class GBPTreeReadWriteTestBase<KEY, VALUE> {
     }
 
     private static Stream<Integer> pageSizes() {
-        return Stream.of(PAGE_SIZE_8K, PAGE_SIZE_16K, PAGE_SIZE_32K, PAGE_SIZE_64K, PAGE_SIZE_4M);
+        return Stream.of(PAGE_SIZE_8K, PAGE_SIZE_16K, PAGE_SIZE_32K);
     }
 
     private void setupTest(int pageSize) {

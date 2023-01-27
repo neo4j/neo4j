@@ -31,36 +31,24 @@ public class IndexUpdateEntry {
     public static <KEY, VALUE> void read(
             PageCursor cursor, Layout<KEY, VALUE> layout, UpdateMode updateMode, KEY key1, KEY key2, VALUE value) {
         switch (updateMode) {
-            case ADDED:
-                BlockEntry.read(cursor, layout, key1, value);
-                break;
-            case REMOVED:
-                BlockEntry.read(cursor, layout, key1);
-                break;
-            case CHANGED:
+            case ADDED -> BlockEntry.read(cursor, layout, key1, value);
+            case REMOVED -> BlockEntry.read(cursor, layout, key1);
+            case CHANGED -> {
                 BlockEntry.read(cursor, layout, key1);
                 BlockEntry.read(cursor, layout, key2, value);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown update mode " + updateMode);
+            }
         }
     }
 
     public static <KEY, VALUE> void write(
             PageCursor cursor, Layout<KEY, VALUE> layout, UpdateMode updateMode, KEY key1, KEY key2, VALUE value) {
         switch (updateMode) {
-            case ADDED:
-                BlockEntry.write(cursor, layout, key1, value);
-                break;
-            case REMOVED:
-                BlockEntry.write(cursor, layout, key1);
-                break;
-            case CHANGED:
+            case ADDED -> BlockEntry.write(cursor, layout, key1, value);
+            case REMOVED -> BlockEntry.write(cursor, layout, key1);
+            case CHANGED -> {
                 BlockEntry.write(cursor, layout, key1);
                 BlockEntry.write(cursor, layout, key2, value);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown update mode " + updateMode);
+            }
         }
     }
 }

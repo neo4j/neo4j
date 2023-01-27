@@ -68,9 +68,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     private static final String CURRENT_FIXED_SIZE_FORMAT_32k_ZIP = "current-format_32k.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_32k_ZIP = "current-dynamic-format_32k.zip";
     private static final String CURRENT_FIXED_SIZE_FORMAT_64k_ZIP = "current-format_64k.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP = "current-dynamic-format_64k.zip";
     private static final String CURRENT_FIXED_SIZE_FORMAT_4M_ZIP = "current-format_4M.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP = "current-dynamic-format_4M.zip";
 
     private static final String CURRENT_FIXED_SIZE_FORMAT_8k_LE_ZIP = "current-format_8k_le.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_8k_LE_ZIP = "current-dynamic-format_8k_le.zip";
@@ -79,9 +77,7 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
     private static final String CURRENT_FIXED_SIZE_FORMAT_32k_LE_ZIP = "current-format_32k_le.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_32k_LE_ZIP = "current-dynamic-format_32k_le.zip";
     private static final String CURRENT_FIXED_SIZE_FORMAT_64k_LE_ZIP = "current-format_64k_le.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_64k_LE_ZIP = "current-dynamic-format_64k_le.zip";
     private static final String CURRENT_FIXED_SIZE_FORMAT_4M_LE_ZIP = "current-format_4M_le.zip";
-    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_4M_LE_ZIP = "current-dynamic-format_4M_le.zip";
 
     private TestLayout<KEY, VALUE> layout;
     private String zipName;
@@ -127,20 +123,10 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
                         CURRENT_FIXED_SIZE_FORMAT_64k_ZIP,
                         PAGE_SIZE_64K,
                         immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
-                Arguments.of(
-                        new SimpleByteArrayLayout(4000, 99),
-                        CURRENT_DYNAMIC_SIZE_FORMAT_64k_ZIP,
-                        PAGE_SIZE_64K,
-                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
                 // 4M
                 Arguments.of(
                         longLayout().withFixedSize(true).build(),
                         CURRENT_FIXED_SIZE_FORMAT_4M_ZIP,
-                        PAGE_SIZE_4M,
-                        immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
-                Arguments.of(
-                        new SimpleByteArrayLayout(4000, 99),
-                        CURRENT_DYNAMIC_SIZE_FORMAT_4M_ZIP,
                         PAGE_SIZE_4M,
                         immutable.of(PageCacheOpenOptions.BIG_ENDIAN)),
 
@@ -183,20 +169,10 @@ public class GBPTreeFormatTest<KEY, VALUE> extends FormatCompatibilityVerifier {
                         CURRENT_FIXED_SIZE_FORMAT_64k_LE_ZIP,
                         PAGE_SIZE_64K,
                         immutable.empty()),
-                Arguments.of(
-                        new SimpleByteArrayLayout(4000, 99),
-                        CURRENT_DYNAMIC_SIZE_FORMAT_64k_LE_ZIP,
-                        PAGE_SIZE_64K,
-                        immutable.empty()),
                 // 4M
                 Arguments.of(
                         longLayout().withFixedSize(true).build(),
                         CURRENT_FIXED_SIZE_FORMAT_4M_LE_ZIP,
-                        PAGE_SIZE_4M,
-                        immutable.empty()),
-                Arguments.of(
-                        new SimpleByteArrayLayout(4000, 99),
-                        CURRENT_DYNAMIC_SIZE_FORMAT_4M_LE_ZIP,
                         PAGE_SIZE_4M,
                         immutable.empty()));
     }

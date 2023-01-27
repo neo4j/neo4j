@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.USE_2B_OFFSET_PAGE_SIZE_LIMIT;
+import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.SUPPORTED_PAGE_SIZE_LIMIT;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.io.pagecache.PageCache;
@@ -29,8 +29,9 @@ import org.neo4j.test.utils.PageCacheConfig;
 
 public class GBPTreeLargeDynamicKeysUnder2BLimitIT extends GBPTreeLargeDynamicKeysITBase {
     @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension =
-            new PageCacheSupportExtension(PageCacheConfig.config().withPageSize(USE_2B_OFFSET_PAGE_SIZE_LIMIT >>> 1));
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension(PageCacheConfig.config()
+            .withPageSize(SUPPORTED_PAGE_SIZE_LIMIT >>> 1)
+            .withMemory("64MiB"));
 
     @Inject
     private PageCache pageCache;

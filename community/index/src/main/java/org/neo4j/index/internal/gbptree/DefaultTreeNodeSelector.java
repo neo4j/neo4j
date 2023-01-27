@@ -56,11 +56,11 @@ public class DefaultTreeNodeSelector {
     private static final TreeNodeSelector.Factory DYNAMIC = new TreeNodeSelector.Factory() {
         @Override
         public <KEY, VALUE> TreeNode<KEY, VALUE> create(
-                int pageSize,
+                int payloadSize,
                 Layout<KEY, VALUE> layout,
                 OffloadStore<KEY, VALUE> offloadStore,
                 DependencyResolver dependencyResolver) {
-            return new TreeNodeDynamicSize<>(pageSize, layout, offloadStore);
+            return new TreeNodeDynamicSize<>(payloadSize, layout, offloadStore);
         }
 
         @Override
