@@ -397,7 +397,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }).foldLeft(
           plans.AssertAllowedDbmsActions(RemoveRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]
         ) {
-          case (source, (userName, roleName)) => plans.RevokeRoleFromUser(source, userName, roleName)
+          case (source, (roleName, userName)) => plans.RevokeRoleFromUser(source, roleName, userName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 

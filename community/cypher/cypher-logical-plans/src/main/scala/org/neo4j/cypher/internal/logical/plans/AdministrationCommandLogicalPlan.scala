@@ -147,7 +147,7 @@ case class GrantRoleToUser(
 case class RevokeRoleFromUser(
   source: SecurityAdministrationLogicalPlan,
   roleName: Either[String, Parameter],
-  userNames: Either[String, Parameter]
+  userName: Either[String, Parameter]
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RequireRole(source: SecurityAdministrationLogicalPlan, name: Either[String, Parameter])(implicit
