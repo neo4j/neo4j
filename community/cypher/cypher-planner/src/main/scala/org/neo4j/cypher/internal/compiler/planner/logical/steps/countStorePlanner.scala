@@ -115,7 +115,7 @@ case object countStorePlanner {
     exp match {
       case // COUNT(<id>)
         func @ FunctionInvocation(_, _, false, Vector(Variable(variableName))) if func.function == functions.Count =>
-        trySolveNodeAggregation(
+        trySolveNodeOrRelationshipAggregation(
           query,
           columnName,
           Some(variableName),
@@ -128,7 +128,7 @@ case object countStorePlanner {
 
       case // COUNT(*)
         CountStar() =>
-        trySolveNodeAggregation(
+        trySolveNodeOrRelationshipAggregation(
           query,
           columnName,
           None,
@@ -142,7 +142,7 @@ case object countStorePlanner {
       case // COUNT(n.prop)
         func @ FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), propKeyName)))
         if func.function == functions.Count =>
-        trySolveNodeAggregation(
+        trySolveNodeOrRelationshipAggregation(
           query,
           columnName,
           Some(variableName),
@@ -161,7 +161,7 @@ case object countStorePlanner {
    * @param variableName    the name of the variable in the count function. None, if this is count(*)
    * @param propertyKeyName the name of the property in the count function. None, if this is count(*) or count(n)
    */
-  private def trySolveNodeAggregation(
+  private def trySolveNodeOrRelationshipAggregation(
     query: SinglePlannerQuery,
     columnName: String,
     variableName: Option[String],
@@ -265,7 +265,8 @@ case object countStorePlanner {
     patternRelationship match {
 
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
-        if variableName.forall(_ == relId) && noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
+        if variableName.forall(name => Set(relId, startNodeId, endNodeId).contains(name)) &&
+          noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]): Option[LogicalPlan] =
           Some(context.staticComponents.logicalPlanProducer.planCountStoreRelationshipAggregation(
             query,

@@ -178,6 +178,13 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
+  test("should not plan a count for rel endpoint count with both ended labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (u:Label1)<-[]-(:Label2)", "u")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
   test("should not plan a count for rel count with type but no direction") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r")
@@ -203,6 +210,42 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ()<-[r:X]-(:Label1)", "r")
     countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+  }
+
+  test("should plan a count for relationship count with lhs label and rel type when variable is on lhs node") {
+    // When
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (u:User)-[:KNOWS]->() RETURN count(u)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+    // Then
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("u")
+  }
+
+  test("should plan a count for relationship count with lhs label and rel type when variable is on rhs node") {
+    // When
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (:User)-[:KNOWS]->(x) RETURN count(x)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+    // Then
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("x")
+  }
+
+  test("should plan a count for relationship count with rhs label and rel type when variable is on rhs node") {
+    // When
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH ()-[:KNOWS]->(u:User) RETURN count(u)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+    // Then
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("u")
+  }
+
+  test("should plan a count for relationship count with rhs label and rel type when variable is on lhs node") {
+    // When
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val query = "MATCH (x)-[:KNOWS]->(:User) RETURN count(x)"
+    val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+    // Then
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("x")
   }
 
   test("should not plan a count for rel count with both ended labels and rel type") {

@@ -2191,7 +2191,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("should sort between aggregation and widening expand") {
     val query =
       """MATCH (a)-[r1:NARROW]->(aa)
-        |WITH count(a) AS count
+        |WITH count(distinct a) AS count
         |MATCH (b)-[r2:R]->(c)
         |RETURN b, c, count ORDER BY count""".stripMargin
 
@@ -2204,7 +2204,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .apply()
       .|.allNodeScan("b", "count")
       .sort(Seq(Ascending("count")))
-      .aggregation(Seq(), Seq("count(a) AS count"))
+      .aggregation(Seq(), Seq("count(distinct a) AS count"))
       .expandAll("(a)-[r1:NARROW]->(aa)")
       .allNodeScan("a")
       .build()
