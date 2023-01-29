@@ -166,7 +166,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("The maximum size in bytes of methods generated for compiled expressions")
     public static final Setting<Integer> cypher_expression_compiled_method_limit = newBuilder(
-                    "internal.cypher.expression.method_limit", INT, 8000)
+                    "internal.cypher.expression_method_limit", INT, 8000)
             .addConstraint(min(0))
             .addConstraint(max(65535))
             .build();
