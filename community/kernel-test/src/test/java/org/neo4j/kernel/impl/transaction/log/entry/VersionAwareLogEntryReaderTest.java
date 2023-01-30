@@ -42,7 +42,8 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadAStartLogEntry() throws IOException {
         // given
-        final LogEntryStart start = new LogEntryStart(1, 2, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
+        final LogEntryStart start =
+                new LogEntryStart(LATEST, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeStartEntry(channel, start);
@@ -124,19 +125,19 @@ class VersionAwareLogEntryReaderTest {
         LogPosition startPosition = new LogPosition(0, 174);
 
         int checksum1 = 1021763356;
-        final LogEntryStart start1 = new LogEntryStart(1, 2, BASE_TX_CHECKSUM, new byte[] {4}, startPosition);
+        final LogEntryStart start1 = new LogEntryStart(LATEST, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, startPosition);
         final LogEntryCommit commit1 = new LogEntryCommit(42, 21, checksum1);
 
         int checksum2 = 2120750830;
-        final LogEntryStart start2 = new LogEntryStart(35, 30, checksum1, new byte[] {5}, startPosition);
+        final LogEntryStart start2 = new LogEntryStart(LATEST, 35, 30, checksum1, new byte[] {5}, startPosition);
         final LogEntryCommit commit2 = new LogEntryCommit(76, 35, checksum2);
 
         int checksum3 = -1462443939;
-        final LogEntryStart start3 = new LogEntryStart(58, 80, checksum2, new byte[] {6}, startPosition);
+        final LogEntryStart start3 = new LogEntryStart(LATEST, 58, 80, checksum2, new byte[] {6}, startPosition);
         final LogEntryCommit commit3 = new LogEntryCommit(83, 47, checksum3);
 
         int notChecksum3 = checksum3 + 1;
-        final LogEntryStart start4 = new LogEntryStart(68, 83, notChecksum3, new byte[] {7}, startPosition);
+        final LogEntryStart start4 = new LogEntryStart(LATEST, 68, 83, notChecksum3, new byte[] {7}, startPosition);
 
         writeStartEntry(channel, start1);
         writeCommitEntry(channel, commit1);

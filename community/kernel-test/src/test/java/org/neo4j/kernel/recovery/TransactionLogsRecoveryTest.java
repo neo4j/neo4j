@@ -178,8 +178,8 @@ class TransactionLogsRecoveryTest {
             byte version = KernelVersion.LATEST.version();
             byte[] headerData = encodeLogIndex(1);
             writer.writeStartEntry(version, 2L, 3L, previousChecksum, headerData);
-            lastCommittedTxStartEntry =
-                    new LogEntryStart(2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
+            lastCommittedTxStartEntry = new LogEntryStart(
+                    KernelVersion.LATEST, 2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
             previousChecksum = writer.writeCommitEntry(version, 4L, 5L);
             lastCommittedTxCommitEntry = new LogEntryCommit(4L, 5L, previousChecksum);
 
@@ -197,7 +197,8 @@ class TransactionLogsRecoveryTest {
             // tx committed after checkpoint
             channel.getCurrentPosition(marker);
             writer.writeStartEntry(version, 6L, 4L, previousChecksum, headerData);
-            expectedStartEntry = new LogEntryStart(6L, 4L, previousChecksum, headerData, marker.newPosition());
+            expectedStartEntry =
+                    new LogEntryStart(KernelVersion.LATEST, 6L, 4L, previousChecksum, headerData, marker.newPosition());
 
             previousChecksum = writer.writeCommitEntry(version, 5L, 7L);
             expectedCommitEntry = new LogEntryCommit(5L, 7L, previousChecksum);

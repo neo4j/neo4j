@@ -218,7 +218,7 @@ class BatchingTransactionAppenderTest {
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
         LogEntryStart start = new LogEntryStart(
-                timeStarted, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+                LATEST, timeStarted, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
         LogEntryCommit commit = new LogEntryCommit(nextTxId, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
@@ -260,8 +260,8 @@ class BatchingTransactionAppenderTest {
         long timeCommitted = timeStarted + 10;
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
-        LogEntryStart start =
-                new LogEntryStart(0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+        LogEntryStart start = new LogEntryStart(
+                LATEST, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
         LogEntryCommit commit = new LogEntryCommit(latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
@@ -380,7 +380,7 @@ class BatchingTransactionAppenderTest {
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
-                new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                new LogEntryStart(LATEST, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
                 new LogEntryCommit(11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(

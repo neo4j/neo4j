@@ -33,21 +33,6 @@ public class LogEntryStart extends AbstractVersionAwareLogEntry {
     private final LogPosition startPosition;
 
     public LogEntryStart(
-            long timeWritten,
-            long lastCommittedTxWhenTransactionStarted,
-            int previousChecksum,
-            byte[] additionalHeader,
-            LogPosition startPosition) {
-        this(
-                KernelVersion.LATEST,
-                timeWritten,
-                lastCommittedTxWhenTransactionStarted,
-                previousChecksum,
-                additionalHeader,
-                startPosition);
-    }
-
-    public LogEntryStart(
             KernelVersion kernelVersion,
             long timeWritten,
             long lastCommittedTxWhenTransactionStarted,

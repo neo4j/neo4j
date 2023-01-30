@@ -54,7 +54,7 @@ class CommittedCommandBatchCursorTest {
 
     private static final LogEntry NULL_ENTRY = null;
     private static final LogEntryStart START_ENTRY =
-            new LogEntryStart(0L, 0L, 0, encodeLogIndex(2), LogPosition.UNSPECIFIED);
+            new LogEntryStart(KernelVersion.LATEST, 0L, 0L, 0, encodeLogIndex(2), LogPosition.UNSPECIFIED);
     private static final LogEntryCommit COMMIT_ENTRY = new LogEntryCommit(42, 0, BASE_TX_CHECKSUM);
     private static final LogEntryCommand COMMAND_ENTRY = new LogEntryCommand(new TestCommand());
     private static final LogEntryChunkStart CHUNK_START = new LogEntryChunkStart(KernelVersion.LATEST, 12, 2);

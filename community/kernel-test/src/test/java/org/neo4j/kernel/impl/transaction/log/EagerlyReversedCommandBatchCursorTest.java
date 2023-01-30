@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.give
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -67,7 +68,7 @@ class EagerlyReversedCommandBatchCursorTest {
 
     private static CommittedTransactionRepresentation createTransaction(long txId) {
         return new CommittedTransactionRepresentation(
-                new LogEntryStart(1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                new LogEntryStart(KernelVersion.LATEST, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),
                 new LogEntryCommit(txId, 1L, BASE_TX_CHECKSUM));
     }
