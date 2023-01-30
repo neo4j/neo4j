@@ -326,6 +326,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): RelationshipValueIndexCursor =
     manyDbHits(inner.relationshipIndexSeek(index, needsValues, indexOrder, queries))
 
+  override def relationshipLockingUniqueIndexSeek(index: IndexDescriptor,
+                                                  queries: Seq[PropertyIndexQuery.ExactPredicate]): RelationshipValueIndexCursor =
+    singleDbHit(inner.relationshipLockingUniqueIndexSeek(index, queries))
+
   override def relationshipIndexSeekByContains(
     index: IndexReadSession,
     needsValues: Boolean,

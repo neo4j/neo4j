@@ -73,6 +73,8 @@ import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.storageengine.api.PropertySelection
+import org.neo4j.storageengine.api.Reference
 import org.neo4j.util.VisibleForTesting
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ElementIdMapper
@@ -182,6 +184,11 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     indexOrder: IndexOrder,
     queries: Seq[PropertyIndexQuery]
   ): RelationshipValueIndexCursor
+
+  def relationshipLockingUniqueIndexSeek(
+                                  index: IndexDescriptor,
+                                  queries: Seq[PropertyIndexQuery.ExactPredicate]
+                                ): RelationshipValueIndexCursor
 
   def relationshipIndexSeekByContains(
     index: IndexReadSession,
@@ -725,6 +732,64 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value], read: Read) exten
   // this cursor doesn't need tracing since all values has already been read.
   override def setTracer(tracer: KernelReadTracer): Unit = {}
   override def removeTracer(): Unit = {}
+}
+
+object RelationshipValueHit {
+  val EMPTY = new RelationshipValueHit(RelationshipValueIndexCursor.EMPTY, null)
+}
+
+class RelationshipValueHit(inner: RelationshipValueIndexCursor,
+                            val values: Array[Value],
+                           ) extends DefaultCloseListenable
+                                                                           with RelationshipValueIndexCursor {
+
+  private var _next = relationshipReference != -1L
+
+  override def numberOfProperties(): Int = values.length
+
+  override def hasValue: Boolean = true
+
+  override def propertyValue(offset: Int): Value = values(offset)
+
+  override def next(): Boolean = {
+    val temp = _next
+    _next = false
+    temp
+  }
+
+  override def closeInternal(): Unit = {
+    _next = false
+    inner.close()
+  }
+
+  override def isClosed: Boolean = _next
+
+  override def score(): Float = Float.NaN
+
+  override def readFromStore(): Boolean = inner.readFromStore()
+
+  override def source(cursor: NodeCursor): Unit = inner.source(cursor)
+
+  override def target(cursor: NodeCursor): Unit = inner.target(cursor)
+
+
+  override def properties(cursor: PropertyCursor,
+                          selection: PropertySelection): Unit = inner.properties(cursor, selection)
+
+  override def propertiesReference(): Reference = inner.propertiesReference()
+
+  override def `type`(): Int = inner.`type`()
+
+  override def relationshipReference(): Long = inner.relationshipReference()
+
+  override def sourceNodeReference(): Long = inner.sourceNodeReference()
+
+  override def targetNodeReference(): Long = inner.targetNodeReference()
+
+  // this cursor doesn't need tracing since all values has already been read.
+  override def setTracer(tracer: KernelReadTracer): Unit = {}
+  override def removeTracer(): Unit = {}
+
 }
 
 trait EntityTransformer {

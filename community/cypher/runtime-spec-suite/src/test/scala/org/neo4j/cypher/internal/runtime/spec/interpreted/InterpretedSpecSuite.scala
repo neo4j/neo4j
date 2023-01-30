@@ -135,6 +135,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexPointBoundi
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexStartsWithSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipLockingUniqueIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
@@ -268,6 +269,7 @@ class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITI
 
 class InterpretedRelationshipIndexSeekTest
     extends RelationshipIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+    with RelationshipLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
 
 class InterpretedRelationshipIndexScanTest
     extends RelationshipIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

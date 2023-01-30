@@ -345,6 +345,9 @@ object StaticEvaluation {
       queries: Seq[PropertyIndexQuery]
     ): RelationshipValueIndexCursor = notAvailable()
 
+    override def relationshipLockingUniqueIndexSeek(index: IndexDescriptor,
+                                                    queries: Seq[PropertyIndexQuery.ExactPredicate]): RelationshipValueIndexCursor = notAvailable()
+
     override def relationshipIndexSeekByContains(
       index: IndexReadSession,
       needsValues: Boolean,

@@ -117,28 +117,45 @@ trait EntityIndexSeeker {
     }
 
   protected def relationshipIndexSeek(
-    state: QueryState,
-    index: IndexReadSession,
-    needsValues: Boolean,
-    indexOrder: IndexOrder,
-    baseContext: CypherRow
-  ): RelationshipValueIndexCursor = {
-    val indexQueries: collection.Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
-    if (indexQueries.size == 1) {
-      state.query.relationshipIndexSeek(index, needsValues, indexOrder, indexQueries.head)
-    } else {
-      orderedCursor(
-        indexOrder,
-        indexQueries.map(query =>
-          state.query.relationshipIndexSeek(
-            index,
-            needsValues = needsValues || indexOrder != IndexOrderNone,
-            indexOrder,
-            query
-          )
-        ).toArray
-      )
-    }
+                                       state: QueryState,
+                                       index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       baseContext: CypherRow
+                                     ): RelationshipValueIndexCursor = indexMode match {
+    case _: ExactSeek |
+         _: SeekByRange =>
+      val indexQueries: collection.Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
+      if (indexQueries.size == 1) {
+        state.query.relationshipIndexSeek(index, needsValues, indexOrder, indexQueries.head)
+      } else {
+        orderedCursor(
+          indexOrder,
+          indexQueries.map(query =>
+            state.query.relationshipIndexSeek(
+              index,
+              needsValues = needsValues || indexOrder != IndexOrderNone,
+              indexOrder,
+              query
+            )
+          ).toArray
+        )
+      }
+    case LockingUniqueIndexSeek =>
+      val indexQueries = computeExactQueries(state, baseContext)
+      if (indexQueries.size == 1) {
+        state.query.relationshipLockingUniqueIndexSeek(index.reference(), indexQueries.head)
+      } else {
+        orderedCursor(
+          indexOrder,
+          indexQueries.map(query =>
+            state.query.relationshipLockingUniqueIndexSeek(
+              index.reference(),
+              query
+            )
+          ).toArray
+        )
+      }
   }
 
   // helpers

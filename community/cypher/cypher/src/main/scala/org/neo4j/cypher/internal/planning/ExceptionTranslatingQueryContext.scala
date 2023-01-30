@@ -163,6 +163,10 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): RelationshipValueIndexCursor =
     translateException(tokenNameLookup, inner.relationshipIndexSeek(index, needsValues, indexOrder, values))
 
+  override def relationshipLockingUniqueIndexSeek(index: IndexDescriptor,
+                                                  queries: Seq[PropertyIndexQuery.ExactPredicate]): RelationshipValueIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipLockingUniqueIndexSeek(index, queries))
+
   override def relationshipIndexSeekByContains(
     index: IndexReadSession,
     needsValues: Boolean,

@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.runtime.NodeValueHit
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadQueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
+import org.neo4j.cypher.internal.runtime.RelationshipValueHit
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.ThreadSafeResourceManager
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
@@ -144,7 +145,6 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
-
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -718,6 +718,29 @@ private[internal] class TransactionBoundReadQueryContext(
       RelationshipValueIndexCursor.EMPTY
     } else {
       innerRelationshipIndexSeek(index, needsValues, indexOrder, predicates: _*)
+    }
+  }
+
+  override def relationshipLockingUniqueIndexSeek(
+                                           index: IndexDescriptor,
+                                           queries: Seq[PropertyIndexQuery.ExactPredicate]
+                                         ): RelationshipValueIndexCursor = {
+
+    val cursor = allocateAndTraceRelationshipValueIndexCursor()
+    allocateAndTraceRelationshipValueIndexCursor()
+    try {
+      indexSearchMonitor.lockingUniqueIndexSeek(index, queries)
+      if (queries.exists(q => q.value() eq Values.NO_VALUE)) {
+        RelationshipValueHit.EMPTY
+      } else {
+        val resultRelId = reads().lockingRelationshipUniqueIndexSeek(index, cursor, queries: _*)
+        if (StatementConstants.NO_SUCH_RELATIONSHIP == resultRelId) {
+          RelationshipValueHit.EMPTY
+        } else {
+          val values = queries.map(_.value()).toArray
+          new RelationshipValueHit(cursor, values)
+        }
+      }
     }
   }
 
