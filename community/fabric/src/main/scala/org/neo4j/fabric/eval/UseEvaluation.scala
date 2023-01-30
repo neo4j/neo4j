@@ -68,7 +68,6 @@ object UseEvaluation {
       context: java.util.Map[String, AnyValue]
     ): Catalog.Graph = Errors.errorContext(query, graphSelection) {
 
-      graphSelection.graphReference
       graphSelection.expression match {
         case v: Variable =>
           catalog.resolveGraph(nameFromVar(v))

@@ -61,15 +61,6 @@ object Catalog {
     override def toString: String = s"internal graph $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
-  // TODO: remove
-  case class ExternalGraph(
-    id: Long,
-    name: Option[String],
-    uuid: UUID
-  ) extends ConcreteGraph {
-    override def toString: String = s"external graph $id" + name.map(n => s" ($n)").getOrElse("")
-  }
-
   case class InternalAlias(
     id: Long,
     uuid: UUID,
