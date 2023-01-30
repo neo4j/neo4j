@@ -246,7 +246,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
   val R: Double = A_ANY_ANY + B_ANY_ANY + C_ANY_ANY + D_ANY_ANY + E_ANY_ANY
   val R_sel: Double = R / (N * N)
 
-  def getIndexType: IndexType
+  def getIndexType: IndexType = IndexType.RANGE
 
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()

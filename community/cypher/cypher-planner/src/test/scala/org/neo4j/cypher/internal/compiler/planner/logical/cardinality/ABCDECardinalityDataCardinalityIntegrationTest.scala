@@ -39,7 +39,7 @@ import org.neo4j.graphdb.schema.IndexType
 import scala.math.cbrt
 import scala.math.sqrt
 
-abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with ABCDECardinalityData
+class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with ABCDECardinalityData
     with TestName {
 
   test("MATCH (n)") {
@@ -1002,8 +1002,4 @@ abstract class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunS
 
   private def expectPlanCardinality(findPlanId: PartialFunction[LogicalPlan, Boolean], expected: Double): Unit =
     planShouldHaveCardinality(testName, findPlanId, expected)
-}
-
-class RangeABCDECardinalityDataCardinalityIntegrationTest extends ABCDECardinalityDataCardinalityIntegrationTest {
-  override def getIndexType: IndexType = IndexType.RANGE
 }
