@@ -140,7 +140,7 @@ case class LegacyShortestPathExpression(
           incomingCtx.set(shortestPathPattern.pathName, ValueUtils.fromPath(path))
           incomingCtx.set(shortestPathPattern.relIterator.get, ValueUtils.asListOfEdges(path.relationships()))
           predicate.isTrue(incomingCtx, state)
-      } && (!withFallBack || ShortestPathExpression.noDuplicates(path.relationships.asScala))
+      } && (!withFallBack || LegacyShortestPathExpression.noDuplicates(path.relationships.asScala))
     }
 
   private def getEndPoint(ctx: ReadableRow, state: QueryState, start: SingleNode): VirtualNodeValue = {

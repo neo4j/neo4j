@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -409,7 +410,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle types missing on compile") {
     given {
-      1 to sizeHint foreach { _ =>
+      1 to 20 foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
     }
@@ -440,7 +441,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("cached plan should adapt to new relationship types") {
     given {
-      1 to sizeHint foreach { _ =>
+      1 to 20 foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
     }
@@ -469,5 +470,184 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     // CREATE T
     given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
+  }
+
+  test("Shortest path on limited RHS of apply") {
+
+    val dim = 5
+    given {
+      gridGraph(dim, dim)
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply(fromSubquery = true)
+      .|.limit(2)
+      .|.shortestPath(
+        "(a)-[rs*1..]-(b)",
+        pathName = Some("p"),
+        all = true,
+        disallowSameNode = false
+      )
+      .|.argument("a", "b")
+      .filter("elementId(a) < elementId(b)")
+      .cartesianProduct(fromSubquery = false)
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def expectedPathCount(dim: Int) = {
+      val nNodes = dim * dim
+      val nPairs = (nNodes * (nNodes - 1)) / 2 // WHERE id(a) < id(b)
+
+      // FIRST SEE [[gridGraph]]
+      //
+      // Due to the LIMIT 2, each pair of nodes will result in either 1 or 2 rows (no nodes are disconnected so 0 isn't
+      // possible)
+      //
+      // We will fill the limit whenever two or more paths of shortest length exist between a pair of nodes.
+      //
+      // For the given graph,
+      // a pair of nodes will have only one shortest path between them if and only if they are in the same column or row
+
+      val nPairsWithOnlyOneShortestPath = {
+        val nPairsOnAGivenRow = (dim * (dim - 1)) / 2
+        val nPairsOnTheSameRow = dim * nPairsOnAGivenRow
+        val nPairsInTheSameColumn = nPairsOnTheSameRow
+        nPairsOnTheSameRow + nPairsInTheSameColumn
+      }
+
+      val nPairsWithAtleastTwoShortestPaths = nPairs - nPairsWithOnlyOneShortestPath
+
+      2 * nPairsWithAtleastTwoShortestPaths + nPairsWithOnlyOneShortestPath
+    }
+
+    // then
+    val expectedRowCount = expectedPathCount(dim)
+
+    runtimeResult should beColumns("a", "b").withRows(rowCount(expectedRowCount))
+  }
+
+  test("Shortest path on eagerly aggregated RHS of apply") {
+
+    val dim = 5
+    given {
+      gridGraph(dim, dim)
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply(fromSubquery = false)
+      .|.top(Seq(Ascending("length(p)")), 2)
+      .|.projection("length(p) AS `length(p)`")
+      .|.shortestPath(
+        "(a)-[rs*1..]-(b)",
+        pathName = Some("p"),
+        all = true,
+        nodePredicates = Seq(),
+        relationshipPredicates = Seq(),
+        disallowSameNode = false
+      )
+      .|.argument("a", "b")
+      .filter("elementId(a) < elementId(b)")
+      .cartesianProduct(fromSubquery = false)
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def expectedPathCount(dim: Int) = {
+      val nNodes = dim * dim
+      val nPairs = (nNodes * (nNodes - 1)) / 2 // WHERE id(a) < id(b)
+
+      // See "Shortest path on limited RHS of apply" for info on cardinality calculation
+      // This test returns exactly the same amount of rows.
+
+      val nPairsWithOnlyOneShortestPath = {
+        val nPairsOnAGivenRow = (dim * (dim - 1)) / 2
+        val nPairsOnTheSameRow = dim * nPairsOnAGivenRow
+        val nPairsInTheSameColumn = nPairsOnTheSameRow
+        nPairsOnTheSameRow + nPairsInTheSameColumn
+      }
+
+      val nPairsWithAtleastTwoShortestPaths = nPairs - nPairsWithOnlyOneShortestPath
+
+      2 * nPairsWithAtleastTwoShortestPaths + nPairsWithOnlyOneShortestPath
+    }
+
+    // then
+    val expectedRowCount = expectedPathCount(dim)
+
+    runtimeResult should beColumns("a", "b").withRows(rowCount(expectedRowCount))
+  }
+
+  test("Shortest path on eagerly aggregated RHS of apply with an inlined node filter") {
+    val dim = 5
+    given {
+      gridGraph(dim, dim)
+    }
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .projection("nodes(p) AS nodes")
+      .apply(fromSubquery = true)
+      .|.top(Seq(Ascending("length(p)")), 2)
+      .|.projection("length(p) AS `length(p)`")
+      .|.shortestPath(
+        "(a)-[rs*1..]-(b)",
+        pathName = Some("p"),
+        all = true,
+        nodePredicates = Seq(Predicate("n", "NOT '0,0' IN labels(n)")),
+        relationshipPredicates = Seq(),
+        disallowSameNode = false
+      )
+      .|.argument("a", "b")
+      .filter("elementId(a) < elementId(b)")
+      .cartesianProduct(fromSubquery = false)
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def expectedPathCount(dim: Int) = {
+      val nNodes = dim * dim
+      val nPairs = (nNodes * (nNodes - 1)) / 2 // WHERE id(a) < id(b)
+
+      // See "Shortest path on limited RHS of apply" for info on cardinality calculation
+      //
+      // NEW FOR THIS TEST CASE:
+      // Any shortest path containing topLeft must either originate from topLeft, or be between a
+      // node on the top row and a node in the leftmost column.
+      //
+      // Any pair having topLeft as the start node won't yield any paths what so ever.
+      //
+      // For the (nodeInTopRow, nodeInLeftMostCol) pairs, even after excluding paths containing topLeft there
+      // will be at least two shortest paths between nodeInTopRow, nodeInLeftMostCol when nodeInTopRow != 01 and
+      // nodeInLeftMostCol != 10. In the (01, 10) case we go from having two shortest paths to one
+
+      val nPairsExcludingTopLeft = nPairs - (nNodes - 1)
+
+      val nPairsWithOnlyOneShortestPath = {
+        val nPairsOnAGivenRow = (dim * (dim - 1)) / 2
+        val nPairsOnTheSameRow = dim * nPairsOnAGivenRow
+        val nPairsInTheSameColumn = nPairsOnTheSameRow
+
+        // The n.o pairs on same row/col originating from topLeft
+        val nOriginatingFromTopLeft = 2 * (dim - 1)
+
+        // +1 due to the (01, 10) pair
+        nPairsOnTheSameRow + nPairsInTheSameColumn - nOriginatingFromTopLeft + 1
+      }
+
+      val nPairsWithAtleastTwoShortestPaths = nPairsExcludingTopLeft - nPairsWithOnlyOneShortestPath
+
+      2 * nPairsWithAtleastTwoShortestPaths + nPairsWithOnlyOneShortestPath
+    }
+
+    // then
+    val expectedRowCount = expectedPathCount(dim)
+
+    runtimeResult should beColumns("a", "b").withRows(rowCount(expectedRowCount))
   }
 }

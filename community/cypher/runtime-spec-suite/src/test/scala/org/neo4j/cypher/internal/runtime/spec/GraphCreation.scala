@@ -274,6 +274,98 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
+   * Default node creation function for [[gridGraph]]
+   */
+  private def createNodeWithCoordinateLables(row: Int, col: Int): Node = {
+    runtimeTestSupport.tx.createNode(
+      Label.label(s"${row},${col}")
+    )
+  }
+
+  /**
+   * Default relationship type name creation function for [[gridGraph]]
+   */
+  private def rightDownRelTypeName(cords1: (Int, Int), cords2: (Int, Int)): String = {
+    if (cords2._1 - cords1._1 == 1 && cords2._2 == cords1._2) {
+      "DOWN"
+    } else if (cords2._2 - cords1._2 == 1 && cords2._1 == cords1._1) {
+      "RIGHT"
+    } else {
+      ""
+    }
+  }
+
+  /**
+   * Creates a two dimensional grid graph. When the function is called with default parameters,
+   * the created graph will look like:
+   *
+   * <p>
+   *
+   *{{{
+   * (:'0,0')-[:RIGHT]->(:'0,1')-[:RIGHT]->(:'0,2')-[:RIGHT]->(:'0,3')-[:RIGHT]->(:'0,4')
+   *    |                  |                  |                  |                  |
+   * [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]
+   *    |                  |                  |                  |                  |
+   *    V                  V                  V                  V                  V
+   * (:'1,0')-[:RIGHT]->(:'1,1')-[:RIGHT]->(:'1,2')-[:RIGHT]->(:'1,3')-[:RIGHT]->(:'1,4')
+   *    |                  |                  |                  |                  |
+   * [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]
+   *    |                  |                  |                  |                  |
+   *    V                  V                  V                  V                  V
+   * (:'2,0')-[:RIGHT]->(:'2,1')-[:RIGHT]->(:'2,2')-[:RIGHT]->(:'2,3')-[:RIGHT]->(:'2,4')
+   *    |                  |                  |                  |                  |
+   * [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]
+   *    |                  |                  |                  |                  |
+   *    V                  V                  V                  V                  V
+   * (:'3,0')-[:RIGHT]->(:'3,1')-[:RIGHT]->(:'3,2')-[:RIGHT]->(:'3,3')-[:RIGHT]->(:'3,4')
+   *    |                  |                  |                  |                  |
+   * [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]            [:DOWN]
+   *    |                  |                  |                  |                  |
+   *    V                  V                  V                  V                  V
+   * (:'4,0')-[:RIGHT]->(:'4,1')-[:RIGHT]->(:'4,2')-[:RIGHT]->(:'4,3')-[:RIGHT]->(:'4,4')
+   * }}}
+   *
+   * @param nRows the amount of rows of the grid graph
+   * @param nCols the amount of columns of the grid graph
+   * @param nodeCreationFunction a function which accepts coordinates and creates a node
+   * @param relationshipTypeNameCreationFunction a function which accepts coordinates of two nodes and creates a relationship type name
+   * @return
+   */
+  def gridGraph(
+    nRows: Int = 5,
+    nCols: Int = 5,
+    nodeCreationFunction: (Int, Int) => Node = createNodeWithCoordinateLables,
+    relationshipTypeNameCreationFunction: ((Int, Int), (Int, Int)) => String = rightDownRelTypeName
+  ): (Seq[Node], Seq[Relationship]) = {
+
+    var nodes = Seq.empty[Node]
+    var rels = Seq.empty[Relationship]
+
+    for {
+      row <- 0 until nRows
+      col <- 0 until nCols
+    } {
+      val node = nodeCreationFunction(row, col)
+      nodes = nodes :+ node
+      if (col > 0) {
+        val prevNodeInRow = nodes(row * nCols + col - 1)
+        rels = rels :+ prevNodeInRow.createRelationshipTo(
+          node,
+          RelationshipType.withName(relationshipTypeNameCreationFunction((row, col - 1), (row, col)))
+        )
+      }
+      if (row > 0) {
+        val prevNodeInCol = nodes((row - 1) * nCols + col)
+        rels = rels :+ prevNodeInCol.createRelationshipTo(
+          node,
+          RelationshipType.withName(relationshipTypeNameCreationFunction((row - 1, col), (row, col)))
+        )
+      }
+    }
+    (nodes, rels)
+  }
+
+  /**
    * Create a lollipop graph:
    *
    * {{{
