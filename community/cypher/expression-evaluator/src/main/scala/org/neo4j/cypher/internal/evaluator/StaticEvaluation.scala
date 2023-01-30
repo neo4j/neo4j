@@ -624,7 +624,7 @@ object StaticEvaluation {
 
     override def logProvider: InternalLogProvider = notAvailable()
 
-    override def providedLanguageFunctions(): Seq[FunctionInformation] = notAvailable()
+    override def providedLanguageFunctions: Seq[FunctionInformation] = notAvailable()
 
     override def getDatabaseContextProvider: DatabaseContextProvider[DatabaseContext] = notAvailable()
 

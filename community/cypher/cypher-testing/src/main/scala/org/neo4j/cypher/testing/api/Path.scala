@@ -21,7 +21,7 @@ package org.neo4j.cypher.testing.api
 
 case class Path(startNode: Node, connections: Seq[Connection])
 
-trait Connection {
+sealed trait Connection {
   def node: Node
   def relationship: Relationship
 }
