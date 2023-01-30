@@ -36,7 +36,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -88,19 +87,29 @@ class CheckpointLogFileTest {
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         TransactionId transactionId = new TransactionId(5, 6, 7, 8);
         assertDoesNotThrow(() -> checkpointAppender.checkPoint(
-                NULL, transactionId, KernelVersion.LATEST, new LogPosition(1, 2), Instant.now(), "test"));
+                NULL,
+                transactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                new LogPosition(1, 2),
+                Instant.now(),
+                "test"));
 
         // we can't append checkpoint for null transaction id
         assertThrows(
                 NullPointerException.class,
                 () -> checkpointAppender.checkPoint(
-                        NULL, null, KernelVersion.LATEST, new LogPosition(1, 2), Instant.now(), "test"));
+                        NULL,
+                        null,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        new LogPosition(1, 2),
+                        Instant.now(),
+                        "test"));
 
         life.shutdown();
 
         // no attempt is made to write any checkpoint here
         assertDoesNotThrow(() -> checkpointAppender.checkPoint(
-                NULL, null, KernelVersion.LATEST, new LogPosition(1, 2), Instant.now(), "test"));
+                NULL, null, LatestVersions.LATEST_KERNEL_VERSION, new LogPosition(1, 2), Instant.now(), "test"));
     }
 
     @Test
@@ -118,7 +127,12 @@ class CheckpointLogFileTest {
         var firstLogPosition = new LogPosition(1, 2);
         var firstTransactionId = new TransactionId(1, 2, 3, 4);
         checkpointAppender.checkPoint(
-                NULL, firstTransactionId, KernelVersion.LATEST, firstLogPosition, Instant.now(), "test");
+                NULL,
+                firstTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                firstLogPosition,
+                Instant.now(),
+                "test");
         assertEquals(
                 firstLogPosition,
                 checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
@@ -126,7 +140,12 @@ class CheckpointLogFileTest {
         var secondLogPosition = new LogPosition(2, 3);
         var secondTransactionId = new TransactionId(2, 3, 4, 5);
         checkpointAppender.checkPoint(
-                NULL, secondTransactionId, KernelVersion.LATEST, secondLogPosition, Instant.now(), "test");
+                NULL,
+                secondTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                secondLogPosition,
+                Instant.now(),
+                "test");
         assertEquals(
                 secondLogPosition,
                 checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
@@ -134,7 +153,12 @@ class CheckpointLogFileTest {
         var thirdLogPosition = new LogPosition(3, 4);
         var thirdTransactionId = new TransactionId(3, 4, 5, 6);
         checkpointAppender.checkPoint(
-                NULL, thirdTransactionId, KernelVersion.LATEST, thirdLogPosition, Instant.now(), "test");
+                NULL,
+                thirdTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                thirdLogPosition,
+                Instant.now(),
+                "test");
         assertEquals(
                 thirdLogPosition,
                 checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition());
@@ -155,27 +179,57 @@ class CheckpointLogFileTest {
         var firstLogPosition = new LogPosition(1, 2);
         var firstTransactionId = new TransactionId(1, 2, 3, 4);
         checkpointAppender.checkPoint(
-                NULL, firstTransactionId, KernelVersion.LATEST, firstLogPosition, Instant.now(), "test");
+                NULL,
+                firstTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                firstLogPosition,
+                Instant.now(),
+                "test");
         var secondLogPosition = new LogPosition(2, 3);
         var secondTransactionId = new TransactionId(2, 3, 43, 44);
         checkpointAppender.checkPoint(
-                NULL, secondTransactionId, KernelVersion.LATEST, secondLogPosition, Instant.now(), "test");
+                NULL,
+                secondTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                secondLogPosition,
+                Instant.now(),
+                "test");
         var thirdLogPosition = new LogPosition(3, 4);
         var thirdTransactionId = new TransactionId(3, 4, 5, 6);
         checkpointAppender.checkPoint(
-                NULL, thirdTransactionId, KernelVersion.LATEST, thirdLogPosition, Instant.now(), "test");
+                NULL,
+                thirdTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                thirdLogPosition,
+                Instant.now(),
+                "test");
         var fourthLogPosition = new LogPosition(4, 5);
         var fourthTransactionId = new TransactionId(4, 5, 6, 7);
         checkpointAppender.checkPoint(
-                NULL, fourthTransactionId, KernelVersion.LATEST, fourthLogPosition, Instant.now(), "test");
+                NULL,
+                fourthTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                fourthLogPosition,
+                Instant.now(),
+                "test");
         var fifthLogPosition = new LogPosition(5, 6);
         var fifthTransactionId = new TransactionId(5, 6, 7, 8);
         checkpointAppender.checkPoint(
-                NULL, fifthTransactionId, KernelVersion.LATEST, fifthLogPosition, Instant.now(), "test");
+                NULL,
+                fifthTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                fifthLogPosition,
+                Instant.now(),
+                "test");
         var sixthLogPosition = new LogPosition(6, 7);
         var sixthTransactionId = new TransactionId(6, 7, 8, 9);
         checkpointAppender.checkPoint(
-                NULL, sixthTransactionId, KernelVersion.LATEST, sixthLogPosition, Instant.now(), "test");
+                NULL,
+                sixthTransactionId,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                sixthLogPosition,
+                Instant.now(),
+                "test");
 
         var checkpointInfos = checkpointFile.reachableCheckpoints();
         assertThat(checkpointInfos).hasSize(6);
@@ -195,7 +249,7 @@ class CheckpointLogFileTest {
         checkpointAppender.checkPoint(
                 NULL,
                 new TransactionId(1, 2, 3, 4),
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(1, 2),
                 Instant.now(),
                 "test");
@@ -204,7 +258,7 @@ class CheckpointLogFileTest {
         checkpointAppender.checkPoint(
                 NULL,
                 new TransactionId(1, 2, 3, 4),
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(2, 3),
                 Instant.now(),
                 "test");
@@ -213,7 +267,7 @@ class CheckpointLogFileTest {
         checkpointAppender.checkPoint(
                 NULL,
                 new TransactionId(1, 2, 3, 4),
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(3, 4),
                 Instant.now(),
                 "test");

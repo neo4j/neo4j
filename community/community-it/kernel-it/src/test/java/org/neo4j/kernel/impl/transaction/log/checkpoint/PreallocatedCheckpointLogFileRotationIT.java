@@ -32,9 +32,9 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 
 @EnabledOnOs(OS.LINUX)
 class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationIT {
@@ -57,7 +57,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var reason = "checkpoints in preallocated file";
         for (int i = 0; i < 3; i++) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
+                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(1);
@@ -77,7 +77,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
                         .hasSize(fileCount)
                         .allMatch(this::sizeEqualsToPreallocatedFile);
                 checkpointAppender.checkPoint(
-                        NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
+                        NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
             }
         }
 

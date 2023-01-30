@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumMap;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StoreId;
@@ -95,7 +96,7 @@ public enum LogFormat {
      *   |          version          | last tx | store id | reserved |
      *  </pre>
      */
-    V8((byte) 8, 128, KernelVersion.V5_0, KernelVersion.LATEST, (logVersion, buffer) -> {
+    V8((byte) 8, 128, KernelVersion.V5_0, KernelVersion.getLatestVersion(Config.defaults()), (logVersion, buffer) -> {
         long previousCommittedTx = buffer.getLong();
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
         buffer.getLong(); // reserved

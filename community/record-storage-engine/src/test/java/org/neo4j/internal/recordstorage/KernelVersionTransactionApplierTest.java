@@ -30,13 +30,14 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.test.LatestVersions;
 
 public class KernelVersionTransactionApplierTest {
 
     @Test
     void shouldUpdateKernelVersion() throws Exception {
         final var from = KernelVersion.EARLIEST;
-        final var to = KernelVersion.LATEST;
+        final var to = LatestVersions.LATEST_KERNEL_VERSION;
         assumeThat(to).isGreaterThan(from);
 
         final var kernelVersionRepository = mock(KernelVersionRepository.class);
@@ -52,7 +53,7 @@ public class KernelVersionTransactionApplierTest {
 
         // then   it is successful (false) and the version updated
         assertThat(result).isFalse();
-        verify(kernelVersionRepository).setKernelVersion(KernelVersion.LATEST);
+        verify(kernelVersionRepository).setKernelVersion(LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     private static Command.MetaDataCommand createMetaDataCommand(KernelVersion from, KernelVersion to) {

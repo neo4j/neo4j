@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -92,7 +93,13 @@ class DetachedCheckpointLogFileTest {
         TransactionId transactionId = new TransactionId(1, 2, 3, 4);
         checkpointFile
                 .getCheckpointAppender()
-                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), "detached");
+                .checkPoint(
+                        NULL,
+                        transactionId,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition,
+                        Instant.now(),
+                        "detached");
         CheckpointInfo lastCheckPoint = ((LogTailInformation) buildLogFiles().getTailMetadata()).lastCheckPoint;
         assertThat(lastCheckPoint.transactionLogPosition()).isEqualTo(logPosition);
     }
@@ -105,7 +112,13 @@ class DetachedCheckpointLogFileTest {
         TransactionId transactionId = new TransactionId(5, 6, 7, 8);
         checkpointFile
                 .getCheckpointAppender()
-                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition2, Instant.now(), "detached");
+                .checkPoint(
+                        NULL,
+                        transactionId,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition2,
+                        Instant.now(),
+                        "detached");
         assertThat(checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition())
                 .isEqualTo(logPosition2);
     }
@@ -122,10 +135,22 @@ class DetachedCheckpointLogFileTest {
         TransactionId transactionId1 = new TransactionId(6, 7, 8, 9);
         checkpointFile
                 .getCheckpointAppender()
-                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), "detached");
+                .checkPoint(
+                        NULL,
+                        transactionId,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition,
+                        Instant.now(),
+                        "detached");
         checkpointFile
                 .getCheckpointAppender()
-                .checkPoint(NULL, transactionId1, KernelVersion.LATEST, logPosition1, Instant.now(), "detached");
+                .checkPoint(
+                        NULL,
+                        transactionId1,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        logPosition1,
+                        Instant.now(),
+                        "detached");
 
         List<CheckpointInfo> reachableCheckpoints = checkpointFile.reachableCheckpoints();
         assertThat(reachableCheckpoints.size()).isEqualTo(2);
@@ -150,7 +175,7 @@ class DetachedCheckpointLogFileTest {
     }
 
     private static class FakeKernelVersionProvider implements KernelVersionProvider {
-        volatile KernelVersion version = KernelVersion.LATEST;
+        volatile KernelVersion version = LatestVersions.LATEST_KERNEL_VERSION;
 
         @Override
         public KernelVersion kernelVersion() {

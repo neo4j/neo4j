@@ -35,10 +35,10 @@ import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -70,7 +70,7 @@ public class CheckpointLogFileRotationIT {
         var reason = "checkpoint for rotation test";
         for (int i = 0; i < 105; i++) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
+                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(27);
@@ -96,7 +96,7 @@ public class CheckpointLogFileRotationIT {
                 i < ROTATION_THRESHOLD;
                 i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
+                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
     }
@@ -110,7 +110,7 @@ public class CheckpointLogFileRotationIT {
         var reason = "checkpoint for rotation test";
         for (int i = CURRENT_FORMAT_LOG_HEADER_SIZE; i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
+                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
         }
         Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(2);

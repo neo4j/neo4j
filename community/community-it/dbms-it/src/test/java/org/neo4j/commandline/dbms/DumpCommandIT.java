@@ -68,7 +68,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.Locker;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -231,7 +230,7 @@ class DumpCommandIT {
             LogFile logFile = logFiles.getLogFile();
             LogEntryWriter<?> writer = logFile.getTransactionLogWriter().getWriter();
             writer.writeStartEntry(
-                    KernelVersion.LATEST.version(),
+                    LatestVersions.LATEST_KERNEL_VERSION.version(),
                     0x123456789ABCDEFL,
                     logFile.getLogFileInformation().getLastEntryId() + 1,
                     BASE_TX_CHECKSUM,

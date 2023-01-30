@@ -75,6 +75,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.LatestVersions;
 
 class ParallelRecoveryVisitorTest {
     private final CursorContextFactory contextFactory =
@@ -234,9 +235,10 @@ class ParallelRecoveryVisitorTest {
 
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
-        LogEntryStart startEntry = new LogEntryStart(KernelVersion.LATEST, 0, 0, 0, new byte[0], UNSPECIFIED);
+        LogEntryStart startEntry =
+                new LogEntryStart(LatestVersions.LATEST_KERNEL_VERSION, 0, 0, 0, new byte[0], UNSPECIFIED);
         CommandBatch txRepresentation = new CompleteTransaction(
-                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, AUTH_DISABLED);
+                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, AUTH_DISABLED);
         LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }
@@ -262,7 +264,7 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public KernelVersion kernelVersion() {
-            return KernelVersion.LATEST;
+            return LatestVersions.LATEST_KERNEL_VERSION;
         }
 
         abstract void lock(LockService lockService, LockGroup lockGroup);

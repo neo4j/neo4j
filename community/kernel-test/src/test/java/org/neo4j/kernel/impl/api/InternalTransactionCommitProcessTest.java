@@ -42,7 +42,6 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -58,6 +57,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 class InternalTransactionCommitProcessTest {
     private final CommitEvent commitEvent = CommitEvent.NULL;
@@ -119,7 +119,14 @@ class InternalTransactionCommitProcessTest {
 
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
         CompleteTransaction noCommandTx = new CompleteTransaction(
-                Collections.emptyList(), UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
+                Collections.emptyList(),
+                UNKNOWN_CONSENSUS_INDEX,
+                -1,
+                -1,
+                -1,
+                -1,
+                LatestVersions.LATEST_KERNEL_VERSION,
+                ANONYMOUS);
 
         // WHEN
 

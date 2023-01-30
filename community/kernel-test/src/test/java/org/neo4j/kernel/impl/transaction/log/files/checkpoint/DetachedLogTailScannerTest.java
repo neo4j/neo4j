@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
-import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -124,7 +123,7 @@ class DetachedLogTailScannerTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
-                        KernelVersion.LATEST,
+                        LatestVersions.LATEST_KERNEL_VERSION,
                         logPosition,
                         Instant.now(),
                         "test");
@@ -515,7 +514,7 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnEmptyLogs() throws Exception {
-        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
 
         long chunkTxId = 42;
         setupLogFiles(10, logFile(start(), chunkEnd(chunkTxId)), logFile());
@@ -526,7 +525,7 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnNotEmptyLogs() throws Exception {
-        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
 
         long chunkTxId = 42;
         PositionEntry position = position();
@@ -567,7 +566,7 @@ class DetachedLogTailScannerTest {
                 try {
                     TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
                     LogEntryWriter<?> writer = logWriter.getWriter();
-                    byte version = LATEST.version();
+                    byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
                     for (Entry entry : entries) {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);

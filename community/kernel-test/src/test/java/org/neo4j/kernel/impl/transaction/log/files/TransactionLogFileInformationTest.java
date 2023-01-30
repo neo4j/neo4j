@@ -33,7 +33,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.LatestVersions;
 
 class TransactionLogFileInformationTest {
     private final LogFiles logFiles = mock(TransactionLogFiles.class);
@@ -159,7 +159,8 @@ class TransactionLogFileInformationTest {
         var logEntryReader = mock(LogEntryReader.class);
         var readableLogChannel = mock(ReadableLogChannel.class);
         when(logEntryReader.readLogEntry(readableLogChannel))
-                .thenReturn(new LogEntryStart(KernelVersion.LATEST, 1, 1, 1, new byte[] {}, LogPosition.UNSPECIFIED));
+                .thenReturn(new LogEntryStart(
+                        LatestVersions.LATEST_KERNEL_VERSION, 1, 1, 1, new byte[] {}, LogPosition.UNSPECIFIED));
         var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
 
         var expectedHeader =

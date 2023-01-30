@@ -50,7 +50,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -58,6 +57,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -100,7 +100,7 @@ class CheckPointerIntegrationTest {
             getCheckPointer(db).forceCheckPoint(new SimpleTriggerInfo("test"));
             List<CheckpointInfo> checkpointInfos = checkPointsInTxLog(db);
             assertEquals(
-                    KernelVersion.LATEST,
+                    LatestVersions.LATEST_KERNEL_VERSION,
                     checkpointInfos.get(checkpointInfos.size() - 1).kernelVersion());
         } finally {
             managementService.shutdown();

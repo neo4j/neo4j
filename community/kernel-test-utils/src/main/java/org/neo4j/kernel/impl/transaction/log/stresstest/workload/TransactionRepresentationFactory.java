@@ -27,7 +27,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.storageengine.api.Commitment;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 class TransactionRepresentationFactory {
     private final CommandGenerator commandGenerator = new CommandGenerator();
@@ -47,7 +47,7 @@ class TransactionRepresentationFactory {
                 txId,
                 currentTimeMillis(),
                 42,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
         return new TransactionToApply(
                 representation,

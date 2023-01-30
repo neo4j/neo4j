@@ -68,7 +68,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -610,7 +609,14 @@ class BatchingNeoStoresTest {
                     INSTANCE);
             CommandBatchToApply apply = new TransactionToApply(
                     new CompleteTransaction(
-                            commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS),
+                            commands,
+                            UNKNOWN_CONSENSUS_INDEX,
+                            0,
+                            0,
+                            0,
+                            0,
+                            LatestVersions.LATEST_KERNEL_VERSION,
+                            ANONYMOUS),
                     NULL_CONTEXT,
                     storeCursors,
                     NO_COMMITMENT,

@@ -113,7 +113,7 @@ class LogsMigrator {
         MigrationTransactionIds migrate() {
             try (MetadataProvider store = getMetaDataStore()) {
                 // Always migrate to the latest kernel version
-                MetadataCache metadataCache = new MetadataCache(KernelVersion.LATEST);
+                MetadataCache metadataCache = new MetadataCache(KernelVersion.getLatestVersion(config));
 
                 TransactionLogInitializer logInitializer =
                         new TransactionLogInitializer(fs, store, storageEngineFactory, metadataCache);

@@ -32,7 +32,6 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.LogCommandSerialization;
 import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -73,7 +72,7 @@ public class TransactionWriter {
                 lastCommittedTx,
                 committedTime,
                 -1,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
     }
 

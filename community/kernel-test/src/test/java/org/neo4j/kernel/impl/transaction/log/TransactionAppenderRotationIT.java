@@ -38,7 +38,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -138,8 +137,8 @@ class TransactionAppenderRotationIT {
 
     private TransactionToApply prepareTransaction() {
         List<StorageCommand> commands = createCommands();
-        CompleteTransaction transactionRepresentation =
-                new CompleteTransaction(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+        CompleteTransaction transactionRepresentation = new CompleteTransaction(
+                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
         return new TransactionToApply(
                 transactionRepresentation,

@@ -37,13 +37,13 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.test.LatestVersions;
 
 class RecoveryProgressIndicatorTest {
 
@@ -59,7 +59,8 @@ class RecoveryProgressIndicatorTest {
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
         CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
-                new LogEntryStart(KernelVersion.LATEST, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                new LogEntryStart(
+                        LatestVersions.LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),
                 new LogEntryCommit(lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);

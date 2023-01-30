@@ -32,7 +32,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -43,6 +42,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -99,7 +99,7 @@ class CheckpointInfoFactoryTest {
         TransactionId transactionId = new TransactionId(6, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
                 new LogEntryDetachedCheckpointV5_0(
-                        KernelVersion.LATEST, transactionId, logPosition, 2, storeId, "checkpoint"),
+                        LatestVersions.LATEST_KERNEL_VERSION, transactionId, logPosition, 2, storeId, "checkpoint"),
                 position,
                 positionAfterCheckpoint,
                 postReaderPosition,
@@ -124,7 +124,7 @@ class CheckpointInfoFactoryTest {
         TransactionId transactionId = new TransactionId(6, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
                 new LogEntryDetachedCheckpointV5_6(
-                        KernelVersion.LATEST, transactionId, logPosition, 2, storeId, "checkpoint"),
+                        LatestVersions.LATEST_KERNEL_VERSION, transactionId, logPosition, 2, storeId, "checkpoint"),
                 position,
                 positionAfterCheckpoint,
                 postReaderPosition,

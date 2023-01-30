@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -44,8 +43,8 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadAStartLogEntry() throws IOException {
         // given
-        final LogEntryStart start =
-                new LogEntryStart(LATEST, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
+        final LogEntryStart start = new LogEntryStart(
+                LatestVersions.LATEST_KERNEL_VERSION, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, new LogPosition(0, 0));
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeStartEntry(channel, start);
@@ -75,7 +74,7 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadACommandLogEntry() throws IOException {
         // given
-        KernelVersion version = LATEST;
+        KernelVersion version = LatestVersions.LATEST_KERNEL_VERSION;
         TestCommand testCommand = new TestCommand(new byte[] {100, 101, 102});
         final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
@@ -96,7 +95,7 @@ class VersionAwareLogEntryReaderTest {
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
-        channel.put(LATEST.version());
+        channel.put(LatestVersions.LATEST_KERNEL_VERSION.version());
         channel.put(LogEntryTypeCodes.COMMAND);
         channel.put(CommandReader.NONE);
 
@@ -127,19 +126,23 @@ class VersionAwareLogEntryReaderTest {
         LogPosition startPosition = new LogPosition(0, 174);
 
         int checksum1 = 1021763356;
-        final LogEntryStart start1 = new LogEntryStart(LATEST, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, startPosition);
+        final LogEntryStart start1 = new LogEntryStart(
+                LatestVersions.LATEST_KERNEL_VERSION, 1, 2, BASE_TX_CHECKSUM, new byte[] {4}, startPosition);
         final LogEntryCommit commit1 = new LogEntryCommit(42, 21, checksum1);
 
         int checksum2 = 2120750830;
-        final LogEntryStart start2 = new LogEntryStart(LATEST, 35, 30, checksum1, new byte[] {5}, startPosition);
+        final LogEntryStart start2 = new LogEntryStart(
+                LatestVersions.LATEST_KERNEL_VERSION, 35, 30, checksum1, new byte[] {5}, startPosition);
         final LogEntryCommit commit2 = new LogEntryCommit(76, 35, checksum2);
 
         int checksum3 = -1462443939;
-        final LogEntryStart start3 = new LogEntryStart(LATEST, 58, 80, checksum2, new byte[] {6}, startPosition);
+        final LogEntryStart start3 = new LogEntryStart(
+                LatestVersions.LATEST_KERNEL_VERSION, 58, 80, checksum2, new byte[] {6}, startPosition);
         final LogEntryCommit commit3 = new LogEntryCommit(83, 47, checksum3);
 
         int notChecksum3 = checksum3 + 1;
-        final LogEntryStart start4 = new LogEntryStart(LATEST, 68, 83, notChecksum3, new byte[] {7}, startPosition);
+        final LogEntryStart start4 = new LogEntryStart(
+                LatestVersions.LATEST_KERNEL_VERSION, 68, 83, notChecksum3, new byte[] {7}, startPosition);
 
         writeStartEntry(channel, start1);
         writeCommitEntry(channel, commit1);
@@ -171,7 +174,7 @@ class VersionAwareLogEntryReaderTest {
     }
 
     private static void writeCommitEntry(InMemoryClosableChannel channel, LogEntryCommit commit) {
-        channel.put(LATEST.version());
+        channel.put(LatestVersions.LATEST_KERNEL_VERSION.version());
         channel.put(LogEntryTypeCodes.TX_COMMIT);
         channel.putLong(commit.getTxId());
         channel.putLong(commit.getTimeWritten());

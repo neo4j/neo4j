@@ -30,6 +30,7 @@ import java.nio.ByteOrder;
 import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -106,6 +107,11 @@ class DetachedCheckpointLogEntryWriterV56Test {
         var transactionId = new TransactionId(7, 8, 9, 10);
         LogPosition logPosition = new LogPosition(1, 2);
         checkpointLogEntryWriter.writeCheckPointEntry(
-                transactionId, KernelVersion.LATEST, logPosition, Instant.ofEpochMilli(1), storeId, reason);
+                transactionId,
+                KernelVersion.getLatestVersion(Config.defaults()),
+                logPosition,
+                Instant.ofEpochMilli(1),
+                storeId,
+                reason);
     }
 }

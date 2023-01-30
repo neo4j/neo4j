@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -89,7 +90,7 @@ class RecoveryOldAndUpgradedVersionsIT {
     @ParameterizedTest
     @ValueSource(strings = {DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME})
     void recoverDatabaseOnOldVersionNoCheckpointsAndContainsUpgradeTransaction(String dbName) throws Throwable {
-        assumeTrue(KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0));
+        assumeTrue(LatestVersions.LATEST_KERNEL_VERSION.isGreaterThan(KernelVersion.V5_0));
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(neo4jLayout.homeDirectory());
         DatabaseLayout dbLayout = neo4jLayout.databaseLayout(dbName);
 
@@ -103,7 +104,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             tx.commit();
         }
 
-        assertKernelVersion(db, KernelVersion.LATEST);
+        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
         shutdown();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -112,7 +113,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         managementService = builder.build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, KernelVersion.LATEST);
+        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @ParameterizedTest
@@ -145,7 +146,7 @@ class RecoveryOldAndUpgradedVersionsIT {
     @ParameterizedTest
     @ValueSource(strings = {DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME})
     void recoverDatabaseOnOldVersionOneCheckpointAndContainsUpgradeTransaction(String dbName) throws Throwable {
-        assumeTrue(KernelVersion.LATEST.isGreaterThan(KernelVersion.V5_0));
+        assumeTrue(LatestVersions.LATEST_KERNEL_VERSION.isGreaterThan(KernelVersion.V5_0));
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(neo4jLayout.homeDirectory());
         DatabaseLayout dbLayout = neo4jLayout.databaseLayout(dbName);
 
@@ -159,7 +160,7 @@ class RecoveryOldAndUpgradedVersionsIT {
             tx.commit();
         }
 
-        assertKernelVersion(db, KernelVersion.LATEST);
+        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
         shutdown();
 
         removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem);
@@ -167,7 +168,7 @@ class RecoveryOldAndUpgradedVersionsIT {
 
         managementService = builder.build();
         db = (GraphDatabaseAPI) managementService.database(dbName);
-        assertKernelVersion(db, KernelVersion.LATEST);
+        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @Test
@@ -187,7 +188,7 @@ class RecoveryOldAndUpgradedVersionsIT {
         // really happened (dbmsRuntimeVersionComponent is still 5.0).
         // For system database we have no idea about the contents of the database while starting it
         // and have to pick a version when there are no logs at all - the latest.
-        assertKernelVersion(db, KernelVersion.LATEST);
+        assertKernelVersion(db, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @Test

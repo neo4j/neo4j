@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -53,6 +52,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 class WriteTransactionCommandOrderingTest {
     private static NodeRecord missingNode() {
@@ -150,7 +150,7 @@ class WriteTransactionCommandOrderingTest {
         RelationshipStore relationshipStore = mock(RelationshipStore.class);
         when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
 
-        KernelVersion latestVersion = KernelVersion.getLatestVersion(Config.defaults());
+        KernelVersion latestVersion = LatestVersions.LATEST_KERNEL_VERSION;
         return new TransactionRecordState(
                 () -> latestVersion,
                 recordChangeSet,

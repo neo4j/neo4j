@@ -38,7 +38,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -47,6 +46,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.Flushable;
@@ -88,6 +88,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
@@ -140,7 +141,9 @@ class BatchingTransactionAppenderTest {
         try (var reader = new CommittedCommandBatchCursor(channel, logEntryReader)) {
             reader.next();
             CommittedCommandBatch commandBatch = reader.get();
-            assertEquals(LATEST, commandBatch.commandBatch().kernelVersion());
+            assertEquals(
+                    LatestVersions.LATEST_KERNEL_VERSION,
+                    commandBatch.commandBatch().kernelVersion());
         }
     }
 
@@ -220,7 +223,12 @@ class BatchingTransactionAppenderTest {
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
         LogEntryStart start = new LogEntryStart(
-                LATEST, timeStarted, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+                LATEST_KERNEL_VERSION,
+                timeStarted,
+                latestCommittedTxWhenStarted,
+                0,
+                additionalHeader,
+                LogPosition.UNSPECIFIED);
         LogEntryCommit commit = new LogEntryCommit(nextTxId, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
@@ -264,7 +272,7 @@ class BatchingTransactionAppenderTest {
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
         LogEntryStart start = new LogEntryStart(
-                LATEST, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
+                LATEST_KERNEL_VERSION, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
         LogEntryCommit commit = new LogEntryCommit(latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
@@ -307,7 +315,7 @@ class BatchingTransactionAppenderTest {
         when(transaction.consensusIndex()).thenReturn(0L);
         when(transaction.isFirst()).thenReturn(true);
         when(transaction.isLast()).thenReturn(true);
-        when(transaction.kernelVersion()).thenReturn(LATEST);
+        when(transaction.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
 
         var e = assertThrows(
                 IOException.class,
@@ -356,7 +364,7 @@ class BatchingTransactionAppenderTest {
         // WHEN
         CommandBatch commandBatch = mock(CommandBatch.class);
         when(commandBatch.consensusIndex()).thenReturn(0L);
-        when(commandBatch.kernelVersion()).thenReturn(LATEST);
+        when(commandBatch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
         when(commandBatch.iterator()).thenReturn(emptyIterator());
 
         var e = assertThrows(
@@ -385,7 +393,7 @@ class BatchingTransactionAppenderTest {
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
-                new LogEntryStart(LATEST, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                new LogEntryStart(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
                 new LogEntryCommit(11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
@@ -412,7 +420,7 @@ class BatchingTransactionAppenderTest {
                 latestCommittedTxWhenStarted,
                 timeCommitted,
                 -1,
-                LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
     }
 
@@ -443,7 +451,7 @@ class BatchingTransactionAppenderTest {
         @Override
         public KernelVersion kernelVersion() {
             versionLookedUp++;
-            return LATEST;
+            return LatestVersions.LATEST_KERNEL_VERSION;
         }
 
         public int getVersionLookedUp() {

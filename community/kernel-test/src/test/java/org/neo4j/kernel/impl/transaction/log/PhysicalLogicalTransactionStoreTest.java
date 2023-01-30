@@ -49,7 +49,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -346,7 +345,7 @@ class PhysicalLogicalTransactionStoreTest {
                 latestCommittedTxWhenStarted,
                 timeCommitted,
                 -1,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         appender.append(

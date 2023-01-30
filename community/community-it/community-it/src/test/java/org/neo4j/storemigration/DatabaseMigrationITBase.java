@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.SchemaRule44;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -294,7 +295,7 @@ public abstract class DatabaseMigrationITBase {
         final var database = (GraphDatabaseAPI) db;
         final var kernelVersionProvider =
                 database.getDependencyResolver().resolveDependency(KernelVersionProvider.class);
-        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(KernelVersion.LATEST);
+        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     protected void verifyRemovedIndexProviders(GraphDatabaseService db) {

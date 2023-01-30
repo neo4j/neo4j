@@ -29,12 +29,12 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.test.LatestVersions;
 
 class TransactionPositionLocatorTest {
     private final LogEntryReader logEntryReader = mock(LogEntryReader.class);
@@ -44,7 +44,8 @@ class TransactionPositionLocatorTest {
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition(1, 128);
 
-    private final LogEntryStart start = new LogEntryStart(KernelVersion.LATEST, 0, 0, 0, null, startPosition);
+    private final LogEntryStart start =
+            new LogEntryStart(LatestVersions.LATEST_KERNEL_VERSION, 0, 0, 0, null, startPosition);
     private final LogEntryCommand command = new LogEntryCommand(new TestCommand());
     private final LogEntryCommit commit = new LogEntryCommit(txId, System.currentTimeMillis(), BASE_TX_CHECKSUM);
 

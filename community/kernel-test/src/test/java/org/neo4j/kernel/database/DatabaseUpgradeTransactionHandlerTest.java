@@ -75,20 +75,22 @@ class DatabaseUpgradeTransactionHandlerTest {
         doATransaction();
 
         // Then
-        assertThat(currentKernelVersion).isEqualTo(KernelVersion.LATEST);
+        assertThat(currentKernelVersion).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(listenerUnregistered).isTrue();
 
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
-                        "Upgrade transaction from %s to %s started", KernelVersion.V4_2, KernelVersion.LATEST)
+                        "Upgrade transaction from %s to %s started",
+                        KernelVersion.V4_2, LatestVersions.LATEST_KERNEL_VERSION)
                 .containsMessageWithArguments(
-                        "Upgrade transaction from %s to %s completed", KernelVersion.V4_2, KernelVersion.LATEST);
+                        "Upgrade transaction from %s to %s completed",
+                        KernelVersion.V4_2, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     @Test
     void shouldNotRegisterListenerWhenOnLatestVersion() {
         // Given
-        init(KernelVersion.LATEST, LatestVersions.LATEST_RUNTIME_VERSION);
+        init(LatestVersions.LATEST_KERNEL_VERSION, LatestVersions.LATEST_RUNTIME_VERSION);
 
         // When
         doATransaction();
@@ -128,14 +130,14 @@ class DatabaseUpgradeTransactionHandlerTest {
         doATransaction();
 
         // then
-        assertThat(currentKernelVersion).isEqualTo(KernelVersion.LATEST);
+        assertThat(currentKernelVersion).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(listenerUnregistered).isTrue();
     }
 
     @Test
     void shouldNotRegisterListenerWhenKernelIsNewerThanRuntime() {
         // Given
-        init(KernelVersion.LATEST, DbmsRuntimeVersion.V4_2);
+        init(LatestVersions.LATEST_KERNEL_VERSION, DbmsRuntimeVersion.V4_2);
 
         // When
         doATransaction();
@@ -164,7 +166,11 @@ class DatabaseUpgradeTransactionHandlerTest {
                     // Then upgrade the dbms runtime version
                     setDbmsRuntime(LatestVersions.LATEST_RUNTIME_VERSION);
                     // And wait for the db to make the upgrade to this version too
-                    assertEventually(this::getKernelVersion, equalityCondition(KernelVersion.LATEST), 1, MINUTES);
+                    assertEventually(
+                            this::getKernelVersion,
+                            equalityCondition(LatestVersions.LATEST_KERNEL_VERSION),
+                            1,
+                            MINUTES);
                     stop.set(true);
                 },
                 1);

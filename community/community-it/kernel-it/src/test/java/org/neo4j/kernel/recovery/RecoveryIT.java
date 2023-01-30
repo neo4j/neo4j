@@ -112,7 +112,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -1164,7 +1163,7 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test1");
@@ -1172,7 +1171,7 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test2");
@@ -1180,7 +1179,7 @@ class RecoveryIT {
         appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 transactionId,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
                 Instant.now(),
                 "test3");

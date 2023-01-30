@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 
 class RecoveryStartInformationProviderTest {
     private static final long NO_TRANSACTION_ID = -1;
@@ -75,7 +75,12 @@ class RecoveryStartInformationProviderTest {
         // given
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
-                        false, NO_TRANSACTION_ID, false, currentLogVersion, LATEST.version(), kernelProv));
+                        false,
+                        NO_TRANSACTION_ID,
+                        false,
+                        currentLogVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
+                        kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -105,14 +110,14 @@ class RecoveryStartInformationProviderTest {
                                 checkpointPosition,
                                 afterCheckpointPosition,
                                 readerPostPosition,
-                                LATEST,
+                                LatestVersions.LATEST_KERNEL_VERSION,
                                 transactionId,
                                 "test"),
                         true,
                         10L,
                         false,
                         currentLogVersion,
-                        LATEST.version(),
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
                         null,
                         kernelProv));
 
@@ -132,7 +137,13 @@ class RecoveryStartInformationProviderTest {
     void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() {
         // given
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), kernelProv));
+                .thenReturn(new LogTailInformation(
+                        true,
+                        10L,
+                        false,
+                        currentLogVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
+                        kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -152,7 +163,8 @@ class RecoveryStartInformationProviderTest {
     @Test
     void detectMissingTransactionLogsInformation() {
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(false, -1, true, -1, LATEST.version(), kernelProv));
+                .thenReturn(new LogTailInformation(
+                        false, -1, true, -1, LatestVersions.LATEST_KERNEL_VERSION.version(), kernelProv));
 
         RecoveryStartInformation recoveryStartInformation =
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
@@ -166,7 +178,13 @@ class RecoveryStartInformationProviderTest {
         long oldestLogVersionFound = 1L;
         when(logFile.getLowestLogVersion()).thenReturn(oldestLogVersionFound);
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), kernelProv));
+                .thenReturn(new LogTailInformation(
+                        true,
+                        10L,
+                        false,
+                        currentLogVersion,
+                        LatestVersions.LATEST_KERNEL_VERSION.version(),
+                        kernelProv));
 
         // when
         UnderlyingStorageException storageException = assertThrows(

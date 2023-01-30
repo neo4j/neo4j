@@ -188,7 +188,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
-                            KernelVersion.LATEST,
+                            LatestVersions.LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
@@ -234,7 +234,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
-                            KernelVersion.LATEST,
+                            LatestVersions.LATEST_KERNEL_VERSION,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
@@ -278,7 +278,7 @@ class RecoveryCorruptedTransactionLogIT {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionIdStore.getLastCommittedTransaction(),
-                        KernelVersion.LATEST,
+                        LatestVersions.LATEST_KERNEL_VERSION,
                         logOffsetBeforeTestTransactions,
                         Instant.now(),
                         "Fallback checkpoint.");
@@ -540,7 +540,7 @@ class RecoveryCorruptedTransactionLogIT {
                 checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
-                        KernelVersion.LATEST,
+                        LatestVersions.LATEST_KERNEL_VERSION,
                         new LogPosition(0, HEADER_OFFSET),
                         Instant.now(),
                         "test" + i);
@@ -1100,7 +1100,7 @@ class RecoveryCorruptedTransactionLogIT {
                     LATEST_LOG_SERIALIZATION, new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction = new CompleteTransaction(
-                    commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+                    commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
             writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         }
     }
@@ -1253,7 +1253,7 @@ class RecoveryCorruptedTransactionLogIT {
                 int previousChecksum,
                 byte[] additionalHeaderData)
                 throws IOException {
-            byte nonExistingLogEntryVersion = (byte) (KernelVersion.LATEST.version() + 10);
+            byte nonExistingLogEntryVersion = (byte) (LatestVersions.LATEST_KERNEL_VERSION.version() + 10);
             channel.put(nonExistingLogEntryVersion).put(TX_START);
             channel.putLong(timeWritten)
                     .putLong(latestCommittedTxWhenStarted)

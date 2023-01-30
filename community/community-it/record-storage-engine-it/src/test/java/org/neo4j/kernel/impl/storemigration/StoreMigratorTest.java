@@ -82,6 +82,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionUserStringProvider;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -455,7 +456,7 @@ class StoreMigratorTest {
 
     @Test
     void shouldDoPartOfMigrationIfNotOnLatestKernelVersion() throws Exception {
-        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(
                 databaseLayout.getNeo4jLayout().homeDirectory());
         var logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
@@ -478,7 +479,7 @@ class StoreMigratorTest {
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)
                 .withStorageEngineFactory(new RecordStorageEngineFactory())
                 .build();
-        assertThat(logFiles.getTailMetadata().kernelVersion()).isEqualTo(KernelVersion.LATEST);
+        assertThat(logFiles.getTailMetadata().kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         verifyDbStartAndFormat(PageAligned.LATEST_RECORD_FORMATS);
         assertFalse(migrationDirPresent());
     }

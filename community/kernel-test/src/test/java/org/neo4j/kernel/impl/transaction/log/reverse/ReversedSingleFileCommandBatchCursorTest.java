@@ -42,7 +42,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -64,6 +63,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -259,7 +259,8 @@ class ReversedSingleFileCommandBatchCursorTest {
             // The type of command doesn't matter here
             commands.add(new TestCommand());
         }
-        return new CompleteTransaction(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+        return new CompleteTransaction(
+                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
     }
 
     private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {

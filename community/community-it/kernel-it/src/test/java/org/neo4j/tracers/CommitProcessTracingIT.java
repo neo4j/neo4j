@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -138,7 +137,7 @@ public class CommitProcessTracingIT {
                 0,
                 0,
                 0,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 ANONYMOUS);
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);

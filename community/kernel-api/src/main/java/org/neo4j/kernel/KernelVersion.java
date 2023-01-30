@@ -60,7 +60,9 @@ public enum KernelVersion {
     // Kernel version should be 5_0 for now, bump is not an option
     // when upgrade will be available several tests
     // with "assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);" should be cleaned up
-    public static final KernelVersion LATEST = V5_0;
+    // The latest version should be kept private to be able to override it from tests.
+    // getLatestVersion should be used when the latest version is required.
+    private static final KernelVersion LATEST = V5_0;
     public static final KernelVersion VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED = V4_3_D4;
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = GLORIOUS_FUTURE;

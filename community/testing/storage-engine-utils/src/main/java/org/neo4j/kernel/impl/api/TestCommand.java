@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 import java.util.Arrays;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -29,6 +30,7 @@ import org.neo4j.storageengine.api.StorageCommand;
  * Sometimes a test just needs a command, no particular command, just a command... this could be that command.
  */
 public class TestCommand implements StorageCommand {
+    private static final KernelVersion LATEST_VERSION = KernelVersion.getLatestVersion(Config.defaults());
     private final byte[] bytes;
 
     public TestCommand() {
@@ -63,7 +65,7 @@ public class TestCommand implements StorageCommand {
 
     @Override
     public KernelVersion kernelVersion() {
-        return KernelVersion.LATEST;
+        return LATEST_VERSION;
     }
 
     @Override

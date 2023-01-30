@@ -56,6 +56,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -136,7 +137,7 @@ class TransactionRangeDiagnosticsTest {
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
         TransactionId transactionId = new TransactionId(37, 38, 39, 40);
-        assertThat(KernelVersion.LATEST)
+        assertThat(LatestVersions.LATEST_KERNEL_VERSION)
                 .describedAs("Guard for used version of checkpoint entry bellow.")
                 .isEqualTo(KernelVersion.V5_0);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
@@ -146,7 +147,7 @@ class TransactionRangeDiagnosticsTest {
                         checkpointLogHighVersion,
                         CheckpointInfoFactory.ofLogEntry(
                                 new LogEntryDetachedCheckpointV5_0(
-                                        KernelVersion.LATEST,
+                                        LatestVersions.LATEST_KERNEL_VERSION,
                                         transactionId,
                                         checkpointLogPosition,
                                         1234,
@@ -265,7 +266,7 @@ class TransactionRangeDiagnosticsTest {
                 }
                 when(transactionLogs.extractHeader(version))
                         .thenReturn(new LogHeader(
-                                KernelVersion.LATEST.version(),
+                                LatestVersions.LATEST_KERNEL_VERSION.version(),
                                 new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
                                 headerTxId,
                                 new StoreId(12345, 56789, "engine-1", "format-1", 1, 1),

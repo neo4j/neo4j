@@ -80,7 +80,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -555,7 +554,14 @@ class NeoStoresTest {
                     storeCursors,
                     INSTANCE);
             CompleteTransaction tx = new CompleteTransaction(
-                    commands, UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, KernelVersion.LATEST, AUTH_DISABLED);
+                    commands,
+                    UNKNOWN_CONSENSUS_INDEX,
+                    -1,
+                    -1,
+                    -1,
+                    -1,
+                    LatestVersions.LATEST_KERNEL_VERSION,
+                    AUTH_DISABLED);
             storageEngine.apply(
                     new TransactionToApply(tx, cursorContext, storeCursors, NO_COMMITMENT, transactionIdGenerator),
                     INTERNAL);

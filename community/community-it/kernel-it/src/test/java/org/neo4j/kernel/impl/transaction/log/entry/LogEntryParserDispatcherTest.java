@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets.parserSet;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
@@ -59,7 +58,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 class LogEntryParserDispatcherTest {
-    private final KernelVersion version = LATEST;
+    private final KernelVersion version = LatestVersions.LATEST_KERNEL_VERSION;
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition(0, 25);
@@ -72,14 +71,14 @@ class LogEntryParserDispatcherTest {
 
     @Test
     void writeAndParseChunksEntries() throws IOException {
-        assumeThat(KernelVersion.LATEST).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableChecksumChannel writeChannel =
                     new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
                 var entryWriter = new LogEntryWriter<>(writeChannel);
-                byte version = LATEST.version();
+                byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
                 entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);
                 entryWriter.writeChunkEndEntry(version, 17, 13);
                 entryWriter.writeChunkStartEntry(version, 11, 13);
@@ -130,7 +129,8 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser = parserSet(LATEST).select(LogEntryTypeCodes.TX_START);
+        final LogEntryParser parser =
+                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_START);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -150,7 +150,8 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser = parserSet(LATEST).select(LogEntryTypeCodes.TX_COMMIT);
+        final LogEntryParser parser =
+                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_COMMIT);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -168,7 +169,8 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser = parserSet(LATEST).select(LogEntryTypeCodes.COMMAND);
+        final LogEntryParser parser =
+                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.COMMAND);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -177,7 +179,7 @@ class LogEntryParserDispatcherTest {
 
     @Test
     void shouldThrowWhenParsingUnknownEntry() {
-        assertThrows(
-                IllegalArgumentException.class, () -> parserSet(LATEST).select((byte) 42)); // unused, at lest for now
+        assertThrows(IllegalArgumentException.class, () -> parserSet(LatestVersions.LATEST_KERNEL_VERSION)
+                .select((byte) 42)); // unused, at lest for now
     }
 }

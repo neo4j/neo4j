@@ -48,7 +48,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -63,6 +62,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -258,7 +258,7 @@ class CorruptedLogsTruncatorTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
-                        KernelVersion.LATEST,
+                        LatestVersions.LATEST_KERNEL_VERSION,
                         new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
                         Instant.now(),
                         "within okay transactions");
@@ -269,7 +269,7 @@ class CorruptedLogsTruncatorTest {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionId,
-                            KernelVersion.LATEST,
+                            LatestVersions.LATEST_KERNEL_VERSION,
                             new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             Instant.now(),
                             "in the part being truncated");

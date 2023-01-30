@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -106,7 +105,7 @@ class DetachedCheckpointAppenderTest {
                 () -> checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
-                        KernelVersion.LATEST,
+                        LatestVersions.LATEST_KERNEL_VERSION,
                         logPosition,
                         Instant.now(),
                         "test"));
@@ -124,7 +123,7 @@ class DetachedCheckpointAppenderTest {
         assertDoesNotThrow(() -> appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 UNSPECIFIED,
                 Instant.now(),
                 "test"));
@@ -141,21 +140,21 @@ class DetachedCheckpointAppenderTest {
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 logPosition1,
                 Instant.now(),
                 "first");
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 logPosition2,
                 Instant.now(),
                 "second");
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                KernelVersion.LATEST,
+                LatestVersions.LATEST_KERNEL_VERSION,
                 logPosition3,
                 Instant.now(),
                 "third");
