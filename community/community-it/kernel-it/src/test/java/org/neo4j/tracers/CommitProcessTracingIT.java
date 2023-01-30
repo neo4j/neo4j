@@ -22,7 +22,6 @@ package org.neo4j.tracers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
@@ -39,6 +38,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -57,6 +57,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -130,7 +131,8 @@ public class CommitProcessTracingIT {
     @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
         var transaction = new CompleteTransaction(
-                List.of(new Command.NodeCountsCommand(LATEST_LOG_SERIALIZATION, 1, 2)),
+                List.of(new Command.NodeCountsCommand(
+                        RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION), 1, 2)),
                 UNKNOWN_CONSENSUS_INDEX,
                 0,
                 0,

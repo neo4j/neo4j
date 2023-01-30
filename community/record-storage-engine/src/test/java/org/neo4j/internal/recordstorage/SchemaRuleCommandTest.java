@@ -55,6 +55,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
+import org.neo4j.test.LatestVersions;
 
 class SchemaRuleCommandTest {
     private final int labelId = 2;
@@ -67,7 +68,8 @@ class SchemaRuleCommandTest {
     private final IndexUpdateListener indexUpdateListener = mock(IndexUpdateListener.class);
     private NeoStoreTransactionApplierFactory storeApplier;
     private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory(indexUpdateListener);
-    private final LogCommandSerialization serialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
+    private final LogCommandSerialization serialization =
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
     private final IndexDescriptor rule = IndexPrototype.forSchema(SchemaDescriptors.forLabel(labelId, propertyKey))
             .withName("index")
             .materialise(id);

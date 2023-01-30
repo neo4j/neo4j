@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -30,6 +29,8 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.internal.recordstorage.LogCommandSerialization;
+import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.LatestVersions;
 
 public class TransactionWriter {
     private final NeoStores neoStores;
@@ -55,6 +57,8 @@ public class TransactionWriter {
     private final List<Command.RelationshipCommand> relationshipCommands = new ArrayList<>();
     private final List<Command.RelationshipGroupCommand> relationshipGroupCommands = new ArrayList<>();
     private final List<Command> otherCommands = new ArrayList<>();
+    private final LogCommandSerialization LATEST_LOG_SERIALIZATION =
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
 
     public TransactionWriter(NeoStores neoStores) {
         this.neoStores = neoStores;

@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -55,6 +55,8 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 @EphemeralNeo4jLayoutExtension
 class HighIdTransactionApplierTest {
     private static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor("empty", "1");
+    private static final LogCommandSerialization LATEST_LOG_SERIALIZATION =
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
 
     @Inject
     private PageCache pageCache;
@@ -168,12 +170,11 @@ class HighIdTransactionApplierTest {
         relationshipGroup.setSecondaryUnitIdOnLoad(20);
 
         // WHEN
-        var serialization = LATEST_LOG_SERIALIZATION;
-        tracker.visitNodeCommand(new NodeCommand(serialization, new NodeRecord(node.getId()), node));
-        tracker.visitRelationshipCommand(
-                new RelationshipCommand(serialization, new RelationshipRecord(relationship.getId()), relationship));
+        tracker.visitNodeCommand(new NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(node.getId()), node));
+        tracker.visitRelationshipCommand(new RelationshipCommand(
+                LATEST_LOG_SERIALIZATION, new RelationshipRecord(relationship.getId()), relationship));
         tracker.visitRelationshipGroupCommand(new RelationshipGroupCommand(
-                serialization, new RelationshipGroupRecord(relationshipGroup.getId()), relationshipGroup));
+                LATEST_LOG_SERIALIZATION, new RelationshipGroupRecord(relationshipGroup.getId()), relationshipGroup));
         tracker.close();
 
         // THEN

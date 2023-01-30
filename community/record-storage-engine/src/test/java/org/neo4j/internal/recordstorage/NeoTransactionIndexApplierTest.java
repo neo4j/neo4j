@@ -24,7 +24,6 @@ import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.common.Subject.SYSTEM;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 import java.util.Collections;
@@ -38,12 +37,15 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 class NeoTransactionIndexApplierTest {
     private final IndexUpdateListener indexingService = mock(IndexUpdateListener.class);
     private final List<DynamicRecord> emptyDynamicRecords = Collections.emptyList();
     private final CommandBatchToApply transactionToApply = new GroupOfCommands(1L, StoreCursors.NULL);
     private final BatchContext batchContext = mock(BatchContext.class, RETURNS_MOCKS);
+    private static final LogCommandSerialization LATEST_LOG_SERIALIZATION =
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
 
     @Test
     void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception {

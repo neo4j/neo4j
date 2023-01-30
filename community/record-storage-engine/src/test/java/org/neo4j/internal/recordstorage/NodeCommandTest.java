@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -76,7 +77,7 @@ class NodeCommandTest {
     private NodeStore nodeStore;
     private final InMemoryClosableChannel channel = new InMemoryClosableChannel();
     private final LogCommandSerialization commandSerialization =
-            RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
     private NeoStores neoStores;
 
     @BeforeEach

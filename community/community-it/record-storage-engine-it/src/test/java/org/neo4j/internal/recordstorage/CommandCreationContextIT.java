@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.FlatRelationshipModifications.singleCreate;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
@@ -49,6 +48,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -128,7 +128,7 @@ public class CommandCreationContextIT {
             var recordState = commandCreationContext.createTransactionRecordState(
                     IGNORE,
                     LockTracer.NONE,
-                    LATEST_LOG_SERIALIZATION,
+                    RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION),
                     memoryTracker,
                     RecordAccess.LoadMonitor.NULL_MONITOR);
             long heapBefore = memoryTracker.estimatedHeapMemory();

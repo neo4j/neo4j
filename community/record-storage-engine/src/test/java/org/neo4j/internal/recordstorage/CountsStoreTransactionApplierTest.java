@@ -34,6 +34,7 @@ import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 
 class CountsStoreTransactionApplierTest {
     @Test
@@ -52,7 +53,9 @@ class CountsStoreTransactionApplierTest {
         try (TransactionApplier txApplier =
                 applier.startTx(new GroupOfCommands(2L, StoreCursors.NULL), mock(BatchContext.class))) {
             txApplier.visitNodeCountsCommand(new Command.NodeCountsCommand(
-                    RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION, ANY_LABEL, 1));
+                    RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION),
+                    ANY_LABEL,
+                    1));
         }
 
         // THEN

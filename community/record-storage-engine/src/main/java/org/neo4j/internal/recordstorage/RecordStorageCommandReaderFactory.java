@@ -24,7 +24,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 public class RecordStorageCommandReaderFactory implements CommandReaderFactory {
     public static final RecordStorageCommandReaderFactory INSTANCE = new RecordStorageCommandReaderFactory();
-    public static final LogCommandSerialization LATEST_LOG_SERIALIZATION = INSTANCE.get(KernelVersion.LATEST);
 
     @Override
     public LogCommandSerialization get(KernelVersion version) {

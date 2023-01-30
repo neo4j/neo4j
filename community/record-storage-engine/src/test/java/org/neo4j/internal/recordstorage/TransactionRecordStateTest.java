@@ -144,6 +144,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -1778,7 +1779,7 @@ class TransactionRecordStateTest {
     @SuppressWarnings("InfiniteLoopStatement")
     private static CommandBatchToApply readFromChannel(StoreCursors storeCursors, ReadableLogChannel channel)
             throws IOException {
-        CommandReader reader = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
+        CommandReader reader = RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
         List<StorageCommand> commands = new ArrayList<>();
         try {
             while (true) {
@@ -1878,7 +1879,7 @@ class TransactionRecordStateTest {
                 NULL_CONTEXT,
                 storeCursors,
                 INSTANCE,
-                RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION);
+                RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION));
     }
 
     private static CommandBatchToApply transaction(StoreCursors storeCursors, TransactionRecordState recordState)

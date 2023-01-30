@@ -29,7 +29,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
@@ -68,6 +67,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -191,7 +191,10 @@ class RecordStorageEngineTest {
                 Visitor<StorageCommand, IOException> visitor = invocationOnMock.getArgument(0);
                 NodeRecord after = new NodeRecord(nodeId);
                 after.setInUse(true);
-                visitor.visit(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(nodeId), after));
+                visitor.visit(new Command.NodeCommand(
+                        RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION),
+                        new NodeRecord(nodeId),
+                        after));
                 return null;
             });
             // when

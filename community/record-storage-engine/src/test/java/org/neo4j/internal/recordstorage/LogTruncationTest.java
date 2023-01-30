@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.LatestVersions;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -56,7 +57,8 @@ import org.neo4j.storageengine.api.StorageCommand;
  */
 class LogTruncationTest {
     private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
-    private final LogCommandSerialization serialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
+    private final LogCommandSerialization serialization =
+            RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
 
