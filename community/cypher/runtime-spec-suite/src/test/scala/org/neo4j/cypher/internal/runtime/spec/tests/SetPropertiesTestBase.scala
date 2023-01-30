@@ -402,7 +402,7 @@ abstract class SetPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set multiple properties without violating constraint") {
     val nodes = given {
-      uniqueIndex("L", "p1", "p2")
+      uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0
       // p1 = 1, p2 = 0

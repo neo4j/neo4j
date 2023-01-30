@@ -1486,7 +1486,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
   test("should handle random failures with ON ERROR FAIL REPORT STATUS") {
     assume(runtime.name != "Pipelined")
     given {
-      uniqueIndex("N", "p")
+      uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
     }
@@ -1620,7 +1620,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
 
   test("should handle random failures with ON ERROR BREAK") {
     given {
-      uniqueIndex("N", "p")
+      uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
     }
@@ -1703,7 +1703,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
 
   test("should handle random failures with ON ERROR CONTINUE") {
     given {
-      uniqueIndex("N", "p")
+      uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
     }

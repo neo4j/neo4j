@@ -1448,8 +1448,8 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("assert same node with merge") {
     given {
-      uniqueIndex("Honey", "prop")
-      uniqueIndex("Milk", "prop")
+      uniqueNodeIndex("Honey", "prop")
+      uniqueNodeIndex("Milk", "prop")
       nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("prop" -> i, "age" -> "old") }, "Honey", "Milk")
     }
 

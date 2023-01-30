@@ -464,6 +464,28 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
+  test("should profile dbHits of directed relationship index unique seek") {
+    // given
+    given {
+      relationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("difficulty", i % 10)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]->(y)", unique = true)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+    val expectedDbHits: Int = sizeHint / 10 + 1
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
+  }
+
   test("should profile dbHits of directed relationship index range seek") {
     // given
     given {
@@ -576,6 +598,28 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2))
   }
 
+  test("should profile dbHits of undirected relationship multiple index unique seek") {
+    // given
+    given {
+      relationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("difficulty", i % 10)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)", unique = true)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2))
+  }
+
   test("should profile dbHits of directed relationship index scan") {
     given {
       relationshipIndex("R", "difficulty")
@@ -599,6 +643,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val expectedDbHits = sizeHint / 10 + 1
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
+
 
   test("should profile dbHits of undirected relationship index scan") {
     given {
@@ -1228,7 +1273,7 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile dbHits of node index seek with IN predicate on locking unique index") {
     val nodes = given {
-      uniqueIndex("Language", "difficulty")
+      uniqueNodeIndex("Language", "difficulty")
       nodePropertyGraph(
         sizeHint,
         {

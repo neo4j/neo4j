@@ -395,7 +395,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
   test("should not take exclusive lock if value not changing") {
     // given a single node
     given {
-      uniqueIndex("L", "prop")
+      uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
@@ -420,7 +420,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
   test("should take exclusive lock if value changing") {
     // given a single node
     given {
-      uniqueIndex("L", "prop")
+      uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 

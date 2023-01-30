@@ -595,7 +595,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
   test("should set multiple properties without violating constraint (removeOtherProps = true)") {
     val nodes = given {
-      uniqueIndex("L", "p1", "p2")
+      uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0
       // p1 = 1, p2 = 0
@@ -623,7 +623,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
   test("should set multiple properties without violating constraint (removeOtherProps = false)") {
     val nodes = given {
-      uniqueIndex("L", "p1", "p2")
+      uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0
       // p1 = 1, p2 = 0
@@ -650,7 +650,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
   test("should not take exclusive lock if value not changing") {
     // given a single node
     given {
-      uniqueIndex("L", "prop")
+      uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 
@@ -674,7 +674,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
   test("should take exclusive lock if value changing") {
     // given a single node
     given {
-      uniqueIndex("L", "prop")
+      uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
 

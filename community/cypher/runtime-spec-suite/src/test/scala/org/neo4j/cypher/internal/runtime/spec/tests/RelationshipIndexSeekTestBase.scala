@@ -41,12 +41,19 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXACT
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE
 import org.neo4j.kernel.impl.util.ValueUtils.asValue
+import org.neo4j.lock.LockType.EXCLUSIVE
+import org.neo4j.lock.LockType.SHARED
+import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
+import org.neo4j.lock.ResourceTypes.LABEL
+import org.neo4j.lock.ResourceTypes.RELATIONSHIP_TYPE
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueCategory
 import org.neo4j.values.storable.ValueType
 import org.neo4j.values.storable.Values
+
+import scala.util.Random
 
 // Supported by all runtimes
 abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
@@ -1629,6 +1636,723 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   def propValueOrdering: Ordering[Any] =
     Ordering.by[Any, AnyValue](v => Values.of(v).asInstanceOf[AnyValue])(ANY_VALUE_ORDERING)
 
+}
+
+// not supported by parallel
+trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
+  self: RelationshipIndexSeekTestBase[CONTEXT] =>
+
+  test("should grab shared lock when finding a relationship (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) => r.setProperty("prop", i)
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]->(y)", unique = true, indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should grab shared lock when finding a relationship (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) => r.setProperty("prop", i)
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]-(y)", unique = true, indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should grab shared lock when finding a relationship (directed, multiple properties)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          r.setProperty("prop1", i)
+          r.setProperty("prop2", s"$i")
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop1 = $propToFind, prop2 = '$propToFind')]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should grab shared lock when finding a relationship (undirected, multiple properties)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          r.setProperty("prop1", i)
+          r.setProperty("prop2", s"$i")
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop1 = $propToFind, prop2 = '$propToFind')]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should grab an exclusive lock when not finding a relationship (directed)") {
+    given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+    val propToFind = sizeHint + 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r").withNoRows().withLocks((EXCLUSIVE, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should grab an exclusive lock when not finding a relationship (undirected)") {
+    given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+    val propToFind = sizeHint + 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r").withNoRows().withLocks((EXCLUSIVE, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should not grab any lock when readOnly = true (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]->(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks()
+  }
+
+  test("should not grab any lock when readOnly = true (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop = $propToFind)]-(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(propToFind)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks()
+  }
+
+  test("should exact seek relationships of a locking unique index with a property (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should exact seek relationships of a locking unique index with a property (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          r.setProperty("prop", i)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should exact seek relationships of a locking composite unique index with properties (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 20, prop2 = '20')]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should exact seek relationships of a locking composite unique index with properties (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 20, prop2 = '20')]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should exact (multiple, but identical) seek relationships of a locking unique index with a property (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 20)]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(relationships(20))
+    runtimeResult should beColumns("r").withRows(singleColumn(expected)).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test("should exact (multiple, but identical) seek relationships of a locking unique index with a property (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 20)]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test("should exact seek relationships of a composite unique index with properties (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 20, prop2 = '20')]->(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withSingleRow(expected)
+  }
+
+  test("should exact seek relationships of a composite unique index with properties (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 20, prop2 = '20')]-(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(20)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected)))
+  }
+
+  test("should seek relationships of a composite unique index with properties (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop1 > ${sizeHint / 2}, prop2)]->(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.zipWithIndex.filter { case (_, i) => i % 10 == 0 && i > sizeHint / 2 }.map(_._1)
+    runtimeResult should beColumns("r").withRows(singleColumn(expected))
+  }
+
+  test("should seek relationships of a composite unique index with properties (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(s"(x)-[r:R(prop1 > ${sizeHint / 2}, prop2)]-(y)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.zipWithIndex.filter { case (_, i) => i % 10 == 0 && i > sizeHint / 2 }.flatMap(t => Seq(t._1, t._1))
+    runtimeResult should beColumns("r").withRows(singleColumn(expected))
+  }
+
+  test("should exact (multiple, not identical) seek relationships of a locking unique index with a property (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 30)]->(x)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(relationships(20), relationships(30))
+    runtimeResult should beColumns("r").withRows(singleColumn(expected)).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test("should exact (multiple, not identical) seek relationships of a locking unique index with a property (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20 OR 30)]-(x)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(relationships(20), relationships(20), relationships(30), relationships(30))
+    runtimeResult should beColumns("r").withRows(singleColumn(expected)).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test("should support composite index and unique locking (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 10, prop2 = '10')]->(y)", unique = true, indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(10)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should support composite index and unique locking (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 10, prop2 = '10')]-(y)", unique = true, indexType = IndexType.RANGE)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(10)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should support composite unique index and unique locking (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 10, prop2 = '10')]->(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(10)
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should support composite unique index and unique locking (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop1", i)
+            r.setProperty("prop2", i.toString)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator("(x)-[r:R(prop1 = 10, prop2 = '10')]-(y)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships(10)
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+  }
+
+  test("should cache properties in locking unique index (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "prop")
+      .projection("cacheR[r.prop] AS prop")
+      .relationshipIndexOperator("(x)-[r:R(prop = 10)]->(y)", _ => GetValue, unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "prop").withSingleRow(relationships(10), 10).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test("should cache properties in locking unique index (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "prop")
+      .projection("cacheR[r.prop] AS prop")
+      .relationshipIndexOperator("(x)-[r:R(prop = 10)]-(y)", _ => GetValue, unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("r", "prop").withRows(Seq.fill(2)(Array(relationships(10), 10))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+  }
+
+  test(s"should multi seek nodes of a unique index with locking (directed)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]->(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt(_)): _*))),
+        unique = true
+      )
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedLocks = Seq(
+      (EXCLUSIVE, INDEX_ENTRY),
+      (EXCLUSIVE, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+    val expected = Seq(Array(relationships.head), Array(relationships(10)), Array(relationships(20)))
+    runtimeResult should beColumns("r").withRows(expected).withLocks(expectedLocks: _*)
+  }
+
+  test(s"should multi seek nodes of a unique index with locking (undirected)") {
+    val relationships = given {
+      indexedCircleGraph(IndexType.RANGE, "R", "prop") {
+        case (r, i) =>
+          if (i % 10 == 0) {
+            r.setProperty("prop", i)
+          }
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .filter("true")
+      .relationshipIndexOperator(
+        "(x)-[r:R(prop)]-(y)",
+        customQueryExpression = Some(ManyQueryExpression(listOf(Seq(-1L, 0L, 1L, 10L, 20L).map(literalInt(_)): _*))),
+        unique = true
+      )
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedLocks = Seq(
+      (EXCLUSIVE, INDEX_ENTRY),
+      (EXCLUSIVE, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
+    val expected = Seq(Array(relationships.head), Array(relationships.head),
+      Array(relationships(10)),  Array(relationships(10)),
+      Array(relationships(20)), Array(relationships(20)))
+    runtimeResult should beColumns("r").withRows(expected).withLocks(expectedLocks: _*)
+  }
 }
 
 abstract class ParallelRelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](

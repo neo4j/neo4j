@@ -270,7 +270,7 @@ trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile page cache stats of create with new label") {
     given {
-      uniqueIndex("M", "prop")
+      uniqueNodeIndex("M", "prop")
       nodePropertyGraph(
         SIZE,
         {

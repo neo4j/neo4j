@@ -711,9 +711,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a unique node index and restarts the transaction. This should be called before any data creation operation.
    */
-  def uniqueIndex(label: String, properties: String*): Unit = {
+  def uniqueNodeIndex(label: String, properties: String*): Unit = {
     nodeConstraint(label) { creator =>
       properties.foldLeft(creator) { case (acc, p) => acc.assertPropertyIsUnique(p) }
     }
@@ -734,6 +734,36 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     nodeConstraint(label) { creator =>
       properties.foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
     }
+  }
+
+  /**
+   * Creates a unique relationship index and restarts the transaction. This should be called before any data creation operation.
+   */
+  def uniqueRelationshipIndex(relationshipType: String, properties: String*): Unit = {
+    try {
+      val creator = properties.foldLeft(
+        runtimeTestSupport.tx.schema().constraintFor(RelationshipType.withName(relationshipType)).withIndexType(IndexType.RANGE)
+      ) {
+        case (acc, prop) => acc.assertPropertyIsUnique(prop)
+      }
+      creator.create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
+
+  def uniqueRelationshipIndex(indexType: IndexType, relationshipType: String, properties: String*): Unit = {
+    runtimeTestSupport.restartTx()
+    try {
+      val creator = runtimeTestSupport.tx.schema().constraintFor(RelationshipType.withName(relationshipType)).withIndexType(indexType)
+      properties
+        .foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
+        .create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
   /**
