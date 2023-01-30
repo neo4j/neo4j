@@ -82,7 +82,7 @@ abstract class LogicalPlan(idGen: IdGen)
       var p2 = otherPlan.productIterator
       while (p1.hasNext && p2.hasNext) {
         val continue =
-          (p1.next, p2.next) match {
+          (p1.next(), p2.next()) match {
             case (lp1: LogicalPlan, lp2: LogicalPlan) =>
               if (lp1.getClass != lp2.getClass) {
                 false
@@ -99,7 +99,7 @@ abstract class LogicalPlan(idGen: IdGen)
 
         if (!continue) return false
         while (!p1.hasNext && !p2.hasNext && stack.nonEmpty) {
-          val (p1New, p2New) = stack.pop
+          val (p1New, p2New) = stack.pop()
           p1 = p1New
           p2 = p2New
         }

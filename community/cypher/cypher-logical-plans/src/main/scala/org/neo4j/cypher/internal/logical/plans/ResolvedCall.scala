@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ZippableUtil.Zippable
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
@@ -122,10 +123,9 @@ case class ResolvedCall(
     )(position)
 
   def coerceArguments: ResolvedCall = {
-    val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
+    val optInputFields = signature.inputSignature.map(Some(_))
     val coercedArguments =
-      callArguments
-        .zip(optInputFields)
+      callArguments.zipLeft(optInputFields, None)
         .map {
           case (arg, optField) =>
             // If type is CTAny we don't need any coercion

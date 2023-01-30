@@ -24,7 +24,7 @@ import org.neo4j.messages.MessageUtil
 
 import java.net.URI
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

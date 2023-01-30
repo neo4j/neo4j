@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.ZippableUtil.Zippable
 import org.neo4j.cypher.internal.util.symbols
 
 object ResolvedFunctionInvocation {
@@ -65,10 +66,9 @@ case class ResolvedFunctionInvocation(
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
-      val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
+      val optInputFields = signature.inputSignature.map(Some(_))
       val coercedArguments =
-        callArguments
-          .zip(optInputFields)
+        callArguments.zipLeft(optInputFields, None)
           .map {
             case (arg, optField) =>
               // If type is CTAny we don't need any coercion

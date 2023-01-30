@@ -371,7 +371,7 @@ object IndexSeek {
       IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue(prop), entityType)
     }
 
-    val paramQueue = mutable.Queue(paramExpr.toArray: _*)
+    val paramQueue = mutable.Queue.from(paramExpr)
     def value(value: String): Expression =
       value match {
         case INT(int)             => SignedDecimalIntegerLiteral(int)(pos)
@@ -652,7 +652,7 @@ object IndexSeek {
       else
         createSeek(properties.toSeq, CompositeQueryExpression(valueExprs.toSeq))
     } else if (predicates.length > 1 && customQueryExpression.isDefined) {
-      createSeek(predicates.map(prop), customQueryExpression.get)
+      createSeek(predicates.toIndexedSeq.map(prop), customQueryExpression.get)
     } else
       throw new IllegalArgumentException(
         s"Cannot parse `${predicates.mkString("Array(", ", ", ")")}` as an index seek."

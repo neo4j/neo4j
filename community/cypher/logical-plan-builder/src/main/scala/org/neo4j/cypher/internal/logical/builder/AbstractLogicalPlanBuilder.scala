@@ -368,8 +368,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   // OPERATORS
 
   def produceResults(vars: String*): IMPL = {
-    resultColumns = vars.map(VariableParser.unescaped).toArray
-    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumns)(_)))
+    val resultColumnsSeq = vars.map(VariableParser.unescaped)
+    resultColumns = resultColumnsSeq.toArray
+    tree = new Tree(UnaryOperator(lp => ProduceResult(lp, resultColumnsSeq)(_)))
     looseEnds += tree
     self
   }
