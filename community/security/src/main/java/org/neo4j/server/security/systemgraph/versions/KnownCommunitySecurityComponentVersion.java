@@ -104,8 +104,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
                 }
             }
         } else {
-            debugLog.error(String.format(
-                    "Multiple users matching initial user password from `auth.ini` file: %s", initialUser.name()));
+            debugLog.warn("Unable to update initial user password from `auth.ini` file: multiple users in the DBMS");
         }
     }
 
