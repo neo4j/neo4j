@@ -156,4 +156,18 @@ public class IndexingTestUtil {
                 .withName(name);
         return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
     }
+
+    public static ConstraintDescriptor createRelPropUniqueConstraintWithSpecifiedProvider(
+            TransactionImpl tx, IndexProviderDescriptor provider, RelationshipType type, String prop, String name)
+            throws KernelException {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema(
+                        SchemaDescriptors.forRelType(
+                                tokenWrite.relationshipTypeGetOrCreateForName(type.name()),
+                                tokenWrite.propertyKeyGetOrCreateForName(prop)),
+                        provider)
+                .withName(name);
+        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
+    }
 }

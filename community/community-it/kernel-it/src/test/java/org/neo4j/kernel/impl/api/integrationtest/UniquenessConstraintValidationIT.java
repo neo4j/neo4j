@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -80,6 +81,17 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName(key);
         transaction.dataWrite().nodeSetProperty(node, propertyKeyId, Values.of(value));
         return node;
+    }
+
+    private static long createRelationship(KernelTransaction transaction, String type, String key, Object value)
+            throws KernelException {
+        Write write = transaction.dataWrite();
+        TokenWrite tokenWrite = transaction.tokenWrite();
+        int typeId = tokenWrite.relationshipTypeGetOrCreateForName(type);
+        long rel = write.relationshipCreate(write.nodeCreate(), typeId, write.nodeCreate());
+        int propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName(key);
+        write.relationshipSetProperty(rel, propertyKeyId, Values.of(value));
+        return rel;
     }
 
     @ParameterizedTest
@@ -303,7 +315,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     @Test
     void unrelatedNodesWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception {
         // given
-        ConstraintDescriptor constraint = createConstraint("Person", "id");
+        ConstraintDescriptor constraint = createNodeConstraint("Person", "id");
 
         long ourNode;
         {
@@ -332,9 +344,42 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
     }
 
     @Test
+    void unrelatedRelationshipWithSamePropertyShouldNotInterfereWithUniquenessCheck() throws Exception {
+        // given
+        ConstraintDescriptor constraint = createRelationshipConstraint("R", "id");
+
+        long ourRelationship;
+        {
+            KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+            ourRelationship = createRelationship(transaction, "R", "id", 1);
+            createRelationship(transaction, "OTHER", "id", 2);
+            commit();
+        }
+
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        TokenRead tokenRead = transaction.tokenRead();
+        int propId = tokenRead.propertyKey("id");
+        IndexDescriptor idx = transaction.schemaRead().indexGetForName(constraint.getName());
+
+        // when
+        createRelationship(transaction, "OTHER", "id", 2);
+
+        // then I should find the original relationship
+        try (RelationshipValueIndexCursor cursor = transaction
+                .cursors()
+                .allocateRelationshipValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker())) {
+            assertThat(transaction
+                            .dataRead()
+                            .lockingRelationshipUniqueIndexSeek(idx, cursor, exact(propId, Values.of(1))))
+                    .isEqualTo(ourRelationship);
+        }
+        commit();
+    }
+
+    @Test
     void addingUniqueNodeWithUnrelatedValueShouldNotAffectLookup() throws Exception {
         // given
-        ConstraintDescriptor constraint = createConstraint("Person", "id");
+        ConstraintDescriptor constraint = createNodeConstraint("Person", "id");
 
         long ourNode;
         {
@@ -357,6 +402,38 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
                 .allocateNodeValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker())) {
             assertThat(transaction.dataRead().lockingNodeUniqueIndexSeek(idx, cursor, exact(propId, Values.of(1))))
                     .isEqualTo(ourNode);
+        }
+        commit();
+    }
+
+    @Test
+    void addingUniqueRelationshipWithUnrelatedValueShouldNotAffectLookup() throws Exception {
+        // given
+        ConstraintDescriptor constraint = createRelationshipConstraint("R", "id");
+
+        long ourRelationship;
+        {
+            KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+            ourRelationship = createRelationship(transaction, "R", "id", 1);
+            commit();
+        }
+
+        KernelTransaction transaction = newTransaction(AnonymousContext.writeToken());
+        TokenRead tokenRead = transaction.tokenRead();
+        int propId = tokenRead.propertyKey("id");
+        IndexDescriptor idx = transaction.schemaRead().indexGetForName(constraint.getName());
+
+        // when
+        createRelationship(transaction, "R", "id", 2);
+
+        // then I should find the original relationship
+        try (RelationshipValueIndexCursor cursor = transaction
+                .cursors()
+                .allocateRelationshipValueIndexCursor(transaction.cursorContext(), transaction.memoryTracker())) {
+            assertThat(transaction
+                            .dataRead()
+                            .lockingRelationshipUniqueIndexSeek(idx, cursor, exact(propId, Values.of(1))))
+                    .isEqualTo(ourRelationship);
         }
         commit();
     }
@@ -404,7 +481,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         return constraint;
     }
 
-    private ConstraintDescriptor createConstraint(String label, String propertyKey) throws KernelException {
+    private ConstraintDescriptor createNodeConstraint(String label, String propertyKey) throws KernelException {
         int labelId;
         int propertyKeyId;
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
@@ -415,6 +492,22 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest {
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
         ConstraintDescriptor constraint =
                 schemaWrite.uniquePropertyConstraintCreate(uniqueForSchema(forLabel(labelId, propertyKeyId)));
+        commit();
+
+        return constraint;
+    }
+
+    private ConstraintDescriptor createRelationshipConstraint(String type, String propertyKey) throws KernelException {
+        int labelId;
+        int propertyKeyId;
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        labelId = tokenWrite.relationshipTypeGetOrCreateForName(type);
+        propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName(propertyKey);
+        commit();
+
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        ConstraintDescriptor constraint =
+                schemaWrite.uniquePropertyConstraintCreate(uniqueForSchema(forRelType(labelId, propertyKeyId)));
         commit();
 
         return constraint;

@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -1117,6 +1118,17 @@ public abstract class AllStoreHolder extends Read {
         @Override
         public long lockingNodeUniqueIndexSeek(
                 IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates) {
+            // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
+            // In transactions deadlocks is a problem for another day :) .
+            throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");
+        }
+
+        @Override
+        public long lockingRelationshipUniqueIndexSeek(
+                IndexDescriptor index,
+                RelationshipValueIndexCursor cursor,
+                PropertyIndexQuery.ExactPredicate... predicates)
+                throws KernelException {
             // This is currently a problematic operation for parallel execution, because it takes exclusive locks.
             // In transactions deadlocks is a problem for another day :) .
             throw new UnsupportedOperationException("Locking unique index seek not allowed during parallel execution");

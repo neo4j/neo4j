@@ -134,6 +134,24 @@ public interface Read {
             throws KernelException;
 
     /**
+     * Returns relationship id of relationship found in the unique index, or -1 if no relationship was found.
+     *
+     * Note that this is a very special method and should be use with caution. It has special locking semantics in
+     * order to facilitate unique creation of relationships. If a relationship is found; a shared lock for the index entry will be
+     * held whereas if no relationship is found we will hold onto an exclusive lock until the close of the transaction.
+     *
+     * Note: This method does not take an IndexReadSession, as it has to acquire a new index session internally to
+     * ensure relationship uniqueness.
+     *
+     * @param index {@link IndexDescriptor} for the index to query.
+     * @param cursor cursor to use for performing the index seek
+     * @param predicates Combination of {@link PropertyIndexQuery.ExactPredicate index queries} to run against referenced index.
+     */
+    long lockingRelationshipUniqueIndexSeek(
+            IndexDescriptor index, RelationshipValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
+            throws KernelException;
+
+    /**
      * Scan all values in an index.
      *
      * @param index {@link IndexReadSession} index read session to query.

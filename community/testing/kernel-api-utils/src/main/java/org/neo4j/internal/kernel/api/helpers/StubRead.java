@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.List;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -97,6 +98,13 @@ public class StubRead implements Read {
     @Override
     public long lockingNodeUniqueIndexSeek(
             IndexDescriptor index, NodeValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long lockingRelationshipUniqueIndexSeek(
+            IndexDescriptor index, RelationshipValueIndexCursor cursor, PropertyIndexQuery.ExactPredicate... predicates)
+            throws KernelException {
         throw new UnsupportedOperationException();
     }
 
