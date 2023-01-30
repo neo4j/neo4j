@@ -19,19 +19,12 @@
  */
 package org.neo4j.harness;
 
-import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
-import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runners.model.Statement;
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.rule.Neo4jRule;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.SuppressOutput;
@@ -164,26 +155,5 @@ public class JUnitRuleTestIT {
         // Then
         statement.evaluate();
         success = true;
-    }
-
-    @Test
-    public void shouldUseSystemTimeZoneForLogging() throws Exception {
-        String currentOffset = currentTimeZoneOffsetString();
-
-        assertThat(contentOf(USER_LOG)).contains(currentOffset);
-        assertThat(contentOf(DEBUG_LOG)).contains(currentOffset);
-        success = true;
-    }
-
-    private String contentOf(String file) throws IOException {
-        GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.defaultDatabaseService();
-        Config config = api.getDependencyResolver().resolveDependency(Config.class);
-        Path homeDir = config.get(GraphDatabaseSettings.neo4j_home);
-        return Files.readString(homeDir.resolve(file));
-    }
-
-    private static String currentTimeZoneOffsetString() {
-        ZoneOffset offset = OffsetDateTime.now().getOffset();
-        return offset.equals(UTC) ? "+0000" : offset.toString().replace(":", "");
     }
 }

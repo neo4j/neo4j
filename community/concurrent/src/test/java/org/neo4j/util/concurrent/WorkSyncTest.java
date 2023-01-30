@@ -129,14 +129,14 @@ class WorkSyncTest {
         }
     }
 
-    private UnsynchronizedAdder sum = new UnsynchronizedAdder();
-    private UnsynchronizedAdder count = new UnsynchronizedAdder();
-    private Adder adder = new Adder();
+    private final UnsynchronizedAdder sum = new UnsynchronizedAdder();
+    private final UnsynchronizedAdder count = new UnsynchronizedAdder();
+    private final Adder adder = new Adder();
     private WorkSync<Adder, AddWork> sync = new WorkSync<>(adder);
-    private Semaphore semaphore = new Semaphore(Integer.MAX_VALUE);
+    private final Semaphore semaphore = new Semaphore(Integer.MAX_VALUE);
 
     @AfterEach
-    private void refillSemaphore() {
+    void refillSemaphore() {
         // This ensures that no threads end up stuck
         semaphore.drainPermits();
         semaphore.release(Integer.MAX_VALUE);

@@ -208,6 +208,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       runtimeTestSupport.stop()
       managementService.shutdown()
       managementService = null
+      runtimeTestSupport = null
+      kernel = null
+      graphDb = null
     }
   }
 
@@ -836,7 +839,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
     restartDB()
     createRuntimeTestSupport()
     super.beforeEach()
-
   }
 
   override protected def afterEach(): Unit = {

@@ -27,17 +27,6 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
-    <dependencies>
-        <dependency>
-            <groupId>co.helmethair</groupId>
-            <artifactId>scalatest-junit-runner</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-    </dependencies>
-
     <profiles>
         <profile>
             <id>include-cypher</id>

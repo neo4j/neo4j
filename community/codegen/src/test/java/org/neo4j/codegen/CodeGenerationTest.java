@@ -88,7 +88,7 @@ public abstract class CodeGenerationTest {
     abstract CodeGenerator getGenerator();
 
     @BeforeEach
-    private void createGenerator() {
+    void createGenerator() {
         generator = getGenerator();
     }
 

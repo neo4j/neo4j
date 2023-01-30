@@ -106,7 +106,7 @@ public class RangeIndexKeySizeValidationIT {
     private PageCache pageCache;
 
     @AfterEach
-    private void cleanup() throws Exception {
+    void cleanup() throws Exception {
         if (dbms != null) {
             dbms.shutdown();
             dbms = null;

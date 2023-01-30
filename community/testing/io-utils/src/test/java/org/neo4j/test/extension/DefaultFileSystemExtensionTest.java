@@ -50,6 +50,7 @@ class DefaultFileSystemExtensionTest {
     void incorrectFileSystemExtensionUsage() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(IncorrectFileSystemUsage.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 

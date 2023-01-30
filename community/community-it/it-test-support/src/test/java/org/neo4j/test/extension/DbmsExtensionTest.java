@@ -39,6 +39,7 @@ class DbmsExtensionTest {
     void enforceAnnotation() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(DbmsExtensionEnforceAnnotations.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 
@@ -55,6 +56,7 @@ class DbmsExtensionTest {
     void checkCallbackSignature() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(DbmsExtensionCheckCallbackSignature.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 
@@ -86,6 +88,7 @@ class DbmsExtensionTest {
     void mixImpermanent() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(DbmsExtensionMixImpermanent.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 

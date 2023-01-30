@@ -36,6 +36,7 @@ class TestInstanceValidationExtensionTest {
     void nonInjectedFieldVerified() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(InjectionIncorrectUsage.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 

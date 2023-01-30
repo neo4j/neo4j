@@ -95,7 +95,7 @@ public class FindEntityByTokenAndPropertyIT {
     }
 
     @BeforeEach
-    private void cleanDb() {
+    void cleanDb() {
         // Clean reused db between every test
         try (Transaction tx = db.beginTx()) {
             tx.schema().getIndexes().forEach(IndexDefinition::drop);

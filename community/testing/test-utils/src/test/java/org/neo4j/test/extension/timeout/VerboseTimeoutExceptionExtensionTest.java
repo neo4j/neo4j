@@ -64,6 +64,7 @@ class VerboseTimeoutExceptionExtensionTest {
     private static Events executeTest(String method) {
         Events events = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectMethod(DumpThreadDumpOnTimeout.class, method))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
         events.assertStatistics(stats -> stats.finished(1));

@@ -40,6 +40,7 @@ class SuppressOutputExtensionTest {
     void shouldThrowExceptionOnMissingResourceLock() {
         Events testEvents = EngineTestKit.engine(ENGINE_ID)
                 .selectors(selectClass(SuppressOutputExtensionIncorrectUsage.class))
+                .enableImplicitConfigurationParameters(true)
                 .execute()
                 .testEvents();
 

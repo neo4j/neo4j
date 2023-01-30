@@ -306,6 +306,7 @@ abstract class BootloaderCommandTestBase {
             // Use Junit to execute test, ensures all extensions and initialization is setup correctly
             Events testEvents = EngineTestKit.engine(ENGINE_ID)
                     .selectors(selectMethod(className, methodName))
+                    .enableImplicitConfigurationParameters(true)
                     .execute()
                     .testEvents();
 

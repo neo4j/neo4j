@@ -51,7 +51,7 @@ public class CreateConstraintFromToStringITBase {
     }
 
     @BeforeEach
-    private void cleanupConstraint() {
+    void cleanupConstraint() {
         try (Transaction tx = db.beginTx()) {
             tx.schema().getConstraints().forEach(ConstraintDefinition::drop);
             tx.commit();

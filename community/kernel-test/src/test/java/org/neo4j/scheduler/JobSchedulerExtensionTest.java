@@ -55,6 +55,7 @@ class JobSchedulerExtensionTest {
         void componentShutdownAfterTest() {
             Events testEvents = EngineTestKit.engine(ENGINE_ID)
                     .selectors(selectClass(JobSchedulerExtensionShutdown.class))
+                    .enableImplicitConfigurationParameters(true)
                     .execute()
                     .testEvents();
 
