@@ -22,24 +22,10 @@ package org.neo4j.kernel.impl.transaction.log;
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
-import java.util.Optional;
-import org.neo4j.configuration.Config;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class EmptyLogTailMetadata implements LogTailMetadata {
+public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetadata {
     static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
-    private final KernelVersion kernelVersion;
-
-    public EmptyLogTailMetadata(Config config) {
-        this.kernelVersion = KernelVersion.getLatestVersion(config);
-    }
-
-    @Override
-    public boolean isRecoveryRequired() {
-        return false;
-    }
 
     @Override
     public long getCheckpointLogVersion() {
@@ -47,23 +33,8 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     }
 
     @Override
-    public KernelVersion kernelVersion() {
-        return kernelVersion;
-    }
-
-    @Override
     public long getLogVersion() {
         return INITIAL_LOG_VERSION;
-    }
-
-    @Override
-    public Optional<StoreId> getStoreId() {
-        return Optional.empty();
-    }
-
-    @Override
-    public boolean logsMissing() {
-        return true;
     }
 
     @Override
@@ -74,15 +45,5 @@ public class EmptyLogTailMetadata implements LogTailMetadata {
     @Override
     public LogPosition getLastTransactionLogPosition() {
         return START_POSITION;
-    }
-
-    @Override
-    public boolean hasUnreadableBytesInCheckpointLogs() {
-        return false;
-    }
-
-    @Override
-    public Optional<CheckpointInfo> getLastCheckPoint() {
-        return Optional.empty();
     }
 }

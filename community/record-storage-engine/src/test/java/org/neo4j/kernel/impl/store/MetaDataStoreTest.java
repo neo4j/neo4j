@@ -30,7 +30,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.Race.throwing;
@@ -72,9 +71,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
-import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
@@ -265,7 +264,7 @@ public class MetaDataStoreTest {
             assertEquals(byteOffset, logPosition.getByteOffset());
         }
 
-        var tail = new EmptyLogTailMetadata() {
+        var tail = new EmptyLogTailLogVersionsMetadata() {
             @Override
             public LogPosition getLastTransactionLogPosition() {
                 return new LogPosition(version, byteOffset);
@@ -658,14 +657,14 @@ public class MetaDataStoreTest {
     }
 
     private MetaDataStore newMetaDataStore(CursorContextFactory contextFactory) {
-        return newMetaDataStore(contextFactory, EMPTY_LOG_TAIL);
+        return newMetaDataStore(contextFactory, LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
     }
 
-    private MetaDataStore newMetaDataStore(LogTailMetadata logTail) {
+    private MetaDataStore newMetaDataStore(LogTailLogVersionsMetadata logTail) {
         return newMetaDataStore(contextFactory, logTail);
     }
 
-    private MetaDataStore newMetaDataStore(CursorContextFactory contextFactory, LogTailMetadata logTail) {
+    private MetaDataStore newMetaDataStore(CursorContextFactory contextFactory, LogTailLogVersionsMetadata logTail) {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
         StoreFactory storeFactory = new StoreFactory(
@@ -696,7 +695,7 @@ public class MetaDataStoreTest {
                 logProvider,
                 contextFactory,
                 false,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
         return storeFactory.openNeoStores(StoreType.META_DATA).getMetaDataStore();
     }

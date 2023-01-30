@@ -34,7 +34,6 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.getSchemaStoreMigration;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -101,7 +100,9 @@ import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -339,7 +340,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     logService,
                     migrationBatchImporterMonitor(legacyStore, progressReporter, importConfig),
                     additionalInitialIds,
-                    EMPTY_LOG_TAIL,
+                    new EmptyLogTailMetadata(config),
                     config,
                     Monitor.NO_MONITOR,
                     jobScheduler,
@@ -421,7 +422,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         NullLogProvider.getInstance(),
                         contextFactory,
                         true,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
                 .openNeoStores(storesToOpen);
     }
@@ -518,7 +519,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                 NullLogProvider.getInstance(),
                 contextFactory,
                 false,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 immutable.empty());
     }
 

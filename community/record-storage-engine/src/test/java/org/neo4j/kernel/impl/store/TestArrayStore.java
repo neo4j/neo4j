@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.lang.reflect.Array;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.impl.store.AbstractDynamicStore.HeavyRecordData;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
@@ -95,7 +95,7 @@ public class TestArrayStore {
                 NullLogProvider.getInstance(),
                 CursorContextFactory.NULL_CONTEXT_FACTORY,
                 false,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 Sets.immutable.empty());
 
         neoStores = factory.openAllNeoStores();

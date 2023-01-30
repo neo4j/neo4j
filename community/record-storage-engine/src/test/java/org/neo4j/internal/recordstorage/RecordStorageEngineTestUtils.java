@@ -28,7 +28,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 import org.neo4j.configuration.Config;
@@ -45,6 +44,8 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
@@ -70,6 +71,7 @@ public class RecordStorageEngineTestUtils {
                 createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),
                 createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        LogTailMetadata emptyLogTailMetadata = new EmptyLogTailMetadata(config);
         return new RecordStorageEngine(
                 layout,
                 config,
@@ -86,8 +88,8 @@ public class RecordStorageEngineTestUtils {
                 new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, DEFAULT_DATABASE_NAME),
                 immediate(),
                 EmptyMemoryTracker.INSTANCE,
-                EMPTY_LOG_TAIL,
-                new MetadataCache(EMPTY_LOG_TAIL),
+                emptyLogTailMetadata,
+                new MetadataCache(emptyLogTailMetadata),
                 LockVerificationFactory.NONE,
                 new CursorContextFactory(cacheTracer, EMPTY),
                 cacheTracer);

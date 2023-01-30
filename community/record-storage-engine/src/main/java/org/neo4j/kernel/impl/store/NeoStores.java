@@ -45,7 +45,7 @@ import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -75,7 +75,7 @@ public class NeoStores implements AutoCloseable {
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
     private final CommonAbstractStore[] stores;
-    private final LogTailMetadata logTailMetadata;
+    private final LogTailLogVersionsMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
     private final boolean readOnly;
 
@@ -90,7 +90,7 @@ public class NeoStores implements AutoCloseable {
             RecordFormats recordFormats,
             CursorContextFactory contextFactory,
             boolean readOnly,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             StoreType[] storeTypes,
             ImmutableSet<OpenOption> openOptions) {
         this.fileSystem = fileSystem;

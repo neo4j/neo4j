@@ -40,7 +40,6 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -84,6 +83,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -162,7 +163,7 @@ class CsvInputEstimateCalculationIT {
                             NullLogService.getInstance(),
                             INVISIBLE,
                             EMPTY,
-                            EMPTY_LOG_TAIL,
+                            new EmptyLogTailMetadata(config),
                             config,
                             Monitor.NO_MONITOR,
                             jobScheduler,
@@ -188,7 +189,7 @@ class CsvInputEstimateCalculationIT {
                                     NullLogProvider.getInstance(),
                                     NULL_CONTEXT_FACTORY,
                                     false,
-                                    EMPTY_LOG_TAIL)
+                                    LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                             .openAllNeoStores()) {
                 assertRoughlyEqual(
                         estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse());

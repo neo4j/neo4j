@@ -32,7 +32,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.lock.LockTracer.NONE;
@@ -91,7 +90,10 @@ import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -423,7 +425,7 @@ class NeoStoresTest {
                 NullLogProvider.getInstance(),
                 CONTEXT_FACTORY,
                 false,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         NeoStores neoStore = factory.openAllNeoStores();
 
         var ex = assertThrows(UnderlyingStorageException.class, neoStore::close);
@@ -446,7 +448,7 @@ class NeoStoresTest {
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
                 false,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
 
         // when
         try (NeoStores ignore = factory.openAllNeoStores()) {
@@ -471,7 +473,7 @@ class NeoStoresTest {
                 LOG_PROVIDER,
                 CONTEXT_FACTORY,
                 false,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf(allStoreTypes, allStoreTypes.length - 1);
 
@@ -494,6 +496,7 @@ class NeoStoresTest {
                 createReadOnlyTokenHolder(TokenHolder.TYPE_PROPERTY_KEY),
                 createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),
                 createReadOnlyTokenHolder(TokenHolder.TYPE_RELATIONSHIP_TYPE));
+        LogTailMetadata emptyLogTail = new EmptyLogTailMetadata(config);
         storageEngine = new RecordStorageEngine(
                 databaseLayout,
                 config,
@@ -510,8 +513,8 @@ class NeoStoresTest {
                 idGeneratorFactory,
                 immediate(),
                 INSTANCE,
-                EMPTY_LOG_TAIL,
-                new MetadataCache(EMPTY_LOG_TAIL),
+                emptyLogTail,
+                new MetadataCache(emptyLogTail),
                 LockVerificationFactory.NONE,
                 CONTEXT_FACTORY,
                 PageCacheTracer.NULL);
@@ -680,7 +683,7 @@ class NeoStoresTest {
                 logProvider,
                 CONTEXT_FACTORY,
                 readOnly,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
     }
 
     private static class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory {

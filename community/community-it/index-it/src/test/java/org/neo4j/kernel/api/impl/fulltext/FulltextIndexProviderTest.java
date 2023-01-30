@@ -42,7 +42,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asP
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.nio.file.Path;
@@ -115,6 +114,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -549,7 +549,7 @@ class FulltextIndexProviderTest {
                         NullLogProvider.getInstance(),
                         contextFactory,
                         false,
-                        EMPTY_LOG_TAIL);
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
                 var cursorContext = CursorContext.NULL_CONTEXT;
                 try (NeoStores neoStores = factory.openAllNeoStores();
                         var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {

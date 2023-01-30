@@ -31,7 +31,6 @@ import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -80,6 +79,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -368,7 +368,7 @@ class MultipleIndexPopulationStressIT {
                     NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE,
                     EMPTY,
-                    EMPTY_LOG_TAIL,
+                    new EmptyLogTailMetadata(config),
                     config,
                     NO_MONITOR,
                     jobScheduler,

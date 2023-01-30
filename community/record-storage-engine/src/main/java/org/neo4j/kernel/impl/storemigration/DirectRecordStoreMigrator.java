@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -96,7 +96,7 @@ class DirectRecordStoreMigrator {
                                 NullLogProvider.getInstance(),
                                 contextFactory,
                                 true,
-                                EMPTY_LOG_TAIL,
+                                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                                 immutable.empty())
                         .openNeoStores(storesToOpen);
                 NeoStores toStores = new StoreFactory(
@@ -111,7 +111,7 @@ class DirectRecordStoreMigrator {
                                 NullLogProvider.getInstance(),
                                 contextFactory,
                                 false,
-                                EMPTY_LOG_TAIL,
+                                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                                 immutable.empty())
                         .openNeoStores(storesToOpen);
                 var cursorContext = contextFactory.create(DIRECT_STORE_MIGRATOR_TAG);

@@ -19,35 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
-
 import java.util.Optional;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.TransactionId;
 
-public interface LogTailMetadata extends KernelVersionProvider {
-    TransactionId EMPTY_LAST_TRANSACTION =
-            new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX);
-
-    LogTailMetadata EMPTY_LOG_TAIL = new EmptyLogTailMetadata();
+public interface LogTailMetadata extends KernelVersionProvider, LogTailLogVersionsMetadata {
 
     boolean isRecoveryRequired();
-
-    long getCheckpointLogVersion();
-
-    long getLogVersion();
 
     Optional<StoreId> getStoreId();
 
     boolean logsMissing();
-
-    TransactionId getLastCommittedTransaction();
-
-    LogPosition getLastTransactionLogPosition();
 
     boolean hasUnreadableBytesInCheckpointLogs();
 

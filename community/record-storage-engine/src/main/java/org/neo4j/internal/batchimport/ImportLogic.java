@@ -73,7 +73,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -676,7 +676,7 @@ public class ImportLogic implements Closeable {
             Configuration config,
             LogService logService,
             AdditionalInitialIds additionalInitialIds,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             Config dbConfig,
             JobScheduler scheduler,
             MemoryTracker memoryTracker,

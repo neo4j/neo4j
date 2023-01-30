@@ -43,7 +43,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -123,7 +123,7 @@ class RecordStoreMigratorTest {
                 storageEngineFactory.versionInformation(storeVersionIdentifier).orElseThrow(),
                 storageEngineFactory.versionInformation(storeVersionIdentifier).orElseThrow(),
                 IndexImporterFactory.EMPTY,
-                LogTailMetadata.EMPTY_LOG_TAIL);
+                new EmptyLogTailMetadata(Config.defaults()));
 
         // Should not have started any migration
         assertThat(progressReporter.started).isFalse();

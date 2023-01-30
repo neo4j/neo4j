@@ -88,7 +88,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -141,7 +141,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private NeoStores temporaryNeoStores;
     private TokenHolders tokenHolders;
     private PageCacheFlusher flusher;
-    private final LogTailMetadata logTailMetadata;
+    private final LogTailLogVersionsMetadata logTailMetadata;
     private boolean doubleRelationshipRecordUnits;
 
     private boolean successful;
@@ -154,7 +154,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             Configuration importConfiguration,
             LogService logService,
             AdditionalInitialIds initialIds,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             boolean externalPageCache,
             IoTracer ioTracer,
             CursorContextFactory contextFactory,
@@ -318,7 +318,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             Configuration config,
             LogService logService,
             AdditionalInitialIds initialIds,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             Config dbConfig,
             JobScheduler jobScheduler,
             PageCacheTracer pageCacheTracer,
@@ -352,7 +352,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             Configuration config,
             LogService logService,
             AdditionalInitialIds initialIds,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             Config dbConfig,
             MemoryTracker memoryTracker) {
         Config neo4jConfig = getNeo4jConfig(config, dbConfig);

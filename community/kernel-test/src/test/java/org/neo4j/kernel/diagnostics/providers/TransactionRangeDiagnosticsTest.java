@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,6 +40,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -297,7 +299,7 @@ class TransactionRangeDiagnosticsTest {
 
         CheckpointFile checkpointFiles = mock(CheckpointFile.class);
         when(files.getCheckpointFile()).thenReturn(checkpointFiles);
-        when(files.getTailMetadata()).thenReturn(LogTailMetadata.EMPTY_LOG_TAIL);
+        when(files.getTailMetadata()).thenReturn(new EmptyLogTailMetadata(Config.defaults()));
         checkpointLogs.accept(checkpointFiles);
         return files;
     }

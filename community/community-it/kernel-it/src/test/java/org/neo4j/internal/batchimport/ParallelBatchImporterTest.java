@@ -34,7 +34,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -92,6 +91,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -187,7 +187,7 @@ public class ParallelBatchImporterTest {
                 NullLogService.getInstance(),
                 monitor,
                 EMPTY,
-                EMPTY_LOG_TAIL,
+                new EmptyLogTailMetadata(dbConfig),
                 dbConfig,
                 Monitor.NO_MONITOR,
                 jobScheduler,

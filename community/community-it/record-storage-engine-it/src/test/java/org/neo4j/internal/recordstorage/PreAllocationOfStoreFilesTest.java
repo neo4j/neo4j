@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.lock.LockService;
@@ -119,7 +119,7 @@ class PreAllocationOfStoreFilesTest {
                 EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY,
                 RecoveryCleanupWorkCollector.ignore(),
                 EmptyMemoryTracker.INSTANCE,
-                LogTailMetadata.EMPTY_LOG_TAIL,
+                new EmptyLogTailMetadata(Config.defaults()),
                 mock(KernelVersionRepository.class),
                 LockVerificationFactory.NONE,
                 CursorContextFactory.NULL_CONTEXT_FACTORY,

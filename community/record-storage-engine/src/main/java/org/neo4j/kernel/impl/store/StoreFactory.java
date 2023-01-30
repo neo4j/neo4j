@@ -41,7 +41,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 
 /**
@@ -58,7 +58,7 @@ public class StoreFactory {
     private final RecordFormats recordFormats;
     private final CursorContextFactory contextFactory;
     private final boolean readOnly;
-    private final LogTailMetadata logTailMetadata;
+    private final LogTailLogVersionsMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
 
     public StoreFactory(
@@ -71,7 +71,7 @@ public class StoreFactory {
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory,
             boolean readOnly,
-            LogTailMetadata logTailMetadata) {
+            LogTailLogVersionsMetadata logTailMetadata) {
         this(
                 directoryStructure,
                 config,
@@ -104,7 +104,7 @@ public class StoreFactory {
             InternalLogProvider logProvider,
             CursorContextFactory contextFactory,
             boolean readOnly,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             ImmutableSet<OpenOption> openOptions) {
         this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
         this.config = config;

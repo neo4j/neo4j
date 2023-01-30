@@ -67,6 +67,7 @@ import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
@@ -229,7 +230,7 @@ public interface StorageEngineFactory {
             PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             PageCacheTracer pageCacheTracer)
             throws IOException;
 
@@ -257,7 +258,7 @@ public interface StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata);
+            LogTailLogVersionsMetadata logTailMetadata);
 
     List<SchemaRule> loadSchemaRules(
             FileSystemAbstraction fs,

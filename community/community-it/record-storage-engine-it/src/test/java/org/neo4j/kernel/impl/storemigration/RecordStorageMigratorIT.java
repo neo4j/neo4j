@@ -28,7 +28,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.IndexImporterFactory.EMPTY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -81,6 +80,8 @@ import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.LogTailExtractor;
@@ -568,7 +569,7 @@ class RecordStorageMigratorIT {
                 versionToMigrateFrom,
                 getVersionToMigrateTo(),
                 EMPTY,
-                EMPTY_LOG_TAIL);
+                new EmptyLogTailMetadata(CONFIG));
 
         // WHEN simulating resuming the migration
 
@@ -585,7 +586,7 @@ class RecordStorageMigratorIT {
                 logService.getInternalLogProvider(),
                 contextFactory,
                 false,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         storeFactory.openAllNeoStores().close();
     }
 
@@ -623,7 +624,7 @@ class RecordStorageMigratorIT {
                 versionToMigrateFrom,
                 versionToMigrateTo,
                 EMPTY,
-                EMPTY_LOG_TAIL);
+                new EmptyLogTailMetadata(CONFIG));
         migrator.moveMigratedFiles(migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo);
 
         // then
@@ -637,7 +638,7 @@ class RecordStorageMigratorIT {
                         NullLogProvider.getInstance(),
                         contextFactory,
                         false,
-                        EMPTY_LOG_TAIL)
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openNeoStores(StoreType.META_DATA)) {
             neoStores.start(NULL_CONTEXT);
             assertThat(neoStores.getMetaDataStore().getCheckpointLogVersion()).isEqualTo(0);

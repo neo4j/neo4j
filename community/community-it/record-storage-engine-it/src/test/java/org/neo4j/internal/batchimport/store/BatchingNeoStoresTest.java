@@ -33,7 +33,6 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -92,6 +91,9 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
@@ -155,7 +157,7 @@ class BatchingNeoStoresTest {
                         Configuration.DEFAULT,
                         NullLogService.getInstance(),
                         EMPTY,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         Config.defaults(),
                         jobScheduler,
                         PageCacheTracer.NULL,
@@ -187,7 +189,7 @@ class BatchingNeoStoresTest {
                         Configuration.DEFAULT,
                         NullLogService.getInstance(),
                         EMPTY,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         Config.defaults(),
                         jobScheduler,
                         PageCacheTracer.NULL,
@@ -222,7 +224,7 @@ class BatchingNeoStoresTest {
                         Configuration.DEFAULT,
                         NullLogService.getInstance(),
                         EMPTY,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         config,
                         jobScheduler,
                         PageCacheTracer.NULL,
@@ -253,7 +255,7 @@ class BatchingNeoStoresTest {
                     Configuration.DEFAULT,
                     NullLogService.getInstance(),
                     EMPTY,
-                    EMPTY_LOG_TAIL,
+                    LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                     Config.defaults(),
                     INSTANCE)) {
                 stores.createNew();
@@ -272,7 +274,7 @@ class BatchingNeoStoresTest {
                     Configuration.DEFAULT,
                     NullLogService.getInstance(),
                     EMPTY,
-                    EMPTY_LOG_TAIL,
+                    LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                     Config.defaults(),
                     INSTANCE)) {
                 stores.pruneAndOpenExistingStore(type -> type == typeToTest, Predicates.alwaysFalse());
@@ -307,7 +309,7 @@ class BatchingNeoStoresTest {
                 Configuration.DEFAULT,
                 NullLogService.getInstance(),
                 EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 config,
                 INSTANCE)) {
             stores.createNew();
@@ -336,7 +338,7 @@ class BatchingNeoStoresTest {
                 Configuration.DEFAULT,
                 NullLogService.getInstance(),
                 EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 config,
                 INSTANCE)) {
             stores.createNew();
@@ -364,7 +366,7 @@ class BatchingNeoStoresTest {
                 Configuration.DEFAULT,
                 NullLogService.getInstance(),
                 EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 Config.defaults(),
                 INSTANCE)) {
             stores.createNew();
@@ -417,7 +419,7 @@ class BatchingNeoStoresTest {
                 Configuration.DEFAULT,
                 NullLogService.getInstance(),
                 EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 Config.defaults(),
                 INSTANCE)) {
             stores.createNew();
@@ -526,7 +528,8 @@ class BatchingNeoStoresTest {
                     new DelegatingTokenHolder(relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
             IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
-            MetadataCache versionRepository = new MetadataCache(EMPTY_LOG_TAIL);
+            LogTailMetadata emptyLogTail = new EmptyLogTailMetadata(Config.defaults());
+            MetadataCache versionRepository = new MetadataCache(emptyLogTail);
             RecordStorageEngine storageEngine = life.add(new RecordStorageEngine(
                     databaseLayout,
                     Config.defaults(),
@@ -543,7 +546,7 @@ class BatchingNeoStoresTest {
                     new DefaultIdGeneratorFactory(fileSystem, immediate(), PageCacheTracer.NULL, DEFAULT_DATABASE_NAME),
                     recoveryCleanupWorkCollector,
                     INSTANCE,
-                    EMPTY_LOG_TAIL,
+                    emptyLogTail,
                     versionRepository,
                     LockVerificationFactory.NONE,
                     CONTEXT_FACTORY,

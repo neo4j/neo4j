@@ -23,6 +23,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.KernelVersionRepository;
@@ -76,7 +77,7 @@ class MetadataCacheTest {
     }
 
     private LogTailMetadata randomLogTailMetadata() {
-        return new EmptyLogTailMetadata() {
+        return new EmptyLogTailMetadata(Config.defaults()) {
             private final KernelVersion kernelVersion = random.among(KernelVersion.VERSIONS);
 
             @Override

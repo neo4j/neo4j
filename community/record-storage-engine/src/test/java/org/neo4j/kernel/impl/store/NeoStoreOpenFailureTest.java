@@ -26,7 +26,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -41,7 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DisabledForRoot;
@@ -74,7 +73,7 @@ class NeoStoreOpenFailureTest {
         StoreType[] storeTypes = StoreType.values();
         ImmutableSet<OpenOption> openOptions = immutable.empty();
         CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
-        LogTailMetadata logTail = EMPTY_LOG_TAIL;
+        LogTailLogVersionsMetadata logTail = LogTailLogVersionsMetadata.EMPTY_LOG_TAIL;
         NeoStores neoStores = new NeoStores(
                 fileSystem,
                 databaseLayout,

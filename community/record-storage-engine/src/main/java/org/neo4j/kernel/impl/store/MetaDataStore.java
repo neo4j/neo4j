@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -128,7 +128,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
             InternalLogProvider logProvider,
             RecordFormat<MetaDataRecord> recordFormat,
             boolean readOnly,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             String databaseName,
             ImmutableSet<OpenOption> openOptions,
             Supplier<StoreId> storeIdFactory) {

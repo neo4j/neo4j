@@ -31,7 +31,6 @@ import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRe
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -62,6 +61,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -125,7 +125,7 @@ class HumanUnderstandableExecutionMonitorIT {
                             NullLogService.getInstance(),
                             monitor,
                             EMPTY,
-                            EMPTY_LOG_TAIL,
+                            new EmptyLogTailMetadata(defaults()),
                             defaults(),
                             Monitor.NO_MONITOR,
                             jobScheduler,

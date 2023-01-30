@@ -32,7 +32,6 @@ import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -52,6 +51,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -91,7 +91,7 @@ class ImportLogicTest {
                 DEFAULT,
                 getInstance(),
                 AdditionalInitialIds.EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 defaults(),
                 INSTANCE)) {
             //noinspection EmptyTryBlock
@@ -182,7 +182,7 @@ class ImportLogicTest {
                 DEFAULT,
                 getInstance(),
                 AdditionalInitialIds.EMPTY,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 defaults(),
                 INSTANCE)) {
             // when

@@ -22,7 +22,6 @@ package org.neo4j.test.storage;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
@@ -44,6 +43,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.MetadataCache;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -93,6 +94,7 @@ public class RecordStorageEngineSupport {
         IdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory(fs, immediate(), PageCacheTracer.NULL, databaseLayout.getDatabaseName());
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
+        LogTailMetadata emptyLogTailMetadata = new EmptyLogTailMetadata(config);
         RecordStorageEngine engine = new ExtendedRecordStorageEngine(
                 databaseLayout,
                 config,
@@ -107,7 +109,8 @@ public class RecordStorageEngineSupport {
                 lockService,
                 databaseHealth,
                 idGeneratorFactory,
-                transactionApplierTransformer);
+                transactionApplierTransformer,
+                emptyLogTailMetadata);
         engine.addIndexUpdateListener(indexUpdateListener);
         life.add(engine);
         return engine;
@@ -236,8 +239,8 @@ public class RecordStorageEngineSupport {
                 LockService lockService,
                 DatabaseHealth databaseHealth,
                 IdGeneratorFactory idGeneratorFactory,
-                Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain>
-                        transactionApplierTransformer) {
+                Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer,
+                LogTailMetadata emptyLogTailMetadata) {
             super(
                     databaseLayout,
                     config,
@@ -254,8 +257,8 @@ public class RecordStorageEngineSupport {
                     idGeneratorFactory,
                     RecoveryCleanupWorkCollector.immediate(),
                     EmptyMemoryTracker.INSTANCE,
-                    EMPTY_LOG_TAIL,
-                    new MetadataCache(EMPTY_LOG_TAIL),
+                    emptyLogTailMetadata,
+                    new MetadataCache(emptyLogTailMetadata),
                     LockVerificationFactory.NONE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY),
                     PageCacheTracer.NULL);

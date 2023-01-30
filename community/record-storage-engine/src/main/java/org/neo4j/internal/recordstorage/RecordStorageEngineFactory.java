@@ -31,7 +31,6 @@ import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_F
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -119,6 +118,8 @@ import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceTypes;
@@ -309,7 +310,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             PageCacheTracer pageCacheTracer) {
         RecordDatabaseLayout databaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = selectForStoreOrConfigForNewDbs(
@@ -352,7 +353,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         pageCache,
                         writable(),
                         contextFactory,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         pageCacheTracer);
                 var cursorContext = contextFactory.create("resetMetadata")) {
             metadataProvider.regenerateMetadata(storeId, externalStoreId, cursorContext);
@@ -382,7 +383,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout layout,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata) {
+            LogTailLogVersionsMetadata logTailMetadata) {
         RecordDatabaseLayout recordDatabaseLayout = formatSpecificDatabaseLayout(layout);
         RecordFormats recordFormats = RecordFormatSelector.selectForStore(
                 recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory);
@@ -469,7 +470,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 NullLogProvider.getInstance(),
                 contextFactory,
                 true,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         try (var cursorContext = contextFactory.create("loadSchemaRules");
                 var stores = factory.openAllNeoStores();
                 var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
@@ -508,7 +509,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 NullLogProvider.getInstance(),
                 contextFactory,
                 true,
-                EMPTY_LOG_TAIL);
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         try (NeoStores stores = factory.openNeoStores(
                 StoreType.PROPERTY_KEY_TOKEN,
                 StoreType.PROPERTY_KEY_TOKEN_NAME,
@@ -638,7 +639,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         logService,
                         executionMonitor,
                         additionalInitialIds,
-                        EMPTY_LOG_TAIL,
+                        new EmptyLogTailMetadata(dbConfig),
                         dbConfig,
                         monitor,
                         jobScheduler,
@@ -752,7 +753,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         NullLogProvider.getInstance(),
                         contextFactory,
                         true,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         immutable.empty())
                 .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE)) {
             long highNodeId = neoStores.getNodeStore().getHighId();

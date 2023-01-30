@@ -31,7 +31,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
@@ -67,6 +66,7 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.test.RandomSupport;
@@ -113,7 +113,7 @@ public class RecordPropertyCursorTest {
                         NullLogProvider.getInstance(),
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
-                        EMPTY_LOG_TAIL,
+                        LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
                 .openAllNeoStores();
         owner = neoStores.getNodeStore().newRecord();

@@ -60,6 +60,7 @@ import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
@@ -214,7 +215,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata,
+            LogTailLogVersionsMetadata logTailMetadata,
             PageCacheTracer pageCacheTracer)
             throws IOException {
         return delegate.transactionMetaDataStore(
@@ -257,7 +258,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             Config config,
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory,
-            LogTailMetadata logTailMetadata) {
+            LogTailLogVersionsMetadata logTailMetadata) {
         return delegate.load44SchemaRules(
                 fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, logTailMetadata);
     }

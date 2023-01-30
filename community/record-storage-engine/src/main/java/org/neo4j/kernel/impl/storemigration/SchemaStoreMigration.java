@@ -26,7 +26,6 @@ import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.createT
 import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.need50Migration;
 import static org.neo4j.kernel.impl.storemigration.SchemaStore44Migration.getSchemaStore44Migrator;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
@@ -231,7 +231,7 @@ public class SchemaStoreMigration {
                 NullLogProvider.getInstance(),
                 contextFactory,
                 true,
-                EMPTY_LOG_TAIL,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                 immutable.empty());
     }
 }

@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -54,6 +53,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -86,6 +86,7 @@ class ImportPanicIT {
     @Test
     void shouldExitAndThrowExceptionOnPanic() throws Exception {
         try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
+            Config config = Config.defaults(GraphDatabaseSettings.db_format, FormatFamily.STANDARD.name());
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout,
                     testDirectory.getFileSystem(),
@@ -94,8 +95,8 @@ class ImportPanicIT {
                     NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE,
                     AdditionalInitialIds.EMPTY,
-                    EMPTY_LOG_TAIL,
-                    Config.defaults(GraphDatabaseSettings.db_format, FormatFamily.STANDARD.name()),
+                    new EmptyLogTailMetadata(config),
+                    config,
                     Monitor.NO_MONITOR,
                     jobScheduler,
                     Collector.EMPTY,

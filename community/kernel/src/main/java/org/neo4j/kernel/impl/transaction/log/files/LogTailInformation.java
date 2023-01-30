@@ -24,6 +24,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.storageengine.api.StoreId;
@@ -119,7 +120,7 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public long getCheckpointLogVersion() {
         if (lastCheckPoint == null) {
-            return EMPTY_LOG_TAIL.getCheckpointLogVersion();
+            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getCheckpointLogVersion();
         }
         return lastCheckPoint.channelPositionAfterCheckpoint().getLogVersion();
     }
@@ -144,13 +145,13 @@ public class LogTailInformation implements LogTailMetadata {
 
     @Override
     public long getLogVersion() {
-        return filesNotFound ? EMPTY_LOG_TAIL.getLogVersion() : currentLogVersion;
+        return filesNotFound ? LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLogVersion() : currentLogVersion;
     }
 
     @Override
     public TransactionId getLastCommittedTransaction() {
         if (lastCheckPoint == null) {
-            return EMPTY_LOG_TAIL.getLastCommittedTransaction();
+            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLastCommittedTransaction();
         }
         return lastCheckPoint.transactionId();
     }
@@ -158,7 +159,7 @@ public class LogTailInformation implements LogTailMetadata {
     @Override
     public LogPosition getLastTransactionLogPosition() {
         if (lastCheckPoint == null) {
-            return EMPTY_LOG_TAIL.getLastTransactionLogPosition();
+            return LogTailLogVersionsMetadata.EMPTY_LOG_TAIL.getLastTransactionLogPosition();
         }
         return lastCheckPoint.transactionLogPosition();
     }
