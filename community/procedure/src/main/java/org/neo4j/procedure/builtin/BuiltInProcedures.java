@@ -250,7 +250,12 @@ public class BuiltInProcedures {
     }
 
     @SystemProcedure
-    @Description("Visualize the schema of the data.")
+    @Description("Visualizes the schema of the data based on available statistics. "
+            + "A new node is returned for each label. The properties represented on the node include: "
+            + "`name` (label name), `indexes` (list of indexes), and `constraints` (list of constraints). "
+            + "A relationship of a given type is returned for all possible combinations of start and end nodes. "
+            + "Note that this may include additional relationships that do not exist in the data due to the "
+            + "information available in the count store. ")
     @Procedure(name = "db.schema.visualization", mode = READ)
     public Stream<SchemaProcedure.GraphResult> schemaVisualization() {
         if (callContext.isSystemDatabase()) {
