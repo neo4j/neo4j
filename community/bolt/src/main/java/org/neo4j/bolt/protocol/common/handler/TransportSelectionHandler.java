@@ -23,6 +23,7 @@ import static org.neo4j.bolt.protocol.common.handler.ProtocolHandshakeHandler.BO
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -32,6 +33,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import java.util.List;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
@@ -42,6 +45,7 @@ import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.Protocol
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.Log;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.packstream.codec.transport.WebSocketFramePackingEncoder;
 import org.neo4j.packstream.codec.transport.WebSocketFrameUnpackingDecoder;
@@ -182,15 +186,27 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void enableSsl(ChannelHandlerContext ctx) {
-        // allocate sufficient space for another transport selection handlers as this instance will be freed upon
-        // pipeline removal
-        connection.memoryTracker().allocateHeap(SSL_HANDLER_SHALLOW_SIZE + SHALLOW_SIZE);
+        // perform TLS negotiation asynchronously before switching back to transport selection once
+        // a secure channel has been established
+        connection.memoryTracker().allocateHeap(SSL_HANDLER_SHALLOW_SIZE);
 
-        ctx.pipeline()
-                .addLast(this.sslContext.newHandler(ctx.alloc()))
-                .remove(this)
-                .addLast(new TransportSelectionHandler(
-                        config, this.sslContext, this.enableProtocolLogging, protocolLoggingMode, logging, true));
+        var handler = this.sslContext.newHandler(ctx.alloc());
+
+        handler.handshakeFuture()
+                .addListener(new TransportSecuritySelectionFutureListener(
+                        ctx.channel(),
+                        this.config,
+                        this.sslContext,
+                        this.connection,
+                        this.enableProtocolLogging,
+                        this.protocolLoggingMode,
+                        this.logging,
+                        this.log));
+
+        // discard this handler distance in order to allow SslHandler to negotiate a secure
+        // connection with the peer - we will reattach once the connection has successfully been
+        // secured
+        ctx.pipeline().addLast(handler).remove(this);
     }
 
     private void switchToSocket(ChannelHandlerContext ctx) {
@@ -259,5 +275,76 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
                                 config, this.enableProtocolLogging, this.protocolLoggingMode, logging));
 
         ctx.pipeline().remove(this);
+    }
+
+    /**
+     * Encapsulates the logic necessary to perform transport selection once TLS has been negotiated.
+     * <p />
+     * This implementation is separated into a dedicated listener implementation to ensure that we
+     * do not accidentally keep a strong reference to {@link TransportSelectionHandler} during the
+     * TLS handshake.
+     */
+    private static class TransportSecuritySelectionFutureListener
+            implements GenericFutureListener<Future<? super Channel>> {
+        private final Channel channel;
+        private final Config config;
+        private final SslContext sslContext;
+        private final Connection connection;
+        private final boolean enableProtocolLogging;
+        private final ProtocolLoggingMode protocolLoggingMode;
+        private final InternalLogProvider logging;
+        private final Log log;
+
+        public TransportSecuritySelectionFutureListener(
+                Channel channel,
+                Config config,
+                SslContext sslContext,
+                Connection connection,
+                boolean enableProtocolLogging,
+                ProtocolLoggingMode protocolLoggingMode,
+                InternalLogProvider logging,
+                Log log) {
+            this.channel = channel;
+            this.config = config;
+            this.sslContext = sslContext;
+            this.connection = connection;
+            this.enableProtocolLogging = enableProtocolLogging;
+            this.protocolLoggingMode = protocolLoggingMode;
+            this.logging = logging;
+            this.log = log;
+        }
+
+        @Override
+        public void operationComplete(Future<? super Channel> f) throws Exception {
+            if (!f.isSuccess()) {
+                var cause = f.cause();
+                var message = "Unknown Error";
+                if (cause != null) {
+                    message = cause.getMessage();
+                }
+
+                log.debug("[%s] TLS handshake has failed: %s", this.channel.remoteAddress(), message);
+
+                // SslHandler likely closes the connection as well, but we make sure that it does
+                // not remain active even if netty behavior changes in the future
+                this.channel.close();
+                return;
+            }
+
+            // as of now we are on an encrypted channel where SslHandler will take care of the en-
+            // and decryption of outgoing and incoming data thus permitting us to continue the
+            // application protocol selection as usual
+            connection.memoryTracker().allocateHeap(SHALLOW_SIZE);
+
+            this.channel
+                    .pipeline()
+                    .addLast(new TransportSelectionHandler(
+                            this.config,
+                            this.sslContext,
+                            this.enableProtocolLogging,
+                            this.protocolLoggingMode,
+                            this.logging,
+                            true));
+        }
     }
 }

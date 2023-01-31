@@ -147,9 +147,7 @@ class TransportSelectionHandlerTest {
 
         channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}));
 
-        verify(memoryTracker)
-                .allocateHeap(
-                        TransportSelectionHandler.SHALLOW_SIZE + TransportSelectionHandler.SSL_HANDLER_SHALLOW_SIZE);
+        verify(memoryTracker).allocateHeap(TransportSelectionHandler.SSL_HANDLER_SHALLOW_SIZE);
     }
 
     @Test
