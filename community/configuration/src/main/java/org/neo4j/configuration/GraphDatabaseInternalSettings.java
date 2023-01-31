@@ -128,6 +128,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.cypher.expression_engine", ofEnum( CypherExpressionEngine.class ), CypherExpressionEngine.DEFAULT ).build();
 
     @Internal
+    @Description( "The maximum size in bytes of methods generated for compiled expressions" )
+    public static final Setting<Integer> cypher_expression_compiled_method_limit = newBuilder(
+            "unsupported.cypher.expression_method_limit", INT, 8000 )
+            .addConstraint( min( 0 ) )
+            .addConstraint( max( 65535 ) )
+            .build();
+
+    @Internal
     @Description( "Number of uses before an expression is considered for compilation" )
     public static final Setting<Integer> cypher_expression_recompilation_limit = newBuilder( "unsupported.cypher.expression_recompilation_limit", INT, 10 )
             .addConstraint( min( 0 ) )
@@ -241,6 +249,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
                   "Allowed values are \"default\" (the default, use compiled when applicable), \"compiled\" and \"interpreted\"." )
     public static final Setting<CypherOperatorEngine> cypher_operator_engine =
             newBuilder( "unsupported.cypher.pipelined.operator_engine", ofEnum( CypherOperatorEngine.class ), CypherOperatorEngine.DEFAULT ).build();
+
+    @Internal
+    @Description( "The maximum size in bytes of methods generated for fused operators" )
+    public static final Setting<Integer> cypher_operator_compiled_method_limit = newBuilder(
+            "unsupported.cypher.pipelined.method_limit", INT, 65535 )
+            .addConstraint( min( 0 ) )
+            .addConstraint( max( 65535 ) )
+            .build();
 
     public enum CypherPipelinedInterpretedPipesFallback
     {

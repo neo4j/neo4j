@@ -88,6 +88,9 @@ class CypherConfiguration private (val config: Config) {
   val planningTextIndexesEnabled: Boolean = config.get(GraphDatabaseInternalSettings.planning_text_indexes_enabled)
   val predicatesAsUnionMaxSize: Int = config.get(GraphDatabaseInternalSettings.predicates_as_union_max_size)
   val allowSourceGeneration: Boolean = config.get(GraphDatabaseInternalSettings.cypher_allow_source_generation)
+  val compiledExpressionMethodLimit: Int =
+    config.get(GraphDatabaseInternalSettings.cypher_expression_compiled_method_limit)
+  val operatorFusingMethodLimit: Int = config.get(GraphDatabaseInternalSettings.cypher_operator_compiled_method_limit)
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)

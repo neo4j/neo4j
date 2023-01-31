@@ -78,7 +78,8 @@ import org.objectweb.asm.Opcodes
 import scala.util.Random
 
 class SizeEstimationTest extends CypherFunSuite {
-  private val generator = CodeGeneration.createGenerator(ByteCodeGeneration(new CodeSaver(false, false)))
+  private val codeGeneration = CodeGeneration.codeGeneration()
+  private val generator = codeGeneration.createGenerator()
   private val sizeComputer = new ByteSizeComputer
   generator.setByteCodeVisitor(sizeComputer)
   private val callBooleanMethod: IntermediateRepresentation = invokeStatic(method[SizeEstimationTest, Boolean]("testBoolean"))
@@ -1100,7 +1101,7 @@ class SizeEstimationTest extends CypherFunSuite {
   private def computeSize(ir: IntermediateRepresentation) = SizeEstimation.estimateByteCodeSize(ir, 1)
 
   private def sizeOf(ir: IntermediateRepresentation) = {
-    val handle = CodeGeneration.compileClass(clazz(ir), generator)
+    val handle = codeGeneration.compileClass(clazz(ir), generator)
     handle.loadClass()
     sizeComputer.byteSize
   }
