@@ -28,7 +28,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDisk
     private static final String panicMessage = "The database has encountered a critical error, "
             + "and needs to be restarted. Please see database logs for more details.";
 
-    private volatile boolean healthy = true;
+    private volatile boolean hasPanic;
     private final HealthEventGenerator healthEventGenerator;
     private final InternalLog log;
     private volatile Throwable causeOfPanic;
@@ -47,20 +47,20 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDisk
      */
     @Override
     public <EXCEPTION extends Throwable> void assertNoPanic(Class<EXCEPTION> panicDisguise) throws EXCEPTION {
-        if (!healthy) {
+        if (hasPanic) {
             throw Exceptions.disguiseException(panicDisguise, panicMessage, causeOfPanic);
         }
     }
 
     @Override
     public synchronized void panic(Throwable cause) {
-        if (!healthy) {
+        if (hasPanic) {
             return;
         }
 
         Objects.requireNonNull(cause, "Must provide a non null cause for the database panic");
         this.causeOfPanic = cause;
-        this.healthy = false;
+        this.hasPanic = true;
         log.error("Database panic: " + panicMessage, cause);
         if (healthEventGenerator != null) {
             healthEventGenerator.panic(cause);
@@ -69,7 +69,7 @@ public class DatabaseHealth extends LifecycleAdapter implements Panic, OutOfDisk
 
     @Override
     public boolean hasNoPanic() {
-        return healthy;
+        return !hasPanic;
     }
 
     @Override
