@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.graphdb
+import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable
@@ -46,6 +48,7 @@ trait TestSubscriber extends QuerySubscriber {
 object TestSubscriber {
   def concurrent: TestSubscriber = new ConcurrentTestSubscriber
   def singleThreaded: TestSubscriber = new SingleThreadedTestSubscriber
+  def counting: CountingSubscriber = new CountingSubscriber
 
   private class ConcurrentTestSubscriber extends TestSubscriber {
 
@@ -130,5 +133,25 @@ object TestSubscriber {
     override def allSeen: Seq[Seq[AnyValue]] = records.toSeq
 
     override def queryStatistics: graphdb.QueryStatistics = statistics
+  }
+
+  final class CountingSubscriber extends QuerySubscriber {
+    private val _records = new AtomicLong(0)
+    private val _completed = new AtomicBoolean(false)
+    private var _error: Throwable = null
+
+    def recordCount: Long = _records.get()
+    def completed: Boolean = _completed.get()
+    def error: Option[Throwable] = Option(_error)
+
+    override def onResult(numberOfFields: Int): Unit = {}
+    override def onRecord(): Unit = {}
+    override def onField(offset: Int, value: AnyValue): Unit = {}
+    override def onRecordCompleted(): Unit = _records.incrementAndGet()
+
+    override def onError(throwable: Throwable): Unit = this.synchronized {
+      _error = Exceptions.chain(_error, throwable)
+    }
+    override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = _completed.set(true)
   }
 }

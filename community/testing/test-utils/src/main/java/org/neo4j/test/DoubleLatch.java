@@ -72,6 +72,10 @@ public class DoubleLatch {
         allButOneFinishedSignal.countDown();
     }
 
+    public long finishCount() {
+        return finishSignal.getCount();
+    }
+
     public void waitForAllToFinish() {
         awaitLatch(finishSignal, awaitUninterruptibly);
     }
