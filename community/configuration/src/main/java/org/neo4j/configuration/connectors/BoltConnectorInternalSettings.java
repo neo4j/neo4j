@@ -38,6 +38,7 @@ import java.time.Duration;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
@@ -51,6 +52,15 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Description("Enable protocol level logging for incoming connections on the Bolt connector")
     public static final Setting<Boolean> protocol_logging =
             newBuilder("internal.server.bolt.protocol_logging", BOOL, false).build();
+
+    @Internal
+    @Description(
+            "Selects the format in which protocol level log messages are formatted (RAW for wire format, DECODED for decoded server view, BOTH for both formats)")
+    public static final Setting<ProtocolLoggingMode> protocol_logging_mode = newBuilder(
+                    "internal.server.bolt.protocol_logging_mode",
+                    SettingValueParsers.ofEnum(ProtocolLoggingMode.class),
+                    ProtocolLoggingMode.DECODED)
+            .build();
 
     @Internal
     @Description("Enable/disable the use of native transports for netty")
@@ -172,4 +182,26 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
     @Description("Enable/disable generation of response metrics")
     public static final Setting<Boolean> enable_response_metrics =
             newBuilder("internal.server.bolt.response_metrics", BOOL, false).build();
+
+    public enum ProtocolLoggingMode {
+        DECODED(false, true),
+        RAW(true, false),
+        BOTH(true, true);
+
+        private boolean loggingRawTraffic;
+        private boolean loggingDecodedTraffic;
+
+        ProtocolLoggingMode(boolean loggingRawTraffic, boolean loggingDecodedTraffic) {
+            this.loggingRawTraffic = loggingRawTraffic;
+            this.loggingDecodedTraffic = loggingDecodedTraffic;
+        }
+
+        public boolean isLoggingRawTraffic() {
+            return loggingRawTraffic;
+        }
+
+        public boolean isLoggingDecodedTraffic() {
+            return loggingDecodedTraffic;
+        }
+    }
 }

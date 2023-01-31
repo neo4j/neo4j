@@ -79,12 +79,12 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
         // when explicitly enabled, also register a protocol logging handler within the pipeline in order to
         // print all incoming and outgoing traffic to the internal log - this has performance implications thus
         // requiring its own dedicated configuration option
-        if (this.config.get(BoltConnectorInternalSettings.protocol_logging)) {
-            connection.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
-            ch.pipeline().addLast("protocolLoggingHandler", new ProtocolLoggingHandler(this.logging));
-        }
+        var enableLogging = this.config.get(BoltConnectorInternalSettings.protocol_logging);
+        var loggingMode = this.config.get(BoltConnectorInternalSettings.protocol_logging_mode);
 
-        ch.pipeline().addLast(new TransportSelectionHandler(this.config, this.sslContext, this.logging));
+        ch.pipeline()
+                .addLast(new TransportSelectionHandler(
+                        this.config, this.sslContext, enableLogging, loggingMode, this.logging));
 
         connection.notifyListeners(listener -> listener.onNetworkPipelineInitialized(ch.pipeline()));
     }

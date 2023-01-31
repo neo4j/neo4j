@@ -31,9 +31,12 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLException;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -47,7 +50,8 @@ class TransportSelectionHandlerTest {
         var logging = new AssertableLogProvider();
 
         var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(Config.defaults(), null, logging));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, logging));
 
         // When
         var ex = new Throwable("Oh no!");
@@ -68,7 +72,8 @@ class TransportSelectionHandlerTest {
         var logging = new AssertableLogProvider();
 
         var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(Config.defaults(), null, logging));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, logging));
 
         // When
         var ex = new IOException("Connection reset by peer");
@@ -95,7 +100,8 @@ class TransportSelectionHandlerTest {
                 .build();
 
         var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new TransportSelectionHandler(Config.defaults(), sslCtx, logging, true));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), sslCtx, false, ProtocolLoggingMode.DECODED, logging, true));
 
         // When
         channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5})); // encrypted
@@ -117,7 +123,8 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(Config.defaults(), null, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
 
         channel.pipeline().remove(TransportSelectionHandler.class);
 
@@ -135,7 +142,8 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(Config.defaults(), sslCtx, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), sslCtx, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
 
         channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {22, 3, 1, 0, 5}));
 
@@ -150,7 +158,8 @@ class TransportSelectionHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new TransportSelectionHandler(Config.defaults(), null, NullLogProvider.getInstance()));
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, false, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
 
         channel.writeInbound(Unpooled.wrappedBuffer("GET /\r\n".getBytes(StandardCharsets.UTF_8)));
 
@@ -164,5 +173,77 @@ class TransportSelectionHandlerTest {
                         + WebSocketFrameUnpackingDecoder.SHALLOW_SIZE);
 
         verify(memoryTracker).releaseHeap(TransportSelectionHandler.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldInstallProtocolLoggingHandlers() {
+        var memoryTracker = Mockito.mock(MemoryTracker.class);
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, true, ProtocolLoggingMode.BOTH, NullLogProvider.getInstance()));
+
+        // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
+        // handler
+        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSequence(ProtocolLoggingHandler.RAW_NAME, "protocolNegotiationRequestEncoder")
+                .containsSubsequence(
+                        "protocolNegotiationRequestDecoder",
+                        ProtocolLoggingHandler.DECODED_NAME,
+                        "protocolHandshakeHandler");
+
+        Mockito.verify(memoryTracker, Mockito.times(2)).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldInstallRawProtocolLoggingHandlers() {
+        var memoryTracker = Mockito.mock(MemoryTracker.class);
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, true, ProtocolLoggingMode.RAW, NullLogProvider.getInstance()));
+
+        // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
+        // handler
+        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSequence(ProtocolLoggingHandler.RAW_NAME, "protocolNegotiationRequestEncoder")
+                .doesNotContain(ProtocolLoggingHandler.DECODED_NAME);
+
+        Mockito.verify(memoryTracker).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldInstallDecodedProtocolLoggingHandlers() {
+        var memoryTracker = Mockito.mock(MemoryTracker.class);
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new TransportSelectionHandler(
+                        Config.defaults(), null, true, ProtocolLoggingMode.DECODED, NullLogProvider.getInstance()));
+
+        // generate an incomplete handshake which exceeds the 5-byte threshold of the selection
+        // handler
+        channel.writeInbound(Unpooled.buffer().writeInt(0x6060B017).writeInt(0x00090005));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSubsequence(
+                        "protocolNegotiationRequestDecoder",
+                        ProtocolLoggingHandler.DECODED_NAME,
+                        "protocolHandshakeHandler")
+                .doesNotContain(ProtocolLoggingHandler.RAW_NAME);
+
+        Mockito.verify(memoryTracker).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
     }
 }

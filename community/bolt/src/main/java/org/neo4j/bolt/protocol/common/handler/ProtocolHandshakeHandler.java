@@ -43,6 +43,7 @@ import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
 import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
@@ -61,13 +62,23 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
     private final InternalLog log;
     private final Config config;
 
+    private final boolean enableProtocolLogging;
+    private final ProtocolLoggingMode protocolLoggingMode;
+
     private Connector connector;
     private Connection connection;
 
-    public ProtocolHandshakeHandler(Config config, InternalLogProvider logging) {
+    public ProtocolHandshakeHandler(
+            Config config,
+            boolean enableProtocolLogging,
+            ProtocolLoggingMode protocolLoggingMode,
+            InternalLogProvider logging) {
         this.config = config;
-        this.logging = logging;
 
+        this.enableProtocolLogging = enableProtocolLogging;
+        this.protocolLoggingMode = protocolLoggingMode;
+
+        this.logging = logging;
         this.log = logging.getLog(getClass());
     }
 
@@ -163,7 +174,15 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
             this.log.warn("Enabling merge cumulator for chunk decoding - Network performance may be degraded");
             frameDecoder.setCumulator(ByteToMessageDecoder.MERGE_CUMULATOR);
         }
-        ctx.pipeline().addLast(frameDecoder);
+        ctx.pipeline().addLast("chunkFrameDecoder", frameDecoder);
+
+        // if raw protocol logging is enabled, we'll remove the previous handler and position it
+        // after the chunk decoder handlers in order to split up the continuous byte stream into
+        // coherent messages before passing them to the log
+        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingRawTraffic()) {
+            ctx.pipeline().remove(ProtocolLoggingHandler.RAW_NAME);
+            ctx.pipeline().addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(this.logging));
+        }
 
         ctx.pipeline()
                 .addLast("chunkFrameEncoder", new ChunkFrameEncoder())
@@ -188,6 +207,13 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                                     logging));
         }
 
+        // if logging of decoded messages is enabled, we'll discard the old handler and introduce a
+        // new instance at the correct position within the pipeline
+        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingDecodedTraffic()) {
+            ctx.pipeline().remove(ProtocolLoggingHandler.DECODED_NAME);
+            ctx.pipeline().addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(this.logging));
+        }
+
         ctx.pipeline()
                 .addLast("goodbyeMessageHandler", new GoodbyeMessageHandler(logging))
                 .addLast("resetMessageHandler", new ResetMessageHandler(logging))
@@ -202,8 +228,6 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
                             "channelThrottleHandler",
                             new ChannelWriteThrottleHandler(writeTimeoutMillis, this.logging));
         }
-
-        ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
 
         ctx.pipeline()
                 .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())

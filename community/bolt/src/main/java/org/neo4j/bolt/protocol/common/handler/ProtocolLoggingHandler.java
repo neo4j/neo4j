@@ -23,17 +23,20 @@ import static io.netty.buffer.ByteBufUtil.prettyHexDump;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import java.net.SocketAddress;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
+import org.neo4j.packstream.io.PackstreamBuf;
 
-@Sharable // currently not shared between channels - required to permit changing position
 public class ProtocolLoggingHandler extends ChannelDuplexHandler {
 
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ProtocolLoggingHandler.class);
+
+    public static final String RAW_NAME = "rawProtocolLoggingHandler";
+    public static final String DECODED_NAME = "decodedProtocolLoggingHandler";
 
     private final InternalLog log;
 
@@ -45,33 +48,12 @@ public class ProtocolLoggingHandler extends ChannelDuplexHandler {
         this.log = log;
     }
 
-    /**
-     * Shifts the handler to the end of the pipeline if it is part of the pipeline.
-     * <p>
-     * This process is necessary as we procedurally build up the pipeline without a guarantee of the
-     * handler being present within the pipeline thus requiring us to add handlers to the end of the
-     * pipeline regardless of whether logging is enabled or not.
-     *
-     * @param ctx a handler context.
-     */
-    public static void shiftToEndIfPresent(ChannelHandlerContext ctx) {
-        var handler = ctx.pipeline().get(ProtocolLoggingHandler.class);
-
-        if (handler == null) {
-            return;
-        }
-
-        ctx.pipeline().remove(handler);
-
-        ctx.pipeline().addLast(handler);
-    }
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf buf) {
-            this.log.info(
-                    "[%s] >>> Blob (%d bytes):\n%s",
-                    ctx.channel().remoteAddress(), buf.readableBytes(), prettyHexDump(buf));
+            this.logBlob(ctx.channel().remoteAddress(), true, buf);
+        } else if (msg instanceof PackstreamBuf buf) {
+            this.logBlob(ctx.channel().remoteAddress(), true, buf.getTarget());
         } else {
             this.log.info("[%s] >>> %s", ctx.channel().remoteAddress(), msg);
         }
@@ -79,12 +61,22 @@ public class ProtocolLoggingHandler extends ChannelDuplexHandler {
         super.channelRead(ctx, msg);
     }
 
+    private void logBlob(SocketAddress remoteAddress, boolean incoming, ByteBuf buf) {
+        var direction = "<<<";
+        if (incoming) {
+            direction = ">>>";
+        }
+
+        this.log.info(
+                "[%s] %s Blob (%d bytes):\n%s", remoteAddress, direction, buf.readableBytes(), prettyHexDump(buf));
+    }
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof ByteBuf buf) {
-            this.log.info(
-                    "[%s] <<< Blob (%d bytes):\n%s",
-                    ctx.channel().remoteAddress(), buf.readableBytes(), prettyHexDump(buf));
+            this.logBlob(ctx.channel().remoteAddress(), false, buf);
+        } else if (msg instanceof PackstreamBuf buf) {
+            this.logBlob(ctx.channel().remoteAddress(), false, buf.getTarget());
         } else {
             this.log.info("[%s] <<< %s", ctx.channel().remoteAddress(), msg);
         }

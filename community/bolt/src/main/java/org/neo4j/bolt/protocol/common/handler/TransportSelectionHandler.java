@@ -38,6 +38,7 @@ import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -63,25 +64,45 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
 
     private final Config config;
     private final SslContext sslContext;
+
+    private final boolean enableProtocolLogging;
+    private final ProtocolLoggingMode protocolLoggingMode;
+
     private final InternalLogProvider logging;
     private final InternalLog log;
+
     private final boolean isEncrypted;
 
     private Connector connector;
     private Connection connection;
 
     @VisibleForTesting
-    TransportSelectionHandler(Config config, SslContext sslContext, InternalLogProvider logging, boolean isEncrypted) {
+    TransportSelectionHandler(
+            Config config,
+            SslContext sslContext,
+            boolean enableProtocolLogging,
+            ProtocolLoggingMode protocolLoggingMode,
+            InternalLogProvider logging,
+            boolean isEncrypted) {
         this.config = config;
         this.sslContext = sslContext;
-        this.logging = logging;
-        this.isEncrypted = isEncrypted;
 
+        this.enableProtocolLogging = enableProtocolLogging;
+        this.protocolLoggingMode = protocolLoggingMode;
+
+        this.logging = logging;
         this.log = logging.getLog(TransportSelectionHandler.class);
+
+        this.isEncrypted = isEncrypted;
     }
 
-    public TransportSelectionHandler(Config config, SslContext sslContext, InternalLogProvider logging) {
-        this(config, sslContext, logging, false);
+    public TransportSelectionHandler(
+            Config config,
+            SslContext sslContext,
+            boolean enableProtocolLogging,
+            ProtocolLoggingMode protocolLoggingMode,
+            InternalLogProvider logging) {
+        this(config, sslContext, enableProtocolLogging, protocolLoggingMode, logging, false);
     }
 
     @Override
@@ -168,7 +189,8 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
         ctx.pipeline()
                 .addLast(this.sslContext.newHandler(ctx.alloc()))
                 .remove(this)
-                .addLast(new TransportSelectionHandler(config, this.sslContext, logging, true));
+                .addLast(new TransportSelectionHandler(
+                        config, this.sslContext, this.enableProtocolLogging, protocolLoggingMode, logging, true));
     }
 
     private void switchToSocket(ChannelHandlerContext ctx) {
@@ -205,6 +227,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
     }
 
     private void switchToHandshake(ChannelHandlerContext ctx) {
+        // if logging of raw traffic has been enabled, we'll attach a new protocol logging handler
+        // now in order to capture messages before they enter the negotiation and Packstream decoder
+        // pipelines
+        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingRawTraffic()) {
+            connection.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+            ctx.pipeline().addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(this.logging));
+        }
+
         connection
                 .memoryTracker()
                 .allocateHeap(ProtocolNegotiationResponseEncoder.SHALLOW_SIZE
@@ -215,9 +245,18 @@ public class TransportSelectionHandler extends ByteToMessageDecoder {
                 .addLast("protocolNegotiationRequestEncoder", new ProtocolNegotiationResponseEncoder())
                 .addLast("protocolNegotiationRequestDecoder", new ProtocolNegotiationRequestDecoder());
 
-        ProtocolLoggingHandler.shiftToEndIfPresent(ctx);
+        // if logging of decoded messages is enabled, we'll also attach another separate decoding
+        // handler in order to capture negotiation requests and responses during this protocol phase
+        if (this.enableProtocolLogging && this.protocolLoggingMode.isLoggingDecodedTraffic()) {
+            connection.memoryTracker().allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+            ctx.pipeline().addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(this.logging));
+        }
 
-        ctx.pipeline().addLast("protocolHandshakeHandler", new ProtocolHandshakeHandler(config, logging));
+        ctx.pipeline()
+                .addLast(
+                        "protocolHandshakeHandler",
+                        new ProtocolHandshakeHandler(
+                                config, this.enableProtocolLogging, this.protocolLoggingMode, logging));
 
         ctx.pipeline().remove(this);
     }

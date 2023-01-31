@@ -29,7 +29,9 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationRequestDecoder;
 import org.neo4j.bolt.negotiation.codec.ProtocolNegotiationResponseEncoder;
@@ -39,7 +41,9 @@ import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings.ProtocolLoggingMode;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
 class ProtocolHandshakeHandlerTest {
@@ -78,7 +82,10 @@ class ProtocolHandshakeHandlerTest {
         var channel = new EmbeddedChannel();
         var connection = ConnectionMockFactory.newFactory()
                 .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
-                .attachTo(channel, new ProtocolHandshakeHandler(Config.defaults(), logProvider));
+                .attachTo(
+                        channel,
+                        new ProtocolHandshakeHandler(
+                                Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -116,7 +123,8 @@ class ProtocolHandshakeHandlerTest {
                 // are not present within the pipeline
                 .attachTo(
                         channel,
-                        new ProtocolHandshakeHandler(Config.defaults(), logProvider),
+                        new ProtocolHandshakeHandler(
+                                Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider),
                         new ProtocolNegotiationRequestDecoder(),
                         new ProtocolNegotiationResponseEncoder());
 
@@ -151,7 +159,8 @@ class ProtocolHandshakeHandlerTest {
         var channel = ConnectionMockFactory.newFactory()
                 .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
+                .createChannel(new ProtocolHandshakeHandler(
+                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -175,7 +184,8 @@ class ProtocolHandshakeHandlerTest {
     void shouldRejectIfWrongPreamble() {
         // Given
         var channel = ConnectionMockFactory.newFactory()
-                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
+                .createChannel(new ProtocolHandshakeHandler(
+                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
 
         // When
         channel.writeInbound(new ProtocolNegotiationRequest(
@@ -199,11 +209,133 @@ class ProtocolHandshakeHandlerTest {
 
         var channel = ConnectionMockFactory.newFactory()
                 .withMemoryTracker(memoryTracker)
-                .createChannel(new ProtocolHandshakeHandler(Config.defaults(), logProvider));
+                .createChannel(new ProtocolHandshakeHandler(
+                        Config.defaults(), false, ProtocolLoggingMode.DECODED, logProvider));
 
         channel.pipeline().removeFirst();
 
         verify(memoryTracker).releaseHeap(ProtocolHandshakeHandler.SHALLOW_SIZE);
         verifyNoMoreInteractions(memoryTracker);
+    }
+
+    @Test
+    void shouldInstallProtocolLoggingHandlers() {
+        var memoryTracker = mock(MemoryTracker.class);
+
+        var version = new ProtocolVersion(5, 0);
+        var protocol = newBoltProtocol(version);
+        var protocolRegistry = newProtocolFactory(version, protocol);
+
+        when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withMemoryTracker(memoryTracker)
+                .createChannel(
+                        new ProtocolHandshakeHandler(Config.defaults(), true, ProtocolLoggingMode.BOTH, logProvider));
+
+        // pre-install handlers as would be the case if the prior protocol stage had initialized the
+        // pipeline
+        channel.pipeline()
+                .addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(NullLogProvider.getInstance()))
+                .addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(NullLogProvider.getInstance()))
+                .addLast(new ProtocolNegotiationRequestDecoder())
+                .addLast(new ProtocolNegotiationResponseEncoder());
+
+        channel.writeInbound(new ProtocolNegotiationRequest(
+                0x6060B017,
+                List.of(
+                        new ProtocolVersion(5, 0),
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID)));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSubsequence("chunkFrameDecoder", ProtocolLoggingHandler.RAW_NAME)
+                .containsSubsequence("readThrottleHandler", ProtocolLoggingHandler.DECODED_NAME);
+
+        Mockito.verify(memoryTracker, Mockito.never()).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldInstallRawProtocolLoggingHandlers() {
+        var memoryTracker = mock(MemoryTracker.class);
+
+        var version = new ProtocolVersion(5, 0);
+        var protocol = newBoltProtocol(version);
+        var protocolRegistry = newProtocolFactory(version, protocol);
+
+        when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withMemoryTracker(memoryTracker)
+                .createChannel(
+                        new ProtocolHandshakeHandler(Config.defaults(), true, ProtocolLoggingMode.RAW, logProvider));
+
+        // pre-install handlers as would be the case if the prior protocol stage had initialized the
+        // pipeline
+        channel.pipeline()
+                .addLast(ProtocolLoggingHandler.RAW_NAME, new ProtocolLoggingHandler(NullLogProvider.getInstance()))
+                .addLast(new ProtocolNegotiationRequestDecoder())
+                .addLast(new ProtocolNegotiationResponseEncoder());
+
+        channel.writeInbound(new ProtocolNegotiationRequest(
+                0x6060B017,
+                List.of(
+                        new ProtocolVersion(5, 0),
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID)));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSubsequence("chunkFrameDecoder", ProtocolLoggingHandler.RAW_NAME)
+                .doesNotContain(ProtocolLoggingHandler.DECODED_NAME);
+
+        Mockito.verify(memoryTracker, Mockito.never()).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
+    }
+
+    @Test
+    void shouldInstallDecodedProtocolLoggingHandlers() {
+        var memoryTracker = mock(MemoryTracker.class);
+
+        var version = new ProtocolVersion(5, 0);
+        var protocol = newBoltProtocol(version);
+        var protocolRegistry = newProtocolFactory(version, protocol);
+
+        when(protocolRegistry.get(eq(version))).thenReturn(Optional.of(protocol));
+
+        var channel = ConnectionMockFactory.newFactory()
+                .withConnector(factory -> factory.withProtocolRegistry(protocolRegistry))
+                .withMemoryTracker(memoryTracker)
+                .createChannel(new ProtocolHandshakeHandler(
+                        Config.defaults(), true, ProtocolLoggingMode.DECODED, logProvider));
+
+        // pre-install handlers as would be the case if the prior protocol stage had initialized the
+        // pipeline
+        channel.pipeline()
+                .addLast(ProtocolLoggingHandler.DECODED_NAME, new ProtocolLoggingHandler(NullLogProvider.getInstance()))
+                .addLast(new ProtocolNegotiationRequestDecoder())
+                .addLast(new ProtocolNegotiationResponseEncoder());
+
+        channel.writeInbound(new ProtocolNegotiationRequest(
+                0x6060B017,
+                List.of(
+                        new ProtocolVersion(5, 0),
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID,
+                        ProtocolVersion.INVALID)));
+
+        var handlers = channel.pipeline().names();
+
+        Assertions.assertThat(handlers)
+                .containsSubsequence("readThrottleHandler", ProtocolLoggingHandler.DECODED_NAME)
+                .doesNotContain(ProtocolLoggingHandler.RAW_NAME);
+
+        Mockito.verify(memoryTracker, Mockito.never()).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
     }
 }

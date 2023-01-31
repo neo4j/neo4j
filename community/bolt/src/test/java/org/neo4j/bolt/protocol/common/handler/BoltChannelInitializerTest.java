@@ -36,7 +36,6 @@ import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionLi
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.testing.mock.ConnectorMockFactory;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -103,29 +102,6 @@ class BoltChannelInitializerTest {
 
         inOrder.verify(pipeline).addLast(ArgumentMatchers.any(TransportSelectionHandler.class));
         inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    void shouldInstallProtocolLoggingHandlers() {
-        Mockito.doReturn(true).when(this.config).get(BoltConnectorInternalSettings.protocol_logging);
-
-        var memoryTracker = Mockito.mock(MemoryTracker.class);
-        var pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
-        var channel = Mockito.mock(Channel.class, Mockito.RETURNS_MOCKS);
-
-        Mockito.doReturn(pipeline).when(channel).pipeline();
-        Mockito.doReturn(memoryTracker).when(this.connection).memoryTracker();
-
-        this.initializer.initChannel(channel);
-
-        var inOrder = Mockito.inOrder(memoryTracker, pipeline);
-
-        inOrder.verify(memoryTracker).allocateHeap(ProtocolLoggingHandler.SHALLOW_SIZE);
-
-        inOrder.verify(pipeline)
-                .addLast(
-                        ArgumentMatchers.eq("protocolLoggingHandler"),
-                        ArgumentMatchers.any(ProtocolLoggingHandler.class));
     }
 
     @Test
