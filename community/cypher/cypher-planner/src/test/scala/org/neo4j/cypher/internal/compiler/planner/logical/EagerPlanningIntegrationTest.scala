@@ -19,9 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.getDegree
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.greaterThan
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.ListSet
@@ -450,6 +464,92 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
+        .build()
+    )
+  }
+
+  test(
+    "MATCH (a:A), (c:C) MERGE (a)-[:BAR]->(b:B) WITH c MATCH (c) WHERE (c)-[:BAR]->() RETURN count(*)"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 50)
+      .setLabelCardinality("C", 50)
+      .setLabelCardinality("B", 50)
+      .setRelationshipCardinality("()-[:BAR]->()", 10)
+      .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
+      .setRelationshipCardinality("(:A)-[:BAR]->(:B)", 10)
+      .build()
+
+    val query =
+      "MATCH (a:A), (c:C) MERGE (a)-[:BAR]->(b:B) WITH c MATCH (c) WHERE (c)-[:BAR]->() RETURN count(*)"
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`count(*)`")
+        .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+        .filterExpression(
+          HasDegreeGreaterThan(varFor("c"), Some(relTypeName("BAR")), OUTGOING, literalInt(0))(InputPosition.NONE),
+          assertIsNode("c")
+        )
+        .eager(ListSet(EagernessReason.Unknown))
+        .apply()
+        .|.merge(
+          Seq(createNode("b", "B")),
+          Seq(createRelationship("anon_0", "a", "BAR", "b", OUTGOING)),
+          lockNodes = Set("a")
+        )
+        .|.filter("b:B")
+        .|.expandAll("(a)-[anon_0:BAR]->(b)")
+        .|.argument("a")
+        .cartesianProduct()
+        .|.nodeByLabelScan("c", "C")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test(
+    "MATCH (a:A), (c:C) MERGE (a)-[:BAR]->(b:B) WITH c MATCH (c) WHERE (c)-[]->() RETURN count(*)"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 50)
+      .setLabelCardinality("C", 50)
+      .setLabelCardinality("B", 50)
+      .setRelationshipCardinality("()-[:BAR]->()", 10)
+      .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
+      .setRelationshipCardinality("(:A)-[:BAR]->(:B)", 10)
+      .build()
+
+    val query =
+      "MATCH (a:A), (c:C) MERGE (a)-[:BAR]->(b:B) WITH c MATCH (c) WHERE (c)-[]->() RETURN count(*)"
+
+    val plan = planner.plan(query)
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`count(*)`")
+        .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+        .filterExpression(
+          HasDegreeGreaterThan(varFor("c"), None, OUTGOING, literalInt(0))(InputPosition.NONE),
+          assertIsNode("c")
+        )
+        .eager(ListSet(EagernessReason.Unknown))
+        .apply()
+        .|.merge(
+          Seq(createNode("b", "B")),
+          Seq(createRelationship("anon_0", "a", "BAR", "b", OUTGOING)),
+          lockNodes = Set("a")
+        )
+        .|.filter("b:B")
+        .|.expandAll("(a)-[anon_0:BAR]->(b)")
+        .|.argument("a")
+        .cartesianProduct()
+        .|.nodeByLabelScan("c", "C")
+        .nodeByLabelScan("a", "A")
         .build()
     )
   }
