@@ -372,7 +372,7 @@ class DiagnosticsReportCommandIT {
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
 
         Path output = homeDir.resolve("profile");
-        String[] args = {"profile", output.toString(), "3s"};
+        String[] args = {"profile", output.toString(), "3s", "--skip-compression"};
         withSuppressedOutput(homeDir, configDir, fs, ctx -> {
             CommandLine commandLine =
                     new CommandLine(new DiagnosticsReportCommand(ctx), new ContextInjectingFactory(ctx));

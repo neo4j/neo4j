@@ -22,6 +22,7 @@ package org.neo4j.dbms.diagnostics.profile;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 abstract class ContinuousProfiler extends Profiler {
@@ -31,7 +32,7 @@ abstract class ContinuousProfiler extends Profiler {
 
     @Override
     protected void start() {
-        assert worker == null : "Already started";
+        Preconditions.checkState(worker == null, "Already started");
         stopFlag.set(false);
         worker = new Thread(this::internalRun);
         worker.setName(getClass().getSimpleName() + " worker");
@@ -52,7 +53,7 @@ abstract class ContinuousProfiler extends Profiler {
 
     @Override
     protected void stop() {
-        assert worker != null : "Not started";
+        Preconditions.checkState(worker != null, "Not started");
         stopFlag.set(true);
         try {
             worker.join(TimeUnit.MINUTES.toMillis(1));

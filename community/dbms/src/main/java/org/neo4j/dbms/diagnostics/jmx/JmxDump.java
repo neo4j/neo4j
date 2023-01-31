@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
@@ -211,6 +212,7 @@ public class JmxDump implements AutoCloseable {
         private final Map<String, String> settings;
         private boolean hasRecording;
         private long recordingId;
+        private static final Set<String> RUNNING_STATES = Set.of("STARTING", "RUNNING", "STOPPING");
 
         private JfrProfileConnection(FlightRecorderMXBean bean) {
             this.bean = bean;
@@ -260,8 +262,7 @@ public class JmxDump implements AutoCloseable {
                     // Valid return values are "NEW", "DELAYED", "STARTING", "RUNNING", "STOPPING", "STOPPED" and
                     // "CLOSED".
                     return bean.getRecordings().stream()
-                            .anyMatch(info -> info.getId() == recordingId
-                                    && info.getState().equals("RUNNING"));
+                            .anyMatch(info -> info.getId() == recordingId && RUNNING_STATES.contains(info.getState()));
                 } catch (RuntimeException ignored) {
                     // Exception here likely means there is a connection issue with the server
                 }

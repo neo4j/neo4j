@@ -23,11 +23,13 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.TRUE;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
@@ -86,6 +90,7 @@ class ProfileCommandTest {
     @Test
     void shouldExecuteForSomeTimeAndGenerateProfiles() throws Exception {
         execute(Duration.ofSeconds(1));
+        unpackResult();
         assertThat(hasJfr()).isTrue();
         assertThat(hasThreadDumps()).isTrue();
     }
@@ -99,25 +104,28 @@ class ProfileCommandTest {
     @Test
     void shouldBeAbleToSelectProfiles() throws Exception {
         execute(Duration.ofSeconds(1), "JFR");
+        unpackResult();
         assertThat(hasJfr()).isTrue();
         assertThat(hasThreadDumps()).isFalse();
 
         fs.deleteRecursively(output);
 
         execute(Duration.ofSeconds(1), "THREADS");
+        unpackResult();
         assertThat(hasJfr()).isFalse();
         assertThat(hasThreadDumps()).isTrue();
 
         fs.deleteRecursively(output);
 
         execute(Duration.ofSeconds(1), "JFR", "THREADS");
+        unpackResult();
         assertThat(hasJfr()).isTrue();
         assertThat(hasThreadDumps()).isTrue();
     }
 
     @Test
-    void shouldBeAbleToCompressResult() throws Exception {
-        execute(Duration.ofSeconds(1), "--compress");
+    void shouldCompressResultByDefault() throws Exception {
+        execute(Duration.ofSeconds(1));
         Path[] paths = fs.listFiles(output);
         assertThat(paths).hasSize(1);
         assertThat(paths[0].getFileName().toString()).endsWith(".gzip");
@@ -172,6 +180,26 @@ class ProfileCommandTest {
         CommandLine.populateCommand(cmd, args.toArray(new String[0]));
         cmd.execute();
         return null;
+    }
+
+    private void unpackResult() throws IOException {
+        Path[] paths = fs.listFiles(output);
+        assertThat(paths).hasSize(1);
+
+        try (TarArchiveInputStream stream =
+                new TarArchiveInputStream(GZIP.decompress(fs.openAsInputStream(paths[0]))); ) {
+            ArchiveEntry entry;
+            while ((entry = stream.getNextEntry()) != null) {
+                Path file = output.resolve(entry.getName());
+                if (entry.isDirectory()) {
+                    fs.mkdirs(file);
+                } else {
+                    try (OutputStream output = fs.openAsOutputStream(file, false)) {
+                        stream.transferTo(output);
+                    }
+                }
+            }
+        }
     }
 
     private static class SeparateProcess {

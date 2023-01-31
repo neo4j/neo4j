@@ -62,8 +62,10 @@ public class ProfileCommand extends AbstractAdminCommand {
     @CommandLine.Parameters(description = "The selected profilers to run. Valid values: ${COMPLETION-CANDIDATES}")
     private Set<ProfilerSource> profilers = Set.of(ProfilerSource.values());
 
-    @CommandLine.Option(names = "--compress", description = "Compress the result into a gzip-file")
-    private boolean compress;
+    @CommandLine.Option(
+            names = "--skip-compression",
+            description = "Keeps the result in a directory structure instead of compressing")
+    private boolean skipCompression;
 
     public enum ProfilerSource {
         JFR,
@@ -149,7 +151,7 @@ public class ProfileCommand extends AbstractAdminCommand {
                             }
                         }
 
-                        if (compress) {
+                        if (!skipCompression) {
                             Path archive = output.resolve(String.format("profile-%s.gzip", clock.instant()));
                             ctx.out().printf("%nCompressing result into %s", archive.getFileName());
                             Dumper dumper = new Dumper(ctx.out());

@@ -134,6 +134,8 @@ class ProfileToolTest {
         tool.start();
 
         assertThat(tool.hasRunningProfilers()).isTrue();
+        tool.stop();
+        assertThat(tool.hasRunningProfilers()).isFalse();
     }
 
     @Test
