@@ -153,9 +153,9 @@ class IndexStatisticsStoreTest {
 
             store.checkpoint(FileFlushEvent.NULL, cursorContext);
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(31);
-            assertThat(cursorTracer.unpins()).isEqualTo(31);
-            assertThat(cursorTracer.hits()).isEqualTo(22);
+            assertThat(cursorTracer.pins()).isEqualTo(30);
+            assertThat(cursorTracer.unpins()).isEqualTo(30);
+            assertThat(cursorTracer.hits()).isEqualTo(21);
             assertThat(cursorTracer.faults()).isEqualTo(9);
         }
     }

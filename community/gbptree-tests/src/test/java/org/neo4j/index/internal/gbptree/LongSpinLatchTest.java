@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,14 +41,18 @@ class LongSpinLatchTest extends LatchTestBase {
     void shouldAcquireAndReleaseRead() {
         // given
         LongSpinLatch latch = latch();
+        latch.ref();
         int countAfterAcquired = latch.acquireRead();
         assertThat(countAfterAcquired).isOne();
         assertThat(removeAction.count.get()).isZero();
 
         // when
         int countAfterReleased = latch.releaseRead();
+        assertThat(countAfterReleased).isZero();
+        assertThat(removeAction.count.get()).isZero();
 
         // then good
+        latch.deref();
         assertThat(countAfterReleased).isZero();
         assertThat(removeAction.count.get()).isOne();
     }
@@ -139,14 +144,14 @@ class LongSpinLatchTest extends LatchTestBase {
     @Test
     void shouldTakeTurnAcquireWrite() throws Throwable {
         // given
-        TreeNodeLatchService service = new TreeNodeLatchService();
-        long nodeId = 99;
+        LongSpinLatch latch = latch();
+        latch.ref();
         Race race = new Race();
         AtomicBoolean singleHolder = new AtomicBoolean();
         race.addContestants(
                 Runtime.getRuntime().availableProcessors(),
                 throwing(() -> {
-                    LongSpinLatch latch = service.acquireWrite(nodeId);
+                    latch.acquireWrite();
                     assertThat(singleHolder.getAndSet(true)).isFalse();
                     Thread.sleep(1);
                     assertThat(singleHolder.getAndSet(false)).isTrue();
@@ -164,16 +169,17 @@ class LongSpinLatchTest extends LatchTestBase {
         LongCapture removeAction = new LongCapture();
         long treeNodeId = 101L;
         LongSpinLatch latch = new LongSpinLatch(treeNodeId, removeAction);
-        latch.acquireRead();
-        latch.releaseRead();
-        assertEquals(1, removeAction.count.get());
-        assertEquals(treeNodeId, removeAction.captured);
+        latch.ref();
 
         // when
-        int result = latch.acquireRead();
+        latch.acquireRead();
+        latch.releaseRead();
+        latch.deref();
 
         // then
-        assertEquals(0, result);
+        assertEquals(1, removeAction.count.get());
+        assertEquals(treeNodeId, removeAction.captured);
+        assertThatThrownBy(latch::acquireRead).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -182,16 +188,17 @@ class LongSpinLatchTest extends LatchTestBase {
         LongCapture removeAction = new LongCapture();
         long treeNodeId = 101L;
         LongSpinLatch latch = new LongSpinLatch(treeNodeId, removeAction);
-        latch.acquireWrite();
-        latch.releaseWrite();
-        assertEquals(1, removeAction.count.get());
-        assertEquals(treeNodeId, removeAction.captured);
+        latch.ref();
 
         // when
-        boolean result = latch.acquireWrite();
+        latch.acquireWrite();
+        latch.releaseWrite();
+        latch.deref();
 
         // then
-        assertFalse(result);
+        assertEquals(1, removeAction.count.get());
+        assertEquals(treeNodeId, removeAction.captured);
+        assertThatThrownBy(latch::acquireWrite).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

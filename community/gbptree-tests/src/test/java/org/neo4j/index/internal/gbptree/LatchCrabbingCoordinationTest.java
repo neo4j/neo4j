@@ -26,20 +26,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.index.internal.gbptree.LatchCrabbingCoordination.DEFAULT_RESET_FREQUENCY;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.pagecache.PageCursor;
 
 class LatchCrabbingCoordinationTest {
     private static final int MERGE_THRESHOLD = 100;
 
     private final TreeNodeLatchService latchService = mock(TreeNodeLatchService.class);
-    private final LatchCrabbingCoordination coordination = new LatchCrabbingCoordination(latchService, MERGE_THRESHOLD);
+    private final LatchCrabbingCoordination coordination =
+            new LatchCrabbingCoordination(latchService, MERGE_THRESHOLD, DEFAULT_RESET_FREQUENCY);
 
     @BeforeEach
     void setUp() {
-        when(latchService.acquireRead(anyLong())).thenAnswer(invocationOnMock -> mock(LongSpinLatch.class));
-        coordination.initialize();
+        when(latchService.latch(anyLong())).thenAnswer(invocationOnMock -> mock(LongSpinLatch.class));
+        coordination.initialize(mock(PageCursor.class));
+        coordination.beginOperation();
     }
 
     @Test
@@ -50,9 +54,9 @@ class LatchCrabbingCoordinationTest {
         coordination.beforeTraversingToChild(3L, 0);
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
-        verify(latchService).acquireRead(3L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
+        verify(latchService).latch(3L);
     }
 
     @Test
@@ -60,7 +64,7 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -69,8 +73,8 @@ class LatchCrabbingCoordinationTest {
         assertTrue(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, false, 5));
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
     }
 
@@ -79,10 +83,10 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch parentLatch = mock(LongSpinLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(1L)).thenReturn(parentLatch);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -92,8 +96,8 @@ class LatchCrabbingCoordinationTest {
         assertTrue(coordination.beforeSplittingLeaf(10));
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
         verify(parentLatch).tryUpgradeToWrite();
     }
@@ -103,10 +107,10 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch parentLatch = mock(LongSpinLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(1L)).thenReturn(parentLatch);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -115,8 +119,8 @@ class LatchCrabbingCoordinationTest {
         assertTrue(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
         verify(parentLatch).tryUpgradeToWrite();
     }
@@ -126,7 +130,7 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -136,8 +140,8 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertFalse(coordination.beforeSplittingLeaf(10)); // <-- bigger than parent available space
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
     }
 
@@ -146,10 +150,10 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch parentLatch = mock(LongSpinLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
-        when(latchService.acquireRead(1L)).thenReturn(parentLatch);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 2);
@@ -158,8 +162,8 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertFalse(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
         verify(parentLatch).tryUpgradeToWrite();
     }
@@ -169,10 +173,10 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch parentLatch = mock(LongSpinLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
-        when(latchService.acquireRead(1L)).thenReturn(parentLatch);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 2);
@@ -181,8 +185,8 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertFalse(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
         verify(parentLatch, never()).tryUpgradeToWrite();
     }
@@ -192,10 +196,10 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch parentLatch = mock(LongSpinLatch.class);
         when(parentLatch.tryUpgradeToWrite()).thenReturn(false);
-        when(latchService.acquireRead(1L)).thenReturn(parentLatch);
+        when(latchService.latch(1L)).thenReturn(parentLatch);
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 2);
@@ -204,8 +208,8 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertFalse(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
         verify(leafLatch).tryUpgradeToWrite();
         verify(parentLatch, never()).tryUpgradeToWrite();
     }
@@ -215,7 +219,7 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -225,8 +229,8 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertTrue(coordination.beforeRemovalFromLeaf(10));
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
     }
 
     @Test
@@ -234,7 +238,7 @@ class LatchCrabbingCoordinationTest {
         // given
         LongSpinLatch leafLatch = mock(LongSpinLatch.class);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(true);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
+        when(latchService.latch(2L)).thenReturn(leafLatch);
 
         // when
         coordination.beforeTraversingToChild(1L, 1);
@@ -257,9 +261,9 @@ class LatchCrabbingCoordinationTest {
         coordination.beforeTraversingToChild(3L, 3);
 
         // then
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
-        verify(latchService).acquireWrite(3L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
+        verify(latchService).latch(3L);
     }
 
     @Test
@@ -275,8 +279,8 @@ class LatchCrabbingCoordinationTest {
         assertTrue(coordination.beforeSplittingLeaf(10)); // <-- bigger than parent available space
 
         // then
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
     }
 
     @Test
@@ -291,8 +295,8 @@ class LatchCrabbingCoordinationTest {
         assertTrue(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
 
         // then
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
     }
 
     @Test
@@ -308,19 +312,19 @@ class LatchCrabbingCoordinationTest {
 
         // then
         assertTrue(coordination.beforeRemovalFromLeaf(10));
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
     }
 
     @Test
     void shouldOptimisticallyReleaseAllLatchesWhenGoingBackUp() {
         // given
         LongSpinLatch latch1 = mock(LongSpinLatch.class);
-        when(latchService.acquireRead(1L)).thenReturn(latch1);
+        when(latchService.latch(1L)).thenReturn(latch1);
         LongSpinLatch latch2 = mock(LongSpinLatch.class);
-        when(latchService.acquireRead(2L)).thenReturn(latch2);
+        when(latchService.latch(2L)).thenReturn(latch2);
         LongSpinLatch latch3 = mock(LongSpinLatch.class);
-        when(latchService.acquireRead(3L)).thenReturn(latch3);
+        when(latchService.latch(3L)).thenReturn(latch3);
         coordination.beforeTraversingToChild(1L, 1);
         coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 5);
         coordination.beforeTraversingToChild(2L, 2);
@@ -332,9 +336,9 @@ class LatchCrabbingCoordinationTest {
         coordination.reset();
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
-        verify(latchService).acquireRead(3L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
+        verify(latchService).latch(3L);
         verify(latch1).releaseRead();
         verify(latch2).releaseRead();
         verify(latch3).releaseRead();
@@ -344,11 +348,11 @@ class LatchCrabbingCoordinationTest {
     void shouldPessimisticallyReleaseAllLatchesWhenGoingBackUp() {
         // given
         LongSpinLatch latch1 = mock(LongSpinLatch.class);
-        when(latchService.acquireWrite(1L)).thenReturn(latch1);
+        when(latchService.latch(1L)).thenReturn(latch1);
         LongSpinLatch latch2 = mock(LongSpinLatch.class);
-        when(latchService.acquireWrite(2L)).thenReturn(latch2);
+        when(latchService.latch(2L)).thenReturn(latch2);
         LongSpinLatch latch3 = mock(LongSpinLatch.class);
-        when(latchService.acquireWrite(3L)).thenReturn(latch3);
+        when(latchService.latch(3L)).thenReturn(latch3);
         coordination.flipToPessimisticMode();
         coordination.beforeTraversingToChild(1L, 1);
         coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 5);
@@ -361,9 +365,9 @@ class LatchCrabbingCoordinationTest {
         coordination.reset();
 
         // then
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
-        verify(latchService).acquireWrite(3L);
+        verify(latchService).latch(1L);
+        verify(latchService).latch(2L);
+        verify(latchService).latch(3L);
         verify(latch1).releaseWrite();
         verify(latch2).releaseWrite();
         verify(latch3).releaseWrite();
@@ -372,27 +376,35 @@ class LatchCrabbingCoordinationTest {
     @Test
     void shouldHandleFirstGoDownWithOptimisticThenWithPessimisticOnFailure() {
         // given
-        LongSpinLatch leafLatch = mock(LongSpinLatch.class);
+        var parentLatchId = 1L;
+        var parentLatch = mock(LongSpinLatch.class);
+        when(parentLatch.treeNodeId()).thenReturn(parentLatchId);
+        when(latchService.latch(parentLatchId)).thenReturn(parentLatch);
+
+        var leafLatch = mock(LongSpinLatch.class);
+        var leafLatchId = 2L;
+        when(leafLatch.treeNodeId()).thenReturn(leafLatchId);
         when(leafLatch.tryUpgradeToWrite()).thenReturn(false);
-        when(latchService.acquireRead(2L)).thenReturn(leafLatch);
-        coordination.beforeTraversingToChild(1L, 1);
+        when(latchService.latch(leafLatchId)).thenReturn(leafLatch);
+
+        coordination.beforeTraversingToChild(parentLatchId, 1);
         assertTrue(coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 5));
-        coordination.beforeTraversingToChild(2L, 2);
+        coordination.beforeTraversingToChild(leafLatchId, 2);
         assertFalse(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
 
         // when
         coordination.flipToPessimisticMode();
-        coordination.beforeTraversingToChild(1L, 1);
+        coordination.beforeTraversingToChild(parentLatchId, 1);
         assertTrue(coordination.arrivedAtChild(true, MERGE_THRESHOLD / 2, false, 5));
-        coordination.beforeTraversingToChild(2L, 2);
+        coordination.beforeTraversingToChild(leafLatchId, 2);
         assertTrue(coordination.arrivedAtChild(false, MERGE_THRESHOLD / 2, true, 5));
 
         // then
-        verify(latchService).acquireRead(1L);
-        verify(latchService).acquireRead(2L);
+        verify(latchService).latch(parentLatchId);
+        verify(latchService).latch(leafLatchId);
         verify(leafLatch).tryUpgradeToWrite();
-        verify(latchService).acquireWrite(1L);
-        verify(latchService).acquireWrite(2L);
+        verify(latchService).latch(parentLatchId);
+        verify(latchService).latch(leafLatchId);
     }
 
     @Test

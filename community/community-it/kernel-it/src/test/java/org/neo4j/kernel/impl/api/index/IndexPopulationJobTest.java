@@ -223,8 +223,8 @@ class IndexPopulationJobTest {
         assertTrue(populator.closeCall);
 
         assertThatTracing(db)
-                .record(pins(13).faults(2))
-                .freki(pins(12).faults(2))
+                .record(pins(12).faults(2))
+                .freki(pins(11).faults(2))
                 .matches(pageCacheTracer);
     }
 
@@ -281,8 +281,8 @@ class IndexPopulationJobTest {
         assertTrue(populator.closeCall);
 
         assertThatTracing(db)
-                .record(pins(13).faults(2))
-                .freki(pins(12).faults(2))
+                .record(pins(12).faults(2))
+                .freki(pins(11).faults(2))
                 .matches(pageCacheTracer);
     }
 

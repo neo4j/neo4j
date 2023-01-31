@@ -39,8 +39,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -127,13 +125,13 @@ class GBPTreeWriterTest {
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.merge(new MutableLong(0), new MutableLong(1), ValueMergers.overwrite());
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-
-            assertThat(cursorTracer.pins()).isEqualTo(1);
-            assertThat(cursorTracer.unpins()).isEqualTo(1);
-            assertThat(cursorTracer.hits()).isEqualTo(1);
-            assertThat(cursorTracer.faults()).isEqualTo(0);
         }
+
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat(cursorTracer.pins()).isEqualTo(1);
+        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 
     @Test
@@ -146,13 +144,13 @@ class GBPTreeWriterTest {
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(1));
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-
-            assertThat(cursorTracer.pins()).isEqualTo(1);
-            assertThat(cursorTracer.unpins()).isEqualTo(1);
-            assertThat(cursorTracer.hits()).isEqualTo(1);
-            assertThat(cursorTracer.faults()).isEqualTo(0);
         }
+
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat(cursorTracer.pins()).isEqualTo(1);
+        assertThat(cursorTracer.unpins()).isEqualTo(1);
+        assertThat(cursorTracer.hits()).isEqualTo(1);
+        assertThat(cursorTracer.faults()).isEqualTo(0);
     }
 
     @Test
@@ -163,25 +161,14 @@ class GBPTreeWriterTest {
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.put(new MutableLong(0), new MutableLong(0));
-            var cursorTracer = cursorContext.getCursorTracer();
-
-            assertThat(cursorTracer.pins()).isEqualTo(1);
-            assertThat(cursorTracer.unpins()).isEqualTo(1);
-            assertThat(cursorTracer.hits()).isEqualTo(1);
-            assertThat(cursorTracer.faults()).isEqualTo(0);
-
-            ((DefaultPageCursorTracer) cursorTracer).setIgnoreCounterCheck(true);
-            cursorTracer.reportEvents();
-            assertZeroCursor(cursorContext);
-
             treeWriter.remove(new MutableLong(0));
-
-            var cursorTracer1 = cursorContext.getCursorTracer();
-            assertThat(cursorTracer1.pins()).isEqualTo(2);
-            assertThat(cursorTracer1.unpins()).isEqualTo(2);
-            assertThat(cursorTracer1.hits()).isEqualTo(2);
-            assertThat(cursorTracer1.faults()).isZero();
         }
+
+        var cursorTracer = cursorContext.getCursorTracer();
+        assertThat(cursorTracer.pins()).isEqualTo(2);
+        assertThat(cursorTracer.unpins()).isEqualTo(2);
+        assertThat(cursorTracer.hits()).isEqualTo(2);
+        assertThat(cursorTracer.faults()).isZero();
     }
 
     @Test
@@ -194,27 +181,9 @@ class GBPTreeWriterTest {
         try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
                 var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT, cursorContext)) {
             treeWriter.remove(new MutableLong(0));
-            var cursorTracer = cursorContext.getCursorTracer();
-            assertThat(cursorTracer.pins()).isEqualTo(1);
-            assertThat(cursorTracer.hits()).isEqualTo(1);
-            assertThat(cursorTracer.unpins()).isEqualTo(1);
-            assertThat(cursorTracer.faults()).isEqualTo(0);
-        }
-    }
-
-    @Test
-    void trackPageCacheAccessOnClose() throws IOException {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
-        var cursorContext = contextFactory.create("trackPageCacheAccessOnClose");
-
-        assertZeroCursor(cursorContext);
-
-        try (var gbpTree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
-                var treeWriter = gbpTree.writer(W_SPLIT_KEEP_ALL_RIGHT | W_BATCHED_SINGLE_THREADED, cursorContext)) {
-            // empty, we check that closing everything register unpins event
         }
 
-        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
+        var cursorTracer = cursorContext.getCursorTracer();
         assertThat(cursorTracer.pins()).isEqualTo(1);
         assertThat(cursorTracer.hits()).isEqualTo(1);
         assertThat(cursorTracer.unpins()).isEqualTo(1);

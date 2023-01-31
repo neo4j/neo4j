@@ -19,22 +19,26 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.neo4j.io.pagecache.PageCursor;
+
 /**
  * Coordinator to get feedback about and affect tree traversal and writing in {@link InternalTreeLogic}.
- * Apart from {@link #mustStartFromRoot()}, methods that return {@code boolean} may affect the traversal down the tree
+ * Apart from {@link #checkForceReset()}, methods that return {@code boolean} may affect the traversal down the tree
  * to finally perform a leaf operation. They have a veto where returning {@code false} will let {@link InternalTreeLogic} unwind the traversal back up
  * to the root, go into {@link #flipToPessimisticMode() pessimistic} mode and traverse down again, with the pessimistic mode.
  */
-interface TreeWriterCoordination {
+interface TreeWriterCoordination extends AutoCloseable {
+    void initialize(PageCursor cursor);
+
     /**
-     * @return whether it's required that traversal starts from the root or not for each operation.
+     * @return whether it's required that traversal starts from the root for the next operation.
      */
-    boolean mustStartFromRoot();
+    boolean checkForceReset();
 
     /**
      * Called before every top-level insert/merge operation.
      */
-    void initialize();
+    void beginOperation();
 
     /**
      * Called before traversing to a child node.
@@ -51,6 +55,13 @@ interface TreeWriterCoordination {
      * @return {@code true} if operation is permitted, otherwise {@code false}.
      */
     boolean arrivedAtChild(boolean isInternal, int availableSpace, boolean isStable, int keyCount);
+
+    /**
+     * Updates already cached state about a particular level.
+     * @param availableSpace how much space is available in this node.
+     * @param keyCount number of keys in the node.
+     */
+    void updateChildInformation(int availableSpace, int keyCount);
 
     /**
      * Called before splitting the leaf.
@@ -79,28 +90,38 @@ interface TreeWriterCoordination {
     void beforeUnderflowInLeaf(long treeNodeId);
 
     /**
-     * Ends the previously {@link #initialize() initialized} traversal,
+     * Go up one level, sort of opposite of {@link #beforeTraversingToChild(long, int)}.
+     */
+    void up();
+
+    /**
+     * Goes all the way up, e.g. releases all latches that the last had acquired.
      */
     void reset();
 
     /**
      * Does {@link #reset()} and flips to pessimistic mode. This will force all methods to take extra caution and never end up in a situation
      * where it will be necessary to return {@code false}.
-     * @return true if mode is changed, and false otherwise, i.e. there is no difference between modes, or already in pessimistic mode
      */
-    boolean flipToPessimisticMode();
+    void flipToPessimisticMode();
+
+    @Override
+    void close();
 
     /**
      * Does nothing and has no requirement of starting from the root every time.
      */
     TreeWriterCoordination NO_COORDINATION = new TreeWriterCoordination() {
         @Override
-        public boolean mustStartFromRoot() {
+        public void initialize(PageCursor cursor) {}
+
+        @Override
+        public boolean checkForceReset() {
             return false;
         }
 
         @Override
-        public void initialize() {}
+        public void beginOperation() {}
 
         @Override
         public boolean beforeSplittingLeaf(int bubbleEntrySize) {
@@ -111,6 +132,9 @@ interface TreeWriterCoordination {
         public boolean arrivedAtChild(boolean isInternal, int availableSpace, boolean isStable, int keyCount) {
             return true;
         }
+
+        @Override
+        public void updateChildInformation(int availableSpace, int keyCount) {}
 
         @Override
         public void beforeTraversingToChild(long treeNodeId, int childPos) {}
@@ -127,11 +151,15 @@ interface TreeWriterCoordination {
         public void beforeUnderflowInLeaf(long treeNodeId) {}
 
         @Override
+        public void up() {}
+
+        @Override
         public void reset() {}
 
         @Override
-        public boolean flipToPessimisticMode() {
-            return false;
-        }
+        public void flipToPessimisticMode() {}
+
+        @Override
+        public void close() {}
     };
 }

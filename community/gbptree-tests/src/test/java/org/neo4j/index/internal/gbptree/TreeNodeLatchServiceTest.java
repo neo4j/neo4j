@@ -36,51 +36,33 @@ import org.neo4j.test.Race;
 
 class TreeNodeLatchServiceTest extends LatchTestBase {
     @Test
-    void shouldReturnSameLatchInstanceForAcquiredRead() {
+    void shouldReturnSameLatchInstanceForStillLivingLatch() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long treeNodeId = 456L;
-        LongSpinLatch latch = service.acquireRead(treeNodeId);
+        LongSpinLatch latch = service.latch(treeNodeId);
 
         // when
-        LongSpinLatch again = service.acquireRead(treeNodeId);
+        LongSpinLatch again = service.latch(treeNodeId);
 
         // then
         assertSame(again, latch);
-        latch.releaseRead();
-        latch.releaseRead();
     }
 
     @Test
-    void shouldReturnNewLatchInstanceForAcquireReadAfterPreviousReleased() {
+    void shouldReturnNewLatchInstanceForDeadLatch() {
         // given
         TreeNodeLatchService service = new TreeNodeLatchService();
         long treeNodeId = 123L;
-        LongSpinLatch first = service.acquireRead(treeNodeId);
-        first.releaseRead();
+        LongSpinLatch first = service.latch(treeNodeId);
+        first.deref();
 
         // when
-        LongSpinLatch second = service.acquireRead(treeNodeId);
+        LongSpinLatch second = service.latch(treeNodeId);
 
         // then
         assertNotSame(second, first);
         second.releaseRead();
-    }
-
-    @Test
-    void shouldReturnNewLatchInstanceForAcquireWriteAfterPreviousReleased() {
-        // given
-        TreeNodeLatchService service = new TreeNodeLatchService();
-        long treeNodeId = 123L;
-        LongSpinLatch first = service.acquireWrite(treeNodeId);
-        first.releaseWrite();
-
-        // when
-        LongSpinLatch second = service.acquireWrite(treeNodeId);
-
-        // then
-        assertNotSame(second, first);
-        second.releaseWrite();
     }
 
     @Test
@@ -91,8 +73,10 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
         long treeNodeId = 5;
         LongAdder count = new LongAdder();
         race.addContestants(Runtime.getRuntime().availableProcessors(), () -> {
-            LongSpinLatch latch = service.acquireRead(treeNodeId);
+            LongSpinLatch latch = service.latch(treeNodeId);
+            latch.acquireRead();
             latch.releaseRead();
+            latch.deref();
             count.add(1);
         });
 
@@ -112,8 +96,10 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
         long treeNodeId = 5;
         LongAdder count = new LongAdder();
         race.addContestants(Runtime.getRuntime().availableProcessors(), () -> {
-            LongSpinLatch latch = service.acquireWrite(treeNodeId);
+            LongSpinLatch latch = service.latch(treeNodeId);
+            latch.acquireWrite();
             latch.releaseWrite();
+            latch.deref();
             count.add(1);
         });
 
@@ -137,8 +123,10 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
 
             @Override
             public void run() {
-                LongSpinLatch latch = service.acquireRead(random.nextLong(1, 100));
+                LongSpinLatch latch = service.latch(random.nextLong(1, 100));
+                latch.acquireRead();
                 latch.releaseRead();
+                latch.deref();
                 reads.incrementAndGet();
             }
         });
@@ -147,8 +135,10 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
 
             @Override
             public void run() {
-                LongSpinLatch latch = service.acquireWrite(random.nextLong(1, 100));
+                LongSpinLatch latch = service.latch(random.nextLong(1, 100));
+                latch.acquireWrite();
                 latch.releaseWrite();
+                latch.deref();
                 writes.incrementAndGet();
             }
         });
@@ -172,10 +162,12 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
         race.addContestants(
                 4,
                 throwing(() -> {
-                    LongSpinLatch latch = service.acquireWrite(id);
+                    LongSpinLatch latch = service.latch(id);
+                    latch.acquireWrite();
                     assertThat(concurrent.incrementAndGet()).isOne();
                     concurrent.decrementAndGet();
                     latch.releaseWrite();
+                    latch.deref();
                 }),
                 1_000);
         race.goUnchecked();
@@ -194,16 +186,19 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
         var numCurrentWriteOwners = new AtomicInteger();
         var numCurrentReadOwners = new AtomicInteger();
         race.addContestants(2, () -> {
-            var latch = service.acquireRead(treeNodeId);
+            var latch = service.latch(treeNodeId);
+            latch.acquireRead();
             assertThat(numCurrentReadOwners.incrementAndGet()).isGreaterThanOrEqualTo(1);
             assertThat(numCurrentWriteOwners.get()).isZero();
             assertThat(numCurrentReadOwners.decrementAndGet()).isGreaterThanOrEqualTo(0);
             latch.releaseRead();
+            latch.deref();
             reads.incrementAndGet();
         });
         // UPGRADE
         race.addContestant(() -> {
-            var latch = service.acquireRead(treeNodeId);
+            var latch = service.latch(treeNodeId);
+            latch.acquireRead();
             assertThat(numCurrentReadOwners.incrementAndGet()).isGreaterThanOrEqualTo(1);
             assertThat(numCurrentWriteOwners.get()).isZero();
             if (latch.tryUpgradeToWrite()) {
@@ -216,13 +211,16 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
                 assertThat(numCurrentReadOwners.decrementAndGet()).isGreaterThanOrEqualTo(0);
                 latch.releaseRead();
             }
+            latch.deref();
         });
         // WRITE
         race.addContestant(() -> {
-            var latch = service.acquireWrite(treeNodeId);
+            var latch = service.latch(treeNodeId);
+            latch.acquireWrite();
             assertThat(numCurrentWriteOwners.incrementAndGet()).isOne();
             assertThat(numCurrentWriteOwners.decrementAndGet()).isZero();
             latch.releaseWrite();
+            latch.deref();
             writes.incrementAndGet();
         });
 

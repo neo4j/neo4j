@@ -198,6 +198,14 @@ class InternalTreeLogic<KEY, VALUE> {
         this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
     }
 
+    void reset() {
+        currentLevel = -1;
+    }
+
+    int depth() {
+        return currentLevel;
+    }
+
     private Level<KEY> descendToLevel(int currentLevel) {
         if (currentLevel >= levels.length) {
             levels = Arrays.copyOf(levels, currentLevel + 1);
@@ -212,10 +220,16 @@ class InternalTreeLogic<KEY, VALUE> {
     private boolean popLevel(PageCursor cursor) throws IOException {
         currentLevel--;
         if (currentLevel >= 0) {
+            coordination.up();
             Level<KEY> level = levels[currentLevel];
             TreeNode.goTo(cursor, "parent", level.treeNodeId);
             return true;
         }
+        // Note: else if currentLevel == -1 (i.e. we're doing structure changes and we're doing a root split/merge
+        // then we cannot quite call coordination.up() since it would release the latch on the root,
+        // which will probably cause concurrency issues. This means now that there's a mismatch between
+        // the coordination depth and this currentLevel. This must be overcome by forcing a reset/initialize
+        // from the writer on the next operation alt. right after the root split/merge.
         return false;
     }
 
@@ -272,6 +286,7 @@ class InternalTreeLogic<KEY, VALUE> {
         int previousLevel = currentLevel;
         while (!levels[currentLevel].covers(key)) {
             currentLevel--;
+            coordination.up();
         }
         if (currentLevel != previousLevel) {
             TreeNode.goTo(cursor, "parent", levels[currentLevel].treeNodeId);
@@ -436,14 +451,12 @@ class InternalTreeLogic<KEY, VALUE> {
      * @return {@code true} so that it can be called in an {@code assert} statement.
      */
     private boolean cursorIsAtExpectedLocation(PageCursor cursor) {
-        if (!coordination.mustStartFromRoot()) {
-            assert currentLevel >= 0 : "Uninitialized tree logic, currentLevel:" + currentLevel;
-            long currentPageId = cursor.getCurrentPageId();
-            long expectedPageId = levels[currentLevel].treeNodeId;
-            assert currentPageId == expectedPageId
-                    : "Expected cursor to be at page:" + expectedPageId + " at level:" + currentLevel
-                            + ", but was at page:" + currentPageId;
-        }
+        assert currentLevel >= 0 : "Uninitialized tree logic, currentLevel:" + currentLevel;
+        long currentPageId = cursor.getCurrentPageId();
+        long expectedPageId = levels[currentLevel].treeNodeId;
+        assert currentPageId == expectedPageId
+                : "Expected cursor to be at page:" + expectedPageId + " at level:" + currentLevel + ", but was at page:"
+                        + currentPageId;
         return true;
     }
 
@@ -718,6 +731,7 @@ class InternalTreeLogic<KEY, VALUE> {
                 var newKeyCount = bTreeNode.removeKeyValueAt(
                         cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
                 TreeNode.setKeyCount(cursor, newKeyCount);
+                // The doInsertInLeaf below will update the child information, so no explicit update here
                 InsertResult result = doInsertInLeaf(
                         cursor,
                         structurePropagation,
@@ -742,10 +756,11 @@ class InternalTreeLogic<KEY, VALUE> {
                 }
             }
         } else if (mergeResult == ValueMerger.MergeResult.REMOVED) {
-            // Remove this entry from the tree and possible underflow while doing so
+            // Remove this entry from the tree and possibly underflow while doing so
             int newKeyCount = bTreeNode.removeKeyValueAt(
                     cursor, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
             TreeNode.setKeyCount(cursor, newKeyCount);
+            coordination.updateChildInformation(bTreeNode.availableSpace(cursor, newKeyCount, false), newKeyCount);
             if (bTreeNode.leafUnderflow(cursor, newKeyCount)) {
                 underflowInLeaf(
                         cursor, structurePropagation, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
@@ -812,7 +827,10 @@ class InternalTreeLogic<KEY, VALUE> {
         // No overflow, insert key and value
         bTreeNode.insertKeyValueAt(
                 cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-        TreeNode.setKeyCount(cursor, keyCount + 1);
+        var newKeyCount = keyCount + 1;
+        TreeNode.setKeyCount(cursor, newKeyCount);
+        // This update will cover both the defrag and insert
+        coordination.updateChildInformation(bTreeNode.availableSpace(cursor, newKeyCount, false), newKeyCount);
         return InsertResult.NO_SPLIT;
     }
 
@@ -1091,6 +1109,10 @@ class InternalTreeLogic<KEY, VALUE> {
                             cursor, structurePropagation, pos, stableGeneration, unstableGeneration, cursorContext);
                 }
             }
+
+            var keyCountAfterUpdate = keyCount(cursor);
+            coordination.updateChildInformation(
+                    bTreeNode.availableSpace(cursor, keyCountAfterUpdate, true), keyCountAfterUpdate);
         }
     }
 
@@ -1351,6 +1373,8 @@ class InternalTreeLogic<KEY, VALUE> {
             // Underflow
             underflowInLeaf(
                     cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration, cursorContext);
+        } else {
+            coordination.updateChildInformation(bTreeNode.availableSpace(cursor, keyCount, false), keyCount);
         }
 
         return RemoveResult.REMOVED;

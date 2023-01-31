@@ -899,8 +899,6 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.hits()).isZero();
 
             try (var marker = idGenerator.marker(cursorContext)) {
-                assertThat(cursorTracer.pins()).isOne();
-
                 marker.markDeleted(1);
             }
             assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
@@ -909,8 +907,9 @@ class IndexedIdGeneratorTest {
     }
 
     @Test
-    void tracePageCacheOnIdGeneratorCacheClear() {
+    void tracePageCacheOnIdGeneratorCacheClear() throws IOException {
         open();
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         var pageCacheTracer = new DefaultPageCacheTracer();
         try (var cursorContext = CONTEXT_FACTORY.create(
                 pageCacheTracer.createPageCursorTracer("tracePageCacheOnIdGeneratorCacheClear"))) {
@@ -918,8 +917,11 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.pins()).isZero();
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
+            markUsed(1);
 
-            idGenerator.marker(NULL_CONTEXT).markDeleted(1);
+            markDeleted(1);
+            markFree(1);
+            idGenerator.maintenance(NULL_CONTEXT);
             idGenerator.clearCache(cursorContext);
 
             assertThat(cursorTracer.pins()).isOne();
@@ -987,12 +989,12 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
 
-            idGenerator.start(NO_FREE_IDS, cursorContext);
+            idGenerator.start(freeIds(1), cursorContext);
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker
             // writer
-            assertThat(cursorTracer.pins()).isEqualTo(1);
-            assertThat(cursorTracer.unpins()).isEqualTo(1);
+            assertThat(cursorTracer.pins()).isEqualTo(3);
+            assertThat(cursorTracer.unpins()).isEqualTo(3);
         }
     }
 

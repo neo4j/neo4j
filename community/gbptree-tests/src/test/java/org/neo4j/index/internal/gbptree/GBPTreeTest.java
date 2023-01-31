@@ -101,6 +101,7 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.Race;
 import org.neo4j.test.Race.ThrowingRunnable;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -1543,12 +1544,13 @@ class GBPTreeTest {
 
             // WHEN
             try (var index = index(specificPageCache).build()) {
-                assertThatThrownBy(
-                                () -> index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)
-                                        .close(),
-                                "Expected to throw because root pointed to by tree state should have a valid successor.")
-                        .isInstanceOf(TreeInconsistencyException.class)
-                        .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
+                try (var writer = index.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT)) {
+                    assertThatThrownBy(
+                                    () -> writer.put(new MutableLong(0), new MutableLong(0)),
+                                    "Expected to throw because root pointed to by tree state should have a valid successor.")
+                            .isInstanceOf(TreeInconsistencyException.class)
+                            .hasMessageContaining(PointerChecking.WRITER_TRAVERSE_OLD_STATE_MESSAGE);
+                }
             }
         }
     }
@@ -1995,15 +1997,15 @@ class GBPTreeTest {
                 GBPTree<MutableLong, MutableLong> index = index(pageCache).build()) {
             // when
             int count = 4;
-            List<Writer<MutableLong, MutableLong>> parallelWriters = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                Writer<MutableLong, MutableLong> writer = index.writer(NULL_CONTEXT);
-                parallelWriters.add(writer);
-                writer.put(new MutableLong(i), new MutableLong(i));
-            }
-            for (Writer<MutableLong, MutableLong> parallelWriter : parallelWriters) {
-                parallelWriter.close();
-            }
+            var race = new Race();
+            race.addContestants(
+                    count,
+                    i -> throwing(() -> {
+                        try (var writer = index.writer(NULL_CONTEXT)) {
+                            writer.put(new MutableLong(i), new MutableLong(i));
+                        }
+                    }));
+            race.goUnchecked();
 
             // then
             for (int r = 0; r < 2; r++) {

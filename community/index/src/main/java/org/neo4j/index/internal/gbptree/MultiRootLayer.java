@@ -177,31 +177,35 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                             // wants to setRoot which means that it wants to acquire the latch on the root mapping ->
                             // deadlock
 
-                            LongSpinLatch rootLatch = support.latchService().tryAcquireWrite(existingValue.rootId);
-                            if (rootLatch == null) {
-                                // Someone else is just now writing to the contents of this data tree. Back out and try
-                                // again
-                                rootIdToRelease.setValue(-1);
-                                return ValueMerger.MergeResult.UNCHANGED;
-                            }
-                            try (PageCursor cursor = support.openRootCursor(
-                                    existingValue.asRoot(), PF_SHARED_WRITE_LOCK, cursorContext)) {
-                                if (TreeNode.keyCount(cursor) != 0) {
-                                    throw new DataTreeNotEmptyException(dataRootKey);
+                            var rootLatch = support.latchService().latch(existingValue.rootId);
+                            try {
+                                if (!rootLatch.tryAcquireWrite()) {
+                                    // Someone else is just now writing to the contents of this data tree.
+                                    // Back out and try again
+                                    rootIdToRelease.setValue(-1);
+                                    return ValueMerger.MergeResult.UNCHANGED;
                                 }
-                                rootIdToRelease.setValue(existingValue.rootId);
+                                try (PageCursor cursor = support.openRootCursor(
+                                        existingValue.asRoot(), PF_SHARED_WRITE_LOCK, cursorContext)) {
+                                    if (TreeNode.keyCount(cursor) != 0) {
+                                        throw new DataTreeNotEmptyException(dataRootKey);
+                                    }
+                                    rootIdToRelease.setValue(existingValue.rootId);
 
-                                // Remove it from the cache if it's present
-                                DataTreeRoot<ROOT_KEY> cachedRoot = rootMappingCache.get(cacheIndex);
-                                if (cachedRoot != null && rootLayout.compare(cachedRoot.key, dataRootKey) == 0) {
-                                    rootMappingCache.compareAndSet(cacheIndex, cachedRoot, null);
+                                    // Remove it from the cache if it's present
+                                    DataTreeRoot<ROOT_KEY> cachedRoot = rootMappingCache.get(cacheIndex);
+                                    if (cachedRoot != null && rootLayout.compare(cachedRoot.key, dataRootKey) == 0) {
+                                        rootMappingCache.compareAndSet(cacheIndex, cachedRoot, null);
+                                    }
+
+                                    return ValueMerger.MergeResult.REMOVED;
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                } finally {
+                                    rootLatch.releaseWrite();
                                 }
-
-                                return ValueMerger.MergeResult.REMOVED;
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
                             } finally {
-                                rootLatch.releaseWrite();
+                                rootLatch.deref();
                             }
                         };
 
@@ -438,7 +442,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             // - A new root for this data tree is set to R2 and placed in the cache
             // - Another root enters, with the same cache index, and places its root on this slot
             // - Reader (we) put the old R1 into cache
-            LongSpinLatch rootMappingLatch = rootMappingCacheLatches.acquireRead(cacheIndexAsTreeNodeId(cacheIndex));
+            var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
+            rootMappingLatch.acquireRead();
             try (CursorContext cursorContext = contextFactory.create("Update root mapping");
                     Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
                             support.internalAllocateSeeker(
@@ -458,6 +463,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 throw new UncheckedIOException(e);
             } finally {
                 rootMappingLatch.releaseRead();
+                rootMappingLatch.deref();
             }
         }
 
@@ -479,7 +485,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public void setRoot(Root newRoot) throws IOException {
-            LongSpinLatch rootMappingLatch = rootMappingCacheLatches.acquireWrite(cacheIndexAsTreeNodeId(cacheIndex));
+            var rootMappingLatch = rootMappingCacheLatches.latch(cacheIndexAsTreeNodeId(cacheIndex));
+            rootMappingLatch.acquireWrite();
             try (CursorContext cursorContext = contextFactory.create("Update root mapping");
                     Writer<ROOT_KEY, RootMappingValue> rootMappingWriter = support.internalParallelWriter(
                             rootLayout,
@@ -496,6 +503,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                 }
             } finally {
                 rootMappingLatch.releaseWrite();
+                rootMappingLatch.deref();
             }
         }
     }

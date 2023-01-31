@@ -24,6 +24,7 @@ import static java.util.Arrays.sort;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * Locks nodes as traversal goes down the tree. The locking scheme is a variant of what is known as "Better Latch Crabbing" and consists of
@@ -86,40 +87,46 @@ import java.util.concurrent.atomic.LongAdder;
  * </pre>
  */
 class LatchCrabbingCoordination implements TreeWriterCoordination {
+    static final int DEFAULT_RESET_FREQUENCY = 20;
+
     private final TreeNodeLatchService latchService;
     private final int leafUnderflowThreshold;
+    private final int resetFrequency;
     private DepthData[] dataByDepth = new DepthData[10];
     private int depth = -1;
     private boolean pessimistic;
-    private volatile long latchAcquisitionId;
-    private volatile boolean latchAcquisitionIsWrite;
+    private int operationCounter;
+    private PageCursor cursor;
 
-    LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold) {
+    LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold, int resetFrequency) {
         this.latchService = latchService;
         this.leafUnderflowThreshold = leafUnderflowThreshold;
+        this.resetFrequency = resetFrequency;
     }
 
     @Override
-    public boolean mustStartFromRoot() {
-        return true;
+    public void initialize(PageCursor cursor) {
+        this.cursor = cursor;
     }
 
     @Override
-    public void initialize() {
-        assert depth == -1;
-        this.pessimistic = false;
+    public boolean checkForceReset() {
+        var result = pessimistic || operationCounter >= resetFrequency;
+        if (result) {
+            operationCounter = 0;
+        }
+        return result;
+    }
+
+    @Override
+    public void beginOperation() {
         inc(Stat.TOTAL_OPERATIONS);
+        this.pessimistic = false;
+        this.operationCounter++;
     }
 
     @Override
     public void beforeTraversingToChild(long childTreeNodeId, int childPos) {
-        // Acquire latch on the child node
-        latchAcquisitionId = childTreeNodeId;
-        latchAcquisitionIsWrite = pessimistic;
-        LongSpinLatch latch =
-                pessimistic ? latchService.acquireWrite(childTreeNodeId) : latchService.acquireRead(childTreeNodeId);
-        latchAcquisitionId = -1;
-
         // Remember information about the latch
         depth++;
         if (depth >= dataByDepth.length) {
@@ -129,9 +136,30 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         if (depthData == null) {
             depthData = dataByDepth[depth] = new DepthData();
         }
-        depthData.latch = latch;
+
+        // Acquire latch on the child node
+        var latch = getLatch(childTreeNodeId, depthData);
+        if (pessimistic) {
+            latch.acquireWrite();
+        } else {
+            latch.acquireRead();
+        }
+
         depthData.latchTypeIsWrite = pessimistic;
         depthData.childPos = childPos;
+    }
+
+    private LongSpinLatch getLatch(long childTreeNodeId, DepthData data) {
+        var latch = data.latch;
+        if (latch != null) {
+            if (latch.treeNodeId() == childTreeNodeId) {
+                // It's the same one as the last time we went down. We still have a ref on it so just use it
+                return latch;
+            }
+            data.derefLatch();
+        }
+        data.latch = latchService.latch(childTreeNodeId);
+        return data.latch;
     }
 
     @Override
@@ -166,6 +194,13 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         return true;
+    }
+
+    @Override
+    public void updateChildInformation(int availableSpace, int keyCount) {
+        var depthData = dataByDepth[depth];
+        depthData.availableSpace = availableSpace;
+        depthData.keyCount = keyCount;
     }
 
     @Override
@@ -223,21 +258,36 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     }
 
     @Override
+    public void up() {
+        releaseLatchAtDepth(depth--);
+    }
+
+    @Override
     public void reset() {
         while (depth >= 0) {
-            releaseLatchAtDepth(depth--);
+            up();
+        }
+        if (cursor != null) {
+            cursor.unpin();
         }
     }
 
     @Override
-    public boolean flipToPessimisticMode() {
+    public void flipToPessimisticMode() {
         reset();
-        if (!pessimistic) {
-            pessimistic = true;
-            inc(Stat.PESSIMISTIC);
-            return true;
+        pessimistic = true;
+        inc(Stat.PESSIMISTIC);
+    }
+
+    @Override
+    public void close() {
+        reset();
+        for (var depthData : dataByDepth) {
+            if (depthData == null) {
+                break;
+            }
+            depthData.derefLatch();
         }
-        return false;
     }
 
     /**
@@ -269,14 +319,11 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
 
         DepthData depthData = dataByDepth[depth];
         if (!depthData.latchTypeIsWrite) {
-            latchAcquisitionId = depthData.latch.treeNodeId();
-            latchAcquisitionIsWrite = true;
             if (!depthData.latch.tryUpgradeToWrite()) {
                 // To avoid deadlock.
                 return false;
             }
             depthData.latchTypeIsWrite = true;
-            latchAcquisitionId = -1;
         }
         return true;
     }
@@ -300,7 +347,6 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
                     .append(latch.toString())
                     .append(format("%n"));
         }
-        builder.append(latchAcquisitionIsWrite ? "W" : "R").append("Acquiring:").append(latchAcquisitionId);
         return builder.toString();
     }
 
@@ -314,6 +360,13 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
 
         boolean positionedAtTheEdge() {
             return childPos == 0 || childPos == keyCount;
+        }
+
+        void derefLatch() {
+            if (latch != null) {
+                latch.deref();
+                latch = null;
+            }
         }
     }
 

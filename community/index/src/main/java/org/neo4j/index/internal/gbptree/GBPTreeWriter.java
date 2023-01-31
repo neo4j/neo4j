@@ -126,17 +126,13 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         try {
             writerLockAcquired = true;
             cursor = pagedFile.io(0L /*Ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            coordination.initialize(cursor);
             this.cursorContext = cursorContext;
             long generation = generationSupplier.getAsLong();
             stableGeneration = stableGeneration(generation);
             unstableGeneration = unstableGeneration(generation);
             this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
             root = rootExchange.getRoot();
-            if (!coordination.mustStartFromRoot()) {
-                root.goTo(cursor);
-                assert assertNoSuccessor(cursor, stableGeneration, unstableGeneration);
-                treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit);
-            }
             success = true;
         } catch (Throwable e) {
             exceptionMessageAppender.accept(e);
@@ -192,7 +188,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private void internalMerge(K key, V value, ValueMerger<K, V> valueMerger, boolean createIfNotExists) {
         try {
             // Try optimistic mode first
-            coordination.initialize();
+            coordination.beginOperation();
             if (!goToRoot()
                     || !treeLogic.insert(
                             cursor,
@@ -205,26 +201,22 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                             unstableGeneration,
                             cursorContext)) {
                 // OK, didn't work. Flip to pessimistic mode and try again.
-                if (coordination.flipToPessimisticMode()) {
-                    assert structurePropagation.isEmpty();
-                    releaseCursorLockIfNeeded();
-                    if (!goToRoot()
-                            || !treeLogic.insert(
-                                    cursor,
-                                    structurePropagation,
-                                    key,
-                                    value,
-                                    valueMerger,
-                                    createIfNotExists,
-                                    stableGeneration,
-                                    unstableGeneration,
-                                    cursorContext)) {
-                        throw appendTreeInformation(new TreeInconsistencyException(
-                                "Unable to insert key:%s value:%s in pessimistic mode", key, value));
-                    }
-                } else {
-                    throw appendTreeInformation(
-                            new TreeInconsistencyException("Unable to insert key:%s value:%s in mode", key, value));
+                coordination.flipToPessimisticMode();
+                assert structurePropagation.isEmpty();
+                treeLogic.reset();
+                if (!goToRoot()
+                        || !treeLogic.insert(
+                                cursor,
+                                structurePropagation,
+                                key,
+                                value,
+                                valueMerger,
+                                createIfNotExists,
+                                stableGeneration,
+                                unstableGeneration,
+                                cursorContext)) {
+                    throw appendTreeInformation(new TreeInconsistencyException(
+                            "Unable to insert key:%s value:%s in pessimistic mode", key, value));
                 }
             }
 
@@ -236,21 +228,14 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             exceptionMessageAppender.accept(t);
             throw t;
         } finally {
-            releaseCursorLockIfNeeded();
-            coordination.reset();
+            checkForceReset();
         }
 
         checkOutOfBounds(cursor);
     }
 
-    private void releaseCursorLockIfNeeded() {
-        if (coordination.mustStartFromRoot()) {
-            cursor.unpin();
-        }
-    }
-
     private boolean goToRoot() throws IOException {
-        if (!coordination.mustStartFromRoot()) {
+        if (treeLogic.depth() >= 0) {
             return true;
         }
 
@@ -282,7 +267,6 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private void setRoot(long rootPointer) throws IOException {
         long rootId = GenerationSafePointerPair.pointer(rootPointer);
         rootExchange.setRoot(new Root(rootId, unstableGeneration));
-        treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit);
     }
 
     @Override
@@ -291,7 +275,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         InternalTreeLogic.RemoveResult result;
         try {
             // Try optimistic mode
-            coordination.initialize();
+            coordination.beginOperation();
             if (!goToRoot()
                     || (result = treeLogic.remove(
                                     cursor,
@@ -303,24 +287,21 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                                     cursorContext))
                             == InternalTreeLogic.RemoveResult.FAIL) {
                 // OK, didn't work. Flip to pessimistic mode and try again.
-                if (coordination.flipToPessimisticMode()) {
-                    assert structurePropagation.isEmpty();
-                    releaseCursorLockIfNeeded();
-                    if (!goToRoot()
-                            || (result = treeLogic.remove(
-                                            cursor,
-                                            structurePropagation,
-                                            key,
-                                            removedValue,
-                                            stableGeneration,
-                                            unstableGeneration,
-                                            cursorContext))
-                                    == InternalTreeLogic.RemoveResult.FAIL) {
-                        throw appendTreeInformation(
-                                new TreeInconsistencyException("Unable to remove key:%s in pessimistic mode", key));
-                    }
-                } else {
-                    throw appendTreeInformation(new TreeInconsistencyException("Unable to remove key:%s in mode", key));
+                coordination.flipToPessimisticMode();
+                assert structurePropagation.isEmpty();
+                treeLogic.reset();
+                if (!goToRoot()
+                        || (result = treeLogic.remove(
+                                        cursor,
+                                        structurePropagation,
+                                        key,
+                                        removedValue,
+                                        stableGeneration,
+                                        unstableGeneration,
+                                        cursorContext))
+                                == InternalTreeLogic.RemoveResult.FAIL) {
+                    throw appendTreeInformation(
+                            new TreeInconsistencyException("Unable to remove key:%s in pessimistic mode", key));
                 }
             }
 
@@ -332,15 +313,24 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             exceptionMessageAppender.accept(e);
             throw e;
         } finally {
-            releaseCursorLockIfNeeded();
-            coordination.reset();
+            checkForceReset();
         }
 
         checkOutOfBounds(cursor);
         return result == InternalTreeLogic.RemoveResult.REMOVED && removedValue.defined ? removedValue.value : null;
     }
 
+    private void checkForceReset() {
+        if (coordination.checkForceReset()) {
+            // After pessimistic (and at some frequency for parallel writer) the tree is pretty much locked tight
+            // so force a reset for the next operation
+            treeLogic.reset();
+            coordination.reset();
+        }
+    }
+
     private void handleStructureChanges(CursorContext cursorContext) throws IOException {
+        var didRootStructureChange = false;
         if (structurePropagation.hasRightKeyInsert) {
             // New root
             long newRootId = freeList.acquireNewId(stableGeneration, unstableGeneration, CursorCreator.bind(cursor));
@@ -360,11 +350,21 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             TreeNode.setKeyCount(cursor, 1);
             setRoot(newRootId);
             monitor.treeGrowth();
+            didRootStructureChange = true;
         } else if (structurePropagation.hasMidChildUpdate) {
             // New successor
             setRoot(structurePropagation.midChild);
+            didRootStructureChange = true;
         }
         structurePropagation.clear();
+
+        if (didRootStructureChange) {
+            // This is for mitigating the temporary mismatch in depth state between coordination and treeLogic
+            // where the coordination must retain the latch on the root until the root structure change
+            // has been completed.
+            coordination.reset();
+            treeLogic.reset();
+        }
     }
 
     @Override
@@ -374,6 +374,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                     new IllegalStateException(format("Tried to close writer, but writer is already closed. %s", this)));
         }
         closeCursor();
+        coordination.close();
+        treeLogic.reset();
         if (parallel) {
             writerLock.readLock().unlock();
         } else {

@@ -122,6 +122,12 @@ class CountsComputerTest {
         DatabaseManagementService managementService = dbBuilder.build();
         try {
             GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            try (var tx = db.beginTx()) {
+                // Just make it non-empty
+                tx.createNode();
+                tx.commit();
+            }
+
             var countsStore = db.getDependencyResolver().resolveDependency(GBPTreeCountsStore.class);
             var pageCacheTracer = new DefaultPageCacheTracer();
             var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);

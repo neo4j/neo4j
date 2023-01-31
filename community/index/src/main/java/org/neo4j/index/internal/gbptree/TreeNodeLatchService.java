@@ -28,44 +28,12 @@ import org.neo4j.util.VisibleForTesting;
 public class TreeNodeLatchService {
     private final ConcurrentHashMap<Long, LongSpinLatch> latches = new ConcurrentHashMap<>();
 
-    /**
-     * Acquires a read latch for the {@code treeNodeId} and returns a {@link LongSpinLatch} instance which can further manipulate
-     * that latch, and release it.
-     * @param treeNodeId tree node id to acquire read latch for.
-     * @return the latch for the tree node id.
-     */
-    LongSpinLatch acquireRead(long treeNodeId) {
+    LongSpinLatch latch(long treeNodeId) {
         while (true) {
-            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
-            if (latch.acquireRead() > 0) {
+            var latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
+            if (latch.ref()) {
                 return latch;
             }
-        }
-    }
-
-    /**
-     * Acquires a write latch for the {@code treeNodeId} and returns a {@link LongSpinLatch} instance which can further manipulate
-     * that latch, and release it.
-     * @param treeNodeId tree node id to acquire write latch for.
-     * @return the latch for the tree node id.
-     */
-    LongSpinLatch acquireWrite(long treeNodeId) {
-        while (true) {
-            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
-            if (latch.acquireWrite()) {
-                return latch;
-            }
-        }
-    }
-
-    LongSpinLatch tryAcquireWrite(long treeNodeId) {
-        while (true) {
-            LongSpinLatch latch = latches.computeIfAbsent(treeNodeId, id -> new LongSpinLatch(id, latches::remove));
-            int result = latch.tryAcquireWrite();
-            if (result == LongSpinLatch.WRITE_LATCH_DEAD) {
-                continue;
-            }
-            return result == LongSpinLatch.WRITE_LATCH_ACQUIRED ? latch : null;
         }
     }
 
