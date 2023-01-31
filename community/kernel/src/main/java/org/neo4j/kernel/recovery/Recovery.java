@@ -495,6 +495,7 @@ public final class Recovery {
 
         LogTailMetadata logTailMetadata = providedLogTail.orElseGet(
                 () -> loadLogTail(fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, memoryTracker));
+        MetadataCache recoveryMetaDataCache = new MetadataCache(logTailMetadata);
         StorageEngine storageEngine = storageEngineFactory.instantiate(
                 fs,
                 clock,
@@ -513,7 +514,7 @@ public final class Recovery {
                 logService.getUserLogProvider(),
                 recoveryCleanupCollector,
                 logTailMetadata,
-                new MetadataCache(logTailMetadata),
+                recoveryMetaDataCache,
                 memoryTracker,
                 cursorContextFactory,
                 tracers.getPageCacheTracer());
@@ -575,7 +576,7 @@ public final class Recovery {
                 .withConfig(config)
                 .withDatabaseTracers(tracers)
                 .withExternalLogTailMetadata(logTailMetadata)
-                .withKernelVersionProvider(logTailMetadata)
+                .withKernelVersionProvider(recoveryMetaDataCache)
                 .withDependencies(dependencies)
                 .withMemoryTracker(memoryTracker)
                 .build();

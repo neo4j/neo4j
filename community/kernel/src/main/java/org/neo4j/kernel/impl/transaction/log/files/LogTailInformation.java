@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import java.util.Objects;
 import java.util.Optional;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
@@ -34,7 +34,7 @@ public class LogTailInformation implements LogTailMetadata {
     public final long firstTxIdAfterLastCheckPoint;
     public final boolean filesNotFound;
     public final long currentLogVersion;
-    public final byte latestLogEntryVersion;
+    public final byte firstLogEntryVersionAfterCheckpoint;
     private final boolean recordAfterCheckpoint;
     private final StoreId storeId;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
@@ -44,7 +44,7 @@ public class LogTailInformation implements LogTailMetadata {
             long firstTxIdAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
-            byte latestLogEntryVersion,
+            byte firstLogEntryVersionAfterCheckpoint,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this(
                 null,
@@ -52,7 +52,7 @@ public class LogTailInformation implements LogTailMetadata {
                 firstTxIdAfterLastCheckPoint,
                 filesNotFound,
                 currentLogVersion,
-                latestLogEntryVersion,
+                firstLogEntryVersionAfterCheckpoint,
                 null,
                 dbmsRuntimeRepository);
     }
@@ -63,14 +63,14 @@ public class LogTailInformation implements LogTailMetadata {
             long firstTxIdAfterLastCheckPoint,
             boolean filesNotFound,
             long currentLogVersion,
-            byte latestLogEntryVersion,
+            byte firstLogEntryVersionAfterCheckpoint,
             StoreId storeId,
             DbmsRuntimeRepository dbmsRuntimeRepository) {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
         this.filesNotFound = filesNotFound;
         this.currentLogVersion = currentLogVersion;
-        this.latestLogEntryVersion = latestLogEntryVersion;
+        this.firstLogEntryVersionAfterCheckpoint = firstLogEntryVersionAfterCheckpoint;
         this.recordAfterCheckpoint = recordAfterCheckpoint;
         this.storeId = storeId;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
@@ -111,8 +111,8 @@ public class LogTailInformation implements LogTailMetadata {
     public String toString() {
         return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint="
                 + firstTxIdAfterLastCheckPoint + ", filesNotFound="
-                + filesNotFound + ", currentLogVersion=" + currentLogVersion + ", latestLogEntryVersion="
-                + latestLogEntryVersion
+                + filesNotFound + ", currentLogVersion=" + currentLogVersion + ", firstLogEntryVersionAfterCheckpoint="
+                + firstLogEntryVersionAfterCheckpoint
                 + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';
     }
 
@@ -126,8 +126,20 @@ public class LogTailInformation implements LogTailMetadata {
 
     @Override
     public KernelVersion kernelVersion() {
-        return Objects.requireNonNullElseGet(lastCheckPoint, dbmsRuntimeRepository::getVersion)
-                .kernelVersion();
+        if (lastCheckPoint != null) {
+            return lastCheckPoint.kernelVersion();
+        }
+
+        // No checkpoint, but we did find some transactions. Since a recovery will happen in this case we
+        // can just say we are on the version we saw in the first transaction. If we are on a later version we
+        // will run into the upgrade transaction which will update this
+        if (firstLogEntryVersionAfterCheckpoint != DetachedLogTailScanner.NO_ENTRY) {
+            return KernelVersion.getForVersion(firstLogEntryVersionAfterCheckpoint);
+        }
+
+        // There was no checkpoint since it is the first start, or we restart after logs removal, and we should
+        // use the version that is defined in the system db
+        return dbmsRuntimeRepository.getVersion().kernelVersion();
     }
 
     @Override

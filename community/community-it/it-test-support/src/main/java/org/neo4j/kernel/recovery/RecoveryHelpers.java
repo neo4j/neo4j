@@ -49,6 +49,24 @@ public final class RecoveryHelpers {
         });
     }
 
+    public static boolean logsContainCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
+        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs);
+        return latestCheckpoint.isPresent();
+    }
+
+    public static CheckpointInfo getLatestCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs)
+            throws IOException {
+        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs);
+        return latestCheckpoint.orElseThrow();
+    }
+
+    private static Optional<CheckpointInfo> getLatestCheckpointInfo(DatabaseLayout dbLayout, FileSystemAbstraction fs)
+            throws IOException {
+        LogFiles logFiles = buildLogFiles(dbLayout, fs);
+        var checkpointFile = logFiles.getCheckpointFile();
+        return checkpointFile.findLatestCheckpoint();
+    }
+
     private static LogFiles buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fs)
                 .build();

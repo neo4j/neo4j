@@ -104,8 +104,10 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
             if (lastCheckPoint == null) {
                 long lowestLogVersion = logFiles.getLogFile().getLowestLogVersion();
                 if (lowestLogVersion != INITIAL_LOG_VERSION) {
-                    throw new UnderlyingStorageException("No check point found in any log file from version "
-                            + lowestLogVersion + " to " + logTailInformation.currentLogVersion);
+                    throw new UnderlyingStorageException("No check point found in any log file and transaction log "
+                            + "files do not exist from expected version " + INITIAL_LOG_VERSION
+                            + ". Lowest found log file is "
+                            + lowestLogVersion + ".");
                 }
                 monitor.noCheckPointFound();
                 LogPosition position = tryExtractHeaderSize();

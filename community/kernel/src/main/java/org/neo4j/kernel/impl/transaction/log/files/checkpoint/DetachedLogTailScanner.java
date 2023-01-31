@@ -64,6 +64,7 @@ import org.neo4j.storageengine.api.StoreId;
 
 public class DetachedLogTailScanner {
     static final long NO_TRANSACTION_ID = -1;
+    public static final byte NO_ENTRY = 0;
     private static final String TRANSACTION_LOG_NAME = "Transaction";
     private static final String CHECKPOINT_LOG_NAME = "Checkpoint";
     private final LogFiles logFiles;
@@ -162,11 +163,11 @@ public class DetachedLogTailScanner {
     private StartCommitEntries getFirstTransactionId(LogFile logFile, long lowestLogVersion) throws IOException {
         var logPosition = logFile.versionExists(lowestLogVersion)
                 ? logFile.extractHeader(lowestLogVersion).getStartPosition()
-                : getLowetLogPosition(lowestLogVersion);
+                : getLowestLogPosition(lowestLogVersion);
         return getFirstTransactionIdAfterCheckpoint(logFile, logPosition);
     }
 
-    private static LogPosition getLowetLogPosition(long lowestLogVersion) {
+    private static LogPosition getLowestLogPosition(long lowestLogVersion) {
         return lowestLogVersion >= 0
                 ? new LogPosition(lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE)
                 : LogPosition.UNSPECIFIED;
@@ -436,7 +437,7 @@ public class DetachedLogTailScanner {
             if (start != null) {
                 return start.kernelVersion().version();
             }
-            return 0;
+            return NO_ENTRY;
         }
     }
 }

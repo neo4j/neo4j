@@ -162,8 +162,8 @@ class RecoveryStartInformationProviderTest {
         // when
         UnderlyingStorageException storageException = assertThrows(
                 UnderlyingStorageException.class, () -> new RecoveryStartInformationProvider(logFiles, monitor).get());
-        final String expectedMessage =
-                "No check point found in any log file from version " + oldestLogVersionFound + " to " + logVersion;
+        final String expectedMessage = "No check point found in any log file and transaction log "
+                + "files do not exist from expected version 0. Lowest found log file is 1.";
         assertEquals(expectedMessage, storageException.getMessage());
     }
 }
