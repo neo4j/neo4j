@@ -738,7 +738,7 @@ object RelationshipValueHit {
   val EMPTY = new RelationshipValueHit(RelationshipValueIndexCursor.EMPTY, null)
 }
 
-class RelationshipValueHit(inner: RelationshipValueIndexCursor,
+class RelationshipValueHit(val inner: RelationshipValueIndexCursor,
                             val values: Array[Value],
                            ) extends DefaultCloseListenable
                                                                            with RelationshipValueIndexCursor {
