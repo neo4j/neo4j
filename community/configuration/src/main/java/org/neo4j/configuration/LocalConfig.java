@@ -145,11 +145,6 @@ public class LocalConfig extends Config {
     }
 
     @Override
-    public Map<Setting<Object>, Object> getValues() {
-        return config.getValues();
-    }
-
-    @Override
     public Setting<Object> getSetting(String name) {
         return config.getSetting(name);
     }

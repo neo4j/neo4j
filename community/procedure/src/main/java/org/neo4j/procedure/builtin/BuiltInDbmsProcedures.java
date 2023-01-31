@@ -128,7 +128,7 @@ public class BuiltInDbmsProcedures {
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
 
-        config.getValues().keySet().forEach(setting -> {
+        config.getDeclaredSettings().values().forEach(setting -> {
             if (!((SettingImpl<?>) setting).internal()
                     && setting.name().toLowerCase().contains(lowerCasedSearchString)) {
                 results.add(new ConfigResult(setting, config));
@@ -156,7 +156,7 @@ public class BuiltInDbmsProcedures {
                 .collect(Collectors.toCollection(HashSet::new));
 
         Config config = graph.getDependencyResolver().resolveDependency(Config.class);
-        config.getValues().keySet().forEach(setting -> {
+        config.getDeclaredSettings().values().forEach(setting -> {
             if (browserSettings.contains(setting.name().toLowerCase())) {
                 results.add(new ConfigResult(setting, config));
             }

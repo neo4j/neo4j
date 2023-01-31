@@ -291,10 +291,10 @@ class BuiltInProceduresTest {
                         .build(),
                 "");
 
-        HashMap<Setting<Object>, Object> objectSettings = new HashMap<>();
-        settings.forEach((setting, value) -> objectSettings.put((Setting<Object>) setting, value));
+        HashMap<String, Setting<Object>> declaredSettings = new HashMap<>();
+        settings.forEach((setting, value) -> declaredSettings.put(setting.name(), (Setting<Object>) setting));
 
-        when(mockConfig.getValues()).thenReturn(objectSettings);
+        when(mockConfig.getDeclaredSettings()).thenReturn(declaredSettings);
         when(resolver.resolveDependency(Config.class)).thenReturn(mockConfig);
 
         // When / Then

@@ -1068,13 +1068,6 @@ public class Config implements Configuration {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Setting<Object>, Object> getValues() {
-        Map<Setting<Object>, Object> values = new HashMap<>();
-        settings.forEach((s, entry) -> values.put((Setting<Object>) entry.setting, entry.value));
-        return values;
-    }
-
-    @SuppressWarnings("unchecked")
     public Setting<Object> getSetting(String name) {
         if (!settings.containsKey(name)) {
             throw new IllegalArgumentException(format("Setting `%s` not found", name));
