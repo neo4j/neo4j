@@ -63,7 +63,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2 {
     protected Command readGroupDegreeCommand(ReadableChannel channel) throws IOException {
         long key = channel.getLong();
         long delta = channel.getLong();
-        return new Command.GroupDegreeCommand(groupIdFromCombinedKey(key), directionFromCombinedKey(key), delta);
+        return new Command.GroupDegreeCommand(this, groupIdFromCombinedKey(key), directionFromCombinedKey(key), delta);
     }
 
     @Override

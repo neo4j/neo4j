@@ -93,10 +93,6 @@ public abstract class Command implements StorageCommand {
         }
     }
 
-    public Command() {
-        this(LATEST_LOG_SERIALIZATION);
-    }
-
     public Command(LogCommandSerialization serialization) {
         this.serialization = serialization;
     }
@@ -606,7 +602,9 @@ public abstract class Command implements StorageCommand {
         private final RelationshipDirection direction;
         private final long delta;
 
-        public GroupDegreeCommand(long groupId, RelationshipDirection direction, long delta) {
+        public GroupDegreeCommand(
+                LogCommandSerialization serialization, long groupId, RelationshipDirection direction, long delta) {
+            super(serialization);
             setup(combinedKeyOnGroupAndDirection(groupId, direction), Mode.UPDATE);
             assert delta != 0 : "Tried to create a GroupDegreeCommand for something that didn't change any count";
             this.groupId = groupId;

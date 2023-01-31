@@ -294,7 +294,8 @@ public class TransactionRecordState implements RecordState {
                 if (delta.longValue() != 0) {
                     long groupId = Command.GroupDegreeCommand.groupIdFromCombinedKey(key);
                     RelationshipDirection direction = Command.GroupDegreeCommand.directionFromCombinedKey(key);
-                    commands.add(new Command.GroupDegreeCommand(groupId, direction, delta.longValue()));
+                    commands.add(new Command.GroupDegreeCommand(
+                            commandSerialization, groupId, direction, delta.longValue()));
                 }
             });
         }

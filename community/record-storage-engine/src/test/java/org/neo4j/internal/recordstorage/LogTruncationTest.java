@@ -120,7 +120,7 @@ class LogTruncationTest {
                 new Command[] {new RelationshipCountsCommand(serialization, 17, 2, 13, -2)});
         permutations.put(
                 Command.GroupDegreeCommand.class,
-                new Command[] {new Command.GroupDegreeCommand(42, RelationshipDirection.OUTGOING, 1)});
+                new Command[] {new Command.GroupDegreeCommand(serialization, 42, RelationshipDirection.OUTGOING, 1)});
     }
 
     @Test
