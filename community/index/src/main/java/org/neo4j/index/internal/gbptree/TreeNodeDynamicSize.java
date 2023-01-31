@@ -577,8 +577,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    int availableSpace(PageCursor cursor, int currentKeyCount) {
-        boolean isInternal = isInternal(cursor);
+    int availableSpace(PageCursor cursor, int currentKeyCount, boolean isInternal) {
         int deadSpace = getDeadSpace(cursor);
         int allocSpace = getAllocSpace(cursor, currentKeyCount, isInternal ? INTERNAL : LEAF);
         return allocSpace + deadSpace;

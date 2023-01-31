@@ -362,8 +362,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
     }
 
     @Override
-    int availableSpace(PageCursor cursor, int currentKeyCount) {
-        boolean isInternal = isInternal(cursor);
+    int availableSpace(PageCursor cursor, int currentKeyCount, boolean isInternal) {
         return isInternal
                 ? internalMaxKeyCount - currentKeyCount * (keySize + childSize())
                 : leafAvailableSpace(currentKeyCount);

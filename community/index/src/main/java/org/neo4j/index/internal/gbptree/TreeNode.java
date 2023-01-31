@@ -455,7 +455,7 @@ abstract class TreeNode<KEY, VALUE> {
      */
     abstract Overflow leafOverflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue);
 
-    abstract int availableSpace(PageCursor cursor, int currentKeyCount);
+    abstract int availableSpace(PageCursor cursor, int currentKeyCount, boolean isInternal);
 
     abstract int totalSpaceOfKeyValue(KEY key, VALUE value);
 

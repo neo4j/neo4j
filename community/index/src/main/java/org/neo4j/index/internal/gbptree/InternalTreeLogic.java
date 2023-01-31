@@ -277,7 +277,8 @@ class InternalTreeLogic<KEY, VALUE> {
             TreeNode.goTo(cursor, "parent", levels[currentLevel].treeNodeId);
         }
 
-        while (isInternal(cursor)) {
+        boolean isInternal = isInternal(cursor);
+        while (isInternal) {
             ensureNodeIsTreeNode(cursor, key);
 
             // We still need to go down further, but we're on the right path
@@ -319,9 +320,10 @@ class InternalTreeLogic<KEY, VALUE> {
             TreeNode.goTo(cursor, "child", childId);
             level.treeNodeId = cursor.getCurrentPageId();
             int childKeyCount = keyCount(cursor);
+            isInternal = isInternal(cursor);
             if (!coordination.arrivedAtChild(
-                    isInternal(cursor),
-                    bTreeNode.availableSpace(cursor, childKeyCount),
+                    isInternal,
+                    bTreeNode.availableSpace(cursor, childKeyCount, isInternal),
                     generation(cursor) != unstableGeneration,
                     childKeyCount)) {
                 return false;

@@ -271,9 +271,10 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         assert assertNoSuccessor(cursor, stableGeneration, unstableGeneration);
         treeLogic.initialize(cursor, ratioToKeepInLeftOnSplit);
         int keyCount = keyCount(cursor);
+        var isInternal = isInternal(cursor);
         return coordination.arrivedAtChild(
-                isInternal(cursor),
-                bTreeNode.availableSpace(cursor, keyCount),
+                isInternal,
+                bTreeNode.availableSpace(cursor, keyCount, isInternal),
                 generation(cursor) != unstableGeneration,
                 keyCount);
     }
