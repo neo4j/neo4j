@@ -26,10 +26,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -191,47 +188,35 @@ case class ResolvedCall(
         val description = signature.description.fold("")(d => s"Description: $d")
 
         if (tooFewArgs) {
-          SemanticCheckResult.error(
-            _: SemanticState,
-            SemanticError(
-              s"""Procedure call does not provide the required number of arguments: got $givenNumArgs expected at least $minNumArgs (total: $totalNumArgs, $numArgsWithDefaults of which have default values).
-                 |
-                 |$sigDesc
-                 |$description""".stripMargin,
-              position
-            )
+          error(
+            s"""Procedure call does not provide the required number of arguments: got $givenNumArgs expected at least $minNumArgs (total: $totalNumArgs, $numArgsWithDefaults of which have default values).
+               |
+               |$sigDesc
+               |$description""".stripMargin,
+            position
           )
         } else {
           val maxExpectedMsg = totalNumArgs match {
             case 0 => "none"
             case _ => s"no more than $totalNumArgs"
           }
-          SemanticCheckResult.error(
-            _: SemanticState,
-            SemanticError(
-              s"""Procedure call provides too many arguments: got $givenNumArgs expected $maxExpectedMsg.
-                 |
-                 |$sigDesc
-                 |$description""".stripMargin,
-              position
-            )
+          error(
+            s"""Procedure call provides too many arguments: got $givenNumArgs expected $maxExpectedMsg.
+               |
+               |$sigDesc
+               |$description""".stripMargin,
+            position
           )
         }
       }
     } else {
       if (totalNumArgs == 0)
-        SemanticCheckResult.error(
-          _: SemanticState,
-          SemanticError("Procedure call is missing parentheses: " + signature.name, position)
-        )
+        error("Procedure call is missing parentheses: " + signature.name, position)
       else
-        SemanticCheckResult.error(
-          _: SemanticState,
-          SemanticError(
-            "Procedure call inside a query does not support passing arguments implicitly. " +
-              "Please pass arguments explicitly in parentheses after procedure name for " + signature.name,
-            position
-          )
+        error(
+          "Procedure call inside a query does not support passing arguments implicitly. " +
+            "Please pass arguments explicitly in parentheses after procedure name for " + signature.name,
+          position
         )
     }
   }
@@ -240,7 +225,7 @@ case class ResolvedCall(
     // CALL of VOID procedure => No need to name arguments, even in query
     // CALL of empty procedure => No need to name arguments, even in query
     if (signature.outputFields.isEmpty && (callResults.nonEmpty || yieldAll)) {
-      SemanticCheckResult.error(_: SemanticState, SemanticError("Cannot yield value from void procedure.", position))
+      error("Cannot yield value from void procedure.", position)
     } else if (signature.outputFields.isEmpty) {
       success
     } // CALL ... YIELD ... => Check named outputs
@@ -248,12 +233,9 @@ case class ResolvedCall(
       callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
     } // CALL wo YIELD of non-VOID or non-empty procedure in query => Error
     else {
-      SemanticCheckResult.error(
-        _: SemanticState,
-        SemanticError(
-          s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)",
-          position
-        )
+      error(
+        s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)",
+        position
       )
     }
 

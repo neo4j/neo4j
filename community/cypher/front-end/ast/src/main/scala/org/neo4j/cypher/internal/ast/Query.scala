@@ -215,30 +215,27 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = (s: SemanticState) => {
+  private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = {
     clauses match {
       case Seq(_: UnresolvedCall, where: With) =>
-        SemanticCheckResult.error(
-          s,
-          SemanticError(
-            "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
-            where.position
-          )
+        error(
+          "Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
+          where.position
         )
       case Seq(_: GraphSelection, _: UnresolvedCall) =>
         // USE clause and standalone procedure call
-        SemanticCheckResult.success(s)
+        success
       case all if all.size > 1 && all.exists(c => c.isInstanceOf[UnresolvedCall]) =>
         // Non-standalone procedure call should not allow YIELD *
         clauses.find {
           case uc: UnresolvedCall => uc.yieldAll
           case _                  => false
         }.map(c =>
-          SemanticCheckResult.error(s, SemanticError("Cannot use `YIELD *` outside standalone call", c.position))
+          error("Cannot use `YIELD *` outside standalone call", c.position)
         )
-          .getOrElse(SemanticCheckResult.success(s))
+          .getOrElse(success)
       case _ =>
-        SemanticCheckResult.success(s)
+        success
     }
   }
 
@@ -392,25 +389,19 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkInputDataStream(clauses: Seq[Clause]): SemanticCheck = (state: SemanticState) => {
+  private def checkInputDataStream(clauses: Seq[Clause]): SemanticCheck = {
     val idsClauses = clauses.filter(_.isInstanceOf[InputDataStream])
 
     idsClauses.size match {
       case c if c > 1 =>
-        SemanticCheckResult.error(
-          state,
-          SemanticError("There can be only one INPUT DATA STREAM in a query", idsClauses(1).position)
-        )
+        error("There can be only one INPUT DATA STREAM in a query", idsClauses(1).position)
       case c if c == 1 =>
         if (clauses.head.isInstanceOf[InputDataStream]) {
-          SemanticCheckResult.success(state)
+          success
         } else {
-          SemanticCheckResult.error(
-            state,
-            SemanticError("INPUT DATA STREAM must be the first clause in a query", idsClauses.head.position)
-          )
+          error("INPUT DATA STREAM must be the first clause in a query", idsClauses.head.position)
         }
-      case _ => SemanticCheckResult.success(state)
+      case _ => success
     }
   }
 

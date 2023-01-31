@@ -88,22 +88,22 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
   override def semanticCheck: SemanticCheck = SemanticCheck.nestedCheck {
 
-    def checkForSubquery(astNode: ASTNode): SemanticCheck = (state: SemanticState) => {
+    def checkForSubquery(astNode: ASTNode): SemanticCheck = {
       val invalid: Option[Expression] = astNode.folder.treeFind[Expression] {
         case _: SubqueryExpression => true
       }
       invalid.map {
         case exp: ExistsExpression =>
-          SemanticCheckResult.error(state, "The EXISTS expression is not valid on SHOW commands.", exp.position)
+          error("The EXISTS expression is not valid on SHOW commands.", exp.position)
         case exp: CountExpression =>
-          SemanticCheckResult.error(state, "The COUNT expression is not valid on SHOW commands.", exp.position)
+          error("The COUNT expression is not valid on SHOW commands.", exp.position)
         case exp: PatternExpression =>
-          SemanticCheckResult.error(state, "Pattern expressions are not valid on SHOW commands.", exp.position)
+          error("Pattern expressions are not valid on SHOW commands.", exp.position)
         case exp: PatternComprehension =>
-          SemanticCheckResult.error(state, "Pattern comprehensions are not valid on SHOW commands.", exp.position)
+          error("Pattern comprehensions are not valid on SHOW commands.", exp.position)
         case exp =>
-          SemanticCheckResult.error(state, "Subquery expressions are not valid on SHOW commands.", exp.position)
-      }.getOrElse(SemanticCheckResult.success(state))
+          error("Subquery expressions are not valid on SHOW commands.", exp.position)
+      }.getOrElse(success)
     }
 
     def checkProjection(r: ProjectionClause): SemanticCheck = {

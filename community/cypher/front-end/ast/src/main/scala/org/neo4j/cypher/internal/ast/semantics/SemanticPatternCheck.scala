@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -165,27 +166,21 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           }
 
         def checkLength: SemanticCheck =
-          (state: SemanticState) =>
-            x.element match {
-              case RelationshipChain(_, rel, _) =>
-                rel.length match {
-                  case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
-                    SemanticCheckResult(
-                      state,
-                      Seq(SemanticError(
-                        s"${x.name}(...) does not support a minimal length different " +
-                          s"from 0 or 1",
-                        min.position
-                      ))
-                    )
+          x.element match {
+            case RelationshipChain(_, rel, _) =>
+              rel.length match {
+                case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
+                  error(
+                    s"${x.name}(...) does not support a minimal length different from 0 or 1",
+                    min.position
+                  )
 
-                  case Some(None) =>
-                    val newState = state.addNotification(UnboundedShortestPathNotification(x.element.position))
-                    SemanticCheckResult(newState, Seq.empty)
-                  case _ => SemanticCheckResult(state, Seq.empty)
-                }
-              case _ => SemanticCheckResult(state, Seq.empty)
-            }
+                case Some(None) =>
+                  warn(UnboundedShortestPathNotification(x.element.position))
+                case _ => success
+              }
+            case _ => success
+          }
 
         def checkRelVariablesUnknown: SemanticCheck =
           (state: SemanticState) => {
