@@ -23,6 +23,12 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.GetDegree
+import org.neo4j.cypher.internal.expressions.HasDegree
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -379,17 +385,33 @@ trait UpdateGraph {
     // NOTE: As long as we have the conservative eagerness rule for FOREACH we do not need this recursive check
     // || other.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(deleteOverlapWithMergeIn)))
 
+  def getDegreeOverlap(qgWithInfo: QgWithLeafInfo) = {
+    val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr)
+    val getDegreeRelationshipTypes = predicates.collect{
+      case getDegree: GetDegree => getDegree.relType
+      case hasDegree: HasDegree => hasDegree.relType
+      case hasDegreeGreaterThan: HasDegreeGreaterThan => hasDegreeGreaterThan.relType
+      case hasDegreeGreaterThanOrEqual: HasDegreeGreaterThanOrEqual => hasDegreeGreaterThanOrEqual.relType
+      case hasDegreeLessThan: HasDegreeLessThan => hasDegreeLessThan.relType
+      case hasDegreeLessThanOrEqual: HasDegreeLessThanOrEqual => hasDegreeLessThanOrEqual.relType
+    }
+
+    getDegreeRelationshipTypes.nonEmpty && relationshipOverlap(getDegreeRelationshipTypes.flatten, Set.empty)
+  }
+
   /*
    * Checks for overlap between rels being read in the query graph
    * and those being created here
    */
   def createRelationshipOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
     // MATCH ()-->() CREATE ()-->()
-    allRelPatternsWrittenNonEmpty && qgWithInfo.patternRelationships.exists(r => {
-      val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
-      val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
-      relationshipOverlap(types, readProps)
-    })
+    allRelPatternsWrittenNonEmpty &&
+    (getDegreeOverlap(qgWithInfo) ||
+      qgWithInfo.patternRelationships.exists(r => {
+        val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
+        val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
+        relationshipOverlap(types, readProps)
+      }))
   }
 
   def createRelationshipOverlapHorizon(allRelPatternsRead: Set[RelationshipPattern]): Boolean = {
@@ -551,12 +573,12 @@ trait UpdateGraph {
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
         readNode != deletedNode &&
-          getDeleteOverlapWithLabelExpression(
-            qgWithInfo,
-            readNode,
-            deletedNode,
-            leafPlansPredicatesResolver
-          )
+        getDeleteOverlapWithLabelExpression(
+          qgWithInfo,
+          readNode,
+          deletedNode,
+          leafPlansPredicatesResolver
+        )
       }
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
 
