@@ -22,7 +22,11 @@ package org.neo4j.bolt.protocol.common.handler;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.pcap.PcapWriteHandler;
 import io.netty.handler.ssl.SslContext;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
@@ -34,6 +38,8 @@ import org.neo4j.memory.HeapEstimator;
  * Initializes generic netty pipelines for use with the Bolt protocol.
  */
 public class BoltChannelInitializer extends ChannelInitializer<Channel> {
+    private static final long SHALLOW_SIZE_PACKET_CAPTURE = HeapEstimator.shallowSizeOfInstance(PcapWriteHandler.class);
+
     private final Config config;
     private final Connector connector;
     private final ByteBufAllocator allocator;
@@ -75,6 +81,36 @@ public class BoltChannelInitializer extends ChannelInitializer<Channel> {
         // continue by initializing a network pipeline for the purposes of encapsulation and protocol
         // negotiation - once complete the channel is ready to negotiate a protocol revision
         connection.memoryTracker().allocateHeap(HeapEstimator.sizeOf(ch) + TransportSelectionHandler.SHALLOW_SIZE);
+
+        // when enabled, also register a protocol capture handler which writes all network
+        // communication for this channel into a dedicated file
+        if (this.config.get(BoltConnectorInternalSettings.protocol_capture)) {
+            connection.memoryTracker().allocateHeap(SHALLOW_SIZE_PACKET_CAPTURE);
+
+            var file = this.config
+                    .get(BoltConnectorInternalSettings.protocol_capture_path)
+                    .resolve(connection.id() + ".pcap")
+                    .toAbsolutePath();
+
+            try {
+                Files.createDirectories(file.getParent());
+
+                ch.pipeline()
+                        .addLast(
+                                "captureHandler",
+                                PcapWriteHandler.builder()
+                                        .build(Files.newOutputStream(
+                                                file,
+                                                StandardOpenOption.CREATE,
+                                                StandardOpenOption.TRUNCATE_EXISTING)));
+
+                log.info(
+                        "[%s] Created packet capture for connection %s at %s",
+                        ch.remoteAddress(), connection.id(), file);
+            } catch (IOException ex) {
+                log.warn("[" + ch.remoteAddress() + "] Failed to initialize Bolt capture handler for connection", ex);
+            }
+        }
 
         // when explicitly enabled, also register a protocol logging handler within the pipeline in order to
         // print all incoming and outgoing traffic to the internal log - this has performance implications thus

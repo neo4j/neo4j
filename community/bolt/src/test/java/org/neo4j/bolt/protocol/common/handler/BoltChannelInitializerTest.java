@@ -23,6 +23,9 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.pcap.PcapWriteHandler;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +39,8 @@ import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionLi
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.testing.mock.ConnectorMockFactory;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -128,5 +133,31 @@ class BoltChannelInitializerTest {
         notificationFunction.accept(listener);
 
         Mockito.verify(listener).onNetworkPipelineInitialized(pipeline);
+    }
+
+    @Test
+    void shouldInstallCaptureListener() throws IOException {
+        var path = Files.createTempDirectory("bolt_");
+
+        try {
+            Mockito.doReturn(true).when(this.config).get(BoltConnectorInternalSettings.protocol_capture);
+            Mockito.doReturn(path).when(this.config).get(BoltConnectorInternalSettings.protocol_capture_path);
+
+            var memoryTracker = Mockito.mock(MemoryTracker.class);
+            var pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
+            var channel = Mockito.mock(Channel.class, Mockito.RETURNS_MOCKS);
+
+            Mockito.doReturn(pipeline).when(channel).pipeline();
+            Mockito.doReturn(memoryTracker).when(this.connection).memoryTracker();
+
+            this.initializer.initChannel(channel);
+
+            Mockito.verify(pipeline)
+                    .addLast(ArgumentMatchers.eq("captureHandler"), ArgumentMatchers.any(PcapWriteHandler.class));
+
+            Assertions.assertThat(path).exists();
+        } finally {
+            FileUtils.deleteDirectory(path);
+        }
     }
 }

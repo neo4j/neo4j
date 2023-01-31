@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.SettingsDeclaration;
@@ -60,6 +61,20 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
                     "internal.server.bolt.protocol_logging_mode",
                     SettingValueParsers.ofEnum(ProtocolLoggingMode.class),
                     ProtocolLoggingMode.DECODED)
+            .build();
+
+    @Internal
+    @Description("Enable capture of traffic logging for incoming connections on the Bolt connector")
+    public static final Setting<Boolean> protocol_capture =
+            newBuilder("internal.server.bolt.protocol_capture", BOOL, false).build();
+
+    @Internal
+    @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the "
+            + "same data directory.")
+    public static final Setting<Path> protocol_capture_path = newBuilder(
+                    "internal.server.bolt.protocol_capture_path", PATH, Path.of("bolt_capture"))
+            .setDependency(GraphDatabaseSettings.neo4j_home)
+            .immutable()
             .build();
 
     @Internal
