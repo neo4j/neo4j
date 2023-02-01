@@ -20,17 +20,14 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
-import org.neo4j.configuration.helpers.RemoteUri
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.InternalException
 import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.IntegralValue
 import org.neo4j.values.storable.StringValue
 
 import java.util.UUID
@@ -102,8 +99,8 @@ object Catalog {
   case class Arg[T <: AnyValue](name: String, tpe: Class[T])
 
   def create(
-    graphAliases: Seq[Graph],
-    composites: Seq[(Composite, Seq[Graph])]
+    graphAliases: Seq[Alias],
+    composites: Seq[(Composite, Seq[Alias])]
   ): Catalog = {
     val databasesAndAliases = byQualifiedName(graphAliases)
     val compositesAndAliases = composites.foldLeft(Catalog.empty) { case (catalog, (composite, aliases)) =>
@@ -116,7 +113,7 @@ object Catalog {
 
   def empty: Catalog = Catalog(Map())
 
-  def byQualifiedName(graphs: Seq[Catalog.Graph]): Catalog =
+  def byQualifiedName(graphs: Seq[Graph]): Catalog =
     Catalog(graphs = graphs.map(graph => catalogName(graph) -> graph).toMap)
 
   def catalogName(graph: Graph): CatalogName =

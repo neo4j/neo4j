@@ -89,7 +89,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
     Catalog.create(aliases, composites)
   }
 
-  protected def getAliases(ids: IdProvider): Seq[Graph] = {
+  protected def getAliases(ids: IdProvider): Seq[Alias] = {
     val references = databaseLookup.databaseReferences.toSeq.filter {
       case _: DatabaseReference.Composite => false
       case _                              => true
@@ -102,7 +102,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup)
     } yield alias
   }
 
-  protected def getComposites(ids: IdProvider): Seq[(Composite, Seq[Graph])] = {
+  protected def getComposites(ids: IdProvider): Seq[(Composite, Seq[Alias])] = {
     val references = databaseLookup.databaseReferences.toSeq
     val compositeRefs = references.collect {
       case comp: DatabaseReference.Composite => comp
