@@ -20,11 +20,28 @@
 package org.neo4j.collection.trackable;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.memory.MemoryTracker;
 
 public final class HeapTrackingCollections {
     private HeapTrackingCollections() {}
+
+    public static HeapTrackingIntHashSet newIntSet(MemoryTracker memoryTracker) {
+        return HeapTrackingIntHashSet.createIntHashSet(memoryTracker);
+    }
+
+    public static HeapTrackingIntHashSet newIntSet(MemoryTracker memoryTracker, int initialCapacity) {
+        return HeapTrackingIntHashSet.createIntHashSet(memoryTracker, initialCapacity);
+    }
+
+    public static HeapTrackingIntHashSet newIntSet(MemoryTracker memoryTracker, HeapTrackingIntHashSet set) {
+        return HeapTrackingIntHashSet.createIntHashSet(memoryTracker, set);
+    }
+
+    public static HeapTrackingIntHashSet newIntSet(MemoryTracker memoryTracker, IntSet set) {
+        return HeapTrackingIntHashSet.createIntHashSet(memoryTracker, set);
+    }
 
     public static <V> MutableIntObjectMap<V> newIntObjectHashMap(MemoryTracker memoryTracker) {
         return HeapTrackingIntObjectHashMap.createIntObjectHashMap(memoryTracker);

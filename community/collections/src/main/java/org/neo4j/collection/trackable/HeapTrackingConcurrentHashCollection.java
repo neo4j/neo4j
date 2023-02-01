@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.memory.MemoryTracker;
 
-@SuppressWarnings({"unchecked", "NullableProblems"})
+@SuppressWarnings({"unchecked"})
 abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrackingConcurrentHash
         implements AutoCloseable {
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentHashCollection.class);
@@ -112,7 +112,7 @@ abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrack
         AtomicReferenceArray<Object> currentArray = dest;
         while (true) {
             int length = currentArray.length();
-            int index = HeapTrackingConcurrentHashMap.indexFor(hash, length);
+            int index = indexFor(hash, length);
             Object o = currentArray.get(index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = ((ResizeContainer) currentArray.get(length - 1)).nextArray;

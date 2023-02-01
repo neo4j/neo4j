@@ -36,7 +36,6 @@ public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCl
     final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    @VisibleForTesting
     public static HeapTrackingLongIntHashMap createLongIntHashMap(MemoryTracker memoryTracker) {
         memoryTracker.allocateHeap(SHALLOW_SIZE + arraysHeapSize(DEFAULT_INITIAL_CAPACITY));
         return new HeapTrackingLongIntHashMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);

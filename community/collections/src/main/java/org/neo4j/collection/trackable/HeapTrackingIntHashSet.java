@@ -25,52 +25,52 @@ import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
 import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
 @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-public final class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseable {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingLongHashSet.class);
+public final class HeapTrackingIntHashSet extends IntHashSet implements AutoCloseable {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingIntHashSet.class);
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    public static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker) {
-        return createLongHashSet(memoryTracker, DEFAULT_INITIAL_CAPACITY);
+    public static HeapTrackingIntHashSet createIntHashSet(MemoryTracker memoryTracker) {
+        return createIntHashSet(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
+    static HeapTrackingIntHashSet createIntHashSet(MemoryTracker memoryTracker, HeapTrackingIntHashSet set) {
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(set.trackedCapacity));
-        return new HeapTrackingLongHashSet(memoryTracker, set);
+        return new HeapTrackingIntHashSet(memoryTracker, set);
     }
 
-    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, LongSet set) {
+    static HeapTrackingIntHashSet createIntHashSet(MemoryTracker memoryTracker, IntSet set) {
         memoryTracker.allocateHeap(SHALLOW_SIZE);
-        return new HeapTrackingLongHashSet(memoryTracker, set);
+        return new HeapTrackingIntHashSet(memoryTracker, set);
     }
 
-    static HeapTrackingLongHashSet createLongHashSet(MemoryTracker memoryTracker, int initialCapacity) {
+    static HeapTrackingIntHashSet createIntHashSet(MemoryTracker memoryTracker, int initialCapacity) {
         int capacity = ceilingPowerOfTwo(initialCapacity << 1);
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(capacity));
-        return new HeapTrackingLongHashSet(memoryTracker, initialCapacity, capacity);
+        return new HeapTrackingIntHashSet(memoryTracker, initialCapacity, capacity);
     }
 
-    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, int initialCapacity, int actualCapacity) {
+    private HeapTrackingIntHashSet(MemoryTracker memoryTracker, int initialCapacity, int actualCapacity) {
         super(initialCapacity);
         this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = actualCapacity;
     }
 
-    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, HeapTrackingLongHashSet set) {
+    private HeapTrackingIntHashSet(MemoryTracker memoryTracker, HeapTrackingIntHashSet set) {
         super(set);
         this.memoryTracker = requireNonNull(memoryTracker);
         this.trackedCapacity = set.trackedCapacity;
     }
 
-    private HeapTrackingLongHashSet(MemoryTracker memoryTracker, LongSet set) {
+    private HeapTrackingIntHashSet(MemoryTracker memoryTracker, IntSet set) {
         super(set);
         this.memoryTracker = requireNonNull(memoryTracker);
     }
@@ -92,6 +92,6 @@ public final class HeapTrackingLongHashSet extends LongHashSet implements AutoCl
 
     @VisibleForTesting
     public static long arrayHeapSize(int arrayLength) {
-        return alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES);
+        return alignObjectSize(ARRAY_HEADER_BYTES + (long) arrayLength * Integer.BYTES);
     }
 }

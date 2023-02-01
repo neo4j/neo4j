@@ -35,7 +35,6 @@ public class HeapTrackingUnifiedSet<T> extends UnifiedSet<T> implements AutoClos
     private final MemoryTracker memoryTracker;
     private int trackedCapacity;
 
-    @VisibleForTesting
     public static <T> HeapTrackingUnifiedSet<T> createUnifiedSet(MemoryTracker memoryTracker) {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 1;
         memoryTracker.allocateHeap(SHALLOW_SIZE + arrayHeapSize(initialSizeToAllocate));

@@ -24,22 +24,13 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.memory.MemoryTracker;
 
-@SuppressWarnings({"unchecked", "NullableProblems"})
+@SuppressWarnings({"unchecked"})
 public final class HeapTrackingConcurrentBag<E> extends HeapTrackingConcurrentHashCollection<E>
         implements AutoCloseable {
     private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentBag.class);
 
-    private HeapTrackingConcurrentBag(MemoryTracker memoryTracker) {
-        super(memoryTracker, DEFAULT_INITIAL_CAPACITY);
-    }
-
-    private HeapTrackingConcurrentBag(MemoryTracker memoryTracker, int initialCapacity) {
-        super(memoryTracker, initialCapacity);
-    }
-
     public static <E> HeapTrackingConcurrentBag<E> newBag(MemoryTracker memoryTracker) {
-        memoryTracker.allocateHeap(SHALLOW_SIZE_THIS);
-        return new HeapTrackingConcurrentBag<>(memoryTracker);
+        return newBag(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
     public static <E> HeapTrackingConcurrentBag<E> newBag(MemoryTracker memoryTracker, int size) {
@@ -49,6 +40,10 @@ public final class HeapTrackingConcurrentBag<E> extends HeapTrackingConcurrentHa
 
     public static long staticSizeOfWrapperObject() {
         return SHALLOW_SIZE_WRAPPER;
+    }
+
+    private HeapTrackingConcurrentBag(MemoryTracker memoryTracker, int initialCapacity) {
+        super(memoryTracker, initialCapacity);
     }
 
     @Override
@@ -76,7 +71,7 @@ public final class HeapTrackingConcurrentBag<E> extends HeapTrackingConcurrentHa
     private void slowAdd(E value, int hash, AtomicReferenceArray<Object> currentArray) {
         while (true) {
             int length = currentArray.length();
-            int index = HeapTrackingConcurrentHashMap.indexFor(hash, length);
+            int index = indexFor(hash, length);
             Object o = currentArray.get(index);
             if (o == RESIZED || o == RESIZING) {
                 currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);

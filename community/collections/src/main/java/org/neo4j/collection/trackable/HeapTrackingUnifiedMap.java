@@ -35,7 +35,6 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K, V> implements Au
     private final MemoryTracker memoryTracker;
     private long trackedHeap;
 
-    @VisibleForTesting
     public static <K, V> HeapTrackingUnifiedMap<K, V> createUnifiedMap(MemoryTracker memoryTracker) {
         int initialSizeToAllocate = DEFAULT_INITIAL_CAPACITY << 2;
         long trackedHeap = arrayHeapSize(initialSizeToAllocate);
