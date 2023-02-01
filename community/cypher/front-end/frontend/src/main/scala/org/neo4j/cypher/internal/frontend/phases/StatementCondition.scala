@@ -26,7 +26,7 @@ case class StatementCondition(inner: ValidatingCondition) extends ValidatingCond
     case x            => throw new IllegalStateException(s"Unknown state: $x")
   }
 
-  override def name: String = productPrefix
+  override def name: String = s"$productPrefix($inner)"
 }
 
 object StatementCondition {

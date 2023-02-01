@@ -56,7 +56,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 object ASTRewriter {
 
-  private val AccumulatedSteps(orderedSteps, _) =
+  val AccumulatedSteps(orderedSteps, postConditions) =
     StepSequencer(ListStepAccumulator[StepSequencer.Step with ASTRewriterFactory]()).orderSteps(
       Set(
         combineSetProperty,

@@ -16,14 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
-import org.neo4j.cypher.internal.rewriting.conditions.noDuplicatesInReturnItems
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
-import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
-import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
@@ -47,18 +41,9 @@ case class AstRewriting(parameterTypeMapping: Map[String, ParameterTypeInfo] = M
   override def phase = AST_REWRITE
 
   override def postConditions: Set[StepSequencer.Condition] = {
-    val validatingRewriterConditions = Set(
-      noDuplicatesInReturnItems,
-      containsNoReturnAll,
-      noUnnamedNodesAndRelationships,
-      containsNoNodesOfType[NotEquals],
-      normalizedEqualsArguments
-    ).map(StatementCondition.apply)
-
-    val nonValidatingRewriterConditions: Set[StepSequencer.Condition] = Set(
-      NoNamedPathsInPatternComprehensions
-    )
-
-    validatingRewriterConditions ++ nonValidatingRewriterConditions
+    // noReferenceEqualityAmongVariables is broken by later phases, e.g. Namespacer.
+    // This can be fixed in a subsequent investigation.
+    (ASTRewriter.postConditions - noReferenceEqualityAmongVariables)
+      .map(StatementCondition.wrap)
   }
 }
