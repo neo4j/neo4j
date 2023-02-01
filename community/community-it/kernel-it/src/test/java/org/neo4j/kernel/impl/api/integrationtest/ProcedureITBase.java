@@ -78,8 +78,15 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.labels", "() :: (label :: STRING?)", "List all available labels in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "db.schema.visualization", "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
-                        "Visualize the schema of the data.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
+                proc( "db.schema.visualization",
+                        "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
+                        "Visualizes the schema of the data based on available statistics. A new node is " +
+                                "returned for each label. The properties represented on the node include: `name` " +
+                                "(label name), `indexes` (list of indexes), and `constraints` (list of constraints). " +
+                                "A relationship of a given type is returned for all possible combinations of start and end nodes. " +
+                                "Note that this may include additional relationships that do not exist in the data due to " +
+                                "the information available in the count store. ",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.schema.nodeTypeProperties", "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
                                 "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)", "Show the derived property schema of the nodes in tabular form.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ), proc( "db.schema.relTypeProperties",
