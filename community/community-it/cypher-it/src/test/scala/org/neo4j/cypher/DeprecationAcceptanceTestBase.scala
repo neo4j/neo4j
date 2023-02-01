@@ -108,7 +108,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoDeprecations(validProviderQueries)
   }
 
-  test("deprecate using the same variable name for several variable length relationships in the same pattern") {
+  test("do not deprecate using the same variable name for several variable length relationships in the same pattern") {
     val queries = Seq(
       "MATCH ()-[r*]->(), ()-[r*]->() RETURN r",
       "MATCH ()-[r*..5]->(), ()<-[r*]-() RETURN r",
@@ -120,15 +120,12 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH ()-[r*]-() WHERE EXISTS {()-[r*]-()-[r*]-()} RETURN r",
       "MATCH ()-[r*]-() RETURN [ ()-[r*]-()-[r*]-() | r ] AS rs"
     )
-    assertNotification(
-      queries,
-      true,
-      DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP,
-      NotificationDetail.Factory.repeatedVarLengthRel("r")
+    assertNoDeprecations(
+      queries
     )
   }
 
-  test("deprecate using the same variable name for variable length relationships across patterns") {
+  test("do not deprecate using the same variable name for variable length relationships across patterns") {
     val queries = Seq(
       "MATCH ()-[s*]->() MATCH ()-[s*]->() RETURN s",
       "MATCH ()-[s*]->() MATCH ()-[r*]->() MATCH ()-[s*]->() RETURN r, s",
@@ -144,11 +141,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         |RETURN p
         |""".stripMargin
     )
-    assertNotification(
-      queries,
-      true,
-      DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP,
-      NotificationDetail.Factory.repeatedVarLengthRel("s")
+    assertNoDeprecations(
+      queries
     )
   }
 

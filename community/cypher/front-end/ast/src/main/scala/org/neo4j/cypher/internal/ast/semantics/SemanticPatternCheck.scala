@@ -85,16 +85,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       when(ctx != SemanticContext.Create) {
         ensureNoReferencesOutFromQuantifiedPath(pattern) chain
           ensureNoRepeatedRelationships(pattern) chain
-          ensureNoRepeatedVarLengthRelationships(pattern) chain
-          ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern)
+          ensureNoRepeatedVarLengthRelationships(pattern)
       }
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
     declareVariables(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
       ensureNoRepeatedRelationships(pattern) chain
-      ensureNoRepeatedVarLengthRelationships(pattern) chain
-      ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(pattern)
+      ensureNoRepeatedVarLengthRelationships(pattern)
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
@@ -652,44 +650,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
     val repetitions = relVariables.values.filter(_.size > 1)
     if (varLength) {
-      // To align with ensureNoRepeatedVarLengthRelationshipsAlreadyInScope, return second occurrence
       repetitions.map(_.sortBy(_.position).drop(1).head).toSeq
     } else {
       // For backwards compatibility, return the first occurrence
       repetitions.map(_.minBy(_.position)).toSeq
     }
   }
-
-  /**
-   * Traverse the sub-tree at astNode. Warn if any var length relationship is repeated from a previous pattern.
-   *
-   * @param astNode the sub-tree to traverse.
-   */
-  private def ensureNoRepeatedVarLengthRelationshipsAlreadyInScope(astNode: ASTNode): SemanticCheck =
-    (state: SemanticState) => {
-      val repetitions = astNode.folder.fold(List.empty[LogicalVariable]) {
-        case RelationshipChain(_, RelationshipPattern(Some(rel), _, Some(_), _, _, _), _) =>
-          if (
-            state.currentScope.availableSymbolDefinitions.exists { s =>
-              s.name == rel.name && s.asVariable.position != rel.position
-            }
-          ) {
-            // var length relationship variable defined in a different position
-            acc => acc ++ List(rel)
-          } else {
-            acc => acc
-          }
-        case _ => acc => acc
-      }
-      val newState = repetitions.foldLeft(state) {
-        case (accState, repeated) =>
-          accState.addNotification(DeprecatedRepeatedVarLengthRelationshipNotification(
-            repeated.position,
-            repeated.name
-          ))
-      }
-      SemanticCheckResult(newState, Seq.empty)
-    }
 
   private def checkNodeProperties(ctx: SemanticContext, properties: Option[Expression]): SemanticCheck =
     checkNoParamMapsWhenMatching(properties, ctx) chain
