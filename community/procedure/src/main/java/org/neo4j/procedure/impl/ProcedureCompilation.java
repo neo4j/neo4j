@@ -229,16 +229,20 @@ public final class ProcedureCompilation {
      * @param signature the signature of the user-defined function
      * @param fieldSetters the fields to set before each call.
      * @param methodToCall the method to call
+     * @param parentClassLoader the classloader to resolve with.
      * @return a CallableUserFunction delegating to the underlying user-defined function.
      * @throws ProcedureException if something went wrong when compiling the user-defined function.
      */
     static CallableUserFunction compileFunction(
-            UserFunctionSignature signature, List<FieldSetter> fieldSetters, Method methodToCall)
+            UserFunctionSignature signature,
+            List<FieldSetter> fieldSetters,
+            Method methodToCall,
+            ClassLoader parentClassLoader)
             throws ProcedureException {
 
         ClassHandle handle;
         try {
-            CodeGenerator codeGenerator = codeGenerator();
+            CodeGenerator codeGenerator = codeGenerator(parentClassLoader);
             try (ClassGenerator generator =
                     codeGenerator.generateClass(PACKAGE, className(signature), CallableUserFunction.class)) {
                 // static fields
@@ -322,16 +326,20 @@ public final class ProcedureCompilation {
      * @param signature the signature of the procedure
      * @param fieldSetters the fields to set before each call.
      * @param methodToCall the method to call
+     * @param parentClassLoader the classloader to resolve with.
      * @return a CallableProcedure delegating to the underlying procedure method.
      * @throws ProcedureException if something went wrong when compiling the user-defined function.
      */
     static CallableProcedure compileProcedure(
-            ProcedureSignature signature, List<FieldSetter> fieldSetters, Method methodToCall)
+            ProcedureSignature signature,
+            List<FieldSetter> fieldSetters,
+            Method methodToCall,
+            ClassLoader parentClassLoader)
             throws ProcedureException {
 
         ClassHandle handle;
         try {
-            CodeGenerator codeGenerator = codeGenerator();
+            CodeGenerator codeGenerator = codeGenerator(parentClassLoader);
             Class<?> iterator = generateIterator(codeGenerator, procedureType(methodToCall));
 
             try (ClassGenerator generator =
@@ -445,6 +453,7 @@ public final class ProcedureCompilation {
      * @param create the method that creates the aggregator
      * @param update the update method of the aggregator
      * @param result the result method of the aggregator
+     * @param parentClassLoader the classloader to resolve with.
      * @return a CallableUserFunction delegating to the underlying user-defined function.
      * @throws ProcedureException if something went wrong when compiling the user-defined function.
      */
@@ -453,12 +462,13 @@ public final class ProcedureCompilation {
             List<FieldSetter> fieldSetters,
             Method create,
             Method update,
-            Method result)
+            Method result,
+            ClassLoader parentClassLoader)
             throws ProcedureException {
 
         ClassHandle handle;
         try {
-            CodeGenerator codeGenerator = codeGenerator();
+            CodeGenerator codeGenerator = codeGenerator(parentClassLoader);
             Class<?> aggregator = generateAggregator(codeGenerator, update, result, signature);
             try (ClassGenerator generator = codeGenerator.generateClass(
                     CallableUserAggregationFunction.BasicUserAggregationFunction.class,
@@ -836,11 +846,12 @@ public final class ProcedureCompilation {
         }
     }
 
-    private static CodeGenerator codeGenerator() throws CodeGenerationNotSupportedException {
+    private static CodeGenerator codeGenerator(ClassLoader parentClassLoader)
+            throws CodeGenerationNotSupportedException {
         if (DEBUG) {
-            return generateCode(CallableUserFunction.class.getClassLoader(), SOURCECODE, PRINT_SOURCE);
+            return generateCode(parentClassLoader, SOURCECODE, PRINT_SOURCE);
         } else {
-            return generateCode(CallableUserFunction.class.getClassLoader(), BYTECODE);
+            return generateCode(parentClassLoader, BYTECODE);
         }
     }
 

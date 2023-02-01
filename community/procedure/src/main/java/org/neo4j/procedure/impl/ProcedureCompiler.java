@@ -105,7 +105,8 @@ class ProcedureCompiler {
         this.restrictions = restrictions;
     }
 
-    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin) throws ProcedureException {
+    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin, ClassLoader parentClassLoader)
+            throws ProcedureException {
         try {
             List<Method> functionMethods = Arrays.stream(fcnDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(UserFunction.class))
@@ -124,7 +125,7 @@ class ProcedureCompiler {
                 String definedName = method.getAnnotation(UserFunction.class).name();
                 QualifiedName funcName = extractName(fcnDefinition, method, valueName, definedName);
                 if (isBuiltin || config.isWhitelisted(funcName.toString())) {
-                    out.add(compileFunction(fcnDefinition, method, funcName));
+                    out.add(compileFunction(fcnDefinition, method, funcName, parentClassLoader));
                 } else {
                     log.warn(String.format("The function '%s' is not on the allowlist and won't be loaded.", funcName));
                 }
@@ -143,7 +144,8 @@ class ProcedureCompiler {
         }
     }
 
-    List<CallableUserAggregationFunction> compileAggregationFunction(Class<?> fcnDefinition) throws ProcedureException {
+    List<CallableUserAggregationFunction> compileAggregationFunction(
+            Class<?> fcnDefinition, ClassLoader parentClassLoader) throws ProcedureException {
         try {
             List<Method> methods = Arrays.stream(fcnDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(UserAggregationFunction.class))
@@ -164,7 +166,7 @@ class ProcedureCompiler {
                 QualifiedName funcName = extractName(fcnDefinition, method, valueName, definedName);
 
                 if (config.isWhitelisted(funcName.toString())) {
-                    out.add(compileAggregationFunction(fcnDefinition, method, funcName));
+                    out.add(compileAggregationFunction(fcnDefinition, method, funcName, parentClassLoader));
                 } else {
                     log.warn(String.format("The function '%s' is not on the allowlist and won't be loaded.", funcName));
                 }
@@ -183,7 +185,8 @@ class ProcedureCompiler {
         }
     }
 
-    List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess) throws ProcedureException {
+    List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess, ClassLoader parentClassLoader)
+            throws ProcedureException {
         try {
             List<Method> procedureMethods = Arrays.stream(procDefinition.getDeclaredMethods())
                     .filter(m -> m.isAnnotationPresent(Procedure.class))
@@ -201,7 +204,7 @@ class ProcedureCompiler {
                 QualifiedName procName = extractName(procDefinition, method, valueName, definedName);
 
                 if (fullAccess || config.isWhitelisted(procName.toString())) {
-                    out.add(compileProcedure(procDefinition, method, fullAccess, procName));
+                    out.add(compileProcedure(procDefinition, method, fullAccess, procName, parentClassLoader));
                 } else {
                     log.warn(
                             String.format("The procedure '%s' is not on the allowlist and won't be loaded.", procName));
@@ -222,7 +225,11 @@ class ProcedureCompiler {
     }
 
     private CallableProcedure compileProcedure(
-            Class<?> procDefinition, Method method, boolean fullAccess, QualifiedName procName)
+            Class<?> procDefinition,
+            Method method,
+            boolean fullAccess,
+            QualifiedName procName,
+            ClassLoader parentClassLoader)
             throws ProcedureException {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor(method);
         List<FieldSignature> outputSignature = outputSignatureCompiler.fieldSignatures(method);
@@ -277,7 +284,19 @@ class ProcedureCompiler {
                 internal,
                 allowExpiredCredentials);
 
-        return ProcedureCompilation.compileProcedure(signature, setters, method);
+        return ProcedureCompilation.compileProcedure(signature, setters, method, parentClassLoader);
+    }
+
+    List<CallableProcedure> compileProcedure(Class<?> procDefinition, boolean fullAccess) throws ProcedureException {
+        return compileProcedure(procDefinition, fullAccess, CallableUserFunction.class.getClassLoader());
+    }
+
+    List<CallableUserAggregationFunction> compileAggregationFunction(Class<?> fcnDefinition) throws ProcedureException {
+        return compileAggregationFunction(fcnDefinition, CallableUserFunction.class.getClassLoader());
+    }
+
+    List<CallableUserFunction> compileFunction(Class<?> fcnDefinition, boolean isBuiltin) throws ProcedureException {
+        return compileFunction(fcnDefinition, isBuiltin, CallableUserFunction.class.getClassLoader());
     }
 
     private String describeAndLogLoadFailure(QualifiedName name) {
@@ -291,7 +310,8 @@ class ProcedureCompiler {
         return description;
     }
 
-    private CallableUserFunction compileFunction(Class<?> procDefinition, Method method, QualifiedName procName)
+    private CallableUserFunction compileFunction(
+            Class<?> procDefinition, Method method, QualifiedName procName, ClassLoader parentClassLoader)
             throws ProcedureException {
         restrictions.verify(procName);
 
@@ -340,11 +360,12 @@ class ProcedureCompiler {
                 internal,
                 threadSafe);
 
-        return ProcedureCompilation.compileFunction(signature, setters, method);
+        return ProcedureCompilation.compileFunction(signature, setters, method, parentClassLoader);
     }
 
     private CallableUserAggregationFunction compileAggregationFunction(
-            Class<?> definition, Method create, QualifiedName funcName) throws ProcedureException {
+            Class<?> definition, Method create, QualifiedName funcName, ClassLoader parentClassLoader)
+            throws ProcedureException {
         restrictions.verify(funcName);
 
         // find update and result method
@@ -465,7 +486,7 @@ class ProcedureCompiler {
                 internal,
                 threadSafe);
 
-        return ProcedureCompilation.compileAggregation(signature, setters, create, update, result);
+        return ProcedureCompilation.compileAggregation(signature, setters, create, update, result, parentClassLoader);
     }
 
     private String deprecated(Method method, Supplier<String> supplier, String warning) {

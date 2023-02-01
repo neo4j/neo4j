@@ -103,11 +103,12 @@ class ProcedureJarLoader {
     private Callables loadProcedures(Path jar, ClassLoader loader, Callables target)
             throws IOException, KernelException {
         RawIterator<Class<?>, IOException> classes = listClassesIn(jar, loader);
+
         while (classes.hasNext()) {
             Class<?> next = classes.next();
-            target.addAllProcedures(compiler.compileProcedure(next, false));
-            target.addAllFunctions(compiler.compileFunction(next, false));
-            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next));
+            target.addAllProcedures(compiler.compileProcedure(next, false, loader));
+            target.addAllFunctions(compiler.compileFunction(next, false, loader));
+            target.addAllAggregationFunctions(compiler.compileAggregationFunction(next, loader));
         }
         return target;
     }

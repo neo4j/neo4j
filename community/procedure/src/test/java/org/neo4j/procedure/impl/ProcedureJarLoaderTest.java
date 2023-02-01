@@ -56,6 +56,7 @@ import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
@@ -67,7 +68,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -89,7 +89,16 @@ public class ProcedureJarLoaderTest {
     private final InternalLog log = mock(InternalLog.class);
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper(mock(InternalTransaction.class));
-    private final ProcedureJarLoader jarloader = new ProcedureJarLoader(procedureCompiler(), NullLog.getInstance());
+
+    private AssertableLogProvider logProvider;
+    private ProcedureJarLoader jarloader;
+
+    @BeforeEach
+    void setup() {
+
+        logProvider = new AssertableLogProvider(true);
+        jarloader = new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
+    }
 
     @Test
     void shouldLoadProcedureFromJar() throws Throwable {
@@ -227,10 +236,6 @@ public class ProcedureJarLoaderTest {
         // given
         URL jar = createMrJarFor(Runtime.version(), ClassWithOneProcedure.class);
 
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
-
         // when
         List<CallableProcedure> procedures =
                 jarloader.loadProceduresFromDir(parentDir(jar)).procedures();
@@ -252,10 +257,6 @@ public class ProcedureJarLoaderTest {
         Runtime.Version nextVersion =
                 Runtime.Version.parse(String.valueOf(Runtime.version().feature() + 1));
         URL jar = createMrJarFor(nextVersion, ClassWithOneProcedure.class);
-
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
 
         // when
         List<CallableProcedure> procedures =
@@ -317,11 +318,6 @@ public class ProcedureJarLoaderTest {
                 ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class);
         corruptJar(theJar);
 
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
-
         // when
         assertThatThrownBy(() -> jarloader.loadProceduresFromDir(parentDir(theJar)))
                 .isInstanceOf(ZipException.class)
@@ -340,11 +336,6 @@ public class ProcedureJarLoaderTest {
                 ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class);
         corruptJar(jarOne);
         corruptJar(jarTwo);
-
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
 
         // when
         assertThatThrownBy(() -> jarloader.loadProceduresFromDir(testDirectory.homePath()))
@@ -384,10 +375,6 @@ public class ProcedureJarLoaderTest {
                         .toFile())
                 .toPath();
 
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
-
         jarloader.loadProceduresFromDir(jar.getParent());
 
         assertThat(logProvider)
@@ -417,9 +404,6 @@ public class ProcedureJarLoaderTest {
                         .createFile(new Random().nextInt() + ".jar")
                         .toFile())
                 .toPath();
-
-        var logProvider = new AssertableLogProvider(true);
-        var jarloader = new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
 
         jarloader.loadProceduresFromDir(jar.getParent());
 
@@ -452,9 +436,6 @@ public class ProcedureJarLoaderTest {
                         .toFile())
                 .toPath();
 
-        var logProvider = new AssertableLogProvider(true);
-        var jarloader = new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
-
         jarloader.loadProceduresFromDir(jar.getParent());
 
         assertThat(logProvider)
@@ -481,11 +462,6 @@ public class ProcedureJarLoaderTest {
         URL theJar = JarBuilder.createJarFor(fileWithSpacesInName, ClassWithOneProcedure.class);
         corruptJar(theJar);
 
-        AssertableLogProvider logProvider = new AssertableLogProvider(true);
-
-        ProcedureJarLoader jarloader =
-                new ProcedureJarLoader(procedureCompiler(), logProvider.getLog(ProcedureJarLoader.class));
-
         // when
         assertThrows(ZipException.class, () -> jarloader.loadProceduresFromDir(parentDir(theJar)));
         assertThat(logProvider).containsMessages(format("Plugin jar file: %s corrupted.", fileWithSpacesInName));
@@ -493,9 +469,6 @@ public class ProcedureJarLoaderTest {
 
     @Test
     void shouldReturnEmptySetOnNullArgument() throws Exception {
-        // given
-        ProcedureJarLoader jarloader = new ProcedureJarLoader(procedureCompiler(), NullLog.getInstance());
-
         // when
         ProcedureJarLoader.Callables callables = jarloader.loadProceduresFromDir(null);
 

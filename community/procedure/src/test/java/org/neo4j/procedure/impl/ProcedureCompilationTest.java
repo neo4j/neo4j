@@ -44,9 +44,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
-import static org.neo4j.procedure.impl.ProcedureCompilation.compileAggregation;
-import static org.neo4j.procedure.impl.ProcedureCompilation.compileFunction;
-import static org.neo4j.procedure.impl.ProcedureCompilation.compileProcedure;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.PI;
@@ -113,6 +110,8 @@ public class ProcedureCompilationTest {
     private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper(mock(InternalTransaction.class));
     private static final InternalTransaction TRANSACTION = mock(InternalTransaction.class);
     public static final ResourceTracker RESOURCE_TRACKER = mock(ResourceTracker.class);
+
+    private static final ClassLoader defaultClassloader = ProcedureCompilationTest.class.getClassLoader();
 
     private Context ctx;
 
@@ -875,6 +874,29 @@ public class ProcedureCompilationTest {
             assertTrue(methodHashMap.containsKey(type), type + " is not being tested!");
         }
         return methodHashMap;
+    }
+
+    private CallableUserFunction compileFunction(
+            UserFunctionSignature signature, List<FieldSetter> fieldSetters, Method methodToCall)
+            throws ProcedureException {
+        return ProcedureCompilation.compileFunction(signature, fieldSetters, methodToCall, defaultClassloader);
+    }
+
+    private CallableUserAggregationFunction compileAggregation(
+            UserFunctionSignature signature,
+            List<FieldSetter> fieldSetters,
+            Method create,
+            Method update,
+            Method result)
+            throws ProcedureException {
+        return ProcedureCompilation.compileAggregation(
+                signature, fieldSetters, create, update, result, defaultClassloader);
+    }
+
+    private CallableProcedure compileProcedure(
+            ProcedureSignature signature, List<FieldSetter> fieldSetters, Method methodToCall)
+            throws ProcedureException {
+        return ProcedureCompilation.compileProcedure(signature, fieldSetters, methodToCall, defaultClassloader);
     }
 
     public Stream<LongOut> longStream(long in) {
