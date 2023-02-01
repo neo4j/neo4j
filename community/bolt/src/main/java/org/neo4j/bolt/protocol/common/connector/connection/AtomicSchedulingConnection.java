@@ -48,7 +48,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.FeatureToggles;
 
@@ -517,8 +516,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         @Override
         public AtomicSchedulingConnection create(Connector connector, String id, Channel channel) {
-            // TODO: Configurable grabSize for tuning?
-            var memoryTracker = new LocalMemoryTracker(connector.memoryPool(), 0, 64, null);
+            // TODO: Configurable chunk size for tuning?
+            var memoryTracker = ConnectionMemoryTracker.createForPool(connector.memoryPool());
             memoryTracker.allocateHeap(SHALLOW_SIZE);
 
             return new AtomicSchedulingConnection(
