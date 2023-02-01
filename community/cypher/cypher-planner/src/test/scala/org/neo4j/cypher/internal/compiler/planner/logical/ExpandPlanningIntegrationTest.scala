@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
@@ -664,5 +666,85 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
         .argument()
         .build()
     )
+  }
+
+  test("should plan ExpandInto for MERGE with ON CREATE with update one property") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query =
+      """MATCH (a {name:'A'}), (b {name:'B'})
+        |MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = 'foo'""".stripMargin
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
+  }
+
+  test("should plan ExpandInto for MERGE with ON CREATE with deleting one property") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query =
+      """MATCH (a {name:'A'}), (b {name:'B'})
+        |MERGE (a)-[r:TYPE]->(b) ON CREATE SET r.name = null""".stripMargin
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
+  }
+
+  test("should plan ExpandInto for MERGE with ON CREATE with update all properties from node") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query = "MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON CREATE SET r = a"
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
+  }
+
+  test("should plan ExpandInto for MERGE with ON MATCH with update all properties from node") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query = "MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) ON MATCH SET r = a"
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
+  }
+
+  test("should plan ExpandInto for MERGE with ON CREATE with update properties from literal map") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query =
+      """MATCH (a {name:'A'}), (b {name:'B'})
+        |MERGE (a)-[r:TYPE]->(b) ON CREATE SET r += {foo: 'bar', bar: 'baz'}""".stripMargin
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
+  }
+
+  test("should plan ExpandInto for MERGE with ON MATCH with update properties from literal map") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:TYPE]->()", 10000)
+      .build()
+    val query =
+      """MATCH (a {name:'A'}), (b {name:'B'})
+        |MERGE (a)-[r:TYPE]->(b) ON MATCH SET r += {foo: 'baz', bar: 'baz'}""".stripMargin
+
+    planner.plan(query) should containPlanMatching {
+      case Expand(_, _, _, _, _, _, ExpandInto) =>
+    }
   }
 }
