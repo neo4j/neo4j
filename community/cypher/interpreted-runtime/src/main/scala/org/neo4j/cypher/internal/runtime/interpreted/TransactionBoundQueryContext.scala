@@ -145,6 +145,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
+
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -722,9 +723,9 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def relationshipLockingUniqueIndexSeek(
-                                           index: IndexDescriptor,
-                                           queries: Seq[PropertyIndexQuery.ExactPredicate]
-                                         ): RelationshipValueIndexCursor = {
+    index: IndexDescriptor,
+    queries: Seq[PropertyIndexQuery.ExactPredicate]
+  ): RelationshipValueIndexCursor = {
 
     val cursor = allocateAndTraceRelationshipValueIndexCursor()
     allocateAndTraceRelationshipValueIndexCursor()

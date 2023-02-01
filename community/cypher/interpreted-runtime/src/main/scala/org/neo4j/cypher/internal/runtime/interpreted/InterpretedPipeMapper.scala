@@ -451,16 +451,16 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case DirectedRelationshipUniqueIndexSeek(
-      idName,
-      startNode,
-      endNode,
-      typeToken,
-      properties,
-      valueExpr,
-      _,
-      indexOrder,
-      indexType
-      ) =>
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekPipe(
           idName,
@@ -499,16 +499,16 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case UndirectedRelationshipUniqueIndexSeek(
-      idName,
-      startNode,
-      endNode,
-      typeToken,
-      properties,
-      valueExpr,
-      _,
-      indexOrder,
-      indexType
-      ) =>
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekPipe(
           idName,

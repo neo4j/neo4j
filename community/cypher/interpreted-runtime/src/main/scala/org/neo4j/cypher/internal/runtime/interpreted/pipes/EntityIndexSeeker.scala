@@ -117,14 +117,14 @@ trait EntityIndexSeeker {
     }
 
   protected def relationshipIndexSeek(
-                                       state: QueryState,
-                                       index: IndexReadSession,
-                                       needsValues: Boolean,
-                                       indexOrder: IndexOrder,
-                                       baseContext: CypherRow
-                                     ): RelationshipValueIndexCursor = indexMode match {
+    state: QueryState,
+    index: IndexReadSession,
+    needsValues: Boolean,
+    indexOrder: IndexOrder,
+    baseContext: CypherRow
+  ): RelationshipValueIndexCursor = indexMode match {
     case _: ExactSeek |
-         _: SeekByRange =>
+      _: SeekByRange =>
       val indexQueries: collection.Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
       if (indexQueries.size == 1) {
         state.query.relationshipIndexSeek(index, needsValues, indexOrder, indexQueries.head)

@@ -742,7 +742,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   def uniqueRelationshipIndex(relationshipType: String, properties: String*): Unit = {
     try {
       val creator = properties.foldLeft(
-        runtimeTestSupport.tx.schema().constraintFor(RelationshipType.withName(relationshipType)).withIndexType(IndexType.RANGE)
+        runtimeTestSupport.tx.schema().constraintFor(RelationshipType.withName(relationshipType)).withIndexType(
+          IndexType.RANGE
+        )
       ) {
         case (acc, prop) => acc.assertPropertyIsUnique(prop)
       }
@@ -756,7 +758,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   def uniqueRelationshipIndex(indexType: IndexType, relationshipType: String, properties: String*): Unit = {
     runtimeTestSupport.restartTx()
     try {
-      val creator = runtimeTestSupport.tx.schema().constraintFor(RelationshipType.withName(relationshipType)).withIndexType(indexType)
+      val creator = runtimeTestSupport.tx.schema().constraintFor(
+        RelationshipType.withName(relationshipType)
+      ).withIndexType(indexType)
       properties
         .foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
         .create()

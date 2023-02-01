@@ -390,16 +390,16 @@ class SlottedPipeMapper(
         )(id)
 
       case DirectedRelationshipUniqueIndexSeek(
-      column,
-      leftNode,
-      rightNode,
-      typeToken,
-      properties,
-      valueExpr,
-      _,
-      indexOrder,
-      indexType
-      ) =>
+          column,
+          leftNode,
+          rightNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekSlottedPipe(
           column,
@@ -413,7 +413,6 @@ class SlottedPipeMapper(
           indexOrder,
           slots
         )(id)
-
 
       case DirectedRelationshipIndexSeek(
           column,
@@ -441,16 +440,16 @@ class SlottedPipeMapper(
         )(id)
 
       case UndirectedRelationshipUniqueIndexSeek(
-      column,
-      leftNode,
-      rightNode,
-      typeToken,
-      properties,
-      valueExpr,
-      _,
-      indexOrder,
-      indexType
-      ) =>
+          column,
+          leftNode,
+          rightNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexOrder,
+          indexType
+        ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekSlottedPipe(
           column,

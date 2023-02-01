@@ -186,9 +186,9 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): RelationshipValueIndexCursor
 
   def relationshipLockingUniqueIndexSeek(
-                                  index: IndexDescriptor,
-                                  queries: Seq[PropertyIndexQuery.ExactPredicate]
-                                ): RelationshipValueIndexCursor
+    index: IndexDescriptor,
+    queries: Seq[PropertyIndexQuery.ExactPredicate]
+  ): RelationshipValueIndexCursor
 
   def relationshipIndexSeekByContains(
     index: IndexReadSession,
@@ -738,10 +738,9 @@ object RelationshipValueHit {
   val EMPTY = new RelationshipValueHit(RelationshipValueIndexCursor.EMPTY, null)
 }
 
-class RelationshipValueHit(val inner: RelationshipValueIndexCursor,
-                            val values: Array[Value],
-                           ) extends DefaultCloseListenable
-                                                                           with RelationshipValueIndexCursor {
+class RelationshipValueHit(val inner: RelationshipValueIndexCursor, val values: Array[Value])
+    extends DefaultCloseListenable
+    with RelationshipValueIndexCursor {
 
   private var _next = relationshipReference != -1L
 
@@ -772,9 +771,8 @@ class RelationshipValueHit(val inner: RelationshipValueIndexCursor,
 
   override def target(cursor: NodeCursor): Unit = inner.target(cursor)
 
-
-  override def properties(cursor: PropertyCursor,
-                          selection: PropertySelection): Unit = inner.properties(cursor, selection)
+  override def properties(cursor: PropertyCursor, selection: PropertySelection): Unit =
+    inner.properties(cursor, selection)
 
   override def propertiesReference(): Reference = inner.propertiesReference()
 

@@ -1661,7 +1661,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(propToFind)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should grab shared lock when finding a relationship (undirected)") {
@@ -1683,7 +1686,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(propToFind)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should grab shared lock when finding a relationship (directed, multiple properties)") {
@@ -1707,7 +1713,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(propToFind)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should grab shared lock when finding a relationship (undirected, multiple properties)") {
@@ -1731,7 +1740,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(propToFind)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should grab an exclusive lock when not finding a relationship (directed)") {
@@ -1843,7 +1855,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(20)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should exact seek relationships of a locking unique index with a property (undirected)") {
@@ -1865,7 +1880,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(20)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should exact seek relationships of a locking composite unique index with properties (directed)") {
@@ -1890,7 +1908,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(20)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should exact seek relationships of a locking composite unique index with properties (undirected)") {
@@ -1915,10 +1936,15 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(20)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
-  test("should exact (multiple, but identical) seek relationships of a locking unique index with a property (directed)") {
+  test(
+    "should exact (multiple, but identical) seek relationships of a locking unique index with a property (directed)"
+  ) {
     val relationships = given {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
@@ -1945,7 +1971,9 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     )
   }
 
-  test("should exact (multiple, but identical) seek relationships of a locking unique index with a property (undirected)") {
+  test(
+    "should exact (multiple, but identical) seek relationships of a locking unique index with a property (undirected)"
+  ) {
     val relationships = given {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
@@ -2068,11 +2096,14 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = relationships.zipWithIndex.filter { case (_, i) => i % 10 == 0 && i > sizeHint / 2 }.flatMap(t => Seq(t._1, t._1))
+    val expected =
+      relationships.zipWithIndex.filter { case (_, i) => i % 10 == 0 && i > sizeHint / 2 }.flatMap(t => Seq(t._1, t._1))
     runtimeResult should beColumns("r").withRows(singleColumn(expected))
   }
 
-  test("should exact (multiple, not identical) seek relationships of a locking unique index with a property (directed)") {
+  test(
+    "should exact (multiple, not identical) seek relationships of a locking unique index with a property (directed)"
+  ) {
     val relationships = given {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
@@ -2100,7 +2131,9 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     )
   }
 
-  test("should exact (multiple, not identical) seek relationships of a locking unique index with a property (undirected)") {
+  test(
+    "should exact (multiple, not identical) seek relationships of a locking unique index with a property (undirected)"
+  ) {
     val relationships = given {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
@@ -2150,7 +2183,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(10)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should support composite index and unique locking (undirected)") {
@@ -2175,7 +2211,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(10)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should support composite unique index and unique locking (directed)") {
@@ -2200,7 +2239,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(10)
-    runtimeResult should beColumns("r").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withSingleRow(expected).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should support composite unique index and unique locking (undirected)") {
@@ -2225,7 +2267,10 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = relationships(10)
-    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks((SHARED, INDEX_ENTRY), (SHARED, RELATIONSHIP_TYPE))
+    runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected))).withLocks(
+      (SHARED, INDEX_ENTRY),
+      (SHARED, RELATIONSHIP_TYPE)
+    )
   }
 
   test("should cache properties in locking unique index (directed)") {
@@ -2348,9 +2393,14 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
       (SHARED, INDEX_ENTRY),
       (SHARED, RELATIONSHIP_TYPE)
     )
-    val expected = Seq(Array(relationships.head), Array(relationships.head),
-      Array(relationships(10)),  Array(relationships(10)),
-      Array(relationships(20)), Array(relationships(20)))
+    val expected = Seq(
+      Array(relationships.head),
+      Array(relationships.head),
+      Array(relationships(10)),
+      Array(relationships(10)),
+      Array(relationships(20)),
+      Array(relationships(20))
+    )
     runtimeResult should beColumns("r").withRows(expected).withLocks(expectedLocks: _*)
   }
 }

@@ -644,7 +644,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe expectedDbHits
   }
 
-
   test("should profile dbHits of undirected relationship index scan") {
     given {
       relationshipIndex("R", "difficulty")
