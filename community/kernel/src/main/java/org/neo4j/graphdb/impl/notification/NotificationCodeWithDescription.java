@@ -20,6 +20,7 @@
 package org.neo4j.graphdb.impl.notification;
 
 import java.util.Objects;
+
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
@@ -62,9 +63,6 @@ public enum NotificationCodeWithDescription {
     DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
             Status.Statement.FeatureDeprecationWarning,
             "The semantics of using colon in the separation of alternative relationship types will change in a future version."),
-    DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP(
-            Status.Statement.FeatureDeprecationWarning,
-            "Using an already bound variable for a variable length relationship is deprecated and will be removed in a future version."),
     DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE(
             Status.Statement.FeatureDeprecationWarning,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
@@ -144,7 +142,11 @@ public enum NotificationCodeWithDescription {
             "Relationship type expression cannot possibly be satisfied."),
     REPEATED_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
-            "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result.");
+            "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result."),
+    REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
+            Status.Statement.RepeatedRelationshipReference,
+            "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result.")
+    ;
 
     private final Status status;
     private final String description;

@@ -62,10 +62,10 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunct
 import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
+import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
@@ -629,7 +629,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
    */
   private def ensureNoRepeatedVarLengthRelationships(astNode: ASTNode): SemanticCheck =
     findRepeatedRelationships(astNode, varLength = true).foldSemanticCheck { repeated =>
-      warn(DeprecatedRepeatedVarLengthRelationshipNotification(repeated.position, repeated.name))
+      warn(RepeatedVarLengthRelationshipReference(repeated.position, repeated.name))
     }
 
   /**

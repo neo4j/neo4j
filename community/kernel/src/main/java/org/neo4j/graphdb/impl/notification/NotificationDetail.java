@@ -161,7 +161,7 @@ public interface NotificationDetail {
         }
 
         public static NotificationDetail repeatedVarLengthRel(final String name) {
-            return createNotificationDetail("the repeated variable", name, true);
+            return createNotificationDetail("the repeated variable-length relationship", name, true);
         }
 
         public static NotificationDetail joinKey(List<String> identifiers) {

@@ -19,6 +19,20 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
+import org.apache.commons.codec.digest.DigestUtils;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.NotificationCategory;
+import org.neo4j.graphdb.SeverityLevel;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
@@ -45,6 +59,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_REL_TYPE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.PROCEDURE_WARNING;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY;
@@ -55,18 +70,6 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.jupiter.api.Test;
-import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.NotificationCategory;
-import org.neo4j.graphdb.SeverityLevel;
 
 class NotificationCodeWithDescriptionTest {
     @Test
@@ -591,6 +594,20 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
                 "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
+                NotificationCategory.GENERIC);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE() {
+        Notification notification =
+                REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(InputPosition.empty, repeatedRelationship("r"));
+
+        verifyNotification(
+                notification,
+                "The query returns no results due to repeated references to a relationship.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.RepeatedRelationshipReference",
+                "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result. (Relationship `r` was repeated)",
                 NotificationCategory.GENERIC);
     }
 

@@ -32,9 +32,6 @@ case class DeprecatedFunctionNotification(position: InputPosition, oldName: Stri
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition, rewrittenExpression: String)
     extends InternalNotification
 
-case class DeprecatedRepeatedVarLengthRelationshipNotification(position: InputPosition, relName: String)
-    extends InternalNotification
-
 case class DeprecatedNodesOrRelationshipsInSetClauseNotification(position: InputPosition) extends InternalNotification
 
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
@@ -57,3 +54,5 @@ case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labe
     extends InternalNotification
 
 case class RepeatedRelationshipReference(position: InputPosition, relName: String) extends InternalNotification
+
+case class RepeatedVarLengthRelationshipReference(position: InputPosition, relName: String) extends InternalNotification

@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
-import org.neo4j.cypher.internal.util.DeprecatedRepeatedVarLengthRelationshipNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
@@ -56,6 +55,7 @@ import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
+import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
@@ -159,11 +159,6 @@ object NotificationWrapping {
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecationNotificationDetail(rewrittenExpression)
       )
-    case DeprecatedRepeatedVarLengthRelationshipNotification(pos, relName) =>
-      NotificationCodeWithDescription.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP.notification(
-        pos.withOffset(offset).asInputPosition,
-        NotificationDetail.Factory.repeatedVarLengthRel(relName)
-      )
     case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
       NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
         pos.withOffset(offset).asInputPosition
@@ -256,6 +251,12 @@ object NotificationWrapping {
       NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE.notification(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.repeatedRelationship(relName)
+      )
+
+    case RepeatedVarLengthRelationshipReference(position, relName) =>
+      NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(
+        position.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.repeatedVarLengthRel(relName)
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")
