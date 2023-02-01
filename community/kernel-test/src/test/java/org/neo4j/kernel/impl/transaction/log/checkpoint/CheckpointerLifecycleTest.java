@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +45,7 @@ class CheckpointerLifecycleTest {
         checkpointLifecycle.shutdown();
 
         verify(checkPointer).forceCheckPoint(any(TriggerInfo.class));
+        verify(checkPointer).shutdown();
     }
 
     @Test
@@ -52,6 +53,7 @@ class CheckpointerLifecycleTest {
         checkpointLifecycle.setCheckpointOnShutdown(false);
         checkpointLifecycle.shutdown();
 
-        verifyNoInteractions(checkPointer);
+        verify(checkPointer).shutdown();
+        verifyNoMoreInteractions(checkPointer);
     }
 }

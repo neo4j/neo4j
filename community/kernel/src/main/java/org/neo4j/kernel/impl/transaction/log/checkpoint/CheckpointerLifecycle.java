@@ -42,7 +42,7 @@ public class CheckpointerLifecycle extends LifecycleAdapter {
         // We cannot throw here since we need to shutdown without exceptions.
         if (checkpointOnShutdown && databasePanic.hasNoPanic()) {
             checkPointer.forceCheckPoint(new SimpleTriggerInfo("Database shutdown"));
-            checkPointer.shutdown();
         }
+        checkPointer.shutdown();
     }
 }

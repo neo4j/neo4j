@@ -100,7 +100,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer {
 
     @Override
     public void shutdown() {
-        shutdown = true;
+        try (var ignored = mutex.checkPoint()) {
+            shutdown = true;
+        }
     }
 
     @Override
