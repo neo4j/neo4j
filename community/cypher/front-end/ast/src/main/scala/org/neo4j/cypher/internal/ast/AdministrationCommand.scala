@@ -797,7 +797,7 @@ final case class DeallocateServers(dryRun: Boolean, serverNames: Seq[Either[Stri
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ReallocateServers(dryRun: Boolean)(
+final case class ReallocateDatabases(dryRun: Boolean)(
   val position: InputPosition
 ) extends WriteAdministrationCommand {
   override def name: String = "REALLOCATE DATABASES"

@@ -234,15 +234,15 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("REALLOCATE DATABASE") {
-    assertAst(ast.ReallocateServers(dryRun = false)(defaultPos))
+    assertAst(ast.ReallocateDatabases(dryRun = false)(defaultPos))
   }
 
   test("REALLOCATE DATABASES") {
-    assertAst(ast.ReallocateServers(dryRun = false)(defaultPos))
+    assertAst(ast.ReallocateDatabases(dryRun = false)(defaultPos))
   }
 
   test("DRYRUN REALLOCATE DATABASES") {
-    assertAst(ast.ReallocateServers(dryRun = true)(InputPosition(7, 1, 8)))
+    assertAst(ast.ReallocateDatabases(dryRun = true)(InputPosition(7, 1, 8)))
   }
 
   test("REALLOCATE SERVERS") {

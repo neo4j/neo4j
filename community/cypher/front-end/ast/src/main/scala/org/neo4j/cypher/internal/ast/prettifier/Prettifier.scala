@@ -133,7 +133,7 @@ import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
-import org.neo4j.cypher.internal.ast.ReallocateServers
+import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
@@ -841,7 +841,7 @@ case class Prettifier(
         }
         s"$dryRunString$commandString ${names.mkString(", ")}"
 
-      case x @ ReallocateServers(dryRun) =>
+      case x @ ReallocateDatabases(dryRun) =>
         if (dryRun) s"DRYRUN ${x.name}"
         else x.name
     }

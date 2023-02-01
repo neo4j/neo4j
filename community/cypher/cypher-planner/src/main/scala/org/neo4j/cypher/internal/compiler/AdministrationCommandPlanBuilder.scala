@@ -77,7 +77,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.ParsedAsYield
-import org.neo4j.cypher.internal.ast.ReallocateServers
+import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
@@ -1002,10 +1002,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val assertAllowed = plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction)
         Some(plans.LogSystemCommand(plans.DeallocateServer(assertAllowed, dryRun, names), prettifier.asString(c)))
 
-      case c @ ReallocateServers(dryRun) =>
+      case c @ ReallocateDatabases(dryRun) =>
         val checkBlocked = plans.AssertNotBlockedDatabaseManagement(ServerManagementAction)
         Some(plans.LogSystemCommand(
-          plans.ReallocateServers(plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction), dryRun),
+          plans.ReallocateDatabases(plans.AssertAllowedDbmsActions(checkBlocked, ServerManagementAction), dryRun),
           prettifier.asString(c)
         ))
 

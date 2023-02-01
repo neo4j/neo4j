@@ -190,7 +190,7 @@ import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
-import org.neo4j.cypher.internal.ast.ReallocateServers
+import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
@@ -2350,7 +2350,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _renameServer,
     _dropServer,
     _deallocateServer,
-    _reallocateServers,
+    _reallocateDatabases,
     _showServers
   )
 
@@ -2382,9 +2382,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     servers <- _listOfNameOfEither
   } yield DeallocateServers(dryRun, servers)(pos)
 
-  def _reallocateServers: Gen[ReallocateServers] = for {
+  def _reallocateDatabases: Gen[ReallocateDatabases] = for {
     dryRun <- boolean
-  } yield ReallocateServers(dryRun)(pos)
+  } yield ReallocateDatabases(dryRun)(pos)
 
   // Top level administration command
 

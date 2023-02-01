@@ -201,7 +201,7 @@ import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
-import org.neo4j.cypher.internal.ast.ReallocateServers
+import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
@@ -2248,7 +2248,8 @@ class Neo4jASTFactory(query: String)
   ): DeallocateServers =
     DeallocateServers(dryRun, serverNames.asScala.map(_.asScala).toList)(p)
 
-  override def reallocateDatabases(p: InputPosition, dryRun: Boolean): ReallocateServers = ReallocateServers(dryRun)(p)
+  override def reallocateDatabases(p: InputPosition, dryRun: Boolean): ReallocateDatabases =
+    ReallocateDatabases(dryRun)(p)
 
   // Database commands
 

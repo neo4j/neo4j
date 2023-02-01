@@ -549,7 +549,7 @@ case class DeallocateServer(
   serverNames: Seq[Either[String, Parameter]]
 )(implicit idGen: IdGen) extends DatabaseAdministrationLogicalPlan(Some(source))
 
-case class ReallocateServers(source: AdministrationCommandLogicalPlan, dryRun: Boolean)(implicit idGen: IdGen)
+case class ReallocateDatabases(source: AdministrationCommandLogicalPlan, dryRun: Boolean)(implicit idGen: IdGen)
     extends DatabaseAdministrationLogicalPlan(Some(source))
 
 case class EnsureValidNumberOfDatabases(source: CreateDatabase)(implicit idGen: IdGen)
