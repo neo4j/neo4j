@@ -19,15 +19,12 @@
  */
 package cypher.features
 
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
 import org.neo4j.cypher.internal.util.test_helpers.FeatureTest
 import org.opencypher.tools.tck.api.CypherTCK
 import org.opencypher.tools.tck.api.Scenario
 
 import java.net.URI
 
-@Execution(ExecutionMode.CONCURRENT)
 abstract class BaseFeatureTest extends FeatureTest with ScenarioTestHelper {
 
   def filterScenarios(

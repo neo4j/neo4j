@@ -32,7 +32,7 @@ class FeatureTestParallelConfig extends ParallelExecutionConfigurationStrategy {
       private val parallelism = Runtime.getRuntime.availableProcessors()
       override def getParallelism: Int = parallelism
       override def getMinimumRunnable: Int = 0
-      override def getMaxPoolSize: Int = parallelism
+      override def getMaxPoolSize: Int = parallelism + 2
       override def getCorePoolSize: Int = parallelism
       override def getKeepAliveSeconds: Int = 30
     }

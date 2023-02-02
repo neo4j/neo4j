@@ -32,7 +32,6 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 /**
  * Use this class to run tests for Cucumber scenarios.
  */
-@Execution(ExecutionMode.CONCURRENT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class FeatureTest {
 
@@ -64,6 +63,7 @@ abstract class FeatureTest {
   def releaseResources(): Unit
 
   @TestFactory
+  @Execution(ExecutionMode.CONCURRENT)
   def runTests(): util.Collection[DynamicTest] = {
     val (expectFail, expectPass) = scenarios.partition(s => denylist().exists(_.isDenylisted(s)))
 
