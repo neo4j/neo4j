@@ -223,6 +223,8 @@ public interface Status
 
         ExternalResourceFailed( ClientError,
                 "Access to an external resource failed" ),
+        RemoteExecutionClientError( ClientError,
+                "The database was unable to execute a remote part of the statement due to a client error." ),
 
         // database errors
         ExecutionFailed( DatabaseError,
@@ -233,6 +235,8 @@ public interface Status
 
         // transient errors
         ExecutionTimeout( TransientError, "The database was unable to execute the statement in a timely fashion." ),
+        RemoteExecutionTransientError( TransientError,
+                "The database was unable to execute a remote part of the statement due to a transient failure." ),
 
         // client notifications (performance)
         CartesianProductWarning( ClientNotification,
