@@ -53,7 +53,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
-import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -82,7 +81,7 @@ public class RecordStorageEngineSupport {
     private RecordStorageEngine get(
             FileSystemAbstraction fs,
             PageCache pageCache,
-            Panic databasePanic,
+            DatabaseHealth databaseHealth,
             RecordDatabaseLayout databaseLayout,
             Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener,
@@ -106,7 +105,7 @@ public class RecordStorageEngineSupport {
                 constraintSemantics,
                 indexConfigCompleter,
                 lockService,
-                databasePanic,
+                databaseHealth,
                 idGeneratorFactory,
                 transactionApplierTransformer);
         engine.addIndexUpdateListener(indexUpdateListener);
@@ -121,7 +120,7 @@ public class RecordStorageEngineSupport {
     public class Builder {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private Panic databasePanic = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
+        private DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
         private final RecordDatabaseLayout databaseLayout;
         private Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain> transactionApplierTransformer =
                 applierFacade -> applierFacade;
@@ -168,8 +167,8 @@ public class RecordStorageEngineSupport {
             return this;
         }
 
-        public Builder databaseHealth(Panic databasePanic) {
-            this.databasePanic = databasePanic;
+        public Builder databaseHealth(DatabaseHealth databaseHealth) {
+            this.databaseHealth = databaseHealth;
             return this;
         }
 
@@ -207,7 +206,7 @@ public class RecordStorageEngineSupport {
             return get(
                     fs,
                     pageCache,
-                    databasePanic,
+                    databaseHealth,
                     databaseLayout,
                     transactionApplierTransformer,
                     indexUpdateListener,
@@ -235,7 +234,7 @@ public class RecordStorageEngineSupport {
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
                 LockService lockService,
-                Panic databasePanic,
+                DatabaseHealth databaseHealth,
                 IdGeneratorFactory idGeneratorFactory,
                 Function<TransactionApplierFactoryChain, TransactionApplierFactoryChain>
                         transactionApplierTransformer) {
@@ -251,7 +250,7 @@ public class RecordStorageEngineSupport {
                     constraintSemantics,
                     indexConfigCompleter,
                     lockService,
-                    databasePanic,
+                    databaseHealth,
                     idGeneratorFactory,
                     RecoveryCleanupWorkCollector.immediate(),
                     EmptyMemoryTracker.INSTANCE,

@@ -70,6 +70,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -99,7 +100,7 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.Panic;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandStream;
@@ -135,7 +136,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final Config config;
     private final InternalLogProvider internalLogProvider;
     private final TokenHolders tokenHolders;
-    private final Panic databasePanic;
+    private final DatabaseHealth databaseHealth;
     private final SchemaCache schemaCache;
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
@@ -175,7 +176,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             ConstraintRuleAccessor constraintSemantics,
             IndexConfigCompleter indexConfigCompleter,
             LockService lockService,
-            Panic databasePanic,
+            DatabaseHealth databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             MemoryTracker otherMemoryTracker,
@@ -190,7 +191,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
-        this.databasePanic = databasePanic;
+        this.databaseHealth = databaseHealth;
         this.constraintSemantics = constraintSemantics;
         this.idGeneratorFactory = idGeneratorFactory;
         this.contextFactory = contextFactory;
@@ -511,7 +512,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         } catch (Throwable cause) {
             TransactionApplyKernelException kernelException = new TransactionApplyKernelException(
                     cause, "Failed to apply transaction: %s", batch == null ? initialBatch : batch);
-            databasePanic.panic(kernelException);
+            databaseHealth.panic(kernelException);
             throw kernelException;
         }
     }

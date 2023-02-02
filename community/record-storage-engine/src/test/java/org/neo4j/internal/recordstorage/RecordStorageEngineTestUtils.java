@@ -49,7 +49,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.monitoring.Panic;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -82,7 +82,7 @@ public class RecordStorageEngineTestUtils {
                 new StandardConstraintRuleAccessor(),
                 (c, indexingBehaviour) -> c,
                 NO_LOCK_SERVICE,
-                mock(Panic.class),
+                mock(DatabaseHealth.class),
                 new DefaultIdGeneratorFactory(fs, immediate(), cacheTracer, DEFAULT_DATABASE_NAME),
                 immediate(),
                 EmptyMemoryTracker.INSTANCE,

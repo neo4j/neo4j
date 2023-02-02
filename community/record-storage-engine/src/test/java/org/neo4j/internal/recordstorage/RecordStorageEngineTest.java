@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -86,7 +85,7 @@ class RecordStorageEngineTest {
     @Inject
     private RecordDatabaseLayout databaseLayout;
 
-    private final Panic databasePanic = mock(DatabaseHealth.class);
+    private final DatabaseHealth databaseHealth = mock(DatabaseHealth.class);
     private final RecordStorageEngineSupport storageEngineRule = new RecordStorageEngineSupport();
 
     @BeforeEach
@@ -112,7 +111,7 @@ class RecordStorageEngineTest {
         IllegalStateException failure = new IllegalStateException("Too many open files");
         RecordStorageEngine engine = storageEngineRule
                 .getWith(fs, pageCache, databaseLayout)
-                .databaseHealth(databasePanic)
+                .databaseHealth(databaseHealth)
                 .transactionApplierTransformer(facade -> transactionApplierFacadeTransformer(facade, failure))
                 .build();
         CommandBatchToApply commandBatchToApply = mock(CommandBatchToApply.class);
@@ -121,7 +120,7 @@ class RecordStorageEngineTest {
                 .rootCause()
                 .isEqualTo(failure);
 
-        verify(databasePanic).panic(any(Throwable.class));
+        verify(databaseHealth).panic(any(Throwable.class));
     }
 
     private static TransactionApplierFactoryChain transactionApplierFacadeTransformer(
@@ -137,7 +136,7 @@ class RecordStorageEngineTest {
         RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction(engine);
         ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass(Exception.class);
-        verify(databasePanic).panic(captor.capture());
+        verify(databaseHealth).panic(captor.capture());
         Throwable exception = captor.getValue();
         if (exception instanceof KernelException) {
             assertThat(((KernelException) exception).status()).isEqualTo(Status.General.UnknownError);
@@ -212,7 +211,7 @@ class RecordStorageEngineTest {
     }
 
     private RecordStorageEngineSupport.Builder recordStorageEngineBuilder() {
-        return storageEngineRule.getWith(fs, pageCache, databaseLayout).databaseHealth(databasePanic);
+        return storageEngineRule.getWith(fs, pageCache, databaseLayout).databaseHealth(databaseHealth);
     }
 
     private static Exception executeFailingTransaction(RecordStorageEngine engine) throws IOException {

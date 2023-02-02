@@ -99,7 +99,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.monitoring.Panic;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -506,7 +506,7 @@ class NeoStoresTest {
                 new StandardConstraintRuleAccessor(),
                 (i, indexingBehaviour) -> i,
                 NO_LOCK_SERVICE,
-                mock(Panic.class),
+                mock(DatabaseHealth.class),
                 idGeneratorFactory,
                 immediate(),
                 INSTANCE,
