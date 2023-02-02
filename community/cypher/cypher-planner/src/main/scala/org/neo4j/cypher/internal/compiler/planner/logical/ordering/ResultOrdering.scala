@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
 
@@ -135,6 +136,9 @@ object ResultOrdering {
             val nextCol = indexOrder match {
               case IndexOrderAscending  => Asc(prop)
               case IndexOrderDescending => Desc(prop)
+              case IndexOrderNone => throw new InternalException(
+                  s"Expected IndexOrderAscending or IndexOrderDescending but was IndexOrderNone"
+                )
             }
             IndexOrderDecided(indexOrder, poColumns :+ nextCol)
 

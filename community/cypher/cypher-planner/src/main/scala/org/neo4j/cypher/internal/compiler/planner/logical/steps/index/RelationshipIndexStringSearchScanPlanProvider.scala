@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.exceptions.InternalException
 
 object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPlanProvider {
 
@@ -63,6 +64,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
               (contains.rhs, ContainsSearchMode)
             case endsWith: EndsWith =>
               (endsWith.rhs, EndsWithSearchMode)
+            case x => throw new InternalException(s"Expected Contains or EndsWith but was ${x.getClass}")
           }
           val singlePredicateSet = indexMatch.predicateSet(Seq(indexPredicate), exactPredicatesCanGetValue = false)
 

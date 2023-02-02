@@ -148,7 +148,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
   object PropertyEquivalence {
 
     def unapply(v: Any): Option[(Property, Property, Equals)] = v match {
-      case equals @ Equals(p1: Property, p2: Property) => Some(p1, p2, equals)
+      case equals @ Equals(p1: Property, p2: Property) => Some((p1, p2, equals))
       case _                                           => None
     }
   }
@@ -156,7 +156,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
   object PropertyMapping {
 
     def unapply(v: Any): Option[(Property, Expression)] = v match {
-      case Equals(p1: Property, expr: Expression) => Some(p1, expr)
+      case Equals(p1: Property, expr: Expression) => Some((p1, expr))
       case _                                      => None
     }
   }

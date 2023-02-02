@@ -96,7 +96,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete path in map") {
-    val nodes = given {
+    given {
       chainGraphs(3, "LOVES", "LOVES", "LOVES_TO_HATE")
     }
 

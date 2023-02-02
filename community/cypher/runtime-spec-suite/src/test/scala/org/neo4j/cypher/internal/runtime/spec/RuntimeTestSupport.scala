@@ -57,7 +57,6 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type

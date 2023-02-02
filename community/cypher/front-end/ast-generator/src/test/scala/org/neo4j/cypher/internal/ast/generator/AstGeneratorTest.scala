@@ -45,6 +45,7 @@ class AstGeneratorTest extends CypherFunSuite with CypherScalaCheckDrivenPropert
     forAll(astGenerator._predicateComparisonChain) {
       case Ands(exprs) =>
         exprs.size should be > 1
+      case x => fail(s"Expected Ands(exprs) but was ${x.getClass}")
     }
   }
 }

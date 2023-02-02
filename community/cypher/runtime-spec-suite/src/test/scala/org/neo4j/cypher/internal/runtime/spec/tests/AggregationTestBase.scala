@@ -241,8 +241,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = aNodes.map(a => Array[Any](a, limit))
-
     runtimeResult should beColumns("a", "c").withNoRows()
   }
 

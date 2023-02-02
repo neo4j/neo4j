@@ -808,7 +808,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
 
       case sp: FindShortestPaths =>
-        val patternRelationship = sp.shortestPath.rel
         val rel = sp.shortestPath.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
             relationshipPattern

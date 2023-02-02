@@ -804,7 +804,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("one sparse and one dense node where one node appears twice I") {
     // given
     val (a, b) = given {
-      val a = tx.createNode(Label.label("A"))
+      tx.createNode(Label.label("A"))
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
       val b = tx.createNode(Label.label("B"))
       makeDense(b)
@@ -886,7 +886,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("two connected sparse nodes where one node appears twice I") {
     // given
     val (a, b) = given {
-      val a = tx.createNode(Label.label("A"))
+      tx.createNode(Label.label("A"))
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
       val b = tx.createNode(Label.label("B"))
       ba.createRelationshipTo(b, RelationshipType.withName("T"))

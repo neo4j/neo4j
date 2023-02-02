@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
 import org.neo4j.values.storable.ValueCategory
@@ -67,6 +68,8 @@ object IndexDescriptor {
     def of(id: NameId): EntityType = id match {
       case labelId: LabelId     => Node(labelId)
       case relTypeId: RelTypeId => Relationship(relTypeId)
+      case _: PropertyKeyId =>
+        throw new InternalException("Expected LabelId or RelTypeId but go PropertyKeyId")
     }
   }
 

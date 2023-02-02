@@ -58,6 +58,7 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
         val insByLhs = expressionsToRewrite.flatMap {
           case In(lhs, rhs: ListLiteral) =>
             rhs.expressions.map(expr => InValue(lhs, expr))
+          case x => throw new IllegalStateException(s"Expected ListLiteral but was ${x.getClass}")
         }.groupBy(_.lhs)
 
         // Find all IN-expressions with the same left hand side and rebuild the expressions

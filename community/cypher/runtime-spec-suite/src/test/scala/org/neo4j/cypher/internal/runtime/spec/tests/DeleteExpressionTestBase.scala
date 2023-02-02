@@ -146,7 +146,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("fail to delete nodes with relationships in map") {
-    val nodes = given {
+    given {
       chainGraphs(3, "PUSHES")
     }
 
@@ -171,7 +171,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not delete too many nodes if delete is between two loops with continuation") {
-    val nodes = given {
+    given {
       nodeGraph(sizeHint)
     }
 

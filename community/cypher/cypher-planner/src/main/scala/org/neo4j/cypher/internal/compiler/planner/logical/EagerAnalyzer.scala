@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
@@ -169,12 +170,18 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
       val stableIdentifier = maybeStableLeaf.map {
         case n: NodeLogicalLeafPlan         => QgWithLeafInfo.StableIdentifier(n.idName)
         case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName)
+        case x => throw new InternalException(
+            s"Expected NodeLogicalLeafPlan or RelationshipLogicalLeafPlan but was ${x.getClass}"
+          )
       }
 
       val unstableLeafIdNames = unstableLeaves.view.flatMap {
         case n: NodeLogicalLeafPlan         => Set(n.idName)
         case r: RelationshipLogicalLeafPlan => Set(r.idName)
         case a: Argument                    => a.argumentIds
+        case x => throw new InternalException(
+            s"Expected NodeLogicalLeafPlan, RelationshipLogicalLeafPlan or Argument but was ${x.getClass}"
+          )
       }.to(ListSet)
 
       val leafPlansPredicatesResolver = getLeafPlansPredicatesResolver(plan)
