@@ -47,6 +47,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
     private final DefaultNodeCursor nodeCursor;
     private final DefaultRelationshipTraversalCursor relationshipTraversalCursor;
 
+    private IndexReadState indexReadState = IndexReadState.UNAVAILABLE;
     private RelationshipSelection selection;
 
     DefaultNodeBasedRelationshipTypeIndexCursor(
@@ -60,6 +61,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
 
     @Override
     public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
+        indexReadState = IndexReadState.INDEX_READ;
         selection = RelationshipSelection.selection(token, Direction.OUTGOING);
         // parent call will initialise the added/removed tx state.
         // this is required as state must be determined on initialisation and NOT on first call to next
@@ -69,6 +71,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
     @Override
     public void initialize(
             IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+        indexReadState = IndexReadState.INDEX_READ;
         selection = RelationshipSelection.selection(token, Direction.OUTGOING);
         super.initialize(progressor, token, added, removed, accessMode);
     }
@@ -84,7 +87,9 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
             nodeCursor.single(entityFromIndex, read);
             if (nodeCursor.next()) {
                 nodeCursor.relationships(relationshipTraversalCursor, selection);
-                return relationshipTraversalCursor.next();
+                final var next = relationshipTraversalCursor.next();
+                indexReadState = next ? IndexReadState.RELATIONSHIP_READ : IndexReadState.INDEX_READ;
+                return next;
             }
         }
 
@@ -118,6 +123,7 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
     @Override
     public void closeInternal() {
         if (!isClosed()) {
+            indexReadState = IndexReadState.UNAVAILABLE;
             nodeCursor.close();
             relationshipTraversalCursor.close();
         }
@@ -148,27 +154,31 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
 
     @Override
     protected boolean innerNext() {
-        // this will do either:
-        do {
-            // all the tx state RELATIONSHIPS first
-            while (relationshipTraversalCursor.next()) {
-                if (relationshipTraversalCursor.currentAddedInTx == NO_ID) {
-                    return true;
+        while (true) {
+            switch (indexReadState) {
+                case INDEX_READ -> indexReadState = indexNext() ? IndexReadState.NODE_READ : IndexReadState.UNAVAILABLE;
+                case NODE_READ -> {
+                    nodeCursor.single(entityFromIndex, read);
+                    if (nodeCursor.next()) {
+                        nodeCursor.relationships(relationshipTraversalCursor, selection);
+                        indexReadState = IndexReadState.RELATIONSHIP_READ;
+                    } else {
+                        indexReadState = IndexReadState.INDEX_READ;
+                    }
+                }
+                case RELATIONSHIP_READ -> {
+                    while (relationshipTraversalCursor.next()) {
+                        if (relationshipTraversalCursor.currentAddedInTx == NO_ID) {
+                            return true;
+                        }
+                    }
+                    indexReadState = IndexReadState.INDEX_READ;
+                }
+                case UNAVAILABLE -> {
+                    return false;
                 }
             }
-
-            // followed by any RELATIONSHIPS from the index
-            if (!indexNext()) {
-                return false;
-            }
-
-            // entityFromIndex will have been set via a call acceptEntity - which is a NODE id
-            nodeCursor.single(entityFromIndex, read);
-            if (nodeCursor.next()) {
-                nodeCursor.relationships(relationshipTraversalCursor, selection);
-                // calling next on the cursor will now return RELATIONSHIPS from the store for the returned NODE
-            }
-        } while (true);
+        }
     }
 
     @Override
@@ -212,5 +222,12 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor extends DefaultRelation
         if (relationshipTraversalCursor.relationshipReference() != entity) {
             throw new IllegalStateException("Relationship hasn't been read from store");
         }
+    }
+
+    private enum IndexReadState {
+        INDEX_READ,
+        NODE_READ,
+        RELATIONSHIP_READ,
+        UNAVAILABLE
     }
 }
