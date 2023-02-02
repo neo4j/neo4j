@@ -91,7 +91,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TerminationMark;
@@ -111,6 +110,7 @@ import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
+import org.neo4j.kernel.impl.api.parallel.ExtendedAssertOpen;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -606,11 +606,23 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionSequenceNumber,
                 cursorContext,
                 () -> statementClock,
-                () -> {
-                    assertOpen();
+                new ExtendedAssertOpen() {
+                    @Override
+                    public boolean isOpen() {
+                        return !closed && !isTerminated() && isOriginalTx();
+                    }
+
+                    @Override
+                    public void assertOpen() {
+                        KernelTransactionImplementation.this.assertOpen();
+                        if (!isOriginalTx()) {
+                            throw new IllegalStateException("Execution context used after transaction close");
+                        }
+                    }
+
                     // Since TX object is reused, let's check if this is still the same TX
-                    if (transactionSequenceNumberWhenCreated != transactionSequenceNumber) {
-                        throw new IllegalStateException("Execution context used after transaction close");
+                    private boolean isOriginalTx() {
+                        return transactionSequenceNumberWhenCreated == transactionSequenceNumber;
                     }
                 });
     }
@@ -1656,7 +1668,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 long transactionId,
                 CursorContext transactionCursorContext,
                 Supplier<ClockContext> clockContextSupplier,
-                AssertOpen assertOpen);
+                ExtendedAssertOpen assertOpen);
     }
 
     private record ExecutionContextClock(Clock systemClock, Clock transactionClock, Clock statementClock)

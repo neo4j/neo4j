@@ -107,6 +107,15 @@ public interface ExecutionContext extends AutoCloseable, ResourceMonitor {
     void performCheckBeforeOperation();
 
     /**
+     * Returns {@code true} if the transaction associated with this execution context is still open
+     * (Not committed, rolled back or terminated).
+     * <p>
+     * It performs almost all the check as {@link #performCheckBeforeOperation} except it does not throw
+     * in the negative scenario.
+     */
+    boolean isTransactionOpen();
+
+    /**
      * Close execution context and merge back any data to the owning transaction if such exists.
      * Should be called by transaction thread and it must be called after {@link #complete()}.
      */

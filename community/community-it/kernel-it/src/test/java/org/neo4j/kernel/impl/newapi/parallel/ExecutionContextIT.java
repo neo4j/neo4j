@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi.parallel;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -356,6 +358,44 @@ public class ExecutionContextIT {
                 assertThatThrownBy(executionContext::close)
                         .isInstanceOf(IllegalStateException.class)
                         .hasMessage("Execution context closed before it was marked as completed.");
+            }
+        }
+    }
+
+    @Test
+    void testStateCheckWhenTransactionClosed() {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var kts = ((InternalTransaction) transaction).kernelTransaction();
+            try (Statement statement = kts.acquireStatement()) {
+                var executionContext = kts.createExecutionContext();
+                executionContext.performCheckBeforeOperation();
+                assertThat(executionContext.isTransactionOpen()).isTrue();
+
+                transaction.close();
+
+                assertThat(executionContext.isTransactionOpen()).isFalse();
+                assertThatThrownBy(executionContext::performCheckBeforeOperation)
+                        .isInstanceOf(NotInTransactionException.class)
+                        .hasMessage("This transaction has already been closed.");
+            }
+        }
+    }
+
+    @Test
+    void testStateCheckWhenTransactionTerminated() {
+        try (Transaction transaction = databaseAPI.beginTx()) {
+            var kts = ((InternalTransaction) transaction).kernelTransaction();
+            try (Statement statement = kts.acquireStatement()) {
+                var executionContext = kts.createExecutionContext();
+                executionContext.performCheckBeforeOperation();
+                assertThat(executionContext.isTransactionOpen()).isTrue();
+
+                transaction.terminate();
+
+                assertThat(executionContext.isTransactionOpen()).isFalse();
+                assertThatThrownBy(executionContext::performCheckBeforeOperation)
+                        .isInstanceOf(TransactionTerminatedException.class)
+                        .hasMessageContaining("The transaction has been terminated");
             }
         }
     }

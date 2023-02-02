@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -69,7 +68,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final ElementIdMapper elementIdMapper;
     private final List<AutoCloseable> otherResources;
-    private final AssertOpen assertOpen;
+    private final ExtendedAssertOpen assertOpen;
 
     public ThreadExecutionContext(
             DefaultPooledCursors cursors,
@@ -92,7 +91,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             org.neo4j.kernel.impl.locking.Locks.Client lockClient,
             LockTracer lockTracer,
             ElementIdMapper elementIdMapper,
-            AssertOpen assertOpen,
+            ExtendedAssertOpen assertOpen,
             Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources) {
         this.cursors = cursors;
@@ -186,6 +185,11 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
     @Override
     public void performCheckBeforeOperation() {
         assertOpen.assertOpen();
+    }
+
+    @Override
+    public boolean isTransactionOpen() {
+        return assertOpen.isOpen();
     }
 
     @Override
