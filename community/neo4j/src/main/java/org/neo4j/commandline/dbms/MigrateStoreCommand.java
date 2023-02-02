@@ -101,7 +101,9 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
     @Parameters(
             arity = "1",
             paramLabel = "<database>",
-            description = "Name of the database to migrate. Can contain * and ? for globbing.",
+            description = "Name of the database to migrate. Can contain * and ? for globbing. "
+                    + "Note that * and ? have special meaning in some shells "
+                    + "and might need to be escaped or used with quotes.",
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
@@ -305,6 +307,10 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
             } catch (IOException e) {
                 throw new CommandFailedException(
                         format("Failed to list databases: %s: %s", e.getClass().getSimpleName(), e.getMessage()), e);
+            }
+            if (dbNames.isEmpty()) {
+                throw new CommandFailedException(
+                        "Pattern '" + database.getDatabaseName() + "' did not match any database");
             }
             return dbNames;
         }

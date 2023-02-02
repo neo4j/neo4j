@@ -61,7 +61,9 @@ class DumpCommandTest {
                 PARAMETERS
 
                       <database>          Name of the database to dump. Can contain * and ? for
-                                            globbing.
+                                            globbing. Note that * and ? have special meaning in
+                                            some shells and might need to be escaped or used
+                                            with quotes.
 
                 OPTIONS
 

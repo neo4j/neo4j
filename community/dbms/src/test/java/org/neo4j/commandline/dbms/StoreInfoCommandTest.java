@@ -113,7 +113,9 @@ class StoreInfoCommandTest {
                 PARAMETERS
 
                       [<database>]         Name of the database to show info for. Can contain *
-                                             and ? for globbing.
+                                             and ? for globbing. Note that * and ? have special
+                                             meaning in some shells and might need to be
+                                             escaped or used with quotes.
                                              Default: *
 
                 OPTIONS

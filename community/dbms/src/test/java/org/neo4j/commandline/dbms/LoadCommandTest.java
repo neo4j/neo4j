@@ -115,7 +115,9 @@ class LoadCommandTest {
                 PARAMETERS
 
                       <database>           Name of the database to load. Can contain * and ?
-                                             for globbing.
+                                             for globbing. Note that * and ? have special
+                                             meaning in some shells and might need to be
+                                             escaped or used with quotes.
 
                 OPTIONS
 

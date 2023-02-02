@@ -66,7 +66,9 @@ public class LoadCommand extends AbstractAdminCommand {
 
     @Parameters(
             arity = "1",
-            description = "Name of the database to load. Can contain * and ? for globbing.",
+            description = "Name of the database to load. Can contain * and ? for globbing. "
+                    + "Note that * and ? have special meaning in some shells "
+                    + "and might need to be escaped or used with quotes.",
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
@@ -244,6 +246,10 @@ public class LoadCommand extends AbstractAdminCommand {
                 }
             } catch (IOException e) {
                 throw new CommandFailedException("Failed to list dump files", e);
+            }
+            if (dbNames.isEmpty()) {
+                throw new CommandFailedException("Pattern '" + database.getDatabaseName()
+                        + "' did not match any dump file in " + dumpDir.toAbsolutePath());
             }
             return dbNames;
         }

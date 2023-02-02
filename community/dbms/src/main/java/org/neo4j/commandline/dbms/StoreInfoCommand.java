@@ -76,7 +76,9 @@ public class StoreInfoCommand extends AbstractAdminCommand {
             arity = "0..1",
             paramLabel = "<database>",
             defaultValue = "*",
-            description = "Name of the database to show info for. Can contain * and ? for globbing.",
+            description = "Name of the database to show info for. Can contain * and ? for globbing. "
+                    + "Note that * and ? have special meaning in some shells "
+                    + "and might need to be escaped or used with quotes.",
             converter = Converters.DatabaseNamePatternConverter.class)
     private DatabaseNamePattern database;
 
