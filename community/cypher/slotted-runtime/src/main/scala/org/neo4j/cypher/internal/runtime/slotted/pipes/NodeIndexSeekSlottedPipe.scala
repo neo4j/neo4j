@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EntityIndexSeeker
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeek
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekMode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -40,7 +39,7 @@ case class NodeIndexSeekSlottedPipe(
   properties: IndexedSeq[SlottedIndexedProperty],
   queryIndexId: Int,
   valueExpr: QueryExpression[Expression],
-  indexMode: IndexSeekMode = IndexSeek,
+  indexMode: IndexSeekMode,
   indexOrder: IndexOrder,
   slots: SlotConfiguration
 )(val id: Id = Id.INVALID_ID) extends Pipe with EntityIndexSeeker with IndexSlottedPipeWithValues {

@@ -723,9 +723,9 @@ private[internal] class TransactionBoundReadQueryContext(
   }
 
   override def relationshipLockingUniqueIndexSeek(
-                                                   index: IndexDescriptor,
-                                                   queries: Seq[PropertyIndexQuery.ExactPredicate]
-                                                 ): RelationshipValueIndexCursor = {
+    index: IndexDescriptor,
+    queries: Seq[PropertyIndexQuery.ExactPredicate]
+  ): RelationshipValueIndexCursor = {
 
     val cursor = transactionalContext.cursors.allocateRelationshipValueIndexCursor(
       transactionalContext.cursorContext,

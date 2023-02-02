@@ -79,13 +79,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonLockingSeek
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.UniqueIndexSeek
 import org.neo4j.cypher.internal.runtime.slotted.aggregation.SlottedPrimitiveGroupingAggTable
 import org.neo4j.cypher.internal.runtime.slotted.expressions.NodeProperty
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedCommandProjection
@@ -623,7 +623,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
         Vector(SlottedIndexedProperty(0, None)),
         0,
         SingleQueryExpression(LiteralHelper.literal(42)),
-        org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeek,
+        org.neo4j.cypher.internal.runtime.interpreted.pipes.NonLockingSeek,
         IndexOrderNone,
         SlotConfiguration.empty
           .newLong("x", false, CTNode)
@@ -801,7 +801,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
         IndexedSeq.empty,
         0,
         SingleQueryExpression(LiteralHelper.literal(42)),
-        UniqueIndexSeek,
+        NonLockingSeek,
         IndexOrderNone,
         SlotConfiguration.empty.newLong("z", false, CTNode)
       )()

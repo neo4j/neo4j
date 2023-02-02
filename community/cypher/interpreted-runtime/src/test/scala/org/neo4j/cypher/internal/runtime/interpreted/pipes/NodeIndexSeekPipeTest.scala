@@ -61,7 +61,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
-      UniqueIndexSeek,
+      NonLockingSeek,
       IndexOrderNone
     )()
     // exhaust
@@ -89,7 +89,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       Array(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
-      UniqueIndexSeek,
+      NonLockingSeek,
       IndexOrderNone
     )()
     val result = pipe.createResults(state)

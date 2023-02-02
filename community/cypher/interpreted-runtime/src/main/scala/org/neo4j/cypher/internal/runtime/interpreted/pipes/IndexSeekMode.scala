@@ -28,13 +28,12 @@ import org.neo4j.values.virtual.VirtualNodeValue
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
 
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
-    case _: RangeQueryExpression[_] if unique                                   => UniqueIndexSeekByRange
-    case _: RangeQueryExpression[_]                                             => IndexSeekByRange
+    case _: RangeQueryExpression[_]                                             => NonLockingSeek
     case qe: CompositeQueryExpression[_] if unique && !readOnly && qe.exactOnly => LockingUniqueIndexSeek
-    case _: CompositeQueryExpression[_] if unique                               => UniqueIndexSeek
+    case _: CompositeQueryExpression[_] if unique                               => NonLockingSeek
     case _ if unique && !readOnly                                               => LockingUniqueIndexSeek
-    case _ if unique                                                            => UniqueIndexSeek
-    case _                                                                      => IndexSeek
+    case _ if unique                                                            => NonLockingSeek
+    case _                                                                      => NonLockingSeek
   }
 }
 
@@ -50,20 +49,6 @@ object IndexSeekMode {
 
 sealed trait IndexSeekMode
 
-sealed trait ExactSeek {
-  self: IndexSeekMode =>
-}
-
-case object IndexSeek extends IndexSeekMode with ExactSeek
-
-case object UniqueIndexSeek extends IndexSeekMode with ExactSeek
+case object NonLockingSeek extends IndexSeekMode
 
 case object LockingUniqueIndexSeek extends IndexSeekMode
-
-sealed trait SeekByRange {
-  self: IndexSeekMode =>
-}
-
-case object IndexSeekByRange extends IndexSeekMode with SeekByRange
-
-case object UniqueIndexSeekByRange extends IndexSeekMode with SeekByRange

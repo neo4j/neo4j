@@ -35,7 +35,7 @@ case class NodeIndexSeekPipe(
   properties: Array[IndexedProperty],
   queryIndexId: Int,
   valueExpr: QueryExpression[Expression],
-  indexMode: IndexSeekMode = IndexSeek,
+  indexMode: IndexSeekMode,
   indexOrder: IndexOrder
 )(val id: Id = Id.INVALID_ID) extends Pipe with EntityIndexSeeker with IndexPipeWithValues {
 

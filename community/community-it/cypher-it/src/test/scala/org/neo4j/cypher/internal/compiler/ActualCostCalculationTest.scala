@@ -45,13 +45,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeek
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonLockingSeek
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SingleSeekArg
@@ -358,7 +358,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
         properties,
         0,
         SingleQueryExpression(literalValue),
-        IndexSeek,
+        NonLockingSeek,
         IndexOrderNone
       )()
     }

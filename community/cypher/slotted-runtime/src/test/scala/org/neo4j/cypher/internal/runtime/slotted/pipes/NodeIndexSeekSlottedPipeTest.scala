@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlottedIndexedProperty
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.UniqueIndexSeek
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonLockingSeek
 import org.neo4j.cypher.internal.runtime.slotted.SlottedCypherRowFactory
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -63,7 +63,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite {
       IndexedSeq(SlottedIndexedProperty(0, None)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
-      UniqueIndexSeek,
+      NonLockingSeek,
       IndexOrderNone,
       slots
     )()
@@ -93,7 +93,7 @@ class NodeIndexSeekSlottedPipeTest extends CypherFunSuite {
       IndexedSeq(SlottedIndexedProperty(0, None)),
       0,
       SingleQueryExpression(LiteralHelper.literal(42)),
-      UniqueIndexSeek,
+      NonLockingSeek,
       IndexOrderNone,
       slots
     )()
