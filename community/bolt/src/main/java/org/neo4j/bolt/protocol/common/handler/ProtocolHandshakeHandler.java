@@ -34,9 +34,7 @@ import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.codec.BoltStructEncoder;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.common.connector.connection.listener.ReadLimitConnectionListener;
 import org.neo4j.bolt.protocol.common.handler.messages.GoodbyeMessageHandler;
-import org.neo4j.bolt.protocol.common.handler.messages.ResetMessageHandler;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.protocol.common.transaction.result.ResultHandler;
 import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
@@ -163,9 +161,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
             this.log.debug(
                     "Imposing %d byte read-limit on connection '%s' until authentication is completed",
                     readLimit, this.connection.id());
-
             frameDecoder = new ChunkFrameDecoder(readLimit, this.logging);
-            this.connection.registerListener(new ReadLimitConnectionListener(this.connection, this.logging));
         } else {
             frameDecoder = new ChunkFrameDecoder(this.logging);
         }
@@ -215,11 +211,10 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         }
 
         ctx.pipeline()
-                .addLast("goodbyeMessageHandler", new GoodbyeMessageHandler(logging))
-                .addLast("resetMessageHandler", new ResetMessageHandler(logging))
+                .addLast(GoodbyeMessageHandler.HANDLER_NAME, new GoodbyeMessageHandler(logging))
                 .addLast("boltStructEncoder", new BoltStructEncoder());
 
-        var writeThrottleEnabled = this.config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle);
+        var writeThrottleEnabled = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle);
         var writeTimeoutMillis = config.get(BoltConnectorInternalSettings.bolt_outbound_buffer_throttle_max_duration)
                 .toMillis();
         if (writeThrottleEnabled && writeTimeoutMillis != 0) {
@@ -232,7 +227,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         ctx.pipeline()
                 .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())
                 .addLast("requestHandler", new RequestHandler(new ResultHandler(connection, logging), logging))
-                .addLast("housekeeper", new HouseKeeperHandler(logging))
+                .addLast(HouseKeeperHandler.HANDLER_NAME, new HouseKeeperHandler(logging))
                 .remove(this);
 
         ctx.pipeline().remove(ProtocolNegotiationResponseEncoder.class);

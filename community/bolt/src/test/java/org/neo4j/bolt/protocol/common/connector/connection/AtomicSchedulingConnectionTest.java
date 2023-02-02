@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.common.connector.connection;
 
 import io.netty.channel.Channel;
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -144,6 +145,9 @@ class AtomicSchedulingConnectionTest {
                 this.logService,
                 this.executorService,
                 this.clock);
+
+        // this is to set useragent
+        this.connection.negotiate(Collections.emptyList(), USER_AGENT);
     }
 
     private void selectProtocol() {
@@ -158,7 +162,7 @@ class AtomicSchedulingConnectionTest {
                 .when(this.authentication)
                 .authenticate(ArgumentMatchers.eq(token), ArgumentMatchers.any());
 
-        this.connection.authenticate(token, USER_AGENT);
+        this.connection.logon(token);
     }
 
     @Test
@@ -642,7 +646,7 @@ class AtomicSchedulingConnectionTest {
 
         Assertions.assertThat(this.connection.loginContext()).isNull();
 
-        var flags = this.connection.authenticate(token, USER_AGENT);
+        var flags = this.connection.logon(token);
 
         ConnectionAssertions.assertThat(this.connection).isActive();
 
@@ -675,7 +679,7 @@ class AtomicSchedulingConnectionTest {
         Assertions.assertThat(this.connection.selectedDefaultDatabase()).isEqualTo(DEFAULT_DB);
 
         // the listeners should have been notified about the newly authenticated user
-        Mockito.verify(listener).onAuthenticated(loginContext);
+        Mockito.verify(listener).onLogon(loginContext);
 
         // also make sure that the authentication is logged for debugging purposes
         LogAssertions.assertThat(this.internalLogProvider)
@@ -706,7 +710,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.doReturn(AUTHENTICATED_USER).when(subject).authenticatedUser();
 
         // the authentication flags should reflect the expired credentials
-        var flags = this.connection.authenticate(token, USER_AGENT);
+        var flags = this.connection.logon(token);
 
         Assertions.assertThat(flags).isEqualTo(AuthenticationFlag.CREDENTIALS_EXPIRED);
 

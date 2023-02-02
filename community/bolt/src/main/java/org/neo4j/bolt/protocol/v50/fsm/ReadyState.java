@@ -21,8 +21,12 @@ package org.neo4j.bolt.protocol.v50.fsm;
 
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
+import org.neo4j.memory.HeapEstimator;
 
 public class ReadyState extends org.neo4j.bolt.protocol.v44.fsm.ReadyState {
+    public static final long SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(org.neo4j.bolt.protocol.v44.fsm.ReadyState.class);
+
     public ReadyState(RoutingTableGetter routingTableGetter) {
         super(routingTableGetter);
     }

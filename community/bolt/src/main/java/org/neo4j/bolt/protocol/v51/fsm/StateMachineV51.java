@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.protocol.v51.fsm;
 
 import java.time.Clock;
@@ -26,18 +27,15 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
 import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v41.fsm.ConnectedState;
 import org.neo4j.bolt.protocol.v43.fsm.FailedState;
 import org.neo4j.bolt.protocol.v44.fsm.InTransactionState;
-import org.neo4j.bolt.protocol.v50.fsm.ReadyState;
-import org.neo4j.bolt.protocol.v50.fsm.StateMachineV50;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 public class StateMachineV51 extends AbstractStateMachine {
-    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineV50.class);
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineV51.class);
 
     public StateMachineV51(
             StateMachineSPI spi,
@@ -49,27 +47,34 @@ public class StateMachineV51 extends AbstractStateMachine {
     }
 
     @Override
-    protected AbstractStateMachine.States buildStates(MemoryTracker memoryTracker) {
-        memoryTracker.allocateHeap(ConnectedState.SHALLOW_SIZE
-                + org.neo4j.bolt.protocol.v44.fsm.ReadyState.SHALLOW_SIZE
+    protected States buildStates(MemoryTracker memoryTracker) {
+        memoryTracker.allocateHeap(NegotiationState.SHALLOW_SIZE
+                + ReadyState.SHALLOW_SIZE
+                + AuthenticationState.SHALLOW_SIZE
                 + AutoCommitState.SHALLOW_SIZE
                 + InTransactionState.SHALLOW_SIZE
                 + FailedState.SHALLOW_SIZE
                 + InterruptedState.SHALLOW_SIZE);
 
-        var connected = new ConnectedState(); // v4.1
+        var negotiation = new NegotiationState(); // v5.1
+        var authentication = new AuthenticationState(); // v5.1
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4.4
         var failed = new FailedState(); // v4.3
-        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v5.0
+        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v5.1
         var interrupted = new InterruptedState(); // v3
 
-        connected.setReadyState(ready);
+        negotiation.setAuthenticationState(authentication);
+
+        authentication.setReadyState(ready);
+        authentication.setInterruptedState(interrupted);
+        authentication.setFailedState(failed);
 
         ready.setTransactionReadyState(inTransaction);
         ready.setStreamingState(autoCommitState);
         ready.setFailedState(failed);
         ready.setInterruptedState(interrupted);
+        ready.setAuthenticationState(authentication);
 
         autoCommitState.setReadyState(ready);
         autoCommitState.setFailedState(failed);
@@ -83,6 +88,6 @@ public class StateMachineV51 extends AbstractStateMachine {
 
         interrupted.setReadyState(ready);
 
-        return new AbstractStateMachine.States(connected, failed);
+        return new AbstractStateMachine.States(negotiation, failed);
     }
 }

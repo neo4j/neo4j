@@ -131,7 +131,12 @@ public interface ConnectionListener {
      *
      * @param ctx a new login context.
      */
-    default void onAuthenticated(LoginContext ctx) {}
+    default void onLogon(LoginContext ctx) {}
+
+    /**
+     * Handles logging off
+     */
+    default void onLogoff() {}
 
     /**
      * Handles the selected impersonation of the connection.

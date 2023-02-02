@@ -63,6 +63,32 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         return this;
     }
 
+    public LogAssert containsMessagesEventually(long maxWaitTimoutMs, String... messages) throws InterruptedException {
+        isNotNull();
+        boolean waitedAlready = false;
+        for (String message : messages) {
+            if (!haveMessage(message)) {
+                if (!waitedAlready) {
+                    long backoff = 0;
+                    int attempt = 0;
+                    while (!haveMessage(message) && backoff <= maxWaitTimoutMs) {
+                        backoff = (long) Math.pow(2, attempt++);
+                        Thread.sleep(backoff);
+                    }
+
+                    waitedAlready = true;
+                }
+
+                if (!haveMessage(message)) {
+                    failWithMessage(
+                            "Expected log to contain messages: `%s` but no matches found in:%n%s",
+                            Arrays.toString(messages), actual.serialize());
+                }
+            }
+        }
+        return this;
+    }
+
     public LogAssert containsMessages(Predicate<String> predicate) {
         isNotNull();
         if (!haveMessage(predicate)) {

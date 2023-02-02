@@ -44,6 +44,11 @@ public class BoltV40Wire extends AbstractBoltWire {
     }
 
     @Override
+    public boolean supportsLogonMessage() {
+        return false;
+    }
+
+    @Override
     protected void configurePipeline() {
         this.pipeline.addLast(LegacyStructWriter.getInstance());
 
@@ -128,5 +133,15 @@ public class BoltV40Wire extends AbstractBoltWire {
                 .writeInt(42)
                 .writeString("one_does_not_simply")
                 .writeString("break_decoding");
+    }
+
+    @Override
+    public ByteBuf logoff() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf logon(Map<String, Object> authToken) {
+        throw new UnsupportedOperationException();
     }
 }

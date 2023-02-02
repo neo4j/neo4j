@@ -35,10 +35,12 @@ public class ReadLimitConnectionListener implements ConnectionListener {
 
     private final Connection connection;
     private final InternalLog log;
+    private final long limit;
 
-    public ReadLimitConnectionListener(Connection connection, InternalLogProvider logging) {
+    public ReadLimitConnectionListener(Connection connection, InternalLogProvider logging, long limit) {
         this.connection = connection;
         this.log = logging.getLog(ReadLimitConnectionListener.class);
+        this.limit = limit;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class ReadLimitConnectionListener implements ConnectionListener {
     }
 
     @Override
-    public void onAuthenticated(LoginContext ctx) {
+    public void onLogon(LoginContext ctx) {
         log.debug("[%s] Removing read limit", this.connection.id());
 
         try (var memoryTracker = this.connection.memoryTracker().getScopedMemoryTracker()) {
@@ -62,7 +64,23 @@ public class ReadLimitConnectionListener implements ConnectionListener {
 
             pipeline.replace(oldDecoder, "chunkFrameDecoder", newDecoder);
         }
+    }
 
-        this.connection.removeListener(this);
+    @Override
+    public void onLogoff() {
+        log.debug("[%s] Re-adding read limit of [%o]", this.connection.id(), limit);
+
+        try (var memoryTracker = this.connection.memoryTracker().getScopedMemoryTracker()) {
+            // temporarily allocate additional memory for a replacement ChunkFrameDecoder as we'll need to create a new
+            // instance in order to remove the imposed read limit
+            memoryTracker.allocateHeap(ChunkFrameDecoder.SHALLOW_SIZE);
+
+            var pipeline = this.connection.channel().pipeline();
+
+            var oldDecoder = pipeline.get(ChunkFrameDecoder.class);
+            var newDecoder = oldDecoder.limit(limit);
+
+            pipeline.replace(oldDecoder, "chunkFrameDecoder", newDecoder);
+        }
     }
 }

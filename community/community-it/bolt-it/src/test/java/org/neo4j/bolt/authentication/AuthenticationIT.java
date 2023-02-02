@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.authentication;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,6 +38,8 @@ import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
 import org.neo4j.bolt.test.annotation.setup.FactoryFunction;
 import org.neo4j.bolt.test.annotation.setup.SettingsFunction;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
+import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
+import org.neo4j.bolt.test.annotation.wire.selector.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
@@ -54,13 +57,11 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-/**
- * Ensures that authentication is processed, returns the correct metadata and failures.
- */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
+@ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 0)})
 public class AuthenticationIT {
 
     protected final AssertableLogProvider userLogProvider = new AssertableLogProvider();
@@ -87,21 +88,30 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldRespondWithCredentialsExpiredOnFirstUse(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
-                .containsKeys("server", "connection_id")
-                .containsEntry("credentials_expired", true));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
     }
 
     @ProtocolTest
     void shouldFailIfWrongCredentials(BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "wrong")));
@@ -132,8 +142,14 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
+
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
         // authenticate normally using the preset credentials and update the password to a new value
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
@@ -152,7 +168,10 @@ public class AuthenticationIT {
         connection.reconnect();
         wire.negotiate(connection);
 
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "secretPassword")));
@@ -163,7 +182,10 @@ public class AuthenticationIT {
         connection.reconnect();
         wire.negotiate(connection);
 
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
@@ -177,7 +199,12 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenWrongType(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", List.of("neo4j"),
                 "credentials", "neo4j")));
@@ -192,7 +219,12 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenMissingKey(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "this-should-have-been-credentials", "neo4j")));
@@ -206,7 +238,12 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenMissingScheme(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "principal", "neo4j",
                 "credentials", "neo4j")));
 
@@ -219,7 +256,12 @@ public class AuthenticationIT {
     @ProtocolTest
     protected void shouldFailIfMalformedAuthTokenUnknownScheme(
             BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "unknown",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
@@ -237,7 +279,12 @@ public class AuthenticationIT {
             connection.reconnect();
             wire.negotiate(connection);
 
-            connection.send(wire.hello(Map.of(
+            connection.send(wire.hello());
+            // ensure that the server returns the expected set of metadata
+            BoltConnectionAssertions.assertThat(connection)
+                    .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+            connection.send(wire.logon(Map.of(
                     "scheme", "basic",
                     "principal", "neo4j",
                     "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN")));
@@ -253,14 +300,18 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailWhenReusingTheSamePassword(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.reset())
@@ -298,14 +349,18 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
 
         connection
                 .send(wire.run(
@@ -332,15 +387,19 @@ public class AuthenticationIT {
     @ProtocolTest
     void shouldNotBeAbleToReadWhenPasswordChangeRequired(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
         // authenticate with the default (expired) credentials
-        connection.send(wire.hello(Map.of(
+        connection.send(wire.logon(Map.of(
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j")));
 
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
-                .containsEntry("credentials_expired", true)
-                .containsKeys("server", "connection_id"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsEntry("credentials_expired", true));
 
         // attempt to execute a query
         connection.send(wire.run("MATCH (n) RETURN n")).send(wire.pull());
@@ -360,5 +419,53 @@ public class AuthenticationIT {
                             Status.Security.CredentialsExpired,
                             "The credentials you provided were valid, but must be changed before you can use this instance.");
         }
+    }
+
+    @ProtocolTest
+    void shouldBeAbleToLogoffAfterBeingAuthenticatedThenLogBackOn(
+            BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
+        connection.send(wire.hello());
+        // ensure that the server returns the expected set of metadata
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta -> Assertions.assertThat(meta).containsKeys("server", "connection_id"));
+
+        // authenticate normally using the preset credentials and update the password to a new value
+        connection.send(wire.logon(Map.of(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j")));
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        connection.send(wire.logoff());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        // Should be back in authentication state so should be able to log back on
+        connection.send(wire.logon(Map.of(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j")));
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+    }
+
+    @ProtocolTest
+    void shouldBeNotBeAbleToAuthenticateOnHelloMessage(BoltWire wire, @Negotiated TransportConnection connection)
+            throws IOException {
+        // authenticate normally using the preset credentials and update the password to a new value
+        connection.send(wire.hello(Map.of(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j")));
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        // Attempt to start a transaction this will fail because you are in authentication state and not authenticated
+        connection.send(wire.begin());
+
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesFailureFuzzy(
+                        Status.Request.Invalid,
+                        "Message 'org.neo4j.bolt.protocol.v50.message.request.BeginMessage@782' cannot be handled by a session in the AUTHENTICATION state.");
     }
 }

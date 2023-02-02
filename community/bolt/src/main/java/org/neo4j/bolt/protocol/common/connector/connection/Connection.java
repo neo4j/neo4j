@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Future;
@@ -192,10 +193,11 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     /**
      * Enables a designated feature for use with this connection.
      *
-     * @param feature a feature.
-     * @return true if the feature has been enabled, false otherwise.
+     * @param features list of features.
+     * @param userAgent the user agent string
+     * @return a list of enabled features
      */
-    boolean enableFeature(Feature feature);
+    List<Feature> negotiate(List<Feature> features, String userAgent);
 
     /**
      * Retrieves the finite state machine for this connection.
@@ -216,13 +218,17 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * Authenticates this connection using a given authentication token.
      *
      * @param token     an authentication token.
-     * @param userAgent a user agent.
      * @return null or an authentication flag which notifies the client about additional requirements or limitations if
      * necessary.
      * @throws AuthenticationException when the given token is invalid or authentication fails.
      * @see AuthenticationFlag for detailed information on the available authentication flags.
      */
-    AuthenticationFlag authenticate(Map<String, Object> token, String userAgent) throws AuthenticationException;
+    AuthenticationFlag logon(Map<String, Object> token) throws AuthenticationException;
+
+    /**
+     * Logs off this connection, so it is ready to accept new authentication.
+     */
+    void logoff();
 
     /**
      * Impersonates a given target user.

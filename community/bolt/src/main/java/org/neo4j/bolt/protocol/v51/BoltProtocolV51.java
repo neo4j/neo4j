@@ -24,12 +24,17 @@ import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.bolt.protocol.v51.fsm.StateMachineV51;
+import org.neo4j.bolt.protocol.v51.message.decoder.HelloMessageDecoder;
+import org.neo4j.bolt.protocol.v51.message.decoder.LogoffMessageDecoder;
+import org.neo4j.bolt.protocol.v51.message.decoder.LogonMessageDecoder;
 import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
 
 public class BoltProtocolV51 extends BoltProtocolV50 {
@@ -47,6 +52,16 @@ public class BoltProtocolV51 extends BoltProtocolV50 {
     @Override
     public ProtocolVersion version() {
         return VERSION;
+    }
+
+    @Override
+    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
+                .builderOf()
+                .register(LogoffMessageDecoder.getInstance())
+                .register(LogonMessageDecoder.getInstance())
+                .register(HelloMessageDecoder.getInstance())
+                .build();
     }
 
     @Override

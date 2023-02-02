@@ -19,15 +19,19 @@
  */
 package org.neo4j.bolt.protocol.common.connector.connection.listener;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.handler.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
@@ -69,7 +73,7 @@ class AuthenticationTimeoutConnectionListenerTest {
         var inOrder = Mockito.inOrder(this.memoryTracker, this.pipeline);
 
         inOrder.verify(this.memoryTracker).allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
-        inOrder.verify(this.pipeline).addLast(ArgumentMatchers.any(AuthenticationTimeoutHandler.class));
+        inOrder.verify(this.pipeline).addLast(any(AuthenticationTimeoutHandler.class));
         inOrder.verifyNoMoreInteractions();
 
         LogAssertions.assertThat(this.logProvider)
@@ -85,23 +89,44 @@ class AuthenticationTimeoutConnectionListenerTest {
         this.listener.onNetworkPipelineInitialized(this.pipeline);
 
         Mockito.verify(this.memoryTracker).allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
-        Mockito.verify(this.pipeline).addLast(ArgumentMatchers.any(AuthenticationTimeoutHandler.class));
+        Mockito.verify(this.pipeline).addLast(any(AuthenticationTimeoutHandler.class));
         Mockito.verifyNoMoreInteractions(this.memoryTracker, this.pipeline);
 
-        this.listener.onAuthenticated(loginContext);
+        this.listener.onLogon(loginContext);
 
         var inOrder = Mockito.inOrder(loginContext, this.connection, this.channel, this.pipeline);
 
         inOrder.verify(this.connection).channel();
         inOrder.verify(this.channel).pipeline();
-        inOrder.verify(this.pipeline).remove(ArgumentMatchers.any(AuthenticationTimeoutHandler.class));
-        inOrder.verify(this.connection).removeListener(this.listener);
+        inOrder.verify(this.pipeline).remove(any(AuthenticationTimeoutHandler.class));
         inOrder.verifyNoMoreInteractions();
 
         LogAssertions.assertThat(this.logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(AuthenticationTimeoutConnectionListener.class)
                 .containsMessageWithArgumentsContaining("Removing authentication timeout handler", CONNECTION_ID);
+    }
+
+    @Test
+    void shouldReAddAuthenticationTimeoutHandlerBeforeHousekeeperOnAuthentication() {
+        listener.onNetworkPipelineInitialized(pipeline);
+        listener.onLogoff();
+
+        InOrder inOrder = Mockito.inOrder(connection, channel, pipeline);
+
+        inOrder.verify(connection).channel();
+        inOrder.verify(channel).pipeline();
+        inOrder.verify(pipeline)
+                .addBefore(
+                        eq(HouseKeeperHandler.HANDLER_NAME),
+                        any(String.class),
+                        any(AuthenticationTimeoutHandler.class));
+        inOrder.verifyNoMoreInteractions();
+
+        LogAssertions.assertThat(logProvider)
+                .forLevel(AssertableLogProvider.Level.DEBUG)
+                .forClass(AuthenticationTimeoutConnectionListener.class)
+                .containsMessageWithArgumentsContaining("Re-adding authentication timeout handler", CONNECTION_ID);
     }
 
     @Test

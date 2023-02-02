@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.concurrent.EventExecutor;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,17 +47,17 @@ class AuthenticationTimeoutHandlerTest {
     void shouldCloseChannelWhenTimeoutIsExceededByClient() throws Exception {
         var ctx = mock(ChannelHandlerContext.class);
         var channel = mock(Channel.class);
+        var executor = mock(EventExecutor.class);
 
         ConnectionMockFactory.newFactory().attachToMock(channel);
 
+        when(ctx.executor()).thenReturn(executor);
         when(ctx.channel()).thenReturn(channel);
         when(channel.toString()).thenReturn("test");
 
         timeoutHandler.handlerAdded(ctx);
 
-        var ex = assertThrows(
-                BoltConnectionFatality.class,
-                () -> timeoutHandler.channelIdle(ctx, IdleStateEvent.READER_IDLE_STATE_EVENT));
+        var ex = assertThrows(BoltConnectionFatality.class, () -> timeoutHandler.authTimerEnded(ctx));
         assertEquals(
                 "Terminated connection 'bolt-test-connection' (test) as the client failed to authenticate within "
                         + TIMEOUT_DURATION.toMillis() + " ms.",
@@ -68,18 +68,18 @@ class AuthenticationTimeoutHandlerTest {
     void shouldCloseChannelWhenTimeoutIsExceededByServer() throws Exception {
         var ctx = mock(ChannelHandlerContext.class);
         var channel = mock(Channel.class);
+        var executor = mock(EventExecutor.class);
 
         ConnectionMockFactory.newFactory().attachToMock(channel);
 
+        when(ctx.executor()).thenReturn(executor);
         when(ctx.channel()).thenReturn(channel);
         when(channel.toString()).thenReturn("test");
 
         timeoutHandler.handlerAdded(ctx);
         timeoutHandler.setRequestReceived(true);
 
-        var ex = assertThrows(
-                BoltConnectionFatality.class,
-                () -> timeoutHandler.channelIdle(ctx, IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT));
+        var ex = assertThrows(BoltConnectionFatality.class, () -> timeoutHandler.authTimerEnded(ctx));
         assertEquals(
                 "Terminated connection 'bolt-test-connection' (test) as the server failed to handle an authentication request within "
                         + TIMEOUT_DURATION.toMillis() + " ms.",

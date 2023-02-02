@@ -48,7 +48,12 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
         var command = this.getCommand(context, wire);
 
         try {
-            connection.send(command);
+            // If using new method hello will not have auth and needs to be sent to get the authentication state
+            if (wire.supportsLogonMessage()) {
+                connection.send(wire.hello());
+            } else {
+                connection.send(command);
+            }
 
             if (wire.getEnabledFeatures().isEmpty()) {
                 BoltConnectionAssertions.assertThat(connection).receivesSuccess();
@@ -62,6 +67,12 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
                                             .collect(Collectors.toSet())));
                 });
             }
+
+            // Then in new auth you auth after hello
+            if (wire.supportsLogonMessage()) {
+                connection.send(command);
+                BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+            }
         } catch (IOException | AssertionError ex) {
             throw new ParameterResolutionException("Failed to authenticate connection", ex);
         }
@@ -70,7 +81,7 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
     private ByteBuf getCommand(ParameterContext context, BoltWire wire) {
         return context.findAnnotation(Authenticated.class)
                 .flatMap(annotation -> this.getCommand(annotation, wire))
-                .orElseGet(wire::hello);
+                .orElseGet(() -> wire.supportsLogonMessage() ? wire.logon() : wire.hello());
     }
 
     private Optional<ByteBuf> getCommand(Authenticated annotation, BoltWire wire) {
@@ -78,6 +89,9 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
             return Optional.empty();
         }
 
+        if (wire.supportsLogonMessage()) {
+            return Optional.of(wire.logon(annotation.principal(), annotation.credentials()));
+        }
         return Optional.of(wire.hello(annotation.principal(), annotation.credentials()));
     }
 }

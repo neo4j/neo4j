@@ -22,9 +22,9 @@ package org.neo4j.bolt.protocol.common.handler;
 import static java.lang.String.format;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.time.Duration;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -35,16 +35,16 @@ import org.neo4j.memory.HeapEstimator;
  * Close the channel directly if we failed to finish authentication within certain timeout specified by {@link
  * BoltConnectorInternalSettings#unsupported_bolt_unauth_connection_timeout}
  */
-public class AuthenticationTimeoutHandler extends IdleStateHandler {
+public class AuthenticationTimeoutHandler extends ChannelInboundHandlerAdapter {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(AuthenticationTimeoutHandler.class);
 
     private final Duration timeout;
+    private Future<?> timeoutFuture;
 
     private Connection connection;
     private volatile boolean requestReceived;
 
     public AuthenticationTimeoutHandler(Duration timeout) {
-        super(timeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS);
         this.timeout = timeout;
     }
 
@@ -52,24 +52,31 @@ public class AuthenticationTimeoutHandler extends IdleStateHandler {
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         this.connection = Connection.getConnection(ctx.channel());
 
+        this.timeoutFuture = ctx.executor()
+                .schedule(
+                        () -> {
+                            try {
+                                authTimerEnded(ctx);
+                            } catch (Exception e) {
+                                ctx.fireExceptionCaught(e);
+                            }
+                        },
+                        timeout.toMillis(),
+                        TimeUnit.MILLISECONDS);
+
         super.handlerAdded(ctx);
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        super.handlerRemoved(ctx);
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        if (this.timeoutFuture != null) {
+            this.timeoutFuture.cancel(false);
+        }
 
-        this.connection.memoryTracker().releaseHeap(SHALLOW_SIZE);
+        this.connection.memoryTracker().releaseHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // Override the parent's method to ensure the count down timer is never reset.
-        ctx.fireChannelRead(msg);
-    }
-
-    @Override
-    protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
+    protected void authTimerEnded(ChannelHandlerContext ctx) throws Exception {
         ctx.close();
 
         if (requestReceived) {

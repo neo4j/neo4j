@@ -34,51 +34,51 @@ public final class BoltDefaultMessages {
     private BoltDefaultMessages() {}
 
     public static RequestMessage hello() {
-        return BoltV44Messages.hello();
+        return BoltV51Messages.hello();
     }
 
     public static RequestMessage hello(Map<String, Object> meta) {
-        return BoltV44Messages.hello(meta);
+        return BoltV51Messages.hello(meta);
     }
 
     public static RequestMessage hello(Map<String, Object> meta, RoutingContext routingContext) {
-        return BoltV44Messages.hello(meta, routingContext);
+        return BoltV51Messages.hello(meta, routingContext);
     }
 
     public static RequestMessage run() {
-        return BoltV44Messages.run();
+        return BoltV51Messages.run();
     }
 
     public static RequestMessage run(String statement) {
-        return BoltV44Messages.run(statement);
+        return BoltV51Messages.run(statement);
     }
 
     public static RequestMessage run(String statement, MapValue params) {
-        return BoltV44Messages.run(statement, params);
+        return BoltV51Messages.run(statement, params);
     }
 
     public static RequestMessage run(String statement, MapValue params, MapValue meta) {
-        return BoltV44Messages.run(statement, params, meta);
+        return BoltV51Messages.run(statement, params, meta);
     }
 
     public static RequestMessage pull() {
-        return BoltV44Messages.pull();
+        return BoltV51Messages.pull();
     }
 
     public static RequestMessage discard() throws BoltIOException {
-        return BoltV44Messages.discard();
+        return BoltV51Messages.discard();
     }
 
     public static RequestMessage begin() {
-        return BoltV44Messages.begin();
+        return BoltV51Messages.begin();
     }
 
     public static RequestMessage begin(String databaseName) {
-        return BoltV44Messages.begin(databaseName);
+        return BoltV51Messages.begin(databaseName);
     }
 
     public static RequestMessage begin(String databaseName, String impersonatedUser) {
-        return BoltV44Messages.begin(databaseName, impersonatedUser);
+        return BoltV51Messages.begin(databaseName, impersonatedUser);
     }
 
     public static RequestMessage begin(
@@ -92,22 +92,22 @@ public final class BoltDefaultMessages {
     }
 
     public static RequestMessage rollback() {
-        return BoltV44Messages.rollback();
+        return BoltV51Messages.rollback();
     }
 
     public static RequestMessage commit() {
-        return BoltV44Messages.commit();
+        return BoltV51Messages.commit();
     }
 
     public static RequestMessage reset() {
-        return BoltV44Messages.reset();
+        return BoltV51Messages.reset();
     }
 
     public static RequestMessage goodbye() {
-        return BoltV44Messages.goodbye();
+        return BoltV51Messages.goodbye();
     }
 
     public static RouteMessage route(String impersonatedUser) {
-        return BoltV44Messages.route(impersonatedUser);
+        return BoltV51Messages.route(impersonatedUser);
     }
 }

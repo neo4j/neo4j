@@ -224,8 +224,7 @@ public abstract class AbstractConnection implements Connection {
         this.notifyListeners(listener -> listener.onStateMachineInitialized(fsm));
     }
 
-    @Override
-    public boolean enableFeature(Feature feature) {
+    private boolean enableFeature(Feature feature) {
         // ensure that the protocol has already been selected on this connection, otherwise we are incapable of enabling
         // features as the pipelines have yet to be initialized.
         if (this.protocol.get() == null) {
@@ -294,6 +293,12 @@ public abstract class AbstractConnection implements Connection {
     }
 
     @Override
+    public List<Feature> negotiate(List<Feature> features, String userAgent) {
+        this.userAgent = userAgent;
+        return features.stream().filter(this::enableFeature).toList();
+    }
+
+    @Override
     public PipelineContext writerContext(PackstreamBuf buf) {
         var pipeline = this.writerPipeline;
         if (pipeline == null) {
@@ -334,13 +339,13 @@ public abstract class AbstractConnection implements Connection {
     }
 
     @Override
-    public AuthenticationFlag authenticate(Map<String, Object> token, String userAgent) throws AuthenticationException {
-        this.userAgent = userAgent;
+    public AuthenticationFlag logon(Map<String, Object> token) throws AuthenticationException {
         this.connectionInfo = new BoltConnectionInfo(this.id, userAgent, this.clientAddress(), this.serverAddress());
 
         var result = this.connector().authentication().authenticate(token, this.info());
 
         var loginContext = result.getLoginContext();
+
         if (!this.loginContext.compareAndSet(null, loginContext)) {
             throw new IllegalStateException("Cannot re-authenticate connection");
         }
@@ -352,12 +357,25 @@ public abstract class AbstractConnection implements Connection {
 
         this.resolveDefaultDatabase();
 
-        this.notifyListeners(listener -> listener.onAuthenticated(loginContext));
+        this.notifyListeners(listener -> listener.onLogon(loginContext));
 
         if (result.credentialsExpired()) {
             return AuthenticationFlag.CREDENTIALS_EXPIRED;
         }
         return null;
+    }
+
+    @Override
+    public void logoff() {
+        if (!this.loginContext.compareAndSet(this.loginContext.get(), null)) {
+            throw new IllegalStateException("Cannot logout as context is not what expected");
+        }
+
+        String username = this.username;
+        this.username = null;
+
+        this.notifyListeners(ConnectionListener::onLogoff);
+        log.debug("[%s] Successfully logged off user %s and re-enabled throttles", this.id, username);
     }
 
     @Override

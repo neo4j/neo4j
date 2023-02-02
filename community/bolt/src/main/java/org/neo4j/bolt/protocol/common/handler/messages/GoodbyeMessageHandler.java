@@ -27,6 +27,8 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 
 public class GoodbyeMessageHandler extends SimpleChannelInboundHandler<GoodbyeMessage> {
+    public static final String HANDLER_NAME = "goodbyeMessageHandler";
+
     private final Log log;
 
     private Connection connection;

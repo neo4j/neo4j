@@ -55,7 +55,7 @@ class ReadLimitConnectionListenerTest {
         this.channel = Mockito.mock(Channel.class);
         this.pipeline = Mockito.mock(ChannelPipeline.class, Mockito.RETURNS_SELF);
         this.logProvider = new AssertableLogProvider();
-        this.chunkFrameDecoder = new ChunkFrameDecoder(this.logProvider);
+        this.chunkFrameDecoder = new ChunkFrameDecoder(1000L, this.logProvider);
 
         Mockito.doReturn(CONNECTION_ID).when(this.connection).id();
         Mockito.doReturn(this.memoryTracker).when(this.connection).memoryTracker();
@@ -66,14 +66,14 @@ class ReadLimitConnectionListenerTest {
 
         Mockito.doReturn(this.chunkFrameDecoder).when(this.pipeline).get(ChunkFrameDecoder.class);
 
-        this.listener = new ReadLimitConnectionListener(connection, this.logProvider);
+        this.listener = new ReadLimitConnectionListener(connection, this.logProvider, 1000L);
     }
 
     @Test
     void shouldReplaceChunkFrameDecoderOnAuthenticated() {
         var loginContext = Mockito.mock(LoginContext.class);
 
-        this.listener.onAuthenticated(loginContext);
+        this.listener.onLogon(loginContext);
 
         var inOrder = Mockito.inOrder(this.connection, this.memoryTracker, this.scopedMemoryTracker, this.pipeline);
 
@@ -87,12 +87,37 @@ class ReadLimitConnectionListenerTest {
                         ArgumentMatchers.any(ChunkFrameDecoder.class),
                         ArgumentMatchers.eq("chunkFrameDecoder"),
                         ArgumentMatchers.any(ChunkFrameDecoder.class));
-        inOrder.verify(this.connection).removeListener(this.listener);
 
         LogAssertions.assertThat(this.logProvider)
                 .forLevel(AssertableLogProvider.Level.DEBUG)
                 .forClass(ReadLimitConnectionListener.class)
                 .containsMessageWithArgumentsContaining("Removing read limit", CONNECTION_ID);
+    }
+
+    @Test
+    void shouldReAddLimitedChunkFrameEncoderOnLogoff() {
+        this.listener.onLogoff();
+
+        var inOrder = Mockito.inOrder(this.connection, this.memoryTracker, this.scopedMemoryTracker, this.pipeline);
+
+        inOrder.verify(this.connection).memoryTracker();
+        inOrder.verify(this.memoryTracker).getScopedMemoryTracker();
+        inOrder.verify(this.scopedMemoryTracker).allocateHeap(ChunkFrameDecoder.SHALLOW_SIZE);
+        inOrder.verify(this.connection).channel();
+        inOrder.verify(this.pipeline).get(ChunkFrameDecoder.class);
+
+        // No easy why to check that the new Decoder has a limit on it.
+        // so we will check that we replace it same as above, then check the log.
+        inOrder.verify(this.pipeline)
+                .replace(
+                        ArgumentMatchers.any(ChunkFrameDecoder.class),
+                        ArgumentMatchers.eq("chunkFrameDecoder"),
+                        ArgumentMatchers.any(ChunkFrameDecoder.class));
+
+        LogAssertions.assertThat(this.logProvider)
+                .forLevel(AssertableLogProvider.Level.DEBUG)
+                .forClass(ReadLimitConnectionListener.class)
+                .containsMessageWithArgumentsContaining("Re-adding read limit of", CONNECTION_ID);
     }
 
     @Test

@@ -41,9 +41,9 @@ import org.neo4j.values.virtual.MapValueBuilder;
 public class ConnectedState implements State {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ConnectedState.class);
 
-    private static final String CONNECTION_ID_KEY = "connection_id";
+    public static final String CONNECTION_ID_KEY = "connection_id";
 
-    private State readyState;
+    protected State readyState;
 
     @Override
     public State process(RequestMessage message, StateMachineContext context) throws BoltConnectionFatality {
@@ -54,11 +54,9 @@ public class ConnectedState implements State {
             var authToken = helloMessage.authToken();
             var routingContext = extractRoutingContext(helloMessage);
 
-            if (processAuthentication(userAgent, authToken, context)) {
-                var enabledFeatures = helloMessage.features().stream()
-                        .filter(feature -> context.connection().enableFeature(feature))
-                        .toList();
+            var enabledFeatures = context.connection().negotiate(helloMessage.features(), helloMessage.userAgent());
 
+            if (processAuthentication(userAgent, authToken, context)) {
                 context.initStatementProcessorProvider(routingContext);
 
                 context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));
@@ -96,7 +94,7 @@ public class ConnectedState implements State {
             var connectionState = context.connectionState();
             connectionState.onMetadata("server", Values.utf8Value(boltSpi.version()));
 
-            var flags = context.connection().authenticate(authToken, userAgent);
+            var flags = context.connection().logon(authToken);
             if (flags != null) {
                 connectionState.onMetadata(flags.name().toLowerCase(), Values.TRUE);
             }

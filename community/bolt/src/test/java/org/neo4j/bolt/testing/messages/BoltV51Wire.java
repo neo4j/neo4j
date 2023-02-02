@@ -20,17 +20,19 @@
 package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import java.util.Map;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
-public class BoltV51Wire extends AbstractBoltWire {
+public class BoltV51Wire extends BoltV50Wire {
     public BoltV51Wire() {
-        super(BoltProtocolV51.VERSION, Feature.UTC_DATETIME);
+        super(BoltProtocolV51.VERSION);
+    }
+
+    @Override
+    public boolean supportsLogonMessage() {
+        return true;
     }
 
     @Override
@@ -38,25 +40,17 @@ public class BoltV51Wire extends AbstractBoltWire {
         return "BoltWire/5.1";
     }
 
-    @Override
-    public ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType) {
-        var meta = new HashMap<String, Object>();
-        if (db != null) {
-            meta.put("db", db);
-        }
-        if (impersonatedUser != null) {
-            meta.put("imp_user", impersonatedUser);
-        }
-        if (bookmarks != null) {
-            meta.put("bookmarks", new ArrayList<>(bookmarks));
-        }
-        if (transactionType != null) {
-            meta.put("tx_type", transactionType);
-        }
-
+    public ByteBuf logon(Map<String, Object> authToken) {
         return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
-                .writeMap(meta)
+                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_LOGON))
+                .writeMap(authToken)
+                .getTarget();
+    }
+
+    @Override
+    public ByteBuf logoff() {
+        return PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_LOGOFF))
                 .getTarget();
     }
 }

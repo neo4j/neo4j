@@ -53,6 +53,8 @@ public abstract class AbstractBoltWire implements BoltWire {
     public static final short MESSAGE_TAG_RESET = (short) 0x0F;
     public static final short MESSAGE_TAG_GOODBYE = (short) 0x02;
     public static final short MESSAGE_TAG_ROUTE = (short) 0x66;
+    public static final short MESSAGE_TAG_LOGON = (short) 0x6A;
+    public static final short MESSAGE_TAG_LOGOFF = (short) 0x6B;
 
     protected final ProtocolVersion version;
     protected final Connection connection;
@@ -328,5 +330,12 @@ public abstract class AbstractBoltWire implements BoltWire {
                 .writeString("one_does_not_simply")
                 .writeString("break_decoding")
                 .writeString(elementId);
+    }
+
+    @Override
+    public ByteBuf logoff() {
+        return PackstreamBuf.allocUnpooled()
+                .writeStructHeader(new StructHeader(0, MESSAGE_TAG_LOGOFF))
+                .getTarget();
     }
 }

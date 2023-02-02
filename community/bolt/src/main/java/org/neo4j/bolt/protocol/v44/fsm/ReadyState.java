@@ -29,10 +29,14 @@ import org.neo4j.bolt.protocol.v44.message.request.BeginMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
 import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.ReadyState {
+    public static final long SHALLOW_SIZE =
+            HeapEstimator.shallowSizeOfInstance(org.neo4j.bolt.protocol.v43.fsm.ReadyState.class);
+
     public ReadyState(RoutingTableGetter routingTableGetter) {
         super(routingTableGetter);
     }

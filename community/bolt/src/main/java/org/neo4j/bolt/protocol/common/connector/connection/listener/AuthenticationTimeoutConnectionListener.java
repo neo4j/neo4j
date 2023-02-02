@@ -23,6 +23,7 @@ import io.netty.channel.ChannelPipeline;
 import java.time.Duration;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.handler.AuthenticationTimeoutHandler;
+import org.neo4j.bolt.protocol.common.handler.HouseKeeperHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.InternalLog;
@@ -57,34 +58,39 @@ public class AuthenticationTimeoutConnectionListener implements ConnectionListen
     @Override
     public void onNetworkPipelineInitialized(ChannelPipeline pipeline) {
         log.debug("[%s] Installing authentication timeout handler", this.connection.id());
-
-        this.connection.memoryTracker().allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
-
-        var handler = new AuthenticationTimeoutHandler(this.timeout);
-        this.handler = handler;
+        connection.memoryTracker().allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
+        handler = new AuthenticationTimeoutHandler(timeout);
 
         pipeline.addLast(handler);
     }
 
     @Override
     public void onRequestReceived(RequestMessage message) {
-        log.debug("[%s] Received request during authentication phase", this.connection.id());
-
-        var handler = this.handler;
         if (handler != null) {
+            log.debug("[%s] Received request during authentication phase", this.connection.id());
             handler.setRequestReceived(true);
         }
     }
 
     @Override
-    public void onAuthenticated(LoginContext ctx) {
+    public void onLogon(LoginContext ctx) {
         log.debug("[%s] Removing authentication timeout handler", this.connection.id());
 
-        var handler = this.handler;
         if (handler != null) {
             this.connection.channel().pipeline().remove(handler);
+            this.handler = null;
         }
+    }
 
-        this.connection.removeListener(this);
+    @Override
+    public void onLogoff() {
+        log.debug("[%s] Re-adding authentication timeout handler", this.connection.id());
+        connection.memoryTracker().allocateHeap(AuthenticationTimeoutHandler.SHALLOW_SIZE);
+
+        handler = new AuthenticationTimeoutHandler(timeout);
+        connection
+                .channel()
+                .pipeline()
+                .addBefore(HouseKeeperHandler.HANDLER_NAME, "authenticationTimeoutHandler", handler);
     }
 }

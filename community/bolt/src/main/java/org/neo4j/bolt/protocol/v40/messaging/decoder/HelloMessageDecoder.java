@@ -19,19 +19,10 @@
  */
 package org.neo4j.bolt.protocol.v40.messaging.decoder;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
-
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
+import org.neo4j.bolt.protocol.common.message.decoder.ReadMetadataUtils;
 import org.neo4j.bolt.protocol.v40.messaging.request.HelloMessage;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.error.struct.IllegalStructSizeException;
@@ -39,12 +30,6 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.packstream.struct.StructReader;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.StringValue;
-import org.neo4j.values.storable.UTF8StringValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.virtual.MapValue;
 
 public class HelloMessageDecoder implements StructReader<Connection, HelloMessage> {
     private static final HelloMessageDecoder INSTANCE = new HelloMessageDecoder();
@@ -87,75 +72,6 @@ public class HelloMessageDecoder implements StructReader<Connection, HelloMessag
 
     protected Map<String, Object> readMetaDataMap(PackstreamValueReader<Connection> reader, int limit)
             throws PackstreamReaderException {
-        MapValue metaDataMapValue;
-        try {
-            metaDataMapValue = reader.readPrimitiveMap(limit);
-        } catch (PackstreamReaderException ex) {
-            throw new IllegalStructArgumentException("extra", ex);
-        }
-
-        var writer = new AuthTokenValueWriter();
-        var metaDataMap = new HashMap<String, Object>(metaDataMapValue.size());
-        metaDataMapValue.foreach((key, value) -> {
-            if (!AuthToken.containsSensitiveInformation(key)) {
-                value.writeTo(writer);
-                metaDataMap.put(key, writer.value());
-            } else {
-                metaDataMap.put(key, sensitiveValueAsObject(value));
-            }
-        });
-
-        return metaDataMap;
-    }
-
-    protected static Object sensitiveValueAsObject(AnyValue value) {
-        if (value instanceof UTF8StringValue stringValue) {
-            return stringValue.bytes();
-        }
-        if (value instanceof StringValue stringValue) {
-            if (stringValue.isEmpty()) {
-                return ArrayUtils.EMPTY_BYTE_ARRAY;
-            }
-
-            return stringValue.stringValue().getBytes(StandardCharsets.UTF_8);
-        }
-
-        if (value == NO_VALUE) {
-            return null;
-        }
-
-        return ((Value) value).asObjectCopy();
-    }
-
-    private static class AuthTokenValueWriter extends BaseToObjectValueWriter<RuntimeException> {
-        @Override
-        protected Node newNodeEntityById(long id) {
-            throw new UnsupportedOperationException("Authentication tokens should not contain nodes");
-        }
-
-        @Override
-        protected Node newNodeEntityByElementId(String elementId) {
-            throw new UnsupportedOperationException("Authentication tokens should not contain nodes");
-        }
-
-        @Override
-        protected Relationship newRelationshipEntityById(long id) {
-            throw new UnsupportedOperationException("Authentication tokens should not contain relationships");
-        }
-
-        @Override
-        protected Relationship newRelationshipEntityByElementId(String elementId) {
-            throw new UnsupportedOperationException("Authentication tokens should not contain relationships");
-        }
-
-        @Override
-        protected Point newPoint(CoordinateReferenceSystem crs, double[] coordinate) {
-            throw new UnsupportedOperationException("Authentication tokens should not contain relationships");
-        }
-
-        Object valueAsObject(AnyValue value) {
-            value.writeTo(this);
-            return value();
-        }
+        return ReadMetadataUtils.readMetadataMap(reader, limit);
     }
 }

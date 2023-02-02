@@ -53,6 +53,7 @@ import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.security.error.AuthenticationException;
@@ -139,7 +140,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
         var loginContext = new AtomicReference<LoginContext>();
         when(connection.loginContext()).thenAnswer(invocation -> loginContext.get());
         try {
-            when(connection.authenticate(any(), any())).thenAnswer(invocation -> {
+            when(connection.logon(any())).thenAnswer(invocation -> {
                 var result = authentication.authenticate(
                         invocation.getArgument(0),
                         new BoltConnectionInfo(
@@ -209,6 +210,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback {
                 .register(new BoltProtocolV43(
                         logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .register(new BoltProtocolV44(
+                        logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
+                .register(new BoltProtocolV51(
                         logService, databaseManagementService, defaultDatabaseResolver, txManager, clock))
                 .build();
 

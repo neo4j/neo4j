@@ -26,6 +26,7 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.Signal;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 public abstract class FailSafeState implements State {
@@ -42,7 +43,7 @@ public abstract class FailSafeState implements State {
 
         try {
             return processUnsafe(message, context);
-        } catch (AuthorizationExpiredException e) {
+        } catch (AuthorizationExpiredException | AuthenticationException e) {
             context.handleFailure(e, true);
             return failedState;
         } catch (Throwable t) {

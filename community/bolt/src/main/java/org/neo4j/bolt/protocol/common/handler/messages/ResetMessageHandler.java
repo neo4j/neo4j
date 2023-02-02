@@ -25,8 +25,10 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.HeapEstimator;
 
 public class ResetMessageHandler extends SimpleChannelInboundHandler<ResetMessage> {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ResetMessageHandler.class);
     private final Log log;
 
     private Connection connection;
@@ -38,6 +40,11 @@ public class ResetMessageHandler extends SimpleChannelInboundHandler<ResetMessag
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         this.connection = Connection.getConnection(ctx.channel());
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        connection.memoryTracker().releaseHeap(ResetMessageHandler.SHALLOW_SIZE);
     }
 
     @Override

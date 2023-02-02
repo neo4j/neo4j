@@ -51,6 +51,8 @@ import org.neo4j.bolt.protocol.common.connector.executor.ThreadPoolExecutorServi
 import org.neo4j.bolt.protocol.common.connector.listener.AuthenticationTimeoutConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.KeepAliveConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.MetricsConnectorListener;
+import org.neo4j.bolt.protocol.common.connector.listener.ReadLimitConnectorListener;
+import org.neo4j.bolt.protocol.common.connector.listener.ResetMessageConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnectorListener;
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
@@ -441,6 +443,16 @@ public class BoltServer extends LifecycleAdapter {
                     keepAliveInterval,
                     logService.getInternalLogProvider()));
         }
+
+        // if read-limit has been configured, we'll register a listener which appends the necessary handlers to the
+        // network pipelines upon connection negotiation
+        var readLimit = config.get(BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes);
+        if (readLimit != 0) {
+            connector.registerListener(new ReadLimitConnectorListener(readLimit, logService.getInternalLogProvider()));
+        }
+
+        // Register the reset message connection listener
+        connector.registerListener(new ResetMessageConnectorListener(logService.getInternalLogProvider()));
 
         connectorLife.add(connector);
     }

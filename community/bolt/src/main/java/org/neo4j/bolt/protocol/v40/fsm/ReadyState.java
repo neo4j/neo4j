@@ -134,4 +134,8 @@ public class ReadyState extends FailSafeState {
     protected String getTxType(BeginMessage beginMessage) {
         return null;
     }
+
+    protected State processLogoffMessage(StateMachineContext context) {
+        return null;
+    }
 }

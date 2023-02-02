@@ -22,6 +22,7 @@ package org.neo4j.bolt.testing.messages;
 import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,14 @@ public interface BoltWire {
                 new BoltV44Wire(),
                 new BoltV50Wire(),
                 new BoltV51Wire());
+    }
+
+    /**
+     * Will be true if it uses the newer authentication method when auth is sent in a logon message not the hello message
+     * @return whether the new auth is being used
+     */
+    default boolean supportsLogonMessage() {
+        return true;
     }
 
     /**
@@ -112,6 +121,23 @@ public interface BoltWire {
     }
 
     ByteBuf hello(Map<String, Object> meta, RoutingContext context);
+
+    default ByteBuf logon() {
+        return this.logon(new HashMap<>());
+    }
+
+    default ByteBuf logon(String principal, String credentials) {
+        return this.logon(Map.of("scheme", "basic", "principal", principal, "credentials", credentials));
+    }
+
+    default ByteBuf logon(String principal, String credentials, String realm) {
+        return this.logon(
+                Map.of("scheme", "basic", "principal", principal, "credentials", credentials, "realm", realm));
+    }
+
+    ByteBuf logon(Map<String, Object> authToken);
+
+    ByteBuf logoff();
 
     default ByteBuf begin() {
         return begin(null, null, null, null);

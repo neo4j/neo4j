@@ -57,11 +57,11 @@ public class ChunkFrameDecoder extends ByteToMessageDecoder {
     }
 
     public ChunkFrameDecoder unlimited() {
-        if (this.limit == -1) {
-            return this;
-        }
-
         return new ChunkFrameDecoder(-1, this.log);
+    }
+
+    public ChunkFrameDecoder limit(long limit) {
+        return new ChunkFrameDecoder(limit, this.log);
     }
 
     @Override

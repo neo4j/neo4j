@@ -19,7 +19,9 @@
  */
 package org.neo4j.bolt.testing.messages;
 
+import io.netty.buffer.ByteBuf;
 import java.util.List;
+import java.util.Map;
 import org.neo4j.bolt.protocol.io.StructType;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.io.writer.LegacyStructWriter;
@@ -31,6 +33,11 @@ public final class BoltV44Wire extends AbstractBoltWire {
 
     public BoltV44Wire() {
         super(BoltProtocolV44.VERSION);
+    }
+
+    @Override
+    public boolean supportsLogonMessage() {
+        return false;
     }
 
     @Override
@@ -88,5 +95,15 @@ public final class BoltV44Wire extends AbstractBoltWire {
                 .writeInt(42)
                 .writeString("one_does_not_simply")
                 .writeString("break_decoding");
+    }
+
+    @Override
+    public ByteBuf logon(Map<String, Object> authToken) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteBuf logoff() {
+        throw new UnsupportedOperationException();
     }
 }

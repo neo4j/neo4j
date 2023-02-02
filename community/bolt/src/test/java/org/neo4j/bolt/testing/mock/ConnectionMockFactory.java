@@ -203,7 +203,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return this.withStaticValue(
                 mock -> {
                     try {
-                        return mock.authenticate(ArgumentMatchers.notNull(), ArgumentMatchers.anyString());
+                        return mock.logon(ArgumentMatchers.notNull());
                     } catch (AuthenticationException ignore) {
                         return null; // never happens
                     }
@@ -216,7 +216,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return this.withStaticValue(
                 mock -> {
                     try {
-                        return mock.authenticate(tokenMatcher.get(), userAgentMatcher.get());
+                        return mock.logon(tokenMatcher.get());
                     } catch (AuthenticationException ignore) {
                         return null; // never happens
                     }
