@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -30,9 +33,11 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
@@ -40,6 +45,7 @@ import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests.genRandomTestSetup
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
 import org.neo4j.exceptions.StatusWrapCypherException
+import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
@@ -53,8 +59,12 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
 
@@ -66,7 +76,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime)
-    with SideEffectingInputStream[CONTEXT] {
+    with SideEffectingInputStream[CONTEXT]
+    with RandomValuesTestSupport
+    with RandomisedTransactionForEachTests[CONTEXT] {
 
   override protected def createRuntimeTestSupport(
     graphDb: GraphDatabaseService,
@@ -89,7 +101,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("batchSize 0") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(0)
+      .transactionForeach(0, randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -107,7 +119,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("batchSize -1") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(-1)
+      .transactionForeach(-1, randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -125,7 +137,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("batchSize -1 on an empty input") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(-1)
+      .transactionForeach(-1, randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -143,7 +155,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("should create data from subqueries") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = OnErrorContinue)
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -175,7 +187,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .aggregation(Seq.empty, Seq("count(*) AS x"))
-      .transactionForeach(batchSize = batchSize)
+      .transactionForeach(batchSize = batchSize, randomErrorBehavior())
       .|.union()
       .|.|.create(createNode("cc", "C"))
       .|.|.eager()
@@ -221,7 +233,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -263,7 +275,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(batchSize)
+      .transactionForeach(batchSize, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -298,7 +310,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(batchSize)
+      .transactionForeach(batchSize, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -382,7 +394,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -438,7 +450,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(batchSize)
+      .transactionForeach(batchSize, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -490,7 +502,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -543,7 +555,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val query = new LogicalQueryBuilder(this)
       .produceResults()
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.prober(txProbe)
       .|.prober(probe)
@@ -571,7 +583,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("statistics should report data creation from subqueries") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -592,7 +604,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val rangeSize = 10
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(batchSize)
+      .transactionForeach(batchSize, randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -617,7 +629,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("statistics should report data creation from subqueries while profiling") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.argument()
@@ -639,7 +651,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.allNodeScan("m")
@@ -656,7 +668,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNode("n", "N"))
       .|.allNodeScan("m")
@@ -680,7 +692,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
@@ -706,7 +718,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.union()
       .|.|.emptyResult()
       .|.|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
@@ -738,7 +750,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
@@ -763,7 +775,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.union()
       .|.|.emptyResult()
       .|.|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
@@ -796,7 +808,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(
         nodes = Seq(createNode("n"), createNode("m")),
@@ -825,7 +837,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val query = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .transactionForeach()
+      .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.union()
       .|.|.emptyResult()
       .|.|.create(
@@ -882,7 +894,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.allNodeScan("m")
       .eager()
       .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.argument("n")
@@ -925,7 +937,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.relationshipTypeScan("(a)-[s:R]->(b)")
       .eager()
       .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.setProperty("r", "prop", "2")
       .|.argument("r")
@@ -969,7 +981,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.allNodeScan("m")
       .eager()
       .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.unwind("nodes(p) AS n")
@@ -1011,7 +1023,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.allNodeScan("m")
       .eager()
       .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.unwind("l AS n")
@@ -1053,7 +1065,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.allNodeScan("o")
       .eager()
       .prober(probe) // pipelined: probe placement still depends on lazy scheduling order
-      .transactionForeach(1)
+      .transactionForeach(1, randomErrorBehavior())
       .|.emptyResult()
       .|.setProperty("n", "prop", "2")
       .|.projection("m.n AS n")
@@ -1075,7 +1087,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   test("should work with grouping aggregation on RHS") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .transactionForeach(3)
+      .transactionForeach(3, randomErrorBehavior())
       .|.aggregation(Seq("1 AS group"), Seq("count(i) AS c"))
       .|.unwind("range(1, x) AS i")
       .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
@@ -1096,6 +1108,264 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         transactionsCommitted = 5,
         transactionsStarted = 5
       )
+  }
+
+  test("should fail on downstream errors") {
+    val rows = sizeHint / 4
+    val batchSize = random.nextInt(rows + 20) + 1
+    val failAtRow = random.nextInt(rows)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "status", "bang")
+      .projection(s"1 / (x - $failAtRow) as bang")
+      .transactionForeach(batchSize, randomErrorHandlingBehavior(), Some("status"))
+      .|.projection("'im innocent' as hello")
+      .|.argument()
+      .unwind(s"range(0, ${rows - 1}) as x")
+      .argument()
+      .build()
+
+    // then
+    val exception = intercept[StatusWrapCypherException] {
+      consume(execute(logicalQuery, runtime))
+    }
+    exception.getMessage should include("/ by zero")
+  }
+
+  test("should fail on upstream errors") {
+    val rows = sizeHint / 4
+    val batchSize = random.nextInt(rows + 20) + 1
+    val failAtRow = random.nextInt(rows)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "status", "bang")
+      .transactionForeach(batchSize, randomErrorHandlingBehavior(), Some("status"))
+      .|.projection("'im innocent' as hello")
+      .|.argument()
+      .projection(s"1 / (x - $failAtRow) as bang")
+      .unwind(s"range(0, ${rows - 1}) as x")
+      .argument()
+      .build()
+
+    // then
+    val exception = intercept[StatusWrapCypherException] {
+      consume(execute(logicalQuery, runtime))
+    }
+    exception.getMessage should include("/ by zero")
+  }
+
+  test("error handling with plan that evaluates expressions inside buffers in pipelined") {
+    // given
+    val batchSize = random.nextInt(17) + 1
+    val input = Range(0, sizeHint)
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val canBatchFail = random.nextBoolean()
+        if (canBatchFail) {
+          batch.map(_ => (random.nextDouble(), random.nextInt(3)))
+        } else {
+          batch.map(_ => (random.nextDouble(), random.nextInt(2) + 1))
+        }
+      }
+      .toSeq
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "committed", "started", "error")
+      .projection("status.committed as committed", "status.started as started", "status.errorMessage as error")
+      .transactionForeach(batchSize, OnErrorContinue, Some("status"))
+      .|.selectOrSemiApply("y / y + y = 2")
+      .|.|.filter("x > 0.5")
+      .|.|.argument()
+      .|.argument()
+      .input(variables = Seq("x", "y"))
+      .build()
+
+    // then
+    val inputRows = input.map { case (x, y) => Array[Any](x, y) }
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+
+    val expected = input
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val committed = !batch.map(_._2).contains(0)
+        val started = true
+        val error = if (committed) null else "/ by zero"
+        batch.map(x => Array[Any](x._1, x._2, committed, started, error))
+      }
+      .toSeq
+
+    runtimeResult should beColumns("x", "y", "committed", "started", "error")
+      .withRows(expected)
+  }
+
+  test("error handling with limit on all sides") {
+    // given
+    val batchSize = random.nextInt(9) + 1
+    val input = Range(0, sizeHint / 3)
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val canBatchFail = random.nextBoolean()
+        val size = random.nextInt(6)
+        if (canBatchFail) {
+          batch.map(_ => Range(0, size).map(_ => random.nextInt(3)).toArray)
+        } else {
+          batch.map(_ => Range.inclusive(1, size).toArray)
+        }
+      }
+      .toSeq
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("xs", "committed", "started", "error")
+      .projection("status.committed as committed", "status.started as started", "status.errorMessage as error")
+      .limit(input.size / 2)
+      .transactionForeach(batchSize, OnErrorContinue, Some("status"))
+      .|.projection("1 / x as maybeBang")
+      .|.limit(3)
+      .|.unwind("xs as x")
+      .|.argument()
+      .limit(input.size - 3)
+      .input(variables = Seq("xs"))
+      .build()
+
+    // then
+    val inputRows = input.map { x => Array[Any](x) }
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+
+    val expected = input
+      .take(input.size - 3)
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val committed = !batch.exists(_.take(3).contains(0))
+        val started = true
+        val error = if (committed) null else "/ by zero"
+        batch.map(x => Array[Any](x, committed, started, error))
+      }
+      .take(input.size / 2)
+      .toSeq
+
+    runtimeResult should beColumns("xs", "committed", "started", "error")
+      .withRows(expected)
+  }
+
+  private def setupCommitErrorHandlingTest(
+    errorBehaviour: InTransactionsOnErrorBehaviour,
+    status: Boolean = true
+  ): (Seq[MapValue], Int, LogicalQuery) = {
+    given {
+      nodeConstraint("Dog") { creator =>
+        creator.assertPropertyExists("tail")
+      }
+    }
+
+    val rows = math.max(sizeHint / 4, 50)
+    val batchSize = if (random.nextBoolean()) random.nextInt(rows + 3) + 1 else random.nextInt(10) + 1
+    val rowFailureProbability = 0.1
+    val input = Range(0, rows).map { i =>
+      val props = new MapValueBuilder()
+      props.add("id", intValue(i))
+      if (random.nextDouble() >= rowFailureProbability) {
+        props.add("tail", stringValue("wagging"))
+      }
+      props.build()
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("props", "committed", "started", "error")
+      .projection(
+        (if (status) Seq(
+           "status.committed as committed",
+           "status.started as started",
+           "right(status.errorMessage, 46) as error"
+         )
+         else Seq(
+           "null as committed",
+           "null as started",
+           "null as error"
+         )): _*
+      )
+      .transactionForeach(batchSize, errorBehaviour, if (status) Some("status") else None)
+      .|.create(createNodeWithProperties("d", Seq("Dog"), "props"))
+      .|.argument()
+      .input(variables = Seq("props"))
+      .build()
+
+    (input, batchSize, query)
+  }
+
+  // If this test fails, the other tests that use the same setup might have lost coverage
+  // and might need a new plan that fails during commit (or this assertion needs to update)
+  test("test integrity, handle errors during commit") {
+    assume(runtime.name != "interpreted")
+    val (_, _, query) = setupCommitErrorHandlingTest(OnErrorFail, status = false)
+
+    // Test integrity
+    val failingInput = Array[Any](MapValue.EMPTY)
+    val exception = intercept[ConstraintViolationException] {
+      consume(execute(query, runtime, new InputValues().and(failingInput)))
+    }
+    exception.getMessage should include("with label `Dog` must have the property `tail`")
+    withClue(
+      s"""
+         |Stacktrace did not include commit from kernel package:
+         |${ExceptionUtils.getStackTrace(exception)}
+         |""".stripMargin
+    ) {
+      // if the following assertion fails you might need to find another plan that fails during commit
+      assert(exception.getStackTrace.exists { e =>
+        e.getClassName.startsWith("org.neo4j.kernel") && e.getMethodName.equals("commit")
+      })
+    }
+  }
+
+  test("handle errors during commit ON ERROR CONTINUE") {
+    assume(runtime.name != "interpreted")
+    val (input, batchSize, query) = setupCommitErrorHandlingTest(OnErrorContinue)
+
+    // then
+    val queryInput = input.map(r => Array[Any](r))
+    val result = execute(query, runtime, new InputValues().and(queryInput: _*))
+    val expected = input
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val batchSuccessful = batch.forall(_.containsKey("tail"))
+        if (batchSuccessful)
+          batch.map(r => Array(r, true, true, null))
+        else
+          batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`"))
+      }
+
+    result should beColumns("props", "committed", "started", "error")
+      .withRows(inOrder(expected.toSeq))
+  }
+
+  test("handle errors during commit ON ERROR BREAK") {
+    assume(runtime.name != "interpreted")
+    val (input, batchSize, query) = setupCommitErrorHandlingTest(OnErrorBreak)
+
+    // then
+    val queryInput = input.map(r => Array[Any](r))
+    val result = execute(query, runtime, new InputValues().and(queryInput: _*))
+    val firstFailure = input
+      .find(r => !r.containsKey("tail"))
+      .map(_.get("id").asInstanceOf[IntValue].intValue())
+    val expected = input
+      .grouped(batchSize)
+      .flatMap { batch =>
+        val batchFirstId = batch.head.get("id").asInstanceOf[IntValue].intValue()
+        val batchLastId = batch.last.get("id").asInstanceOf[IntValue].intValue()
+        val shouldFail = firstFailure.exists(first => first >= batchFirstId && first <= batchLastId)
+        val hasFailedPreviousBatch = firstFailure.exists(first => batchFirstId > first)
+        if (shouldFail) batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`"))
+        else if (hasFailedPreviousBatch) batch.map(r => Array(r, false, false, null))
+        else batch.map(r => Array(r, true, true, null))
+      }
+
+    result should beColumns("props", "committed", "started", "error")
+      .withRows(inOrder(expected.toSeq))
   }
 
   private def checkExternalAndRuntimeNodes(
@@ -1164,6 +1434,12 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       }
     }
   }
+
+  private def randomErrorBehavior(): InTransactionsOnErrorBehaviour =
+    randomAmong(Seq(OnErrorFail, OnErrorContinue, OnErrorBreak))
+
+  private def randomErrorHandlingBehavior(): InTransactionsOnErrorBehaviour =
+    randomAmong(Seq(OnErrorContinue, OnErrorBreak))
 }
 
 /**
@@ -1194,19 +1470,13 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
       val query = new LogicalQueryBuilder(this)
-        .produceResults("i", "started", "committed", "errorMessage")
-        .projection(
-          "i AS i",
-          "status.started AS started",
-          "status.committed AS committed",
-          "status.errorMessage AS errorMessage"
-        )
+        .produceResults("i")
         .transactionForeach(
           onErrorBehaviour = OnErrorFail,
           batchSize = setup.txBatchSize,
-          maybeReportAs = Some("status")
+          maybeReportAs = None
         )
         .|.emptyResult()
         .|.create(createNodeWithProperties("n", Seq("N"), "rhs"))
@@ -1234,13 +1504,13 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
         val runtimeResult = execute(query, runtime, input)
         consume(runtimeResult)
 
-        val expected = setup.input.map(row => Array(row.i, true, true, null))
+        val expected = setup.input.map(row => Array(row.i))
 
         val expectedNodes = setup.input.iterator
           .map(row => row.rhsUnwind.size)
           .sum
 
-        runtimeResult should beColumns("i", "started", "committed", "errorMessage")
+        runtimeResult should beColumns("i")
           .withRows(inOrder(expected))
           .withStatistics(
             nodesCreated = expectedNodes,
@@ -1263,7 +1533,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "started", "committed")
         .projection(
@@ -1345,7 +1615,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       node.setProperty("p", 42)
     }
 
-    forAll(genRandomTestSetup(sizeHint), minSuccessful(100)) { setup =>
+    forAll(genRandomTestSetup(sizeHint), minSuccessful(50)) { setup =>
       val query = new LogicalQueryBuilder(this)
         .produceResults("i", "started", "committed")
         .projection(

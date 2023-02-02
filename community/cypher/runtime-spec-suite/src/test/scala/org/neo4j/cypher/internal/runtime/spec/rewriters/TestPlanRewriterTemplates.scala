@@ -44,14 +44,15 @@ object TestPlanRewriterTemplates {
 
   def everywhere(
     weight: Double,
-    rewritePlan: LogicalPlan => LogicalPlan
+    rewritePlan: LogicalPlan => LogicalPlan,
+    random: Random = Random
   ): Rewriter = {
     bottomUpWithParent(
       RewriterWithParent.lift {
         case (pr: ProduceResult, _) =>
           pr
         case (p: LogicalPlan, parent: Option[LogicalPlan])
-          if isParentOkToInterject(parent) && randomShouldApply(weight) =>
+          if isParentOkToInterject(parent) && randomShouldApply(weight, random) =>
           rewritePlan(p)
       },
       onlyRewriteLogicalPlansStopper

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.ConstraintCreator
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
@@ -713,47 +714,35 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
    */
   def uniqueIndex(label: String, properties: String*): Unit = {
+    nodeConstraint(label) { creator =>
+      properties.foldLeft(creator) { case (acc, p) => acc.assertPropertyIsUnique(p) }
+    }
+  }
+
+  def nodeConstraint(label: String)(f: ConstraintCreator => ConstraintCreator): Unit = {
+    runtimeTestSupport.restartTx()
     try {
-      val creator = properties.foldLeft(
-        runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)
-      ) {
-        case (acc, prop) => acc.assertPropertyIsUnique(prop)
-      }
-      creator.create()
+      val creator = runtimeTestSupport.tx.schema().constraintFor(Label.label(label))
+      f(creator).create()
     } finally {
       runtimeTestSupport.restartTx()
     }
-    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(2, TimeUnit.MINUTES)
   }
 
   def uniqueNodeIndex(indexType: IndexType, label: String, properties: String*): Unit = {
-    runtimeTestSupport.restartTx()
-    try {
-      val creator = runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(indexType)
-      properties
-        .foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
-        .create()
-    } finally {
-      runtimeTestSupport.restartTx()
+    nodeConstraint(label) { creator =>
+      properties.foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
     }
-    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
   /**
    * Creates a node key constraint and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeKey(label: String, properties: String*): Unit = {
-    try {
-      val creator = properties.foldLeft(
-        runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)
-      ) {
-        case (acc, prop) => acc.assertPropertyIsNodeKey(prop)
-      }
-      creator.create()
-    } finally {
-      runtimeTestSupport.restartTx()
+    nodeConstraint(label) { creator =>
+      properties.foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsNodeKey(prop) }
     }
-    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 }
 

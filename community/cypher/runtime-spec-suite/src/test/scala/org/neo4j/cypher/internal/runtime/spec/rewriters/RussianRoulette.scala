@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.runtime.spec.rewriters.PlanRewriterContext.pos
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
+import scala.util.Random
+
 /**
  * Randomly inserts plans that will cause runtime exceptions.
  * 
@@ -44,7 +46,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 case class RussianRoulette(
   bangProbability: Double,
   rouletteProbability: Double,
-  idGen: IdGen
+  idGen: IdGen,
+  random: Random = Random
 ) extends Rewriter {
 
   private val rouletteRewriter: Rewriter = TestPlanRewriterTemplates.everywhere(

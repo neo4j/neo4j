@@ -91,6 +91,9 @@ class RebindableDualScopedMemoryTrackerTest {
         assertEquals(10, inner.estimatedHeapMemory());
         assertEquals(17, scopedMemoryTracker.estimatedHeapMemory());
 
+        scopedMemoryTracker.releaseNative(4);
+        scopedMemoryTracker.releaseHeap(6);
+
         scopedMemoryTracker.close();
 
         assertEquals(1, memoryTracker.usedNativeMemory());
@@ -114,7 +117,9 @@ class RebindableDualScopedMemoryTrackerTest {
         ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
+        child.releaseNative(5);
         child.allocateHeap(5);
+        child.releaseHeap(5);
 
         // When
         scopedMemoryTracker.close();
@@ -144,7 +149,9 @@ class RebindableDualScopedMemoryTrackerTest {
         ScopedMemoryTracker child = new ScopedMemoryTracker(scopedMemoryTracker);
 
         child.allocateNative(5);
+        child.releaseNative(5);
         child.allocateHeap(5);
+        child.releaseHeap(5);
         scopedMemoryTracker.close();
 
         assertThrows(IllegalStateException.class, () -> child.allocateHeap(10));
@@ -179,6 +186,9 @@ class RebindableDualScopedMemoryTrackerTest {
         assertEquals(10006, inner.estimatedHeapMemory());
 
         scopedMemoryTracker.closeInner();
+
+        assertEquals(4, scopedMemoryTracker.unreleasedInnerScopeNative());
+        assertEquals(6, scopedMemoryTracker.unreleasedInnerScopeHeap());
 
         scopedMemoryTracker.allocateNative(2000);
         scopedMemoryTracker.releaseNative(1000);
@@ -218,6 +228,11 @@ class RebindableDualScopedMemoryTrackerTest {
 
         scopedMemoryTracker.closeInner();
 
+        final long expectedCarryOverNative = 4;
+        final long expectedCarryOverHeap = 6;
+        assertEquals(expectedCarryOverNative, scopedMemoryTracker.unreleasedInnerScopeNative());
+        assertEquals(expectedCarryOverHeap, scopedMemoryTracker.unreleasedInnerScopeHeap());
+
         scopedMemoryTracker.allocateNative(2000);
         scopedMemoryTracker.releaseNative(1000);
         scopedMemoryTracker.allocateHeap(5000);
@@ -235,16 +250,16 @@ class RebindableDualScopedMemoryTrackerTest {
 
         scopedMemoryTracker.setInnerDelegate(inner2);
 
-        scopedMemoryTracker.allocateNative(7);
-        scopedMemoryTracker.releaseNative(3);
-        scopedMemoryTracker.allocateHeap(10);
-        scopedMemoryTracker.releaseHeap(4);
+        scopedMemoryTracker.allocateNative(23);
+        scopedMemoryTracker.releaseNative(7);
+        scopedMemoryTracker.allocateHeap(11);
+        scopedMemoryTracker.releaseHeap(2);
 
         assertEquals(1008, memoryTracker.usedNativeMemory());
         assertEquals(2011, memoryTracker.estimatedHeapMemory());
 
-        assertEquals(100004, inner2.usedNativeMemory());
-        assertEquals(100006, inner2.estimatedHeapMemory());
+        assertEquals(100000 + 23 - 7 + expectedCarryOverNative, inner2.usedNativeMemory());
+        assertEquals(100000 + 11 - 2 + expectedCarryOverHeap, inner2.estimatedHeapMemory());
 
         scopedMemoryTracker.closeInner();
 
@@ -258,5 +273,148 @@ class RebindableDualScopedMemoryTrackerTest {
 
         assertEquals(100000, inner2.usedNativeMemory());
         assertEquals(100000, inner2.estimatedHeapMemory());
+    }
+
+    @Test
+    void assertNoUnreleasedInnerOnClose() {
+        final var outer = new LocalMemoryTracker();
+        final var tracker = new RebindableDualScopedMemoryTracker(outer);
+
+        final var inner1 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner1);
+        tracker.allocateNative(3);
+        tracker.releaseNative(1);
+        tracker.allocateHeap(2);
+        tracker.releaseHeap(1);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(2, tracker.unreleasedInnerScopeNative());
+        assertEquals(1, tracker.unreleasedInnerScopeHeap());
+
+        final var inner2 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner2);
+        tracker.allocateNative(4);
+        tracker.releaseNative(3);
+        tracker.allocateHeap(10);
+        tracker.releaseHeap(5);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(0, inner2.usedNativeMemory());
+        assertEquals(0, inner2.estimatedHeapMemory());
+        assertEquals(2 + 1, tracker.unreleasedInnerScopeNative());
+        assertEquals(1 + 5, tracker.unreleasedInnerScopeHeap());
+
+        final var inner3 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner3);
+        tracker.allocateNative(20);
+        tracker.releaseNative(10);
+        tracker.allocateHeap(34);
+        tracker.releaseHeap(30);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(0, inner2.usedNativeMemory());
+        assertEquals(0, inner2.estimatedHeapMemory());
+        assertEquals(0, inner3.usedNativeMemory());
+        assertEquals(0, inner3.estimatedHeapMemory());
+        assertEquals(2 + 1 + 10, tracker.unreleasedInnerScopeNative());
+        assertEquals(1 + 5 + 4, tracker.unreleasedInnerScopeHeap());
+
+        final var error = assertThrows(AssertionError.class, tracker::close);
+        assertEquals("Unreleased inner native memory", error.getMessage());
+    }
+
+    @Test
+    void assertNoUnreleasedInnerOnClose2() {
+        final var outer = new LocalMemoryTracker();
+        final var tracker = new RebindableDualScopedMemoryTracker(outer);
+
+        final var inner1 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner1);
+        tracker.allocateNative(3);
+        tracker.releaseNative(3);
+        tracker.allocateHeap(2);
+        tracker.releaseHeap(1);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(0, tracker.unreleasedInnerScopeNative());
+        assertEquals(1, tracker.unreleasedInnerScopeHeap());
+
+        final var error = assertThrows(AssertionError.class, tracker::close);
+        assertEquals("Unreleased inner heap memory", error.getMessage());
+    }
+
+    @Test
+    void assertNoUnreleasedInnerOnClose3() {
+        final var outer = new LocalMemoryTracker();
+        final var tracker = new RebindableDualScopedMemoryTracker(outer);
+
+        final var inner1 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner1);
+        tracker.allocateNative(3);
+        tracker.releaseNative(1);
+        tracker.allocateHeap(2);
+        tracker.releaseHeap(1);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(2, tracker.unreleasedInnerScopeNative());
+        assertEquals(1, tracker.unreleasedInnerScopeHeap());
+
+        final var inner2 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner2);
+        tracker.allocateNative(4);
+        tracker.releaseNative(3);
+        tracker.allocateHeap(10);
+        tracker.releaseHeap(5);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(0, inner2.usedNativeMemory());
+        assertEquals(0, inner2.estimatedHeapMemory());
+        assertEquals(2 + 1, tracker.unreleasedInnerScopeNative());
+        assertEquals(1 + 5, tracker.unreleasedInnerScopeHeap());
+
+        final var inner3 = new LocalMemoryTracker();
+        tracker.setInnerDelegate(inner3);
+        tracker.allocateNative(20);
+        tracker.releaseNative(20 + 2 + 1);
+        tracker.allocateHeap(34);
+        tracker.releaseHeap(34 + 1 + 5);
+        tracker.closeInner();
+
+        assertEquals(0, tracker.usedNativeMemory());
+        assertEquals(0, tracker.estimatedHeapMemory());
+        assertEquals(0, inner1.usedNativeMemory());
+        assertEquals(0, inner1.estimatedHeapMemory());
+        assertEquals(0, inner2.usedNativeMemory());
+        assertEquals(0, inner2.estimatedHeapMemory());
+        assertEquals(0, inner3.usedNativeMemory());
+        assertEquals(0, inner3.estimatedHeapMemory());
+        assertEquals(0, tracker.unreleasedInnerScopeNative());
+        assertEquals(0, tracker.unreleasedInnerScopeHeap());
+
+        tracker.close();
     }
 }

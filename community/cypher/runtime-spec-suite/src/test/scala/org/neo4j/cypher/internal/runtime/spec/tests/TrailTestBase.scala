@@ -4215,7 +4215,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
   }
 
   def complexGraphAndPartiallyOrderedExpectedResult(): Seq[Seq[Array[Object]]] = {
-    OrderedTrailTestBase.complexGraphAndPartiallyOrderedExpectedResult(givenComplexGraph)
+    OrderedTrailTestBase.complexGraphAndPartiallyOrderedExpectedResult(givenComplexGraph())
   }
 }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.memory;
 
+import org.neo4j.util.VisibleForTesting;
+
 /**
  * A {@link ScopedMemoryTracker} with a mutable inner delegate memory tracker.
  * When the inner delegate memory tracker is null (the default), all allocation and release calls go to the
@@ -30,33 +32,46 @@ package org.neo4j.memory;
  * This class is intended to simplify the management of recording allocations over inner transactions.
  */
 public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
+    // This is always scoped
     private MemoryTracker innerDelegate;
-    private long innerTrackedNative;
-    private long innerTrackedHeap;
+
+    // This is memory that was allocated inside an inner scope but was not released
+    // and is carried over to the next inner scope.
+    private long unreleasedInnerScopeNative;
+    private long unreleasedInnerScopeHeap;
 
     public RebindableDualScopedMemoryTracker(MemoryTracker outerDelegate) {
         super(outerDelegate);
     }
 
     public void setInnerDelegate(MemoryTracker innerDelegate) {
-        this.innerDelegate = innerDelegate;
+        final var scopedInner = innerDelegate.getScopedMemoryTracker();
+
+        // Inherit memory that was not deallocated in the last inner scope
+        // This is not ideal, but happens easily because it's very hard to
+        // do perfect cleanup of failing queries in CALL IN TRANSACTIONS
+        // with ON ERROR CONTINUE|BREAK.
+        scopedInner.allocateNative(unreleasedInnerScopeNative);
+        scopedInner.allocateHeap(unreleasedInnerScopeHeap);
+        this.innerDelegate = scopedInner;
     }
 
     @Override
     public long usedNativeMemory() {
-        return super.usedNativeMemory() + innerTrackedNative;
+        final long outer = super.usedNativeMemory();
+        return innerDelegate != null ? innerDelegate.usedNativeMemory() + outer : outer;
     }
 
     @Override
     public long estimatedHeapMemory() {
-        return super.estimatedHeapMemory() + innerTrackedHeap;
+        final long outer = super.estimatedHeapMemory();
+        return innerDelegate != null ? innerDelegate.estimatedHeapMemory() + outer : outer;
     }
 
     @Override
     public void allocateNative(long bytes) {
         if (innerDelegate != null) {
             innerDelegate.allocateNative(bytes);
-            innerTrackedNative += bytes;
         } else {
             super.allocateNative(bytes);
         }
@@ -66,7 +81,6 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
     public void releaseNative(long bytes) {
         if (innerDelegate != null) {
             innerDelegate.releaseNative(bytes);
-            innerTrackedNative -= bytes;
         } else {
             super.releaseNative(bytes);
         }
@@ -76,7 +90,6 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
     public void allocateHeap(long bytes) {
         if (innerDelegate != null) {
             innerDelegate.allocateHeap(bytes);
-            innerTrackedHeap += bytes;
         } else {
             super.allocateHeap(bytes);
         }
@@ -86,7 +99,6 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
     public void releaseHeap(long bytes) {
         if (innerDelegate != null) {
             innerDelegate.releaseHeap(bytes);
-            innerTrackedHeap -= bytes;
         } else {
             super.releaseHeap(bytes);
         }
@@ -99,37 +111,35 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
 
     @Override
     public void reset() {
-        innerDelegate.releaseNative(innerTrackedNative);
-        innerDelegate.releaseHeap(innerTrackedHeap);
-        innerTrackedNative = 0;
-        innerTrackedHeap = 0;
+        innerDelegate.reset();
+        unreleasedInnerScopeNative = 0;
+        unreleasedInnerScopeHeap = 0;
         super.reset();
     }
 
     @Override
     public void close() {
-        // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-        if (innerDelegate != null
-                && (!(innerDelegate instanceof ScopedMemoryTracker)
-                        || !((ScopedMemoryTracker) innerDelegate).isClosed)) {
-            innerDelegate.releaseNative(innerTrackedNative);
-            innerDelegate.releaseHeap(innerTrackedHeap);
-            innerDelegate = null;
+        if (innerDelegate != null) {
+            closeInner();
         }
-        innerTrackedNative = 0;
-        innerTrackedHeap = 0;
+
+        assert unreleasedInnerScopeNative == 0 : "Unreleased inner native memory";
+        unreleasedInnerScopeNative = 0;
+        assert unreleasedInnerScopeHeap == 0 : "Unreleased inner heap memory";
+        unreleasedInnerScopeHeap = 0;
+
         super.close();
     }
 
     public void closeInner() {
         if (innerDelegate != null) {
-            // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-            if (!(innerDelegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) innerDelegate).isClosed) {
-                innerDelegate.releaseNative(innerTrackedNative);
-                innerDelegate.releaseHeap(innerTrackedHeap);
-            }
-            innerTrackedNative = 0;
-            innerTrackedHeap = 0;
+            unreleasedInnerScopeNative = innerDelegate.usedNativeMemory();
+            unreleasedInnerScopeHeap = innerDelegate.estimatedHeapMemory();
+
+            // Pretend that everything was released in the inner scope.
+            // We carry over unreleased memory to the next inner scope
+            // and assert it's zero by the time we close this tracker.
+            innerDelegate.close();
             innerDelegate = null;
         }
     }
@@ -137,5 +147,15 @@ public class RebindableDualScopedMemoryTracker extends ScopedMemoryTracker {
     @Override
     public MemoryTracker getScopedMemoryTracker() {
         return new ScopedMemoryTracker(this);
+    }
+
+    @VisibleForTesting
+    protected long unreleasedInnerScopeNative() {
+        return unreleasedInnerScopeNative;
+    }
+
+    @VisibleForTesting
+    protected long unreleasedInnerScopeHeap() {
+        return unreleasedInnerScopeHeap;
     }
 }

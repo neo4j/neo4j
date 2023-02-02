@@ -475,11 +475,9 @@ class InterpretedSubqueryForeachTest extends SubqueryForeachTestBase(COMMUNITY.E
 
 class InterpretedTransactionForeachTest
     extends TransactionForeachTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-    with RandomisedTransactionForEachTests[CommunityRuntimeContext]
 
 class InterpretedTransactionApplyTest
     extends TransactionApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-    with RandomisedTransactionApplyTests[CommunityRuntimeContext]
 
 class InterpretedSetRelationshipPropertyTest
     extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

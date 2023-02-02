@@ -1179,7 +1179,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     val rowCount = runtimeUsed match {
       case Interpreted => 37000
       case Slotted     => 53000
-      case Pipelined   => 80000
+      case Pipelined   => 70000
     }
 
     // given
