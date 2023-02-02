@@ -2347,11 +2347,12 @@ NODE_PATTERN NodePattern() throws Exception:
             labelExpression = LabelExpression(astFactory.nodeType())
             ( properties=Properties() )?
             ( <WHERE> predicate=Expression() )?
-       | LOOKAHEAD(LabelExpression(astFactory.nodeType()) <RPAREN>)
-            labelExpression = LabelExpression(astFactory.nodeType())
-       | LOOKAHEAD(2) labelExpression = LabelExpression(astFactory.nodeType())
+       | LOOKAHEAD(LabelExpression(astFactory.nodeType()) Properties())
+        labelExpression = LabelExpression(astFactory.nodeType())
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
+        |LOOKAHEAD(LabelExpression(astFactory.nodeType()))
+            labelExpression = LabelExpression(astFactory.nodeType())
        | properties=Properties() ( <WHERE> predicate=Expression() )?
        | ( v=Variable() )?
        )
@@ -2476,12 +2477,13 @@ REL_PATTERN RelationshipPattern() throws Exception:
             ( pathLength=PathLength() )?
             ( properties=Properties() )?
             ( <WHERE> predicate=Expression() )?
-       | LOOKAHEAD(LabelExpression(astFactory.relationshipType()) (PathLength() )? <RBRACKET>)
-            labelExpression = LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )?
-       | LOOKAHEAD(2) labelExpression = LabelExpression(astFactory.relationshipType())
+       | LOOKAHEAD(LabelExpression(astFactory.relationshipType()) (PathLength())? Properties())
+            labelExpression = LabelExpression(astFactory.relationshipType())
             ( pathLength=PathLength() )?
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
+       | LOOKAHEAD(LabelExpression(astFactory.relationshipType()) (PathLength() )?)
+            labelExpression = LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )?
        | LOOKAHEAD(( PathLength() )? properties=Properties())( pathLength=PathLength() )? properties=Properties() ( <WHERE> predicate=Expression() )?
        | pathLength=PathLength()
        | LOOKAHEAD(2) v=Variable() pathLength=PathLength()
@@ -3029,7 +3031,7 @@ EXPRESSION PatternComprehension() throws Exception:
 void PatternComprehensionPrefix() throws Exception:
 {}
 {
-    <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() ( <WHERE> | <BAR> )
+    <LBRACKET> ( Variable() <EQ> )? EveryPathPatternNonEmpty() ( <WHERE> | <BAR> )
 }
 
 EXPRESSION ReduceExpression() throws Exception:

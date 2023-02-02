@@ -97,6 +97,7 @@ import org.neo4j.cypher.internal.expressions.PathFactor
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
@@ -641,6 +642,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), None, None, None)(pos)
     )(pos))(pos))(None, None)
+
+  def patternComprehension(relChain: RelationshipChain, projection: Expression): PatternComprehension =
+    PatternComprehension(None, RelationshipsPattern(relChain)(pos), None, projection)(pos, None, None)
 
   def nodes(p: PathExpression): FunctionInvocation = {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
