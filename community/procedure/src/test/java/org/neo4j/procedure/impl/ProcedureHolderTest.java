@@ -20,10 +20,12 @@
 package org.neo4j.procedure.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
@@ -90,5 +92,76 @@ class ProcedureHolderTest {
         procHolder.put(qualifiedName, item, false);
         assertNull(procHolder.get(lowerCaseName));
         assertThrows(NoSuchElementException.class, () -> procHolder.idOf(lowerCaseName));
+    }
+
+    @Test
+    void preservesIdsForUnregisteredItems() {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        int id = procHolder.put(qn, "value", true);
+
+        // when
+        procHolder.unregister(qn);
+        procHolder.put(qn, "value", true);
+
+        // then
+        assertThat(procHolder.idOf(qn)).isEqualTo(id);
+    }
+
+    @Test
+    void tombstoneProcedureHolderPreservesRequested() {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        String item = "CaseInSensitiveItem";
+
+        int id = procHolder.put(qn, item, true);
+
+        // when
+        var renewed = ProcedureHolder.tombstone(procHolder, Set.of(id));
+
+        // then
+        assertThat(renewed.get(qn)).isEqualTo(item);
+        assertThat(renewed.get(id)).isEqualTo(item);
+        assertThat(renewed.idOf(qn)).isEqualTo(id);
+    }
+
+    @Test
+    void tombstoneProcedureHolderRemovesOther() {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        String item = "CaseInSensitiveItem";
+        int id = procHolder.put(qn, item, true);
+
+        // when
+        var renewed = ProcedureHolder.tombstone(procHolder, Set.of());
+
+        // then
+        assertNull(renewed.get(qn));
+        assertNull(renewed.get(id));
+        assertThatThrownBy(() -> renewed.idOf(qn)).isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void tombstoneProcedureHolderPreservesIdsAndNamesForRestoredEntries() {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        QualifiedName qn = new QualifiedName(new String[0], "CaseInSensitive");
+        QualifiedName qn2 = new QualifiedName(new String[0], "qn2");
+        String item = "CaseInSensitiveItem";
+        int removedId = procHolder.put(qn, item, true), keptId = procHolder.put(qn2, item, true);
+
+        // when
+        var renewed = ProcedureHolder.tombstone(procHolder, Set.of(keptId));
+        renewed.put(qn, item, true);
+        renewed.put(qn2, item, true);
+
+        // then
+        assertThat(renewed.get(qn)).isEqualTo(item);
+        assertThat(renewed.idOf(qn)).isEqualTo(removedId);
+        assertThat(renewed.get(qn2)).isEqualTo(item);
+        assertThat(renewed.idOf(qn2)).isEqualTo(keptId);
     }
 }

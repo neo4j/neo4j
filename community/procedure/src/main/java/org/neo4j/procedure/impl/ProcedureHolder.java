@@ -19,15 +19,22 @@
  */
 package org.neo4j.procedure.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 /**
  * Simple in memory store for procedures.
+ *
+ * The implementation preserves ids for QualifiedName's in order
+ * to allow for entries to be overwritten.
  *
  * Should only be accessed from a single thread
  * @param <T> the type to be stored
@@ -35,34 +42,86 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 class ProcedureHolder<T> {
     private final Map<QualifiedName, Integer> nameToId = new HashMap<>();
     private final Map<QualifiedName, Integer> caseInsensitiveName2Id = new HashMap<>();
-    private final List<T> store = new ArrayList<>();
+    private final List<Object> store = new ArrayList<>();
+
+    private static final Object TOMBSTONE = new Object();
 
     T get(QualifiedName name) {
         Integer id = name2Id(name);
         if (id == null) {
             return null;
         }
-        return store.get(id);
+        Object value = store.get(id);
+        if (value == TOMBSTONE) {
+            return null;
+        }
+
+        return (T) value;
     }
 
     T get(int id) {
-        return store.get(id);
+        Object element = store.get(id);
+        if (element == TOMBSTONE) {
+            return null;
+        }
+
+        return (T) element;
     }
 
-    void put(QualifiedName name, T item, boolean caseInsensitive) {
-        int id = store.size();
-        store.add(item);
-        nameToId.put(name, id);
-        if (caseInsensitive) {
-            caseInsensitiveName2Id.put(toLowerCaseName(name), id);
+    int put(QualifiedName name, T item, boolean caseInsensitive) {
+        Integer id = name2Id(name);
+
+        // Existing entry -> preserve ids
+        if (id != null) {
+            store.set(id, item);
         } else {
-            caseInsensitiveName2Id.remove(toLowerCaseName(name));
+            id = store.size();
+            nameToId.put(name, id);
+            store.add(item);
         }
+
+        // Update case sensitivity
+        var lowercaseName = toLowerCaseName(name);
+        if (caseInsensitive) {
+            caseInsensitiveName2Id.put(lowercaseName, id);
+        } else {
+            caseInsensitiveName2Id.remove(lowercaseName);
+        }
+
+        return id;
+    }
+
+    /**
+     * Create a tombstoned copy of the ProcedureHolder.
+     *
+     * @param src The source ProcedureHolder from which the copy is made.
+     * @param preserve The ids that should be preserved, if any.
+     *
+     * @return A new ProcedureHolder
+     */
+    public static <T> ProcedureHolder<T> tombstone(ProcedureHolder<T> src, Set<Integer> preserve) {
+        requireNonNull(preserve);
+
+        var ret = new ProcedureHolder<T>();
+
+        for (int i = 0; i < src.store.size(); i++) {
+            if (preserve.contains(i)) {
+                ret.store.add(src.store.get(i));
+            } else {
+                ret.store.add(TOMBSTONE);
+            }
+        }
+
+        src.caseInsensitiveName2Id.forEach((k, v) -> ret.caseInsensitiveName2Id.put(k, v));
+        src.nameToId.forEach((k, v) -> ret.nameToId.put(k, v));
+
+        return ret;
     }
 
     int idOf(QualifiedName name) {
         Integer id = name2Id(name);
-        if (id == null) {
+
+        if (id == null || store.get(id) == TOMBSTONE) {
             throw new NoSuchElementException();
         }
 
@@ -70,7 +129,7 @@ class ProcedureHolder<T> {
     }
 
     List<T> all() {
-        return store;
+        return (List<T>) store.stream().filter(e -> e != TOMBSTONE).collect(Collectors.toList());
     }
 
     boolean contains(QualifiedName name) {
@@ -83,6 +142,7 @@ class ProcedureHolder<T> {
             QualifiedName lowerCaseName = toLowerCaseName(name);
             id = caseInsensitiveName2Id.get(lowerCaseName);
         }
+
         return id;
     }
 
@@ -97,11 +157,9 @@ class ProcedureHolder<T> {
     }
 
     public void unregister(QualifiedName name) {
-        Integer idObejct = name2Id(name);
-        if (idObejct != null) {
-            store.remove(idObejct.intValue());
+        Integer id = name2Id(name);
+        if (id != null) {
+            store.set(id, TOMBSTONE);
         }
-        nameToId.remove(name);
-        caseInsensitiveName2Id.remove(toLowerCaseName(name));
     }
 }
