@@ -47,7 +47,8 @@ import picocli.CommandLine;
 @CommandLine.Command(
         name = "profile",
         header = "Profile a running neo4j process",
-        description = "Runs various profilers against a running neo4j VM",
+        description =
+                "Runs various profilers against a running neo4j VM. Note: This is a beta version. Behavior and surface will change in future versions.",
         hidden = true)
 public class ProfileCommand extends AbstractAdminCommand {
 
