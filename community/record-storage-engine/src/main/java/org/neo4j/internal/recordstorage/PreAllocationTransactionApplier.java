@@ -17,18 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.internal.recordstorage;
 
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.storageengine.api.StorageEngine;
+import java.io.IOException;
+import java.util.Map;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordStore;
 
-public interface CommitProcessFactory {
-    TransactionCommitProcess create(
-            TransactionAppender appender,
-            StorageEngine storageEngine,
-            NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-            boolean preAllocateSpaceInStoreFiles);
+public class PreAllocationTransactionApplier extends HighIdTransactionApplierBase {
+
+    public PreAllocationTransactionApplier(NeoStores neoStores) {
+        super(neoStores);
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (Map.Entry<RecordStore<?>, HighId> highId : highIds.entrySet()) {
+            highId.getKey().allocate(highId.getValue().id);
+        }
+    }
 }

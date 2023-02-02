@@ -41,7 +41,8 @@ class CommunityCommitProcessFactoryTest {
                 mock(TransactionAppender.class),
                 mock(StorageEngine.class),
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
-                writable());
+                writable(),
+                false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }
@@ -54,7 +55,8 @@ class CommunityCommitProcessFactoryTest {
                 mock(TransactionAppender.class),
                 mock(StorageEngine.class),
                 from(DEFAULT_DATABASE_NAME, UUID.randomUUID()),
-                readOnly());
+                readOnly(),
+                false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }

@@ -892,7 +892,11 @@ public class Database extends AbstractDatabase {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
         TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create(
-                logsModule.transactionAppender(), storageEngine, namedDatabaseId, readOnlyDatabaseChecker);
+                logsModule.transactionAppender(),
+                storageEngine,
+                namedDatabaseId,
+                readOnlyDatabaseChecker,
+                databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned

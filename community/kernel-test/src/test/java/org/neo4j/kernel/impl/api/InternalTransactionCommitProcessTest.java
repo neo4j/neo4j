@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
@@ -40,7 +41,9 @@ import java.io.IOException;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
@@ -68,7 +71,7 @@ class InternalTransactionCommitProcessTest {
                 .when(appender)
                 .append(any(TransactionToApply.class), any(LogAppendEvent.class));
         StorageEngine storageEngine = mock(StorageEngine.class);
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
 
         // WHEN
         TransactionFailureException exception = assertThrows(
@@ -90,7 +93,7 @@ class InternalTransactionCommitProcessTest {
         doThrow(new IOException(rootCause))
                 .when(storageEngine)
                 .apply(any(TransactionToApply.class), any(TransactionApplicationMode.class));
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
         TransactionToApply transaction = mockedTransaction(transactionIdStore);
 
         // WHEN
@@ -114,7 +117,7 @@ class InternalTransactionCommitProcessTest {
 
         StorageEngine storageEngine = mock(StorageEngine.class);
 
-        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine);
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
         CompleteTransaction noCommandTx = new CompleteTransaction(
                 Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
 
@@ -131,6 +134,51 @@ class InternalTransactionCommitProcessTest {
                 INTERNAL);
 
         verify(transactionIdStore).transactionCommitted(txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP);
+    }
+
+    @Test
+    void shouldFailWithOutOfDiskSpaceOnPreAllocationException() throws Exception {
+        TransactionAppender appender = mock(TransactionAppender.class);
+        StorageEngine storageEngine = mock(StorageEngine.class);
+        doThrow(new OutOfDiskSpaceException("test out of disk"))
+                .when(storageEngine)
+                .preAllocateStoreFilesForCommands(any(), any());
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, true);
+
+        TransactionFailureException exception = assertThrows(
+                TransactionFailureException.class,
+                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+        assertThat(exception.getMessage()).contains("Could not preallocate disk space ");
+        // FIXME ODP this is not the status we should end up with in the end
+        assertThat(exception.status()).isEqualTo(Status.General.UnknownError);
+        assertTrue(contains(exception, "test out of disk", OutOfDiskSpaceException.class));
+    }
+
+    @Test
+    void shouldNotReportOutOfDiskSpaceOnGeneralIOException() throws Exception {
+        TransactionAppender appender = mock(TransactionAppender.class);
+        StorageEngine storageEngine = mock(StorageEngine.class);
+        doThrow(new IOException("IO exception other than out of disk"))
+                .when(storageEngine)
+                .preAllocateStoreFilesForCommands(any(), any());
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, true);
+
+        TransactionFailureException exception = assertThrows(
+                TransactionFailureException.class,
+                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+        assertThat(exception.getMessage()).contains("Could not preallocate disk space ");
+        assertThat(exception.status()).isEqualTo(Status.Transaction.TransactionCommitFailed);
+        assertTrue(contains(exception, "IO exception other than out of disk", IOException.class));
+    }
+
+    @Test
+    void shouldNotTryToPreallocateWhenDisabled() throws IOException, TransactionFailureException {
+        TransactionAppender appender = mock(TransactionAppender.class);
+        StorageEngine storageEngine = mock(StorageEngine.class);
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
+        commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL);
+
+        verify(storageEngine, never()).preAllocateStoreFilesForCommands(any(), any());
     }
 
     private TransactionToApply mockedTransaction(TransactionIdStore transactionIdStore) {

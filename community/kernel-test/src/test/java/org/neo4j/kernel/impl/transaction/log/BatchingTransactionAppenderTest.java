@@ -366,7 +366,8 @@ class BatchingTransactionAppenderTest {
     void shouldFailIfTransactionIdsMismatch() {
         // Given
         BatchingTransactionAppender appender = life.add(createTransactionAppender());
-        var commitProcess = new InternalTransactionCommitProcess(appender, mock(StorageEngine.class, RETURNS_MOCKS));
+        var commitProcess =
+                new InternalTransactionCommitProcess(appender, mock(StorageEngine.class, RETURNS_MOCKS), false);
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(42L);
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);

@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -301,4 +303,13 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     <EXCEPTION extends Exception> void scanAllRecords(Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor)
             throws EXCEPTION;
+
+    /**
+     * Send a hint to the file system that it may reserve at least the given number of pages worth of capacity
+     * for this file.
+     * The operation throws {@link IOException} if the operation fails. The users may choose to specifically handle
+     * {@link OutOfDiskSpaceException} as detecting low disk space in advance is one of the main purposes
+     * of this operation.
+     */
+    void allocate(long highId) throws IOException;
 }

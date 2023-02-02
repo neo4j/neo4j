@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
@@ -183,4 +184,15 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     default TransactionStateBehaviour transactionStateBehaviour() {
         return TransactionStateBehaviour.DEFAULT_BEHAVIOUR;
     }
+
+    /**
+     * Preallocate disk space for a batch of groups of commands to this storage.
+     *
+     * @param batch batch of groups of commands to preallocate disk space for.
+     * @param mode {@link TransactionApplicationMode} that can affect if allocation needs to happen.
+     * @throws OutOfDiskSpaceException if preallocation failed due to lack of disk space.
+     * @throws IOException if preallocation failed for a different reason.
+     */
+    void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
+            throws OutOfDiskSpaceException, IOException;
 }

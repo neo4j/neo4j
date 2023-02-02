@@ -400,6 +400,10 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
+        public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
+                throws IOException {}
+
+        @Override
         public void shutdown() {}
 
         @Override

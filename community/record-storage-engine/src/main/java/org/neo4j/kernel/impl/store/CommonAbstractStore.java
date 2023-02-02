@@ -1031,4 +1031,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     public int getStoreHeaderInt() {
         return ((IntStoreHeader) storeHeader).value();
     }
+
+    @Override
+    public void allocate(long highId) throws IOException {
+        pagedFile.preAllocate(pageIdForRecord(highId));
+    }
 }

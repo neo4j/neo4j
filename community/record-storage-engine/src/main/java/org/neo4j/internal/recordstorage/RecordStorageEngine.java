@@ -700,4 +700,17 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public StorageEngineIndexingBehaviour indexingBehaviour() {
         return indexingBehaviour;
     }
+
+    @Override
+    public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
+            throws IOException {
+        if (!mode.equals(REVERSE_RECOVERY) && batch != null) {
+            try (PreAllocationTransactionApplier txApplier = new PreAllocationTransactionApplier(neoStores)) {
+                while (batch != null) {
+                    batch.accept(txApplier);
+                    batch = batch.next();
+                }
+            }
+        }
+    }
 }

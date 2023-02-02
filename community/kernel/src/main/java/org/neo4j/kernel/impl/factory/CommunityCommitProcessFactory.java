@@ -34,8 +34,10 @@ public class CommunityCommitProcessFactory implements CommitProcessFactory {
             TransactionAppender appender,
             StorageEngine storageEngine,
             NamedDatabaseId databaseId,
-            DatabaseReadOnlyChecker readOnlyChecker) {
+            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean preAllocateSpaceInStoreFiles) {
         return new DatabaseTransactionCommitProcess(
-                new InternalTransactionCommitProcess(appender, storageEngine), readOnlyChecker);
+                new InternalTransactionCommitProcess(appender, storageEngine, preAllocateSpaceInStoreFiles),
+                readOnlyChecker);
     }
 }

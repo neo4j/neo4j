@@ -23,6 +23,8 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionComm
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.OutOfDiskSpaceException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -34,15 +36,22 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 public class InternalTransactionCommitProcess implements TransactionCommitProcess {
     private final TransactionAppender appender;
     private final StorageEngine storageEngine;
+    private final boolean preAllocateSpaceInStores;
 
-    public InternalTransactionCommitProcess(TransactionAppender appender, StorageEngine storageEngine) {
+    public InternalTransactionCommitProcess(
+            TransactionAppender appender, StorageEngine storageEngine, boolean preAllocateSpaceInStores) {
         this.appender = appender;
         this.storageEngine = storageEngine;
+        this.preAllocateSpaceInStores = preAllocateSpaceInStores;
     }
 
     @Override
     public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
+        if (preAllocateSpaceInStores) {
+            preAllocateSpaceInStores(batch, commitEvent, mode);
+        }
+
         long lastTxId = appendToLog(batch, commitEvent);
         try {
             applyToStore(batch, commitEvent, mode);
@@ -70,6 +79,24 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
                     TransactionCommitFailed,
                     cause,
                     "Could not apply the transaction: " + batch + " to the store after written to log.");
+        }
+    }
+
+    private void preAllocateSpaceInStores(
+            CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            throws TransactionFailureException {
+        // FIXME ODP - add function to commitEvent to be able to trace?
+        try {
+            storageEngine.preAllocateStoreFilesForCommands(batch, mode);
+        } catch (OutOfDiskSpaceException oods) {
+            throw new TransactionFailureException(
+                    // FIXME ODP - add an out of disk space status when we are ready to expose this functionality
+                    Status.General.UnknownError,
+                    oods,
+                    "Could not preallocate disk space for the transaction: " + batch);
+        } catch (Throwable cause) {
+            throw new TransactionFailureException(
+                    TransactionCommitFailed, cause, "Could not preallocate disk space for the transaction: " + batch);
         }
     }
 
