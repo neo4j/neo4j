@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Panic;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -110,7 +110,7 @@ class PreAllocationOfStoreFilesTest {
                 mock(ConstraintRuleAccessor.class),
                 mock(IndexConfigCompleter.class),
                 LockService.NO_LOCK_SERVICE,
-                mock(Health.class),
+                mock(Panic.class),
                 EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY,
                 RecoveryCleanupWorkCollector.ignore(),
                 EmptyMemoryTracker.INSTANCE,
