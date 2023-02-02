@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.common.handler;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.pcap.PcapWriteHandler;
 import java.io.IOException;
@@ -30,6 +31,8 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -135,7 +138,9 @@ class BoltChannelInitializerTest {
         Mockito.verify(listener).onNetworkPipelineInitialized(pipeline);
     }
 
+    // disabled on Windows as file locking causes problems with temporary file deletion
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void shouldInstallCaptureListener() throws IOException {
         var path = Files.createTempDirectory("bolt_");
 
@@ -152,10 +157,24 @@ class BoltChannelInitializerTest {
 
             this.initializer.initChannel(channel);
 
-            Mockito.verify(pipeline)
-                    .addLast(ArgumentMatchers.eq("captureHandler"), ArgumentMatchers.any(PcapWriteHandler.class));
+            var captor = ArgumentCaptor.forClass(PcapWriteHandler.class);
+            Mockito.verify(pipeline).addLast(ArgumentMatchers.eq("captureHandler"), captor.capture());
 
-            Assertions.assertThat(path).exists();
+            var handler = captor.getValue();
+
+            Assertions.assertThat(handler).isNotNull();
+
+            // ensure initialization since PcapWriteHandler fails to close the output stream if
+            // added to a mock channel since it never creates PcapWriter
+            try {
+                handler.channelActive(Mockito.mock(ChannelHandlerContext.class, Mockito.RETURNS_MOCKS));
+            } catch (Exception ignore) {
+            }
+
+            try {
+                handler.close();
+            } catch (Exception ignore) {
+            }
         } finally {
             FileUtils.deleteDirectory(path);
         }
