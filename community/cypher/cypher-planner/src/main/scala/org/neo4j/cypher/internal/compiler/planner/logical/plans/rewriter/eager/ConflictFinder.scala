@@ -211,9 +211,9 @@ object ConflictFinder {
       : Map[LogicalVariable, (PossibleDeleteConflictPlans, DeleteConflictType)] = {
       // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
       // But we have to include other possibleDeleteConflictPlans that are not in the snapshot, to also cover write-read conflicts.
-      readsAndWrites.writes.deletes.possibleDeleteConflictPlanSnapshots(writePlan)
+      readsAndWrites.writes.deletes.possibleNodeDeleteConflictPlanSnapshots(writePlan)
         .view.mapValues[(PossibleDeleteConflictPlans, DeleteConflictType)](x => (x, MatchDeleteConflict)).toMap
-        .fuse(readsAndWrites.reads.possibleDeleteConflictPlans.view.mapValues(x => (x, DeleteMatchConflict)).toMap)(
+        .fuse(readsAndWrites.reads.possibleNodeDeleteConflictPlans.view.mapValues(x => (x, DeleteMatchConflict)).toMap)(
           (x, _) => x
         )
     }

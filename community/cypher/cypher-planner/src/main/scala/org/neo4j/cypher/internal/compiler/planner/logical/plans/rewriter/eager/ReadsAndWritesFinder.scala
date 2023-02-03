@@ -237,7 +237,7 @@ object ReadsAndWritesFinder {
    * together with the predicates solved in the plans.
    * It also tracks the plans that last references the variable (potentially multiple in the case of UNION).
    *
-   * The variable itself is not tracked here, but is the key in [[Reads.possibleDeleteConflictPlans]].
+   * The variable itself is not tracked here, but is the key in [[Reads.possibleNodeDeleteConflictPlans]].
    *
    * @param plansThatIntroduceVariable  a list of plans that introduce the variable
    *                                     or have a filter on the variable. The plan is bundled with
@@ -267,19 +267,19 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of reads in the logical plan tree.
    *
-   * @param readProperties              a provider to find out which plans read which properties.
-   * @param readLabels                  a provider to find out which plans read which labels.
-   * @param nodeFilterExpressions       for each node variable the expressions that filter on that variable.
-   *                                    This also tracks if a variable is introduced by a plan.
-   *                                    If a variable is introduced by a plan, and no predicates are applied on that variable,
-   *                                    it is still present as a key in this map.
-   * @param possibleDeleteConflictPlans for each node variable, the [[PossibleDeleteConflictPlans]]
+   * @param readProperties                  a provider to find out which plans read which properties.
+   * @param readLabels                      a provider to find out which plans read which labels.
+   * @param nodeFilterExpressions           for each node variable the expressions that filter on that variable.
+   *                                        This also tracks if a variable is introduced by a plan.
+   *                                        If a variable is introduced by a plan, and no predicates are applied on that variable,
+   *                                        it is still present as a key in this map.
+   * @param possibleNodeDeleteConflictPlans for each node variable, the [[PossibleDeleteConflictPlans]]
    */
   private[eager] case class Reads(
     readProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
     readLabels: ReadingPlansProvider[LabelName] = ReadingPlansProvider(),
     nodeFilterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
-    possibleDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
+    possibleNodeDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
   ) {
 
     /**
@@ -349,7 +349,7 @@ object ReadsAndWritesFinder {
       variable: LogicalVariable,
       expressions: Seq[Expression]
     ): Reads = {
-      val prev = possibleDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
+      val prev = possibleNodeDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
 
       val plansThatIntroduceVariable =
         if (prev.plansThatIntroduceVariable.isEmpty) {
@@ -367,20 +367,20 @@ object ReadsAndWritesFinder {
 
       val lastPlansToReferenceVariable = Seq(plan)
 
-      copy(possibleDeleteConflictPlans =
-        possibleDeleteConflictPlans
+      copy(possibleNodeDeleteConflictPlans =
+        possibleNodeDeleteConflictPlans
           .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, lastPlansToReferenceVariable))
       )
     }
 
     /**
      * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]]. 
-     * This should be called if a plan references a variable.
+     * This should be called if a plan references a node variable.
      */
-    def updateLastPlansToReferenceVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
-      val prev = possibleDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
+    def updateLastPlansToReferenceNodeVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
+      val prev = possibleNodeDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
       val next = prev.copy(lastPlansToReferenceVariable = Seq(plan))
-      copy(possibleDeleteConflictPlans = possibleDeleteConflictPlans.updated(variable, next))
+      copy(possibleNodeDeleteConflictPlans = possibleNodeDeleteConflictPlans.updated(variable, next))
     }
 
     /**
@@ -403,8 +403,8 @@ object ReadsAndWritesFinder {
           }
         },
         acc => {
-          planReads.referencedVariables.foldLeft(acc) {
-            case (acc, variable) => acc.updateLastPlansToReferenceVariable(plan, variable)
+          planReads.referencedNodeVariables.foldLeft(acc) {
+            case (acc, variable) => acc.updateLastPlansToReferenceNodeVariable(plan, variable)
           }
         },
         acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
@@ -427,8 +427,8 @@ object ReadsAndWritesFinder {
         readProperties = this.readProperties ++ other.readProperties,
         readLabels = this.readLabels ++ other.readLabels,
         nodeFilterExpressions = this.nodeFilterExpressions.fuse(other.nodeFilterExpressions)(_ ++ (_, mergePlan)),
-        possibleDeleteConflictPlans =
-          this.possibleDeleteConflictPlans.fuse(other.possibleDeleteConflictPlans)(_ ++ _)
+        possibleNodeDeleteConflictPlans =
+          this.possibleNodeDeleteConflictPlans.fuse(other.possibleNodeDeleteConflictPlans)(_ ++ _)
       )
     }
   }
@@ -522,13 +522,14 @@ object ReadsAndWritesFinder {
    * @param deletedNodeVariables                  for each plan, the nodes that are deleted by variable name
    * @param plansThatDeleteNodeExpressions        all plans that delete non-variable expressions of type node
    * @param plansThatDeleteUnknownTypeExpressions all plans that delete expressions of unknown type
-   * @param possibleDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleDeleteConflictPlans
+   * @param possibleNodeDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleNodeDeleteConflictPlans
    */
   private[eager] case class Deletes(
     deletedNodeVariables: Map[LogicalPlan, Set[Variable]] = Map.empty,
     plansThatDeleteNodeExpressions: Seq[LogicalPlan] = Seq.empty,
     plansThatDeleteUnknownTypeExpressions: Seq[LogicalPlan] = Seq.empty,
-    possibleDeleteConflictPlanSnapshots: Map[LogicalPlan, Map[LogicalVariable, PossibleDeleteConflictPlans]] = Map.empty
+    possibleNodeDeleteConflictPlanSnapshots: Map[LogicalPlan, Map[LogicalVariable, PossibleDeleteConflictPlans]] =
+      Map.empty
   ) {
 
     /**
@@ -549,19 +550,19 @@ object ReadsAndWritesFinder {
 
     /**
      * Since DELETE plans need to look for the latest plan that references a variable _before_ the DELETE plan itself,
-     * we save a snapshot of the current possibleDeleteConflictPlanSnapshots, associated with the DELETE plan.
+     * we save a snapshot of the current possibleNodeDeleteConflictPlanSnapshots, associated with the DELETE plan.
      */
-    def withPossibleDeleteConflictPlanSnapshot(
+    def withPossibleNodeDeleteConflictPlanSnapshot(
       plan: LogicalPlan,
       snapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Deletes = {
-      copy(possibleDeleteConflictPlanSnapshots = possibleDeleteConflictPlanSnapshots.updated(plan, snapshot))
+      copy(possibleNodeDeleteConflictPlanSnapshots = possibleNodeDeleteConflictPlanSnapshots.updated(plan, snapshot))
     }
 
     def includePlanDeletes(
       plan: LogicalPlan,
       planDeletes: PlanDeletes,
-      possibleDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Deletes = {
       Function.chain[Deletes](Seq(
         acc => planDeletes.deletedNodeVariables.foldLeft(acc)(_.withDeletedNodeVariable(_, plan)),
@@ -569,7 +570,8 @@ object ReadsAndWritesFinder {
         acc =>
           if (planDeletes.deletesUnknownTypeExpressions) acc.withPlanThatDeletesUnknownTypeExpressions(plan) else acc,
         acc =>
-          if (!planDeletes.isEmpty) acc.withPossibleDeleteConflictPlanSnapshot(plan, possibleDeleteConflictPlanSnapshot)
+          if (!planDeletes.isEmpty)
+            acc.withPossibleNodeDeleteConflictPlanSnapshot(plan, possibleNodeDeleteConflictPlanSnapshot)
           else acc
       ))(this)
     }
@@ -603,13 +605,17 @@ object ReadsAndWritesFinder {
       plan: LogicalPlan,
       planWrites: PlanWrites,
       nodeFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions],
-      possibleDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Writes = {
       Function.chain[Writes](Seq(
         acc => acc.withSets(acc.sets.includePlanSets(plan, planWrites.sets)),
         acc => acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, nodeFilterExpressionsSnapshot)),
         acc =>
-          acc.withDeletes(acc.deletes.includePlanDeletes(plan, planWrites.deletes, possibleDeleteConflictPlanSnapshot))
+          acc.withDeletes(acc.deletes.includePlanDeletes(
+            plan,
+            planWrites.deletes,
+            possibleNodeDeleteConflictPlanSnapshot
+          ))
       ))(this)
     }
 
@@ -669,12 +675,12 @@ object ReadsAndWritesFinder {
         // and that should happen before the reads of this plan are processed.
         acc => {
           val nodeFilterExpressionsSnapshot = acc.reads.nodeFilterExpressions
-          val possibleDeleteConflictPlanSnapshot = acc.reads.possibleDeleteConflictPlans
+          val possibleNodeDeleteConflictPlanSnapshot = acc.reads.possibleNodeDeleteConflictPlans
           acc.withWrites(acc.writes.includePlanWrites(
             plan,
             planWrites,
             nodeFilterExpressionsSnapshot,
-            possibleDeleteConflictPlanSnapshot
+            possibleNodeDeleteConflictPlanSnapshot
           ))
         },
         acc => acc.withReads(acc.reads.includePlanReads(plan, planReads))

@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTNode
 
 /**
  * Finds all reads for a single plan.
@@ -72,15 +73,15 @@ object ReadFinder {
    * Reads of a single plan.
    * The Seqs may contain duplicates. These are filtered out later in [[ConflictFinder]].
    *
-   * @param readProperties         the read properties
-   * @param readsUnknownProperties `true` if the plan reads unknown properties, e.g. by calling the `properties` function.
-   * @param readLabels             the read labels
-   * @param readsUnknownLabels     `true` if the plan reads unknown labels, e.g. by calling the `labels` function.
-   * @param nodeFilterExpressions  All node expressions that filter the rows, in a map with the dependency as key.
-   *                               This also tracks if a variable is introduced by this plan. 
-   *                               If a variable is introduced by this plan, and no predicates are applied on that variable,
-   *                               it is still present as a key in this map with an empty sequence of filter expressions.
-   * @param referencedVariables    all referenced variables
+   * @param readProperties          the read properties
+   * @param readsUnknownProperties  `true` if the plan reads unknown properties, e.g. by calling the `properties` function.
+   * @param readLabels              the read labels
+   * @param readsUnknownLabels      `true` if the plan reads unknown labels, e.g. by calling the `labels` function.
+   * @param nodeFilterExpressions   All node expressions that filter the rows, in a map with the dependency as key.
+   *                                This also tracks if a variable is introduced by this plan.
+   *                                If a variable is introduced by this plan, and no predicates are applied on that variable,
+   *                                it is still present as a key in this map with an empty sequence of filter expressions.
+   * @param referencedNodeVariables all referenced node variables
    */
   private[eager] case class PlanReads(
     readProperties: Seq[PropertyKeyName] = Seq.empty,
@@ -88,7 +89,7 @@ object ReadFinder {
     readLabels: Seq[LabelName] = Seq.empty,
     readsUnknownLabels: Boolean = false,
     nodeFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
-    referencedVariables: Set[LogicalVariable] = Set.empty
+    referencedNodeVariables: Set[LogicalVariable] = Set.empty
   ) {
 
     def withPropertyRead(property: PropertyKeyName): PlanReads = {
@@ -112,7 +113,7 @@ object ReadFinder {
       val newExpressions = nodeFilterExpressions.getOrElse(variable, Seq.empty)
       copy(
         nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions),
-        referencedVariables = referencedVariables + variable
+        referencedNodeVariables = referencedNodeVariables + variable
       )
     }
 
@@ -124,8 +125,8 @@ object ReadFinder {
     def withUnknownLabelsRead(): PlanReads =
       copy(readsUnknownLabels = true)
 
-    def withReferencedVariable(variable: Variable): PlanReads =
-      copy(referencedVariables = referencedVariables + variable)
+    def withReferencedNodeVariable(variable: LogicalVariable): PlanReads =
+      copy(referencedNodeVariables = referencedNodeVariables + variable)
   }
 
   /**
@@ -278,8 +279,10 @@ object ReadFinder {
         // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
         acc => SkipChildren(acc)
 
-      case v: Variable =>
-        acc => SkipChildren(acc.withReferencedVariable(v))
+      case v: Variable
+        // If v could be a node
+        if semanticTable.types.get(v).fold(true)(_.specified contains CTNode) =>
+        acc => SkipChildren(acc.withReferencedNodeVariable(v))
 
       case Property(expr, propertyName) if !semanticTable.isMapNoFail(expr) =>
         acc => TraverseChildren(acc.withPropertyRead(propertyName))
@@ -296,7 +299,7 @@ object ReadFinder {
       case HasALabel(Variable(_)) =>
         acc => TraverseChildren(acc.withUnknownLabelsRead())
 
-      case ContainerIndex(expr, index) if (!semanticTable.isIntegerNoFail(index) && !semanticTable.isMapNoFail(expr)) =>
+      case ContainerIndex(expr, index) if !semanticTable.isIntegerNoFail(index) && !semanticTable.isMapNoFail(expr) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc => SkipChildren(acc.withUnknownPropertiesRead())
