@@ -32,15 +32,15 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 
-public class LockingNodeUniqueIndexSeek {
-    public static <CURSOR extends NodeValueIndexCursor> long apply(
+class LockingNodeUniqueIndexSeek {
+    static <CURSOR extends NodeValueIndexCursor> long apply(
             Locks.Client locks,
             LockTracer lockTracer,
             CURSOR cursor,
             UniqueNodeIndexSeeker<CURSOR> nodeIndexSeeker,
             Read read,
             IndexDescriptor index,
-            PropertyIndexQuery.ExactPredicate... predicates)
+            PropertyIndexQuery.ExactPredicate[] predicates)
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException {
         int[] entityTokenIds = index.schema().getEntityTokenIds();
         if (entityTokenIds.length != 1) {

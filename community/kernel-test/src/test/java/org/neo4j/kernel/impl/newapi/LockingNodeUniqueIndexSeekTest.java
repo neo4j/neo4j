@@ -73,7 +73,13 @@ class LockingNodeUniqueIndexSeekTest {
 
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply(
-                locks, LockTracer.NONE, cursor, uniqueNodeIndexSeeker, read, index, predicate);
+                locks,
+                LockTracer.NONE,
+                cursor,
+                uniqueNodeIndexSeeker,
+                read,
+                index,
+                new PropertyIndexQuery.ExactPredicate[] {predicate});
 
         // then
         assertEquals(42L, nodeId);
@@ -90,7 +96,13 @@ class LockingNodeUniqueIndexSeekTest {
 
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply(
-                locks, LockTracer.NONE, cursor, uniqueNodeIndexSeeker, read, index, predicate);
+                locks,
+                LockTracer.NONE,
+                cursor,
+                uniqueNodeIndexSeeker,
+                read,
+                index,
+                new PropertyIndexQuery.ExactPredicate[] {predicate});
 
         // then
         assertEquals(42L, nodeId);
@@ -111,7 +123,13 @@ class LockingNodeUniqueIndexSeekTest {
 
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply(
-                locks, LockTracer.NONE, cursor, uniqueNodeIndexSeeker, read, index, predicate);
+                locks,
+                LockTracer.NONE,
+                cursor,
+                uniqueNodeIndexSeeker,
+                read,
+                index,
+                new PropertyIndexQuery.ExactPredicate[] {predicate});
 
         // then
         assertEquals(-1L, nodeId);

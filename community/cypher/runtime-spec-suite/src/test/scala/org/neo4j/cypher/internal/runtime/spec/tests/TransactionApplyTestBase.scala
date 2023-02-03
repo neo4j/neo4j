@@ -1337,7 +1337,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("handle errors with union on RHS") {
     given {
-      uniqueIndex("Animal", "id")
+      uniqueNodeIndex("Animal", "id")
       nodePropertyGraph(1, { case _ => Map("id" -> 0) }, "Animal")
     }
 
@@ -1557,7 +1557,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
 
   test("should handle random failures with ON ERROR FAIL") {
     given {
-      uniqueIndex("N", "p")
+      uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
     }

@@ -125,8 +125,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ProjectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProvidedOrderTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandFuzzTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionApplyTests
-import org.neo4j.cypher.internal.runtime.spec.tests.RandomisedTransactionForEachTests
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexContainsScanTestBase

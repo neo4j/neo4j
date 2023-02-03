@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -39,8 +40,11 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.test.DoubleLatch;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -65,20 +69,20 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         commit();
     }
 
-    // nodeGetUniqueWithLabelAndProperty(statement, :Person, foo=val)
+    // relationshipGetUniqueWithLabelAndProperty(statement, :Person, foo=val)
     //
-    // Given we have a unique constraint on :Person(foo)
+    // Given we have a unique constraint on :R(foo)
     // (If not, throw)
     //
-    // If there is a node n with n:Person and n.foo == val, return it
-    // If there is no such node, return ?
+    // If there is a relationship r with r:R and r.foo == val, return it
+    // If there is no such relationship, return ?
     //
     // Ensure that if that method is called again with the same argument from some other transaction,
     // that transaction blocks until this transaction has finished
     //
 
-    // [X] must return node from the unique index with the given property
-    // [X] must return NO_SUCH_NODE if it is not in the index for the given property
+    // [X] must return relationship from the unique index with the given property
+    // [X] must return NO_SUCH_RELATIONSHIP if it is not in the index for the given property
     //
     // must block other transactions that try to call it with the same arguments
 
@@ -131,7 +135,7 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         IndexDescriptor index = createUniquenessConstraint(relationshipTypeId, propertyId1, propertyId2);
         Value value1 = Values.of("value1");
         Value value2 = Values.of("value2");
-        long nodeId = createRelationshipWithValues(value1, value2);
+        long relId = createRelationshipWithValues(value1, value2);
 
         // when looking for it
         KernelTransaction transaction = newTransaction();
@@ -144,7 +148,7 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
                             index, cursor, exact(propertyId1, value1), exact(propertyId2, value2));
 
             // then
-            assertEquals(nodeId, foundId, "Created relationship was not found");
+            assertEquals(relId, foundId, "Created relationship was not found");
         }
         commit();
     }
@@ -173,7 +177,7 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         commit();
     }
 
-    @Test // ( timeout = 10_000 )
+    @Test
     void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception {
         // This is the interleaving that we are trying to verify works correctly:
         // ----------------------------------------------------------------------
@@ -190,7 +194,7 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         //                       : open end latch
         // *unblock* <-------------‘
         // assert that we complete before timeout
-        final DoubleLatch latch = new DoubleLatch();
+        final var latch = new BinaryLatch();
 
         IndexDescriptor index = createUniquenessConstraint(relationshipTypeId, propertyId1);
         Value value = Values.of("value");
@@ -201,31 +205,61 @@ class RelationshipGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         // This adds the relationship to the unique index and should take an index write lock
         write.relationshipSetProperty(relId, propertyId1, value);
 
-        Runnable runnableForThread2 = () -> {
-            latch.waitForAllToStart();
+        try (OtherThreadExecutor other = new OtherThreadExecutor("Transaction Thread 2")) {
+            var future = other.executeDontWait(() -> {
+                latch.await();
+                try (KernelTransaction tx =
+                        kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                    try (RelationshipValueIndexCursor cursor =
+                            tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+                        tx.dataRead().lockingRelationshipUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    }
+                    tx.commit();
+                }
+                return null;
+            });
+
+            latch.release();
+            other.waitUntilWaiting(details -> details.isAt(ForsetiClient.class, "acquireShared"));
+
+            commit();
+            future.get();
+        }
+    }
+
+    @Test
+    void shouldMakeSureWeBlockOtherThreadsFromCreatingRelationship() throws Throwable {
+        // This simulates a MERGE ()-[r:R {foo: "value"}]->() query. Here we do that by having multiple threads
+        // first trying to find the relationship and if not there it will create the relationship. No matter the number
+        // of threads we should always have one thread creating the node and the rest of them should find it.
+        IndexDescriptor index = createUniquenessConstraint(relationshipTypeId, propertyId1);
+        Value value = Values.of("value");
+        Race race = new Race();
+        AtomicInteger readCounter = new AtomicInteger();
+        AtomicInteger writeCounter = new AtomicInteger();
+        int contestants = Runtime.getRuntime().availableProcessors();
+        race.addContestants(contestants, Race.throwing(() -> {
             try (KernelTransaction tx =
                     kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
                 try (RelationshipValueIndexCursor cursor =
                         tx.cursors().allocateRelationshipValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
-                    tx.dataRead().lockingRelationshipUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    long relId =
+                            tx.dataRead().lockingRelationshipUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
+                        Write write = tx.dataWrite();
+                        relId = write.relationshipCreate(write.nodeCreate(), relationshipTypeId, write.nodeCreate());
+                        write.relationshipSetProperty(relId, propertyId1, value);
+                        writeCounter.incrementAndGet();
+                    } else {
+                        readCounter.incrementAndGet();
+                    }
                 }
                 tx.commit();
-            } catch (KernelException e) {
-                throw new RuntimeException(e);
-            } finally {
-                latch.finish();
             }
-        };
-        Thread thread2 = new Thread(runnableForThread2, "Transaction Thread 2");
-        thread2.start();
-        latch.startAndWaitForAllToStart();
-
-        while ((thread2.getState() != Thread.State.TIMED_WAITING) && (thread2.getState() != Thread.State.WAITING)) {
-            Thread.yield();
-        }
-
-        commit();
-        latch.waitForAllToFinish();
+        }));
+        race.go();
+        assertEquals(contestants - 1, readCounter.get());
+        assertEquals(1, writeCounter.get());
     }
 
     private static boolean isNoSuchRelationship(long foundId) {

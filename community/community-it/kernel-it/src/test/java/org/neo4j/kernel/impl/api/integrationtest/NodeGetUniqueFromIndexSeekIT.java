@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
@@ -38,7 +39,10 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.test.DoubleLatch;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.Race;
+import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -178,7 +182,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         //                       : open end latch
         // *unblock* <-------------‘
         // assert that we complete before timeout
-        final DoubleLatch latch = new DoubleLatch();
+        final var latch = new BinaryLatch();
 
         IndexDescriptor index = createUniquenessConstraint(labelId, propertyId1);
         Value value = Values.of("value");
@@ -190,31 +194,61 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest {
         // This adds the node to the unique index and should take an index write lock
         write.nodeSetProperty(nodeId, propertyId1, value);
 
-        Runnable runnableForThread2 = () -> {
-            latch.waitForAllToStart();
+        try (OtherThreadExecutor other = new OtherThreadExecutor("Transaction Thread 2")) {
+            var future = other.executeDontWait(() -> {
+                latch.await();
+                try (KernelTransaction tx =
+                        kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
+                    try (NodeValueIndexCursor cursor =
+                            tx.cursors().allocateNodeValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
+                        tx.dataRead().lockingNodeUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    }
+                    tx.commit();
+                }
+                return null;
+            });
+
+            latch.release();
+            other.waitUntilWaiting(details -> details.isAt(ForsetiClient.class, "acquireShared"));
+
+            commit();
+            future.get();
+        }
+    }
+
+    @Test
+    void shouldMakeSureWeBlockOtherThreadsFromCreatingNode() throws Throwable {
+        // This simulates a MERGE (n:Person {foo: "value"}) query. Here we do that by having multiple threads
+        // first trying to find the node and if not there it will create the node. No matter the number
+        // of threads we should always have one thread creating the node and the rest of them should find it.
+        IndexDescriptor index = createUniquenessConstraint(labelId, propertyId1);
+        Value value = Values.of("value");
+        Race race = new Race();
+        AtomicInteger readCounter = new AtomicInteger();
+        AtomicInteger writeCounter = new AtomicInteger();
+        int contestants = Runtime.getRuntime().availableProcessors();
+        race.addContestants(contestants, Race.throwing(() -> {
             try (KernelTransaction tx =
                     kernel.beginTransaction(KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED)) {
                 try (NodeValueIndexCursor cursor =
                         tx.cursors().allocateNodeValueIndexCursor(tx.cursorContext(), tx.memoryTracker())) {
-                    tx.dataRead().lockingNodeUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    long nodeId = tx.dataRead().lockingNodeUniqueIndexSeek(index, cursor, exact(propertyId1, value));
+                    if (nodeId == StatementConstants.NO_SUCH_NODE) {
+                        Write write = tx.dataWrite();
+                        nodeId = write.nodeCreate();
+                        write.nodeAddLabel(nodeId, labelId);
+                        write.nodeSetProperty(nodeId, propertyId1, value);
+                        writeCounter.incrementAndGet();
+                    } else {
+                        readCounter.incrementAndGet();
+                    }
                 }
                 tx.commit();
-            } catch (KernelException e) {
-                throw new RuntimeException(e);
-            } finally {
-                latch.finish();
             }
-        };
-        Thread thread2 = new Thread(runnableForThread2, "Transaction Thread 2");
-        thread2.start();
-        latch.startAndWaitForAllToStart();
-
-        while ((thread2.getState() != Thread.State.TIMED_WAITING) && (thread2.getState() != Thread.State.WAITING)) {
-            Thread.yield();
-        }
-
-        commit();
-        latch.waitForAllToFinish();
+        }));
+        race.go();
+        assertEquals(contestants - 1, readCounter.get());
+        assertEquals(1, writeCounter.get());
     }
 
     private static boolean isNoSuchNode(long foundId) {

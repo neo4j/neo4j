@@ -32,16 +32,15 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 
-public class LockingRelationshipUniqueIndexSeek {
-
-    public static <CURSOR extends RelationshipValueIndexCursor> long apply(
+class LockingRelationshipUniqueIndexSeek {
+    static <CURSOR extends RelationshipValueIndexCursor> long apply(
             Locks.Client locks,
             LockTracer lockTracer,
             CURSOR cursor,
             UniqueRelationshipIndexSeeker<CURSOR> relationshipIndexSeeker,
             Read read,
             IndexDescriptor index,
-            PropertyIndexQuery.ExactPredicate... predicates)
+            PropertyIndexQuery.ExactPredicate[] predicates)
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException {
         int[] entityTokenIds = index.schema().getEntityTokenIds();
         if (entityTokenIds.length != 1) {
