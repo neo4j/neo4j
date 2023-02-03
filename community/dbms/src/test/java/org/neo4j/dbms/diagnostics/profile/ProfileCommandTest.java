@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.TRUE;
@@ -36,10 +37,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.io.output.NullPrintStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -48,6 +51,8 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
+import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -74,12 +79,14 @@ class ProfileCommandTest {
     private Path threadDumpDir;
     private ExecutionContext context;
     private ByteArrayOutputStream ctxOut;
+    private Config config;
 
     @BeforeEach
     void setUp() throws IOException {
         output = dir.directory("output");
         jfrDir = output.resolve("jfr");
         threadDumpDir = output.resolve("threads");
+        config = Config.defaults(GraphDatabaseSettings.neo4j_home, dir.homePath());
         setPid(ProcessHandle.current().pid());
         ctxOut = new ByteArrayOutputStream();
         context = new ExecutionContext(
@@ -88,6 +95,12 @@ class ProfileCommandTest {
                 new PrintStream(ctxOut),
                 new PrintStream(new ByteArrayOutputStream()),
                 fs);
+
+        JMXDumper jmxDumper =
+                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
+        assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
+        maybeDump.get().close();
     }
 
     @Test
@@ -167,8 +180,7 @@ class ProfileCommandTest {
     }
 
     private void setPid(long pid) throws IOException {
-        Path pidFile = Config.defaults(GraphDatabaseSettings.neo4j_home, dir.homePath())
-                .get(BootloaderSettings.pid_file);
+        Path pidFile = config.get(BootloaderSettings.pid_file);
         fs.mkdirs(pidFile.getParent());
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", pid), EmptyMemoryTracker.INSTANCE);
     }

@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +37,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Optional;
+import org.apache.commons.io.output.NullPrintStream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +51,8 @@ import org.neo4j.cli.ContextInjectingFactory;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
+import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.FileUtils;
@@ -369,10 +374,16 @@ class DiagnosticsReportCommandIT {
     @Test
     @DisabledOnOs(OS.WINDOWS)
     void shouldRunProfileAsASubCommand() throws IOException {
-        Path pidFile =
-                Config.defaults(GraphDatabaseSettings.neo4j_home, homeDir).get(BootloaderSettings.pid_file);
+        Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, homeDir);
+        Path pidFile = config.get(BootloaderSettings.pid_file);
         fs.mkdirs(pidFile.getParent());
         FileSystemUtils.writeString(fs, pidFile, format("%s%n", getPID()), EmptyMemoryTracker.INSTANCE);
+
+        JMXDumper jmxDumper =
+                new JMXDumper(config, fs, NullPrintStream.NULL_PRINT_STREAM, NullPrintStream.NULL_PRINT_STREAM, true);
+        Optional<JmxDump> maybeDump = jmxDumper.getJMXDump();
+        assumeThat(maybeDump).isPresent(); // IF not, then no point in running tests
+        maybeDump.get().close();
 
         Path output = homeDir.resolve("profile");
         String[] args = {"profile", output.toString(), "3s", "--skip-compression"};
