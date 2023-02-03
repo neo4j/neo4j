@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 
@@ -130,10 +131,20 @@ class PreAllocationOfStoreFilesTest {
     void shouldReserveSpaceOnPreallocation() throws IOException {
         CompleteTransaction storageCommands = new CompleteTransaction(
                 List.of(
-                        new NodeCommand(new NodeRecord(1000), new NodeRecord(1000).initialize(true, -1, false, -1, 1)),
-                        new NodeCommand(new NodeRecord(1001), new NodeRecord(1001).initialize(true, -1, false, -1, 1)),
-                        new NodeCommand(new NodeRecord(500), new NodeRecord(500).initialize(true, -1, false, -1, 1)),
+                        new NodeCommand(
+                                LATEST_LOG_SERIALIZATION,
+                                new NodeRecord(1000),
+                                new NodeRecord(1000).initialize(true, -1, false, -1, 1)),
+                        new NodeCommand(
+                                LATEST_LOG_SERIALIZATION,
+                                new NodeRecord(1001),
+                                new NodeRecord(1001).initialize(true, -1, false, -1, 1)),
+                        new NodeCommand(
+                                LATEST_LOG_SERIALIZATION,
+                                new NodeRecord(500),
+                                new NodeRecord(500).initialize(true, -1, false, -1, 1)),
                         new RelationshipCommand(
+                                LATEST_LOG_SERIALIZATION,
                                 new RelationshipRecord(2000),
                                 new RelationshipRecord(2000)
                                         .initialize(true, -1, -1, -1, 1, -1, -1, -1, -1, true, true))),

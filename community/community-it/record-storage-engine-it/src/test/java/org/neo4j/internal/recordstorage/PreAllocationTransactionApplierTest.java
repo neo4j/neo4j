@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
@@ -181,11 +182,13 @@ class PreAllocationTransactionApplierTest {
                     new RelationshipGroupRecord(8).initialize(true, 0, 1, 2, 3, 4, 5);
             relationshipGroup.setSecondaryUnitIdOnLoad(20);
 
-            applier.visitNodeCommand(new NodeCommand(new NodeRecord(node.getId()), node));
-            applier.visitRelationshipCommand(
-                    new RelationshipCommand(new RelationshipRecord(relationship.getId()), relationship));
+            applier.visitNodeCommand(new NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(node.getId()), node));
+            applier.visitRelationshipCommand(new RelationshipCommand(
+                    LATEST_LOG_SERIALIZATION, new RelationshipRecord(relationship.getId()), relationship));
             applier.visitRelationshipGroupCommand(new Command.RelationshipGroupCommand(
-                    new RelationshipGroupRecord(relationshipGroup.getId()), relationshipGroup));
+                    LATEST_LOG_SERIALIZATION,
+                    new RelationshipGroupRecord(relationshipGroup.getId()),
+                    relationshipGroup));
         }
 
         verify(fakeNodeStore, times(1)).allocate(6);
@@ -200,7 +203,9 @@ class PreAllocationTransactionApplierTest {
     void shouldNotPreallocateForMetadataCommand() throws IOException {
         try (PreAllocationTransactionApplier applier = new PreAllocationTransactionApplier(neoStores)) {
             applier.visitMetaDataCommand(new Command.MetaDataCommand(
-                    new MetaDataRecord().initialize(true, 1), new MetaDataRecord().initialize(true, 2)));
+                    LATEST_LOG_SERIALIZATION,
+                    new MetaDataRecord().initialize(true, 1),
+                    new MetaDataRecord().initialize(true, 2)));
         }
 
         verifyNoMoreInteractionsOnStores();
