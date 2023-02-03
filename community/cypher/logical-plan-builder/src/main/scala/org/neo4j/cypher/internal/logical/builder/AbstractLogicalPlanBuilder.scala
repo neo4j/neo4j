@@ -236,6 +236,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
 
@@ -2088,6 +2089,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
    */
   def newVariable(variable: Variable): Unit = {
     semanticTable = semanticTable.addTypeInfoCTAny(variable)
+  }
+
+  /**
+   * Called if a variable needs to have a specific type
+   */
+  def newVariable(variable: Variable, typ: CypherType): Unit = {
+    semanticTable = semanticTable.addTypeInfo(variable, typ.invariant)
   }
 
   protected def newAlias(variable: Variable, expression: Expression): Unit = {

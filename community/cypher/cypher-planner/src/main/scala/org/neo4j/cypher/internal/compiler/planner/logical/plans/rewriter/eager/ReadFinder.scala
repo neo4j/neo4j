@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -59,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -303,6 +306,43 @@ object ReadFinder {
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc => SkipChildren(acc.withUnknownPropertiesRead())
+
+      case npe: NestedPlanExpression =>
+        // A nested plan expression cannot have writes
+        val nestedReads = collectReadsAndWrites(npe.plan, semanticTable).reads
+
+        // Remap all reads to the outer plan, i.e. to the PlanReads currently being built
+        val readProperties = nestedReads.readProperties.plansReadingConcreteSymbol.keySet
+        val readsUnknownProperties = nestedReads.readProperties.plansReadingUnknownSymbols.nonEmpty
+        val readLabels = nestedReads.readLabels.plansReadingConcreteSymbol.keySet
+        val readsUnknownLabels = nestedReads.readLabels.plansReadingUnknownSymbols.nonEmpty
+        val nodeFilterExpressions = nestedReads.nodeFilterExpressions.view.mapValues(_.expression)
+        val referencedNodeVariables = nestedReads.possibleNodeDeleteConflictPlans.keySet
+
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+          nestedReads.productIterator.toSeq == Seq(
+            nestedReads.readProperties,
+            nestedReads.readLabels,
+            nestedReads.nodeFilterExpressions,
+            nestedReads.possibleNodeDeleteConflictPlans
+          ),
+          "Make sure to edit this place when adding new fields to Reads"
+        )
+
+        acc => {
+          val nextAcc = Function.chain[PlanReads](Seq(
+            acc => readProperties.foldLeft(acc)(_.withPropertyRead(_)),
+            acc => if (readsUnknownProperties) acc.withUnknownPropertiesRead() else acc,
+            acc => readLabels.foldLeft(acc)(_.withLabelRead(_)),
+            acc => if (readsUnknownLabels) acc.withUnknownLabelsRead() else acc,
+            acc =>
+              nodeFilterExpressions.foldLeft(acc) {
+                case (acc, (variable, nfe)) => acc.withAddedNodeFilterExpression(variable, nfe)
+              },
+            acc => referencedNodeVariables.foldLeft(acc)(_.withReferencedNodeVariable(_))
+          ))(acc)
+          TraverseChildren(nextAcc)
+        }
     }
   }
 

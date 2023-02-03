@@ -38,14 +38,32 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setN
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.immutable.ListSet
 
 class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOps with AstConstructionTestSupport {
+
+  /**
+   * Get a builder for incomplete logical plans with an ID offset.
+   * This can be used to build plans for nested plan expressions.
+   *
+   * The ID offset helps to avoid having ID conflicts in the outer plan that
+   * contains the nested plan.
+   */
+  private def subPlanBuilderWithIdOffset(): LogicalPlanBuilder =
+    new LogicalPlanBuilder(wholePlan = false) {
+      override val idGen: IdGen = new SequentialIdGen(100)
+    }
 
   // Negative tests
 
@@ -442,6 +460,111 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("inserts eager between property set and property read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .filter("m.prop > 0")
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"EXISTS { MATCH (n)-[r]->(m) WHERE m.prop > 0 }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.foo AS x")
+      .filterExpression(nestedPlanExpression)
+      .setNodeProperty("n", "prop", "5")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.foo AS x")
+        .filterExpression(nestedPlanExpression)
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(3), Id(2))))))
+        .setNodeProperty("n", "prop", "5")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between property set and all properties read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .projection("properties(m) AS properties")
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanCollectExpression(
+      nestedPlan,
+      varFor("properties"),
+      s"COLLECT { MATCH (n)-[r]->(m) RETURN properties(m) AS properties }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("ps")
+      .projection(Map("ps" -> nestedPlanExpression))
+      .setNodeProperty("n", "prop", "5")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("ps")
+        .projection(Map("ps" -> nestedPlanExpression))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
+        .setNodeProperty("n", "prop", "5")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between property set and property read in projection of nested plan collect expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanCollectExpression(
+      nestedPlan,
+      prop("m", "prop"),
+      s"[(n)-[r]->(m) | m.prop]"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("mProps")
+      .projection(Map("mProps" -> nestedPlanExpression))
+      .setNodeProperty("n", "prop", "5")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("mProps")
+        .projection(Map("mProps" -> nestedPlanExpression))
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
+        .setNodeProperty("n", "prop", "5")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   // Label Read/Set conflict
 
   test("inserts no eager between label set and label read if label read through stable iterator") {
@@ -673,6 +796,77 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       planBuilder.getSemanticTable
     )
     result should equal(plan)
+  }
+
+  test("inserts eager between label set and label read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .filter("m:N")
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"EXISTS { MATCH (n)-[r]->(m:N) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.foo AS x")
+      .filterExpression(nestedPlanExpression)
+      .setLabels("n", "N")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.foo AS x")
+        .filterExpression(nestedPlanExpression)
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(3), Id(2))))))
+        .setLabels("n", "N")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("inserts eager between label set and all labels read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .projection("labels(m) AS labels")
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanCollectExpression(
+      nestedPlan,
+      varFor("labels"),
+      s"COLLECT { MATCH (n)-[r]->(m) RETURN labels(m) AS labels }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("lbs")
+      .projection(Map("lbs" -> nestedPlanExpression))
+      .setLabels("n", "N")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("lbs")
+        .projection(Map("lbs" -> nestedPlanExpression))
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(1))))))
+        .setLabels("n", "N")
+        .allNodeScan("n")
+        .build()
+    )
   }
 
   // Read vs Create conflicts
@@ -1916,6 +2110,44 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       planBuilder.getSemanticTable
     )
     result should equal(plan)
+  }
+
+  test("inserts eager between create and label read in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .filter("m:N")
+      .expand("(n)-[r]->(m)")
+      .argument("n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"EXISTS { MATCH (n)-[r]->(m:N) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("x")
+      .projection("n.foo AS x")
+      .filterExpression(nestedPlanExpression)
+      .create(createNode("n", "N"))
+      .unwind("[1,2] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("x")
+        .projection("n.foo AS x")
+        .filterExpression(nestedPlanExpression)
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(3), Id(2))))))
+        .create(createNode("n", "N"))
+        .unwind("[1,2] AS x")
+        .argument()
+        .build()
+    )
   }
 
   // Read vs Merge conflicts
@@ -4023,7 +4255,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("Should be eager in Delete/Read conflict, if not overlapping bt no predicates on read node leaf plan") {
+  test("Should be eager in Delete/Read conflict, if not overlapping but no predicates on read node leaf plan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
@@ -4048,6 +4280,87 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(5), Id(4))))))
         .deleteNode("n")
         .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager if deleted node conflicts with unstable node in nested plan expression") {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .expandInto("(n)-[r]->(m)")
+      .allNodeScan("m", "n")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      nestedPlan,
+      s"EXISTS { MATCH (n)-[r]->(m) }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .filterExpression(nestedPlanExpression)
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .filterExpression(nestedPlanExpression)
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "Eager for DELETE conflict must be placed after the last reference to matched node, in nested plan expression"
+  ) {
+    val nestedPlan = subPlanBuilderWithIdOffset()
+      .projection("m.prop AS prop") // Property projection can crash if executed on deleted node.
+      .argument("m")
+      .build()
+
+    val prop = varFor("prop")
+    val nestedPlanExpression = NestedPlanCollectExpression(
+      nestedPlan,
+      prop,
+      s"COLLECT { MATCH (m) RETURN m.prop AS prop }"
+    )(pos)
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n").withCardinality(40)
+      .projection(Map("props" -> nestedPlanExpression)).withCardinality(60)
+      .unwind("[1,2,3] AS i").withCardinality(60)
+      .expand("(n)-[r]->(m)").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    // This makes sure we do not mistake prop for a potential node
+    planBuilder.newVariable(prop, CTList(CTAny))
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .projection(Map("props" -> nestedPlanExpression)).withCardinality(60)
+        .unwind("[1,2,3] AS i")
+        .expand("(n)-[r]->(m)")
+        .allNodeScan("n")
         .build()
     )
   }
