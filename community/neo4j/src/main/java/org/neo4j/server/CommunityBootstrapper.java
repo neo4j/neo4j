@@ -30,10 +30,11 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 
 public class CommunityBootstrapper extends NeoBootstrapper {
     @Override
-    protected DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies) {
+    protected DatabaseManagementService createNeo(
+            Config config, boolean consoleMode, GraphDatabaseDependencies dependencies) {
         DatabaseManagementServiceFactory facadeFactory =
                 new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
-        return facadeFactory.build(config, dependencies);
+        return facadeFactory.build(config, consoleMode, dependencies);
     }
 
     @Override

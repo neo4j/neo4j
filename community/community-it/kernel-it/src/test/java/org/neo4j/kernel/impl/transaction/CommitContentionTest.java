@@ -121,7 +121,10 @@ class CommitContentionTest {
                                 return SkipTransactionDatabaseStats::new;
                             }
                         })
-                .build(cfg, GraphDatabaseDependencies.newDependencies().dependencies(noOpSystemGraphInitializer(cfg)));
+                .build(
+                        cfg,
+                        false,
+                        GraphDatabaseDependencies.newDependencies().dependencies(noOpSystemGraphInitializer(cfg)));
         return managementService.database(cfg.get(GraphDatabaseSettings.initial_default_database));
     }
 

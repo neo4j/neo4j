@@ -120,15 +120,17 @@ public class DatabaseManagementServiceFactory {
     }
 
     /**
-     * Instantiate a graph database given configuration, dependencies, and a custom implementation of {@link org
-     * .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
+     * Instantiate a graph database given configuration, dependencies, and a custom implementation of
+     * {@link org .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
-     * @param config configuration
+     * @param config       configuration
+     * @param consoleMode  if running in console mode. If {@code false}, we avoid printing to stdout/stderr.
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService build(Config config, final ExternalDependencies dependencies) {
-        var globalModule = createGlobalModule(config, dependencies);
+    public DatabaseManagementService build(
+            Config config, boolean consoleMode, final ExternalDependencies dependencies) {
+        var globalModule = createGlobalModule(config, consoleMode, dependencies);
         var edition = editionFactory.apply(globalModule);
         var globalDependencies = globalModule.getGlobalDependencies();
         var globalLife = globalModule.getGlobalLife();
@@ -290,8 +292,9 @@ public class DatabaseManagementServiceFactory {
     /**
      * Create the platform module. Override to replace with custom module.
      */
-    protected GlobalModule createGlobalModule(Config config, final ExternalDependencies dependencies) {
-        return new GlobalModule(config, dbmsInfo, dependencies);
+    protected GlobalModule createGlobalModule(
+            Config config, boolean consoleMode, final ExternalDependencies dependencies) {
+        return new GlobalModule(config, dbmsInfo, consoleMode, dependencies);
     }
 
     /**

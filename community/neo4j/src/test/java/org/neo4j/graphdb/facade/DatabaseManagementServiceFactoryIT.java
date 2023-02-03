@@ -134,7 +134,7 @@ class DatabaseManagementServiceFactoryIT {
                     .set(neo4j_home, testDirectory.absolutePath())
                     .set(preallocate_logical_logs, false)
                     .build();
-            return databaseManagementServiceFactory.build(cfg, GraphDatabaseDependencies.newDependencies());
+            return databaseManagementServiceFactory.build(cfg, false, GraphDatabaseDependencies.newDependencies());
         }
     }
 
@@ -198,12 +198,13 @@ class DatabaseManagementServiceFactoryIT {
                     var cause = assertThrows(
                                     RuntimeException.class,
                                     () -> databaseManagementServiceFactory.build(
-                                            cfg, GraphDatabaseDependencies.newDependencies()))
+                                            cfg, false, GraphDatabaseDependencies.newDependencies()))
                             .getCause();
                     assertTrue(expectedException.isInstance(cause));
                     assertTrue(cause.getMessage().contains(execptedMessage));
                 } else {
-                    dbms = databaseManagementServiceFactory.build(cfg, GraphDatabaseDependencies.newDependencies());
+                    dbms = databaseManagementServiceFactory.build(
+                            cfg, false, GraphDatabaseDependencies.newDependencies());
                     var dependencyResolver =
                             ((GraphDatabaseAPI) dbms.database(SYSTEM_DATABASE_NAME)).getDependencyResolver();
                     assertDoesNotThrow(() -> dependencyResolver.resolveDependency(expectedServerClass));

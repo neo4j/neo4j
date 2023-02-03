@@ -42,6 +42,6 @@ public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder {
     protected DatabaseManagementService createNeo(Config config, ExternalDependencies dependencies) {
         DatabaseManagementServiceFactory facadeFactory =
                 new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
-        return facadeFactory.build(config, dependencies);
+        return facadeFactory.build(config, false, dependencies);
     }
 }

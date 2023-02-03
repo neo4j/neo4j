@@ -130,7 +130,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         var factory = new TestDatabaseManagementServiceFactory(
                 getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider);
 
-        return factory.build(augmentConfig(config), GraphDatabaseDependencies.newDependencies(dependencies));
+        return factory.build(
+                augmentConfig(config), consoleMode, GraphDatabaseDependencies.newDependencies(dependencies));
     }
 
     @Override

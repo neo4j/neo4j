@@ -60,7 +60,8 @@ class DatabaseManagementServiceFactoryTest {
         Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath());
         RuntimeException startupError = new RuntimeException();
         DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory(startupError, null);
-        RuntimeException startException = assertThrows(RuntimeException.class, () -> factory.build(config, deps));
+        RuntimeException startException =
+                assertThrows(RuntimeException.class, () -> factory.build(config, false, deps));
         assertEquals(startupError, getRootCause(startException));
     }
 
@@ -72,7 +73,7 @@ class DatabaseManagementServiceFactoryTest {
 
         DatabaseManagementServiceFactory factory =
                 newFaultyGraphDatabaseFacadeFactory(startupException, shutdownException);
-        RuntimeException initException = assertThrows(RuntimeException.class, () -> factory.build(config, deps));
+        RuntimeException initException = assertThrows(RuntimeException.class, () -> factory.build(config, false, deps));
 
         assertTrue(initException.getMessage().startsWith("Error starting "));
         assertThat(initException).hasRootCause(startupException);
@@ -83,11 +84,12 @@ class DatabaseManagementServiceFactoryTest {
             final RuntimeException startupError, RuntimeException shutdownError) {
         return new DatabaseManagementServiceFactory(DbmsInfo.UNKNOWN, CommunityEditionModule::new) {
             @Override
-            protected GlobalModule createGlobalModule(Config config, ExternalDependencies dependencies) {
+            protected GlobalModule createGlobalModule(
+                    Config config, boolean consoleMode, ExternalDependencies dependencies) {
                 LifeSupport lifeSupport = new LifeSupport();
                 lifeSupport.add(new PoisonedLifecycleMember(startupError, shutdownError));
 
-                return new GlobalModule(config, dbmsInfo, dependencies) {
+                return new GlobalModule(config, dbmsInfo, consoleMode, dependencies) {
                     @Override
                     public LifeSupport createLife() {
                         return lifeSupport;

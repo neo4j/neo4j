@@ -72,9 +72,9 @@ public class SystemDbUpgrader {
         var bootstrapProgress = progressMonitor.startSection("Bootstrap");
         var graphDatabaseDependencies =
                 dependenciesWithoutExtensions(eventListener).databaseEventListeners(Iterables.iterable(eventListener));
-        var globalModule = new GlobalModule(config, DbmsInfo.TOOL, graphDatabaseDependencies) {
+        var globalModule = new GlobalModule(config, DbmsInfo.TOOL, false, graphDatabaseDependencies) {
             @Override
-            protected LogService createLogService(InternalLogProvider userLogProvider) {
+            protected LogService createLogService(InternalLogProvider userLogProvider, boolean consoleMode) {
                 return new SimpleLogService(systemDbStartupLogProvider);
             }
 

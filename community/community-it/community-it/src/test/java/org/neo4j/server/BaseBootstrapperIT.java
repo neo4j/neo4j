@@ -30,10 +30,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.server_logging_config_path;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -70,7 +72,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.server.startup.Environment;
 import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.server.ExclusiveWebContainerTestBase;
@@ -278,8 +279,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     @Test
     void loggingConfigurationErrorsShouldPreventStartup() throws IOException {
         Path log4jConfig = testDirectory.file("user-logs.xml");
-        FileSystemUtils.writeString(
-                testDirectory.getFileSystem(), log4jConfig, "<Configuration><", EmptyMemoryTracker.INSTANCE);
+        FileSystemUtils.writeString(testDirectory.getFileSystem(), log4jConfig, "<Configuration><", INSTANCE);
 
         String[] args = new String[] {
             "--home-dir",
@@ -308,6 +308,39 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 bootstrapper, "--home-dir", testDirectory.homePath().toString(), "--console-mode");
         assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
         assertThat(suppressOutput.getErrorVoice().toString()).doesNotContain(String.valueOf(Environment.FULLY_FLEDGED));
+    }
+
+    @Test
+    void debugLogToSystemOutInConsoleMode() throws IOException {
+        String log4jConfig =
+                """
+                <Configuration status="ERROR" packages="org.neo4j.logging.log4j">
+                    <Appenders>
+                        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+                            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSSZ}{GMT+0} %-5p %m%n"/>
+                        </Console>
+                    </Appenders>
+                    <Loggers>
+                        <Root level="INFO">
+                            <AppenderRef ref="ConsoleAppender"/>
+                        </Root>
+                    </Loggers>
+                </Configuration>
+                """;
+        Path xmlConfig = testDirectory.file("serverConsoleLogger.xml");
+        FileSystemUtils.writeString(testDirectory.getFileSystem(), xmlConfig, log4jConfig, INSTANCE);
+
+        int resultCode = NeoBootstrapper.start(
+                bootstrapper,
+                "--home-dir",
+                testDirectory.homePath().toString(),
+                "--console-mode",
+                "-c",
+                configOption(
+                        server_logging_config_path, xmlConfig.toAbsolutePath().toString()));
+        assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
+        assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System diagnostics ]"));
+        assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System memory information ]"));
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);

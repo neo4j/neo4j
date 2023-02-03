@@ -167,7 +167,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                     .toString();
 
             log.info("Starting...");
-            databaseManagementService = createNeo(config, dependencies);
+            databaseManagementService = createNeo(config, consoleMode, dependencies);
             log.info("Started.");
 
             return OK;
@@ -260,7 +260,8 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         return log;
     }
 
-    protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
+    protected abstract DatabaseManagementService createNeo(
+            Config config, boolean consoleMode, GraphDatabaseDependencies dependencies);
 
     protected abstract boolean checkLicenseAgreement(Path homeDir, boolean consoleMode);
 
