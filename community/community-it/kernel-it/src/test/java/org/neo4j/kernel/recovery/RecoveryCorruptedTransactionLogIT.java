@@ -28,6 +28,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_l
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
@@ -1087,8 +1088,9 @@ class RecoveryCorruptedTransactionLogIT {
             TransactionLogWriter writer =
                     new TransactionLogWriter(realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_VERSION);
             List<StorageCommand> commands = new ArrayList<>();
-            commands.add(new Command.PropertyCommand(new PropertyRecord(1), new PropertyRecord(2)));
-            commands.add(new Command.NodeCommand(new NodeRecord(2), new NodeRecord(3)));
+            commands.add(new Command.PropertyCommand(
+                    LATEST_LOG_SERIALIZATION, new PropertyRecord(1), new PropertyRecord(2)));
+            commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction =
                     new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
             writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);

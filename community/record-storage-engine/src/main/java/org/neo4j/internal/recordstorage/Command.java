@@ -144,10 +144,6 @@ public abstract class Command implements StorageCommand {
         protected final RECORD before;
         protected final RECORD after;
 
-        public BaseCommand(RECORD before, RECORD after) {
-            this(LATEST_LOG_SERIALIZATION, before, after);
-        }
-
         public BaseCommand(LogCommandSerialization serialization, RECORD before, RECORD after) {
             super(serialization);
             setup(after.getId(), Mode.fromRecordState(after));
@@ -176,10 +172,6 @@ public abstract class Command implements StorageCommand {
     public static class NodeCommand extends BaseCommand<NodeRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(NodeCommand.class);
 
-        public NodeCommand(NodeRecord before, NodeRecord after) {
-            super(before, after);
-        }
-
         public NodeCommand(LogCommandSerialization serialization, NodeRecord before, NodeRecord after) {
             super(serialization, before, after);
         }
@@ -207,10 +199,6 @@ public abstract class Command implements StorageCommand {
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(RelationshipCommand.class);
 
-        public RelationshipCommand(RelationshipRecord before, RelationshipRecord after) {
-            super(before, after);
-        }
-
         public RelationshipCommand(
                 LogCommandSerialization serialization, RelationshipRecord before, RelationshipRecord after) {
             super(serialization, before, after);
@@ -234,10 +222,6 @@ public abstract class Command implements StorageCommand {
 
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(RelationshipGroupCommand.class);
-
-        public RelationshipGroupCommand(RelationshipGroupRecord before, RelationshipGroupRecord after) {
-            super(before, after);
-        }
 
         public RelationshipGroupCommand(
                 LogCommandSerialization serialization, RelationshipGroupRecord before, RelationshipGroupRecord after) {
@@ -266,10 +250,6 @@ public abstract class Command implements StorageCommand {
     }
 
     public static class MetaDataCommand extends BaseCommand<MetaDataRecord> {
-        MetaDataCommand(MetaDataRecord before, MetaDataRecord after) {
-            super(before, after);
-        }
-
         MetaDataCommand(LogCommandSerialization serialization, MetaDataRecord before, MetaDataRecord after) {
             super(serialization, before, after);
         }
@@ -287,10 +267,6 @@ public abstract class Command implements StorageCommand {
 
     public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange {
         static final long HEAP_SIZE = shallowSizeOfInstance(PropertyCommand.class);
-
-        public PropertyCommand(PropertyRecord before, PropertyRecord after) {
-            super(before, after);
-        }
 
         public PropertyCommand(LogCommandSerialization serialization, PropertyRecord before, PropertyRecord after) {
             super(serialization, before, after);
@@ -354,10 +330,6 @@ public abstract class Command implements StorageCommand {
 
     public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD>
             implements StorageCommand.TokenCommand {
-        public TokenCommand(RECORD before, RECORD after) {
-            super(before, after);
-        }
-
         public TokenCommand(LogCommandSerialization serialization, RECORD before, RECORD after) {
             super(serialization, before, after);
         }
@@ -371,19 +343,10 @@ public abstract class Command implements StorageCommand {
         public boolean isInternal() {
             return getAfter().isInternal();
         }
-
-        @Override
-        public String toString() {
-            return beforeAndAfterToString(before, after);
-        }
     }
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(PropertyKeyTokenCommand.class);
-
-        public PropertyKeyTokenCommand(PropertyKeyTokenRecord before, PropertyKeyTokenRecord after) {
-            super(before, after);
-        }
 
         public PropertyKeyTokenCommand(
                 LogCommandSerialization serialization, PropertyKeyTokenRecord before, PropertyKeyTokenRecord after) {
@@ -403,10 +366,6 @@ public abstract class Command implements StorageCommand {
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(RelationshipTypeTokenCommand.class);
-
-        public RelationshipTypeTokenCommand(RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after) {
-            super(before, after);
-        }
 
         public RelationshipTypeTokenCommand(
                 LogCommandSerialization serialization,
@@ -428,10 +387,6 @@ public abstract class Command implements StorageCommand {
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord> {
         static final long HEAP_SIZE = shallowSizeOfInstance(LabelTokenCommand.class);
-
-        public LabelTokenCommand(LabelTokenRecord before, LabelTokenRecord after) {
-            super(before, after);
-        }
 
         public LabelTokenCommand(
                 LogCommandSerialization serialization, LabelTokenRecord before, LabelTokenRecord after) {

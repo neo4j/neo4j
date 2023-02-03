@@ -29,6 +29,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -194,11 +195,11 @@ class OnlineIndexUpdatesTest {
             nodeStore.updateRecord(inUse, nodeCursor, NULL_CONTEXT, storeCursors);
         }
 
-        NodeCommand nodeCommand = new NodeCommand(inUse, notInUse);
+        NodeCommand nodeCommand = new NodeCommand(LATEST_LOG_SERIALIZATION, inUse, notInUse);
         PropertyRecord propertyBlocks = new PropertyRecord(propertyId);
         propertyBlocks.setNodeId(nodeId);
-        PropertyCommand propertyCommand =
-                new PropertyCommand(recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
+        PropertyCommand propertyCommand = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION, recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
 
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(fulltext(NODE, ENTITY_TOKENS, new int[] {1, 4, 6}))
                 .withName("index")
@@ -232,11 +233,12 @@ class OnlineIndexUpdatesTest {
             relationshipStore.updateRecord(inUse, pageCursor, NULL_CONTEXT, storeCursors);
         }
 
-        Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand(inUse, notInUse);
+        Command.RelationshipCommand relationshipCommand =
+                new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, inUse, notInUse);
         PropertyRecord propertyBlocks = new PropertyRecord(propertyId);
         propertyBlocks.setRelId(relId);
-        PropertyCommand propertyCommand =
-                new PropertyCommand(recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
+        PropertyCommand propertyCommand = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION, recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
 
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
                         fulltext(RELATIONSHIP, ENTITY_TOKENS, new int[] {1, 4, 6}))
@@ -271,11 +273,13 @@ class OnlineIndexUpdatesTest {
             nodeStore.updateRecord(inUseNode, pageCursor, NULL_CONTEXT, storeCursors);
         }
 
-        NodeCommand nodeCommand = new NodeCommand(inUseNode, notInUseNode);
+        NodeCommand nodeCommand = new NodeCommand(LATEST_LOG_SERIALIZATION, inUseNode, notInUseNode);
         PropertyRecord nodePropertyBlocks = new PropertyRecord(nodePropertyId);
         nodePropertyBlocks.setNodeId(nodeId);
-        PropertyCommand nodePropertyCommand =
-                new PropertyCommand(recordAccess.getIfLoaded(nodePropertyId).forReadingData(), nodePropertyBlocks);
+        PropertyCommand nodePropertyCommand = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION,
+                recordAccess.getIfLoaded(nodePropertyId).forReadingData(),
+                nodePropertyBlocks);
 
         IndexDescriptor nodeIndexDescriptor = IndexPrototype.forSchema(
                         fulltext(NODE, ENTITY_TOKENS, new int[] {1, 4, 6}))
@@ -292,11 +296,14 @@ class OnlineIndexUpdatesTest {
             relationshipStore.updateRecord(inUse, pageCursor, NULL_CONTEXT, storeCursors);
         }
 
-        Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand(inUse, notInUse);
+        Command.RelationshipCommand relationshipCommand =
+                new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, inUse, notInUse);
         PropertyRecord relationshipPropertyBlocks = new PropertyRecord(propertyId);
         relationshipPropertyBlocks.setRelId(relId);
-        PropertyCommand relationshipPropertyCommand =
-                new PropertyCommand(recordAccess.getIfLoaded(propertyId).forReadingData(), relationshipPropertyBlocks);
+        PropertyCommand relationshipPropertyCommand = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION,
+                recordAccess.getIfLoaded(propertyId).forReadingData(),
+                relationshipPropertyBlocks);
 
         FulltextSchemaDescriptor schema = fulltext(RELATIONSHIP, ENTITY_TOKENS, new int[] {1, 4, 6});
         IndexDescriptor relationshipIndexDescriptor =
@@ -336,16 +343,17 @@ class OnlineIndexUpdatesTest {
             relationshipStore.updateRecord(inUse, pageCursor, NULL_CONTEXT, storeCursors);
         }
 
-        Command.RelationshipCommand relationshipCommand = new Command.RelationshipCommand(inUse, notInUse);
+        Command.RelationshipCommand relationshipCommand =
+                new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, inUse, notInUse);
         PropertyRecord propertyBlocks = new PropertyRecord(propertyId);
         propertyBlocks.setRelId(relId);
-        PropertyCommand propertyCommand =
-                new PropertyCommand(recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
+        PropertyCommand propertyCommand = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION, recordAccess.getIfLoaded(propertyId).forReadingData(), propertyBlocks);
 
         PropertyRecord propertyBlocks2 = new PropertyRecord(propertyId2);
         propertyBlocks2.setRelId(relId);
-        PropertyCommand propertyCommand2 =
-                new PropertyCommand(recordAccess.getIfLoaded(propertyId2).forReadingData(), propertyBlocks2);
+        PropertyCommand propertyCommand2 = new PropertyCommand(
+                LATEST_LOG_SERIALIZATION, recordAccess.getIfLoaded(propertyId2).forReadingData(), propertyBlocks2);
 
         IndexDescriptor indexDescriptor0 = IndexPrototype.forSchema(
                         fulltext(RELATIONSHIP, ENTITY_TOKENS, new int[] {1, 4, 6}))

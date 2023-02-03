@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.TokenStore.NAME_STORE_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -77,25 +78,25 @@ public class TransactionWriter {
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(id);
         PropertyKeyTokenRecord after = withName(new PropertyKeyTokenRecord(id), dynamicIds, key);
         after.setInternal(internal);
-        otherCommands.add(new Command.PropertyKeyTokenCommand(before, after));
+        otherCommands.add(new Command.PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void label(int id, String name, boolean internal, int... dynamicIds) {
         LabelTokenRecord before = new LabelTokenRecord(id);
         LabelTokenRecord after = withName(new LabelTokenRecord(id), dynamicIds, name);
         after.setInternal(internal);
-        otherCommands.add(new Command.LabelTokenCommand(before, after));
+        otherCommands.add(new Command.LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void relationshipType(int id, String relType, boolean internal, int... dynamicIds) {
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(id);
         RelationshipTypeTokenRecord after = withName(new RelationshipTypeTokenRecord(id), dynamicIds, relType);
         after.setInternal(internal);
-        otherCommands.add(new Command.RelationshipTypeTokenCommand(before, after));
+        otherCommands.add(new Command.RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void update(LabelTokenRecord before, LabelTokenRecord after) {
-        otherCommands.add(new Command.LabelTokenCommand(before, after));
+        otherCommands.add(new Command.LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void create(NodeRecord node) {
@@ -226,27 +227,27 @@ public class TransactionWriter {
     }
 
     public void add(NodeRecord before, NodeRecord after) {
-        nodeCommands.add(new Command.NodeCommand(before, after));
+        nodeCommands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void add(RelationshipRecord before, RelationshipRecord after) {
-        relationshipCommands.add(new Command.RelationshipCommand(before, after));
+        relationshipCommands.add(new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void add(RelationshipGroupRecord before, RelationshipGroupRecord after) {
-        relationshipGroupCommands.add(new Command.RelationshipGroupCommand(before, after));
+        relationshipGroupCommands.add(new Command.RelationshipGroupCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void add(PropertyRecord before, PropertyRecord property) {
-        otherCommands.add(new Command.PropertyCommand(before, property));
+        otherCommands.add(new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, property));
     }
 
     public void add(RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after) {
-        otherCommands.add(new Command.RelationshipTypeTokenCommand(before, after));
+        otherCommands.add(new Command.RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void add(PropertyKeyTokenRecord before, PropertyKeyTokenRecord after) {
-        otherCommands.add(new Command.PropertyKeyTokenCommand(before, after));
+        otherCommands.add(new Command.PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after));
     }
 
     public void incrementNodeCount(int labelId, long delta) {

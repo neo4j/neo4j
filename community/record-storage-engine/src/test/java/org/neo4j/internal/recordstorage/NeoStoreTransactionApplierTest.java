@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -159,7 +160,7 @@ class NeoStoreTransactionApplierTest {
         NodeRecord after = new NodeRecord(12);
         after.setInUse(true);
         after.setLabelField(42, asList(one, two, three));
-        Command.NodeCommand command = new Command.NodeCommand(before, after);
+        Command.NodeCommand command = new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -180,7 +181,7 @@ class NeoStoreTransactionApplierTest {
         NodeRecord after = new NodeRecord(12);
         after.setInUse(false);
         after.setLabelField(42, asList(one, two, three));
-        Command.NodeCommand command = new Command.NodeCommand(before, after);
+        Command.NodeCommand command = new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -201,7 +202,7 @@ class NeoStoreTransactionApplierTest {
         NodeRecord after = new NodeRecord(12);
         after.setInUse(true);
         after.setLabelField(42, asList(one, two, three));
-        Command.NodeCommand command = new Command.NodeCommand(before, after);
+        Command.NodeCommand command = new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -227,7 +228,7 @@ class NeoStoreTransactionApplierTest {
         after.setInUse(true);
         after.setDense(true);
         after.setLabelField(42, asList(one, two, three));
-        Command.NodeCommand command = new Command.NodeCommand(before, after);
+        Command.NodeCommand command = new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -250,7 +251,7 @@ class NeoStoreTransactionApplierTest {
         record.setLinks(3, 4, 5);
         record.setInUse(true);
 
-        Command command = new Command.RelationshipCommand(before, record);
+        Command command = new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, before, record);
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
 
@@ -269,7 +270,7 @@ class NeoStoreTransactionApplierTest {
         record.setLinks(3, 4, 5);
         record.setInUse(false);
 
-        Command command = new Command.RelationshipCommand(before, record);
+        Command command = new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, before, record);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -288,7 +289,7 @@ class NeoStoreTransactionApplierTest {
         RelationshipRecord record = new RelationshipRecord(12);
         record.setLinks(3, 4, 5);
         record.setInUse(true);
-        Command command = new Command.RelationshipCommand(before, record);
+        Command command = new Command.RelationshipCommand(LATEST_LOG_SERIALIZATION, before, record);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -309,7 +310,7 @@ class NeoStoreTransactionApplierTest {
         PropertyRecord before = new PropertyRecord(11);
         PropertyRecord after = new PropertyRecord(12);
         after.setNodeId(42);
-        Command command = new Command.PropertyCommand(before, after);
+        Command command = new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -328,7 +329,7 @@ class NeoStoreTransactionApplierTest {
         PropertyRecord before = new PropertyRecord(11);
         PropertyRecord after = new PropertyRecord(12);
         after.setNodeId(42);
-        Command command = new Command.PropertyCommand(before, after);
+        Command command = new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -348,7 +349,7 @@ class NeoStoreTransactionApplierTest {
         PropertyRecord before = new PropertyRecord(11);
         PropertyRecord after = new PropertyRecord(12);
         after.setRelId(42);
-        Command command = new Command.PropertyCommand(before, after);
+        Command command = new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -366,7 +367,7 @@ class NeoStoreTransactionApplierTest {
         PropertyRecord before = new PropertyRecord(11);
         PropertyRecord after = new PropertyRecord(12);
         after.setRelId(42);
-        Command command = new Command.PropertyCommand(before, after);
+        Command command = new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -395,7 +396,7 @@ class NeoStoreTransactionApplierTest {
                         NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue());
         RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 1, 2, 3, 4, 5, 6);
-        Command command = new Command.RelationshipGroupCommand(before, after);
+        Command command = new Command.RelationshipGroupCommand(LATEST_LOG_SERIALIZATION, before, after);
         boolean result = apply(applier, command::handle, transactionToApply);
 
         // then
@@ -419,7 +420,7 @@ class NeoStoreTransactionApplierTest {
                         NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue());
         RelationshipGroupRecord after = new RelationshipGroupRecord(42).initialize(true, 1, 2, 3, 4, 5, 6);
-        Command command = new Command.RelationshipGroupCommand(before, after);
+        Command command = new Command.RelationshipGroupCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         boolean result = apply(applier, command::handle, transactionToApply);
 
@@ -440,7 +441,7 @@ class NeoStoreTransactionApplierTest {
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command command = new RelationshipTypeTokenCommand(before, after);
+        Command command = new RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -460,7 +461,8 @@ class NeoStoreTransactionApplierTest {
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand(before, after);
+        Command.RelationshipTypeTokenCommand command =
+                new Command.RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
         NamedToken token = new NamedToken("token", 21);
         when(relationshipTypeTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
                 .thenReturn(token);
@@ -486,7 +488,7 @@ class NeoStoreTransactionApplierTest {
         LabelTokenRecord after = new LabelTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command command = new LabelTokenCommand(before, after);
+        Command command = new LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -505,7 +507,7 @@ class NeoStoreTransactionApplierTest {
         LabelTokenRecord after = new LabelTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command.LabelTokenCommand command = new Command.LabelTokenCommand(before, after);
+        Command.LabelTokenCommand command = new Command.LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
         NamedToken token = new NamedToken("token", 21);
         when(labelTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
                 .thenReturn(token);
@@ -531,7 +533,7 @@ class NeoStoreTransactionApplierTest {
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command command = new PropertyKeyTokenCommand(before, after);
+        Command command = new PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -551,7 +553,8 @@ class NeoStoreTransactionApplierTest {
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
-        Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand(before, after);
+        Command.PropertyKeyTokenCommand command =
+                new Command.PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
         NamedToken token = new NamedToken("token", 21);
         when(propertyKeyTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
                 .thenReturn(token);

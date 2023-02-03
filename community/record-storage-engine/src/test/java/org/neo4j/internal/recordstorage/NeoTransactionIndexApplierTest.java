@@ -24,6 +24,7 @@ import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.common.Subject.SYSTEM;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 import java.util.Collections;
@@ -52,7 +53,7 @@ class NeoTransactionIndexApplierTest {
         before.setLabelField(17, emptyDynamicRecords);
         NodeRecord after = new NodeRecord(12);
         after.setLabelField(18, emptyDynamicRecords);
-        Command.NodeCommand command = new Command.NodeCommand(before, after);
+        Command.NodeCommand command = new Command.NodeCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
         boolean result;

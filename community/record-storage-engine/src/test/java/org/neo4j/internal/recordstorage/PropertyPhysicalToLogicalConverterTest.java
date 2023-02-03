@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
@@ -248,7 +249,7 @@ class PropertyPhysicalToLogicalConverterTest {
         EntityUpdates.Builder updates =
                 EntityUpdates.forEntity(0, false).withTokens(labelsBefore).withTokensAfter(labelsAfter);
         EntityCommandGrouper grouper = new EntityCommandGrouper<>(Command.NodeCommand.class, 8);
-        grouper.add(new Command.NodeCommand(new NodeRecord(nodeId), new NodeRecord(nodeId)));
+        grouper.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(nodeId), new NodeRecord(nodeId)));
         for (Command.PropertyCommand change : changes) {
             grouper.add(change);
         }
@@ -259,6 +260,6 @@ class PropertyPhysicalToLogicalConverterTest {
     }
 
     private static Command.PropertyCommand change(final PropertyRecord before, final PropertyRecord after) {
-        return new Command.PropertyCommand(before, after);
+        return new Command.PropertyCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 }

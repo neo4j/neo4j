@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -67,7 +68,7 @@ public class Commands {
             List<DynamicRecord> dynamicRecords = dynamicRecords(dynamicLabelRecordIds);
             record.setLabelField(DynamicNodeLabels.dynamicPointer(dynamicRecords), dynamicRecords);
         }
-        return new NodeCommand(new NodeRecord(id), record);
+        return new NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(id), record);
     }
 
     private static List<DynamicRecord> dynamicRecords(long... dynamicLabelRecordIds) {
@@ -87,14 +88,14 @@ public class Commands {
         after.setLinks(startNode, endNode, type);
         after.setInUse(true);
         after.setCreated();
-        return new RelationshipCommand(before, after);
+        return new RelationshipCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 
     public static LabelTokenCommand createLabelToken(int id, int nameId) {
         LabelTokenRecord before = new LabelTokenRecord(id);
         LabelTokenRecord after = new LabelTokenRecord(id);
         populateTokenRecord(after, nameId);
-        return new LabelTokenCommand(before, after);
+        return new LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 
     private static void populateTokenRecord(TokenRecord record, int nameId) {
@@ -112,14 +113,14 @@ public class Commands {
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(id);
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(id);
         populateTokenRecord(after, nameId);
-        return new PropertyKeyTokenCommand(before, after);
+        return new PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 
     public static RelationshipTypeTokenCommand createRelationshipTypeToken(int id, int nameId) {
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(id);
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(id);
         populateTokenRecord(after, nameId);
-        return new RelationshipTypeTokenCommand(before, after);
+        return new RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 
     public static RelationshipGroupCommand createRelationshipGroup(long id, int type) {
@@ -134,7 +135,7 @@ public class Commands {
                         NULL_REFERENCE.longValue(),
                         NULL_REFERENCE.longValue());
         after.setCreated();
-        return new RelationshipGroupCommand(before, after);
+        return new RelationshipGroupCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 
     public static SchemaRuleCommand createIndexRule(
@@ -159,7 +160,7 @@ public class Commands {
             block.setValueRecords(dynamicRecords(valueRecordIds));
         }
         record.addPropertyBlock(block);
-        return new PropertyCommand(new PropertyRecord(id), record);
+        return new PropertyCommand(LATEST_LOG_SERIALIZATION, new PropertyRecord(id), record);
     }
 
     public static CommandBatchToApply transaction(Command... commands) {

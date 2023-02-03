@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
@@ -62,6 +63,6 @@ public class KernelVersionTransactionApplierTest {
         MetaDataRecord after = new MetaDataRecord();
         after.initialize(true, to.version());
 
-        return new Command.MetaDataCommand(before, after);
+        return new Command.MetaDataCommand(LATEST_LOG_SERIALIZATION, before, after);
     }
 }

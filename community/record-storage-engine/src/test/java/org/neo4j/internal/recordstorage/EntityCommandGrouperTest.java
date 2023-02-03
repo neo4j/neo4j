@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -178,7 +179,8 @@ class EntityCommandGrouperTest {
 
     private PropertyCommand property(PrimitiveRecord owner) {
         long propertyId = nextPropertyId++;
-        return new PropertyCommand(new PropertyRecord(propertyId, owner), new PropertyRecord(propertyId, owner));
+        return new PropertyCommand(
+                LATEST_LOG_SERIALIZATION, new PropertyRecord(propertyId, owner), new PropertyRecord(propertyId, owner));
     }
 
     private static class Group {
@@ -219,13 +221,14 @@ class EntityCommandGrouperTest {
         NODE {
             @Override
             NodeCommand command(long value) {
-                return new NodeCommand(new NodeRecord(value), new NodeRecord(value));
+                return new NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(value), new NodeRecord(value));
             }
         },
         RELATIONSHIP {
             @Override
             RelationshipCommand command(long value) {
-                return new RelationshipCommand(new RelationshipRecord(value), new RelationshipRecord(value));
+                return new RelationshipCommand(
+                        LATEST_LOG_SERIALIZATION, new RelationshipRecord(value), new RelationshipRecord(value));
             }
         };
 

@@ -146,7 +146,7 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization {
         RelationshipGroupRecord after = readRelationshipGroupExtendedRecord(id, channel);
 
         markAfterRecordAsCreatedIfCommandLooksCreated(before, after);
-        return new Command.RelationshipGroupCommand(before, after);
+        return new Command.RelationshipGroupCommand(this, before, after);
     }
 
     private RelationshipGroupRecord readRelationshipGroupExtendedRecord(long id, ReadableChannel channel)

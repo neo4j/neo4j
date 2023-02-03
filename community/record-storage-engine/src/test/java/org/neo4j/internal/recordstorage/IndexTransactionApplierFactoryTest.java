@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -159,7 +160,7 @@ class IndexTransactionApplierFactoryTest {
                 .initialize(true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 0);
         NodeLabelsField.parseLabelsField(after).add(1, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
-        return new NodeCommand(new NodeRecord(nodeId), after);
+        return new NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(nodeId), after);
     }
 
     private static class OrderVerifyingUpdateListener implements IndexUpdateListener {

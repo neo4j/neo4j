@@ -32,6 +32,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
@@ -194,7 +195,7 @@ class RecordStorageEngineTest {
                 Visitor<StorageCommand, IOException> visitor = invocationOnMock.getArgument(0);
                 NodeRecord after = new NodeRecord(nodeId);
                 after.setInUse(true);
-                visitor.visit(new Command.NodeCommand(new NodeRecord(nodeId), after));
+                visitor.visit(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(nodeId), after));
                 return null;
             });
             // when

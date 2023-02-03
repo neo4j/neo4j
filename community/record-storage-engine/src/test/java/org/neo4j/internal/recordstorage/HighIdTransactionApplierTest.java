@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
@@ -167,11 +168,12 @@ class HighIdTransactionApplierTest {
         relationshipGroup.setSecondaryUnitIdOnLoad(20);
 
         // WHEN
-        tracker.visitNodeCommand(new NodeCommand(new NodeRecord(node.getId()), node));
+        var serialization = LATEST_LOG_SERIALIZATION;
+        tracker.visitNodeCommand(new NodeCommand(serialization, new NodeRecord(node.getId()), node));
         tracker.visitRelationshipCommand(
-                new RelationshipCommand(new RelationshipRecord(relationship.getId()), relationship));
+                new RelationshipCommand(serialization, new RelationshipRecord(relationship.getId()), relationship));
         tracker.visitRelationshipGroupCommand(new RelationshipGroupCommand(
-                new RelationshipGroupRecord(relationshipGroup.getId()), relationshipGroup));
+                serialization, new RelationshipGroupRecord(relationshipGroup.getId()), relationshipGroup));
         tracker.close();
 
         // THEN

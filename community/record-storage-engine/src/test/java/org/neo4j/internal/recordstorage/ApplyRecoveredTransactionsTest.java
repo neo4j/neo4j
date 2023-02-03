@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -106,17 +107,20 @@ class ApplyRecoveredTransactionsTest {
         long nodeId = neoStores.getNodeStore().nextId(NULL_CONTEXT);
         long relationshipId = neoStores.getRelationshipStore().nextId(NULL_CONTEXT);
         int type = 1;
+        LogCommandSerialization serialization = LATEST_LOG_SERIALIZATION;
         applyExternalTransaction(
                 1,
-                new NodeCommand(new NodeRecord(nodeId), inUse(created(new NodeRecord(nodeId)))),
+                new NodeCommand(serialization, new NodeRecord(nodeId), inUse(created(new NodeRecord(nodeId)))),
                 new RelationshipCommand(
-                        null, inUse(created(with(new RelationshipRecord(relationshipId), nodeId, nodeId, type)))));
+                        serialization,
+                        null,
+                        inUse(created(with(new RelationshipRecord(relationshipId), nodeId, nodeId, type)))));
 
         // and when, later on, recovering a transaction deleting some of those
         applyExternalTransaction(
                 2,
-                new NodeCommand(inUse(created(new NodeRecord(nodeId))), new NodeRecord(nodeId)),
-                new RelationshipCommand(null, new RelationshipRecord(relationshipId)));
+                new NodeCommand(serialization, inUse(created(new NodeRecord(nodeId))), new NodeRecord(nodeId)),
+                new RelationshipCommand(serialization, null, new RelationshipRecord(relationshipId)));
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
         assertEquals(nodeId + 1, neoStores.getNodeStore().getHighId());
