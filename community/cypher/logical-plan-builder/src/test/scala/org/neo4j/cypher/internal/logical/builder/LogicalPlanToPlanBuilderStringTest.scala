@@ -1921,6 +1921,16 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
+    "assertSameRelationship",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .assertSameRelationship("x")
+      .|.allNodeScan("x")
+      .allNodeScan("x")
+      .build()
+  )
+
+  testPlan(
     "deleteNode",
     new TestPlanBuilder()
       .produceResults("n")

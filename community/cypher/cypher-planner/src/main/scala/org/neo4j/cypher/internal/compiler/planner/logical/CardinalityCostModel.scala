@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
@@ -647,6 +648,9 @@ object CardinalityCostModel {
       nestedLoopChildrenWorkReduction(p, parentWorkReduction, batchSize, cardinalities)
 
     case _: AssertSameNode =>
+      (parentWorkReduction, WorkReduction.NoReduction)
+
+    case _: AssertSameRelationship =>
       (parentWorkReduction, WorkReduction.NoReduction)
 
     case u: Union =>

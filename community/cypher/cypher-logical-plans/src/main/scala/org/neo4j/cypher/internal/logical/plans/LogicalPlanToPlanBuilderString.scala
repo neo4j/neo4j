@@ -1094,6 +1094,8 @@ object LogicalPlanToPlanBuilderString {
         s"${triadicSelectionId.value.x}, $positivePredicate, ${wrapInQuotationsAndMkString(Seq(sourceId, targetId))}"
       case AssertSameNode(idName, _, _) =>
         wrapInQuotations(idName)
+      case AssertSameRelationship(idName, _, _) =>
+        wrapInQuotations(idName)
       case Prober(_, _) =>
         "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
       case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name).toSeq)

@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
@@ -2070,6 +2071,16 @@ case class LogicalPlan2PlanDescription(
           "AssertSameNode",
           children,
           Seq(Details(asPrettyString(node))),
+          variables,
+          withRawCardinalities
+        )
+
+      case AssertSameRelationship(idName, _, _) =>
+        PlanDescriptionImpl(
+          id,
+          "AssertSameRelationship",
+          children,
+          Seq(Details(asPrettyString(idName))),
           variables,
           withRawCardinalities
         )

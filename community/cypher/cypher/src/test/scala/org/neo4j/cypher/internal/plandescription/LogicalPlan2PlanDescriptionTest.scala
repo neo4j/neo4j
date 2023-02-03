@@ -159,6 +159,7 @@ import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedDropAlias
 import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedRemoteAliasManagement
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -5641,6 +5642,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(AssertSameNode("n", lhsLP, rhsLP), 2345.0),
       planDescription(id, "AssertSameNode", TwoChildren(lhsPD, rhsPD), Seq(details(Seq("n"))), Set("a", "b", "n"))
+    )
+  }
+
+  test("AssertSameRelationship") {
+    assertGood(
+      attach(AssertSameRelationship("r", lhsLP, rhsLP), 2345.0),
+      planDescription(
+        id,
+        "AssertSameRelationship",
+        TwoChildren(lhsPD, rhsPD),
+        Seq(details(Seq("r"))),
+        Set("a", "b", "r")
+      )
     )
   }
 

@@ -124,6 +124,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
@@ -1435,6 +1436,19 @@ case class LogicalPlanProducer(
       solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
     annotate(AssertSameNode(node, left, right), solved, providedOrders.get(left.id).fromLeft, context)
   }
+
+  def planAssertSameRelationship(
+    relationship: PatternRelationship,
+    left: LogicalPlan,
+    right: LogicalPlan,
+    context: LogicalPlanningContext
+  ): LogicalPlan =
+    annotate(
+      AssertSameRelationship(relationship.name, left, right),
+      solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery,
+      providedOrders.get(left.id).fromLeft,
+      context
+    )
 
   def planOptional(
     inputPlan: LogicalPlan,
