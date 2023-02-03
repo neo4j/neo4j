@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.diagnostics.profile;
 
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 
@@ -79,6 +80,10 @@ public class ProfileCommand extends AbstractAdminCommand {
 
     @Override
     protected void execute() throws Exception {
+        if (IS_OS_WINDOWS) {
+            ctx.out().println("This command is currently not supported on Windows.");
+            return;
+        }
         if (duration.isNegative() || duration.isZero()) {
             ctx.out().println("Duration needs to be positive");
             return;

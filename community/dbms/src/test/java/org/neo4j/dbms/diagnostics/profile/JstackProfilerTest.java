@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.output.NullPrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -51,6 +53,7 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
 @TestDirectoryExtension
+@DisabledOnOs(OS.WINDOWS)
 class JstackProfilerTest {
 
     @Inject

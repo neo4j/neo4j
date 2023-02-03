@@ -42,6 +42,8 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
@@ -58,6 +60,7 @@ import org.neo4j.time.Stopwatch;
 import picocli.CommandLine;
 
 @TestDirectoryExtension
+@DisabledOnOs(OS.WINDOWS)
 class ProfileCommandTest {
 
     @Inject

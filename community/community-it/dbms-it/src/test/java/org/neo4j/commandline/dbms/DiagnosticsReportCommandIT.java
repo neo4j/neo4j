@@ -40,6 +40,8 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.CommandTestUtils;
 import org.neo4j.cli.ContextInjectingFactory;
@@ -365,6 +367,7 @@ class DiagnosticsReportCommandIT {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void shouldRunProfileAsASubCommand() throws IOException {
         Path pidFile =
                 Config.defaults(GraphDatabaseSettings.neo4j_home, homeDir).get(BootloaderSettings.pid_file);

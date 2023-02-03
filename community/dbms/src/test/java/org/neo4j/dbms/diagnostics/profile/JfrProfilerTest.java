@@ -31,6 +31,8 @@ import jdk.jfr.consumer.RecordingFile;
 import org.apache.commons.io.output.NullPrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -45,6 +47,7 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 @TestDirectoryExtension
+@DisabledOnOs(OS.WINDOWS)
 class JfrProfilerTest {
     @Inject
     TestDirectory dir;
