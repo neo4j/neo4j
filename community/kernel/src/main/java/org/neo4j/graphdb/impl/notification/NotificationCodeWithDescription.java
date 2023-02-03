@@ -145,8 +145,7 @@ public enum NotificationCodeWithDescription {
             "A relationship is referenced more than once in the query, which leads to no results because relationships must not occur more than once in each result."),
     REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE(
             Status.Statement.RepeatedRelationshipReference,
-            "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result.")
-    ;
+            "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result.");
 
     private final Status status;
     private final String description;

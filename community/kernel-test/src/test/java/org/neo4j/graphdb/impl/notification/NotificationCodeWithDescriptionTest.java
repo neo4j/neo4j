@@ -19,20 +19,6 @@
  */
 package org.neo4j.graphdb.impl.notification;
 
-import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-
-import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.NotificationCategory;
-import org.neo4j.graphdb.SeverityLevel;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
@@ -70,6 +56,18 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.junit.jupiter.api.Test;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.NotificationCategory;
+import org.neo4j.graphdb.SeverityLevel;
 
 class NotificationCodeWithDescriptionTest {
     @Test
