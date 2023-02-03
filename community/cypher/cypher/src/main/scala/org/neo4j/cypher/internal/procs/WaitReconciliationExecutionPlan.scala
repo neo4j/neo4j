@@ -38,7 +38,6 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
-import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -66,8 +65,7 @@ case class WaitReconciliationExecutionPlan(
   databaseNamespaceParamKey: String,
   timeoutInSeconds: Long,
   source: ExecutionPlan,
-  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty)
+  parameterTransformer: ParameterTransformer = ParameterTransformer()
 ) extends AdministrationChainedExecutionPlan(Some(source)) {
 
   private val txIdParam = "__internal_transactionId"
@@ -110,21 +108,14 @@ case class WaitReconciliationExecutionPlan(
     var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val tx = tc.transaction()
-      val (updatedParams, notifications) = {
-        parameterValidator(
-          tx,
-          parameterConverter(
-            tx,
-            safeMergeParameters(systemParams, params, ctx.contextVars)
-          )
-        )
-      }
+      val securityContext = tc.securityContext()
+      val (updatedParams, notifications) =
+        parameterTransformer.transform(tx, securityContext, systemParams.updatedWith(ctx.contextVars), params)
 
       // We can't wait for a transaction from the same transaction so commit the existing transaction
       // and start a new one like PERIODIC COMMIT does
       val oldTxId = tc.commitAndRestartTx()
 
-      val securityContext = tc.securityContext()
       val fullAccess = securityContext.withMode(AccessMode.Static.FULL)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 

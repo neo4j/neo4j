@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.rendering.QueryRenderer
@@ -68,7 +69,7 @@ case class SystemProcedureCallPlanner(
       queryString,
       MapValue.EMPTY,
       checkCredentialsExpired = checkCredentialsExpired,
-      parameterConverter = (_, params) => addParameterDefaults(params),
+      parameterTransformer = ParameterTransformer().convert((_, params) => addParameterDefaults(params)),
       modeConverter = s => s.withMode(new OverriddenAccessMode(s.mode(), AccessMode.Static.READ))
     )
   }

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
@@ -60,7 +61,7 @@ case class DropUserExecutionPlanner(
             )
         },
       sourcePlan,
-      parameterConverter = userNameFields.nameConverter
+      parameterTransformer = ParameterTransformer().convert(userNameFields.nameConverter)
     )
   }
 }

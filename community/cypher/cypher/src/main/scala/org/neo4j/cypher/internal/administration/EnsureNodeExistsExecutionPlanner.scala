@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
@@ -66,7 +67,7 @@ case class EnsureNodeExistsExecutionPlanner(
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler(action, labelDescription, name),
       sourcePlan,
-      parameterConverter = nameFields.nameConverter
+      parameterTransformer = ParameterTransformer().convert(nameFields.nameConverter)
     )
   }
 
@@ -89,8 +90,9 @@ case class EnsureNodeExistsExecutionPlanner(
       VirtualValues.map(aliasNameFields.keys, aliasNameFields.values),
       queryHandler(action, DATABASE_NAME_LABEL_DESCRIPTION, aliasName),
       sourcePlan,
-      parameterConverter = aliasNameFields.nameConverter,
-      parameterValidator = checkNamespaceExists(aliasNameFields)
+      parameterTransformer = ParameterTransformer().convert(aliasNameFields.nameConverter).validate(
+        checkNamespaceExists(aliasNameFields)
+      )
     )
 
   }

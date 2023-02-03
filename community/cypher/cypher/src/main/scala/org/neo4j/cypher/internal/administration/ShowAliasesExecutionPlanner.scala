@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.ALIAS_PROPERTIES
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH
@@ -92,8 +93,9 @@ case class ShowAliasesExecutionPlanner(
       query,
       aliasNameFields.map(anf => VirtualValues.map(anf.keys, anf.values)).getOrElse(VirtualValues.EMPTY_MAP),
       source = sourcePlan,
-      parameterConverter = aliasNameFields.map(_.nameConverter).getOrElse(IdentityConverter),
-      parameterValidator = aliasNameFields.map(checkNamespaceExists).getOrElse((_, p) => (p, Set.empty))
+      parameterTransformer =
+        ParameterTransformer().convert(aliasNameFields.map(_.nameConverter).getOrElse(IdentityConverter))
+          .validate(aliasNameFields.map(checkNamespaceExists).getOrElse((_, p) => (p, Set.empty)))
     )
   }
 

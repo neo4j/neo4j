@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.administration
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.IdentityConverter
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExists
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
@@ -67,8 +66,8 @@ import org.neo4j.cypher.internal.ast.ShowDatabase.TYPE_COL
 import org.neo4j.cypher.internal.ast.ShowDatabase.WRITER_COL
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
-import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.dbms.database.DatabaseInfo
 import org.neo4j.dbms.database.DatabaseInfoService
@@ -146,7 +145,6 @@ case class ShowDatabasesExecutionPlanner(
   private val accessibleDbsKey = internalKey("accessibleDbs")
   private val dbms = resolver.resolveDependency(classOf[DatabaseManagementService])
   private val infoService = resolver.resolveDependency(classOf[DatabaseInfoService])
-  private val noOpValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty)
 
   def planShowDatabases(
     scope: DatabaseScope,
@@ -158,15 +156,16 @@ case class ShowDatabasesExecutionPlanner(
     val usernameKey = internalKey("username")
     val optionsKey = internalKey("options")
     val isCompositeKey = internalKey("isComposite")
-    val paramGenerator: (Transaction, SecurityContext) => MapValue =
-      (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext, yields, verbose)
+    val parameterGenerator: ParameterTransformer = ParameterTransformer((tx, securityContext) =>
+      generateShowAccessibleDatabasesParameter(tx, securityContext, yields, verbose)
+    )
 
-    val (extraFilter, params, paramConverter, paramValidator) = scope match {
+    val (extraFilter, params, parameterTransformer) = scope match {
       // show default database
       case _: DefaultDatabaseScope =>
-        (s"WHERE default = true", VirtualValues.EMPTY_MAP, IdentityConverter, noOpValidator)
+        (s"WHERE default = true", VirtualValues.EMPTY_MAP, parameterGenerator)
       // show home database
-      case _: HomeDatabaseScope => (s"WHERE home = true", VirtualValues.EMPTY_MAP, IdentityConverter, noOpValidator)
+      case _: HomeDatabaseScope => (s"WHERE home = true", VirtualValues.EMPTY_MAP, parameterGenerator)
       // show database name
       case NamedDatabaseScope(p) =>
         val nameFields =
@@ -174,11 +173,10 @@ case class ShowDatabasesExecutionPlanner(
         (
           s"WHERE any(a in aliases WHERE $$`${nameFields.nameKey}` = a.$NAME_PROPERTY AND  $$`${nameFields.namespaceKey}` = a.$NAMESPACE_PROPERTY)",
           VirtualValues.map(nameFields.keys, nameFields.values),
-          nameFields.nameConverter,
-          checkNamespaceExists(nameFields)(_, _)
+          parameterGenerator.convert(nameFields.nameConverter).validate(checkNamespaceExists(nameFields))
         )
       // show all databases
-      case _ => ("", VirtualValues.EMPTY_MAP, IdentityConverter, noOpValidator)
+      case _ => ("", VirtualValues.EMPTY_MAP, parameterGenerator)
     }
 
     def optionsOutputMap(keys: Set[String], mapName: String): String = {
@@ -309,9 +307,7 @@ case class ShowDatabasesExecutionPlanner(
       securityAuthorizationHandler,
       query,
       params,
-      parameterGenerator = paramGenerator,
-      parameterConverter = paramConverter,
-      parameterValidator = paramValidator
+      parameterTransformer = parameterTransformer
     )
   }
 

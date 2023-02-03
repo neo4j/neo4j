@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.AdministrationCommandRuntime.ParameterConverter
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
-import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
@@ -57,9 +55,7 @@ case class UpdatingSystemCommandExecutionPlan(
   source: Option[ExecutionPlan] = None,
   checkCredentialsExpired: Boolean = true,
   initAndFinally: InitAndFinally = NoInitAndFinally,
-  parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-  parameterConverter: ParameterConverter = (_, p) => p,
-  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty),
+  parameterTransformer: ParameterTransformer = ParameterTransformer(),
   assertPrivilegeAction: Transaction => Unit = _ => {}
 ) extends AdministrationChainedExecutionPlan(source) {
 
@@ -80,15 +76,8 @@ case class UpdatingSystemCommandExecutionPlan(
       val tx = tc.transaction()
       assertPrivilegeAction(tx)
 
-      val (updatedParams, notifications) = {
-        parameterValidator(
-          tx,
-          parameterConverter(
-            tx,
-            safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext))
-          )
-        )
-      }
+      val (updatedParams, notifications) =
+        parameterTransformer.transform(tx, securityContext, systemParams, params)
       val systemSubscriber =
         new SystemCommandQuerySubscriber(ctx, new RowDroppingQuerySubscriber(subscriber), queryHandler, updatedParams)
       assertCanWrite(tc, systemSubscriber)

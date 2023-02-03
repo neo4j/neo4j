@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
-import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
@@ -54,9 +53,7 @@ case class SystemCommandExecutionPlan(
   queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
   source: Option[ExecutionPlan] = None,
   checkCredentialsExpired: Boolean = true,
-  parameterGenerator: (Transaction, SecurityContext) => MapValue = (_, _) => MapValue.EMPTY,
-  parameterConverter: (Transaction, MapValue) => MapValue = (_, p) => p,
-  parameterValidator: (Transaction, MapValue) => (MapValue, Set[InternalNotification]) = (_, p) => (p, Set.empty),
+  parameterTransformer: ParameterTransformer = ParameterTransformer(),
   modeConverter: SecurityContext => SecurityContext = s => s.withMode(AccessMode.Static.READ)
 ) extends AdministrationChainedExecutionPlan(source) {
 
@@ -75,15 +72,8 @@ case class SystemCommandExecutionPlan(
     withFullDatabaseAccess(tc) { elevatedSecurityContext =>
       val securityContext = tc.securityContext()
       val tx = tc.transaction()
-      val (updatedParams, notifications) = {
-        parameterValidator(
-          tx,
-          parameterConverter(
-            tx,
-            safeMergeParameters(systemParams, params, parameterGenerator.apply(tx, securityContext))
-          )
-        )
-      }
+      val (updatedParams, notifications) =
+        parameterTransformer.transform(tx, securityContext, systemParams, params)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
       val execution = normalExecutionEngine.executeSubquery(

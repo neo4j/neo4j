@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.values.storable.Values
@@ -65,11 +66,12 @@ case class ShowUsersExecutionPlanner(
          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
          |""".stripMargin,
       VirtualValues.EMPTY_MAP,
-      parameterGenerator = (_, securityContext) =>
+      parameterTransformer = ParameterTransformer((_, securityContext) =>
         VirtualValues.map(
           Array(currentUserKey),
           Array(Values.utf8Value(securityContext.subject().executingUser()))
         )
+      )
     )
   }
 }

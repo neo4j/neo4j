@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
@@ -122,9 +123,10 @@ case class SetOwnPasswordExecutionPlanner(
         p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero()
         p.get(currentKeyBytes).asInstanceOf[ByteArray].zero()
       }),
-      parameterGenerator = (_, securityContext) =>
-        VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser()))),
-      parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
+      parameterTransformer = ParameterTransformer((_, securityContext) =>
+        VirtualValues.map(Array(usernameKey), Array(Values.utf8Value(securityContext.subject().executingUser())))
+      )
+        .convert((tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m)))
     )
   }
 

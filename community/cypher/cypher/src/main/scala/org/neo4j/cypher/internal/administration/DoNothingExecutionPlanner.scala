@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
@@ -141,7 +142,7 @@ case class DoNothingExecutionPlanner(
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler,
       sourcePlan,
-      parameterConverter = nameFields.nameConverter
+      parameterTransformer = ParameterTransformer().convert(nameFields.nameConverter)
     )
   }
 
@@ -172,8 +173,8 @@ case class DoNothingExecutionPlanner(
       ),
       queryHandler,
       sourcePlan,
-      parameterConverter = nameFields.nameConverter,
-      parameterValidator = checkNamespaceExists(nameFields)
+      parameterTransformer =
+        ParameterTransformer().convert(nameFields.nameConverter).validate(checkNamespaceExists(nameFields))
     )
   }
 

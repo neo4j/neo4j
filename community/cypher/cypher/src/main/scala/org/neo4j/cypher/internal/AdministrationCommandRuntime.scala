@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.Continue
 import org.neo4j.cypher.internal.procs.InitAndFinallyFunctions
+import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
@@ -85,7 +86,6 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 }
 
 object AdministrationCommandRuntime {
-  type ParameterConverter = (Transaction, MapValue) => MapValue
 
   private[internal] val followerError = "Administration commands must be executed on the LEADER server."
   private val secureHasher = new SecureHasher
@@ -276,8 +276,8 @@ object AdministrationCommandRuntime {
         initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
         finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero()
       ),
-      parameterConverter = mapValueConverter,
-      parameterValidator = isHomeDatabasePresent(homeDatabaseFields)
+      parameterTransformer = ParameterTransformer().convert(mapValueConverter)
+        .validate(isHomeDatabasePresent(homeDatabaseFields))
     )
   }
 
@@ -381,8 +381,8 @@ object AdministrationCommandRuntime {
       initAndFinally = InitAndFinallyFunctions(finallyFunction =
         p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero())
       ),
-      parameterConverter = mapper,
-      parameterValidator = isHomeDatabasePresent(homeDatabaseFields)
+      parameterTransformer =
+        ParameterTransformer().convert(mapper).validate(isHomeDatabasePresent(homeDatabaseFields))
     )
   }
 
@@ -460,7 +460,7 @@ object AdministrationCommandRuntime {
         ),
       sourcePlan,
       initAndFinally = InitAndFinallyFunctions(initFunction = initFunction),
-      parameterConverter = mapValueConverter
+      parameterTransformer = ParameterTransformer().convert(mapValueConverter)
     )
   }
 
