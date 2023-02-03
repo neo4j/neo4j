@@ -72,6 +72,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         pkToken.name should equal("name")
         semanticTable.id(pkToken) should equal(Some(PropertyKeyId(12)))
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -94,6 +95,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         pkToken.name should equal("name")
         semanticTable.id(pkToken) should equal(None)
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -116,6 +118,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         labelToken.name should equal("Resolved")
         semanticTable.id(labelToken) should equal(Some(LabelId(12)))
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -138,6 +141,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         labelToken.name should equal("Unresolved")
         semanticTable.id(labelToken) should equal(None)
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -171,6 +175,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         relTypeToken.name should equal("RESOLVED")
         semanticTable.id(relTypeToken) should equal(Some(RelTypeId(12)))
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -204,6 +209,7 @@ class ResolveTokensTest extends CypherFunSuite {
         )) =>
         relTypeToken.name should equal("UNRESOLVED")
         semanticTable.id(relTypeToken) should equal(None)
+      case _ => throw new IllegalArgumentException(s"Unexpected query: $query")
     }
   }
 
@@ -214,6 +220,7 @@ class ResolveTokensTest extends CypherFunSuite {
       normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
     rewriter(parsed) match {
       case query: Query => f(query)
+      case other        => throw new IllegalArgumentException(s"Unexpected value: $other")
     }
   }
 }

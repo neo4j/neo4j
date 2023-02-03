@@ -80,6 +80,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
                 case (_, _: AllNodesScan)    => 10
                 case (_, _: NodeByLabelScan) => 100
                 case (_, _: Sort)            => 1000
+                case (_, plan)               => throw new IllegalArgumentException(s"Unexpected plan: $plan")
               }
 
             logicalPlans.headOption.map(_._1)

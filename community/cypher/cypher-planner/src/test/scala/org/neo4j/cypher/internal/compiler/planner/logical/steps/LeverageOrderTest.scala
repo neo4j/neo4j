@@ -95,6 +95,7 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     leverageOrder(po, grouping, Set.empty) match {
       case OrderToLeverageWithAliases(Seq(v), _) =>
         v should be theSameInstanceAs (groupingInstance)
+      case order => throw new IllegalArgumentException(s"Unexpected order: $order")
     }
   }
 }

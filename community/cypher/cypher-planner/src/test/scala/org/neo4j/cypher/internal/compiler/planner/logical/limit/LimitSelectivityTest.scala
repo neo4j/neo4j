@@ -325,6 +325,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
               .getOrElse(Selectivity.ONE)
           )
         }
+      case _ => sys.error("the impossible happened")
     }
   }
 

@@ -281,6 +281,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
           _,
           _
         ) => ()
+      case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
     }
   }
 
@@ -313,6 +314,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
           _
         ) =>
         args should equal(Set("r", "a1"))
+      case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
     }
   }
 
@@ -344,6 +346,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
         predicates.exprs should equal(ListSet(predicate))
+      case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
     }
   }
 
@@ -368,6 +371,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
           _
         ) =>
         args should equal(Set("r"))
+      case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
     }
   }
 

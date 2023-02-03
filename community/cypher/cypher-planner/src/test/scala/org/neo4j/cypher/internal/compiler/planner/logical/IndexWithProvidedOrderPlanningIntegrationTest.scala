@@ -128,8 +128,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val plan =
         new given {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
-        } getLogicalPlanFor (s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults =
-          false)
+        }.getLogicalPlanFor(
+          s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
+          stripProduceResults = false
+        )
 
       plan._1 should equal(
         new LogicalPlanBuilder()
@@ -557,8 +559,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val plan =
         new given {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
-        } getLogicalPlanFor (s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults =
-          false)
+        }.getLogicalPlanFor(
+          s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
+          stripProduceResults = false
+        )
 
       plan._1 should equal(
         new LogicalPlanBuilder()
@@ -777,8 +781,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val plan =
         new given {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
-        } getLogicalPlanFor (s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
-        stripProduceResults = false)
+        }.getLogicalPlanFor(
+          s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
+          stripProduceResults = false
+        )
 
       val so = sortOrder("m.prop")
       withClue(plan._1) {
@@ -801,8 +807,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val plan =
         new given {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
-        } getLogicalPlanFor (s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
-        stripProduceResults = false)
+        }.getLogicalPlanFor(
+          s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
+          stripProduceResults = false
+        )
 
       val so = sortOrder("m.prop")
       withClue(plan._1) {

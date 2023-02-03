@@ -1712,6 +1712,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     ): Cardinality = (fromLabel, relTypeId, toLabel) match {
       case (None, None, None)                         => allRelCardinality
       case (None, relTypeId: Option[RelTypeId], None) => labelOrRelCardinalities(relTypeId.get)
+      case ids                                        => throw new IllegalArgumentException(s"Unexpected IDs: $ids")
     }
 
     override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelOrRelCardinalities(labelId.get)
@@ -1823,12 +1824,14 @@ class RangeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
     // Only non-negative input values are allowed.
     val xs = 0 to 500_000 by 1
 
-    xs.sliding(2).foreach { case Seq(x, y) =>
-      withClue(x) {
-        val fx = probLognormalGreaterThan1(x)
-        val fy = probLognormalGreaterThan1(y)
-        fy should be > fx
-      }
+    xs.sliding(2).foreach {
+      case Seq(x, y) =>
+        withClue(x) {
+          val fx = probLognormalGreaterThan1(x)
+          val fy = probLognormalGreaterThan1(y)
+          fy should be > fx
+        }
+      case _ => sys.error("the impossible happened")
     }
   }
 }

@@ -54,12 +54,14 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuit
       case TrigramIndexProvider.DESCRIPTOR => IndexCapabilities.text_2_0
       case RangeIndexProvider.DESCRIPTOR   => IndexCapabilities.range
       case PointIndexProvider.DESCRIPTOR   => IndexCapabilities.point
+      case _ => throw new IllegalArgumentException(s"Unexpected descriptor: $indexProviderDescriptor")
     }
 
   private def indexProviders(indexType: IndexType): Seq[IndexProviderDescriptor] = indexType match {
     case IndexType.TEXT  => Seq(TextIndexProvider.DESCRIPTOR, TrigramIndexProvider.DESCRIPTOR)
     case IndexType.RANGE => Seq(RangeIndexProvider.DESCRIPTOR)
     case IndexType.POINT => Seq(PointIndexProvider.DESCRIPTOR)
+    case _               => throw new IllegalArgumentException(s"Unexpected index type: $indexType")
   }
 
   test("processGraphCount for node indexes") {

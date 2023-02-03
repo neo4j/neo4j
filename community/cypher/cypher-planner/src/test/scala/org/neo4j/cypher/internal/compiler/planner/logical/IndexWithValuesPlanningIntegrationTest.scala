@@ -89,6 +89,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set("n"),
           Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
+      case _ => sys.error("the impossible happened")
     }.toSeq should contain(plan._1)
   }
 
@@ -118,6 +119,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set("n"),
           Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
+      case _ => sys.error("the impossible happened")
     }.toSeq should contain(plan._1)
   }
 
@@ -147,6 +149,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set("n"),
           Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
         )
+      case _ => sys.error("the impossible happened")
     }.toSeq should contain(plan._1)
   }
 
