@@ -56,7 +56,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
-@Disabled // TODO: Rewrite this test
+@Disabled("Disabled since 2022-05-30. As of 2023-02-03 there are plans to reevaluating this test.")
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @ExtendWith(SuppressOutputExtension.class)
