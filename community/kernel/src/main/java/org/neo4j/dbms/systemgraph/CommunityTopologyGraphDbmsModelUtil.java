@@ -334,18 +334,18 @@ public final class CommunityTopologyGraphDbmsModelUtil {
     }
 
     private static Optional<Node> findAliasNodeInDefaultNamespace(Transaction tx, String databaseName) {
-        return tx
-                .findNodes(
-                        TopologyGraphDbmsModel.DATABASE_NAME_LABEL, TopologyGraphDbmsModel.NAME_PROPERTY, databaseName)
-                .stream()
-                .filter(n -> getOptionalPropertyOnNode(
-                                TopologyGraphDbmsModel.DATABASE_NAME,
-                                n,
-                                TopologyGraphDbmsModel.NAMESPACE_PROPERTY,
-                                String.class)
-                        .orElse(TopologyGraphDbmsModel.DEFAULT_NAMESPACE)
-                        .equals(TopologyGraphDbmsModel.DEFAULT_NAMESPACE))
-                .findFirst();
+        try (var nodes = tx.findNodes(
+                TopologyGraphDbmsModel.DATABASE_NAME_LABEL, TopologyGraphDbmsModel.NAME_PROPERTY, databaseName)) {
+            return nodes.stream()
+                    .filter(n -> getOptionalPropertyOnNode(
+                                    TopologyGraphDbmsModel.DATABASE_NAME,
+                                    n,
+                                    TopologyGraphDbmsModel.NAMESPACE_PROPERTY,
+                                    String.class)
+                            .orElse(TopologyGraphDbmsModel.DEFAULT_NAMESPACE)
+                            .equals(TopologyGraphDbmsModel.DEFAULT_NAMESPACE))
+                    .findFirst();
+        }
     }
 
     static <T> Optional<T> ignoreConcurrentDeletes(Supplier<Optional<T>> operation) {
