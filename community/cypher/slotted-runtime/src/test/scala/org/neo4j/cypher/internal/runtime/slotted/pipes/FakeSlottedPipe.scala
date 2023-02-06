@@ -42,8 +42,10 @@ case class FakeSlottedPipe(data: Iterable[Map[Any, Any]], slots: SlotConfigurati
     extends Pipe with MockitoSugar {
 
   private var _it: CountingIterator[CypherRow] = _
+  private var _createCount = 0
 
   def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
+    _createCount += 1
     val it = data.iterator.map { values =>
       val result = SlottedRow(slots)
 
@@ -75,4 +77,6 @@ case class FakeSlottedPipe(data: Iterable[Map[Any, Any]], slots: SlotConfigurati
   def wasClosed: Boolean = _it.wasClosed
 
   def currentIterator: CountingIterator[CypherRow] = _it
+
+  def createCount: Int = _createCount
 }

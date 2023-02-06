@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator.INIT_CHUNK_SIZE
+import org.neo4j.function.Suppliers
 import org.neo4j.io.IOUtils
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
@@ -203,11 +204,15 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
     override protected[this] def closeMore(): Unit = self.close()
   }
 
-  // this is our own implementation, [[Iterator.++]] is overly complex, we probably don't need to be so specialized.
-  def ++[B >: T](that: => ClosingIterator[B]): ClosingIterator[B] = new ClosingIterator[B] {
+  /**
+   * Lazily concatenates two closing iterators.
+   * 
+   * Note!! If `that` is never materialised it will not be closed!
+   */
+  def addAllLazy[B >: T](that: () => ClosingIterator[B]): ClosingIterator[B] = new ClosingIterator[B] {
     // We read this into a lazy local variable here to avoid creating a new `that` iterator multiple times.
     // This is OK, since we expect to close both sides anyway.
-    private lazy val eagerThat = that
+    private val lazyThat = Suppliers.lazySingleton(() => that.apply())
 
     private var cur: ClosingIterator[B] = self
 
@@ -215,7 +220,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
       if (cur.hasNext) {
         true
       } else if (cur eq self) {
-        cur = eagerThat
+        cur = lazyThat.get()
         cur.hasNext
       } else {
         false
@@ -226,9 +231,8 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
 
     override protected[this] def closeMore(): Unit = {
       self.close()
-      eagerThat match {
-        case closingIterator: ClosingIterator[_] => closingIterator.close()
-        case _                                   =>
+      if (lazyThat.isInitialised) {
+        lazyThat.get().close()
       }
     }
   }

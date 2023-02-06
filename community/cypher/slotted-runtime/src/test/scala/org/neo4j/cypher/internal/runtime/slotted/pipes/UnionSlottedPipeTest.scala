@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UnionSlottedPipeTest extends CypherFunSuite {
 
-  test("Close should close RHS and LHS.") {
+  test("close should close rhs and lhs when exhausted") {
     val slots = SlotConfiguration.empty
       .newLong("a", nullable = false, CTNode)
       .newLong("b", nullable = false, CTNode)
@@ -38,9 +38,59 @@ class UnionSlottedPipeTest extends CypherFunSuite {
     val pipe = UnionSlottedPipe(lhs, rhs, slots, mapping, mapping)()
     val result = pipe.createResults(QueryStateHelper.empty)
     result.next()
+    result.next()
+    result.next()
+    result.next()
+    result.hasNext shouldBe false
+
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 1
+  }
+
+  test("close should close rhs and lhs") {
+    val slots = SlotConfiguration.empty
+      .newLong("a", nullable = false, CTNode)
+      .newLong("b", nullable = false, CTNode)
+
+    val lhs = FakeSlottedPipe(Seq(Map("a" -> 10), Map("a" -> 11)), slots)
+    val rhs = FakeSlottedPipe(Seq(Map("b" -> 20), Map("b" -> 21)), slots)
+    val mapping = SlottedPipeMapper.computeUnionRowMapping(slots, slots)
+    val pipe = UnionSlottedPipe(lhs, rhs, slots, mapping, mapping)()
+    val result = pipe.createResults(QueryStateHelper.empty)
+    result.next()
+    result.next()
+    result.next()
+    result.hasNext shouldBe true
+
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe false
+
     result.close()
 
     lhs.wasClosed shouldBe true
     rhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 1
+  }
+
+  test("close should not close rhs if it's not used") {
+    val slots = SlotConfiguration.empty
+      .newLong("a", nullable = false, CTNode)
+      .newLong("b", nullable = false, CTNode)
+
+    val lhs = FakeSlottedPipe(Seq(Map("a" -> 10), Map("a" -> 11)), slots)
+    val rhs = FakeSlottedPipe(Seq(Map("b" -> 20), Map("b" -> 21)), slots)
+    val mapping = SlottedPipeMapper.computeUnionRowMapping(slots, slots)
+    val pipe = UnionSlottedPipe(lhs, rhs, slots, mapping, mapping)()
+    val result = pipe.createResults(QueryStateHelper.empty)
+    result.next()
+    result.next()
+    result.close()
+
+    lhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 0
   }
 }

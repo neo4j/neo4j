@@ -71,8 +71,11 @@ case class NodeLeftOuterHashJoinPipe(nodeVariables: Set[String], lhs: Pipe, rhs:
       })
     }
 
-    val rowsWithNullAsJoinKey = probeTable.nullRows.map(addNulls)
+    def rowsWithNullAsJoinKey = probeTable.nullRows.map(addNulls)
 
-    (joinedRows ++ rowsWithNullAsJoinKey ++ rowsWithoutRhsMatch).closing(probeTable)
+    joinedRows
+      .addAllLazy(() => rowsWithNullAsJoinKey)
+      .addAllLazy(() => rowsWithoutRhsMatch)
+      .closing(probeTable)
   }
 }

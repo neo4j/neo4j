@@ -33,10 +33,12 @@ import scala.collection.Map
 case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
 
   private var _countingIterator: CountingIterator[CypherRow] = _
+  private var _createCount = 0
 
   def this(data: Iterator[Map[String, Any]]) = this(data.toList)
 
   override def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
+    _createCount += 1
     _countingIterator = new CountingIterator(data.map(m =>
       CypherRow(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))
     ).iterator)
@@ -50,6 +52,8 @@ case class FakePipe(data: Iterable[Map[String, Any]]) extends Pipe {
   def resetClosed(): Unit = _countingIterator.resetClosed()
 
   def currentIterator: CountingIterator[CypherRow] = _countingIterator
+
+  def createCount: Int = _createCount
 
   override val id: Id = Id.INVALID_ID
 }

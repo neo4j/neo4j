@@ -26,5 +26,5 @@ import org.neo4j.cypher.internal.util.attribution.Id
 case class UnionPipe(l: Pipe, r: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] =
-    l.createResults(state) ++ r.createResults(state)
+    l.createResults(state).addAllLazy(() => r.createResults(state))
 }

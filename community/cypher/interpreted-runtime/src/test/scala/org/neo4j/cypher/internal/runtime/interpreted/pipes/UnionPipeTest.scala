@@ -24,15 +24,55 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UnionPipeTest extends CypherFunSuite {
 
-  test("Close should close RHS and LHS.") {
+  test("close should close rhs and lhs when exhausted") {
     val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
     val rhs = FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
     val pipe = UnionPipe(lhs, rhs)()
     val result = pipe.createResults(QueryStateHelper.empty)
     result.next()
+    result.next()
+    result.next()
+    result.next()
+    result.hasNext shouldBe false
+
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 1
+  }
+
+  test("close should close rhs and lhs") {
+    val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
+    val pipe = UnionPipe(lhs, rhs)()
+    val result = pipe.createResults(QueryStateHelper.empty)
+    result.next()
+    result.next()
+    result.next()
+    result.hasNext shouldBe true
+
+    lhs.wasClosed shouldBe true
+    rhs.wasClosed shouldBe false
+
     result.close()
 
     lhs.wasClosed shouldBe true
     rhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 1
+  }
+
+  test("close should not close rhs if it's not used") {
+    val lhs = FakePipe(Seq(Map("a" -> 10), Map("a" -> 11)))
+    val rhs = FakePipe(Seq(Map("b" -> 20), Map("b" -> 21)))
+    val pipe = UnionPipe(lhs, rhs)()
+    val result = pipe.createResults(QueryStateHelper.empty)
+    result.next()
+    result.next()
+    result.close()
+
+    lhs.wasClosed shouldBe true
+    lhs.createCount shouldBe 1
+    rhs.createCount shouldBe 0
   }
 }

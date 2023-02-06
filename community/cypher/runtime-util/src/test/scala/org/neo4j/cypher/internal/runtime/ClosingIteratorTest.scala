@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator.MemoryTrackingEagerBatchingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.asClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.TestSupplier
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.forever
 import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -200,11 +201,11 @@ class ClosingIteratorTest extends CypherFunSuite {
     outer.closed shouldBe true
   }
 
-  test("++ closes when depleted and returns correct results") {
+  test("addAllLazy closes when depleted and returns correct results") {
     // given
     val first = values(1, 2)
-    val second = values(3, 4)
-    val concatted = first ++ second
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
     // when
     concatted.hasNext shouldBe true
     concatted.next() shouldBe 1
@@ -217,14 +218,15 @@ class ClosingIteratorTest extends CypherFunSuite {
     concatted.hasNext shouldBe false
     // then
     first.closed shouldBe true
-    second.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
   }
 
-  test("++ when first is empty") {
+  test("addAllLazy when first is empty") {
     // given
     val first = values()
-    val second = values(3, 4)
-    val concatted = first ++ second
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
     // when
     concatted.hasNext shouldBe true
     concatted.next() shouldBe 3
@@ -233,14 +235,15 @@ class ClosingIteratorTest extends CypherFunSuite {
     concatted.hasNext shouldBe false
     // then
     first.closed shouldBe true
-    second.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
   }
 
-  test("++ when second is empty") {
+  test("addAllLazy when second is empty") {
     // given
     val first = values(3, 4)
-    val second = values()
-    val concatted = first ++ second
+    val second = TestSupplier(values())
+    val concatted = first addAllLazy second
     // when
     concatted.hasNext shouldBe true
     concatted.next() shouldBe 3
@@ -249,27 +252,15 @@ class ClosingIteratorTest extends CypherFunSuite {
     concatted.hasNext shouldBe false
     // then
     first.closed shouldBe true
-    second.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
   }
 
-  test("++ closes on explicit close while iterating over first") {
+  test("addAllLazy closes on explicit close while iterating over second") {
     // given
     val first = values(1, 2)
-    val second = values(3, 4)
-    val concatted = first ++ second
-    // when
-    concatted.next()
-    concatted.close()
-    // then
-    first.closed shouldBe true
-    second.closed shouldBe true
-  }
-
-  test("++ closes on explicit close while iterating over second") {
-    // given
-    val first = values(1, 2)
-    val second = values(3, 4)
-    val concatted = first ++ second
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
     // when
     concatted.next()
     concatted.next()
@@ -277,10 +268,11 @@ class ClosingIteratorTest extends CypherFunSuite {
     concatted.close()
     // then
     first.closed shouldBe true
-    second.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
   }
 
-  test("++ close should not regenerate iterator") {
+  test("addAllLazy close should not regenerate iterator") {
     // given
     // Inlining so that the second argument is call-by-name
     var c = 0
@@ -289,7 +281,7 @@ class ClosingIteratorTest extends CypherFunSuite {
       values(v: _*)
     }
 
-    val concatted = values(1) ++ countingValues(2)
+    val concatted = values(1).addAllLazy(() => countingValues(2))
 
     // when
     // exhaust
@@ -304,7 +296,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     c shouldBe 1
   }
 
-  test("++ close should not eagerize second iterator") {
+  test("addAllLazy close should not eagerize second iterator") {
     // given
     // Inlining so that the second argument is call-by-name
     var created = false
@@ -314,7 +306,7 @@ class ClosingIteratorTest extends CypherFunSuite {
     }
 
     // when
-    val concatted = values(1) ++ rememberingValues(2)
+    val concatted = values(1).addAllLazy(() => rememberingValues(2))
 
     // then
     created shouldBe false
@@ -325,6 +317,51 @@ class ClosingIteratorTest extends CypherFunSuite {
 
     // then
     created shouldBe true
+  }
+
+  test("addAllLazy close should not close rhs if not initialised") {
+    // given
+    val first = values(1, 2)
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
+    // when
+    concatted.next()
+    concatted.close()
+    // then
+    first.closed shouldBe true
+    second.isUsed shouldBe false
+  }
+
+  test("addAllLazy close should close rhs if initialised") {
+    // given
+    val first = values(1, 2)
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
+    // when
+    concatted.next()
+    concatted.next()
+    concatted.next()
+    concatted.close()
+    // then
+    first.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
+  }
+
+  test("addAllLazy close should close rhs if initialised 2") {
+    // given
+    val first = values(1, 2)
+    val second = TestSupplier(values(3, 4))
+    val concatted = first addAllLazy second
+    // when
+    concatted.next()
+    concatted.next()
+    concatted.hasNext
+    concatted.close()
+    // then
+    first.closed shouldBe true
+    second.isUsed shouldBe true
+    second.iter.closed shouldBe true
   }
 
   test("single returns one element") {
@@ -541,5 +578,15 @@ object ClosingIteratorTest {
   def forever[T](value: T): TestClosingIterator[T] = new TestClosingIterator[T] {
     override protected[this] def innerHasNext: Boolean = true
     override def next(): T = value
+  }
+
+  case class TestSupplier[T](iter: TestClosingIterator[T]) extends (() => ClosingIterator[T]) {
+    var isUsed: Boolean = false
+
+    override def apply(): ClosingIterator[T] = {
+      assert(!isUsed)
+      isUsed = true
+      iter
+    }
   }
 }

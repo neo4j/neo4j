@@ -38,10 +38,8 @@ case class UnionSlottedPipe(
 )(val id: Id = Id.INVALID_ID) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
-    def left = lhs.createResults(state).map(mapRow(slots, lhsMapping, _, state))
-    def right = rhs.createResults(state).map(mapRow(slots, rhsMapping, _, state))
-    left ++ right
-
+    lhs.createResults(state).map(mapRow(slots, lhsMapping, _, state))
+      .addAllLazy(() => rhs.createResults(state).map(mapRow(slots, rhsMapping, _, state)))
   }
 }
 
