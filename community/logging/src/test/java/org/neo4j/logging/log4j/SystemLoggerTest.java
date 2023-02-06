@@ -62,7 +62,8 @@ class SystemLoggerTest {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             SystemLogger.printErrorMessages(new PrintStream(out));
             assertThat(out.toString()).contains("ERROR Error parsing");
-            suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:1:17");
+            assertThat(suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:1:17"))
+                    .isTrue();
         } finally {
             // Make sure to clear listeners
             SystemLogger.errorsEncounteredDuringSetup();
