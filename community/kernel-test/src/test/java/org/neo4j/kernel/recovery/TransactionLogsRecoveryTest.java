@@ -74,6 +74,7 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -114,6 +115,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
+import org.neo4j.time.Clocks;
 
 @Neo4jLayoutExtension
 class TransactionLogsRecoveryTest {
@@ -225,8 +227,10 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             recoveryLogFiles,
+                            KernelVersionProvider.LATEST_VERSION,
                             NO_MONITOR,
                             mock(InternalLog.class),
+                            Clocks.systemClock(),
                             false) {
                         private int nr;
 
@@ -339,8 +343,10 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             logFiles,
+                            KernelVersionProvider.LATEST_VERSION,
                             NO_MONITOR,
                             mock(InternalLog.class),
+                            Clocks.systemClock(),
                             false),
                     logPruner,
                     schemaLife,
@@ -639,8 +645,10 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             logFiles,
+                            KernelVersionProvider.LATEST_VERSION,
                             NO_MONITOR,
                             mock(InternalLog.class),
+                            Clocks.systemClock(),
                             false),
                     logPruner,
                     schemaLife,

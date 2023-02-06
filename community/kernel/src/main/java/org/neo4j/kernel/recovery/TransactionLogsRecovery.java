@@ -87,6 +87,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         Stopwatch recoveryStartTime = Stopwatch.start();
 
+        TransactionIdTracker transactionIdTracker = new TransactionIdTracker();
         LogPosition recoveryStartPosition = recoveryStartInformation.getTransactionLogPosition();
 
         monitor.recoveryRequired(recoveryStartPosition);
@@ -98,7 +99,6 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-                TransactionIdTracker transactionIdTracker = new TransactionIdTracker();
                 try (var transactionsToRecover =
                                 recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
                         var recoveryVisitor = recoveryService.getRecoveryApplier(
@@ -183,11 +183,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                             }
                         } else {
                             recoveryStartupChecker.checkIfCanceled();
-                            if (transactionIdTracker.isCompletedTransaction(nextCommandBatch.txId())) {
+                            if (transactionIdTracker.replayTransaction(nextCommandBatch.txId())) {
                                 recoveryVisitor.visit(nextCommandBatch);
                                 monitor.batchRecovered(nextCommandBatch);
                             } else {
-                                monitor.batchRolledback(nextCommandBatch);
+                                monitor.batchApplySkipped(nextCommandBatch);
                             }
                             if (lastCommandBatch == null || lastCommandBatch.txId() < nextCommandBatch.txId()) {
                                 lastCommandBatch = nextCommandBatch;
@@ -217,8 +217,10 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     monitor.failToRecoverTransactionsAfterPosition(t, recoveryStartPosition);
                 }
             }
-            progressReporter.completed();
             logsTruncator.truncate(recoveryToPosition);
+            recoveryService.rollbackTransactions(recoveryToPosition, transactionIdTracker, lastCommandBatch);
+
+            progressReporter.completed();
         }
 
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {

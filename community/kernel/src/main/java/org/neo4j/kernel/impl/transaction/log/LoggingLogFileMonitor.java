@@ -34,12 +34,12 @@ import org.neo4j.logging.InternalLog;
 
 public class LoggingLogFileMonitor
         implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor {
-    private static final int UNKNOWN_TRANSACTION = -1;
-    private long minRecoveredTransaction = UNKNOWN_TRANSACTION;
-    private long maxTransactionRecovered = -1;
+    private long minObservedTransaction = Long.MAX_VALUE;
+    private long maxObservedTransaction = Long.MIN_VALUE;
     private final InternalLog log;
     private int numberOfRecoveredTransactions;
-    private int numberOfRolledbackTransactions;
+    private int skippedFirstBatches;
+    private int observedRollbacks;
 
     public LoggingLogFileMonitor(InternalLog log) {
         this.log = log;
@@ -53,11 +53,14 @@ public class LoggingLogFileMonitor
     @Override
     public void recoveryCompleted(long recoveryTimeInMilliseconds) {
         log.info(format(
-                "Recovery completed. %d transactions applied [first:%s, last:%s], %d transactions rolled back. Time spent: %s.",
+                "Recovery completed. Observed transactions range [first:%s, last:%s]: %d transactions applied, "
+                        + "%d not completed transactions rolled back, "
+                        + "skipped applying %d previously rolled back transactions. Time spent: %s.",
+                valueOrDefault(minObservedTransaction, Long.MAX_VALUE),
+                valueOrDefault(maxObservedTransaction, Long.MIN_VALUE),
                 numberOfRecoveredTransactions,
-                valueOrDefault(minRecoveredTransaction),
-                valueOrDefault(maxTransactionRecovered),
-                numberOfRolledbackTransactions,
+                numberOfRecoveredTransactions(),
+                observedRollbacks,
                 duration(recoveryTimeInMilliseconds)));
     }
 
@@ -94,19 +97,20 @@ public class LoggingLogFileMonitor
 
     @Override
     public void batchRecovered(CommittedCommandBatch committedBatch) {
-        if (minRecoveredTransaction == -1) {
-            minRecoveredTransaction = committedBatch.txId();
-        }
-        maxTransactionRecovered = Math.max(maxTransactionRecovered, committedBatch.txId());
+        trackTxId(committedBatch.txId());
         if (committedBatch.commandBatch().isLast()) {
             numberOfRecoveredTransactions++;
         }
     }
 
     @Override
-    public void batchRolledback(CommittedCommandBatch committedBatch) {
+    public void batchApplySkipped(CommittedCommandBatch committedBatch) {
+        trackTxId(committedBatch.txId());
         if (committedBatch.commandBatch().isFirst()) {
-            numberOfRolledbackTransactions++;
+            skippedFirstBatches++;
+        }
+        if (committedBatch.isRollback()) {
+            observedRollbacks++;
         }
     }
 
@@ -152,8 +156,17 @@ public class LoggingLogFileMonitor
         log.info(sb.append('.').toString());
     }
 
-    private static String valueOrDefault(long value) {
-        return value == UNKNOWN_TRANSACTION ? "None" : String.valueOf(value);
+    private void trackTxId(long txId) {
+        minObservedTransaction = Math.min(minObservedTransaction, txId);
+        maxObservedTransaction = Math.max(maxObservedTransaction, txId);
+    }
+
+    private int numberOfRecoveredTransactions() {
+        return skippedFirstBatches - observedRollbacks;
+    }
+
+    private static String valueOrDefault(long value, long unknownValue) {
+        return value == unknownValue ? "None" : String.valueOf(value);
     }
 
     private static String describeBatch(CommittedCommandBatch commandBatch) {

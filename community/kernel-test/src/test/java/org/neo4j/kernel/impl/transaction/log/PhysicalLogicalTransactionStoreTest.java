@@ -68,6 +68,7 @@ import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.RecoveryStartInformation;
+import org.neo4j.kernel.recovery.TransactionIdTracker;
 import org.neo4j.kernel.recovery.TransactionLogsRecovery;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -444,6 +445,14 @@ class PhysicalLogicalTransactionStoreTest {
         public RecoveryApplier getRecoveryApplier(
                 TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) {
             return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock(RecoveryApplier.class) : visitor;
+        }
+
+        @Override
+        public LogPosition rollbackTransactions(
+                LogPosition writePosition,
+                TransactionIdTracker transactionTracker,
+                CommittedCommandBatch commandBatch) {
+            return writePosition;
         }
 
         @Override

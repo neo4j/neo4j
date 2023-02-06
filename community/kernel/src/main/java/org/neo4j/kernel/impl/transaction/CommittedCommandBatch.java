@@ -35,4 +35,6 @@ public interface CommittedCommandBatch {
     long timeWritten();
 
     long txId();
+
+    boolean isRollback();
 }

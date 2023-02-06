@@ -128,18 +128,15 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
             LogEntryStart startEntry = null;
             while ((logEntry = logEntryReader.readLogEntry(channel)) != null) {
                 switch (logEntry.getType()) {
-                    case TX_START:
-                        startEntry = (LogEntryStart) logEntry;
-                        break;
-                    case TX_COMMIT:
+                    case TX_START -> startEntry = (LogEntryStart) logEntry;
+                    case TX_COMMIT -> {
                         LogEntryCommit commit = (LogEntryCommit) logEntry;
                         if (commit.getTxId() == startTransactionId) {
                             transactionStartEntry = startEntry;
                             return false;
                         }
-                        break;
-                    default: // just skip commands
-                        break;
+                    }
+                    default -> {} // just skip commands
                 }
             }
             return true;

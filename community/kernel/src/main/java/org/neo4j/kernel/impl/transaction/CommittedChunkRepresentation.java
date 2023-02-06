@@ -83,6 +83,11 @@ public record CommittedChunkRepresentation(
         return chunkEnd.getTransactionId();
     }
 
+    @Override
+    public boolean isRollback() {
+        return false;
+    }
+
     private static LogEntryChunkStart createChunkStart(LogEntry start) {
         if (start instanceof LogEntryChunkStart chunkStart) {
             return chunkStart;

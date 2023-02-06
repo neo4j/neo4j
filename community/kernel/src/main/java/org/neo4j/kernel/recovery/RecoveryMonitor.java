@@ -52,5 +52,5 @@ public interface RecoveryMonitor {
         // noop
     }
 
-    default void batchRolledback(CommittedCommandBatch committedBatch) {}
+    default void batchApplySkipped(CommittedCommandBatch committedBatch) {}
 }

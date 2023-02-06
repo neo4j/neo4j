@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.neo4j.io.fs.PhysicalFlushableChannel.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -26,14 +27,23 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.time.Clock;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -45,7 +55,10 @@ public class DefaultRecoveryService implements RecoveryService {
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
+    private final LogFiles logFiles;
+    private final KernelVersionProvider versionProvider;
     private final InternalLog log;
+    private final Clock clock;
     private final boolean doParallelRecovery;
 
     DefaultRecoveryService(
@@ -54,14 +67,19 @@ public class DefaultRecoveryService implements RecoveryService {
             LogicalTransactionStore logicalTransactionStore,
             LogVersionRepository logVersionRepository,
             LogFiles logFiles,
+            KernelVersionProvider versionProvider,
             RecoveryStartInformationProvider.Monitor monitor,
             InternalLog log,
+            Clock clock,
             boolean doParallelRecovery) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
+        this.logFiles = logFiles;
+        this.versionProvider = versionProvider;
         this.log = log;
+        this.clock = clock;
         this.doParallelRecovery = doParallelRecovery;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
@@ -78,6 +96,33 @@ public class DefaultRecoveryService implements RecoveryService {
             return new ParallelRecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
         }
         return new RecoveryVisitor(storageEngine, mode, contextFactory, tracerTag);
+    }
+
+    @Override
+    public LogPosition rollbackTransactions(
+            LogPosition writePosition,
+            TransactionIdTracker transactionTracker,
+            CommittedCommandBatch lastCommittedBatch)
+            throws IOException {
+        long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
+        if (notCompletedTransactions.length == 0) {
+            return writePosition;
+        }
+        byte version = versionProvider.kernelVersion().version();
+        LogFile logFile = logFiles.getLogFile();
+        PhysicalLogVersionedStoreChannel channel =
+                logFile.createLogChannelForVersion(writePosition.getLogVersion(), lastCommittedBatch::txId);
+        channel.position(writePosition.getByteOffset());
+        try (var tempRollbackBuffer = new HeapScopedBuffer(
+                        DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
+                var writerChannel = new PositionAwarePhysicalFlushableChecksumChannel(channel, tempRollbackBuffer)) {
+            var entryWriter = new LogEntryWriter<>(writerChannel);
+            long time = clock.millis();
+            for (long notCompletedTransaction : notCompletedTransactions) {
+                entryWriter.writeRollbackEntry(version, notCompletedTransaction, time);
+            }
+            return writerChannel.getCurrentPosition();
+        }
     }
 
     @Override

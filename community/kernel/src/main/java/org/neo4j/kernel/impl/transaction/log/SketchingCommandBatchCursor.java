@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
 
 public class SketchingCommandBatchCursor implements CommandBatchCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;
@@ -50,6 +51,10 @@ public class SketchingCommandBatchCursor implements CommandBatchCursor {
     public boolean next() throws IOException {
         while (hasEntries()) {
             LogEntry entry = logEntryCursor.get();
+            if (entry instanceof LogEntryRollback) {
+                channel.getCurrentPosition(lastGoodPositionMarker);
+                return true;
+            }
             assert entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart
                     : "Expected Start entry, read " + entry + " instead";
 

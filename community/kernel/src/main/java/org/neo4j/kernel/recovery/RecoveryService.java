@@ -39,6 +39,10 @@ public interface RecoveryService {
     RecoveryApplier getRecoveryApplier(
             TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) throws Exception;
 
+    LogPosition rollbackTransactions(
+            LogPosition writePosition, TransactionIdTracker transactionTracker, CommittedCommandBatch lastCommandBatch)
+            throws IOException;
+
     void transactionsRecovered(
             CommittedCommandBatch lastRecoveredBatch,
             LogPosition lastTransactionPosition,

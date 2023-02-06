@@ -32,6 +32,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
+import org.neo4j.kernel.impl.transaction.tracing.RollbackChunkRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class CommittedCommandBatchCursor implements CommandBatchCursor {
@@ -63,8 +65,13 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
 
         LogEntry entry = logEntryCursor.get();
         List<StorageCommand> entries = new ArrayList<>();
-
-        if (entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart) {
+        if (entry instanceof LogEntryRollback rollback) {
+            current = new RollbackChunkRepresentation(
+                    rollback.kernelVersion(),
+                    rollback.getTransactionId(),
+                    rollback.getTimeWritten(),
+                    rollback.getChecksum());
+        } else if (entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart) {
             LogEntry startEntry = entry;
             LogEntry endEntry;
             while (true) {
@@ -86,11 +93,11 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
             } else {
                 current = CommittedChunkRepresentation.createChunkRepresentation(startEntry, entries, endEntry);
             }
-            channel.getCurrentPosition(lastGoodPositionMarker);
-            return true;
         } else {
             throw new IllegalStateException("Was expecting transaction or chunk start but got: " + entry);
         }
+        channel.getCurrentPosition(lastGoodPositionMarker);
+        return true;
     }
 
     @Override

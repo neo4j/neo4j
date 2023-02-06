@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -32,35 +33,35 @@ class TransactionIdTrackerTest {
     @Test
     void completeTransactionTracking() {
         var transactionIdTracker = new TransactionIdTracker();
-        var commandBatch1 = createCommandBatch(1, true, true);
-        var commandBatch3 = createCommandBatch(3, true, true);
-        var commandBatch2 = createCommandBatch(2, true, true);
-        var commandBatch4 = createCommandBatch(4, true, true);
+        var commandBatch1 = createCommandBatch(1, true, true, false);
+        var commandBatch3 = createCommandBatch(3, true, true, false);
+        var commandBatch2 = createCommandBatch(2, true, true, false);
+        var commandBatch4 = createCommandBatch(4, true, true, false);
 
         transactionIdTracker.trackBatch(commandBatch1);
         transactionIdTracker.trackBatch(commandBatch3);
         transactionIdTracker.trackBatch(commandBatch2);
         transactionIdTracker.trackBatch(commandBatch4);
 
-        assertTrue(transactionIdTracker.isCompletedTransaction(1));
-        assertTrue(transactionIdTracker.isCompletedTransaction(2));
-        assertTrue(transactionIdTracker.isCompletedTransaction(3));
-        assertTrue(transactionIdTracker.isCompletedTransaction(4));
+        assertTrue(transactionIdTracker.replayTransaction(1));
+        assertTrue(transactionIdTracker.replayTransaction(2));
+        assertTrue(transactionIdTracker.replayTransaction(3));
+        assertTrue(transactionIdTracker.replayTransaction(4));
     }
 
     @Test
     void trackMultiChunkedCompletedTransactions() {
         var transactionIdTracker = new TransactionIdTracker();
         // chain of 2
-        var commandBatch11 = createCommandBatch(1, true, false);
-        var commandBatch12 = createCommandBatch(1, false, true);
+        var commandBatch11 = createCommandBatch(1, true, false, false);
+        var commandBatch12 = createCommandBatch(1, false, true, false);
         // chain of 2
-        var commandBatch21 = createCommandBatch(2, true, false);
-        var commandBatch22 = createCommandBatch(2, false, true);
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch22 = createCommandBatch(2, false, true, false);
         // chain of 3
-        var commandBatch31 = createCommandBatch(3, true, false);
-        var commandBatch32 = createCommandBatch(3, false, false);
-        var commandBatch33 = createCommandBatch(3, false, true);
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
+        var commandBatch33 = createCommandBatch(3, false, true, false);
 
         transactionIdTracker.trackBatch(commandBatch33);
         transactionIdTracker.trackBatch(commandBatch22);
@@ -72,21 +73,21 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch32);
         transactionIdTracker.trackBatch(commandBatch31);
 
-        assertTrue(transactionIdTracker.isCompletedTransaction(1));
-        assertTrue(transactionIdTracker.isCompletedTransaction(2));
-        assertTrue(transactionIdTracker.isCompletedTransaction(3));
+        assertTrue(transactionIdTracker.replayTransaction(1));
+        assertTrue(transactionIdTracker.replayTransaction(2));
+        assertTrue(transactionIdTracker.replayTransaction(3));
     }
 
     @Test
     void trackMultiChunkedNonCompleteTransactions() {
         var transactionIdTracker = new TransactionIdTracker();
         // non completed chain of 1
-        var commandBatch11 = createCommandBatch(1, true, false);
+        var commandBatch11 = createCommandBatch(1, true, false, false);
         // non completed chain of 1
-        var commandBatch21 = createCommandBatch(2, true, false);
+        var commandBatch21 = createCommandBatch(2, true, false, false);
         // non completed chain of 2
-        var commandBatch31 = createCommandBatch(3, true, false);
-        var commandBatch32 = createCommandBatch(3, false, false);
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
 
         transactionIdTracker.trackBatch(commandBatch21);
 
@@ -95,33 +96,33 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch32);
         transactionIdTracker.trackBatch(commandBatch31);
 
-        assertFalse(transactionIdTracker.isCompletedTransaction(1));
-        assertFalse(transactionIdTracker.isCompletedTransaction(2));
-        assertFalse(transactionIdTracker.isCompletedTransaction(3));
+        assertFalse(transactionIdTracker.replayTransaction(1));
+        assertFalse(transactionIdTracker.replayTransaction(2));
+        assertFalse(transactionIdTracker.replayTransaction(3));
     }
 
     @Test
     void trackCombinationOfTransactions() {
         var transactionIdTracker = new TransactionIdTracker();
         // completed chain of 1
-        var commandBatch11 = createCommandBatch(1, true, true);
+        var commandBatch11 = createCommandBatch(1, true, true, false);
         // completed chain of 2
-        var commandBatch21 = createCommandBatch(2, true, false);
-        var commandBatch22 = createCommandBatch(2, false, true);
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch22 = createCommandBatch(2, false, true, false);
         // non completed chain of 2
-        var commandBatch31 = createCommandBatch(3, true, false);
-        var commandBatch32 = createCommandBatch(3, false, false);
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
         // completed chain of 4
-        var commandBatch41 = createCommandBatch(4, true, false);
-        var commandBatch42 = createCommandBatch(4, false, false);
-        var commandBatch43 = createCommandBatch(4, false, false);
-        var commandBatch44 = createCommandBatch(4, false, true);
+        var commandBatch41 = createCommandBatch(4, true, false, false);
+        var commandBatch42 = createCommandBatch(4, false, false, false);
+        var commandBatch43 = createCommandBatch(4, false, false, false);
+        var commandBatch44 = createCommandBatch(4, false, true, false);
         // completed chain of 1
-        var commandBatch51 = createCommandBatch(5, true, true);
+        var commandBatch51 = createCommandBatch(5, true, true, false);
         // non completed chain of 1
-        var commandBatch61 = createCommandBatch(6, true, false);
+        var commandBatch61 = createCommandBatch(6, true, false, false);
         // completed chain of 1
-        var commandBatch71 = createCommandBatch(7, true, true);
+        var commandBatch71 = createCommandBatch(7, true, true, false);
 
         transactionIdTracker.trackBatch(commandBatch71);
         transactionIdTracker.trackBatch(commandBatch44);
@@ -138,22 +139,97 @@ class TransactionIdTrackerTest {
         transactionIdTracker.trackBatch(commandBatch31);
         transactionIdTracker.trackBatch(commandBatch41);
 
-        assertTrue(transactionIdTracker.isCompletedTransaction(1));
-        assertTrue(transactionIdTracker.isCompletedTransaction(2));
-        assertTrue(transactionIdTracker.isCompletedTransaction(4));
-        assertTrue(transactionIdTracker.isCompletedTransaction(5));
-        assertTrue(transactionIdTracker.isCompletedTransaction(7));
+        assertTrue(transactionIdTracker.replayTransaction(1));
+        assertTrue(transactionIdTracker.replayTransaction(2));
+        assertTrue(transactionIdTracker.replayTransaction(4));
+        assertTrue(transactionIdTracker.replayTransaction(5));
+        assertTrue(transactionIdTracker.replayTransaction(7));
 
-        assertFalse(transactionIdTracker.isCompletedTransaction(3));
-        assertFalse(transactionIdTracker.isCompletedTransaction(6));
+        assertFalse(transactionIdTracker.replayTransaction(3));
+        assertFalse(transactionIdTracker.replayTransaction(6));
     }
 
-    private static CommittedCommandBatch createCommandBatch(long id, boolean first, boolean last) {
+    @Test
+    void trackRollbacksOfTransactions() {
+        var transactionIdTracker = new TransactionIdTracker();
+
+        // chain of 2
+        var commandBatch11 = createCommandBatch(1, true, false, false);
+        var commandBatch12 = createCommandBatch(1, false, true, true);
+        // chain of 2
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch22 = createCommandBatch(2, false, true, false);
+        // chain of 3
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
+        var commandBatch33 = createCommandBatch(3, false, true, true);
+        // chain of 2
+        var commandBatch41 = createCommandBatch(4, true, false, false);
+        var commandBatch42 = createCommandBatch(4, false, true, false);
+
+        transactionIdTracker.trackBatch(commandBatch42);
+        transactionIdTracker.trackBatch(commandBatch22);
+        transactionIdTracker.trackBatch(commandBatch21);
+
+        transactionIdTracker.trackBatch(commandBatch12);
+        transactionIdTracker.trackBatch(commandBatch11);
+
+        transactionIdTracker.trackBatch(commandBatch41);
+
+        transactionIdTracker.trackBatch(commandBatch33);
+        transactionIdTracker.trackBatch(commandBatch32);
+
+        transactionIdTracker.trackBatch(commandBatch31);
+
+        assertFalse(transactionIdTracker.replayTransaction(1));
+        assertTrue(transactionIdTracker.replayTransaction(2));
+        assertFalse(transactionIdTracker.replayTransaction(3));
+        assertTrue(transactionIdTracker.replayTransaction(4));
+    }
+
+    @Test
+    void trackNonCompletedTransactions() {
+        var transactionIdTracker = new TransactionIdTracker();
+
+        // chain of 2
+        var commandBatch11 = createCommandBatch(1, true, false, false);
+        var commandBatch12 = createCommandBatch(1, false, true, true);
+        // chain of 2
+        var commandBatch21 = createCommandBatch(2, true, false, false);
+        var commandBatch22 = createCommandBatch(2, false, false, false);
+        // chain of 3
+        var commandBatch31 = createCommandBatch(3, true, false, false);
+        var commandBatch32 = createCommandBatch(3, false, false, false);
+        var commandBatch33 = createCommandBatch(3, false, true, true);
+        // chain of 2
+        var commandBatch41 = createCommandBatch(4, true, false, false);
+        var commandBatch42 = createCommandBatch(4, false, true, false);
+
+        var commandBatch5 = createCommandBatch(5, true, false, false);
+
+        transactionIdTracker.trackBatch(commandBatch5);
+        transactionIdTracker.trackBatch(commandBatch42);
+        transactionIdTracker.trackBatch(commandBatch41);
+
+        transactionIdTracker.trackBatch(commandBatch33);
+        transactionIdTracker.trackBatch(commandBatch32);
+        transactionIdTracker.trackBatch(commandBatch31);
+
+        transactionIdTracker.trackBatch(commandBatch22);
+        transactionIdTracker.trackBatch(commandBatch21);
+        transactionIdTracker.trackBatch(commandBatch12);
+        transactionIdTracker.trackBatch(commandBatch11);
+
+        assertThat(transactionIdTracker.notCompletedTransactions()).containsExactly(2, 5);
+    }
+
+    private static CommittedCommandBatch createCommandBatch(long id, boolean first, boolean last, boolean rollback) {
         var committedCommandBatch = mock(CommittedCommandBatch.class);
         var commandBatch = mock(CommandBatch.class);
         when(commandBatch.isFirst()).thenReturn(first);
         when(commandBatch.isLast()).thenReturn(last);
         when(committedCommandBatch.txId()).thenReturn(id);
+        when(committedCommandBatch.isRollback()).thenReturn(rollback);
         when(committedCommandBatch.commandBatch()).thenReturn(commandBatch);
         return committedCommandBatch;
     }

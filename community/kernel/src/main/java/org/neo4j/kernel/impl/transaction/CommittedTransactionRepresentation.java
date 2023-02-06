@@ -88,6 +88,11 @@ public record CommittedTransactionRepresentation(
     }
 
     @Override
+    public boolean isRollback() {
+        return false;
+    }
+
+    @Override
     public String toString() {
         return "CommittedTransactionRepresentation{" + "startEntry="
                 + startEntry + ", transactionRepresentation="

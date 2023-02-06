@@ -26,11 +26,16 @@ import org.neo4j.storageengine.api.CommandBatch;
 
 public class TransactionIdTracker {
 
-    private final MutableLongSet completedTransactions = LongSets.mutable.empty();
+    private final MutableLongSet completedTransactionsWindow = LongSets.mutable.empty();
+    private final MutableLongSet rollbackTransactions = LongSets.mutable.empty();
     private final MutableLongSet notCompletedTransactions = LongSets.mutable.empty();
 
-    boolean isCompletedTransaction(long transactionId) {
-        return !notCompletedTransactions.contains(transactionId);
+    boolean replayTransaction(long transactionId) {
+        return !(notCompletedTransactions.contains(transactionId) || rollbackTransactions.contains(transactionId));
+    }
+
+    long[] notCompletedTransactions() {
+        return notCompletedTransactions.toSortedArray();
     }
 
     public void trackBatch(CommittedCommandBatch committedBatch) {
@@ -39,16 +44,21 @@ public class TransactionIdTracker {
             return;
         }
         long transactionId = committedBatch.txId();
-        if (commandBatch.isLast()) {
-            completedTransactions.add(transactionId);
-        } else {
 
-            if (!completedTransactions.contains(transactionId)) {
+        if (commandBatch.isLast()) {
+            completedTransactionsWindow.add(transactionId);
+            if (committedBatch.isRollback()) {
+                rollbackTransactions.add(transactionId);
+            }
+        } else {
+            if (!completedTransactionsWindow.contains(transactionId)) {
+                // we encountered transaction that we never completed, so we will need to rollback it
                 notCompletedTransactions.add(transactionId);
             }
-            // if this is first batch be can remove it's from tacking now as well
+            // we are not really interested in keeping the whole set; window of this transaction is gone now
+            // so, we can stop tracking it now
             if (commandBatch.isFirst()) {
-                completedTransactions.remove(transactionId);
+                completedTransactionsWindow.remove(transactionId);
             }
         }
     }

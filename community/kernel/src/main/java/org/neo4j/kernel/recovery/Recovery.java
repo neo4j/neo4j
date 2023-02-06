@@ -72,6 +72,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -608,6 +609,7 @@ public final class Recovery {
                 monitors.newMonitor(RecoveryStartInformationProvider.Monitor.class),
                 logFiles,
                 storageEngine,
+                logTailMetadata,
                 transactionStore,
                 metadataProvider,
                 schemaLife,
@@ -616,6 +618,7 @@ public final class Recovery {
                 recoveryLog,
                 startupChecker,
                 memoryTracker,
+                clock,
                 doParallelRecovery,
                 recoveryPredicate,
                 cursorContextFactory);
@@ -738,6 +741,7 @@ public final class Recovery {
             RecoveryStartInformationProvider.Monitor positionMonitor,
             LogFiles logFiles,
             StorageEngine storageEngine,
+            KernelVersionProvider versionProvider,
             LogicalTransactionStore logicalTransactionStore,
             LogVersionRepository logVersionRepository,
             Lifecycle schemaLife,
@@ -746,6 +750,7 @@ public final class Recovery {
             InternalLog log,
             RecoveryStartupChecker startupChecker,
             MemoryTracker memoryTracker,
+            Clock clock,
             boolean doParallelRecovery,
             RecoveryPredicate recoveryPredicate,
             CursorContextFactory contextFactory) {
@@ -755,8 +760,10 @@ public final class Recovery {
                 logicalTransactionStore,
                 logVersionRepository,
                 logFiles,
+                versionProvider,
                 positionMonitor,
                 log,
+                clock,
                 doParallelRecovery);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
@@ -884,7 +891,7 @@ public final class Recovery {
         }
 
         @Override
-        public void init() throws IOException {
+        public void init() {
             checkForMissingLogFiles();
         }
 

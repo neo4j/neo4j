@@ -23,6 +23,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUN
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_ROLLBACK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
 import java.io.IOException;
@@ -70,6 +71,13 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
         writeLogEntryHeader(version, CHUNK_END, channel);
         channel.putLong(transactionId);
         channel.putLong(chunkId);
+        return channel.putChecksum();
+    }
+
+    public int writeRollbackEntry(byte version, long transactionId, long timeWritten) throws IOException {
+        channel.beginChecksum();
+        writeLogEntryHeader(version, TX_ROLLBACK, channel);
+        channel.putLong(transactionId).putLong(timeWritten);
         return channel.putChecksum();
     }
 
