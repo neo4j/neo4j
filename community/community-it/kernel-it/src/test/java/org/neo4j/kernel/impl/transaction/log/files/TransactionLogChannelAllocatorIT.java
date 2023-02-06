@@ -231,7 +231,6 @@ class TransactionLogChannelAllocatorIT {
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,
                 config,
-                null,
                 null);
     }
 

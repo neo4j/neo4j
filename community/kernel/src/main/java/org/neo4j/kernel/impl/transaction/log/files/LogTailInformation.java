@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.util.Optional;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -37,7 +37,7 @@ public class LogTailInformation implements LogTailMetadata {
     public final byte firstLogEntryVersionAfterCheckpoint;
     private final boolean recordAfterCheckpoint;
     private final StoreId storeId;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final KernelVersionProvider fallbackKernelVersionProvider;
 
     public LogTailInformation(
             boolean recordAfterCheckpoint,
@@ -45,7 +45,7 @@ public class LogTailInformation implements LogTailMetadata {
             boolean filesNotFound,
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            KernelVersionProvider fallbackKernelVersionProvider) {
         this(
                 null,
                 recordAfterCheckpoint,
@@ -54,7 +54,7 @@ public class LogTailInformation implements LogTailMetadata {
                 currentLogVersion,
                 firstLogEntryVersionAfterCheckpoint,
                 null,
-                dbmsRuntimeRepository);
+                fallbackKernelVersionProvider);
     }
 
     public LogTailInformation(
@@ -65,7 +65,7 @@ public class LogTailInformation implements LogTailMetadata {
             long currentLogVersion,
             byte firstLogEntryVersionAfterCheckpoint,
             StoreId storeId,
-            DbmsRuntimeRepository dbmsRuntimeRepository) {
+            KernelVersionProvider fallbackKernelVersionProvider) {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
         this.filesNotFound = filesNotFound;
@@ -73,7 +73,7 @@ public class LogTailInformation implements LogTailMetadata {
         this.firstLogEntryVersionAfterCheckpoint = firstLogEntryVersionAfterCheckpoint;
         this.recordAfterCheckpoint = recordAfterCheckpoint;
         this.storeId = storeId;
-        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
+        this.fallbackKernelVersionProvider = fallbackKernelVersionProvider;
     }
 
     public boolean logsAfterLastCheckpoint() {
@@ -137,9 +137,9 @@ public class LogTailInformation implements LogTailMetadata {
             return KernelVersion.getForVersion(firstLogEntryVersionAfterCheckpoint);
         }
 
-        // There was no checkpoint since it is the first start, or we restart after logs removal, and we should
-        // use the version that is defined in the system db
-        return dbmsRuntimeRepository.getVersion().kernelVersion();
+        // There was no checkpoint since it is the first start, or we restart after logs removal,
+        // use the version specified as the fallback
+        return fallbackKernelVersionProvider.kernelVersion();
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 
@@ -285,17 +284,6 @@ public class LogFilesBuilder {
         var health = getDatabaseHealth();
         var clock = getClock();
 
-        // runtime repo is used to find out runtime version in cases when it does not exist in logs
-        // That can be in 2 cases: new database creation and logs removal
-        DbmsRuntimeRepository dbmsRuntimeRepository;
-        if (SYSTEM_DATABASE_NAME.equals(databaseLayout.getDatabaseName())
-                || dependencies == null
-                || !dependencies.containsDependency(DbmsRuntimeRepository.class)) {
-            dbmsRuntimeRepository = new LatestVersionRuntimeRepository();
-        } else {
-            dbmsRuntimeRepository = dependencies.resolveDependency(DbmsRuntimeRepository.class);
-        }
-
         return new TransactionLogFilesContext(
                 rotationThreshold,
                 tryPreallocateTransactionLogs,
@@ -317,8 +305,7 @@ public class LogFilesBuilder {
                 clock,
                 databaseLayout.getDatabaseName(),
                 config,
-                externalLogTail,
-                dbmsRuntimeRepository);
+                externalLogTail);
     }
 
     private CommandReaderFactory commandReaderFactory() {

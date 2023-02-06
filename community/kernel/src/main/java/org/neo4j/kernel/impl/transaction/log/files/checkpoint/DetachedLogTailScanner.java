@@ -38,9 +38,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -74,7 +74,7 @@ public class DetachedLogTailScanner {
     private final CheckpointFile checkpointFile;
     private final boolean failOnCorruptedLogFiles;
     private final FileSystemAbstraction fileSystem;
-    private final DbmsRuntimeRepository dbmsRuntimeRepository;
+    private final KernelVersionProvider fallbackKernelVersionProvider;
 
     private LogTailMetadata logTail;
 
@@ -89,7 +89,7 @@ public class DetachedLogTailScanner {
         this.checkpointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
         this.failOnCorruptedLogFiles = context.isFailOnCorruptedLogFiles();
-        this.dbmsRuntimeRepository = context.getDbmsRuntimeRepository();
+        this.fallbackKernelVersionProvider = context.getKernelVersionProvider();
         this.logTail = context.getExternalTailInfo();
         this.monitor = monitor;
     }
@@ -145,7 +145,7 @@ public class DetachedLogTailScanner {
                 highestLogVersion,
                 entries.getEntryVersion(),
                 checkpoint.storeId(),
-                dbmsRuntimeRepository);
+                fallbackKernelVersionProvider);
     }
 
     private LogTailInformation noCheckpointLogTail(LogFile logFile, long highestLogVersion, long lowestLogVersion)
@@ -157,7 +157,7 @@ public class DetachedLogTailScanner {
                 lowestLogVersion == UNKNOWN,
                 highestLogVersion,
                 entries.getEntryVersion(),
-                dbmsRuntimeRepository);
+                fallbackKernelVersionProvider);
     }
 
     private StartCommitEntries getFirstTransactionId(LogFile logFile, long lowestLogVersion) throws IOException {

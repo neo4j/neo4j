@@ -34,8 +34,8 @@ import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -52,7 +52,7 @@ class RecoveryStartInformationProviderTest {
     private final LogFiles logFiles = mock(LogFiles.class);
     private final LogFile logFile = mock(LogFile.class);
     private final Monitor monitor = mock(Monitor.class);
-    private final DbmsRuntimeRepository dbmsRepo = mock(DbmsRuntimeRepository.class);
+    private final KernelVersionProvider kernelProv = mock(KernelVersionProvider.class);
 
     @BeforeEach
     void setUp() throws IOException {
@@ -66,7 +66,7 @@ class RecoveryStartInformationProviderTest {
         // given
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
-                        false, NO_TRANSACTION_ID, false, currentLogVersion, LATEST.version(), dbmsRepo));
+                        false, NO_TRANSACTION_ID, false, currentLogVersion, LATEST.version(), kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -105,7 +105,7 @@ class RecoveryStartInformationProviderTest {
                         currentLogVersion,
                         LATEST.version(),
                         null,
-                        dbmsRepo));
+                        kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -123,7 +123,7 @@ class RecoveryStartInformationProviderTest {
     void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() {
         // given
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), dbmsRepo));
+                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), kernelProv));
 
         // when
         RecoveryStartInformation recoveryStartInformation =
@@ -143,7 +143,7 @@ class RecoveryStartInformationProviderTest {
     @Test
     void detectMissingTransactionLogsInformation() {
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(false, -1, true, -1, LATEST.version(), dbmsRepo));
+                .thenReturn(new LogTailInformation(false, -1, true, -1, LATEST.version(), kernelProv));
 
         RecoveryStartInformation recoveryStartInformation =
                 new RecoveryStartInformationProvider(logFiles, monitor).get();
@@ -157,7 +157,7 @@ class RecoveryStartInformationProviderTest {
         long oldestLogVersionFound = 1L;
         when(logFile.getLowestLogVersion()).thenReturn(oldestLogVersionFound);
         when(logFiles.getTailMetadata())
-                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), dbmsRepo));
+                .thenReturn(new LogTailInformation(true, 10L, false, currentLogVersion, LATEST.version(), kernelProv));
 
         // when
         UnderlyingStorageException storageException = assertThrows(
