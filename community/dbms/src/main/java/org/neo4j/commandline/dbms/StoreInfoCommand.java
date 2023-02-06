@@ -42,6 +42,7 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -127,11 +128,7 @@ public class StoreInfoCommand extends AbstractAdminCommand {
                 var jobScheduler = createInitialisedScheduler();
                 var pageCache = StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
 
-            if (path != null) {
-                validatePath(fs, path, neo4jLayout);
-            } else {
-                path = neo4jLayout.databasesDirectory();
-            }
+            validateDatabasesPath(fs, neo4jLayout.databasesDirectory());
             if (database.containsPattern()) {
                 var collector = structuredFormat
                         ? Collectors.joining(",", "[", "]")
@@ -162,24 +159,27 @@ public class StoreInfoCommand extends AbstractAdminCommand {
     }
 
     private Config createConfig() {
-        return createPrefilledConfigBuilder()
-                .set(GraphDatabaseSettings.read_only_database_default, true)
-                .build();
+        final var builder = createPrefilledConfigBuilder().set(GraphDatabaseSettings.read_only_database_default, true);
+        if (path != null) {
+            builder.set(
+                    GraphDatabaseInternalSettings.databases_root_path,
+                    path.toAbsolutePath().normalize());
+        }
+        return builder.build();
     }
 
-    private void validatePath(FileSystemAbstraction fs, Path storePath, Neo4jLayout neo4jLayout) {
-        if (!fs.isDirectory(storePath)) {
-            throw new IllegalArgumentException(
-                    format("Provided path %s must point to a directory.", storePath.toAbsolutePath()));
+    private void validateDatabasesPath(FileSystemAbstraction fs, Path databasesPath) {
+        if (!fs.isDirectory(databasesPath)) {
+            throw new IllegalArgumentException(format("Provided path %s must point to a directory.", databasesPath));
         }
 
-        var dirName = storePath.getFileName().toString();
-        var databaseLayout = neo4jLayout.databaseLayout(dirName);
+        // check not a path to store files
+        final var databaseLayout = DatabaseLayout.ofFlat(databasesPath);
         if (Validators.isExistingDatabase(storageEngineSelector, fs, databaseLayout)) {
             throw new IllegalArgumentException(format(
-                    "The directory %s contains the store files of a single database. --from-path should point to the "
-                            + "databases directory.",
-                    storePath.toAbsolutePath()));
+                    "The directory %s contains the store files of a single database."
+                            + " --from-path should point to the databases directory.",
+                    databasesPath));
         }
     }
 
