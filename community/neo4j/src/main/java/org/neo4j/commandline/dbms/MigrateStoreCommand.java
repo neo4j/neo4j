@@ -60,6 +60,7 @@ import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -346,8 +347,10 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
             DatabaseLayout layout,
             MemoryTracker memoryTracker) {
         try {
+            // If empty tx logs are allowed, and we don't have tx logs we fall back to the latest kernel version.
+            // That should be safe since we are trying to migrate to that version anyway.
             return new LogTailExtractor(fs, pageCache, config, engineFactory, databaseTracers)
-                    .getTailMetadata(layout, memoryTracker);
+                    .getTailMetadata(layout, memoryTracker, KernelVersionProvider.LATEST_VERSION);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

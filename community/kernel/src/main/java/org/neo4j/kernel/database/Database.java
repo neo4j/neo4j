@@ -740,7 +740,11 @@ public class Database extends AbstractDatabase {
         var logTailSupplier = Suppliers.lazySingleton(() -> {
             try {
                 return new LogTailExtractor(fs, databasePageCache, databaseConfig, storageEngineFactory, tracers)
-                        .getTailMetadata(databaseLayout, memoryTracker);
+                        .getTailMetadata(
+                                databaseLayout,
+                                memoryTracker,
+                                new DbmsRuntimeFallbackKernelVersionProvider(
+                                        databaseDependencies, databaseLayout.getDatabaseName()));
             } catch (Exception e) {
                 throw new UnableToMigrateException("Fail to load log tail during upgrade.", e);
             }

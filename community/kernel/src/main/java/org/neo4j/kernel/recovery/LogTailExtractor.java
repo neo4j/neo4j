@@ -52,13 +52,28 @@ public class LogTailExtractor {
         this.databaseTracers = databaseTracers;
     }
 
+    /**
+     * Only use this version if you are sure you do not have empty tx logs or are sure that kernel version will not be asked for.
+     */
     public LogTailMetadata getTailMetadata(DatabaseLayout databaseLayout, MemoryTracker memoryTracker)
             throws IOException {
-        return buildLogFiles(databaseLayout, memoryTracker).getTailMetadata();
+        return buildLogFiles(databaseLayout, memoryTracker, KernelVersionProvider.THROWING_PROVIDER)
+                .getTailMetadata();
     }
 
-    private LogFiles buildLogFiles(DatabaseLayout databaseLayout, MemoryTracker memoryTracker) throws IOException {
-        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
+    public LogTailMetadata getTailMetadata(
+            DatabaseLayout databaseLayout,
+            MemoryTracker memoryTracker,
+            KernelVersionProvider emptyLogsFallbackKernelVersionProvider)
+            throws IOException {
+        return buildLogFiles(databaseLayout, memoryTracker, emptyLogsFallbackKernelVersionProvider)
+                .getTailMetadata();
+    }
+
+    private LogFiles buildLogFiles(
+            DatabaseLayout databaseLayout, MemoryTracker memoryTracker, KernelVersionProvider kernelVersionProvider)
+            throws IOException {
+        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, kernelVersionProvider)
                 .withConfig(config)
                 .withMemoryTracker(memoryTracker)
                 .withDatabaseTracers(databaseTracers)

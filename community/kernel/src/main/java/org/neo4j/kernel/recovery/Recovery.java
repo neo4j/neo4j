@@ -692,7 +692,7 @@ public final class Recovery {
             MemoryTracker memoryTracker) {
         try {
             return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, tracers)
-                    .getTailMetadata(databaseLayout, memoryTracker);
+                    .getTailMetadata(databaseLayout, memoryTracker, KernelVersionProvider.LATEST_VERSION);
         } catch (IOException ioe) {
             throw new UncheckedIOException("Fail to load log tail.", ioe);
         }

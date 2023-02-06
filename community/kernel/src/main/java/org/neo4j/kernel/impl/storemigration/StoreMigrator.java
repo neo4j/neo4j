@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
@@ -579,8 +580,10 @@ public class StoreMigrator {
     private Suppliers.Lazy<LogTailMetadata> getLogTailSupplier() {
         return Suppliers.lazySingleton(() -> {
             try {
+                // If empty tx logs are allowed, and we don't have tx logs we fall back to the latest kernel version.
+                // That should be safe since we are trying to migrate to that version anyway.
                 return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, databaseTracers)
-                        .getTailMetadata(databaseLayout, memoryTracker);
+                        .getTailMetadata(databaseLayout, memoryTracker, KernelVersionProvider.LATEST_VERSION);
             } catch (Exception e) {
                 throw new UnableToMigrateException("Fail to load log tail during migration.", e);
             }
