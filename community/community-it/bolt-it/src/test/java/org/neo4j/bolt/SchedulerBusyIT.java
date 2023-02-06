@@ -24,6 +24,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -63,6 +65,18 @@ public class SchedulerBusyIT {
     private BoltServer boltServer() {
         var gdb = (GraphDatabaseAPI) server.graphDatabaseService();
         return gdb.getDependencyResolver().resolveDependency(BoltServer.class);
+    }
+
+    /**
+     * Suspends test execution until {@code n} threads within the Bolt thread pool are occupied.
+     *
+     * @param n the desired number of occupied threads.
+     */
+    private void awaitThreadPoolSaturation(int n) {
+        var executor = (ThreadPoolExecutor) boltServer().getExecutorService();
+
+        Assert.awaitUntilAsserted(
+                () -> Assertions.assertThat(executor.getActiveCount()).isEqualTo(n));
     }
 
     @FactoryFunction
@@ -140,32 +154,32 @@ public class SchedulerBusyIT {
             @Negotiated TransportConnection connection3,
             @Negotiated TransportConnection connection4)
             throws Exception {
-        var executor = (ThreadPoolExecutor) boltServer().getExecutorService();
-
         // saturate the thread pool using autocommit transactions (this works since open transactions currently force
         // Bolt to stick to the worker thread until closed or timed out)
         enterStreaming(wire, connection1);
         enterStreaming(wire, connection2);
 
+        awaitThreadPoolSaturation(2);
+
         // free up a slot for the new connection
         exitStreaming(wire, connection1);
 
-        while (!Thread.interrupted() && executor.getActiveCount() == 2) {
-            Thread.sleep(10);
-        }
+        awaitThreadPoolSaturation(1);
 
         // send another request on a third connection in order to generate a new job submission
         establishNewConnection(wire, connection3);
 
+        awaitThreadPoolSaturation(1);
+
         // free up another slot for the new connection
         exitStreaming(wire, connection2);
 
-        while (!Thread.interrupted() && executor.getActiveCount() == 2) {
-            Thread.sleep(10);
-        }
+        awaitThreadPoolSaturation(0);
 
         // send another request on a fourth connection in order to generate a new job submission
         establishNewConnection(wire, connection4);
+
+        awaitThreadPoolSaturation(0);
     }
 
     @TransportTest
@@ -183,9 +197,13 @@ public class SchedulerBusyIT {
         enterStreaming(wire, connection2);
         exitStreaming(wire, connection2);
 
+        awaitThreadPoolSaturation(0);
+
         // saturate the thread pool
         enterStreaming(wire, connection3);
         enterStreaming(wire, connection4);
+
+        awaitThreadPoolSaturation(2);
 
         // shutdown the server in order to trigger Bolt shutdown procedures
         this.server.shutdownDatabase();
