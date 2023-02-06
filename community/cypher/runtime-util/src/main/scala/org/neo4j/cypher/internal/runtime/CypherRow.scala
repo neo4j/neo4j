@@ -329,7 +329,7 @@ class MapCypherRow(
   override def equals(other: Any): Boolean = other match {
     case that: MapCypherRow =>
       (that canEqual this) &&
-        m == that.m
+      m == that.m
     case _ => false
   }
 

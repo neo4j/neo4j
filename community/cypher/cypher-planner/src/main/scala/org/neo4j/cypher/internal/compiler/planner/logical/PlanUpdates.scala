@@ -338,7 +338,8 @@ case object PlanUpdates extends UpdatesPlanner {
           .copy(config = context.plannerState.config.withLeafPlanners(leafPlanners)))
         .withModifiedSettings(_
           .copy(planningRelationshipUniqueIndexSeekEnabled =
-            context.settings.planningMergeRelationshipUniqueIndexSeekEnabled))
+            context.settings.planningMergeRelationshipUniqueIndexSeekEnabled
+          ))
     val read = mergeRead(innerContext)
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds

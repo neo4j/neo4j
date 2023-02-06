@@ -251,7 +251,8 @@ case class CreateIrExpressions(
             tail = Some(
               RegularSinglePlannerQuery(
                 horizon = AggregatingQueryProjection(aggregationExpressions =
-                  Map(countVariableName -> CountStar()(countExpression.position)))
+                  Map(countVariableName -> CountStar()(countExpression.position))
+                )
               )
             )
           )

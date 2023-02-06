@@ -132,7 +132,7 @@ class QueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: CacheabilityInfo](
     override def equals(other: Any): Boolean = other match {
       case that: CachedValue =>
         (that canEqual this) &&
-          value == that.value
+        value == that.value
       case _ => false
     }
 

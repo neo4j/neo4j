@@ -248,7 +248,7 @@ case class CommunityAdministrationCommandRuntime(
           returns
         )
 
-    // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'
+      // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD 'password'
     // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD $password
     case createUser: CreateUser => context =>
         val sourcePlan: Option[ExecutionPlan] =

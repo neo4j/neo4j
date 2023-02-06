@@ -88,13 +88,15 @@ object Deprecations {
       case s @ SetExactPropertiesFromMapItem(_, e: Variable) =>
         Deprecation(
           Some(Ref(s) -> s.copy(expression =
-            functionInvocationForSetProperties(s, e))(s.position)),
+            functionInvocationForSetProperties(s, e)
+          )(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
         )
       case s @ SetIncludingPropertiesFromMapItem(_, e: Variable) =>
         Deprecation(
           Some(Ref(s) -> s.copy(expression =
-            functionInvocationForSetProperties(s, e))(s.position)),
+            functionInvocationForSetProperties(s, e)
+          )(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
         )
 

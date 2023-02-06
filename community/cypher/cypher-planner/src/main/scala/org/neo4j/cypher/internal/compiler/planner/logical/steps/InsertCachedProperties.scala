@@ -246,7 +246,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
           acc =>
             SkipChildren(acc)
 
-        // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
+          // We don't cache all properties in case expressions to avoid the risk of reading properties that are not used.
         // Potential optimisation: Figure out properties that are shared between all case branches and cache them.
         case caseExp: CaseExpression => acc =>
             val mainExpr = caseExp.expression

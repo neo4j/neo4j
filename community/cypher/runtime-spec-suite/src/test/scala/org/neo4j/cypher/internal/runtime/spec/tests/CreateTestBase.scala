@@ -406,7 +406,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       val relationships = allRelationships.asScala.filter(_.getType.name() == "NEW").toList
       relationships should have size 2 * sizeHint
       runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated =
-        2 * sizeHint)
+        2 * sizeHint
+      )
     } finally {
       allRelationships.close()
     }

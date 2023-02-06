@@ -239,8 +239,8 @@ object LogicalPlanToPlanBuilderString {
         projectStrs(groupingExpressions)
       case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
         s""" Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))}), ${projectStrs(
-          groupingExpressions
-        )} """.trim
+            groupingExpressions
+          )} """.trim
       case Projection(_, discardSymbols, projectExpressions) =>
         if (discardSymbols.isEmpty) {
           projectStrs(projectExpressions)
@@ -270,8 +270,8 @@ object LogicalPlanToPlanBuilderString {
         val onCreateString = onCreate.map(mutationToString)
 
         s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(
-          ", "
-        )}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
+            ", "
+          )}), Seq(${onCreateString.mkString(", ")}), Set(${wrapInQuotationsAndMkString(nodesToLock)})"
 
       case Foreach(_, variable, list, mutations) =>
         s"${wrapInQuotations(variable)}, ${wrapInQuotations(expressionStringifier(list))}, Seq(${mutations.map(mutationToString).mkString(", ")})"
@@ -432,8 +432,8 @@ object LogicalPlanToPlanBuilderString {
             callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
           }
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(
-          ", "
-        )})$yielding" """.trim
+            ", "
+          )})$yielding" """.trim
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns.map(escapeIdentifier))
       case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, directed, length) =>
@@ -484,13 +484,13 @@ object LogicalPlanToPlanBuilderString {
         s"new ${exception.getClass.getSimpleName}()"
       case Input(nodes, rels, vars, nullable) =>
         s""" Seq(${wrapInQuotationsAndMkString(nodes)}), Seq(${wrapInQuotationsAndMkString(
-          rels
-        )}), Seq(${wrapInQuotationsAndMkString(vars)}), $nullable  """.trim
+            rels
+          )}), Seq(${wrapInQuotationsAndMkString(vars)}), $nullable  """.trim
       case RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds) =>
         val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
         s""" "$idName", ${startLabel.map(l => wrapInQuotations(l.name))}, Seq(${wrapInQuotationsAndMkString(
-          typeNames.map(_.name)
-        )}), ${endLabel.map(l => wrapInQuotations(l.name))}$args """.trim
+            typeNames.map(_.name)
+          )}), ${endLabel.map(l => wrapInQuotations(l.name))}$args """.trim
       case NodeCountFromCountStore(idName, labelNames, argumentIds) =>
         val args = if (argumentIds.isEmpty) "" else ", " + wrapInQuotationsAndMkString(argumentIds.toSeq)
         val labelStr = labelNames.map(_.map(l => wrapInQuotations(l.name)).toString).mkString(", ")
@@ -520,8 +520,8 @@ object LogicalPlanToPlanBuilderString {
       case SetRelationshipProperties(_, entity, items) => setPropertiesParam(entity, items)
       case SetPropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(
-          Seq(expressionStringifier(idName), expressionStringifier(expression))
-        )}, $removeOtherProps """.trim
+            Seq(expressionStringifier(idName), expressionStringifier(expression))
+          )}, $removeOtherProps """.trim
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
@@ -600,23 +600,23 @@ object LogicalPlanToPlanBuilderString {
       case UndirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
-          argumentIds
-        )}), $idsString """.trim
+            argumentIds
+          )}), $idsString """.trim
       case UndirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
-          argumentIds
-        )}), $idsString """.trim
+            argumentIds
+          )}), $idsString """.trim
       case DirectedRelationshipByIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
-          argumentIds
-        )}), $idsString """.trim
+            argumentIds
+          )}), $idsString """.trim
       case DirectedRelationshipByElementIdSeek(idName, ids, leftNode, rightNode, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotationsAndMkString(Seq(idName, leftNode, rightNode))}, Set(${wrapInQuotationsAndMkString(
-          argumentIds
-        )}), $idsString """.trim
+            argumentIds
+          )}), $idsString """.trim
       case DirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
         val args = argumentIds.map(wrapInQuotations)
         val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
@@ -1340,8 +1340,8 @@ object LogicalPlanToPlanBuilderString {
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
     s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(point)}", ${expressionStringifier(
-      distance
-    )}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
+        distance
+      )}$indexOrderStr$argStr$getValueStr$inclusiveStr$indexTypeStr """.trim
   }
 
   private def pointBoundingBoxNodeIndexSeek(
@@ -1370,8 +1370,8 @@ object LogicalPlanToPlanBuilderString {
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
     s""" "$idName", "${labelToken.name}", "$propName", "${expressionStringifier(lowerLeft)}", "${expressionStringifier(
-      upperRight
-    )}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+        upperRight
+      )}"$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
   private def pointBoundingBoxRelationshipIndexSeek(
@@ -1404,8 +1404,8 @@ object LogicalPlanToPlanBuilderString {
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
     s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
-      lowerLeft
-    )}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
+        lowerLeft
+      )}", "${expressionStringifier(upperRight)}"$directedString$indexOrderStr$argStr$getValueStr$indexTypeStr """.trim
   }
 
   private def pointDistanceRelationshipIndexSeek(
@@ -1440,10 +1440,10 @@ object LogicalPlanToPlanBuilderString {
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     val indexTypeStr = indexTypeToNamedArgumentString(indexType)
     s""" "$idName", "$start", "$end", "${typeToken.name}", "$propName", "${expressionStringifier(
-      point
-    )}", ${expressionStringifier(
-      distance
-    )}$directedStr$inclusiveStr$getValueStr$indexOrderStr$argStr$indexTypeStr """.trim
+        point
+      )}", ${expressionStringifier(
+        distance
+      )}$directedStr$inclusiveStr$getValueStr$indexOrderStr$argStr$indexTypeStr """.trim
   }
 
   private def idsStr(ids: SeekableArgs) = {

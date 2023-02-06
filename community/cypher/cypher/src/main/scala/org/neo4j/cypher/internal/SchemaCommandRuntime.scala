@@ -126,7 +126,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateNodePropertyUniquenessConstraint(source, _, label, props, name, options) => context =>
         SchemaExecutionPlan(
@@ -144,7 +144,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
     case CreateRelationshipPropertyUniquenessConstraint(source, _, relType, props, name, options) => context =>
         SchemaExecutionPlan(
@@ -204,7 +204,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           }
         )
 
-    // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateRangeIndex(source, entityName, props, name, options) => context =>
         SchemaExecutionPlan(
@@ -224,7 +224,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
+      // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
     case CreateLookupIndex(source, entityType, name, options) => context =>
         SchemaExecutionPlan(
@@ -237,7 +237,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON EACH (n.prop) [OPTIONS {...}]
+      // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON EACH (n.prop) [OPTIONS {...}]
     // CREATE FULLTEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON EACH (n.prop) [OPTIONS {...}]
     case CreateFulltextIndex(source, entityNames, props, name, options) => context =>
         SchemaExecutionPlan(
@@ -255,7 +255,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateTextIndex(source, entityName, props, name, options) => context =>
         SchemaExecutionPlan(
@@ -270,7 +270,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
-    // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+      // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreatePointIndex(source, entityName, props, name, options) => context =>
         SchemaExecutionPlan(

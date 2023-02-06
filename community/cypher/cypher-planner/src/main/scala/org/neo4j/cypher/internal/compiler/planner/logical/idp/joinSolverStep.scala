@@ -96,9 +96,9 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
           if (VERBOSE) {
             println(
               s"${show(leftGoal, nodes(lhs, context.staticComponents.planningAttributes.solveds))} overlap ${show(
-                rightGoal,
-                nodes(rhs, context.staticComponents.planningAttributes.solveds)
-              )} on ${showNames(overlappingNodes)}"
+                  rightGoal,
+                  nodes(rhs, context.staticComponents.planningAttributes.solveds)
+                )} on ${showNames(overlappingNodes)}"
             )
           }
           // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here

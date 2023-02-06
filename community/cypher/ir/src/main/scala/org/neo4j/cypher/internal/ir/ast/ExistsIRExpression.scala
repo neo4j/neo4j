@@ -60,9 +60,9 @@ case class ExistsIRExpression(
   override def equals(existsIRExpression: Any): Boolean = existsIRExpression match {
     case ee: ExistsIRExpression =>
       this.query.equals(ee.query) &&
-        this.existsVariableName.equals(ee.existsVariableName) &&
-        this.solvedExpressionAsString.replaceAll("\r\n", "\n")
-          .equals(ee.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+      this.existsVariableName.equals(ee.existsVariableName) &&
+      this.solvedExpressionAsString.replaceAll("\r\n", "\n")
+        .equals(ee.solvedExpressionAsString.replaceAll("\r\n", "\n"))
     case _ => false
   }
 }

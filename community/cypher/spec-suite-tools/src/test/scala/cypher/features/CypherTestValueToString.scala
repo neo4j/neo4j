@@ -65,8 +65,8 @@ object CypherTestValueToString extends (Any => String) {
           case (k, v) => (k, CypherTestValueToString(v))
         }
         s"{${properties.map {
-          case (k, v) => s"$k: $v"
-        }.mkString(", ")}}"
+            case (k, v) => s"$k: $v"
+          }.mkString(", ")}}"
 
       case path: Path =>
         val string = path.connections.foldLeft(CypherTestValueToString(path.startNode)) {

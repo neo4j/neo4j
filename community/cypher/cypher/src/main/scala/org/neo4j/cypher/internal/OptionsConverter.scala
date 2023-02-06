@@ -491,13 +491,13 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
     if (
       itemsMap.exists { case (p: String, _) =>
         p.equalsIgnoreCase(SPATIAL_CARTESIAN_MIN.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_CARTESIAN_MAX.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MIN.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MAX.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_WGS84_MIN.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_WGS84_MAX.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_WGS84_3D_MIN.getSettingName) ||
-          p.equalsIgnoreCase(SPATIAL_WGS84_3D_MAX.getSettingName)
+        p.equalsIgnoreCase(SPATIAL_CARTESIAN_MAX.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MIN.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_CARTESIAN_3D_MAX.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_WGS84_MIN.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_WGS84_MAX.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MIN.getSettingName) ||
+        p.equalsIgnoreCase(SPATIAL_WGS84_3D_MAX.getSettingName)
       }
     ) {
       itemsMap.writeTo(pp)

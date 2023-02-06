@@ -112,7 +112,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       val pq = RegularSinglePlannerQuery(horizon =
-        CallSubqueryHorizon(sq, correlated = false, yielding = true, inTransactionsParameters = None))
+        CallSubqueryHorizon(sq, correlated = false, yielding = true, inTransactionsParameters = None)
+      )
       val inputPlan = Argument()
 
       // When
@@ -137,7 +138,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       val pq = RegularSinglePlannerQuery(horizon =
-        CallSubqueryHorizon(sq, correlated = true, yielding = true, inTransactionsParameters = None))
+        CallSubqueryHorizon(sq, correlated = true, yielding = true, inTransactionsParameters = None)
+      )
       val inputPlan = Argument()
 
       // When

@@ -48,8 +48,8 @@ trait RewriteProcedureCalls {
   def process(from: BaseState, resolver: ProcedureSignatureResolver): BaseState = {
     val rewrittenStatement = from.statement().endoRewrite(rewriter(resolver))
     from.withStatement(rewrittenStatement)
-    // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
-    // so now we can assign them in the state.
+      // normalizeWithAndReturnClauses aliases return columns, but only now do we have return columns for procedure calls
+      // so now we can assign them in the state.
       .withReturnColumns(rewrittenStatement.returnColumns.map(_.name))
   }
 

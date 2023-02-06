@@ -121,9 +121,11 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternRelationships =
-        Set(PatternRelationship("n", ("a", "b"), BOTH, Seq(relTypeName("N")), SimplePatternLength)))
+        Set(PatternRelationship("n", ("a", "b"), BOTH, Seq(relTypeName("N")), SimplePatternLength))
+      )
       val mQg = QueryGraph(patternRelationships =
-        Set(PatternRelationship("m", ("c", "d"), BOTH, Seq(relTypeName("M")), SimplePatternLength)))
+        Set(PatternRelationship("m", ("c", "d"), BOTH, Seq(relTypeName("M")), SimplePatternLength))
+      )
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "a", "b")

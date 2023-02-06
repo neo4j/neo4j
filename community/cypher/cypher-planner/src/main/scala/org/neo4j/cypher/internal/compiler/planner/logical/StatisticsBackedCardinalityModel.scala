@@ -179,17 +179,20 @@ class StatisticsBackedCardinalityModel(
     // ProcedureCall
     case _: ProcedureCallProjection =>
       cardinalityAndInput.copy(cardinality =
-        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)
+      ) // At least 1 row
 
     // Show command - e.g. ShowIndexesCommand
     case _: CommandProjection =>
       cardinalityAndInput.copy(cardinality =
-        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)
+      ) // At least 1 row
 
     // Load CSV
     case _: LoadCSVProjection =>
       cardinalityAndInput.copy(cardinality =
-        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
+        Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)
+      ) // At least 1 row
 
     case _: PassthroughAllHorizon =>
       cardinalityAndInput

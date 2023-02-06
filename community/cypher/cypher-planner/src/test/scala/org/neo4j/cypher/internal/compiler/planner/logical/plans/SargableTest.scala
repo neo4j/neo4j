@@ -97,7 +97,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
     assertDoesNotMatch(equals(id(nodeA), expr2)) {
-      case AsIdSeekable(_) => (/* oh noes */ )
+      case AsIdSeekable(_) => ( /* oh noes */ )
     }
   }
 
@@ -105,7 +105,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertDoesNotMatch(equals(function("rand", nodeA), expr2)) {
-      case AsIdSeekable(_) => (/* oh noes */ )
+      case AsIdSeekable(_) => ( /* oh noes */ )
     }
   }
 
@@ -127,7 +127,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
     assertDoesNotMatch(equals(elementId(nodeA), expr2)) {
-      case AsElementIdSeekable(_) => (/* oh noes */ )
+      case AsElementIdSeekable(_) => ( /* oh noes */ )
     }
   }
 
@@ -135,7 +135,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertDoesNotMatch(equals(function("rand", nodeA), expr2)) {
-      case AsElementIdSeekable(_) => (/* oh noes */ )
+      case AsElementIdSeekable(_) => ( /* oh noes */ )
     }
   }
 
@@ -237,7 +237,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
     assertDoesNotMatch(in(prop("a", "id"), expr2)) {
-      case AsPropertySeekable(_) => (/* oh noes */ )
+      case AsPropertySeekable(_) => ( /* oh noes */ )
     }
   }
 

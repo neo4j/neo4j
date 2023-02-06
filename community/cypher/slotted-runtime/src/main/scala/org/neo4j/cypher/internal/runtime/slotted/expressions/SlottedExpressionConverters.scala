@@ -77,8 +77,8 @@ object SlottedExpressionConverters {
   )(slots: SlotConfiguration): Seq[(String, Expression, Boolean)] = {
     // SlotConfiguration is a separate parameter list so it can be applied at a later stage
     groupings.toSeq.map(a => (a._1, a._2, orderToLeverage.contains(a._2)))
-    // Sort grouping key (1) by expressions with provided order first, followed by unordered expressions
-    //          and then (2) by slot offset
+      // Sort grouping key (1) by expressions with provided order first, followed by unordered expressions
+      //          and then (2) by slot offset
       .sortBy(b => (!b._3, slots(b._1).offset))
   }
 }

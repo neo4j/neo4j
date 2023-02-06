@@ -71,9 +71,9 @@ case class CountIRExpression(
   override def equals(countIRExpression: Any): Boolean = countIRExpression match {
     case ce: CountIRExpression =>
       this.query.equals(ce.query) &&
-        this.countVariableName.equals(ce.countVariableName) &&
-        this.solvedExpressionAsString.replaceAll("\r\n", "\n")
-          .equals(ce.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+      this.countVariableName.equals(ce.countVariableName) &&
+      this.solvedExpressionAsString.replaceAll("\r\n", "\n")
+        .equals(ce.solvedExpressionAsString.replaceAll("\r\n", "\n"))
     case _ => false
   }
 }

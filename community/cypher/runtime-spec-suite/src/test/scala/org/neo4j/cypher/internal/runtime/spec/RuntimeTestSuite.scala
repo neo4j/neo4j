@@ -185,7 +185,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       ) {
         runtimeTestParameters.copy(planCombinationRewriter =
           Some(runtimeTestParameters.planCombinationRewriter.get.copy(hints =
-            runtimeTestParameters.planCombinationRewriter.get.hints.union(testPlanCombinationRewriterHints)))
+            runtimeTestParameters.planCombinationRewriter.get.hints.union(testPlanCombinationRewriterHints)
+          ))
         )
       } else {
         runtimeTestParameters

@@ -333,7 +333,7 @@ case class LegacyPruningVarLengthExpandPipe(
         r => (VirtualValues.relationship(r), VirtualValues.node(relationships.otherNodeId(node.id())))
       ).filter {
         case (rel, other) => filteringStep.filterRelationship(row, state)(rel) &&
-            filteringStep.filterNode(row, state)(other)
+          filteringStep.filterNode(row, state)(other)
       }
     }
   }

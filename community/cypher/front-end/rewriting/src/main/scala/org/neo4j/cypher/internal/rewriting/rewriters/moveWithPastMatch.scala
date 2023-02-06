@@ -131,7 +131,9 @@ case object moveWithPastMatch extends StepSequencer.Step with ASTRewriterFactory
             // The WITH can be moved past the MatchGroup
             val newWith = w.copy(returnItems =
               w.returnItems.copy(items =
-                w.returnItems.items ++ mg.allExportedVariablesAsReturnItems)(w.returnItems.position))(w.position)
+                w.returnItems.items ++ mg.allExportedVariablesAsReturnItems
+              )(w.returnItems.position)
+            )(w.position)
 
             previousSections :+ mg :+ mw.copy(`with` = newWith)
           case (previousSections, section) =>

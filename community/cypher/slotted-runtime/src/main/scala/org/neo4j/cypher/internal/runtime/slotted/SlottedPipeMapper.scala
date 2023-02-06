@@ -1066,7 +1066,8 @@ class SlottedPipeMapper(
             values(i) = convertExpressions(e)
         }
         SetPipe(source, SlottedSetRelationshipPropertiesOperation(slots(name), keys, values, needsExclusiveLock))(id =
-          id)
+          id
+        )
 
       case SetRelationshipPropertiesFromMap(_, name, expression, removeOtherProps) =>
         val needsExclusiveLock =

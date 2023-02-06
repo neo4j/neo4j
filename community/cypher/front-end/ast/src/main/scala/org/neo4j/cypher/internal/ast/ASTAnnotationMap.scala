@@ -57,8 +57,8 @@ object ASTAnnotationMap {
       that match {
         case that: PositionedNode[N] =>
           that.canEqual(this) &&
-            this.node == that.node &&
-            this.node.position == that.node.position
+          this.node == that.node &&
+          this.node.position == that.node.position
         case _ => false
       }
     }

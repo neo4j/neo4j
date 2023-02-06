@@ -345,11 +345,11 @@ case class RegularSinglePlannerQuery(
     // Make sure it corresponds with pointOutDifference
     case that: RegularSinglePlannerQuery =>
       (that canEqual this) &&
-        queryInput == that.queryInput &&
-        queryGraph == that.queryGraph &&
-        horizon == that.horizon &&
-        tail == that.tail &&
-        interestingOrder.requiredOrderCandidate.order == that.interestingOrder.requiredOrderCandidate.order
+      queryInput == that.queryInput &&
+      queryGraph == that.queryGraph &&
+      horizon == that.horizon &&
+      tail == that.tail &&
+      interestingOrder.requiredOrderCandidate.order == that.interestingOrder.requiredOrderCandidate.order
     case _ => false
   }
 

@@ -766,7 +766,7 @@ abstract class OptionalExpandIntoTestBase[CONTEXT <: RuntimeContext](
         c <- cs
         b <- bs
       } // r2
-      c.createRelationshipTo(b, RelationshipType.withName("R"))
+        c.createRelationshipTo(b, RelationshipType.withName("R"))
 
       r1s
     }

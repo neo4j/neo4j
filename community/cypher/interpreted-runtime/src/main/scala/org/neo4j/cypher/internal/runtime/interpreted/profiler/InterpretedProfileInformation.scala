@@ -49,11 +49,11 @@ class InterpretedProfileInformation extends QueryProfile {
     override def equals(o: Any): Boolean = o match {
       case that: OperatorProfile =>
         this.time == that.time &&
-          this.dbHits == that.dbHits &&
-          this.rows == that.rows &&
-          this.pageCacheHits == that.pageCacheHits &&
-          this.pageCacheMisses == that.pageCacheMisses &&
-          this.maxAllocatedMemory == that.maxAllocatedMemory()
+        this.dbHits == that.dbHits &&
+        this.rows == that.rows &&
+        this.pageCacheHits == that.pageCacheHits &&
+        this.pageCacheMisses == that.pageCacheMisses &&
+        this.maxAllocatedMemory == that.maxAllocatedMemory()
       case _ => false
     }
 

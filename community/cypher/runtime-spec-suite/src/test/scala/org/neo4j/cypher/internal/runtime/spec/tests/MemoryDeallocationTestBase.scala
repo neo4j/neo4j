@@ -800,7 +800,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val toleratedDeviationPercentage = Math.round(toleratedDeviation * 100)
     val deviationMessage =
       s"$deviationPercentage%${if (toleratedDeviation > 0.0d) s" is more than tolerated ${toleratedDeviationPercentage}%"
-      else ""}"
+        else ""}"
 
     withClue(
       s"Query 1 used $maxMem1 bytes and Query 2 used $maxMem2 bytes ($memDiff bytes difference, $deviationMessage):\n"

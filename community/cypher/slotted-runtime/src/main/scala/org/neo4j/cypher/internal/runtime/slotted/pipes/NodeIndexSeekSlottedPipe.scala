@@ -67,12 +67,12 @@ case class NodeIndexSeekSlottedPipe(
   override def equals(other: Any): Boolean = other match {
     case that: NodeIndexSeekSlottedPipe =>
       (that canEqual this) &&
-        ident == that.ident &&
-        label == that.label &&
-        (properties == that.properties) &&
-        valueExpr == that.valueExpr &&
-        indexMode == that.indexMode &&
-        slots == that.slots
+      ident == that.ident &&
+      label == that.label &&
+      (properties == that.properties) &&
+      valueExpr == that.valueExpr &&
+      indexMode == that.indexMode &&
+      slots == that.slots
     case _ => false
   }
 

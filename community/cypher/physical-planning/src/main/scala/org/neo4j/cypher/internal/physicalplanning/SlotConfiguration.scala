@@ -540,10 +540,10 @@ class SlotConfiguration private (
   override def equals(other: Any): Boolean = other match {
     case that: SlotConfiguration =>
       (that canEqual this) &&
-        slots == that.slots &&
-        numberOfLongs == that.numberOfLongs &&
-        numberOfReferences == that.numberOfReferences &&
-        markedDiscarded == that.markedDiscarded
+      slots == that.slots &&
+      numberOfLongs == that.numberOfLongs &&
+      numberOfReferences == that.numberOfReferences &&
+      markedDiscarded == that.markedDiscarded
     case _ => false
   }
 

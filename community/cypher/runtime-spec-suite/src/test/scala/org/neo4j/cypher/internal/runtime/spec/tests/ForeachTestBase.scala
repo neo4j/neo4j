@@ -745,7 +745,8 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
         "i",
         "[1, 2, 3]",
         Seq(createPattern(relationships =
-          Seq(createRelationship("r", "x", "R", "x", properties = Some("{p1: 42, p2: null}")))))
+          Seq(createRelationship("r", "x", "R", "x", properties = Some("{p1: 42, p2: null}")))
+        ))
       )
       .allNodeScan("x")
       .build(readOnly = false)

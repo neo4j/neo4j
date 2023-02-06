@@ -2815,8 +2815,8 @@ case class LogicalPlan2PlanDescription(
     case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
     case OptionsMap(options) =>
       pretty" OPTIONS ${options.map({
-        case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
-      }).mkPrettyString("{", SEPARATOR, "}")}"
+          case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
+        }).mkPrettyString("{", SEPARATOR, "}")}"
   }
 
   private def setPropertyInfo(idName: PrettyString, expression: Expression, removeOtherProps: Boolean): PrettyString = {

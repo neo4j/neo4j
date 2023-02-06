@@ -439,7 +439,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       sortedPlan should equal(inputPlan)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder =
-          io)
+          io
+        )
       )
     }
   }
@@ -461,7 +462,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       ))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder =
-          io)
+          io
+        )
       )
     }
   }
@@ -480,7 +482,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       sortedPlan should equal(Sort(inputPlan, Seq(Ascending("m"))))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder =
-          io)
+          io
+        )
       )
     }
   }
@@ -505,7 +508,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder =
-          io)
+          io
+        )
       )
     }
   }

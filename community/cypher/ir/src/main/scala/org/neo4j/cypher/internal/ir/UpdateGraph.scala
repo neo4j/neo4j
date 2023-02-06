@@ -579,12 +579,12 @@ trait UpdateGraph {
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
         readNode != deletedNode &&
-          getDeleteOverlapWithLabelExpression(
-            qgWithInfo,
-            readNode,
-            deletedNode,
-            leafPlansPredicatesResolver
-          )
+        getDeleteOverlapWithLabelExpression(
+          qgWithInfo,
+          readNode,
+          deletedNode,
+          leafPlansPredicatesResolver
+        )
       }
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
 

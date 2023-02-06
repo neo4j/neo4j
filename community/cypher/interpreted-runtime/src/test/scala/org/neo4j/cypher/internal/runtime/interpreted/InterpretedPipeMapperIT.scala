@@ -82,7 +82,8 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
   private val planContext: PlanContext = mock[PlanContext]
 
   private val semanticTable = new SemanticTable(resolvedRelTypeNames =
-    mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
+    mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3))
+  )
 
   private val converters =
     new ExpressionConverters(CommunityExpressionConverter(

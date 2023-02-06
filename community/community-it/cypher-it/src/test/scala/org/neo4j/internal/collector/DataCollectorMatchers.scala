@@ -331,10 +331,10 @@ object DataCollectorMatchers {
       obj match {
         case seq: Seq[_] =>
           seq.size == array.length &&
-            seq.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+          seq.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
         case otherArray: Array[_] =>
           otherArray.length == array.length &&
-            otherArray.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
+          otherArray.zip(array).forall(pair => arraySafeEquals(pair._1, pair._2))
         case _ => false
       }
     }

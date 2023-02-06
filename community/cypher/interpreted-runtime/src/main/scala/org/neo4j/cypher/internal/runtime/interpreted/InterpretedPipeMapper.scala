@@ -1476,11 +1476,13 @@ case class InterpretedPipeMapper(
 
       case ConditionalApply(lhsPlan, rhsPlan, ids) =>
         ConditionalApplyPipe(lhs, rhs, ids, negated = false, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id =
-          id)
+          id
+        )
 
       case AntiConditionalApply(lhsPlan, rhsPlan, ids) =>
         ConditionalApplyPipe(lhs, rhs, ids, negated = true, rhsPlan.availableSymbols -- lhsPlan.availableSymbols)(id =
-          id)
+          id
+        )
 
       case Union(_, _) =>
         UnionPipe(lhs, rhs)(id = id)
