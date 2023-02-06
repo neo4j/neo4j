@@ -151,7 +151,7 @@ public class DatabaseUpgradeTransactionIT {
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction(
             DbmsRuntimeVersion dbmsRuntimeVersion) throws Exception {
         // Given
-        assumeThat(dbmsRuntimeVersion).isLessThan(DbmsRuntimeVersion.V5_4);
+        assumeThat(dbmsRuntimeVersion).isLessThan(DbmsRuntimeVersion.V5_6);
 
         long startTransaction = lastCommittedTransactionId();
 

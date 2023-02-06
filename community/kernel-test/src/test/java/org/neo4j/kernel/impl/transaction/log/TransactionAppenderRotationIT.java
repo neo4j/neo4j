@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -138,7 +138,7 @@ class TransactionAppenderRotationIT {
     private TransactionToApply prepareTransaction() {
         List<StorageCommand> commands = createCommands();
         CompleteTransaction transactionRepresentation =
-                new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+                new CompleteTransaction(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
         return new TransactionToApply(
                 transactionRepresentation,

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import static java.lang.String.format;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.neo4j.common.Subject;
@@ -44,11 +43,11 @@ public class CompleteTransaction implements CommandBatch {
      */
     private final int leaseId;
 
-    private byte[] additionalHeader;
+    private long consensusIndex;
 
     public CompleteTransaction(
             List<StorageCommand> commands,
-            byte[] additionalHeader,
+            long consensusIndex,
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted,
@@ -56,7 +55,7 @@ public class CompleteTransaction implements CommandBatch {
             KernelVersion kernelVersion,
             Subject subject) {
         this.commands = commands;
-        this.additionalHeader = additionalHeader;
+        this.consensusIndex = consensusIndex;
         this.timeStarted = timeStarted;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
         this.timeCommitted = timeCommitted;
@@ -65,8 +64,8 @@ public class CompleteTransaction implements CommandBatch {
         this.subject = subject;
     }
 
-    public void setAdditionalHeader(byte[] additionalHeader) {
-        this.additionalHeader = additionalHeader;
+    public void setConsensusIndex(long consensusIndex) {
+        this.consensusIndex = consensusIndex;
     }
 
     @Override
@@ -80,8 +79,8 @@ public class CompleteTransaction implements CommandBatch {
     }
 
     @Override
-    public byte[] additionalHeader() {
-        return additionalHeader;
+    public long consensusIndex() {
+        return consensusIndex;
     }
 
     @Override
@@ -126,14 +125,14 @@ public class CompleteTransaction implements CommandBatch {
         CompleteTransaction that = (CompleteTransaction) o;
         return latestCommittedTxWhenStarted == that.latestCommittedTxWhenStarted
                 && timeStarted == that.timeStarted
-                && Arrays.equals(additionalHeader, that.additionalHeader)
+                && consensusIndex == that.consensusIndex
                 && commands.equals(that.commands);
     }
 
     @Override
     public int hashCode() {
         int result = commands.hashCode();
-        result = 31 * result + (additionalHeader != null ? Arrays.hashCode(additionalHeader) : 0);
+        result = 31 * result + (int) (consensusIndex ^ (consensusIndex >>> 32));
         result = 31 * result + (int) (timeStarted ^ (timeStarted >>> 32));
         result = 31 * result + (int) (latestCommittedTxWhenStarted ^ (latestCommittedTxWhenStarted >>> 32));
         return result;
@@ -147,13 +146,13 @@ public class CompleteTransaction implements CommandBatch {
     @Override
     public String toString(boolean includeCommands) {
         String basic = format(
-                "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, additionalHeader:%s, commands.length:%d",
+                "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, consensusIndex:%d, commands.length:%d",
                 getClass().getSimpleName(),
                 timeStarted,
                 latestCommittedTxWhenStarted,
                 timeCommitted,
                 leaseId,
-                Arrays.toString(additionalHeader),
+                consensusIndex,
                 commands.size());
         if (!includeCommands) {
             return basic;

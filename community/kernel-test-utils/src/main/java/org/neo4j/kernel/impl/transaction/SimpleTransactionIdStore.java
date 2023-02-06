@@ -36,18 +36,25 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
  */
 public class SimpleTransactionIdStore implements TransactionIdStore {
     private final AtomicLong committingTransactionId = new AtomicLong();
-    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence(-1, 100, new long[3]);
-    private final AtomicReference<TransactionId> committedTransactionId =
-            new AtomicReference<>(new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence(-1, 100, new long[4]);
+    private final AtomicReference<TransactionId> committedTransactionId = new AtomicReference<>(
+            new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
 
     public SimpleTransactionIdStore() {
-        this(BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
+        this(
+                BASE_TX_ID,
+                BASE_TX_CHECKSUM,
+                BASE_TX_COMMIT_TIMESTAMP,
+                UNKNOWN_CONSENSUS_INDEX,
+                BASE_TX_LOG_VERSION,
+                BASE_TX_LOG_BYTE_OFFSET);
     }
 
     public SimpleTransactionIdStore(
             long previouslyCommittedTxId,
             int checksum,
             long previouslyCommittedTxCommitTimestamp,
+            long previousConsensusIndex,
             long previouslyCommittedTxLogVersion,
             long previouslyCommittedTxLogByteOffset) {
         assert previouslyCommittedTxId >= BASE_TX_ID : "cannot start from a tx id less than BASE_TX_ID";
@@ -55,6 +62,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
                 previouslyCommittedTxId,
                 checksum,
                 previouslyCommittedTxCommitTimestamp,
+                previousConsensusIndex,
                 previouslyCommittedTxLogByteOffset,
                 previouslyCommittedTxLogVersion);
     }
@@ -70,10 +78,11 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public synchronized void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
+    public synchronized void transactionCommitted(
+            long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
         TransactionId current = committedTransactionId.get();
         if (current == null || transactionId > current.transactionId()) {
-            committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp));
+            committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
         }
     }
 
@@ -95,26 +104,45 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
         long[] data = closedTransactionId.get();
-        return new ClosedTransactionMetadata(data[0], new LogPosition(data[1], data[2]), (int) data[3], data[4]);
+        return new ClosedTransactionMetadata(
+                data[0], new LogPosition(data[1], data[2]), (int) data[3], data[4], data[5]);
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion) {
+            long transactionId,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion) {
         committingTransactionId.set(transactionId);
-        committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp));
-        closedTransactionId.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
+        committedTransactionId.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
+        closedTransactionId.set(
+                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
     }
 
     @Override
     public void transactionClosed(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
-        closedTransactionId.offer(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        closedTransactionId.offer(
+                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
     }
 
     @Override
     public void resetLastClosedTransaction(
-            long transactionId, long byteOffset, long logVersion, int checksum, long commitTimestamp) {
-        closedTransactionId.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
+            long transactionId,
+            long byteOffset,
+            long logVersion,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        closedTransactionId.set(
+                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
     }
 }

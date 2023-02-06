@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -235,8 +235,8 @@ class ParallelRecoveryVisitorTest {
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
         LogEntryStart startEntry = new LogEntryStart(0, 0, 0, new byte[0], UNSPECIFIED);
-        CommandBatch txRepresentation =
-                new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, AUTH_DISABLED);
+        CommandBatch txRepresentation = new CompleteTransaction(
+                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, AUTH_DISABLED);
         LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }

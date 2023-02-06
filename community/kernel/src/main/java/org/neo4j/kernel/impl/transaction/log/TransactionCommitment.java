@@ -29,6 +29,7 @@ public class TransactionCommitment implements Commitment {
     private boolean committed;
     private long transactionId;
     private int checksum;
+    private long consensusIndex;
     private LogPosition logPosition;
     private long transactionCommitTimestamp;
 
@@ -38,10 +39,16 @@ public class TransactionCommitment implements Commitment {
     }
 
     @Override
-    public void commit(long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {
+    public void commit(
+            long transactionId,
+            LogPosition beforeCommit,
+            LogPosition logPositionAfterCommit,
+            int checksum,
+            long consensusIndex) {
         this.transactionId = transactionId;
         this.logPosition = logPositionAfterCommit;
         this.checksum = checksum;
+        this.consensusIndex = consensusIndex;
         this.transactionMetadataCache.cacheTransactionMetadata(transactionId, beforeCommit);
     }
 
@@ -49,7 +56,7 @@ public class TransactionCommitment implements Commitment {
     public void publishAsCommitted(long transactionCommitTimestamp) {
         this.committed = true;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
-        transactionIdStore.transactionCommitted(transactionId, checksum, transactionCommitTimestamp);
+        transactionIdStore.transactionCommitted(transactionId, checksum, transactionCommitTimestamp, consensusIndex);
     }
 
     @Override
@@ -60,7 +67,8 @@ public class TransactionCommitment implements Commitment {
                     logPosition.getLogVersion(),
                     logPosition.getByteOffset(),
                     checksum,
-                    transactionCommitTimestamp);
+                    transactionCommitTimestamp,
+                    consensusIndex);
         }
     }
 }

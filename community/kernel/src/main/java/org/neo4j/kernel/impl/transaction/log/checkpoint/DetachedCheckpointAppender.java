@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
@@ -64,7 +65,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final LogRotation logRotation;
     private StoreId storeId;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
-    private DetachedCheckpointLogEntryWriter checkpointWriter;
+    private CheckpointWriters checkpointWriters;
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
@@ -100,7 +101,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         seekCheckpointChannel(version);
         buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
         writer = new PositionAwarePhysicalFlushableChecksumChannel(channel, buffer);
-        checkpointWriter = new DetachedCheckpointLogEntryWriter(writer, context.getKernelVersionProvider());
+        checkpointWriters = new CheckpointWriters(writer);
     }
 
     private void seekCheckpointChannel(long expectedVersion) throws IOException {
@@ -146,11 +147,12 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     public void checkPoint(
             LogCheckPointEvent logCheckPointEvent,
             TransactionId transactionId,
+            KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,
             String reason)
             throws IOException {
-        if (checkpointWriter == null) {
+        if (writer == null) {
             // we were not started but on a failure path someone tried to shutdown everything with checkpoint.
             log.warn("Checkpoint was attempted while appender is not started. No checkpoint record will be appended.");
             return;
@@ -159,7 +161,9 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             try {
                 databasePanic.assertNoPanic(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentPosition();
-                checkpointWriter.writeCheckPointEntry(transactionId, logPosition, checkpointTime, storeId, reason);
+                getCheckpointLogEntryWriter(kernelVersion)
+                        .writeCheckPointEntry(
+                                transactionId, kernelVersion, logPosition, checkpointTime, storeId, reason);
                 var logPositionAfterCheckpoint = writer.getCurrentPosition();
                 logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);
                 forceAfterAppend(logCheckPointEvent);
@@ -169,6 +173,10 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 throw cause;
             }
         }
+    }
+
+    private CheckpointLogEntryWriter getCheckpointLogEntryWriter(KernelVersion kernelVersion) {
+        return checkpointWriters.writer(kernelVersion);
     }
 
     public long getCurrentPosition() {

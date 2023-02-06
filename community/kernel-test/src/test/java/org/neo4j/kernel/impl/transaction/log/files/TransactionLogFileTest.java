@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -107,7 +108,7 @@ class TransactionLogFileTest {
     private final long rotationThreshold = ByteUnit.mebiBytes(1);
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
     private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
+            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
 
     @BeforeEach
     void setUp() {
@@ -144,7 +145,7 @@ class TransactionLogFileTest {
         fileSystem
                 .write(logFiles.getLogFile().getLogFileForVersion(logVersionRepository.getCurrentLogVersion()))
                 .close();
-        transactionIdStore.transactionCommitted(5L, 5, 5L);
+        transactionIdStore.transactionCommitted(5L, 5, 5L, 6L);
 
         PhysicalLogicalTransactionStore.LogVersionLocator versionLocator =
                 new PhysicalLogicalTransactionStore.LogVersionLocator(4L);

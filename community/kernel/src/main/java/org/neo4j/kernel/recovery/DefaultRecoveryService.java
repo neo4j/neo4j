@@ -23,6 +23,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -119,7 +120,8 @@ public class DefaultRecoveryService implements RecoveryService {
                     logVersion,
                     CURRENT_FORMAT_LOG_HEADER_SIZE,
                     lastClosedTransactionData.checksum(),
-                    lastClosedTransactionData.commitTimestamp());
+                    lastClosedTransactionData.commitTimestamp(),
+                    lastClosedTransactionData.consensusIndex());
             logVersionRepository.setCurrentLogVersion(logVersion);
             long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
             if (checkpointLogVersion < 0) {
@@ -136,6 +138,7 @@ public class DefaultRecoveryService implements RecoveryService {
                     lastRecoveredBatch.txId(),
                     lastRecoveredBatch.checksum(),
                     lastRecoveredBatch.timeWritten(),
+                    lastRecoveredBatch.commandBatch().consensusIndex(),
                     lastRecoveredTransactionPosition.getByteOffset(),
                     lastRecoveredTransactionPosition.getLogVersion());
         } else {
@@ -152,7 +155,8 @@ public class DefaultRecoveryService implements RecoveryService {
                     positionAfterLastRecoveredTransaction.getLogVersion(),
                     positionAfterLastRecoveredTransaction.getByteOffset(),
                     BASE_TX_CHECKSUM,
-                    BASE_TX_COMMIT_TIMESTAMP);
+                    BASE_TX_COMMIT_TIMESTAMP,
+                    UNKNOWN_CONSENSUS_INDEX);
         }
 
         logVersionRepository.setCurrentLogVersion(positionAfterLastRecoveredTransaction.getLogVersion());

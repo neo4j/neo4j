@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 import java.time.Instant;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.storageengine.api.TransactionId;
@@ -32,6 +33,7 @@ public interface CheckpointAppender {
      *
      * @param logCheckPointEvent a trace event for the given check point operation.
      * @param transactionId last closed transaction id at time of checkpoint
+     * @param kernelVersion kernel version of checkpoint
      * @param logPosition the log position contained in the written check point
      * @param checkpointTime time when checkpoint occurred
      * @param reason reason for checkpoint to occur
@@ -41,6 +43,7 @@ public interface CheckpointAppender {
     void checkPoint(
             LogCheckPointEvent logCheckPointEvent,
             TransactionId transactionId,
+            KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,
             String reason)

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,6 +34,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_S
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 import java.io.IOException;
@@ -89,11 +89,11 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -121,7 +121,7 @@ import org.neo4j.test.extension.RandomExtension;
 @Neo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
 class RecoveryCorruptedTransactionLogIT {
-    private static final int CHECKPOINT_RECORD_SIZE = DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
+    private static final int CHECKPOINT_RECORD_SIZE = DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -184,6 +184,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
+                            KernelVersion.LATEST,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
@@ -229,6 +230,7 @@ class RecoveryCorruptedTransactionLogIT {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionIdStore.getLastCommittedTransaction(),
+                            KernelVersion.LATEST,
                             logOffsetBeforeTestTransactions,
                             Instant.now(),
                             "Fallback checkpoint.");
@@ -272,6 +274,7 @@ class RecoveryCorruptedTransactionLogIT {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionIdStore.getLastCommittedTransaction(),
+                        KernelVersion.LATEST,
                         logOffsetBeforeTestTransactions,
                         Instant.now(),
                         "Fallback checkpoint.");
@@ -533,6 +536,7 @@ class RecoveryCorruptedTransactionLogIT {
                 checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
+                        KernelVersion.LATEST,
                         new LogPosition(0, HEADER_OFFSET),
                         Instant.now(),
                         "test" + i);
@@ -1091,8 +1095,8 @@ class RecoveryCorruptedTransactionLogIT {
             commands.add(new Command.PropertyCommand(
                     LATEST_LOG_SERIALIZATION, new PropertyRecord(1), new PropertyRecord(2)));
             commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
-            CompleteTransaction transaction =
-                    new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+            CompleteTransaction transaction = new CompleteTransaction(
+                    commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
             writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         }
     }

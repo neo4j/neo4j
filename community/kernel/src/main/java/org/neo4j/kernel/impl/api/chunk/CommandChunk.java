@@ -29,9 +29,10 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMetadata) implements CommandBatch {
+
     @Override
-    public byte[] additionalHeader() {
-        return chunkMetadata.additionalData();
+    public long consensusIndex() {
+        return chunkMetadata.consensusIndex();
     }
 
     @Override

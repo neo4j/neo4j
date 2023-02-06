@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.Duration.ofDays;
 import static java.util.OptionalLong.empty;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy.PERIODIC;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -49,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.api.database.transaction.LogChannel;
@@ -65,12 +68,16 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -99,6 +106,9 @@ class TransactionLogServiceIT {
     private LogicalTransactionStore transactionStore;
 
     @Inject
+    private FileSystemAbstraction fs;
+
+    @Inject
     private MetadataProvider metadataProvider;
 
     @Inject
@@ -107,6 +117,8 @@ class TransactionLogServiceIT {
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
         builder.setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD)
+                .setConfig(GraphDatabaseSettings.check_point_policy, PERIODIC)
+                .setConfig(GraphDatabaseSettings.check_point_interval_time, ofDays(10))
                 .setConfig(GraphDatabaseSettings.keep_logical_logs, "2 files");
     }
 
@@ -609,6 +621,155 @@ class TransactionLogServiceIT {
         } finally {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);
         }
+    }
+
+    @Test
+    void failToAppendCheckpointOnAvailableDatabase() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> logService.appendCheckpoint(TransactionIdStore.UNKNOWN_TRANSACTION_ID, "Test"));
+    }
+
+    @Test
+    void appendCheckpointForTheLastAvailableTransaction() throws IOException {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+        String testReason = "My unique last checkpoint1.";
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.logsAfterLastCheckpoint())
+                .describedAs("There should not be any new commits after the checkpoint." + freshTail)
+                .isFalse();
+        assertThat(freshTail.isRecoveryRequired())
+                .describedAs("Recovery should not be required. " + freshTail)
+                .isFalse();
+    }
+
+    @Test
+    void appendCheckpointForNotTheLastAvailableTransaction() throws IOException {
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+
+        createNodeInIsolatedTransaction("foo");
+
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+        String testReason = "My unique last checkpoint2.";
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        var checkpointInfo = logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertThat(checkpointInfo.reason()).contains(testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.getLastCheckPoint().orElseThrow()).isEqualTo(checkpointInfo);
+        assertThat(freshTail.logsAfterLastCheckpoint())
+                .describedAs("There should be new commits after the checkpoint." + freshTail)
+                .isTrue();
+        assertThat(freshTail.isRecoveryRequired())
+                .describedAs("Recovery should be required. " + freshTail)
+                .isTrue();
+        assertThat(freshTail.firstTxIdAfterLastCheckPoint)
+                .describedAs("Transaction id after should be right after checkpointed tx id.")
+                .isEqualTo(lastTransactionId.transactionId() + 1);
+    }
+
+    @Test
+    void appendCheckpointWhenLogFilesAreEmpty() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            createNodeInIsolatedTransaction("foo");
+        }
+        // we have some transaction that actually generated tx id
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+        LogFile logFile = logFiles.getLogFile();
+        long logVersion = logFile.getCurrentLogVersion();
+        logFile.rotate();
+
+        // remove all old file version
+        while (logFile.versionExists(logVersion)) {
+            Path file = logFile.getLogFileForVersion(logVersion);
+            fs.deleteFile(file);
+            logVersion--;
+        }
+
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+
+        String testReason = "Checkpoint on empty log files should work since its full story copy.";
+        logService.appendCheckpoint(lastTransactionId, testReason);
+
+        LogTailInformation freshTail = getFreshLogTail();
+        assertThat(lastTransactionId).isEqualTo(freshTail.getLastCommittedTransaction());
+        assertThat(freshTail.logsAfterLastCheckpoint())
+                .describedAs("There should not be any commits after the checkpoint." + freshTail)
+                .isFalse();
+        assertThat(freshTail.isRecoveryRequired())
+                .describedAs("Recovery should not be required. " + freshTail)
+                .isFalse();
+    }
+
+    @Test
+    void failToAppendCheckpointWhenHaveSeveralLogFiles() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            createNodeInIsolatedTransaction("foo");
+        }
+        // we have some transaction that actually generated tx id
+        TransactionId lastTransactionId = metadataProvider.getLastCommittedTransaction();
+        LogFile logFile = logFiles.getLogFile();
+        long logVersion = logFile.getCurrentLogVersion();
+        logFile.rotate();
+        logFile.rotate();
+
+        // remove all old file version
+        while (logFile.versionExists(logVersion)) {
+            Path file = logFile.getLogFileForVersion(logVersion);
+            fs.deleteFile(file);
+            logVersion--;
+        }
+
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+
+        String testReason = "Fail to append this checkpoint to non existing tx.";
+        assertThatThrownBy(() -> logService.appendCheckpoint(lastTransactionId, testReason))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining(
+                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+    }
+
+    @Test
+    void failToAppendCheckpointWhenHaveNonEmptyLogFile() throws IOException {
+        for (int i = 0; i < 10; i++) {
+            createNodeInIsolatedTransaction("foo");
+        }
+        assertThat(logFiles.getLogFile().getMatchedFiles()).hasSize(1);
+
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+
+        String testReason = "Fail to append this checkpoint to non existing tx.";
+        assertThatThrownBy(() -> logService.appendCheckpoint(new TransactionId(789, 1, 2, 3), testReason))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining(
+                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+    }
+
+    @Test
+    void failToAppendCheckpointForTransactionThatDoesNotExistInLogs() {
+        availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
+        String testReason = "My unique last checkpoint3.";
+        assertThatThrownBy(() -> logService.appendCheckpoint(new TransactionId(789, 7, 8, 9), testReason))
+                .isInstanceOf(IOException.class)
+                .hasMessageContaining(
+                        "requested checkpoint record can't be created since transaction does not exist in the log files.");
+    }
+
+    private LogTailInformation getFreshLogTail() {
+        return ((CheckpointLogFile) logFiles.getCheckpointFile())
+                .getLogTailScanner()
+                .findLogTail();
     }
 
     private ByteBuffer readTransactionIntoBuffer(

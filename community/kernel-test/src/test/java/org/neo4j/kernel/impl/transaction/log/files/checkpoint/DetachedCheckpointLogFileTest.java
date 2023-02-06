@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -71,7 +72,7 @@ class DetachedCheckpointLogFileTest {
     private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
     private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
+            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointFile checkpointFile;
     private LogFiles logFiles;
     private final FakeKernelVersionProvider versionProvider = new FakeKernelVersionProvider();
@@ -88,8 +89,10 @@ class DetachedCheckpointLogFileTest {
     void findLogTailShouldWorkForDetachedCheckpoints() throws IOException {
         LogPosition logPosition =
                 new LogPosition(logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE);
-        TransactionId transactionId = new TransactionId(1, 2, 3);
-        checkpointFile.getCheckpointAppender().checkPoint(NULL, transactionId, logPosition, Instant.now(), "detached");
+        TransactionId transactionId = new TransactionId(1, 2, 3, 4);
+        checkpointFile
+                .getCheckpointAppender()
+                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), "detached");
         CheckpointInfo lastCheckPoint = ((LogTailInformation) buildLogFiles().getTailMetadata()).lastCheckPoint;
         assertThat(lastCheckPoint.transactionLogPosition()).isEqualTo(logPosition);
     }
@@ -99,8 +102,10 @@ class DetachedCheckpointLogFileTest {
         // Should find the detached checkpoint first
         LogPosition logPosition2 =
                 new LogPosition(logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE);
-        TransactionId transactionId = new TransactionId(5, 6, 7);
-        checkpointFile.getCheckpointAppender().checkPoint(NULL, transactionId, logPosition2, Instant.now(), "detached");
+        TransactionId transactionId = new TransactionId(5, 6, 7, 8);
+        checkpointFile
+                .getCheckpointAppender()
+                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition2, Instant.now(), "detached");
         assertThat(checkpointFile.findLatestCheckpoint().orElseThrow().transactionLogPosition())
                 .isEqualTo(logPosition2);
     }
@@ -113,12 +118,14 @@ class DetachedCheckpointLogFileTest {
         // Add detached checkpoints
         LogPosition logPosition = new LogPosition(0, 3);
         LogPosition logPosition1 = new LogPosition(0, 4);
-        TransactionId transactionId = new TransactionId(5, 6, 7);
-        TransactionId transactionId1 = new TransactionId(6, 7, 8);
-        checkpointFile.getCheckpointAppender().checkPoint(NULL, transactionId, logPosition, Instant.now(), "detached");
+        TransactionId transactionId = new TransactionId(5, 6, 7, 8);
+        TransactionId transactionId1 = new TransactionId(6, 7, 8, 9);
         checkpointFile
                 .getCheckpointAppender()
-                .checkPoint(NULL, transactionId1, logPosition1, Instant.now(), "detached");
+                .checkPoint(NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), "detached");
+        checkpointFile
+                .getCheckpointAppender()
+                .checkPoint(NULL, transactionId1, KernelVersion.LATEST, logPosition1, Instant.now(), "detached");
 
         List<CheckpointInfo> reachableCheckpoints = checkpointFile.reachableCheckpoints();
         assertThat(reachableCheckpoints.size()).isEqualTo(2);

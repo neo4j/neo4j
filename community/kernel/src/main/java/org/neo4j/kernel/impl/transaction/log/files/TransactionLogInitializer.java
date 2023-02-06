@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -133,25 +133,32 @@ public class TransactionLogInitializer {
 
     private long appendEmptyTransactionAndCheckPoint(LogFiles logFiles, String reason) throws IOException {
         TransactionId committedTx = store.getLastCommittedTransaction();
+        long consensusIndex = UNKNOWN_CONSENSUS_INDEX;
         long timestamp = committedTx.commitTimestamp();
         long upgradeTransactionId = store.nextCommittingTransactionId();
         KernelVersion kernelVersion = metadataCache.kernelVersion();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion);
+        CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
         int checksum =
                 transactionLogWriter.append(emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
-        appendCheckpoint(logFiles, reason, position, new TransactionId(upgradeTransactionId, checksum, timestamp));
-        store.transactionCommitted(upgradeTransactionId, checksum, timestamp);
+        appendCheckpoint(
+                logFiles,
+                reason,
+                position,
+                new TransactionId(upgradeTransactionId, checksum, timestamp, consensusIndex),
+                kernelVersion);
+        store.transactionCommitted(upgradeTransactionId, checksum, timestamp, consensusIndex);
         return upgradeTransactionId;
     }
 
-    private static CompleteTransaction emptyTransaction(long timestamp, long txId, KernelVersion kernelVersion) {
+    private static CompleteTransaction emptyTransaction(
+            long timestamp, long txId, KernelVersion kernelVersion, long consensusIndex) {
         return new CompleteTransaction(
                 Collections.emptyList(),
-                EMPTY_BYTE_ARRAY,
+                consensusIndex,
                 timestamp,
                 txId,
                 timestamp,
@@ -161,8 +168,9 @@ public class TransactionLogInitializer {
     }
 
     private static void appendCheckpoint(
-            LogFiles logFiles, String reason, LogPosition position, TransactionId transactionId) throws IOException {
+            LogFiles logFiles, String reason, LogPosition position, TransactionId transactionId, KernelVersion version)
+            throws IOException {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        checkpointAppender.checkPoint(LogCheckPointEvent.NULL, transactionId, position, Instant.now(), reason);
+        checkpointAppender.checkPoint(LogCheckPointEvent.NULL, transactionId, version, position, Instant.now(), reason);
     }
 }

@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -54,6 +55,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl.ForceOperation;
@@ -129,6 +132,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -161,6 +165,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -192,6 +197,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -223,6 +229,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -299,6 +306,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         any(String.class));
@@ -338,6 +346,7 @@ class CheckPointerImplTest {
                 .checkPoint(
                         any(LogCheckPointEvent.class),
                         any(TransactionId.class),
+                        any(KernelVersion.class),
                         eq(logPosition),
                         any(Instant.class),
                         contains(triggerName));
@@ -398,7 +407,8 @@ class CheckPointerImplTest {
                 mutex,
                 new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY),
                 clock,
-                IOController.DISABLED);
+                IOController.DISABLED,
+                KernelVersionProvider.LATEST_VERSION);
     }
 
     private CheckPointerImpl checkPointer() {
@@ -406,8 +416,9 @@ class CheckPointerImplTest {
     }
 
     private void mockTxIdStore() {
-        var initialCommitted = new ClosedTransactionMetadata(initialTransactionId, logPosition, 4, 5);
-        var otherCommitted = new ClosedTransactionMetadata(transactionId, logPosition, 6, 7);
+        var initialCommitted =
+                new ClosedTransactionMetadata(initialTransactionId, logPosition, 4, 5, UNKNOWN_CONSENSUS_INDEX);
+        var otherCommitted = new ClosedTransactionMetadata(transactionId, logPosition, 6, 7, UNKNOWN_CONSENSUS_INDEX);
         when(metadataProvider.getLastClosedTransaction()).thenReturn(initialCommitted, otherCommitted);
         when(metadataProvider.getLastClosedTransactionId())
                 .thenReturn(initialTransactionId, transactionId, transactionId);
@@ -425,6 +436,7 @@ class CheckPointerImplTest {
                         .checkPoint(
                                 any(LogCheckPointEvent.class),
                                 any(TransactionId.class),
+                                any(KernelVersion.class),
                                 any(LogPosition.class),
                                 any(Instant.class),
                                 any(String.class));

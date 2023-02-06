@@ -51,7 +51,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     /**
      * Relationship uniqueness constraints
      */
-    V5_4(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_54, KernelVersion.V5_4);
+    V5_6(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_56, KernelVersion.V5_6);
 
     public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION =
             V5_0; // version should be fixed to 5_0, bump is not an option

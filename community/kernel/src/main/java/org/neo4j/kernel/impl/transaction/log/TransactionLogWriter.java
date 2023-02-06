@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.kernel.KernelVersion;
@@ -73,7 +75,7 @@ public class TransactionLogWriter {
                     batch.getTimeStarted(),
                     batch.getLatestCommittedTxWhenStarted(),
                     previousChecksum,
-                    batch.additionalHeader());
+                    encodeLogIndex(batch.consensusIndex()));
         } else {
             writer.writeChunkStartEntry(version, batch.getTimeCommitted(), chunkId);
         }

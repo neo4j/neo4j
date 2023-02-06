@@ -32,7 +32,11 @@ public interface Commitment {
 
         @Override
         public void commit(
-                long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {}
+                long transactionId,
+                LogPosition beforeCommit,
+                LogPosition logPositionAfterCommit,
+                int checksum,
+                long consensusIndex) {}
 
         @Override
         public void publishAsCommitted(long transactionCommitTimestamp) {}
@@ -41,7 +45,12 @@ public interface Commitment {
         public void publishAsClosed() {}
     };
 
-    void commit(long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum);
+    void commit(
+            long transactionId,
+            LogPosition beforeCommit,
+            LogPosition logPositionAfterCommit,
+            int checksum,
+            long consensusIndex);
 
     /**
      * Marks the transaction as committed and makes this fact public.

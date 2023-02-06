@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import static java.lang.System.currentTimeMillis;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ class TransactionRepresentationFactory {
     TransactionToApply nextTransaction(long txId) {
         CompleteTransaction representation = new CompleteTransaction(
                 createRandomCommands(),
-                EMPTY_BYTE_ARRAY,
+                UNKNOWN_CONSENSUS_INDEX,
                 currentTimeMillis(),
                 txId,
                 currentTimeMillis(),

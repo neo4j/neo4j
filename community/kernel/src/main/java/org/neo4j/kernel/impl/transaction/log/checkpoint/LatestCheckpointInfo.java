@@ -17,16 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.transaction.log.checkpoint;
+
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.ChunkEndLogEntryParserV5_4;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.ChunkStartLogEntryParserV5_4;
+import org.neo4j.storageengine.api.TransactionId;
 
-public class LogEntryParserSetV5_4 extends LogEntryParserSetV5_0 {
-    LogEntryParserSetV5_4() {
-        super(KernelVersion.V5_4);
-        register(new ChunkStartLogEntryParserV5_4());
-        register(new ChunkEndLogEntryParserV5_4());
-    }
+public record LatestCheckpointInfo(TransactionId checkpointedTransactionId, KernelVersion kernelVersion) {
+    public static final LatestCheckpointInfo UNKNOWN_CHECKPOINT_INFO =
+            new LatestCheckpointInfo(UNKNOWN_TRANSACTION_ID, null);
 }

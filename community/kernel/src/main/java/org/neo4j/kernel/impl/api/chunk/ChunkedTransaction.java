@@ -121,7 +121,12 @@ public class ChunkedTransaction implements CommandBatchToApply {
     @Override
     public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
         if (chunk.isFirst()) {
-            this.commitment.commit(transactionId, beforeCommit, positionAfter, checksum);
+            this.commitment.commit(
+                    transactionId,
+                    beforeCommit,
+                    positionAfter,
+                    checksum,
+                    chunk.chunkMetadata().consensusIndex());
             this.cursorContext.getVersionContext().initWrite(transactionId);
         }
     }

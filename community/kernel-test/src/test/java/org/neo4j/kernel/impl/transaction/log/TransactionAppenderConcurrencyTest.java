@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +31,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.lang.StackWalker.StackFrame;
@@ -270,7 +270,7 @@ public class TransactionAppenderConcurrencyTest {
 
     protected static TransactionToApply tx() {
         CompleteTransaction tx = new CompleteTransaction(
-                singletonList(new TestCommand()), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+                singletonList(new TestCommand()), UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
         return new TransactionToApply(tx, NULL_CONTEXT, StoreCursors.NULL, NO_COMMITMENT, EMPTY);
     }
 

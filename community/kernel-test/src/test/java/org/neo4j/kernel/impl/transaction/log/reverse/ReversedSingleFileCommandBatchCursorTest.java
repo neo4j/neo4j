@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,6 +30,7 @@ import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exha
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -259,7 +259,7 @@ class ReversedSingleFileCommandBatchCursorTest {
             // The type of command doesn't matter here
             commands.add(new TestCommand());
         }
-        return new CompleteTransaction(commands, EMPTY_BYTE_ARRAY, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
+        return new CompleteTransaction(commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS);
     }
 
     private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {

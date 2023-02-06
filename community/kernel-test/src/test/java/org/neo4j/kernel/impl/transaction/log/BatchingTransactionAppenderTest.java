@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,12 +40,14 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -109,7 +110,7 @@ class BatchingTransactionAppenderTest {
     void setUp() {
         when(logFiles.getLogFile()).thenReturn(logFile);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, 1));
+                .thenReturn(new TransactionId(BASE_TX_ID, BASE_TX_CHECKSUM, 1, 2));
     }
 
     @Test
@@ -121,10 +122,11 @@ class BatchingTransactionAppenderTest {
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+                .thenReturn(
+                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender = life.add(createTransactionAppender());
-        CommandBatch transaction = new CompleteTransaction(
-                singleTestCommand(), new byte[] {1, 2, 5}, 12345, 7896, 123456, -1, null, ANONYMOUS);
+        CommandBatch transaction =
+                new CompleteTransaction(singleTestCommand(), 5, 12345, 7896, 123456, -1, null, ANONYMOUS);
 
         assertEquals(0, versionProvider.getVersionLookedUp());
 
@@ -149,11 +151,12 @@ class BatchingTransactionAppenderTest {
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+                .thenReturn(
+                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender = life.add(createTransactionAppender());
 
         // WHEN
-        CommandBatch transaction = transaction(singleTestCommand(), new byte[] {1, 2, 5}, 12345, 4545, 12345 + 10);
+        CommandBatch transaction = transaction(singleTestCommand(), 5, 12345, 4545, 12345 + 10);
 
         appender.append(
                 new TransactionToApply(
@@ -166,7 +169,7 @@ class BatchingTransactionAppenderTest {
             reader.next();
             CommittedCommandBatch commandBatch = reader.get();
             CommandBatch tx = commandBatch.commandBatch();
-            assertArrayEquals(transaction.additionalHeader(), tx.additionalHeader());
+            assertEquals(transaction.consensusIndex(), tx.consensusIndex());
             assertEquals(transaction.getTimeStarted(), tx.getTimeStarted());
             assertEquals(transaction.getTimeCommitted(), commandBatch.timeWritten());
             assertEquals(transaction.getLatestCommittedTxWhenStarted(), tx.getLatestCommittedTxWhenStarted());
@@ -182,9 +185,9 @@ class BatchingTransactionAppenderTest {
 
         TransactionAppender appender = life.add(createTransactionAppender());
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(2L, 3L, 4L);
-        CommandBatch batch1 = transaction(singleTestCommand(), new byte[0], 0, 1, 0);
-        CommandBatch batch2 = transaction(singleTestCommand(), new byte[0], 0, 1, 0);
-        CommandBatch batch3 = transaction(singleTestCommand(), new byte[0], 0, 1, 0);
+        CommandBatch batch1 = transaction(singleTestCommand(), 0, 0, 1, 0);
+        CommandBatch batch2 = transaction(singleTestCommand(), 0, 0, 1, 0);
+        CommandBatch batch3 = transaction(singleTestCommand(), 0, 0, 1, 0);
         TransactionToApply batch = batchOf(batch1, batch2, batch3);
 
         // WHEN
@@ -204,12 +207,13 @@ class BatchingTransactionAppenderTest {
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(nextTxId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+                .thenReturn(new TransactionId(
+                        nextTxId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender =
                 life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
         // WHEN
-        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final byte[] additionalHeader = encodeLogIndex(5);
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
@@ -234,7 +238,7 @@ class BatchingTransactionAppenderTest {
             reader.next();
             CommittedCommandBatch commandBatch = reader.get();
             CommandBatch result = commandBatch.commandBatch();
-            assertArrayEquals(additionalHeader, result.additionalHeader());
+            assertEquals(5, result.consensusIndex());
             assertEquals(timeStarted, result.getTimeStarted());
             assertEquals(timeCommitted, commandBatch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, result.getLatestCommittedTxWhenStarted());
@@ -250,7 +254,7 @@ class BatchingTransactionAppenderTest {
         TransactionAppender appender = life.add(createTransactionAppender());
 
         // WHEN
-        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final byte[] additionalHeader = encodeLogIndex(5);
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -289,13 +293,14 @@ class BatchingTransactionAppenderTest {
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+                .thenReturn(
+                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
         Mockito.reset(databasePanic);
         TransactionAppender appender = life.add(createTransactionAppender());
 
         // WHEN
         CommandBatch transaction = mock(CommandBatch.class);
-        when(transaction.additionalHeader()).thenReturn(new byte[0]);
+        when(transaction.consensusIndex()).thenReturn(0L);
         when(transaction.isFirst()).thenReturn(true);
         when(transaction.isLast()).thenReturn(true);
         when(transaction.kernelVersion()).thenReturn(LATEST);
@@ -312,7 +317,8 @@ class BatchingTransactionAppenderTest {
                         logAppendEvent));
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
-        verify(transactionIdStore, never()).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong());
+        verify(transactionIdStore, never())
+                .transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
         verify(databasePanic).panic(failure);
     }
 
@@ -337,13 +343,14 @@ class BatchingTransactionAppenderTest {
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
-                .thenReturn(new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP));
+                .thenReturn(
+                        new TransactionId(txId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
         TransactionAppender appender =
                 life.add(new BatchingTransactionAppender(logFiles, transactionIdStore, databasePanic));
 
         // WHEN
         CommandBatch commandBatch = mock(CommandBatch.class);
-        when(commandBatch.additionalHeader()).thenReturn(new byte[0]);
+        when(commandBatch.consensusIndex()).thenReturn(0L);
         when(commandBatch.kernelVersion()).thenReturn(LATEST);
         when(commandBatch.iterator()).thenReturn(emptyIterator());
 
@@ -359,7 +366,8 @@ class BatchingTransactionAppenderTest {
                         logAppendEvent));
         assertSame(failure, e);
         verify(transactionIdStore).nextCommittingTransactionId();
-        verify(transactionIdStore, never()).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong());
+        verify(transactionIdStore, never())
+                .transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
     }
 
     @Test
@@ -388,13 +396,13 @@ class BatchingTransactionAppenderTest {
 
     private static CommandBatch transaction(
             List<StorageCommand> commands,
-            byte[] additionalHeader,
+            long consensusIndex,
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted) {
         return new CompleteTransaction(
                 commands,
-                additionalHeader,
+                consensusIndex,
                 timeStarted,
                 latestCommittedTxWhenStarted,
                 timeCommitted,

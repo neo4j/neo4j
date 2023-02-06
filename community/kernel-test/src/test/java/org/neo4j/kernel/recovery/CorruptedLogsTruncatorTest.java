@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.recovery.CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -48,6 +48,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -257,6 +258,7 @@ class CorruptedLogsTruncatorTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
+                        KernelVersion.LATEST,
                         new LogPosition(highestCorrectLogFileIndex, byteOffset - 1),
                         Instant.now(),
                         "within okay transactions");
@@ -267,6 +269,7 @@ class CorruptedLogsTruncatorTest {
                     .checkPoint(
                             LogCheckPointEvent.NULL,
                             transactionId,
+                            KernelVersion.LATEST,
                             new LogPosition(highestCorrectLogFileIndex, byteOffset + 1),
                             Instant.now(),
                             "in the part being truncated");

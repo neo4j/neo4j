@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.OptionalLong;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.TransactionId;
 
 /**
  * Service to access database transaction logs
@@ -62,4 +63,12 @@ public interface TransactionLogService {
      * @throws IOException on failure performing underlying transaction logs operation
      */
     void restore(LogPosition position) throws IOException;
+
+    /**
+     * Append checkpoint record to log files that uses provided {@link TransactionId transactionId} as last closed transaction.
+     * @param transactionId last closed transaction id to be used in a checkpoint record.
+     * @param reason checkpoint reason
+     * @throws IOException on failure performing underlying log files operation
+     */
+    void appendCheckpoint(TransactionId transactionId, String reason) throws IOException;
 }

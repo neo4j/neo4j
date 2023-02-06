@@ -33,8 +33,8 @@ public interface TriggerInfo extends Consumer<String> {
      * This method can be used to retrieve the actual human-readable description about the events that triggered the
      * check point.
      *
-     * @param transactionId the transaction id we are check pointing on
+     * @param latestCheckpointInfo info about the last checkpoint
      * @return the description of the events that triggered check pointing
      */
-    String describe(long transactionId);
+    String describe(LatestCheckpointInfo latestCheckpointInfo);
 }

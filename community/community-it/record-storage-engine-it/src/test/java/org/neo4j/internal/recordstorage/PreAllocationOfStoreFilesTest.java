@@ -30,6 +30,7 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.List;
@@ -148,7 +149,7 @@ class PreAllocationOfStoreFilesTest {
                                 new RelationshipRecord(2000),
                                 new RelationshipRecord(2000)
                                         .initialize(true, -1, -1, -1, 1, -1, -1, -1, -1, true, true))),
-                new byte[] {0, 1, 2, 3, 4, 5, 6, 7},
+                UNKNOWN_CONSENSUS_INDEX,
                 1611333951,
                 2,
                 1611777951,

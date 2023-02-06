@@ -19,7 +19,6 @@
  */
 package org.neo4j.tracers;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
@@ -28,6 +27,7 @@ import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 import java.util.List;
@@ -130,7 +130,7 @@ public class CommitProcessTracingIT {
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
         var transaction = new CompleteTransaction(
                 List.of(new Command.NodeCountsCommand(1, 2)),
-                EMPTY_BYTE_ARRAY,
+                UNKNOWN_CONSENSUS_INDEX,
                 0,
                 0,
                 0,

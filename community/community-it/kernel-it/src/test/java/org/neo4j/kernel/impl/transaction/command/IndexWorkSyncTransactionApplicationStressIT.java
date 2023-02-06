@@ -29,6 +29,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 import java.io.IOException;
@@ -160,8 +161,8 @@ class IndexWorkSyncTransactionApplicationStressIT {
             StoreCursors storeCursors,
             TransactionCommitmentFactory commitmentFactory,
             TransactionIdGenerator transactionIdGenerator) {
-        CompleteTransaction txRepresentation =
-                new CompleteTransaction(commands, new byte[0], -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
+        CompleteTransaction txRepresentation = new CompleteTransaction(
+                commands, UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
         TransactionToApply tx = new TransactionToApply(
                 txRepresentation,
                 NULL_CONTEXT,

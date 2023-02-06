@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
@@ -86,10 +88,23 @@ public interface CheckPointer {
     long forceCheckPoint(TriggerInfo triggerInfo) throws IOException;
 
     /**
-     * @return the transaction id which the last checkpoint was made it. If there's no checkpoint then
-     * {@link TransactionIdStore#BASE_TX_ID} is returned.
+     * This method forces the write of a check point in the transaction log for specific transaction and position.
+     *
+     * It is used by clustering to force checkpoint on logs after store copy.
+     *
+     * @param transactionId transaction id to checkpoint.
+     * @param position position of provided transaction id to checkpoint.
+     * @param triggerInfo the info describing why check pointing has been triggered.
+     * @return the transaction id used for the check pointing
+     * @throws IOException if writing the check point fails
      */
-    long lastCheckPointedTransactionId();
+    long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) throws IOException;
+
+    /**
+     * @return Info about latest checkpoint that was made. If there's no checkpoint then
+     * {@link TransactionIdStore#UNKNOWN_TRANSACTION_ID} is returned and null kernel version is provided
+     */
+    LatestCheckpointInfo latestCheckPointInfo();
 
     /**
      * Shutdown checkpointer and prevent any new checkpoints from happening.

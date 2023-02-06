@@ -49,14 +49,15 @@ import org.neo4j.graphdb.Resource;
 public final class StoreSnapshot implements AutoCloseable {
     private final Stream<StoreResource> unrecoverableFiles;
     private final Path[] recoverableFiles;
-    private final long lastAppliedTransactionId;
+    private final TransactionId lastAppliedTransactionId;
+
     private final StoreId storeId;
     private final Resource checkPointMutex;
 
     public StoreSnapshot(
             Stream<StoreResource> unrecoverableFiles,
             Path[] recoverableFiles,
-            long lastAppliedTransactionId,
+            TransactionId lastAppliedTransactionId,
             StoreId storeId,
             Resource checkPointMutex) {
         this.unrecoverableFiles = unrecoverableFiles;
@@ -90,7 +91,7 @@ public final class StoreSnapshot implements AutoCloseable {
     /**
      * @return the latest transaction id to be closed/applied at the time this snapshot is created
      */
-    public long lastAppliedTransactionId() {
+    public TransactionId lastAppliedTransactionId() {
         return lastAppliedTransactionId;
     }
 

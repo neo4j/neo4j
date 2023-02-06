@@ -55,6 +55,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.util.VisibleForTesting;
 
 public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFile {
     private final DetachedCheckpointAppender checkpointAppender;
@@ -264,6 +265,11 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public long getHighestLogVersion() {
         return visitLogFiles(new RangeLogVersionVisitor()).getHighestVersion();
+    }
+
+    @VisibleForTesting
+    public DetachedLogTailScanner getLogTailScanner() {
+        return logTailScanner;
     }
 
     private <V extends LogVersionVisitor> V visitLogFiles(V visitor) {

@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.transaction.log.entry.v56;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_6;
+import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryParserV5_6.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 
 import java.io.IOException;
@@ -31,32 +31,31 @@ import java.time.Instant;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class DetachedCheckpointLogEntryWriter {
+public class DetachedCheckpointLogEntryWriterV5_6 implements CheckpointLogEntryWriter {
     public static final int RECORD_LENGTH_BYTES = 232;
-    private final KernelVersionProvider kernelVersionProvider;
     protected final WritableChecksumChannel channel;
 
-    public DetachedCheckpointLogEntryWriter(
-            WritableChecksumChannel channel, KernelVersionProvider kernelVersionProvider) {
+    public DetachedCheckpointLogEntryWriterV5_6(WritableChecksumChannel channel) {
         this.channel = channel;
-        this.kernelVersionProvider = kernelVersionProvider;
     }
 
+    @Override
     public void writeCheckPointEntry(
             TransactionId transactionId,
+            KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,
             StoreId storeId,
             String reason)
             throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel);
+        writeLogEntryHeader(kernelVersion, DETACHED_CHECK_POINT_V5_6, channel);
         byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
         StoreIdSerialization.serializeWithFixedSize(storeId, ByteBuffer.wrap(storeIdBuffer));
         byte[] reasonBytes = reason.getBytes();
@@ -70,6 +69,7 @@ public class DetachedCheckpointLogEntryWriter {
                 .putLong(transactionId.transactionId())
                 .putInt(transactionId.checksum())
                 .putLong(transactionId.commitTimestamp())
+                .putLong(transactionId.consensusIndex())
                 .putShort(length)
                 .put(descriptionBytes, descriptionBytes.length);
         channel.putChecksum();

@@ -17,36 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v54;
+package org.neo4j.kernel.impl.transaction.log.entry.v56;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
 
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
 
-public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
-    private final long timeWritten;
+public class LogEntryChunkEnd extends AbstractLogEntry {
+    private final long transactionId;
     private final long chunkId;
+    private final int checksum;
 
-    public LogEntryChunkStart(KernelVersion kernelVersion, long timeWritten, long chunkId) {
-        super(kernelVersion, CHUNK_START);
-        this.timeWritten = timeWritten;
+    public LogEntryChunkEnd(long transactionId, long chunkId, int checksum) {
+        super(CHUNK_END);
+        this.transactionId = transactionId;
         this.chunkId = chunkId;
-    }
-
-    public long getTimeWritten() {
-        return timeWritten;
+        this.checksum = checksum;
     }
 
     public long getChunkId() {
         return chunkId;
     }
 
+    public int getChecksum() {
+        return checksum;
+    }
+
+    public long getTransactionId() {
+        return transactionId;
+    }
+
     @Override
     public String toString() {
-        return "LogEntryChunkStart{" + "kernelVersion="
-                + kernelVersion() + ", timeWritten="
-                + timeWritten + ", chunkId="
-                + chunkId + '}';
+        return "LogEntryChunkEnd{" + "chunkId=" + chunkId + ", checksum=" + checksum + ", txId=" + transactionId + '}';
     }
 }

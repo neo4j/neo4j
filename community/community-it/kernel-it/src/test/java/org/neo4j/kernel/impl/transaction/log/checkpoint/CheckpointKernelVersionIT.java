@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -45,7 +47,7 @@ public class CheckpointKernelVersionIT {
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException {
         // earlier version do not support new format of checkpoint commands; it's impossible to read them back, so we
         // cannot test them
-        kernelVersionRepository.setKernelVersion(KernelVersion.V5_0);
+        kernelVersionRepository.setKernelVersion(KernelVersion.V5_6);
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + kernelVersionRepository.kernelVersion()));
 
         final var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints().stream();
@@ -53,5 +55,16 @@ public class CheckpointKernelVersionIT {
         assertThat(kernelVersions)
                 .as("kernel versions from checkpoints")
                 .containsExactly(kernelVersionRepository.kernelVersion());
+    }
+
+    @Test
+    void checkPointInLegacy5_0Format() throws IOException {
+        kernelVersionRepository.setKernelVersion(KernelVersion.V5_0);
+        checkPointer.forceCheckPoint(new SimpleTriggerInfo("Legacy format."));
+
+        final var checkpoint =
+                logFiles.getCheckpointFile().findLatestCheckpoint().orElseThrow();
+        assertEquals(KernelVersion.V5_0, checkpoint.kernelVersion());
+        assertEquals(UNKNOWN_CONSENSUS_INDEX, checkpoint.transactionId().consensusIndex());
     }
 }

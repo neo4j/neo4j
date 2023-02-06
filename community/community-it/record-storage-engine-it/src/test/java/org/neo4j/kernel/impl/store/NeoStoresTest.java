@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,6 +43,7 @@ import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -372,16 +372,16 @@ class NeoStoresTest {
         try (NeoStores neoStore = factory.openAllNeoStores()) {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
-                    40, 4444, BASE_TX_COMMIT_TIMESTAMP, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
+                    40, 4444, BASE_TX_COMMIT_TIMESTAMP, 7, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
 
             // WHEN
-            store.transactionCommitted(42, 6666, BASE_TX_COMMIT_TIMESTAMP);
+            store.transactionCommitted(42, 6666, BASE_TX_COMMIT_TIMESTAMP, 8);
 
             // THEN
-            assertEquals(new TransactionId(42, 6666, BASE_TX_COMMIT_TIMESTAMP), store.getLastCommittedTransaction());
+            assertEquals(new TransactionId(42, 6666, BASE_TX_COMMIT_TIMESTAMP, 8), store.getLastCommittedTransaction());
             assertEquals(
                     new ClosedTransactionMetadata(
-                            40, new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), 4444, BASE_TX_COMMIT_TIMESTAMP),
+                            40, new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), 4444, BASE_TX_COMMIT_TIMESTAMP, 7),
                     store.getLastClosedTransaction());
         }
     }
@@ -394,16 +394,16 @@ class NeoStoresTest {
         try (NeoStores neoStore = factory.openAllNeoStores()) {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.setLastCommittedAndClosedTransactionId(
-                    40, 4444, BASE_TX_COMMIT_TIMESTAMP, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
+                    40, 4444, BASE_TX_COMMIT_TIMESTAMP, 8, CURRENT_FORMAT_LOG_HEADER_SIZE, 0);
 
             // WHEN
-            store.transactionCommitted(39, 3333, BASE_TX_COMMIT_TIMESTAMP);
+            store.transactionCommitted(39, 3333, BASE_TX_COMMIT_TIMESTAMP, 9);
 
             // THEN
-            assertEquals(new TransactionId(40, 4444, BASE_TX_COMMIT_TIMESTAMP), store.getLastCommittedTransaction());
+            assertEquals(new TransactionId(40, 4444, BASE_TX_COMMIT_TIMESTAMP, 8), store.getLastCommittedTransaction());
             assertEquals(
                     new ClosedTransactionMetadata(
-                            40, new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), 4444, BASE_TX_COMMIT_TIMESTAMP),
+                            40, new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE), 4444, BASE_TX_COMMIT_TIMESTAMP, 8),
                     store.getLastClosedTransaction());
         }
     }
@@ -552,7 +552,7 @@ class NeoStoresTest {
                     storeCursors,
                     INSTANCE);
             CompleteTransaction tx = new CompleteTransaction(
-                    commands, EMPTY_BYTE_ARRAY, -1, -1, -1, -1, KernelVersion.LATEST, AUTH_DISABLED);
+                    commands, UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, KernelVersion.LATEST, AUTH_DISABLED);
             storageEngine.apply(
                     new TransactionToApply(tx, cursorContext, storeCursors, NO_COMMITMENT, transactionIdGenerator),
                     INTERNAL);

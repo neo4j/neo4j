@@ -29,8 +29,9 @@ import org.neo4j.storageengine.api.TransactionId;
 public class HighestTransactionId {
     private final AtomicReference<TransactionId> highest = new AtomicReference<>();
 
-    public HighestTransactionId(long initialTransactionId, int initialChecksum, long commitTimestamp) {
-        set(initialTransactionId, initialChecksum, commitTimestamp);
+    public HighestTransactionId(
+            long initialTransactionId, int initialChecksum, long commitTimestamp, long consensusIndex) {
+        set(initialTransactionId, initialChecksum, commitTimestamp, consensusIndex);
     }
 
     /**
@@ -40,16 +41,17 @@ public class HighestTransactionId {
      * @param transactionId transaction id to compare for highest.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transactionId}.
+     * @param consensusIndex consensus index for transaction with {@code transactionId}.
      * @return {@code true} if the given transaction id was higher than the current highest,
      * {@code false}.
      */
-    public boolean offer(long transactionId, int checksum, long commitTimestamp) {
+    public boolean offer(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
         TransactionId high = highest.get();
         if (transactionId < high.transactionId()) { // a higher id has already been offered
             return false;
         }
 
-        TransactionId update = new TransactionId(transactionId, checksum, commitTimestamp);
+        TransactionId update = new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex);
         while (!highest.compareAndSet(high, update)) {
             high = highest.get();
             if (high.transactionId()
@@ -67,9 +69,10 @@ public class HighestTransactionId {
      * @param transactionId id of the transaction.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp commit time for transaction with {@code transactionId}.
+     * @param consensusIndex consensus index for transaction with {@code transactionId}.
      */
-    public final void set(long transactionId, int checksum, long commitTimestamp) {
-        highest.set(new TransactionId(transactionId, checksum, commitTimestamp));
+    public final void set(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+        highest.set(new TransactionId(transactionId, checksum, commitTimestamp, consensusIndex));
     }
 
     /**

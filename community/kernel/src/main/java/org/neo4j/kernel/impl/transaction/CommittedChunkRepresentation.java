@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkEnd;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -49,7 +49,7 @@ public record CommittedChunkRepresentation(
                 start instanceof LogEntryStart,
                 end instanceof LogEntryCommit,
                 logEntryChunkStart.getChunkId(),
-                EMPTY_BYTE_ARRAY,
+                UNKNOWN_CONSENSUS_INDEX,
                 logEntryChunkStart.getTimeWritten(),
                 -1,
                 logEntryChunkStart.getTimeWritten(),

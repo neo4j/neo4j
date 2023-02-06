@@ -68,7 +68,7 @@ class VolumeBasedCheckpointIT {
         dbms = startDbms(volumeCheckpointConfig);
         GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
         var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
-        long lastCheckpointedTransactionId = checkPointer.lastCheckPointedTransactionId();
+        var lastCheckpointedTransactionId = checkPointer.latestCheckPointInfo().checkpointedTransactionId();
 
         try (var transaction = database.beginTx()) {
             Node node = transaction.createNode();
@@ -76,9 +76,11 @@ class VolumeBasedCheckpointIT {
             transaction.commit();
         }
 
-        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES))
-                .untilAsserted(() -> assertThat(checkPointer.lastCheckPointedTransactionId())
-                        .isGreaterThan(lastCheckpointedTransactionId));
+        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
+                        .latestCheckPointInfo()
+                        .checkpointedTransactionId()
+                        .transactionId())
+                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
     }
 
     @Test
@@ -92,7 +94,7 @@ class VolumeBasedCheckpointIT {
         dbms = startDbms(volumeCheckpointConfig);
         GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
         var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
-        long lastCheckpointedTransactionId = checkPointer.lastCheckPointedTransactionId();
+        var lastCheckpointedTransactionId = checkPointer.latestCheckPointInfo().checkpointedTransactionId();
 
         for (int i = 0; i < 1024; i++) {
             try (var transaction = database.beginTx()) {
@@ -102,9 +104,11 @@ class VolumeBasedCheckpointIT {
             }
         }
 
-        await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES))
-                .untilAsserted(() -> assertThat(checkPointer.lastCheckPointedTransactionId())
-                        .isGreaterThan(lastCheckpointedTransactionId));
+        await().atMost(ofMinutes(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
+                        .latestCheckPointInfo()
+                        .checkpointedTransactionId()
+                        .transactionId())
+                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
     }
 
     @Test
@@ -118,7 +122,7 @@ class VolumeBasedCheckpointIT {
         dbms = startDbms(volumeCheckpointConfig);
         GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database(DEFAULT_DATABASE_NAME);
         var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
-        long lastCheckpointedTransactionId = checkPointer.lastCheckPointedTransactionId();
+        var lastCheckpointedTransactionId = checkPointer.latestCheckPointInfo().checkpointedTransactionId();
 
         try (var transaction = database.beginTx()) {
             Node node = transaction.createNode();
@@ -131,9 +135,11 @@ class VolumeBasedCheckpointIT {
             transaction.commit();
         }
 
-        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES))
-                .untilAsserted(() -> assertThat(checkPointer.lastCheckPointedTransactionId())
-                        .isGreaterThan(lastCheckpointedTransactionId));
+        await().atMost(ofSeconds(WAIT_TIMEOUT_MINUTES)).untilAsserted(() -> assertThat(checkPointer
+                        .latestCheckPointInfo()
+                        .checkpointedTransactionId()
+                        .transactionId())
+                .isGreaterThan(lastCheckpointedTransactionId.transactionId()));
     }
 
     private DatabaseManagementService startDbms(Config config) {

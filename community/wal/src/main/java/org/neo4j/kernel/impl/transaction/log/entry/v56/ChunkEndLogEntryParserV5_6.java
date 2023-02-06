@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v54;
+package org.neo4j.kernel.impl.transaction.log.entry.v56;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChecksumChannel;
@@ -28,8 +28,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class ChunkEndLogEntryParserV5_4 extends LogEntryParser {
-    public ChunkEndLogEntryParserV5_4() {
+public class ChunkEndLogEntryParserV5_6 extends LogEntryParser {
+    public ChunkEndLogEntryParserV5_6() {
         super(LogEntryTypeCodes.CHUNK_END);
     }
 

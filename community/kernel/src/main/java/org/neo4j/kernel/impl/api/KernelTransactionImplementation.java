@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
@@ -34,6 +33,7 @@ import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.g
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.time.Clock;
 import java.util.Iterator;
@@ -980,7 +980,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 // Finish up the whole transaction representation
                 CompleteTransaction transactionRepresentation = new CompleteTransaction(
                         extractedCommands,
-                        EMPTY_BYTE_ARRAY,
+                        UNKNOWN_CONSENSUS_INDEX,
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
                         timeCommitted,
@@ -1032,7 +1032,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         chunkNumber == BASE_CHUNK_NUMBER,
                         commit,
                         chunkNumber,
-                        EMPTY_BYTE_ARRAY,
+                        UNKNOWN_CONSENSUS_INDEX,
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
                         timeCommitted,

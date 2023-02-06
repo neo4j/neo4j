@@ -34,6 +34,7 @@ import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -299,6 +300,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                     initialIds.lastCommittedTransactionId(),
                     initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP,
+                    UNKNOWN_CONSENSUS_INDEX,
                     initialIds.lastCommittedTransactionLogByteOffset(),
                     initialIds.lastCommittedTransactionLogVersion());
             metaDataStore.setCheckpointLogVersion(initialIds.checkpointLogVersion());

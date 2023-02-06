@@ -25,6 +25,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 public class FakeCommitment implements Commitment {
     public static final int CHECKSUM = 3;
     public static final long TIMESTAMP = 8194639457389L;
+    public static final long CONSENSUS_INDEX = 1456L;
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
@@ -37,18 +38,22 @@ public class FakeCommitment implements Commitment {
 
     @Override
     public void commit(
-            long transactionId, LogPosition beforeCommit, LogPosition logPositionAfterCommit, int checksum) {}
+            long transactionId,
+            LogPosition beforeCommit,
+            LogPosition logPositionAfterCommit,
+            int checksum,
+            long consensusIndex) {}
 
     @Override
     public void publishAsCommitted(long transactionCommitTimestamp) {
         committed = true;
-        transactionIdStore.transactionCommitted(id, CHECKSUM, TIMESTAMP);
+        transactionIdStore.transactionCommitted(id, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
     }
 
     @Override
     public void publishAsClosed() {
         if (committed) {
-            transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP);
+            transactionIdStore.transactionClosed(id, 1, 2, CHECKSUM, TIMESTAMP, CONSENSUS_INDEX);
         }
     }
 }

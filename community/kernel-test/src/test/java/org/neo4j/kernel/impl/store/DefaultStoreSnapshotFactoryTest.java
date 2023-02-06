@@ -37,6 +37,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.LatestCheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.logging.internal.DatabaseLogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -67,6 +68,7 @@ class DefaultStoreSnapshotFactoryTest {
         when(database.getStoreFileListing()).thenReturn(storeFileListing);
         when(database.getInternalLogProvider()).thenReturn(DatabaseLogProvider.nullDatabaseLogProvider());
         var checkPointer = mock(CheckPointer.class);
+        when(checkPointer.latestCheckPointInfo()).thenReturn(LatestCheckpointInfo.UNKNOWN_CHECKPOINT_INFO);
         var dependencies = new Dependencies();
         dependencies.satisfyDependency(checkPointer);
         when(database.getDependencyResolver()).thenReturn(dependencies);

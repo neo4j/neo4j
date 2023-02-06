@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +29,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkEnd;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 
 class CommittedCommandBatchCursorTest {
     private final ReadableLogChannel channel = mock(ReadableLogChannel.class, RETURNS_MOCKS);
@@ -54,7 +54,7 @@ class CommittedCommandBatchCursorTest {
 
     private static final LogEntry NULL_ENTRY = null;
     private static final LogEntryStart START_ENTRY =
-            new LogEntryStart(0L, 0L, 0, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED);
+            new LogEntryStart(0L, 0L, 0, encodeLogIndex(2), LogPosition.UNSPECIFIED);
     private static final LogEntryCommit COMMIT_ENTRY = new LogEntryCommit(42, 0, BASE_TX_CHECKSUM);
     private static final LogEntryCommand COMMAND_ENTRY = new LogEntryCommand(new TestCommand());
     private static final LogEntryChunkStart CHUNK_START = new LogEntryChunkStart(KernelVersion.LATEST, 12, 2);

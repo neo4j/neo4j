@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.neo4j.common.Subject.ANONYMOUS;
+import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.decodeLogIndex;
 
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +49,7 @@ public record CommittedTransactionRepresentation(
                 startEntry,
                 new CompleteTransaction(
                         commands,
-                        startEntry.getAdditionalHeader(),
+                        decodeLogIndex(startEntry.getAdditionalHeader()),
                         startEntry.getTimeWritten(),
                         startEntry.getLastCommittedTxWhenTransactionStarted(),
                         commitEntry.getTimeWritten(),

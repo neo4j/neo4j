@@ -30,37 +30,46 @@ import java.util.concurrent.locks.Lock;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 public class TransactionLogServiceImpl implements TransactionLogService {
-    private final LogFiles logFiles;
     private final LogicalTransactionStore transactionStore;
     private final TransactionIdStore transactionIdStore;
 
     private final Lock pruneLock;
     private final LogFile logFile;
-    private final DatabaseAvailabilityGuard availabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
+    private final InternalLog log;
+    private final CheckPointer checkPointer;
 
     public TransactionLogServiceImpl(
             TransactionIdStore transactionIdStore,
             LogFiles logFiles,
             LogicalTransactionStore transactionStore,
             Lock pruneLock,
-            DatabaseAvailabilityGuard availabilityGuard) {
+            AvailabilityGuard availabilityGuard,
+            InternalLogProvider logProvider,
+            CheckPointer checkPointer) {
         this.transactionIdStore = transactionIdStore;
-        this.logFiles = logFiles;
         this.transactionStore = transactionStore;
         this.pruneLock = pruneLock;
         this.logFile = logFiles.getLogFile();
         this.availabilityGuard = availabilityGuard;
+        this.log = logProvider.getLog(getClass());
+        this.checkPointer = checkPointer;
     }
 
     @Override
@@ -91,6 +100,37 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     public void restore(LogPosition position) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
         logFile.truncate(position);
+    }
+
+    @Override
+    public void appendCheckpoint(TransactionId transactionId, String reason) throws IOException {
+        checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
+        LogPosition batchPosition;
+        long txId = transactionId.transactionId();
+        long currentLogVersion = logFile.getCurrentLogVersion();
+        // we have only one log file, and they do not have any logs - scenario that is the result of full story
+        // copy. In this case we need to have a checkpoint that points right after the header.
+        if (logFile.getMatchedFiles().length == 1 && !logFile.hasAnyEntries(currentLogVersion)) {
+            batchPosition = logFile.extractHeader(currentLogVersion).getStartPosition();
+        } else {
+            try (var commandBatchCursor = transactionStore.getCommandBatches(txId)) {
+                // we select transaction and read that from the start since it can be the last one and we need the
+                // position
+                // right after that, and we can't lookup batches from txId + 1 since that does not exist.
+                commandBatchCursor.get();
+                commandBatchCursor.next();
+                batchPosition = commandBatchCursor.position();
+            } catch (NoSuchTransactionException e) {
+                throw new NoSuchTransactionException(
+                        txId + 1,
+                        "requested checkpoint record can't be created since transaction does not exist in the log files.",
+                        e);
+            }
+        }
+        log.info(
+                "Writing checkpoint to force recovery from transaction id:`%d` from specific position:`%s`.",
+                txId, batchPosition);
+        checkPointer.forceCheckPoint(transactionId, batchPosition, new SimpleTriggerInfo(reason));
     }
 
     private ArrayList<LogChannel> collectChannels(
@@ -148,32 +188,32 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         }
 
         @Override
-        public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
+        public long write(ByteBuffer[] srcs, int offset, int length) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public int write(ByteBuffer src) throws IOException {
+        public int write(ByteBuffer src) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public void writeAll(ByteBuffer src) throws IOException {
+        public void writeAll(ByteBuffer src) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public void writeAll(ByteBuffer src, long position) throws IOException {
+        public void writeAll(ByteBuffer src, long position) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public StoreChannel truncate(long size) throws IOException {
+        public StoreChannel truncate(long size) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 
         @Override
-        public long write(ByteBuffer[] srcs) throws IOException {
+        public long write(ByteBuffer[] srcs) {
             throw new UnsupportedOperationException("Read only channel does not support any write operations.");
         }
 

@@ -37,4 +37,7 @@ public class LogEntryTypeCodes {
 
     public static final byte CHUNK_START = 10;
     public static final byte CHUNK_END = 11;
+
+    // Checkpoint also contains consensus log index
+    public static final byte DETACHED_CHECK_POINT_V5_6 = (byte) 12;
 }

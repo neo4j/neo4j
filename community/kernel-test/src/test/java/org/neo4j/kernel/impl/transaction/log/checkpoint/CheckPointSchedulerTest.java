@@ -52,10 +52,12 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOController;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Panic;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.OtherThreadExecutor;
@@ -203,8 +205,13 @@ class CheckPointSchedulerTest {
             }
 
             @Override
-            public long lastCheckPointedTransactionId() {
-                return 42;
+            public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+                return 0;
+            }
+
+            @Override
+            public LatestCheckpointInfo latestCheckPointInfo() {
+                return LatestCheckpointInfo.UNKNOWN_CHECKPOINT_INFO;
             }
 
             @Override
@@ -345,7 +352,12 @@ class CheckPointSchedulerTest {
         }
 
         @Override
-        public long lastCheckPointedTransactionId() {
+        public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LatestCheckpointInfo latestCheckPointInfo() {
             throw new UnsupportedOperationException();
         }
 
@@ -395,8 +407,13 @@ class CheckPointSchedulerTest {
         }
 
         @Override
-        public long lastCheckPointedTransactionId() {
-            return 0;
+        public long forceCheckPoint(TransactionId transactionId, LogPosition position, TriggerInfo triggerInfo) {
+            throw new UnsupportedOperationException("This should have not been called");
+        }
+
+        @Override
+        public LatestCheckpointInfo latestCheckPointInfo() {
+            return LatestCheckpointInfo.UNKNOWN_CHECKPOINT_INFO;
         }
 
         @Override

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -75,7 +77,7 @@ class DetachedCheckpointAppenderTest {
     private final DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());
     private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository(1L);
     private final TransactionIdStore transactionIdStore =
-            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0);
+            new SimpleTransactionIdStore(2L, 0, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX, 0, 0);
     private CheckpointAppender checkpointAppender;
     private LogFiles logFiles;
 
@@ -101,7 +103,12 @@ class DetachedCheckpointAppenderTest {
         assertThrows(
                 IOException.class,
                 () -> checkpointAppender.checkPoint(
-                        LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition, Instant.now(), "test"));
+                        LogCheckPointEvent.NULL,
+                        UNKNOWN_TRANSACTION_ID,
+                        KernelVersion.LATEST,
+                        logPosition,
+                        Instant.now(),
+                        "test"));
     }
 
     @Test
@@ -114,7 +121,12 @@ class DetachedCheckpointAppenderTest {
                 NO_ROTATION,
                 mock(DetachedLogTailScanner.class));
         assertDoesNotThrow(() -> appender.checkPoint(
-                LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, UNSPECIFIED, Instant.now(), "test"));
+                LogCheckPointEvent.NULL,
+                UNKNOWN_TRANSACTION_ID,
+                KernelVersion.LATEST,
+                UNSPECIFIED,
+                Instant.now(),
+                "test"));
     }
 
     @Test
@@ -126,11 +138,26 @@ class DetachedCheckpointAppenderTest {
         var logPosition3 = new LogPosition(0, 30);
         assertThat(checkpointFile.reachableCheckpoints()).hasSize(0);
         checkpointAppender.checkPoint(
-                LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition1, Instant.now(), "first");
+                LogCheckPointEvent.NULL,
+                UNKNOWN_TRANSACTION_ID,
+                KernelVersion.LATEST,
+                logPosition1,
+                Instant.now(),
+                "first");
         checkpointAppender.checkPoint(
-                LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition2, Instant.now(), "second");
+                LogCheckPointEvent.NULL,
+                UNKNOWN_TRANSACTION_ID,
+                KernelVersion.LATEST,
+                logPosition2,
+                Instant.now(),
+                "second");
         checkpointAppender.checkPoint(
-                LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition3, Instant.now(), "third");
+                LogCheckPointEvent.NULL,
+                UNKNOWN_TRANSACTION_ID,
+                KernelVersion.LATEST,
+                logPosition3,
+                Instant.now(),
+                "third");
 
         var checkpoints = checkpointFile.reachableCheckpoints();
         assertThat(checkpoints).hasSize(3);

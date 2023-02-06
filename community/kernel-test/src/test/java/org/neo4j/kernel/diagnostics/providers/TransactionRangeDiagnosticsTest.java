@@ -131,7 +131,10 @@ class TransactionRangeDiagnosticsTest {
         LogPosition checkpointLogPosition = new LogPosition(checkpointLogHighVersion, 34);
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
-        TransactionId transactionId = new TransactionId(37, 38, 39);
+        TransactionId transactionId = new TransactionId(37, 38, 39, 40);
+        assertThat(KernelVersion.LATEST)
+                .describedAs("Guard for used version of checkpoint entry bellow.")
+                .isEqualTo(KernelVersion.V5_0);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
                 transactionLogsWithTransaction(txLogLowVersion, txLogHighVersion, 42),
                 checkpointLogsWithLastCheckpoint(

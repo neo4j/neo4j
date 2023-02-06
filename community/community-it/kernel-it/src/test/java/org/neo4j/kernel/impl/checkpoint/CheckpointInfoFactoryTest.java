@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.checkpoint;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryDetachedCheckpointV5_6;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -64,7 +66,8 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(0, 448);
         LogPosition positionAfterCheckpoint = new LogPosition(0, 640);
         LogPosition postReaderPosition = new LogPosition(0, 640);
-        var transactionId = new TransactionId(73, 614900954, 1645458411645L);
+        var transactionId = new TransactionId(73, 614900954, 1645458411645L, 17);
+        var restoredTransactionId = new TransactionId(73, 614900954, 1645458411645L, UNKNOWN_CONSENSUS_INDEX);
 
         prepareTestResources();
 
@@ -83,7 +86,7 @@ class CheckpointInfoFactoryTest {
         assertEquals(position, checkpointInfo.checkpointEntryPosition());
         assertEquals(positionAfterCheckpoint, checkpointInfo.channelPositionAfterCheckpoint());
         assertEquals(postReaderPosition, checkpointInfo.checkpointFilePostReadPosition());
-        assertEquals(transactionId, checkpointInfo.transactionId());
+        assertEquals(restoredTransactionId, checkpointInfo.transactionId());
     }
 
     @Test
@@ -93,9 +96,34 @@ class CheckpointInfoFactoryTest {
         LogPosition position = new LogPosition(1, 2);
         LogPosition positionAfterCheckpoint = new LogPosition(3, 4);
         LogPosition postReaderPosition = new LogPosition(5, 6);
-        TransactionId transactionId = new TransactionId(6, 7, 8);
+        TransactionId transactionId = new TransactionId(6, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
                 new LogEntryDetachedCheckpointV5_0(
+                        KernelVersion.LATEST, transactionId, logPosition, 2, storeId, "checkpoint"),
+                position,
+                positionAfterCheckpoint,
+                postReaderPosition,
+                null,
+                null);
+
+        assertEquals(logPosition, checkpointInfo.transactionLogPosition());
+        assertEquals(storeId, checkpointInfo.storeId());
+        assertEquals(position, checkpointInfo.checkpointEntryPosition());
+        assertEquals(transactionId, checkpointInfo.transactionId());
+        assertEquals(positionAfterCheckpoint, checkpointInfo.channelPositionAfterCheckpoint());
+        assertEquals(postReaderPosition, checkpointInfo.checkpointFilePostReadPosition());
+    }
+
+    @Test
+    void checkpointInfoOfDetachedCheckpoint54Entry() {
+        var logPosition = new LogPosition(0, 1);
+        var storeId = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
+        LogPosition position = new LogPosition(1, 2);
+        LogPosition positionAfterCheckpoint = new LogPosition(3, 4);
+        LogPosition postReaderPosition = new LogPosition(5, 6);
+        TransactionId transactionId = new TransactionId(6, 7, 8, 9);
+        var checkpointInfo = ofLogEntry(
+                new LogEntryDetachedCheckpointV5_6(
                         KernelVersion.LATEST, transactionId, logPosition, 2, storeId, "checkpoint"),
                 position,
                 positionAfterCheckpoint,

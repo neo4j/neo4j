@@ -27,10 +27,9 @@ import org.neo4j.kernel.KernelVersionProvider;
  */
 public interface CommandBatch extends CommandStream, KernelVersionProvider {
     /**
-     * @return an additional header of this transaction. Just arbitrary bytes that means nothing
-     * to this transaction representation.
+     * Command batch consensus index
      */
-    byte[] additionalHeader();
+    long consensusIndex();
 
     /**
      * @return time when transaction was started, i.e. when the user started it, not when it was committed.

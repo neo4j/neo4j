@@ -47,6 +47,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.util.concurrent.Futures.combine;
 
 import java.util.ArrayList;
@@ -147,7 +148,7 @@ class KernelTransactionsTest {
     @Inject
     private OtherThread t2;
 
-    private Locks locks = mock(Locks.class);
+    private final Locks locks = mock(Locks.class);
 
     @BeforeEach
     void setUp() {
@@ -717,7 +718,8 @@ class KernelTransactionsTest {
         life.start();
 
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-        when(transactionIdStore.getLastCommittedTransaction()).thenReturn(new TransactionId(0, 0, 0));
+        when(transactionIdStore.getLastCommittedTransaction())
+                .thenReturn(new TransactionId(0, 0, 0, UNKNOWN_CONSENSUS_INDEX));
 
         KernelVersionProvider kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
 

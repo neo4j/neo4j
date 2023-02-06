@@ -119,7 +119,13 @@ class DetachedLogTailScannerTest {
             throws IOException {
         separateCheckpointFile
                 .getCheckpointAppender()
-                .checkPoint(LogCheckPointEvent.NULL, transactionId, logPosition, Instant.now(), "test");
+                .checkPoint(
+                        LogCheckPointEvent.NULL,
+                        transactionId,
+                        KernelVersion.LATEST,
+                        logPosition,
+                        Instant.now(),
+                        "test");
     }
 
     @Test

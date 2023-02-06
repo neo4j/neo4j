@@ -60,12 +60,11 @@ public class TransactionWriter {
         this.neoStores = neoStores;
     }
 
-    public CommandBatch representation(
-            byte[] additionalHeader, long startTime, long lastCommittedTx, long committedTime) {
+    public CommandBatch representation(long consensusIndex, long startTime, long lastCommittedTx, long committedTime) {
         prepareForCommit();
         return new CompleteTransaction(
                 allCommands(),
-                additionalHeader,
+                consensusIndex,
                 startTime,
                 lastCommittedTx,
                 committedTime,

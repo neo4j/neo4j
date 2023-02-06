@@ -87,7 +87,7 @@ class RecoveryStartInformationProviderTest {
         LogPosition checkpointPosition = new LogPosition(2, 4);
         LogPosition afterCheckpointPosition = new LogPosition(4, 8);
         LogPosition readerPostPosition = new LogPosition(5, 9);
-        TransactionId transactionId = new TransactionId(4L, 2, 5L);
+        TransactionId transactionId = new TransactionId(4L, 2, 5L, 6L);
         when(logFiles.getTailMetadata())
                 .thenReturn(new LogTailInformation(
                         new CheckpointInfo(

@@ -93,8 +93,8 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
-        transactionIdStore.transactionCommitted(transactionId, checksum, commitTimestamp);
+    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
+        transactionIdStore.transactionCommitted(transactionId, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -119,21 +119,38 @@ public class SimpleMetaDataProvider implements MetadataProvider {
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion) {
+            long transactionId,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion) {
         transactionIdStore.setLastCommittedAndClosedTransactionId(
-                transactionId, checksum, commitTimestamp, byteOffset, logVersion);
+                transactionId, checksum, commitTimestamp, consensusIndex, byteOffset, logVersion);
     }
 
     @Override
     public void transactionClosed(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
-        transactionIdStore.transactionClosed(transactionId, logVersion, byteOffset, checksum, commitTimestamp);
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        transactionIdStore.transactionClosed(
+                transactionId, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
     public void resetLastClosedTransaction(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
-        transactionIdStore.resetLastClosedTransaction(transactionId, logVersion, byteOffset, checksum, commitTimestamp);
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        transactionIdStore.resetLastClosedTransaction(
+                transactionId, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override

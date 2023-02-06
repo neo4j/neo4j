@@ -20,7 +20,6 @@
 package org.neo4j.kernel.database;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
@@ -32,6 +31,7 @@ import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -178,7 +178,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -451,9 +450,8 @@ public class Database extends AbstractDatabase {
                 cursorContextFactory,
                 tracers.getPageCacheTracer());
 
-        MetadataProvider metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
-
-        TransactionIdStore transactionIdStore = metadataProvider;
+        TransactionIdStore transactionIdStore =
+                databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
         initialiseContextFactory(transactionIdStore::getLastClosedTransactionId);
         elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
@@ -632,7 +630,7 @@ public class Database extends AbstractDatabase {
                     storageEngine.createUpgradeCommands(fromKernelVersion, toKernelVersion);
             CompleteTransaction transactionRepresentation = new CompleteTransaction(
                     upgradeCommands,
-                    EMPTY_BYTE_ARRAY,
+                    UNKNOWN_CONSENSUS_INDEX,
                     time,
                     transactionIdStore.getLastClosedTransactionId(),
                     time,
@@ -859,7 +857,8 @@ public class Database extends AbstractDatabase {
                 storeCopyCheckPointMutex,
                 cursorContextFactory,
                 clock,
-                ioController);
+                ioController,
+                metadataCache);
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler(
@@ -869,7 +868,13 @@ public class Database extends AbstractDatabase {
         life.add(checkPointScheduler);
 
         TransactionLogServiceImpl transactionLogService = new TransactionLogServiceImpl(
-                transactionIdStore, logFiles, logicalTransactionStore, pruneLock, databaseAvailabilityGuard);
+                transactionIdStore,
+                logFiles,
+                logicalTransactionStore,
+                pruneLock,
+                databaseAvailabilityGuard,
+                logProvider,
+                checkPointer);
         databaseDependencies.satisfyDependencies(
                 checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 

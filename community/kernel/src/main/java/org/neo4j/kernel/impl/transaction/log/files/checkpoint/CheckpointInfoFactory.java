@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryDetachedCheckpointV5_6;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
@@ -84,6 +86,16 @@ public class CheckpointInfoFactory {
                     checkpoint50.kernelVersion(),
                     checkpoint50.getTransactionId(),
                     checkpoint50.getReason());
+        } else if (entry instanceof LogEntryDetachedCheckpointV5_6 checkpoint56) {
+            return new CheckpointInfo(
+                    checkpoint56.getLogPosition(),
+                    checkpoint56.getStoreId(),
+                    checkpointEntryPosition,
+                    channelPositionAfterCheckpoint,
+                    checkpointFilePostReadPosition,
+                    checkpoint56.kernelVersion(),
+                    checkpoint56.getTransactionId(),
+                    checkpoint56.getReason());
         } else {
             throw new UnsupportedOperationException(
                     "Expected to observe only checkpoint entries, but: `" + entry + "` was found.");
@@ -111,7 +123,11 @@ public class CheckpointInfoFactory {
                                 + " was found but transaction start was missing.");
                     }
                     return new TransactionInfo(
-                            new TransactionId(commit.getTxId(), commit.getChecksum(), commit.getTimeWritten()),
+                            new TransactionId(
+                                    commit.getTxId(),
+                                    commit.getChecksum(),
+                                    commit.getTimeWritten(),
+                                    UNKNOWN_CONSENSUS_INDEX),
                             logEntryStart.kernelVersion());
                 }
             }
@@ -176,8 +192,8 @@ public class CheckpointInfoFactory {
             long transactionId = maybeReverse(fallbackReader.getLong(), reverseBytes);
             long timeWritten = maybeReverse(fallbackReader.getLong(), reverseBytes);
             int checksum = skipChecksum ? 0 : maybeReverse(fallbackReader.getInt(), reverseBytes);
-            return Optional.of(
-                    new TransactionInfo(new TransactionId(transactionId, checksum, timeWritten), kernelVersion));
+            return Optional.of(new TransactionInfo(
+                    new TransactionId(transactionId, checksum, timeWritten, UNKNOWN_CONSENSUS_INDEX), kernelVersion));
         } catch (Exception e) {
             context.getLogProvider()
                     .getLog(CheckpointInfoFactory.class)

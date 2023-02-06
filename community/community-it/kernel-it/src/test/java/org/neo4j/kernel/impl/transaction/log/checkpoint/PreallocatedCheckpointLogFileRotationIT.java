@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 
 import java.io.IOException;
@@ -32,6 +32,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.TransactionId;
 
@@ -52,10 +53,11 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102);
+        var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoints in preallocated file";
         for (int i = 0; i < 3; i++) {
-            checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+            checkpointAppender.checkPoint(
+                    NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(1);
@@ -66,7 +68,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102);
+        var transactionId = new TransactionId(100, 101, 102, 103);
         var reason = "checkpoint in preallocated file";
 
         for (int fileCount = 1; fileCount < 6; fileCount++) {
@@ -74,7 +76,8 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
                 assertThat(checkpointFile.getDetachedCheckpointFiles())
                         .hasSize(fileCount)
                         .allMatch(this::sizeEqualsToPreallocatedFile);
-                checkpointAppender.checkPoint(NULL, transactionId, logPosition, Instant.now(), reason);
+                checkpointAppender.checkPoint(
+                        NULL, transactionId, KernelVersion.LATEST, logPosition, Instant.now(), reason);
             }
         }
 

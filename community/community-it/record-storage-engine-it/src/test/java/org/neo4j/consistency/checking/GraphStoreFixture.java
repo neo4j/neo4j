@@ -30,6 +30,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -351,7 +352,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                     new TransactionDataBuilder(writer, neoStores, idGenerator, indexingService, recordAccess),
                     idGenerator);
             idGenerator.updateCorrespondingIdGenerators(neoStores);
-            return writer.representation(new byte[0], startTimestamp, lastCommittedTx, currentTimeMillis());
+            return writer.representation(UNKNOWN_CONSENSUS_INDEX, startTimestamp, lastCommittedTx, currentTimeMillis());
         }
     }
 

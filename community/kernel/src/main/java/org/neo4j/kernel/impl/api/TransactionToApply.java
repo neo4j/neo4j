@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.internal.helpers.Format.date;
-import static org.neo4j.internal.helpers.Format.hexString;
 import static org.neo4j.kernel.impl.api.txid.TransactionIdGenerator.EXTERNAL_ID;
 
 import java.io.IOException;
@@ -144,7 +143,7 @@ public class TransactionToApply implements CommandBatchToApply {
 
     @Override
     public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
-        this.commitment.commit(transactionId, beforeCommit, positionAfter, checksum);
+        this.commitment.commit(transactionId, beforeCommit, positionAfter, checksum, commandBatch.consensusIndex());
         this.cursorContext.getVersionContext().initWrite(transactionId);
     }
 
@@ -174,8 +173,8 @@ public class TransactionToApply implements CommandBatchToApply {
                 + date(tr.getTimeCommitted()) + ", with "
                 + countCommands() + " commands in this transaction" + ", lease "
                 + tr.getLeaseId() + ", latest committed transaction id when started was "
-                + tr.getLatestCommittedTxWhenStarted() + ", additional header bytes: "
-                + hexString(tr.additionalHeader()) + "}";
+                + tr.getLatestCommittedTxWhenStarted() + ", consensusIndex: "
+                + tr.consensusIndex() + "}";
     }
 
     private String countCommands() {

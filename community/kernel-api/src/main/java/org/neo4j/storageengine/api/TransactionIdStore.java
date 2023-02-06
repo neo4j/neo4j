@@ -23,16 +23,16 @@ package org.neo4j.storageengine.api;
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
- * completion of those are marked using {@link #transactionClosed(long, long, long, int, long)}.
+ * completion of those are marked using {@link #transactionClosed(long, long, long, int, long, long)}.
  * <p>
  * A transaction ID passes through a {@link TransactionIdStore} like this:
  * <ol>
  * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  * At this point that id isn't visible from any getter.</li>
- * <li>{@link #transactionCommitted(long, int, long)} is called with this id after the fact that the transaction
+ * <li>{@link #transactionCommitted(long, int, long, long)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
- * <li>{@link #transactionClosed(long, long, long, int, long)} is called with this id again, this time after all changes the
+ * <li>{@link #transactionClosed(long, long, long, int, long, long)} is called with this id again, this time after all changes the
  * transaction imposes have been applied to the store.
  * </ol>
  */
@@ -66,12 +66,17 @@ public interface TransactionIdStore {
      */
     long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
 
-    TransactionId UNKNOWN_TRANSACTION_ID =
-            new TransactionId(BASE_TX_ID - 1, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP);
+    /**
+     * Value for unknown consensus log index.
+     */
+    long UNKNOWN_CONSENSUS_INDEX = -1;
+
+    TransactionId UNKNOWN_TRANSACTION_ID = new TransactionId(
+            BASE_TX_ID - 1, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX);
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long, int, long)}.
+     * until handed to {@link #transactionCommitted(long, int, long, long)}.
      */
     long nextCommittingTransactionId();
 
@@ -87,11 +92,12 @@ public interface TransactionIdStore {
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
+     * @param consensusIndex consensus index of the transaction.
      */
-    void transactionCommitted(long transactionId, int checksum, long commitTimestamp);
+    void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex);
 
     /**
-     * @return highest seen {@link #transactionCommitted(long, int, long)}  committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, int, long, long)}  committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
@@ -104,7 +110,7 @@ public interface TransactionIdStore {
     TransactionId getLastCommittedTransaction();
 
     /**
-     * @return highest seen gap-free {@link #transactionClosed(long, long, long, int, long)}  closed transaction id}.
+     * @return highest seen gap-free {@link #transactionClosed(long, long, long, int, long, long)}  closed transaction id}.
      */
     long getLastClosedTransactionId();
 
@@ -121,11 +127,17 @@ public interface TransactionIdStore {
      * @param transactionId transaction id that will be the last closed/committed id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
+     * @param consensusIndex consensus index of the transaction.
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
      */
     void setLastCommittedAndClosedTransactionId(
-            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion);
+            long transactionId,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion);
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
@@ -135,8 +147,15 @@ public interface TransactionIdStore {
      * @param byteOffset offset in the log file where start writing the next log entry.
      * @param checksum applied transaction checksum
      * @param commitTimestamp applied transaction commit timestamp
+     * @param consensusIndex consensus index of the transaction.
      */
-    void transactionClosed(long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp);
+    void transactionClosed(
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex);
 
     /**
      * Unconditionally set last closed transaction info. Should be used for cases where last closed transaction info should be
@@ -147,7 +166,13 @@ public interface TransactionIdStore {
      * @param byteOffset new last closed transaction offset
      * @param checksum new last closed transaction checksum
      * @param commitTimestamp new last closed transaction commit timestamp
+     * @param consensusIndex new last closed transaction consensus index
      */
     void resetLastClosedTransaction(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp);
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex);
 }

@@ -27,6 +27,8 @@ package org.neo4j.kernel.availability;
  * or await availability using {@link #isAvailable(long)}.
  */
 public interface AvailabilityGuard {
+    AvailabilityGuard NOT_AVAILABLE_GUARD = new NotAvailableGuard();
+
     /**
      * Indicate a requirement that must be fulfilled before the database is considered available.
      *
@@ -87,4 +89,45 @@ public interface AvailabilityGuard {
      * @return a textual representation of what components, if any, are blocking
      */
     String describe();
+
+    class NotAvailableGuard implements AvailabilityGuard {
+        private static final String ALWAYS_NOT_AVAILABLE_GUARD = "Always not available guard";
+
+        private NotAvailableGuard() {}
+
+        @Override
+        public void require(AvailabilityRequirement requirement) {}
+
+        @Override
+        public void fulfill(AvailabilityRequirement requirement) {}
+
+        @Override
+        public boolean isAvailable() {
+            return false;
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return false;
+        }
+
+        @Override
+        public boolean isAvailable(long millis) {
+            return false;
+        }
+
+        @Override
+        public void await(long millis) throws UnavailableException {}
+
+        @Override
+        public void addListener(AvailabilityListener listener) {}
+
+        @Override
+        public void removeListener(AvailabilityListener listener) {}
+
+        @Override
+        public String describe() {
+            return ALWAYS_NOT_AVAILABLE_GUARD;
+        }
+    }
 }

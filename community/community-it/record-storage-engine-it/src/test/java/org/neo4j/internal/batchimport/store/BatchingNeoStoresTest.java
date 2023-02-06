@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.io.IOException;
@@ -605,7 +606,8 @@ class BatchingNeoStoresTest {
                     storeCursors,
                     INSTANCE);
             CommandBatchToApply apply = new TransactionToApply(
-                    new CompleteTransaction(commands, new byte[0], 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS),
+                    new CompleteTransaction(
+                            commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, KernelVersion.LATEST, ANONYMOUS),
                     NULL_CONTEXT,
                     storeCursors,
                     NO_COMMITMENT,

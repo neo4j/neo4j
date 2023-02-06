@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.monitoring.HealthEventGenerator.NO_OP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -198,7 +198,7 @@ class QueueTransactionAppenderConcurrencyIT {
 
     private TransactionToApply createTransaction() {
         CompleteTransaction tx = new CompleteTransaction(
-                List.of(new TestCommand()), ArrayUtils.EMPTY_BYTE_ARRAY, 1, 2, 3, 4, KernelVersion.LATEST, ANONYMOUS);
+                List.of(new TestCommand()), UNKNOWN_CONSENSUS_INDEX, 1, 2, 3, 4, KernelVersion.LATEST, ANONYMOUS);
         var transactionCommitment = new TransactionCommitment(metadataCache, transactionIdStore);
         return new TransactionToApply(
                 tx,

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.v54.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 
 public class SketchingCommandBatchCursor implements CommandBatchCursor {
     private final ReadableClosablePositionAwareChecksumChannel channel;

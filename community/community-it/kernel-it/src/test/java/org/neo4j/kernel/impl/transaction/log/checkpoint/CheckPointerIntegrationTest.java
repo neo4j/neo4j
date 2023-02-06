@@ -50,6 +50,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -92,6 +93,21 @@ class CheckPointerIntegrationTest {
     }
 
     @Test
+    void latestKernelVersionInCheckpointByDefault() throws Exception {
+        DatabaseManagementService managementService = builder.build();
+        try {
+            GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(DEFAULT_DATABASE_NAME);
+            getCheckPointer(db).forceCheckPoint(new SimpleTriggerInfo("test"));
+            List<CheckpointInfo> checkpointInfos = checkPointsInTxLog(db);
+            assertEquals(
+                    KernelVersion.LATEST,
+                    checkpointInfos.get(checkpointInfos.size() - 1).kernelVersion());
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     void shouldCheckPointBasedOnTime() throws Throwable {
         // given
         long millis = 200;
@@ -123,8 +139,7 @@ class CheckPointerIntegrationTest {
 
             assertTrue(
                     checkPoints.size() >= 2,
-                    "Expected at least two (at least one for time interval and one for shutdown), was "
-                            + checkPoints.toString());
+                    "Expected at least two (at least one for time interval and one for shutdown), was " + checkPoints);
         } finally {
             managementService.shutdown();
         }
@@ -252,7 +267,10 @@ class CheckPointerIntegrationTest {
             }
             var closedTxMetadata = getMetadataProvider(databaseAPI).getLastClosedTransaction();
             var lastClosedTxId = new TransactionId(
-                    closedTxMetadata.transactionId(), closedTxMetadata.checksum(), closedTxMetadata.commitTimestamp());
+                    closedTxMetadata.transactionId(),
+                    closedTxMetadata.checksum(),
+                    closedTxMetadata.commitTimestamp(),
+                    closedTxMetadata.consensusIndex());
 
             getCheckPointer(databaseAPI).forceCheckPoint(new SimpleTriggerInfo("test"));
             var checkpointInfos = checkPointsInTxLog(databaseAPI);

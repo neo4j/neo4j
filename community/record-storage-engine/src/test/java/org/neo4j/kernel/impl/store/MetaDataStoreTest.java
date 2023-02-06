@@ -32,6 +32,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -210,24 +211,24 @@ public class MetaDataStoreTest {
         metaDataStore.close();
         assertThrows(
                 StoreFileClosedException.class,
-                () -> metaDataStore.setLastCommittedAndClosedTransactionId(1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4));
+                () -> metaDataStore.setLastCommittedAndClosedTransactionId(1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4, 5));
     }
 
     @Test
     void setLastClosedTransactionFailWhenStoreIsClosed() {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows(StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction(1, 2, 3, 4, 5));
+        assertThrows(StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction(1, 2, 3, 4, 5, 6));
     }
 
     @Test
     void setLastClosedTransactionOverridesLastClosedTransactionInformation() {
         try (MetaDataStore metaDataStore = newMetaDataStore()) {
-            metaDataStore.resetLastClosedTransaction(3, 4, 5, 6, 7);
+            metaDataStore.resetLastClosedTransaction(3, 4, 5, 6, 7, 8);
 
             assertEquals(3L, metaDataStore.getLastClosedTransactionId());
             assertEquals(
-                    new ClosedTransactionMetadata(3, new LogPosition(4, 5), 6, 7),
+                    new ClosedTransactionMetadata(3, new LogPosition(4, 5), 6, 7, 8),
                     metaDataStore.getLastClosedTransaction());
         }
     }
@@ -238,7 +239,7 @@ public class MetaDataStoreTest {
         metaDataStore.close();
         assertThrows(
                 StoreFileClosedException.class,
-                () -> metaDataStore.transactionCommitted(1, 1, BASE_TX_COMMIT_TIMESTAMP));
+                () -> metaDataStore.transactionCommitted(1, 1, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX));
     }
 
     @Test
@@ -248,12 +249,13 @@ public class MetaDataStoreTest {
         long byteOffset = 777L;
         int checksum = 5252;
         long timestamp = 1234;
+        long consensusIndex = 12345;
         long transactionId;
         try (MetaDataStore metaDataStore = newMetaDataStore()) {
             transactionId = metaDataStore.getLastClosedTransaction().transactionId() + 1;
 
             // WHEN
-            metaDataStore.transactionClosed(transactionId, version, byteOffset, checksum, timestamp);
+            metaDataStore.transactionClosed(transactionId, version, byteOffset, checksum, timestamp, consensusIndex);
             // long[] with the highest offered gap-free number and its meta data.
             var closedTransaction = metaDataStore.getLastClosedTransaction();
 
@@ -271,7 +273,7 @@ public class MetaDataStoreTest {
 
             @Override
             public TransactionId getLastCommittedTransaction() {
-                return new TransactionId(transactionId, checksum, timestamp);
+                return new TransactionId(transactionId, checksum, timestamp, consensusIndex);
             }
         };
 
@@ -303,7 +305,7 @@ public class MetaDataStoreTest {
     @Test
     void transactionCommittedMustBeAtomic() throws Throwable {
         try (MetaDataStore store = newMetaDataStore()) {
-            store.transactionCommitted(2, 2, 2);
+            store.transactionCommitted(2, 2, 2, 2);
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -321,7 +323,7 @@ public class MetaDataStoreTest {
                     && currentTimeMillis() >= endTime);
             race.addContestants(3, () -> {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted(count, (int) count, count);
+                store.transactionCommitted(count, (int) count, count, count);
             });
 
             race.addContestants(3, throwing(() -> {
@@ -347,7 +349,7 @@ public class MetaDataStoreTest {
         try (MetaDataStore store = newMetaDataStore()) {
             PagedFile pf = store.pagedFile;
             int initialValue = 2;
-            store.transactionClosed(initialValue, initialValue, initialValue, initialValue, initialValue);
+            store.transactionClosed(initialValue, initialValue, initialValue, initialValue, initialValue, initialValue);
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -365,7 +367,7 @@ public class MetaDataStoreTest {
                     && currentTimeMillis() >= endTime);
             race.addContestants(3, () -> {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted(count, (int) count, count);
+                store.transactionCommitted(count, (int) count, count, count);
             });
 
             race.addContestants(3, throwing(() -> {

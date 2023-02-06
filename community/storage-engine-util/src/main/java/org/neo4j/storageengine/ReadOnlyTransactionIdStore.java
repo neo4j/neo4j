@@ -29,6 +29,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final long transactionId;
     private final int transactionChecksum;
     private final long transactionCommitTimestamp;
+    private final long transactionConsensusIndex;
     private final LogPosition logPosition;
 
     public ReadOnlyTransactionIdStore(LogTailMetadata logTailMetadata) {
@@ -37,6 +38,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
         transactionChecksum = lastCommittedTransaction.checksum();
         transactionCommitTimestamp = lastCommittedTransaction.commitTimestamp();
         logPosition = logTailMetadata.getLastTransactionLogPosition();
+        transactionConsensusIndex = lastCommittedTransaction.consensusIndex();
     }
 
     @Override
@@ -50,7 +52,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
+    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
@@ -61,7 +63,8 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
 
     @Override
     public TransactionId getLastCommittedTransaction() {
-        return new TransactionId(transactionId, transactionChecksum, BASE_TX_COMMIT_TIMESTAMP);
+        return new TransactionId(
+                transactionId, transactionChecksum, BASE_TX_COMMIT_TIMESTAMP, transactionConsensusIndex);
     }
 
     @Override
@@ -72,24 +75,39 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction() {
         return new ClosedTransactionMetadata(
-                transactionId, logPosition, transactionChecksum, transactionCommitTimestamp);
+                transactionId, logPosition, transactionChecksum, transactionCommitTimestamp, transactionConsensusIndex);
     }
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion) {
+            long transactionId,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long logByteOffset,
+            long logVersion) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
     public void transactionClosed(
-            long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp) {
+            long transactionId,
+            long logVersion,
+            long logByteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 
     @Override
     public void resetLastClosedTransaction(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         throw new UnsupportedOperationException("Read-only transaction ID store");
     }
 }

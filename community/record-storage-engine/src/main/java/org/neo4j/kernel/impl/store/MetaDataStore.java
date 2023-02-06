@@ -155,13 +155,17 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
         lastCommittingTx = new AtomicLong(lastCommittedTx.transactionId());
         highestCommittedTransaction = new HighestTransactionId(
-                lastCommittedTx.transactionId(), lastCommittedTx.checksum(), lastCommittedTx.commitTimestamp());
+                lastCommittedTx.transactionId(),
+                lastCommittedTx.checksum(),
+                lastCommittedTx.commitTimestamp(),
+                lastCommittedTx.consensusIndex());
         var logPosition = logTailMetadata.getLastTransactionLogPosition();
         lastClosedTx = new ArrayQueueOutOfOrderSequence(lastCommittedTx.transactionId(), 200, new long[] {
             logPosition.getLogVersion(),
             logPosition.getByteOffset(),
             lastCommittedTx.checksum(),
-            lastCommittedTx.commitTimestamp()
+            lastCommittedTx.commitTimestamp(),
+            lastCommittedTx.consensusIndex()
         });
     }
 
@@ -209,11 +213,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
 
     @Override
     public void setLastCommittedAndClosedTransactionId(
-            long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion) {
+            long transactionId,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex,
+            long byteOffset,
+            long logVersion) {
         assertNotClosed();
         lastCommittingTx.set(transactionId);
-        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
-        highestCommittedTransaction.set(transactionId, checksum, commitTimestamp);
+        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
+        highestCommittedTransaction.set(transactionId, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -277,9 +286,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     }
 
     @Override
-    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp) {
+    public void transactionCommitted(long transactionId, int checksum, long commitTimestamp, long consensusIndex) {
         assertNotClosed();
-        highestCommittedTransaction.offer(transactionId, checksum, commitTimestamp);
+        highestCommittedTransaction.offer(transactionId, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override
@@ -305,20 +314,31 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         assertNotClosed();
         long[] txData = lastClosedTx.get();
         return new ClosedTransactionMetadata(
-                txData[0], new LogPosition(txData[1], txData[2]), (int) txData[3], txData[4]);
+                txData[0], new LogPosition(txData[1], txData[2]), (int) txData[3], txData[4], txData[5]);
     }
 
     @Override
     public void transactionClosed(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
-        lastClosedTx.offer(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
+        lastClosedTx.offer(
+                transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
     }
 
     @Override
     public void resetLastClosedTransaction(
-            long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp) {
+            long transactionId,
+            long logVersion,
+            long byteOffset,
+            int checksum,
+            long commitTimestamp,
+            long consensusIndex) {
         assertNotClosed();
-        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp});
+        lastClosedTx.set(transactionId, new long[] {logVersion, byteOffset, checksum, commitTimestamp, consensusIndex});
     }
 
     public void logRecords(final DiagnosticsLogger logger) {

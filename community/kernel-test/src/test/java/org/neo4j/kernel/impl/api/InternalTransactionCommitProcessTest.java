@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +35,7 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.internal.helpers.Exceptions.contains;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -104,7 +104,7 @@ class InternalTransactionCommitProcessTest {
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify(transactionIdStore).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong());
+        verify(transactionIdStore).transactionClosed(eq(txId), anyLong(), anyLong(), anyInt(), anyLong(), anyLong());
     }
 
     @Test
@@ -119,7 +119,7 @@ class InternalTransactionCommitProcessTest {
 
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
         CompleteTransaction noCommandTx = new CompleteTransaction(
-                Collections.emptyList(), EMPTY_BYTE_ARRAY, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
+                Collections.emptyList(), UNKNOWN_CONSENSUS_INDEX, -1, -1, -1, -1, KernelVersion.LATEST, ANONYMOUS);
 
         // WHEN
 
@@ -133,7 +133,9 @@ class InternalTransactionCommitProcessTest {
                 commitEvent,
                 INTERNAL);
 
-        verify(transactionIdStore).transactionCommitted(txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP);
+        verify(transactionIdStore)
+                .transactionCommitted(
+                        txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, FakeCommitment.CONSENSUS_INDEX);
     }
 
     @Test
@@ -183,7 +185,7 @@ class InternalTransactionCommitProcessTest {
 
     private TransactionToApply mockedTransaction(TransactionIdStore transactionIdStore) {
         CommandBatch transaction = mock(CommandBatch.class);
-        when(transaction.additionalHeader()).thenReturn(new byte[0]);
+        when(transaction.consensusIndex()).thenReturn(UNKNOWN_CONSENSUS_INDEX);
         var commitmentFactory = new TransactionCommitmentFactory(new TransactionMetadataCache(), transactionIdStore);
         var transactionCommitment = commitmentFactory.newCommitment();
         return new TransactionToApply(

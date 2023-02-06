@@ -19,15 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static java.lang.Math.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -47,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpoin
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -85,7 +92,8 @@ class DetachedCheckpointLogEntryParserV50Test {
                 assertEquals(KernelVersion.V5_0, checkpointV50.kernelVersion());
                 assertEquals(new LogPosition(1, 2), checkpointV50.getLogPosition());
                 assertEquals(TEST_STORE_ID, checkpointV50.getStoreId());
-                assertEquals(new TransactionId(100, 101, 102), checkpointV50.getTransactionId());
+                assertEquals(
+                        new TransactionId(100, 101, 102, UNKNOWN_CONSENSUS_INDEX), checkpointV50.getTransactionId());
             }
         }
     }
@@ -121,7 +129,7 @@ class DetachedCheckpointLogEntryParserV50Test {
     private static void writeCheckpoint(WritableChecksumChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
         var logPosition = new LogPosition(1, 2);
-        var transactionId = new TransactionId(100, 101, 102);
+        var transactionId = new TransactionId(100, 101, 102, 103);
 
         writeCheckPointEntry(
                 channel, kernelVersion, transactionId, logPosition, Instant.ofEpochMilli(1), TEST_STORE_ID, reason);
@@ -136,7 +144,24 @@ class DetachedCheckpointLogEntryParserV50Test {
             StoreId storeId,
             String reason)
             throws IOException {
-        new DetachedCheckpointLogEntryWriter(channel, () -> kernelVersion)
-                .writeCheckPointEntry(transactionId, logPosition, checkpointTime, storeId, reason);
+        channel.put(kernelVersion.version()).put(DETACHED_CHECK_POINT_V5_0);
+
+        byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
+        StoreIdSerialization.serializeWithFixedSize(storeId, ByteBuffer.wrap(storeIdBuffer));
+        byte[] reasonBytes = reason.getBytes();
+        short length = safeCastIntToShort(min(reasonBytes.length, MAX_DESCRIPTION_LENGTH));
+        byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
+        System.arraycopy(reasonBytes, 0, descriptionBytes, 0, length);
+
+        channel.putLong(logPosition.getLogVersion())
+                .putLong(logPosition.getByteOffset())
+                .putLong(checkpointTime.toEpochMilli())
+                .put(storeIdBuffer, storeIdBuffer.length)
+                .putLong(transactionId.transactionId())
+                .putInt(transactionId.checksum())
+                .putLong(transactionId.commitTimestamp())
+                .putShort(length)
+                .put(descriptionBytes, descriptionBytes.length);
+        channel.putChecksum();
     }
 }

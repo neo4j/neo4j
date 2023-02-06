@@ -26,7 +26,7 @@ public record ChunkMetadata(
         boolean first,
         boolean last,
         long chunkId,
-        byte[] additionalData,
+        long consensusIndex,
         long startTimeMillis,
         long lastTransactionIdWhenStarted,
         long chunkCommitTime,

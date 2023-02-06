@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,7 +119,7 @@ class PhysicalLogicalTransactionStoreTest {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         Config config = Config.defaults();
-        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final long consensusIndex = 1;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -134,7 +133,7 @@ class PhysicalLogicalTransactionStoreTest {
                     logFiles,
                     positionCache,
                     transactionIdStore,
-                    additionalHeader,
+                    consensusIndex,
                     timeStarted,
                     latestCommittedTxWhenStarted,
                     timeCommitted,
@@ -153,7 +152,7 @@ class PhysicalLogicalTransactionStoreTest {
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
                 logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
         verifyTransaction(
-                positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
+                positionCache, consensusIndex, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
     }
 
     @Test
@@ -182,7 +181,7 @@ class PhysicalLogicalTransactionStoreTest {
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY);
         Config config = Config.defaults();
-        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final long consensusIndex = 2;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -197,7 +196,7 @@ class PhysicalLogicalTransactionStoreTest {
                     logFiles,
                     positionCache,
                     transactionIdStore,
-                    additionalHeader,
+                    consensusIndex,
                     timeStarted,
                     latestCommittedTxWhenStarted,
                     timeCommitted,
@@ -210,7 +209,7 @@ class PhysicalLogicalTransactionStoreTest {
         life.add(logFiles);
         final AtomicBoolean recoveryPerformed = new AtomicBoolean();
         FakeRecoveryVisitor visitor =
-                new FakeRecoveryVisitor(additionalHeader, timeStarted, timeCommitted, latestCommittedTxWhenStarted);
+                new FakeRecoveryVisitor(consensusIndex, timeStarted, timeCommitted, latestCommittedTxWhenStarted);
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
                 logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
@@ -247,7 +246,7 @@ class PhysicalLogicalTransactionStoreTest {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
         Config config = Config.defaults();
-        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final long consensusIndex = 5;
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
@@ -261,7 +260,7 @@ class PhysicalLogicalTransactionStoreTest {
                     logFiles,
                     positionCache,
                     transactionIdStore,
-                    additionalHeader,
+                    consensusIndex,
                     timeStarted,
                     latestCommittedTxWhenStarted,
                     timeCommitted,
@@ -279,7 +278,7 @@ class PhysicalLogicalTransactionStoreTest {
         life.start();
         try {
             verifyTransaction(
-                    positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
+                    positionCache, consensusIndex, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
         } finally {
             life.shutdown();
         }
@@ -330,7 +329,7 @@ class PhysicalLogicalTransactionStoreTest {
             LogFiles logFiles,
             TransactionMetadataCache positionCache,
             TransactionIdStore transactionIdStore,
-            byte[] additionalHeader,
+            long consensusIndex,
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted,
@@ -340,7 +339,7 @@ class PhysicalLogicalTransactionStoreTest {
                 life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
         CompleteTransaction transaction = new CompleteTransaction(
                 singleTestCommand(),
-                additionalHeader,
+                consensusIndex,
                 timeStarted,
                 latestCommittedTxWhenStarted,
                 timeCommitted,
@@ -364,7 +363,7 @@ class PhysicalLogicalTransactionStoreTest {
 
     private static void verifyTransaction(
             TransactionMetadataCache positionCache,
-            byte[] additionalHeader,
+            long consensusIndex,
             long timeStarted,
             long latestCommittedTxWhenStarted,
             long timeCommitted,
@@ -375,7 +374,7 @@ class PhysicalLogicalTransactionStoreTest {
             assertTrue(hasNext);
             CommittedCommandBatch commandBatch = cursor.get();
             CommandBatch transaction = commandBatch.commandBatch();
-            assertArrayEquals(additionalHeader, transaction.additionalHeader());
+            assertEquals(consensusIndex, transaction.consensusIndex());
             assertEquals(timeStarted, transaction.getTimeStarted());
             assertEquals(timeCommitted, commandBatch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted());
@@ -391,15 +390,15 @@ class PhysicalLogicalTransactionStoreTest {
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier {
-        private final byte[] additionalHeader;
+        private final long consensusIndex;
         private final long timeStarted;
         private final long timeCommitted;
         private final long latestCommittedTxWhenStarted;
         private int visitedTransactions;
 
         FakeRecoveryVisitor(
-                byte[] additionalHeader, long timeStarted, long timeCommitted, long latestCommittedTxWhenStarted) {
-            this.additionalHeader = additionalHeader;
+                long consensusIndex, long timeStarted, long timeCommitted, long latestCommittedTxWhenStarted) {
+            this.consensusIndex = consensusIndex;
             this.timeStarted = timeStarted;
             this.timeCommitted = timeCommitted;
             this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
@@ -408,7 +407,7 @@ class PhysicalLogicalTransactionStoreTest {
         @Override
         public boolean visit(CommittedCommandBatch batch) {
             CommandBatch transaction = batch.commandBatch();
-            assertArrayEquals(additionalHeader, transaction.additionalHeader());
+            assertEquals(consensusIndex, transaction.consensusIndex());
             assertEquals(timeStarted, transaction.getTimeStarted());
             assertEquals(timeCommitted, batch.timeWritten());
             assertEquals(latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted());
