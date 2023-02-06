@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport with RewritePhaseTest {
+class collapseMultipleInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport with RewritePhaseTest {
 
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] =
     CNFNormalizerTest.getTransformer andThen collapseMultipleInPredicates
@@ -55,6 +55,20 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
     assertRewritten(
       "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [rand()] RETURN a",
       "MATCH (a) WHERE a.prop IN [42, rand()] RETURN a"
+    )
+  }
+
+  test("should collapse empty collection and non-empty collection") {
+    assertRewritten(
+      "MATCH (a) WHERE id(a) IN [] OR id(a) IN [1,2,3] RETURN a",
+      "MATCH (a) WHERE id(a) IN [1,2,3] RETURN a",
+    )
+  }
+
+  test("should collapse empty collection") {
+    assertRewritten(
+      "MATCH (a) WHERE id(a) IN [] OR a.prop > 1 RETURN a",
+      "MATCH (a) WHERE a.prop > 1 RETURN a",
     )
   }
 }

@@ -64,10 +64,8 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
         // Return the original non-rewritten expressions together with our new ones
         val allNewExpressions = nonRewritable ++ reorderedInExpressions
         allNewExpressions match {
-          case head :: Nil if !reorderedInExpressions.isEmpty =>
-            // we only have one element from reorderedInExpressions
-            head
-          case l                                              => Ors(l)(predicate.position)
+          case head :: Nil => head
+          case l => Ors(l)(predicate.position)
         }
     },
     cancellation = context.cancellationChecker
