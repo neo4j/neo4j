@@ -25,7 +25,6 @@ import static java.util.Arrays.asList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -203,11 +202,7 @@ public final class SuppressOutput {
 
         @Override
         public String toString() {
-            try {
-                return replacementBuffer.toString(StandardCharsets.UTF_8.name());
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
+            return replacementBuffer.toString(StandardCharsets.UTF_8);
         }
 
         abstract void restore(boolean failure) throws IOException;

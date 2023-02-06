@@ -290,7 +290,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
         int resultCode = NeoBootstrapper.start(bootstrapper, args);
         assertThat(resultCode).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
-        suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:");
+        assertThat(suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:"))
+                .isTrue();
     }
 
     @Test
