@@ -245,8 +245,32 @@ public final class Recovery {
             DatabaseLayout databaseLayout,
             MemoryTracker memoryTracker,
             IOController ioController,
-            InternalLogProvider logProvider) {
-        return new Context(fs, pageCache, databaseLayout, config, memoryTracker, tracers, ioController, logProvider);
+            InternalLogProvider logProvider,
+            KernelVersionProvider emptyLogsFallbackKernelVersion) {
+        return new Context(
+                fs,
+                pageCache,
+                databaseLayout,
+                config,
+                memoryTracker,
+                tracers,
+                ioController,
+                logProvider,
+                emptyLogsFallbackKernelVersion);
+    }
+
+    public static Context context(
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            DatabaseTracers tracers,
+            Config config,
+            DatabaseLayout databaseLayout,
+            MemoryTracker memoryTracker,
+            IOController ioController,
+            InternalLogProvider logProvider,
+            LogTailMetadata logTail) {
+        return new Context(
+                fs, pageCache, databaseLayout, config, memoryTracker, tracers, ioController, logProvider, logTail);
     }
 
     /**
@@ -270,6 +294,7 @@ public final class Recovery {
         private final IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
         private long awaitIndexesOnlineMillis;
+        private final KernelVersionProvider emptyLogsFallbackKernelVersion;
 
         private Context(
                 FileSystemAbstraction fileSystemAbstraction,
@@ -279,7 +304,8 @@ public final class Recovery {
                 MemoryTracker memoryTracker,
                 DatabaseTracers tracers,
                 IOController ioController,
-                InternalLogProvider logProvider) {
+                InternalLogProvider logProvider,
+                KernelVersionProvider emptyLogsFallbackKernelVersion) {
             requireNonNull(pageCache);
             requireNonNull(fileSystemAbstraction);
             requireNonNull(databaseLayout);
@@ -292,6 +318,34 @@ public final class Recovery {
             this.tracers = tracers;
             this.ioController = ioController;
             this.logProvider = requireNonNull(logProvider);
+            this.emptyLogsFallbackKernelVersion = emptyLogsFallbackKernelVersion;
+        }
+
+        private Context(
+                FileSystemAbstraction fileSystemAbstraction,
+                PageCache pageCache,
+                DatabaseLayout databaseLayout,
+                Config config,
+                MemoryTracker memoryTracker,
+                DatabaseTracers tracers,
+                IOController ioController,
+                InternalLogProvider logProvider,
+                LogTailMetadata logTail) {
+            requireNonNull(pageCache);
+            requireNonNull(fileSystemAbstraction);
+            requireNonNull(databaseLayout);
+            requireNonNull(config);
+            this.pageCache = pageCache;
+            this.fs = fileSystemAbstraction;
+            this.databaseLayout = databaseLayout;
+            this.config = config;
+            this.memoryTracker = memoryTracker;
+            this.tracers = tracers;
+            this.ioController = ioController;
+            this.logProvider = requireNonNull(logProvider);
+            // No need for the kernelVersionProvider if we are guaranteed a log tail.
+            this.emptyLogsFallbackKernelVersion = KernelVersionProvider.THROWING_PROVIDER;
+            this.providedLogTail = Optional.of(logTail);
         }
 
         /**
@@ -299,14 +353,6 @@ public final class Recovery {
          */
         public Context monitors(Monitors monitors) {
             this.globalMonitors = monitors;
-            return this;
-        }
-
-        /**
-         * @param logTail log tail from database
-         */
-        public Context logTail(LogTailMetadata logTail) {
-            this.providedLogTail = Optional.of(logTail);
             return this;
         }
 
@@ -392,7 +438,8 @@ public final class Recovery {
                     context.clock,
                     context.ioController,
                     context.recoveryPredicate,
-                    context.awaitIndexesOnlineMillis);
+                    context.awaitIndexesOnlineMillis,
+                    context.emptyLogsFallbackKernelVersion);
         } finally {
             config.removeAllLocalListeners();
         }
@@ -415,7 +462,8 @@ public final class Recovery {
             Clock clock,
             IOController ioController,
             RecoveryPredicate recoveryPredicate,
-            long awaitIndexesOnlineMillis)
+            long awaitIndexesOnlineMillis,
+            KernelVersionProvider emptyLogsFallbackKernelVersion)
             throws IOException {
         InternalLog recoveryLog = logProvider.getLog(Recovery.class);
         if (!forceRunRecovery
@@ -494,8 +542,15 @@ public final class Recovery {
                 tracers.getPageCacheTracer(),
                 indexDependencies));
 
-        LogTailMetadata logTailMetadata = providedLogTail.orElseGet(
-                () -> loadLogTail(fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, memoryTracker));
+        LogTailMetadata logTailMetadata = providedLogTail.orElseGet(() -> loadLogTail(
+                fs,
+                pageCache,
+                tracers,
+                config,
+                databaseLayout,
+                storageEngineFactory,
+                memoryTracker,
+                emptyLogsFallbackKernelVersion));
         MetadataCache recoveryMetaDataCache = new MetadataCache(logTailMetadata);
         StorageEngine storageEngine = storageEngineFactory.instantiate(
                 fs,
@@ -689,10 +744,11 @@ public final class Recovery {
             Config config,
             DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            KernelVersionProvider emptyLogsFallbackKernelVersion) {
         try {
             return new LogTailExtractor(fs, pageCache, config, storageEngineFactory, tracers)
-                    .getTailMetadata(databaseLayout, memoryTracker, KernelVersionProvider.LATEST_VERSION);
+                    .getTailMetadata(databaseLayout, memoryTracker, emptyLogsFallbackKernelVersion);
         } catch (IOException ioe) {
             throw new UncheckedIOException("Fail to load log tail.", ioe);
         }

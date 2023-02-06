@@ -114,6 +114,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -874,8 +875,16 @@ class RecoveryIT {
         fileSystem.deleteFileOrThrow(idFile);
         assertTrue(isRecoveryRequired(layout));
 
-        performRecovery(Recovery.context(
-                fileSystem, pageCache, EMPTY, defaults(), layout, INSTANCE, IOController.DISABLED, logProvider));
+        performRecovery(context(
+                fileSystem,
+                pageCache,
+                EMPTY,
+                defaults(),
+                layout,
+                INSTANCE,
+                IOController.DISABLED,
+                logProvider,
+                KernelVersionProvider.LATEST_VERSION));
         assertFalse(isRecoveryRequired(layout));
 
         assertTrue(fileSystem.fileExists(idFile));
@@ -899,8 +908,16 @@ class RecoveryIT {
         assertTrue(isRecoveryRequired(layout));
 
         Config config = defaults(Map.of(GraphDatabaseSettings.keep_logical_logs, "keep_none"));
-        performRecovery(Recovery.context(
-                fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED, logProvider));
+        performRecovery(context(
+                fileSystem,
+                pageCache,
+                EMPTY,
+                config,
+                layout,
+                INSTANCE,
+                IOController.DISABLED,
+                logProvider,
+                KernelVersionProvider.LATEST_VERSION));
         assertThat(Arrays.stream(fileSystem.listFiles(layout.getTransactionLogsDirectory()))
                         .filter(path -> path.toString().contains("transaction.db"))
                         .count())
@@ -1082,8 +1099,16 @@ class RecoveryIT {
         monitors.addMonitorListener(monitor);
         Config config = Config.defaults();
 
-        Recovery.performRecovery(Recovery.context(
-                        fileSystem, pageCache, EMPTY, config, layout, INSTANCE, IOController.DISABLED, logProvider)
+        Recovery.performRecovery(context(
+                        fileSystem,
+                        pageCache,
+                        EMPTY,
+                        config,
+                        layout,
+                        INSTANCE,
+                        IOController.DISABLED,
+                        logProvider,
+                        KernelVersionProvider.LATEST_VERSION)
                 .recoveryPredicate(RecoveryPredicate.ALL)
                 .monitors(monitors)
                 .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
@@ -1424,8 +1449,8 @@ class RecoveryIT {
                         databaseLayout,
                         INSTANCE,
                         IOController.DISABLED,
-                        logProvider)
-                .logTail(spiedLogTail)
+                        logProvider,
+                        spiedLogTail)
                 .clock(fakeClock));
         verify(spiedLogTail, times(1)).getLastTransactionLogPosition();
 
@@ -1508,7 +1533,7 @@ class RecoveryIT {
         LogFiles logFiles = buildLogFiles(databaseTracers);
         assertTrue(isRecoveryRequired(databaseLayout, config, logFiles, databaseTracers));
 
-        Recovery.performRecovery(Recovery.context(
+        Recovery.performRecovery(context(
                         fileSystem,
                         pageCache,
                         databaseTracers,
@@ -1516,8 +1541,8 @@ class RecoveryIT {
                         databaseLayout,
                         INSTANCE,
                         IOController.DISABLED,
-                        logProvider)
-                .logTail(logFiles.getTailMetadata())
+                        logProvider,
+                        logFiles.getTailMetadata())
                 .recoveryPredicate(recoveryCriteria.toPredicate())
                 .monitors(monitors)
                 .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))

@@ -50,6 +50,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -166,7 +167,8 @@ class RecoveryWithTokenIndexesIT {
                 layout,
                 INSTANCE,
                 IOController.DISABLED,
-                NullLogProvider.getInstance()));
+                NullLogProvider.getInstance(),
+                KernelVersionProvider.LATEST_VERSION));
         assertFalse(Recovery.isRecoveryRequired(fs, layout, config, INSTANCE));
     }
 

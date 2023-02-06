@@ -408,11 +408,11 @@ public class Database extends AbstractDatabase {
                         databaseLayout,
                         otherDatabaseMemoryTracker,
                         ioController,
-                        internalLogProvider)
+                        internalLogProvider,
+                        tailMetadata)
                 .recoveryPredicate(RecoveryPredicate.ALL)
                 .monitors(databaseMonitors)
                 .extensionFactories(extensionFactories)
-                .logTail(tailMetadata)
                 .startupChecker(new RecoveryStartupChecker(startupController, namedDatabaseId))
                 .clock(clock))) {
             // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
