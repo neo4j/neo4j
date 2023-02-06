@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -63,5 +65,21 @@ class LogPositionMarkerTest {
 
         // given
         assertEquals(LogPosition.UNSPECIFIED, logPosition);
+    }
+
+    @Test
+    void isMarkerInLog() {
+        // given
+        final LogPositionMarker marker = new LogPositionMarker();
+
+        // when
+        final var logVersion = 1;
+        marker.mark(logVersion, 2);
+        assertTrue(marker.isMarkerInLog(logVersion), "should match the log version");
+        assertFalse(marker.isMarkerInLog(logVersion - 1), "should NOT match the log version");
+        assertFalse(marker.isMarkerInLog(logVersion + 1), "should NOT match the log version");
+
+        marker.unspecified();
+        assertFalse(marker.isMarkerInLog(logVersion), "should NOT match for the unspecified marker");
     }
 }

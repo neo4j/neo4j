@@ -39,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -136,29 +138,8 @@ class ReadAheadLogChannelTest {
         StoreChannel storeChannel = fileSystem.read(file(0));
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, -1 /* ignored */, (byte) -1, file(0), nativeChannelAccessor, databaseTracer);
-        try (ReadAheadLogChannel channel = new ReadAheadLogChannel(
-                versionedStoreChannel,
-                new LogVersionBridge() {
-                    private boolean returned;
-
-                    @Override
-                    public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw)
-                            throws IOException {
-                        if (!returned) {
-                            returned = true;
-                            channel.close();
-                            return new PhysicalLogVersionedStoreChannel(
-                                    fileSystem.read(file(1)),
-                                    -1 /* ignored */,
-                                    (byte) -1,
-                                    file(1),
-                                    nativeChannelAccessor,
-                                    databaseTracer);
-                        }
-                        return channel;
-                    }
-                },
-                INSTANCE)) {
+        try (ReadAheadLogChannel channel =
+                new ReadAheadLogChannel(versionedStoreChannel, new RollingLogVersionBridge(-1), INSTANCE)) {
             // THEN
             for (long i = 0; i < 20; i++) {
                 assertEquals(i, channel.getLong());
@@ -166,13 +147,57 @@ class ReadAheadLogChannelTest {
         }
     }
 
-    private void writeSomeData(Path file, Visitor<ByteBuffer, IOException> visitor) throws IOException {
+    @Test
+    void markAndGetShouldReturnTheStartOfTheLogFileAndNotTheEndOfThePrevious() throws Exception {
+        // GIVEN
+        final var byteValue = (byte) 42;
+        final var channelSize1 = writeSomeData(file(0), buffer -> {
+            for (var i = 0; i < 10; i++) {
+                buffer.putLong(i);
+            }
+            return true;
+        });
+        final var channelSize2 = writeSomeData(file(1), buffer -> {
+            buffer.put(byteValue);
+            for (var i = 10; i < 20; i++) {
+                buffer.putLong(i);
+            }
+            return true;
+        });
+
+        final var storeChannel = fileSystem.read(file(0));
+        final var versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                storeChannel, 0, (byte) -1, file(0), nativeChannelAccessor, databaseTracer);
+        try (var channel = new ReadAheadLogChannel(versionedStoreChannel, new RollingLogVersionBridge(1), INSTANCE)) {
+            // THEN
+            for (var i = 0; i < 10; i++) {
+                assertEquals(i, channel.getLong());
+            }
+
+            final var marker = new LogPositionMarker();
+            channel.getCurrentPosition(marker);
+            assertEquals(new LogPosition(0, channelSize1), marker.newPosition());
+
+            assertEquals(byteValue, channel.markAndGet(marker));
+            assertEquals(new LogPosition(1, 0), marker.newPosition());
+
+            for (var i = 10; i < 20; i++) {
+                assertEquals(i, channel.getLong());
+            }
+
+            channel.getCurrentPosition(marker);
+            assertEquals(new LogPosition(1, channelSize2), marker.newPosition());
+        }
+    }
+
+    private long writeSomeData(Path file, Visitor<ByteBuffer, IOException> visitor) throws IOException {
         try (StoreChannel channel = fileSystem.write(file)) {
             ByteBuffer buffer =
                     ByteBuffers.allocate(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE);
             visitor.visit(buffer);
             buffer.flip();
             channel.writeAll(buffer);
+            return channel.size();
         }
     }
 
@@ -191,6 +216,28 @@ class ReadAheadLogChannelTest {
 
         public boolean isRaw() {
             return rawWitness.booleanValue();
+        }
+    }
+
+    private class RollingLogVersionBridge implements LogVersionBridge {
+
+        private final long version;
+
+        private boolean returned;
+
+        private RollingLogVersionBridge(long version) {
+            this.version = version;
+        }
+
+        @Override
+        public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
+            if (!returned) {
+                returned = true;
+                channel.close();
+                return new PhysicalLogVersionedStoreChannel(
+                        fileSystem.read(file(1)), version, (byte) -1, file(1), nativeChannelAccessor, databaseTracer);
+            }
+            return channel;
         }
     }
 }

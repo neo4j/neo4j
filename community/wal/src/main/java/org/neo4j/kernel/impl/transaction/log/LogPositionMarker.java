@@ -49,6 +49,10 @@ public class LogPositionMarker {
         return byteOffset;
     }
 
+    public boolean isMarkerInLog(long logVersion) {
+        return specified && this.logVersion == logVersion;
+    }
+
     @Override
     public String toString() {
         return "Mark:" + newPosition();

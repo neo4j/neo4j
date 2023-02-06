@@ -72,6 +72,14 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareChe
     }
 
     @Override
+    public byte markAndGet(LogPositionMarker marker) throws IOException {
+        if (delegate instanceof ReadableClosablePositionAwareChecksumChannel posChannel) {
+            return posChannel.markAndGet(marker);
+        }
+        return ReadableClosablePositionAwareChecksumChannel.super.markAndGet(marker);
+    }
+
+    @Override
     public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) {
         assertAssigned();
         positionMarker.unspecified();

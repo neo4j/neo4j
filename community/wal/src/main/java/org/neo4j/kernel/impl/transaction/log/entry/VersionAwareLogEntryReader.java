@@ -56,16 +56,14 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     @Override
     public LogEntry readLogEntry(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
         try {
-            channel.getCurrentPosition(positionMarker);
-
-            byte versionCode = channel.get();
+            byte versionCode = channel.markAndGet(positionMarker);
             if (versionCode == 0) {
                 // we reached the end of available records but still have space available in pre-allocated file
                 // we reset channel position to restore last read byte in case someone would like to re-read or check it
                 // again if possible
                 // and we report that we reach end of record stream from our point of view
                 if (channel instanceof PositionableChannel) {
-                    resetChannelPosition(channel);
+                    rewindOneByte(channel);
                 } else {
                     throw new IllegalStateException(
                             "Log reader expects positionable channel to be able to reset offset. Current channel: "
@@ -96,7 +94,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                 // Since checksum is calculated over the whole entry we need to rewind and begin
                 // a new checksum segment if we change version parser.
                 if (channel instanceof PositionableChannel) {
-                    resetChannelPosition(channel);
+                    rewindOneByte(channel);
                     channel.beginChecksum();
                     channel.get();
                 }
@@ -132,24 +130,23 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
 
     private void verifyChecksumChain(LogEntry e) {
         if (VERIFY_CHECKSUM_CHAIN && verifyChecksumChain) {
-            if (e instanceof LogEntryStart) {
-                int previousChecksum = ((LogEntryStart) e).getPreviousChecksum();
+            if (e instanceof LogEntryStart logEntryStart) {
+                int previousChecksum = logEntryStart.getPreviousChecksum();
                 if (lastTxChecksum != BASE_TX_CHECKSUM) {
                     if (previousChecksum != lastTxChecksum) {
                         throw new IllegalStateException("The checksum chain is broken. " + positionMarker);
                     }
                 }
-            } else if (e instanceof LogEntryCommit) {
-                lastTxChecksum = ((LogEntryCommit) e).getChecksum();
+            } else if (e instanceof LogEntryCommit logEntryCommit) {
+                lastTxChecksum = logEntryCommit.getChecksum();
             }
         }
     }
 
-    private void resetChannelPosition(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+    private void rewindOneByte(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
         // take current position
         channel.getCurrentPosition(positionMarker);
-        PositionableChannel positionableChannel = (PositionableChannel) channel;
-        positionableChannel.setCurrentPosition(positionMarker.getByteOffset() - 1);
+        ((PositionableChannel) channel).setCurrentPosition(positionMarker.getByteOffset() - 1);
         // refresh with reset position
         channel.getCurrentPosition(positionMarker);
     }
