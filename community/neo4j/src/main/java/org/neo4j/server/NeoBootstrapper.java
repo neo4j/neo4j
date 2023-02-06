@@ -126,7 +126,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
         log = userLogProvider.getLog(getClass());
 
-        boolean licenseAccepted = checkLicenseAgreement(homeDir);
+        boolean licenseAccepted = checkLicenseAgreement(homeDir, consoleMode);
 
         // Log any messages written before logging was configured.
         startupLog.replayInto(log);
@@ -262,7 +262,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
     protected abstract DatabaseManagementService createNeo(Config config, GraphDatabaseDependencies dependencies);
 
-    protected abstract boolean checkLicenseAgreement(Path homeDir);
+    protected abstract boolean checkLicenseAgreement(Path homeDir, boolean consoleMode);
 
     private static Log4jLogProvider setupLogging(Config config, boolean consoleMode) {
         Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
