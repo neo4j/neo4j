@@ -1169,7 +1169,7 @@
     "admin": true,
     "name": "dbms.cluster.readReplicaToggle",
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "signature": "dbms.cluster.readReplicaToggle(databaseName :: STRING?, pause :: BOOLEAN?) :: (state :: STRING?)",
     "rolesBoostedExecution": [
@@ -1183,7 +1183,7 @@
         "type": "STRING?"
       }
     ],
-    "description": "The toggle can pause or resume read replica",
+    "description": "The toggle can pause or resume read replica (deprecated in favor of dbms.cluster.secondaryReplicationToggle)",
     "rolesExecution": [
       "admin"
     ],
@@ -1245,6 +1245,43 @@
       "deprecated": false
     },
     "enterpriseOnly": false
+  },
+  {
+    "admin": true,
+    "name": "dbms.cluster.secondaryReplicationToggle",
+    "option": {
+      "deprecated": false
+    },
+    "signature": "dbms.cluster.secondaryReplicationToggle(databaseName :: STRING?, pause :: BOOLEAN?) :: (state :: STRING?)",
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "worksOnSystem": true,
+    "returnDescription": [
+      {
+        "name": "state",
+        "description": "state :: STRING?",
+        "type": "STRING?"
+      }
+    ],
+    "description": "The toggle can pause or resume the secondary replication process",
+    "rolesExecution": [
+      "admin"
+    ],
+    "argumentDescription": [
+      {
+        "name": "databaseName",
+        "description": "databaseName :: STRING?",
+        "type": "STRING?"
+      },
+      {
+        "name": "pause",
+        "description": "pause :: BOOLEAN?",
+        "type": "BOOLEAN?"
+      }
+    ],
+    "mode": "DBMS",
+    "enterpriseOnly": true
   },
   {
     "admin": true,
