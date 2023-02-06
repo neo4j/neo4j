@@ -97,7 +97,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        logFiles = LogFilesBuilder.builder(databaseLayout, fs, LATEST_VERSION)
                 .withRotationThreshold(ByteUnit.mebiBytes(10))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)

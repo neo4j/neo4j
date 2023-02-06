@@ -21,6 +21,9 @@ package org.neo4j.kernel;
 
 public interface KernelVersionProvider {
     KernelVersionProvider LATEST_VERSION = () -> KernelVersion.LATEST;
+    KernelVersionProvider THROWING_PROVIDER = () -> {
+        throw new IllegalStateException("Kernel version can not be provided in this state");
+    };
 
     KernelVersion kernelVersion();
 }

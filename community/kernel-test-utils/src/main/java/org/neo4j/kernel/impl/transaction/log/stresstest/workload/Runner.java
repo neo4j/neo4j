@@ -33,6 +33,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -108,7 +109,7 @@ public class Runner implements Callable<Long> {
             throws IOException {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.builder(databaseLayout, fileSystemAbstraction)
+        return LogFilesBuilder.builder(databaseLayout, fileSystemAbstraction, KernelVersionProvider.LATEST_VERSION)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

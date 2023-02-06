@@ -119,14 +119,13 @@ public class TransactionLogInitializer {
     }
 
     private LogFilesSpan buildLogFiles(DatabaseLayout layout, Path transactionLogsDirectory) throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(layout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(layout, fs, metadataCache)
                 .withLogVersionRepository(store)
                 .withTransactionIdStore(store)
                 .withStoreId(store.getStoreId())
                 .withLogsDirectory(transactionLogsDirectory)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withDatabaseHealth(new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()))
-                .withKernelVersionProvider(metadataCache)
                 .build();
         return new LogFilesSpan(new Lifespan(logFiles), logFiles);
     }

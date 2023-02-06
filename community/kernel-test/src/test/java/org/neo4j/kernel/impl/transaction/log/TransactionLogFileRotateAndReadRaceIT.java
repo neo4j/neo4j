@@ -35,6 +35,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -93,7 +94,7 @@ class TransactionLogFileRotateAndReadRaceIT {
                 .build();
 
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(new TestCommandReaderFactory())

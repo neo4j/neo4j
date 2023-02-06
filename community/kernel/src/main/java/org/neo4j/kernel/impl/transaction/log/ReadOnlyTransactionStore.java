@@ -24,6 +24,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -47,7 +48,8 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
             CommandReaderFactory commandReaderFactory)
             throws IOException {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder(fromDatabaseLayout, fs, pageCache)
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder(
+                        fromDatabaseLayout, fs, pageCache, KernelVersionProvider.THROWING_PROVIDER)
                 .withCommandReaderFactory(commandReaderFactory)
                 .withConfig(config)
                 .build();

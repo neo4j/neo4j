@@ -1077,7 +1077,7 @@ class RecoveryCorruptedTransactionLogIT {
     private void addCorruptedCommandsToLastLogFile(LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         PositiveLogFilesBasedLogVersionRepository versionRepository =
                 new PositiveLogFilesBasedLogVersionRepository(logFiles);
-        LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+        LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_VERSION)
                 .withLogVersionRepository(versionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withStoreId(new StoreId(4, 5, "engine-1", "format-1", 1, 2))
@@ -1111,7 +1111,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogFiles buildDefaultLogFiles(StoreId storeId) throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_VERSION)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withStoreId(storeId)

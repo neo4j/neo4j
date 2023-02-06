@@ -35,8 +35,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -107,11 +105,18 @@ public class LogFilesBuilder {
      * Log files will be able to access store and external components information, perform rotations, etc.
      * @param databaseLayout database directory
      * @param fileSystem log files filesystem
+     * @param kernelVersionProvider provider of the kernel version to use for transactions and checkpoints.
+     *                              Make sure that this is a provider that will listen to upgrade transactions
+     *                              so the version is updated when needed.
      */
-    public static LogFilesBuilder builder(DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem) {
+    public static LogFilesBuilder builder(
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            KernelVersionProvider kernelVersionProvider) {
         LogFilesBuilder filesBuilder = new LogFilesBuilder();
         filesBuilder.databaseLayout = databaseLayout;
         filesBuilder.fileSystem = fileSystem;
+        filesBuilder.kernelVersionProvider = kernelVersionProvider;
         return filesBuilder;
     }
 
@@ -123,10 +128,16 @@ public class LogFilesBuilder {
      * @param databaseLayout store directory
      * @param fileSystem log file system
      * @param pageCache page cache for read only store info access
+     * @param kernelVersionProvider provider of the kernel version to use for transactions and checkpoints.
+     *                              Make sure that this is a provider that will listen to upgrade transactions
+     *                              so the version is updated when needed.
      */
     public static LogFilesBuilder activeFilesBuilder(
-            DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache) {
-        LogFilesBuilder builder = builder(databaseLayout, fileSystem);
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fileSystem,
+            PageCache pageCache,
+            KernelVersionProvider kernelVersionProvider) {
+        LogFilesBuilder builder = builder(databaseLayout, fileSystem, kernelVersionProvider);
         builder.pageCache = pageCache;
         builder.readOnly = true;
         return builder;
@@ -145,6 +156,7 @@ public class LogFilesBuilder {
         builder.databaseLayout = DatabaseLayout.ofFlat(logsDirectory);
         builder.fileSystem = fileSystem;
         builder.fileBasedOperationsOnly = true;
+        builder.kernelVersionProvider = KernelVersionProvider.THROWING_PROVIDER;
         return builder;
     }
 
@@ -155,11 +167,6 @@ public class LogFilesBuilder {
 
     public LogFilesBuilder withLogVersionRepository(LogVersionRepository logVersionRepository) {
         this.logVersionRepository = logVersionRepository;
-        return this;
-    }
-
-    public LogFilesBuilder withKernelVersionProvider(KernelVersionProvider kernelVersionProvider) {
-        this.kernelVersionProvider = kernelVersionProvider;
         return this;
     }
 
@@ -277,17 +284,6 @@ public class LogFilesBuilder {
         var monitors = getMonitors();
         var health = getDatabaseHealth();
         var clock = getClock();
-
-        // If no transaction log version provider has been supplied explicitly, we try to use the version from the
-        // system database.
-        // Or the latest version if we can't find the system db version.
-        if (kernelVersionProvider == null) {
-            if (dependencies == null || !dependencies.containsDependency(KernelVersionProvider.class)) {
-                kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
-            } else {
-                this.kernelVersionProvider = dependencies.resolveDependency(KernelVersionProvider.class);
-            }
-        }
 
         // runtime repo is used to find out runtime version in cases when it does not exist in logs
         // That can be in 2 cases: new database creation and logs removal
@@ -575,17 +571,6 @@ public class LogFilesBuilder {
         @Override
         public LogVersionRepository logVersionRepository(LogFiles logFiles) {
             return new ReadOnlyLogVersionRepository(logFiles.getTailMetadata());
-        }
-    }
-
-    private static class LatestVersionRuntimeRepository extends DbmsRuntimeRepository {
-        private LatestVersionRuntimeRepository() {
-            super(null, null);
-        }
-
-        @Override
-        public DbmsRuntimeVersion getVersion() {
-            return DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
         }
     }
 }

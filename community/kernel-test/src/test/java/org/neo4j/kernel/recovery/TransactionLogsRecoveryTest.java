@@ -692,7 +692,7 @@ class TransactionLogsRecoveryTest {
     private record DataWriters(LogEntryWriter<?> writer, PositionAwareChannel channel) {}
 
     private LogFiles buildLogFiles() throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

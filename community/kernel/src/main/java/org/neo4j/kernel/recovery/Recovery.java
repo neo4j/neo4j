@@ -572,12 +572,11 @@ public final class Recovery {
                 logService,
                 metadataProvider);
 
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, recoveryMetaDataCache)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withConfig(config)
                 .withDatabaseTracers(tracers)
                 .withExternalLogTailMetadata(logTailMetadata)
-                .withKernelVersionProvider(recoveryMetaDataCache)
                 .withDependencies(dependencies)
                 .withMemoryTracker(memoryTracker)
                 .build();

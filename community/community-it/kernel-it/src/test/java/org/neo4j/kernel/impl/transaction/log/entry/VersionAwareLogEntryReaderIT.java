@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -82,7 +83,7 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void readOnlyLogFilesWhileCommandsAreAvailable() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -101,7 +102,7 @@ class VersionAwareLogEntryReaderIT {
 
     @Test
     void correctlyResetPositionWhenEndOfCommandsReached() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -124,7 +125,7 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @DisabledOnOs(OS.LINUX)
     void readTillTheEndOfNotPreallocatedFile() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())

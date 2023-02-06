@@ -61,6 +61,7 @@ import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -144,7 +145,7 @@ public class TransactionAppenderConcurrencyTest {
         life.add(new FileSystemLifecycleAdapter(fs));
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
@@ -186,7 +187,7 @@ public class TransactionAppenderConcurrencyTest {
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         life.add(new FileSystemLifecycleAdapter(fs));
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)

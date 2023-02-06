@@ -139,14 +139,13 @@ class DetachedCheckpointLogFileTest {
 
     private LogFiles buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.builder(databaseLayout, fileSystem)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, versionProvider)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
                 .withStoreId(storeId)
-                .withKernelVersionProvider(versionProvider)
                 .build();
     }
 

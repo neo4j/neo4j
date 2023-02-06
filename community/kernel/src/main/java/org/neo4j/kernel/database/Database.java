@@ -609,7 +609,11 @@ public class Database extends AbstractDatabase {
     }
 
     private LogFiles getLogFiles() throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, fs)
+        return LogFilesBuilder.builder(
+                        databaseLayout,
+                        fs,
+                        new DbmsRuntimeFallbackKernelVersionProvider(
+                                databaseDependencies, databaseLayout.getDatabaseName()))
                 .withConfig(databaseConfig)
                 .withDependencies(databaseDependencies)
                 .withLogProvider(internalLogProvider)

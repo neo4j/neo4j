@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
@@ -73,7 +74,7 @@ class TransactionLogFileIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void doNotScanDirectoryOnRotate() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)
@@ -108,7 +109,7 @@ class TransactionLogFileIT {
     void trackTransactionLogFileMemory() throws IOException {
         var memoryTracker = new LocalMemoryTracker();
         var life = new LifeSupport();
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)

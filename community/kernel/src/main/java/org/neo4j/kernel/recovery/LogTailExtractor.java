@@ -24,6 +24,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -57,7 +58,7 @@ public class LogTailExtractor {
     }
 
     private LogFiles buildLogFiles(DatabaseLayout databaseLayout, MemoryTracker memoryTracker) throws IOException {
-        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
+        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
                 .withConfig(config)
                 .withMemoryTracker(memoryTracker)
                 .withDatabaseTracers(databaseTracers)

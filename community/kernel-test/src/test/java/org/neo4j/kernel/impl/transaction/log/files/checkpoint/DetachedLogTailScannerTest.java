@@ -52,6 +52,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -105,7 +106,7 @@ class DetachedLogTailScannerTest {
 
     LogFiles createLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
+        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
@@ -131,7 +132,8 @@ class DetachedLogTailScannerTest {
     @Test
     void includeWrongPositionInException() throws Exception {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        var testTogFiles = LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache)
+        var testTogFiles = LogFilesBuilder.activeFilesBuilder(
+                        databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
