@@ -126,7 +126,7 @@
     <lucene.version>9.4.2</lucene.version>
     <bouncycastle.version>1.70</bouncycastle.version>
     <jetty.version>9.4.50.v20221201</jetty.version>
-    <scala-maven-plugin.version>4.4.1</scala-maven-plugin.version>
+    <scala-maven-plugin.version>4.8.0</scala-maven-plugin.version>
     <scala.version>2.13.10</scala.version>
     <scala.binary.version>2.13</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
@@ -569,7 +569,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.1</version>
           <dependencies>
             <dependency>
               <groupId>de.skuzzle.enforcer</groupId>
@@ -657,7 +657,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -677,7 +677,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -692,7 +692,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.1</version>
           <dependencies>
             <dependency>
               <groupId>org.ow2.asm</groupId>
