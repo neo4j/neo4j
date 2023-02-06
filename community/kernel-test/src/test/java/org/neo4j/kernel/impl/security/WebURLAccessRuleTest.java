@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import inet.ipaddr.IPAddressString;
@@ -132,7 +134,7 @@ class WebURLAccessRuleTest {
         // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
         HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
         when(connection.getResponseCode()).thenReturn(302);
-        when(connection.getHeaderField("Location")).thenReturn("http://127.0.0.1");
+        when(connection.getHeaderField("Location")).thenReturn("https://127.0.0.1");
 
         URLStreamHandler urlStreamHandler = new URLStreamHandler() {
             @Override
@@ -141,7 +143,7 @@ class WebURLAccessRuleTest {
             }
         };
 
-        URL url = new URL("http", "127.0.0.0", 8000, "", urlStreamHandler);
+        URL url = new URL("https", "127.0.0.0", 8000, "", urlStreamHandler);
 
         // set the config
         final Config config =
@@ -207,8 +209,8 @@ class WebURLAccessRuleTest {
             }
         };
 
-        URL urlA = new URL("http", "127.0.0.0", 8000, "/a", urlStreamHandler);
-        URL urlB = new URL("http", "127.0.0.0", 8000, "/b", urlStreamHandler);
+        URL urlA = new URL("https", "127.0.0.0", 8000, "/a", urlStreamHandler);
+        URL urlB = new URL("https", "127.0.0.0", 8000, "/b", urlStreamHandler);
         when(connectionA.getURL()).thenReturn(urlA);
         when(connectionB.getURL()).thenReturn(urlB);
 
@@ -220,5 +222,65 @@ class WebURLAccessRuleTest {
         assertThatThrownBy(() -> URLAccessRules.webAccess().validate(config, urlA))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining("Redirect limit exceeded");
+    }
+
+    @Test
+    void shouldPinIPsForHttpAndFtp() throws Exception {
+        final IPAddressString blockedIpv4Range = new IPAddressString("127.168.0.1");
+        final URL httpUrl = new URL("http://localhost/test.csv");
+        final URL httpsUrl = new URL("https://localhost/test.csv");
+        final URL ftpUrl = new URL("ftp://localhost/test.csv");
+
+        // set the config
+        final Config config =
+                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+
+        class TestWebURLAccessRule extends WebURLAccessRule {
+            public static boolean enteredIpPinning = false;
+
+            @Override
+            protected URL substituteHostByIP(URL u, String ip) {
+                enteredIpPinning = true;
+                return u;
+            }
+        }
+        var accessRule = new TestWebURLAccessRule();
+
+        // execute the query
+        assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpUrl));
+        assertTrue(accessRule.enteredIpPinning);
+
+        accessRule.enteredIpPinning = false;
+        accessRule.validate(config, ftpUrl);
+        assertTrue(accessRule.enteredIpPinning);
+
+        accessRule.enteredIpPinning = false;
+        assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpsUrl));
+        assertFalse(accessRule.enteredIpPinning);
+    }
+
+    @Test
+    void shouldSubstitueIpCorrectly() throws Exception {
+        var accessRule = new WebURLAccessRule();
+        assertEquals(
+                "http://127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP(new URL("http://localhost/test.csv"), "127.0.0.1")
+                        .toString());
+        assertEquals(
+                "http://user:password@127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP(new URL("http://user:password@localhost/test.csv"), "127.0.0.1")
+                        .toString());
+        assertEquals(
+                "https://user:password@127.0.0.1/test.csv?a=b&c=d",
+                accessRule
+                        .substituteHostByIP(new URL("https://user:password@localhost/test.csv?a=b&c=d"), "127.0.0.1")
+                        .toString());
+        assertEquals(
+                "ftp://user:password@127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP(new URL("ftp://user:password@localhost/test.csv"), "127.0.0.1")
+                        .toString());
     }
 }
