@@ -57,7 +57,7 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
     @Override
     public GetRoutingTableProcedure createProcedure(List<String> namespace) {
         LocalRoutingTableProcedureValidator validator =
-                new LocalRoutingTableProcedureValidator(databaseAvailabilityChecker, databaseReferenceRepo);
+                new LocalRoutingTableProcedureValidator(databaseAvailabilityChecker);
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
 

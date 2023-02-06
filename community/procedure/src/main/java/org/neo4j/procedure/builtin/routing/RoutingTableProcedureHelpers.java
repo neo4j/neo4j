@@ -19,6 +19,8 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
+import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Optional;
@@ -30,7 +32,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-class RoutingTableProcedureHelpers {
+public class RoutingTableProcedureHelpers {
     static Optional<SocketAddress> findClientProvidedAddress(
             MapValue routingContext, int defaultBoltPort, InternalLog log) throws ProcedureException {
         var address = routingContext.get(GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY);
@@ -57,5 +59,19 @@ class RoutingTableProcedureHelpers {
                 Status.Procedure.ProcedureCallFailed,
                 "An address key is included in the query string provided to the "
                         + "GetRoutingTableProcedure, but its value could not be parsed.");
+    }
+
+    static ProcedureException databaseNotFoundException(String databaseName) {
+        return new ProcedureException(
+                DatabaseNotFound,
+                "Unable to get a routing table for database '" + databaseName
+                        + "' because this database does not exist");
+    }
+
+    public static ProcedureException databaseNotAvailableException(String databaseName) {
+        return new ProcedureException(
+                DatabaseUnavailable,
+                "Unable to get a routing table for database '" + databaseName
+                        + "' because this database is unavailable");
     }
 }

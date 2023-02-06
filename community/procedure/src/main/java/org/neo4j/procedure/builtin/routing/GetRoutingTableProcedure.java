@@ -144,7 +144,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
             return RawIterator.<AnyValue[], ProcedureException>of(RoutingResultFormat.build(result));
         } catch (ProcedureException ex) {
             // Check that the cause of the exception wasn't the database being removed while this procedure was running.
-            validator.assertDatabaseExists(databaseReference);
+            assertDatabaseExists(databaseReference);
             // otherwise re-throw
             throw ex;
         }
@@ -182,7 +182,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
         return databaseReferenceRepo
                 .getByAlias(databaseName)
-                .orElseThrow(() -> BaseRoutingTableProcedureValidator.databaseNotFoundException(databaseName));
+                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(databaseName));
     }
 
     private static void assertRoutingResultNotEmpty(RoutingResult result, DatabaseReference databaseReference)
@@ -246,5 +246,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                             + BoltConnector.enabled.name()
                             + "'");
         }
+    }
+
+    private void assertDatabaseExists( DatabaseReference databaseReference ) throws ProcedureException
+    {
+        databaseReferenceRepo.getByAlias(databaseReference.alias())
+                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(databaseReference.alias().name()));
     }
 }

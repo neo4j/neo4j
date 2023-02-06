@@ -23,14 +23,12 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 
-public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedureValidator {
+public class LocalRoutingTableProcedureValidator implements RoutingTableProcedureValidator {
 
     private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
 
     public LocalRoutingTableProcedureValidator(
-            DatabaseAvailabilityChecker databaseAvailabilityChecker,
-            DatabaseReferenceRepository databaseReferenceRepo) {
-        super(databaseReferenceRepo);
+            DatabaseAvailabilityChecker databaseAvailabilityChecker) {
         this.databaseAvailabilityChecker = databaseAvailabilityChecker;
     }
 
@@ -46,10 +44,10 @@ public class LocalRoutingTableProcedureValidator extends BaseRoutingTableProcedu
 
     private void assertDatabaseIsOperational(DatabaseReference.Internal databaseReference) throws ProcedureException {
         if (!databaseAvailabilityChecker.isPresent(databaseReference)) {
-            throw databaseNotFoundException(databaseReference.alias().name());
+            throw RoutingTableProcedureHelpers.databaseNotFoundException(databaseReference.alias().name());
         }
         if (!databaseAvailabilityChecker.isAvailable(databaseReference)) {
-            throw databaseNotAvailableException(databaseReference.alias().name());
+            throw RoutingTableProcedureHelpers.databaseNotAvailableException(databaseReference.alias().name());
         }
     }
 }
