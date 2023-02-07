@@ -49,7 +49,7 @@ case class NestedPlanGetByNameExpression(
   override val solvedExpressionAsString: String
 )(val position: InputPosition) extends NestedPlanExpression
 
-abstract sealed class NestedPlanExpression extends Expression with SemanticCheckableExpression {
+sealed abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
 
   def plan: LogicalPlan
 
