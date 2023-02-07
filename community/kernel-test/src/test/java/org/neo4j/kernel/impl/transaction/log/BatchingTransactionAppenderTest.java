@@ -39,7 +39,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.KernelVersion.LATEST;
-import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -48,6 +47,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -147,7 +147,8 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -179,7 +180,7 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
-        TransactionLogWriter logWriter = new TransactionLogWriter(channel, LATEST_VERSION);
+        TransactionLogWriter logWriter = new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER);
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -202,7 +203,8 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -249,7 +251,8 @@ class BatchingTransactionAppenderTest {
     void shouldNotAppendCommittedTransactionsWhenTooFarAhead() {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -289,7 +292,8 @@ class BatchingTransactionAppenderTest {
                 new HeapScopedBuffer(Long.BYTES * 2, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -337,7 +341,8 @@ class BatchingTransactionAppenderTest {
                 .when(channel)
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, LATEST_VERSION));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);

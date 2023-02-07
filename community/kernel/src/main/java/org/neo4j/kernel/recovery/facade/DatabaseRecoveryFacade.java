@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.InternalLogProvider;
@@ -80,8 +80,8 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                         memoryTracker,
                         IOController.DISABLED,
                         logProvider,
-                        KernelVersionProvider.LATEST_VERSION) // FIXME this should not be latest unless we are
-                // guaranteed to never have empty logs here
+                        () -> KernelVersion.getLatestVersion(config)) // FIXME this should not be latest unless
+                // we are guaranteed to never have empty logs here
                 .recoveryPredicate(recoveryCriteria.toPredicate()));
         monitor.recoveryCompleted();
     }

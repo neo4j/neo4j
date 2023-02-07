@@ -44,7 +44,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -64,6 +63,7 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -95,7 +95,7 @@ class ReversedMultiFileCommandBatchCursorTest {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

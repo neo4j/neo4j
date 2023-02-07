@@ -38,7 +38,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -48,6 +47,7 @@ import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -78,7 +78,7 @@ class LogFilesBuilderTest {
     @Test
     void buildActiveFilesOnlyContext() throws IOException {
         TransactionLogFilesContext context = activeFilesBuilder(
-                        databaseLayout, fileSystem, pageCache, KernelVersionProvider.LATEST_VERSION)
+                        databaseLayout, fileSystem, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -107,7 +107,8 @@ class LogFilesBuilderTest {
 
     @Test
     void buildDefaultContext() throws IOException {
-        TransactionLogFilesContext context = builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository(2))
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
@@ -125,7 +126,8 @@ class LogFilesBuilderTest {
 
     @Test
     void buildContextWithRotationThreshold() throws IOException {
-        TransactionLogFilesContext context = builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository(2))
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
@@ -152,7 +154,8 @@ class LogFilesBuilderTest {
         dependencies.satisfyDependency(transactionIdStore);
         dependencies.satisfyDependency(databaseHealth);
 
-        TransactionLogFilesContext context = builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withDependencies(dependencies)
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .buildContext();
@@ -177,7 +180,8 @@ class LogFilesBuilderTest {
                 .set(transaction_logs_root_path, customLogDirectory.toAbsolutePath())
                 .build();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        LogFiles logFiles = builder(DatabaseLayout.of(config), fileSystem, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = builder(
+                        DatabaseLayout.of(config), fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -227,7 +231,7 @@ class LogFilesBuilderTest {
 
     private static LogFilesBuilder builderWithTestCommandReaderFactory(
             DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem) {
-        return builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        return builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(new TestCommandReaderFactory());
     }
 }

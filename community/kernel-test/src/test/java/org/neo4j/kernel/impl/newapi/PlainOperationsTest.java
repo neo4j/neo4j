@@ -86,7 +86,6 @@ import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -104,6 +103,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -951,7 +951,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -995,7 +995,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -1037,7 +1037,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),
@@ -1080,7 +1080,7 @@ public class PlainOperationsTest extends OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 commandCreationContext,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(StorageLocks.class),
                 ktx,
                 mock(KernelToken.class),

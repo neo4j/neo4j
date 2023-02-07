@@ -24,13 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.Subject.ANONYMOUS;
-import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -97,7 +97,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        logFiles = LogFilesBuilder.builder(databaseLayout, fs, LATEST_VERSION)
+        logFiles = LogFilesBuilder.builder(databaseLayout, fs, LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(10))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
@@ -248,8 +248,8 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private void appendCorruptedTransaction() throws IOException {
         var channel = logFile.getTransactionLogWriter().getChannel();
-        TransactionLogWriter writer =
-                new TransactionLogWriter(channel, new CorruptedLogEntryWriter<>(channel), LATEST_VERSION);
+        TransactionLogWriter writer = new TransactionLogWriter(
+                channel, new CorruptedLogEntryWriter<>(channel), LATEST_KERNEL_VERSION_PROVIDER);
         writer.append(tx(random.intBetween(100, 1000)), ++txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
     }
 

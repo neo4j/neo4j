@@ -61,7 +61,6 @@ import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -86,6 +85,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -145,7 +145,7 @@ public class TransactionAppenderConcurrencyTest {
         life.add(new FileSystemLifecycleAdapter(fs));
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
@@ -187,7 +187,7 @@ public class TransactionAppenderConcurrencyTest {
         DatabaseHealth databaseHealth =
                 new DatabaseHealth(mock(DatabaseHealthEventGenerator.class), NullLog.getInstance());
         life.add(new FileSystemLifecycleAdapter(fs));
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)

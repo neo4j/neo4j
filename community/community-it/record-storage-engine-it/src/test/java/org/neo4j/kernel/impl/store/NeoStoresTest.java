@@ -82,7 +82,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -115,6 +114,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -536,7 +536,7 @@ class NeoStoresTest {
         try (CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
                 var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
             commandCreationContext.initialize(
-                    KernelVersionProvider.LATEST_VERSION,
+                    LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     cursorContext,
                     storeCursors,
                     CommandCreationContext.NO_STARTTIME_OF_OLDEST_TRANSACTION,

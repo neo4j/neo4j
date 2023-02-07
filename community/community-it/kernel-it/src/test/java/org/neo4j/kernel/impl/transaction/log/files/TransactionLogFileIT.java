@@ -34,7 +34,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
@@ -46,6 +45,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -74,7 +74,8 @@ class TransactionLogFileIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void doNotScanDirectoryOnRotate() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)
@@ -109,7 +110,8 @@ class TransactionLogFileIT {
     void trackTransactionLogFileMemory() throws IOException {
         var memoryTracker = new LocalMemoryTracker();
         var life = new LifeSupport();
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withStoreId(STORE_ID)

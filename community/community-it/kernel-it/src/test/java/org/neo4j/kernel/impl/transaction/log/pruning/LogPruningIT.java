@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -62,7 +62,8 @@ class LogPruningIT {
 
     @Test
     void pruningStrategyShouldBeDynamic() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(db.databaseLayout(), fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(
+                        db.databaseLayout(), fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withLastCommittedTransactionIdSupplier(() -> 1)
                 .withStorageEngineFactory(db.getDependencyResolver().resolveDependency(StorageEngineFactory.class))

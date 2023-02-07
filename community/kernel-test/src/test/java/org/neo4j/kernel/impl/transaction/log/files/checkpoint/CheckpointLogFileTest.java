@@ -37,7 +37,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -52,6 +51,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -222,7 +222,7 @@ class CheckpointLogFileTest {
 
     private LogFiles buildLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)

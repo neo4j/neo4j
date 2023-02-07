@@ -72,6 +72,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -100,7 +101,7 @@ public final class KernelTransactionFactory {
         var locks = mock(Locks.class);
         when(locks.newClient()).thenReturn(new NoOpClient());
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-        KernelVersionProvider kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
+        KernelVersionProvider kernelVersionProvider = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
                 Config.defaults(),
                 mock(DatabaseTransactionEventListeners.class),

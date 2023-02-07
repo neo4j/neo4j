@@ -56,7 +56,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -78,6 +77,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
@@ -289,7 +289,7 @@ class KernelTransactionTerminationTest {
                     mock(KernelTransactions.class),
                     TransactionIdGenerator.EMPTY,
                     mock(DbmsRuntimeRepository.class),
-                    KernelVersionProvider.LATEST_VERSION,
+                    LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     NullLogProvider.getInstance(),
                     false);
 

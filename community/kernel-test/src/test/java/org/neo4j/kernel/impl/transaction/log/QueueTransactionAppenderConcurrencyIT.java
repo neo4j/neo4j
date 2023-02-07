@@ -42,7 +42,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -57,6 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -213,7 +213,7 @@ class QueueTransactionAppenderConcurrencyIT {
             SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
             throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)

@@ -128,6 +128,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThread;
@@ -721,7 +722,7 @@ class KernelTransactionsTest {
         when(transactionIdStore.getLastCommittedTransaction())
                 .thenReturn(new TransactionId(0, 0, 0, UNKNOWN_CONSENSUS_INDEX));
 
-        KernelVersionProvider kernelVersionProvider = KernelVersionProvider.LATEST_VERSION;
+        KernelVersionProvider kernelVersionProvider = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
         DefaultTracers tracers = new DefaultTracers(
                 "null", NullLog.getInstance(), new Monitors(), mock(JobScheduler.class), clock, config);

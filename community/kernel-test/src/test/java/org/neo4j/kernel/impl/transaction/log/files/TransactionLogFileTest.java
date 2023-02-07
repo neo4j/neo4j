@@ -68,7 +68,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -83,6 +82,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -162,7 +162,7 @@ class TransactionLogFileTest {
     @Test
     void preAllocateOnStartAndEvictOnShutdownNewLogFile() throws IOException {
         final CapturingNativeAccess capturingNativeAccess = new CapturingNativeAccess();
-        LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
@@ -310,7 +310,7 @@ class TransactionLogFileTest {
     void shouldCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
@@ -332,7 +332,7 @@ class TransactionLogFileTest {
     void shouldSuppressFailureToCloseChannelInFailedAttemptToReadHeaderAfterOpen() throws Exception {
         // GIVEN a file which returns 1/2 log header size worth of bytes
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
@@ -667,7 +667,8 @@ class TransactionLogFileTest {
     }
 
     private LogFiles buildLogFiles() throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, wrappingFileSystem, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.builder(
+                        databaseLayout, wrappingFileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(rotationThreshold)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
@@ -685,7 +686,8 @@ class TransactionLogFileTest {
     }
 
     private void startStop(CapturingNativeAccess capturingNativeAccess, LifeSupport lifeSupport) throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

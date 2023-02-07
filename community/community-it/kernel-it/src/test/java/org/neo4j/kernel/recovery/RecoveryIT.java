@@ -113,7 +113,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -146,6 +145,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -884,7 +884,7 @@ class RecoveryIT {
                 INSTANCE,
                 IOController.DISABLED,
                 logProvider,
-                KernelVersionProvider.LATEST_VERSION));
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER));
         assertFalse(isRecoveryRequired(layout));
 
         assertTrue(fileSystem.fileExists(idFile));
@@ -917,7 +917,7 @@ class RecoveryIT {
                 INSTANCE,
                 IOController.DISABLED,
                 logProvider,
-                KernelVersionProvider.LATEST_VERSION));
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER));
         assertThat(Arrays.stream(fileSystem.listFiles(layout.getTransactionLogsDirectory()))
                         .filter(path -> path.toString().contains("transaction.db"))
                         .count())
@@ -1107,7 +1107,7 @@ class RecoveryIT {
                         INSTANCE,
                         IOController.DISABLED,
                         logProvider,
-                        KernelVersionProvider.LATEST_VERSION)
+                        LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .recoveryPredicate(RecoveryPredicate.ALL)
                 .monitors(monitors)
                 .extensionFactories(Iterables.cast(Services.loadAll(ExtensionFactory.class)))
@@ -1579,7 +1579,7 @@ class RecoveryIT {
 
     private LogFiles buildLogFiles(DatabaseTracers databaseTracers) throws IOException {
         return LogFilesBuilder.activeFilesBuilder(
-                        databaseLayout, fileSystem, pageCache, KernelVersionProvider.LATEST_VERSION)
+                        databaseLayout, fileSystem, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout, null)
                         .commandReaderFactory())
                 .withDatabaseTracers(databaseTracers)

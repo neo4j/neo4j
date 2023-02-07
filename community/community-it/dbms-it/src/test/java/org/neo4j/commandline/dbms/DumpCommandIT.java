@@ -69,7 +69,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.Locker;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -80,6 +79,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.test.extension.Inject;
@@ -222,7 +222,7 @@ class DumpCommandIT {
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException {
         LogFiles logFiles = LogFilesBuilder.builder(
-                        databaseLayout, testDirectory.getFileSystem(), KernelVersionProvider.LATEST_VERSION)
+                        databaseLayout, testDirectory.getFileSystem(), LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withStoreId(new StoreId(1, 1, "engine-1", "format-1", 1, 1))

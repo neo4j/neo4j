@@ -51,7 +51,6 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -65,6 +64,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -246,7 +246,7 @@ class TransactionLogChannelAllocatorIT {
                 new Monitors(),
                 true,
                 new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance()),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,
                 config,

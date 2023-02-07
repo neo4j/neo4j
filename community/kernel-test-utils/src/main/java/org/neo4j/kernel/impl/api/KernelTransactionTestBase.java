@@ -56,7 +56,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -95,6 +94,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.token.TokenHolders;
@@ -235,7 +235,7 @@ class KernelTransactionTestBase {
                 mock(KernelTransactions.class),
                 TransactionIdGenerator.EMPTY,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }

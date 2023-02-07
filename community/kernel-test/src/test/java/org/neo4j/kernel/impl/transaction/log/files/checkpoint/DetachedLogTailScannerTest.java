@@ -52,7 +52,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -71,6 +70,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -106,7 +106,8 @@ class DetachedLogTailScannerTest {
 
     LogFiles createLogFiles() throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.activeFilesBuilder(databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.activeFilesBuilder(
+                        databaseLayout, fs, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())
@@ -133,7 +134,7 @@ class DetachedLogTailScannerTest {
     void includeWrongPositionInException() throws Exception {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
         var testTogFiles = LogFilesBuilder.activeFilesBuilder(
-                        databaseLayout, fs, pageCache, KernelVersionProvider.LATEST_VERSION)
+                        databaseLayout, fs, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

@@ -28,7 +28,6 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corr
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
-import static org.neo4j.kernel.KernelVersionProvider.LATEST_VERSION;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -36,6 +35,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -1077,7 +1077,7 @@ class RecoveryCorruptedTransactionLogIT {
     private void addCorruptedCommandsToLastLogFile(LogEntryWriterWrapper logEntryWriterWrapper) throws IOException {
         PositiveLogFilesBasedLogVersionRepository versionRepository =
                 new PositiveLogFilesBasedLogVersionRepository(logFiles);
-        LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_VERSION)
+        LogFiles internalLogFiles = LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(versionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withStoreId(new StoreId(4, 5, "engine-1", "format-1", 1, 2))
@@ -1089,8 +1089,8 @@ class RecoveryCorruptedTransactionLogIT {
                     transactionLogFile.getTransactionLogWriter().getWriter();
             LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
-            TransactionLogWriter writer =
-                    new TransactionLogWriter(realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_VERSION);
+            TransactionLogWriter writer = new TransactionLogWriter(
+                    realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_KERNEL_VERSION_PROVIDER);
             List<StorageCommand> commands = new ArrayList<>();
             commands.add(new Command.PropertyCommand(
                     LATEST_LOG_SERIALIZATION, new PropertyRecord(1), new PropertyRecord(2)));
@@ -1111,7 +1111,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogFiles buildDefaultLogFiles(StoreId storeId) throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_VERSION)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withStoreId(storeId)

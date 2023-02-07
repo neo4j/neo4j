@@ -73,7 +73,6 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -111,6 +110,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -227,7 +227,7 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             recoveryLogFiles,
-                            KernelVersionProvider.LATEST_VERSION,
+                            LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
@@ -343,7 +343,7 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             logFiles,
-                            KernelVersionProvider.LATEST_VERSION,
+                            LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
@@ -645,7 +645,7 @@ class TransactionLogsRecoveryTest {
                             txStore,
                             versionRepository,
                             logFiles,
-                            KernelVersionProvider.LATEST_VERSION,
+                            LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
@@ -700,7 +700,7 @@ class TransactionLogsRecoveryTest {
     private record DataWriters(LogEntryWriter<?> writer, PositionAwareChannel channel) {}
 
     private LogFiles buildLogFiles() throws IOException {
-        return LogFilesBuilder.builder(databaseLayout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withCommandReaderFactory(new TestCommandReaderFactory())

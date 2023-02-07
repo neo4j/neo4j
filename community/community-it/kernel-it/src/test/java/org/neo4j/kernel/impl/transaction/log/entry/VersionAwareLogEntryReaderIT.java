@@ -37,7 +37,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -83,7 +83,7 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @EnabledOnOs(OS.LINUX)
     void readOnlyLogFilesWhileCommandsAreAvailable() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -102,7 +102,7 @@ class VersionAwareLogEntryReaderIT {
 
     @Test
     void correctlyResetPositionWhenEndOfCommandsReached() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())
@@ -125,7 +125,7 @@ class VersionAwareLogEntryReaderIT {
     @Test
     @DisabledOnOs(OS.LINUX)
     void readTillTheEndOfNotPreallocatedFile() throws IOException {
-        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, KernelVersionProvider.LATEST_VERSION)
+        LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withStorageEngineFactory(storageEngineFactory)
                 .withLogVersionRepository(new SimpleLogVersionRepository())
                 .withTransactionIdStore(new SimpleTransactionIdStore())

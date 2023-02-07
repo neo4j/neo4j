@@ -39,7 +39,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -68,6 +67,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -157,7 +157,7 @@ class TransactionAppenderRotationIT {
             SimpleLogVersionRepository logVersionRepository, SimpleTransactionIdStore transactionIdStore)
             throws IOException {
         var storeId = new StoreId(1, 2, "engine-1", "format-1", 3, 4);
-        return LogFilesBuilder.builder(layout, fileSystem, KernelVersionProvider.LATEST_VERSION)
+        return LogFilesBuilder.builder(layout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)

@@ -68,7 +68,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -93,6 +92,7 @@ import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -196,7 +196,7 @@ abstract class OperationsTest {
                 mock(IndexTxStateUpdater.class),
                 creationContext,
                 mock(DbmsRuntimeRepository.class),
-                KernelVersionProvider.LATEST_VERSION,
+                LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 storageLocks,
                 transaction,
                 kernelToken,
