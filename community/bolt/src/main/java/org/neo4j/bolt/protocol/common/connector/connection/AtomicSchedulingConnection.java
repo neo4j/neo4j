@@ -439,6 +439,9 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         } else {
             // interrupt any remaining workloads to ensure that the connection closes as fast as possible
             this.interrupt();
+            // Submit a noop job to wake up a worker thread waiting in single-job polling mode and have it realize that
+            // the transaction is terminated
+            submit(fsm -> {});
         }
     }
 
