@@ -19,7 +19,7 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import static org.neo4j.procedure.builtin.routing.RoutingTableProcedureHelpers.findClientProvidedAddress;
+import static org.neo4j.dbms.routing.RoutingTableProcedureHelpers.findClientProvidedAddress;
 
 import java.util.Collections;
 import java.util.List;

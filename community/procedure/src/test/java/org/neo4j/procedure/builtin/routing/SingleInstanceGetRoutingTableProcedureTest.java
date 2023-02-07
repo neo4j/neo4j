@@ -32,6 +32,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SERVER_DEFAULTS;
 import static org.neo4j.configuration.GraphDatabaseSettings.client_side_router_enforce_for_domains;
 import static org.neo4j.configuration.GraphDatabaseSettings.routing_default_router;
+import static org.neo4j.dbms.routing.RoutingTableProcedureHelpers.ADDRESS_CONTEXT_KEY;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
@@ -43,7 +44,6 @@ import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller.DEFAULT_NAMESPACE;
-import static org.neo4j.procedure.builtin.routing.GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.lang.annotation.ElementType;

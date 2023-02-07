@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
@@ -33,9 +33,12 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
 public class RoutingTableProcedureHelpers {
-    static Optional<SocketAddress> findClientProvidedAddress(
+    public static final String ADDRESS_CONTEXT_KEY = "address";
+    public static final String FROM_ALIAS_KEY = "alias";
+
+    public static Optional<SocketAddress> findClientProvidedAddress(
             MapValue routingContext, int defaultBoltPort, InternalLog log) throws ProcedureException {
-        var address = routingContext.get(GetRoutingTableProcedure.ADDRESS_CONTEXT_KEY);
+        var address = routingContext.get(ADDRESS_CONTEXT_KEY);
         if (address == null || address == NO_VALUE) {
             return Optional.empty();
         }
@@ -61,7 +64,7 @@ public class RoutingTableProcedureHelpers {
                         + "GetRoutingTableProcedure, but its value could not be parsed.");
     }
 
-    static ProcedureException databaseNotFoundException(String databaseName) {
+    public static ProcedureException databaseNotFoundException(String databaseName) {
         return new ProcedureException(
                 DatabaseNotFound,
                 "Unable to get a routing table for database '" + databaseName

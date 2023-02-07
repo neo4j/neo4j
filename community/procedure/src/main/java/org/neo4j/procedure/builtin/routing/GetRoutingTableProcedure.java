@@ -19,14 +19,17 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import static org.neo4j.dbms.routing.RoutingTableProcedureHelpers.FROM_ALIAS_KEY;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.exceptions.Status.Database.IllegalAliasChain;
 import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.api.exceptions.Status.Procedure.ProcedureCallFailed;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.SERVERS;
 import static org.neo4j.procedure.builtin.routing.ParameterNames.TTL;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +39,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.routing.RoutingTableProcedureHelpers;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -51,14 +55,12 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 public final class GetRoutingTableProcedure implements CallableProcedure {
     private static final String NAME = "getRoutingTable";
     private static final String DESCRIPTION =
             "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.";
-    public static final String ADDRESS_CONTEXT_KEY = "address";
 
     private final ProcedureSignature signature;
     private final DatabaseReferenceRepository databaseReferenceRepo;
@@ -135,6 +137,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         var routingContext = extractRoutingContext(input);
 
         assertBoltConnectorEnabled(databaseReference);
+        assertNotIllegalAliasChain(databaseReference, routingContext);
         try {
             var result = invoke(databaseReference, routingContext);
             log.info(
@@ -173,7 +176,7 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
     private DatabaseReference extractDatabaseReference(AnyValue[] input, String user) throws ProcedureException {
         var arg = input[1];
         final String databaseName;
-        if (arg == Values.NO_VALUE) {
+        if (arg == NO_VALUE) {
             databaseName = defaultDatabaseResolver.defaultDatabase(user);
         } else if (arg instanceof TextValue) {
             databaseName = ((TextValue) arg).stringValue();
@@ -185,17 +188,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
                 .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(databaseName));
     }
 
-    private static void assertRoutingResultNotEmpty(RoutingResult result, DatabaseReference databaseReference)
-            throws ProcedureException {
-        if (result.containsNoEndpoints()) {
-            throw new ProcedureException(
-                    DatabaseUnavailable, "Routing table for database " + databaseReference.alias() + " is empty");
-        }
-    }
-
     private static MapValue extractRoutingContext(AnyValue[] input) {
         var arg = input[0];
-        if (arg == Values.NO_VALUE) {
+        if (arg == NO_VALUE) {
             return MapValue.EMPTY;
         } else if (arg instanceof MapValue) {
             return (MapValue) arg;
@@ -248,9 +243,34 @@ public final class GetRoutingTableProcedure implements CallableProcedure {
         }
     }
 
-    private void assertDatabaseExists( DatabaseReference databaseReference ) throws ProcedureException
-    {
-        databaseReferenceRepo.getByAlias(databaseReference.alias())
-                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(databaseReference.alias().name()));
+    private static void assertRoutingResultNotEmpty(RoutingResult result, DatabaseReference databaseReference)
+            throws ProcedureException {
+        if (result.containsNoEndpoints()) {
+            throw new ProcedureException(
+                    DatabaseUnavailable, "Routing table for database " + databaseReference.alias() + " is empty");
+        }
+    }
+
+    private void assertDatabaseExists(DatabaseReference databaseReference) throws ProcedureException {
+        databaseReferenceRepo
+                .getByAlias(databaseReference.alias())
+                .orElseThrow(() -> RoutingTableProcedureHelpers.databaseNotFoundException(
+                        databaseReference.alias().name()));
+    }
+
+    private void assertNotIllegalAliasChain(DatabaseReference databaseReference, MapValue routingContext)
+            throws ProcedureException {
+        var refIsRemoteAlias = databaseReference instanceof DatabaseReference.External;
+
+        var sourceAlias = routingContext.get(FROM_ALIAS_KEY);
+        var sourceAliasIsPresent = sourceAlias != null && sourceAlias != NO_VALUE;
+        if (refIsRemoteAlias && sourceAliasIsPresent) {
+            var sourceAliasString = ((TextValue) sourceAlias).stringValue();
+            throw new ProcedureException(
+                    IllegalAliasChain,
+                    "Unable to provide a routing table for the database '"
+                            + databaseReference.alias().name() + "' because the request came from another alias '"
+                            + sourceAliasString + "' and alias chains " + "are not permitted.");
+        }
     }
 }
