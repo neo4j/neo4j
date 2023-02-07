@@ -1060,10 +1060,11 @@ class RecoveryCorruptedTransactionLogIT {
 
     private byte randomInvalidVersionsBytes() {
         int highestVersionByte = KernelVersion.VERSIONS.stream()
+                .filter(version -> version != KernelVersion.GLORIOUS_FUTURE)
                 .mapToInt(KernelVersion::version)
                 .max()
                 .orElseThrow();
-        return (byte) random.nextInt(highestVersionByte + 1, Byte.MAX_VALUE + 1);
+        return (byte) random.nextInt(highestVersionByte + 1, Byte.MAX_VALUE);
     }
 
     /**

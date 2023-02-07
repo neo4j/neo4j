@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static java.lang.String.format;
+
 import java.util.EnumMap;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.util.Preconditions;
 
 public class LogEntryParserSets {
     private static final EnumMap<KernelVersion, LogEntryParserSet> PARSER_SETS = new EnumMap<>(KernelVersion.class);
@@ -41,9 +42,14 @@ public class LogEntryParserSets {
      * all types of log entries.
      * @return LogEntryParserSet for the given {@code version}.
      */
-    public static LogEntryParserSet parserSet(KernelVersion version) {
+    public static LogEntryParserSet parserSet(KernelVersion version, KernelVersion latestRecognizedKernelVersion) {
         LogEntryParserSet parserSet = PARSER_SETS.get(version);
-        Preconditions.checkState(parserSet != null, "No log entries version matching %s", version);
+        if (parserSet == null) {
+            if (version == KernelVersion.GLORIOUS_FUTURE && latestRecognizedKernelVersion.isAtLeast(version)) {
+                return new LogEntryParserSetVGloriousFuture();
+            }
+            throw new IllegalStateException(format("No log entries version matching %s", version));
+        }
         return parserSet;
     }
 }

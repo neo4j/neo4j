@@ -54,7 +54,7 @@ public enum KernelVersion {
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
     // and it is not sure which version the feature will land in.
-    GLORIOUS_FUTURE((byte) 99);
+    GLORIOUS_FUTURE(Byte.MAX_VALUE);
 
     public static final KernelVersion EARLIEST = V4_2;
     // Kernel version should be 5_0 for now, bump is not an option

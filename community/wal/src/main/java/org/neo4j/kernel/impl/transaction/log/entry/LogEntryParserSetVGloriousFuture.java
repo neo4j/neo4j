@@ -20,23 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.ChunkEndLogEntryParserV5_6;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.ChunkStartLogEntryParserV5_6;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryParserV5_6;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.RollbackLogEntryParserV5_6;
 
-public class LogEntryParserSetV5_6 extends LogEntryParserSetV5_0 {
-    LogEntryParserSetV5_6() {
-        this(KernelVersion.V5_6);
-    }
-
-    LogEntryParserSetV5_6(KernelVersion kernelVersion) {
-        super(kernelVersion);
-        register(new ChunkStartLogEntryParserV5_6());
-        register(new ChunkEndLogEntryParserV5_6());
-
-        register(new DetachedCheckpointLogEntryParserV5_6());
-
-        register(new RollbackLogEntryParserV5_6());
+public class LogEntryParserSetVGloriousFuture extends LogEntryParserSetV5_6 {
+    LogEntryParserSetVGloriousFuture() {
+        super(KernelVersion.GLORIOUS_FUTURE);
     }
 }

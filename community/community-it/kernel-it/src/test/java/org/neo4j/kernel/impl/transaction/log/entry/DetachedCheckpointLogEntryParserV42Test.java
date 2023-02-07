@@ -96,7 +96,8 @@ class DetachedCheckpointLogEntryParserV42Test {
                 .put(bytes, bytes.length);
         channel.putChecksum();
 
-        var checkpointParser = LogEntryParserSets.parserSet(version).select(DETACHED_CHECK_POINT);
+        var checkpointParser = LogEntryParserSets.parserSet(version, LatestVersions.LATEST_KERNEL_VERSION)
+                .select(DETACHED_CHECK_POINT);
         LogEntry logEntry = checkpointParser.parse(version, channel, positionMarker, commandReader);
         assertEquals(checkpoint, logEntry);
     }

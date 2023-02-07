@@ -80,7 +80,8 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             }
             if (parserSet == null || parserSet.getIntroductionVersion().version() != versionCode) {
                 try {
-                    parserSet = LogEntryParserSets.parserSet(KernelVersion.getForVersion(versionCode));
+                    parserSet = LogEntryParserSets.parserSet(
+                            KernelVersion.getForVersion(versionCode), latestRecognizedKernelVersion);
                 } catch (IllegalArgumentException e) {
                     String msg;
                     if (versionCode > latestRecognizedKernelVersion.version()) {

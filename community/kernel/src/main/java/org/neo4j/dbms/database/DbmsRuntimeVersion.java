@@ -53,7 +53,12 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     /**
      * Relationship uniqueness constraints
      */
-    V5_6(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_56, KernelVersion.V5_6);
+    V5_6(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_56, KernelVersion.V5_6),
+
+    /**
+     * Glorious future version to be used for testing coming versions.
+     */
+    GLORIOUS_FUTURE(Integer.MAX_VALUE, DBMS_RUNTIME_COMPONENT, "Future version", KernelVersion.GLORIOUS_FUTURE);
 
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.

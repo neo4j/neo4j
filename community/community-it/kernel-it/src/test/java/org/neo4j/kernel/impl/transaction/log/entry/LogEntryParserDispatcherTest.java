@@ -129,8 +129,9 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser =
-                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_START);
+        final LogEntryParser parser = parserSet(
+                        LatestVersions.LATEST_KERNEL_VERSION, LatestVersions.LATEST_KERNEL_VERSION)
+                .select(LogEntryTypeCodes.TX_START);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -150,8 +151,9 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser =
-                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_COMMIT);
+        final LogEntryParser parser = parserSet(
+                        LatestVersions.LATEST_KERNEL_VERSION, LatestVersions.LATEST_KERNEL_VERSION)
+                .select(LogEntryTypeCodes.TX_COMMIT);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -169,8 +171,9 @@ class LogEntryParserDispatcherTest {
         channel.getCurrentPosition(marker);
 
         // when
-        final LogEntryParser parser =
-                parserSet(LatestVersions.LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.COMMAND);
+        final LogEntryParser parser = parserSet(
+                        LatestVersions.LATEST_KERNEL_VERSION, LatestVersions.LATEST_KERNEL_VERSION)
+                .select(LogEntryTypeCodes.COMMAND);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -179,7 +182,8 @@ class LogEntryParserDispatcherTest {
 
     @Test
     void shouldThrowWhenParsingUnknownEntry() {
-        assertThrows(IllegalArgumentException.class, () -> parserSet(LatestVersions.LATEST_KERNEL_VERSION)
+        assertThrows(IllegalArgumentException.class, () -> parserSet(
+                        LatestVersions.LATEST_KERNEL_VERSION, LatestVersions.LATEST_KERNEL_VERSION)
                 .select((byte) 42)); // unused, at lest for now
     }
 }
