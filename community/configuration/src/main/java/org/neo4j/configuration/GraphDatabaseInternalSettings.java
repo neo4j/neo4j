@@ -28,6 +28,7 @@ import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.BYTE;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.CIDR_IP;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
@@ -1088,4 +1089,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             + "Can be useful for writing upgrade tests for coming versions")
     public static final Setting<Integer> latest_runtime_version =
             newBuilder("internal.dbms.latest_runtime_version", INT, null).build();
+
+    @Internal
+    @Description("Just to be used in tests: A way to set the latest kernel version. "
+            + "Can be useful for writing upgrade tests for coming versions")
+    public static final Setting<Byte> latest_kernel_version =
+            newBuilder("internal.dbms.latest_kernel_version", BYTE, null).build();
 }

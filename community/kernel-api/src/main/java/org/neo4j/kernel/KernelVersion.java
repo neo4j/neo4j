@@ -22,6 +22,8 @@ package org.neo4j.kernel;
 import java.util.List;
 import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
 import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 
 /**
  * One version scheme to unify various internal versions into one with the intent of conceptual simplification and simplification of version bumping.
@@ -68,6 +70,11 @@ public enum KernelVersion {
 
     private final byte version;
 
+    public static KernelVersion getLatestVersion(Config config) {
+        Byte version = config.get(GraphDatabaseInternalSettings.latest_kernel_version);
+        return version == null ? LATEST : KernelVersion.getForVersion(version);
+    }
+
     KernelVersion(byte version) {
         this.version = version;
     }
@@ -76,8 +83,8 @@ public enum KernelVersion {
         return this.version;
     }
 
-    public boolean isLatest() {
-        return this == LATEST;
+    public boolean isLatest(Config config) {
+        return this == getLatestVersion(config);
     }
 
     public boolean isGreaterThan(KernelVersion other) {

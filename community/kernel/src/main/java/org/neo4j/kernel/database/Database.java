@@ -631,7 +631,8 @@ public class Database extends AbstractDatabase {
                 metadataCache,
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
-                internalLogProvider);
+                internalLogProvider,
+                databaseConfig);
 
         handler.registerUpgradeListener((fromKernelVersion, toKernelVersion) -> {
             long time = clock.millis();

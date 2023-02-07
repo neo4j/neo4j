@@ -21,8 +21,12 @@ package org.neo4j.test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 
 public class LatestVersions {
+    public static final KernelVersion LATEST_KERNEL_VERSION = KernelVersion.getLatestVersion(Config.defaults());
+    public static final KernelVersionProvider LATEST_KERNEL_VERSION_PROVIDER = () -> LATEST_KERNEL_VERSION;
     public static final DbmsRuntimeVersion LATEST_RUNTIME_VERSION =
             DbmsRuntimeVersion.getLatestVersion(Config.defaults());
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
@@ -59,18 +60,21 @@ class DatabaseUpgradeTransactionHandler {
     // I.e. the upgrade transaction wouldn't be a strong barrier. This lock prevents this scenario.
     private final UpgradeLocker locker;
     private final InternalLog log;
+    private final Config config;
 
     DatabaseUpgradeTransactionHandler(
             DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionProvider kernelVersionProvider,
             DatabaseTransactionEventListeners transactionEventListeners,
             UpgradeLocker locker,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            Config config) {
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionProvider = kernelVersionProvider;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
         this.log = logProvider.getLog(this.getClass());
+        this.config = config;
     }
 
     interface InternalUpgradeTransactionHandler {
@@ -88,7 +92,7 @@ class DatabaseUpgradeTransactionHandler {
      * until it succeeds.
      */
     void registerUpgradeListener(InternalUpgradeTransactionHandler internalUpgradeTransactionHandler) {
-        if (!kernelVersionProvider.kernelVersion().isLatest()) {
+        if (!kernelVersionProvider.kernelVersion().isLatest(config)) {
             transactionEventListeners.registerTransactionEventListener(
                     new DatabaseUpgradeListener(internalUpgradeTransactionHandler));
         }
@@ -153,7 +157,7 @@ class DatabaseUpgradeTransactionHandler {
             }
 
             readLock.close();
-            if (kernelVersionProvider.kernelVersion().isLatest() && unregistered.compareAndSet(false, true)) {
+            if (kernelVersionProvider.kernelVersion().isLatest(config) && unregistered.compareAndSet(false, true)) {
                 try {
                     transactionEventListeners.unregisterTransactionEventListener(this);
                 } catch (Throwable e) {

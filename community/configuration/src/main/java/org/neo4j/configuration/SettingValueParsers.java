@@ -123,6 +123,27 @@ public final class SettingValueParsers {
         }
     };
 
+    public static final SettingValueParser<Byte> BYTE = new SettingValueParser<>() {
+        @Override
+        public Byte parse(String value) {
+            try {
+                return Byte.parseByte(value.trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(format("'%s' is not a valid byte value", value), e);
+            }
+        }
+
+        @Override
+        public Class<Byte> getType() {
+            return Byte.class;
+        }
+
+        @Override
+        public String getDescription() {
+            return "a byte";
+        }
+    };
+
     public static final SettingValueParser<Integer> INT = new SettingValueParser<>() {
         @Override
         public Integer parse(String value) {

@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ExceptionUtils;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -217,7 +218,12 @@ class DatabaseUpgradeTransactionHandlerTest {
                 .unregisterTransactionEventListener(any());
 
         DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler(
-                dbmsRuntimeRepository, kernelVersionProvider, databaseTransactionEventListeners, lock, logProvider);
+                dbmsRuntimeRepository,
+                kernelVersionProvider,
+                databaseTransactionEventListeners,
+                lock,
+                logProvider,
+                Config.defaults());
         handler.registerUpgradeListener((fromKernelVersion, toKernelVersion) -> {
             registeredTransactions.add(new RegisteredTransaction(toKernelVersion, true));
             setKernelVersion(toKernelVersion);
