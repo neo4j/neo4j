@@ -112,6 +112,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -948,7 +949,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private boolean checkpointEntryLooksCorrupted(byte[] array) {
-        var testReader = new VersionAwareLogEntryReader(version -> null);
+        var testReader = new VersionAwareLogEntryReader(version -> null, LatestVersions.LATEST_KERNEL_VERSION);
         var ch = new InMemoryVersionableReadableClosablePositionAwareChannel();
         for (byte b : array) {
             ch.put(b);
@@ -1007,8 +1008,8 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogPosition getLastReadablePosition(Path logFile) throws IOException {
-        VersionAwareLogEntryReader entryReader =
-                new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory());
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
+                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
         LogFile txLogFile = logFiles.getLogFile();
         long logVersion = txLogFile.getLogVersion(logFile);
         LogPosition startPosition = txLogFile.extractHeader(logVersion).getStartPosition();
@@ -1030,8 +1031,8 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private LogPosition getLastReadablePosition(LogFile logFile) throws IOException {
-        VersionAwareLogEntryReader entryReader =
-                new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory());
+        VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
+                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
         LogPosition startPosition = logFile.extractHeader(logFiles.getLogFile().getHighestLogVersion())
                 .getStartPosition();
         try (ReadableLogChannel reader = logFile.getReader(startPosition)) {

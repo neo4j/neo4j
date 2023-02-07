@@ -127,7 +127,10 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private long lastReadablePosition() throws IOException {
         try (var reader = new ReadAheadLogChannel(
                         new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
-                var logEntryCursor = new LogEntryCursor(new VersionAwareLogEntryReader(NO_COMMANDS, true), reader)) {
+                var logEntryCursor = new LogEntryCursor(
+                        new VersionAwareLogEntryReader(
+                                NO_COMMANDS, true, KernelVersion.getLatestVersion(context.getConfig())),
+                        reader)) {
             while (logEntryCursor.next()) {
                 logEntryCursor.get();
             }

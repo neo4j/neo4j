@@ -107,8 +107,10 @@ public class CheckpointInfoFactory {
         try (var channel = logFile.openForVersion(transactionPosition.getLogVersion());
                 var reader = new ReadAheadLogChannel(
                         new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
-                var logEntryCursor =
-                        new LogEntryCursor(new VersionAwareLogEntryReader(context.getCommandReaderFactory()), reader)) {
+                var logEntryCursor = new LogEntryCursor(
+                        new VersionAwareLogEntryReader(
+                                context.getCommandReaderFactory(), KernelVersion.getLatestVersion(context.getConfig())),
+                        reader)) {
             LogPosition checkedPosition = null;
             LogEntryStart logEntryStart = null;
             while (logEntryCursor.next()) {
@@ -178,7 +180,8 @@ public class CheckpointInfoFactory {
         try (var fallbackReader = new ReadAheadLogChannel(
                 new UnclosableChannel(fallbackChannel), NO_MORE_CHANNELS, context.getMemoryTracker())) {
             byte versionCode = fallbackReader.get();
-            if (versionCode > KernelVersion.LATEST.version()) {
+            if (versionCode
+                    > KernelVersion.getLatestVersion(context.getConfig()).version()) {
                 return Optional.empty();
             }
             var kernelVersion = (versionCode < KernelVersion.EARLIEST.version())

@@ -59,6 +59,7 @@ import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -149,7 +150,8 @@ class RecoverIndexDropIT {
 
         try (ReadableLogChannel reader =
                 logFile.getReader(logFile.extractHeader(0).getStartPosition())) {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory());
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(
+                    storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
             while (logEntryReader.readLogEntry(reader) != null) {}
             LogPosition position = logEntryReader.lastPosition();
             StoreChannel storeChannel = fs.write(logFile.getLogFileForVersion(logFile.getHighestLogVersion()));

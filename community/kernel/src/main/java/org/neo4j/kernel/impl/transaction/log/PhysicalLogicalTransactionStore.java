@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_S
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import org.neo4j.configuration.Config;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -47,6 +48,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
     private final boolean presketchLogFiles;
+    private final KernelVersion latestKernelVersion;
 
     public PhysicalLogicalTransactionStore(
             LogFiles logFiles,
@@ -61,12 +63,13 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.presketchLogFiles = config.get(pre_sketch_transaction_logs);
+        this.latestKernelVersion = KernelVersion.getLatestVersion(config);
     }
 
     @Override
     public CommandBatchCursor getCommandBatches(LogPosition position) throws IOException {
         return new CommittedCommandBatchCursor(
-                logFile.getReader(position), new VersionAwareLogEntryReader(commandReaderFactory));
+                logFile.getReader(position), new VersionAwareLogEntryReader(commandReaderFactory, latestKernelVersion));
     }
 
     @Override
@@ -74,7 +77,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
         return ReversedMultiFileCommandBatchCursor.fromLogFile(
                 logFile,
                 backToPosition,
-                new VersionAwareLogEntryReader(commandReaderFactory),
+                new VersionAwareLogEntryReader(commandReaderFactory, latestKernelVersion),
                 failOnCorruptedLogFiles,
                 monitors.newMonitor(ReversedTransactionCursorMonitor.class),
                 presketchLogFiles);
@@ -84,7 +87,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
     public CommandBatchCursor getCommandBatches(final long transactionIdToStartFrom) throws IOException {
         // look up in position cache
         try {
-            var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory);
+            var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, latestKernelVersion);
             TransactionMetadataCache.TransactionMetadata transactionMetadata =
                     transactionMetadataCache.getTransactionMetadata(transactionIdToStartFrom);
             if (transactionMetadata != null) {

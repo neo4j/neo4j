@@ -35,9 +35,11 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.test.LatestVersions;
 
 class VersionAwareLogEntryReaderTest {
-    private final LogEntryReader logEntryReader = new VersionAwareLogEntryReader(new TestCommandReaderFactory());
+    private final LogEntryReader logEntryReader =
+            new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
 
     @Test
     void shouldReadAStartLogEntry() throws IOException {

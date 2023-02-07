@@ -39,19 +39,25 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     private static final boolean VERIFY_CHECKSUM_CHAIN =
             FeatureToggles.flag(LogEntryReader.class, "verifyChecksumChain", false);
     private final CommandReaderFactory commandReaderFactory;
+    private final KernelVersion latestRecognizedKernelVersion;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
     private LogEntryParserSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
-    public VersionAwareLogEntryReader(CommandReaderFactory commandReaderFactory) {
-        this(commandReaderFactory, true);
+    public VersionAwareLogEntryReader(
+            CommandReaderFactory commandReaderFactory, KernelVersion latestRecognizedKernelVersion) {
+        this(commandReaderFactory, true, latestRecognizedKernelVersion);
     }
 
-    public VersionAwareLogEntryReader(CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain) {
+    public VersionAwareLogEntryReader(
+            CommandReaderFactory commandReaderFactory,
+            boolean verifyChecksumChain,
+            KernelVersion latestRecognizedKernelVersion) {
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
+        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
     }
 
     @Override
@@ -77,12 +83,12 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                     parserSet = LogEntryParserSets.parserSet(KernelVersion.getForVersion(versionCode));
                 } catch (IllegalArgumentException e) {
                     String msg;
-                    if (versionCode > KernelVersion.LATEST.version()) {
+                    if (versionCode > latestRecognizedKernelVersion.version()) {
                         msg = String.format(
                                 "Log file contains entries with prefix %d, and the highest supported prefix is %s. This "
                                         + "indicates that the log files originates from an newer version of neo4j, which we don't support "
                                         + "downgrading from.",
-                                versionCode, KernelVersion.LATEST);
+                                versionCode, latestRecognizedKernelVersion);
                     } else {
                         msg = String.format(
                                 "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This "

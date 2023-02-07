@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.util.function.Supplier;
 import org.neo4j.internal.helpers.collection.LfuCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -45,7 +46,8 @@ public class TransactionLogFileInformation implements LogFileInformation {
                 logFiles,
                 logHeaderCache,
                 context,
-                () -> new VersionAwareLogEntryReader(context.getCommandReaderFactory()));
+                () -> new VersionAwareLogEntryReader(
+                        context.getCommandReaderFactory(), KernelVersion.getLatestVersion(context.getConfig())));
     }
 
     @VisibleForTesting

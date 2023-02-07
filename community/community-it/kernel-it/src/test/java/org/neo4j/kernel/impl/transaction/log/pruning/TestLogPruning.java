@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 class TestLogPruning {
@@ -228,7 +229,9 @@ class TestLogPruning {
                     db.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
             try (ReadableLogChannel channel = new ReadAheadLogChannel(versionedStoreChannel, bridge, INSTANCE)) {
                 try (CommittedCommandBatchCursor physicalTransactionCursor = new CommittedCommandBatchCursor(
-                        channel, new VersionAwareLogEntryReader(storageEngineFactory.commandReaderFactory()))) {
+                        channel,
+                        new VersionAwareLogEntryReader(
+                                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION))) {
                     while (physicalTransactionCursor.next()) {
                         counter++;
                     }

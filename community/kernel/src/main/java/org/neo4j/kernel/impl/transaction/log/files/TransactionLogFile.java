@@ -51,6 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -629,7 +630,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         // scroll all over possible checkpoints
         try (ReadAheadLogChannel readAheadLogChannel =
                 new ReadAheadLogChannel(new UnclosableChannel(channel), memoryTracker)) {
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(context.getCommandReaderFactory());
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader(
+                    context.getCommandReaderFactory(), KernelVersion.getLatestVersion(context.getConfig()));
             LogEntry entry;
             do {
                 // seek to the end the records.

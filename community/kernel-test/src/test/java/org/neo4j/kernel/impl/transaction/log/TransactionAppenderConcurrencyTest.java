@@ -218,7 +218,8 @@ public class TransactionAppenderConcurrencyTest {
                 .isInstanceOf(OutOfMemoryError.class);
 
         // Check number of transactions, should only have one
-        LogEntryReader logEntryReader = new VersionAwareLogEntryReader(new TestCommandReaderFactory());
+        LogEntryReader logEntryReader =
+                new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
 
         LogFile logFile = logFiles.getLogFile();
         assertThat(logFile.getLowestLogVersion()).isEqualTo(logFile.getHighestLogVersion());

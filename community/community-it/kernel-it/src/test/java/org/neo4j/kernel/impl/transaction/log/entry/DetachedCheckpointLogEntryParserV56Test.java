@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -75,7 +76,8 @@ class DetachedCheckpointLogEntryParserV56Test {
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(),
+                    LatestVersions.LATEST_KERNEL_VERSION);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
                             fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
@@ -102,7 +104,8 @@ class DetachedCheckpointLogEntryParserV56Test {
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory());
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(),
+                    LatestVersions.LATEST_KERNEL_VERSION);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
                             fs.read(path), 1, (byte) 2, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),

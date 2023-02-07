@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -27,6 +29,7 @@ public final class TestLogEntryReader {
     private TestLogEntryReader() {}
 
     public static LogEntryReader logEntryReader() {
-        return new VersionAwareLogEntryReader(new TestCommandReaderFactory());
+        return new VersionAwareLogEntryReader(
+                new TestCommandReaderFactory(), KernelVersion.getLatestVersion(Config.defaults()));
     }
 }
