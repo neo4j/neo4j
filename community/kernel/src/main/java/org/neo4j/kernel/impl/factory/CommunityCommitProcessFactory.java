@@ -30,7 +30,9 @@ import org.neo4j.storageengine.api.StorageEngine;
 public class CommunityCommitProcessFactory implements CommitProcessFactory {
     @Override
     public TransactionCommitProcess create(
-            TransactionAppender appender, StorageEngine storageEngine, DatabaseReadOnlyChecker readOnlyChecker,
+            TransactionAppender appender,
+            StorageEngine storageEngine,
+            DatabaseReadOnlyChecker readOnlyChecker,
             boolean preAllocateSpaceInStoreFiles) {
         return new DatabaseTransactionCommitProcess(
                 new InternalTransactionCommitProcess(appender, storageEngine, preAllocateSpaceInStoreFiles),

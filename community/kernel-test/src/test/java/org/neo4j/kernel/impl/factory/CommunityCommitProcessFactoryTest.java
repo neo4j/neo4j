@@ -34,8 +34,8 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenWritable() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess = factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), writable(),
-                false);
+        var commitProcess =
+                factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), writable(), false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }
@@ -44,8 +44,8 @@ class CommunityCommitProcessFactoryTest {
     void createRegularCommitProcessWhenDynamicallyReadOnly() {
         var factory = new CommunityCommitProcessFactory();
 
-        var commitProcess = factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), readOnly(),
-                false);
+        var commitProcess =
+                factory.create(mock(TransactionAppender.class), mock(StorageEngine.class), readOnly(), false);
 
         assertThat(commitProcess).isInstanceOf(DatabaseTransactionCommitProcess.class);
     }

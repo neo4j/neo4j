@@ -25,6 +25,8 @@ import org.neo4j.storageengine.api.StorageEngine;
 
 public interface CommitProcessFactory {
     TransactionCommitProcess create(
-            TransactionAppender appender, StorageEngine storageEngine, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+            TransactionAppender appender,
+            StorageEngine storageEngine,
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             boolean preAllocateSpaceInStoreFiles);
 }
