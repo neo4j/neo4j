@@ -127,6 +127,34 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
   }
 
+  test("relationship asserting multi relationship index exact seek should cache properties") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .union()
+      .|.filter("cacheR[r.prop] IN [1, 2]")
+      .|.assertSameRelationship("r")
+      .|.|.relationshipIndexOperator("(a)-[r:R(prop = 2)]->(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop = 2)]->(b)", getValue = _ => GetValue)
+      .relationshipTypeScan("(a)-[r:R]->(b)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(2).dbHits() shouldBe 0 // filter
+  }
+
   test("many node index exact seek should cache properties") {
     given {
       nodeIndex("A", "prop")
