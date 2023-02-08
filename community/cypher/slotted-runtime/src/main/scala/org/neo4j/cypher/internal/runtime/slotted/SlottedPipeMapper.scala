@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
@@ -213,6 +213,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.AllOrderedDistinctSlotted
 import org.neo4j.cypher.internal.runtime.slotted.pipes.AntiConditionalApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ArgumentSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.AssertSameRelationshipSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.BFSPruningVarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.CartesianProductSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ConditionalApplySlottedPipe
@@ -1466,8 +1467,8 @@ class SlottedPipeMapper(
           SlottedExecutionContextOrdering.asComparator(sortedColumns.map(translateColumnOrder(slots, _)))
         )(id = id)
 
-      case _: AssertSameNode =>
-        fallback.onTwoChildPlan(plan, lhs, rhs)
+      case AssertSameRelationship(relationship, _, _) =>
+        AssertSameRelationshipSlottedPipe(lhs, rhs, relationship, slots(relationship))(id = id)
 
       case Trail(
           _,

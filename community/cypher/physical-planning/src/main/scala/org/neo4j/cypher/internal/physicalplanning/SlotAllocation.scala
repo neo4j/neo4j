@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -168,7 +169,6 @@ import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
 
 import java.util
-
 import scala.util.Try
 
 /**
@@ -1104,7 +1104,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         })
         result
 
-      case _: AssertSameNode =>
+      case _: AssertSameNode | _: AssertSameRelationship =>
         lhs
 
       case _: SubqueryForeach =>
