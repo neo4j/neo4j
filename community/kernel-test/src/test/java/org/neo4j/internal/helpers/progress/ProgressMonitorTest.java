@@ -24,7 +24,6 @@ import static java.lang.System.lineSeparator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
@@ -53,8 +52,12 @@ class ProgressMonitorTest {
     void setUp() {
         indicator = indicatorMock();
         when(indicator.reportResolution()).thenReturn(10);
-        factory = mock(ProgressMonitorFactory.class);
-        when(factory.newIndicator(any(String.class))).thenReturn(indicator);
+        factory = new ProgressMonitorFactory() {
+            @Override
+            protected Indicator newIndicator(String process) {
+                return indicator;
+            }
+        };
     }
 
     @Test
@@ -128,8 +131,7 @@ class ProgressMonitorTest {
 
     @Test
     void shouldNotAllowAddingMultiplePartsWithSameIdentifier(TestInfo testInfo) {
-        ProgressMonitorFactory.MultiPartBuilder builder =
-                mock(ProgressMonitorFactory.class).multipleParts(testInfo.getDisplayName());
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.multipleParts(testInfo.getDisplayName());
         builder.progressForPart("first", 10);
 
         IllegalArgumentException exception =

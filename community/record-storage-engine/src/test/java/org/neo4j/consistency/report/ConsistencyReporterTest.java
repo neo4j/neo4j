@@ -22,6 +22,7 @@ package org.neo4j.consistency.report;
 import static java.lang.String.format;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -102,12 +103,25 @@ class ConsistencyReporterTest {
 
             // then
             if (method.getAnnotation(Warning.class) == null) {
-                verify(report)
-                        .error(any(RecordType.class), any(AbstractBaseRecord.class), argThat(expectedFormat()), any());
+                var verificationMode = atMostOnce();
+                verify(report, verificationMode)
+                        .error(
+                                any(RecordType.class),
+                                any(AbstractBaseRecord.class),
+                                argThat(expectedFormat()),
+                                any(Object[].class));
+                verify(report, verificationMode)
+                        .error(any(RecordType.class), any(AbstractBaseRecord.class), argThat(expectedFormat()));
             } else {
-                verify(report)
+                var verificationMode = atMostOnce();
+                verify(report, verificationMode)
                         .warning(
-                                any(RecordType.class), any(AbstractBaseRecord.class), argThat(expectedFormat()), any());
+                                any(RecordType.class),
+                                any(AbstractBaseRecord.class),
+                                argThat(expectedFormat()),
+                                any(Object[].class));
+                verify(report, verificationMode)
+                        .warning(any(RecordType.class), any(AbstractBaseRecord.class), argThat(expectedFormat()));
             }
         }
 

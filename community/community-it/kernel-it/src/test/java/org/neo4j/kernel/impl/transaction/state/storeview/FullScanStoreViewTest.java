@@ -249,9 +249,9 @@ class FullScanStoreViewTest {
         assertNotNull(lock1, "Lock[node=1] never acquired");
         InOrder order = inOrder(locks, lock0, lock1);
         order.verify(locks).acquireNodeLock(0, SHARED);
-        order.verify(lock0).release();
+        order.verify(lock0).close();
         order.verify(locks).acquireNodeLock(1, SHARED);
-        order.verify(lock1).release();
+        order.verify(lock1).close();
     }
 
     @Test
@@ -280,9 +280,9 @@ class FullScanStoreViewTest {
         assertNotNull(lock1, "Lock[relationship=" + sKnowsA.getId() + "] never acquired");
         InOrder order = inOrder(locks, lock0, lock1);
         order.verify(locks).acquireRelationshipLock(aKnowsS.getId(), SHARED);
-        order.verify(lock0).release();
+        order.verify(lock0).close();
         order.verify(locks).acquireRelationshipLock(sKnowsA.getId(), SHARED);
-        order.verify(lock1).release();
+        order.verify(lock1).close();
     }
 
     @Test

@@ -97,7 +97,7 @@ class DeferredConflictCheckingIndexUpdaterTest {
         ValueIndexReader reader = mock(ValueIndexReader.class);
         doAnswer(new NodeIdsIndexReaderQueryAnswer(descriptor, 101, 202))
                 .when(reader)
-                .query(any(), any(), any(), any(), any());
+                .query(any(), any(), any(), any(), any(PropertyIndexQuery[].class));
         DeferredConflictCheckingIndexUpdater updater =
                 new DeferredConflictCheckingIndexUpdater(actual, () -> reader, descriptor, NULL_CONTEXT);
 

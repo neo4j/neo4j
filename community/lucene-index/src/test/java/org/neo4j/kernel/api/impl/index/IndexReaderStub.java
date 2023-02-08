@@ -27,11 +27,13 @@ import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
@@ -41,10 +43,11 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.neo4j.internal.helpers.collection.MapUtil;
@@ -132,13 +135,23 @@ public class IndexReaderStub extends LeafReader {
     }
 
     @Override
-    public VectorValues getVectorValues(String field) {
+    public FloatVectorValues getFloatVectorValues(String s) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ByteVectorValues getByteVectorValues(String s) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public TopDocs searchNearestVectors(String field, float[] target, int k, Bits acceptDocs, int visitedLimit) {
         return null;
+    }
+
+    @Override
+    public TopDocs searchNearestVectors(String s, byte[] bytes, int i, Bits bits, int i1) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -204,6 +217,11 @@ public class IndexReaderStub extends LeafReader {
     }
 
     @Override
+    public TermVectors termVectors() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int numDocs() {
         return elements.length;
     }
@@ -216,6 +234,11 @@ public class IndexReaderStub extends LeafReader {
     @Override
     public void document(int docID, StoredFieldVisitor visitor) throws IOException {
         visitor.stringField(DUMMY_FIELD_INFO, String.valueOf(docID));
+    }
+
+    @Override
+    public StoredFields storedFields() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

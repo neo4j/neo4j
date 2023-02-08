@@ -85,7 +85,8 @@ class LenientStoreInputChunkTest {
             chunk.visitPropertyChainNoThrow(visitor, primitiveRecord, EntityType.NODE, new String[0]);
 
             // then
-            verify(readBehaviour).error(argThat(format -> format.contains("circular property chain")), any());
+            verify(readBehaviour)
+                    .error(argThat(format -> format.contains("circular property chain")), any(Object[].class));
         }
     }
 
@@ -145,7 +146,8 @@ class LenientStoreInputChunkTest {
             chunk.visitPropertyChainNoThrow(visitor, nodeRecord, EntityType.NODE, new String[0]);
 
             // then
-            verify(readBehaviour).error(argThat(format -> format.contains("Ignoring broken property chain.")), any());
+            verify(readBehaviour)
+                    .error(argThat(format -> format.contains("Ignoring broken property chain.")), any(Object[].class));
         }
     }
 

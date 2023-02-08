@@ -340,7 +340,7 @@ class DatabaseAvailabilityGuardTest {
     }
 
     private static void verifyLogging(InternalLog log, VerificationMode mode) {
-        verify(log, mode).info(anyString(), Mockito.<Object[]>any());
+        verify(log, mode).info(anyString(), Mockito.any(Object[].class));
     }
 
     private DatabaseAvailabilityGuard getDatabaseAvailabilityGuard(Clock clock, InternalLog log) {

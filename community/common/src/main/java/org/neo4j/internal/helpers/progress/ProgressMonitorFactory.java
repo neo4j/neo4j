@@ -84,7 +84,7 @@ public abstract class ProgressMonitorFactory {
     }
 
     public final MultiPartBuilder multipleParts(String process) {
-        return new MultiPartBuilder(this, process);
+        return new MultiPartBuilder(newIndicator(process));
     }
 
     public final ProgressListener singlePart(String process, long totalCount) {
@@ -97,8 +97,8 @@ public abstract class ProgressMonitorFactory {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
 
-        private MultiPartBuilder(ProgressMonitorFactory factory, String process) {
-            this.aggregator = new Aggregator(factory.newIndicator(process));
+        private MultiPartBuilder(Indicator indicator) {
+            this.aggregator = new Aggregator(indicator);
         }
 
         public ProgressListener progressForPart(String part, long totalCount) {
@@ -107,14 +107,6 @@ public abstract class ProgressMonitorFactory {
             ProgressListener.MultiPartProgressListener progress =
                     new ProgressListener.MultiPartProgressListener(aggregator, part, totalCount);
             aggregator.add(progress, totalCount);
-            return progress;
-        }
-
-        public ProgressListener progressForUnknownPart(String part) {
-            assertNotBuilt();
-            assertUniquePart(part);
-            ProgressListener progress = ProgressListener.NONE;
-            aggregator.add(progress, 0);
             return progress;
         }
 
@@ -132,7 +124,7 @@ public abstract class ProgressMonitorFactory {
 
         /**
          * Have to be called after all individual progresses have been added.
-         * @return a {@link Completer} which can be called do issue {@link ProgressListener#done()} for all individual progress parts.
+         * @return a {@link Completer} which can be called do issue {@link ProgressListener#close()} for all individual progress parts.
          */
         public Completer build() {
             Preconditions.checkState(aggregator != null, "Already built");
@@ -143,7 +135,7 @@ public abstract class ProgressMonitorFactory {
         }
 
         /**
-         * Can be called to invoke all individual {@link ProgressListener#done()}.
+         * Can be called to invoke all individual {@link ProgressListener#close()}.
          */
         public void done() {
             aggregator.done();
