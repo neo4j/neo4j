@@ -1051,6 +1051,7 @@
         <version>${neo4j-java-driver.version}</version>
         <scope>test</scope>
       </dependency>
+
       <dependency>
         <groupId>org.apache.directory.server</groupId>
         <artifactId>apacheds-server-integ</artifactId>
@@ -1180,6 +1181,13 @@
         <groupId>org.openjdk.jol</groupId>
         <artifactId>jol-core</artifactId>
         <version>0.16</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockftpserver</groupId>
+        <artifactId>MockFtpServer</artifactId>
+        <version>3.1.0</version>
         <scope>test</scope>
       </dependency>
 

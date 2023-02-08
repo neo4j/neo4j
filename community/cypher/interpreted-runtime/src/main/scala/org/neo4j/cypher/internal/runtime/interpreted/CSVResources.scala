@@ -160,7 +160,7 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
     val con =
       if (ipBlocklist.nonEmpty) {
-        WebURLAccessRule.checkUrlIncludingHops(url, ipBlocklist.asJava)
+        new WebURLAccessRule().checkUrlIncludingHops(url, ipBlocklist.asJava)
       } else {
         val newCon = url.openConnection()
         newCon.setRequestProperty(

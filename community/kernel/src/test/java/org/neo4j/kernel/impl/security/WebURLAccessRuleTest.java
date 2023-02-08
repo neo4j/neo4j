@@ -22,11 +22,12 @@ package org.neo4j.kernel.impl.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import inet.ipaddr.IPAddressString;
-import org.junit.jupiter.api.Test;
 
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -36,7 +37,9 @@ import java.net.URLStreamHandler;
 import java.util.List;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -48,40 +51,50 @@ class WebURLAccessRuleTest
     {
         final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.0/8" );
         final IPAddressString blockedIpv6Range = new IPAddressString( "0:0:0:0:0:0:0:1/8" );
-        final var urlAddresses = List.of( "http://localhost/test.csv", "https://localhost/test.csv", "ftp://localhost/test.csv", "http://[::1]/test.csv" );
+        final var urlAddresses = List.of(
+                "http://localhost/test.csv",
+                "https://localhost/test.csv",
+                "ftp://localhost/test.csv",
+                "http://[::1]/test.csv" );
 
         for ( var urlAddress : urlAddresses )
         {
             final URL url = new URL( urlAddress );
 
-            //set the config
-            final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range, blockedIpv6Range ) );
+            // set the config
+            final Config config = Config.defaults(
+                    GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range, blockedIpv6Range ) );
 
-            //execute the query
-            final var error = assertThrows( URLAccessValidationError.class, () ->
-                    URLAccessRules.webAccess().validate( config, url ) );
+            // execute the query
+            final var error = assertThrows( URLAccessValidationError.class, () -> URLAccessRules.webAccess()
+                                                                                                .validate( config, url ) );
 
-            //assert that the validation fails
-            assertThat( error.getMessage() ).contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
+            // assert that the validation fails
+            assertThat( error.getMessage() )
+                    .contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
         }
     }
 
     @Test
     void validationShouldPassWhenUrlIsNotWithinBlockedRange() throws MalformedURLException, URLAccessValidationError
     {
-        final var urlAddresses = List.of( "http://localhost/test.csv", "https://localhost/test.csv", "ftp://localhost/test.csv", "http://[::1]/test.csv" );
+        final var urlAddresses = List.of(
+                "http://localhost/test.csv",
+                "https://localhost/test.csv",
+                "ftp://localhost/test.csv",
+                "http://[::1]/test.csv" );
 
         for ( var urlAddress : urlAddresses )
         {
             final URL url = new URL( urlAddress );
 
-            //set the config
+            // set the config
             final Config config = Config.defaults();
 
-            //execute the query
+            // execute the query
             final var result = URLAccessRules.webAccess().validate( config, url );
 
-            //assert that the validation passes
+            // assert that the validation passes
             assert result == url;
         }
     }
@@ -92,15 +105,17 @@ class WebURLAccessRuleTest
         final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.1" );
         final URL url = new URL( "http://localhost/test.csv" );
 
-        //set the config
-        final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+        // set the config
+        final Config config =
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
 
-        //execute the query
-        final var error = assertThrows( URLAccessValidationError.class, () ->
-                URLAccessRules.webAccess().validate( config, url ) );
+        // execute the query
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate( config, url ) );
 
-        //assert that the validation fails
-        assertThat( error.getMessage() ).contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
+        // assert that the validation fails
+        assertThat( error.getMessage() )
+                .contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
     }
 
     @Test
@@ -110,14 +125,15 @@ class WebURLAccessRuleTest
         // The .invalid domain is always invalid, according to https://datatracker.ietf.org/doc/html/rfc2606#section-2
         final URL url = new URL( "http://always.invalid/test.csv" );
 
-        //set the config
-        final Config config = Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+        // set the config
+        final Config config =
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
 
-        //execute the query
-        final var error = assertThrows( URLAccessValidationError.class, () ->
-                URLAccessRules.webAccess().validate( config, url ) );
+        // execute the query
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate( config, url ) );
 
-        //assert that the validation fails
+        // assert that the validation fails
         assertThat( error.getMessage() ).contains( "Unable to verify access to always.invalid" );
     }
 
@@ -127,44 +143,9 @@ class WebURLAccessRuleTest
         final IPAddressString blockedIpv4Range = new IPAddressString( "127.0.0.1" );
 
         // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
-        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
-        when(connection.getResponseCode()).thenReturn(302);
-        when(connection.getHeaderField("Location" )).thenReturn("http://127.0.0.1" );
-
-        URLStreamHandler urlStreamHandler = new URLStreamHandler()
-        {
-            @Override
-            protected URLConnection openConnection( URL u )
-            {
-                return connection;
-            }
-        };
-
-        URL url = new URL( "http", "127.0.0.0", 8000, "", urlStreamHandler );
-
-        // set the config
-        final Config config =
-                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
-
-        // execute the query
-        final var error = assertThrows(
-                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
-
-        // assert that the validation fails
-        assertThat(error.getMessage())
-                .contains(
-                        "access to /127.0.0.1 is blocked via the configuration property unsupported.dbms.cypher_ip_blocklist");
-    }
-
-    @Test
-    void shouldNotFollowChangeInProtocols() throws Exception
-    {
-        final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
-
-        // Mock a redirect (response code 306) from a valid URL (127.0.0.0) to another URL
-        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
-        when(connection.getResponseCode()).thenReturn(306);
-        when(connection.getHeaderField("Location")).thenReturn("http://127.0.0.1");
+        HttpURLConnection connection = Mockito.mock( HttpURLConnection.class );
+        when( connection.getResponseCode() ).thenReturn( 302 );
+        when( connection.getHeaderField( "Location" ) ).thenReturn( "https://127.0.0.1" );
 
         URLStreamHandler urlStreamHandler = new URLStreamHandler()
         {
@@ -179,13 +160,48 @@ class WebURLAccessRuleTest
 
         // set the config
         final Config config =
-                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
 
         // execute the query
-        final var validatedURL = URLAccessRules.webAccess().validate(config, url);
+        final var error = assertThrows(
+                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate( config, url ) );
+
+        // assert that the validation fails
+        assertThat( error.getMessage() )
+                .contains(
+                        "access to /127.0.0.1 is blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
+    }
+
+    @Test
+    void shouldNotFollowChangeInProtocols() throws Exception
+    {
+        final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
+
+        // Mock a redirect (response code 306) from a valid URL (127.0.0.0) to another URL
+        HttpURLConnection connection = Mockito.mock( HttpURLConnection.class );
+        when( connection.getResponseCode() ).thenReturn( 306 );
+        when( connection.getHeaderField( "Location" ) ).thenReturn( "http://127.0.0.1" );
+
+        URLStreamHandler urlStreamHandler = new URLStreamHandler()
+        {
+            @Override
+            protected URLConnection openConnection( URL u )
+            {
+                return connection;
+            }
+        };
+
+        URL url = new URL( "https", "127.0.0.0", 8000, "", urlStreamHandler );
+
+        // set the config
+        final Config config =
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+
+        // execute the query
+        final var validatedURL = URLAccessRules.webAccess().validate( config, url );
 
         // assert that the url is the same, as the redirect was a change in protocol and shouldn't be followed
-        assertEquals(url, validatedURL);
+        assertEquals( url, validatedURL );
     }
 
     @Test
@@ -194,13 +210,13 @@ class WebURLAccessRuleTest
         final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
 
         // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
-        HttpURLConnection connectionA = Mockito.mock(HttpURLConnection.class);
-        when(connectionA.getResponseCode()).thenReturn(302);
-        when(connectionA.getHeaderField("Location" )).thenReturn("/b");
+        HttpURLConnection connectionA = Mockito.mock( HttpURLConnection.class );
+        when( connectionA.getResponseCode() ).thenReturn( 302 );
+        when( connectionA.getHeaderField( "Location" ) ).thenReturn( "/b" );
 
-        HttpURLConnection connectionB = Mockito.mock(HttpURLConnection.class);
-        when(connectionB.getResponseCode()).thenReturn(302);
-        when(connectionB.getHeaderField("Location" )).thenReturn("/a");
+        HttpURLConnection connectionB = Mockito.mock( HttpURLConnection.class );
+        when( connectionB.getResponseCode() ).thenReturn( 302 );
+        when( connectionB.getHeaderField( "Location" ) ).thenReturn( "/a" );
 
         MutableInt counter = new MutableInt( 0 );
         URLStreamHandler urlStreamHandler = new URLStreamHandler()
@@ -212,18 +228,87 @@ class WebURLAccessRuleTest
             }
         };
 
-        URL urlA = new URL( "http", "127.0.0.0", 8000, "/a", urlStreamHandler );
-        URL urlB = new URL( "http", "127.0.0.0", 8000, "/b", urlStreamHandler );
-        when(connectionA.getURL()).thenReturn(urlA);
-        when(connectionB.getURL()).thenReturn(urlB);
+        URL urlA = new URL( "https", "127.0.0.0", 8000, "/a", urlStreamHandler );
+        URL urlB = new URL( "https", "127.0.0.0", 8000, "/b", urlStreamHandler );
+        when( connectionA.getURL() ).thenReturn( urlA );
+        when( connectionB.getURL() ).thenReturn( urlB );
 
         // set the config
         final Config config =
-                Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
 
         // assert that the validation fails
-        assertThatThrownBy(() -> URLAccessRules.webAccess().validate(config, urlA))
-                .isInstanceOf(URLAccessValidationError.class)
-                .hasMessageContaining("Redirect limit exceeded");
+        assertThatThrownBy( () -> URLAccessRules.webAccess().validate( config, urlA ) )
+                .isInstanceOf( URLAccessValidationError.class )
+                .hasMessageContaining( "Redirect limit exceeded" );
+    }
+
+    @Test
+    void shouldPinIPsForHttpAndFtp() throws Exception
+    {
+        final IPAddressString blockedIpv4Range = new IPAddressString( "127.168.0.1" );
+        final URL httpUrl = new URL( "http://localhost/test.csv" );
+        final URL httpsUrl = new URL( "https://localhost/test.csv" );
+        final URL ftpUrl = new URL( "ftp://localhost/test.csv" );
+
+        // set the config
+        final Config config =
+                Config.defaults( GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of( blockedIpv4Range ) );
+
+        class TestWebURLAccessRule extends WebURLAccessRule
+        {
+            public boolean enteredIpPinning;
+
+            TestWebURLAccessRule()
+            {
+                enteredIpPinning = false;
+            }
+
+            @Override
+            protected URL substituteHostByIP( URL u, String ip )
+            {
+                enteredIpPinning = true;
+                return u;
+            }
+        }
+        var accessRule = new TestWebURLAccessRule();
+
+        // execute the query
+        assertThrows( URLAccessValidationError.class, () -> accessRule.validate( config, httpUrl ) );
+        assertTrue( accessRule.enteredIpPinning );
+
+        accessRule.enteredIpPinning = false;
+        accessRule.validate( config, ftpUrl );
+        assertTrue( accessRule.enteredIpPinning );
+
+        accessRule.enteredIpPinning = false;
+        assertThrows( URLAccessValidationError.class, () -> accessRule.validate( config, httpsUrl ) );
+        assertFalse( accessRule.enteredIpPinning );
+    }
+
+    @Test
+    void shouldSubstitueIpCorrectly() throws Exception
+    {
+        var accessRule = new WebURLAccessRule();
+        assertEquals(
+                "http://127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP( new URL( "http://localhost/test.csv" ), "127.0.0.1" )
+                        .toString() );
+        assertEquals(
+                "http://user:password@127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP( new URL( "http://user:password@localhost/test.csv" ), "127.0.0.1" )
+                        .toString() );
+        assertEquals(
+                "https://user:password@127.0.0.1/test.csv?a=b&c=d",
+                accessRule
+                        .substituteHostByIP( new URL( "https://user:password@localhost/test.csv?a=b&c=d" ), "127.0.0.1" )
+                        .toString() );
+        assertEquals(
+                "ftp://user:password@127.0.0.1/test.csv",
+                accessRule
+                        .substituteHostByIP( new URL( "ftp://user:password@localhost/test.csv" ), "127.0.0.1" )
+                        .toString() );
     }
 }

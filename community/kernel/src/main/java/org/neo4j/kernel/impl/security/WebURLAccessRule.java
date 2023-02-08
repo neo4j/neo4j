@@ -28,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -51,28 +52,65 @@ public class WebURLAccessRule implements URLAccessRule
         return agent + " Java/" + version;
     }
 
-    // This is used by APOC and thus needs to be public
+    @Deprecated( forRemoval = true )
     public static void checkNotBlocked( URL url, List<IPAddressString> blockedIpRanges ) throws Exception
     {
+        new WebURLAccessRule().checkNotBlockedAndPinToIP( url, blockedIpRanges );
+    }
+
+    // This is used by APOC and thus needs to be public
+    public URL checkNotBlockedAndPinToIP( URL url, List<IPAddressString> blockedIpRanges ) throws Exception
+    {
         InetAddress inetAddress = InetAddress.getByName( url.getHost() );
+        URL result = url;
 
         for ( var blockedIpRange : blockedIpRanges )
         {
             if ( blockedIpRange.contains( new IPAddressString( inetAddress.getHostAddress() ) ) )
             {
-                throw new URLAccessValidationError( "access to " + inetAddress + " is blocked via the configuration property "
-                                                    + GraphDatabaseInternalSettings.cypher_ip_blocklist.name() );
+                throw new URLAccessValidationError(
+                        "access to " + inetAddress + " is blocked via the configuration property "
+                        + GraphDatabaseInternalSettings.cypher_ip_blocklist.name() );
             }
         }
+
+        // If the address is a http or ftp one, we want to avoid an extra DNS lookup to avoid
+        // DNS spoofing. It is unlikely, but it could happen between the first DNS resolve above
+        // and the con.connect() below, in case we have the JVM dns cache disabled, or it
+        // expires in between this two calls. Thus, we substitute the resolved ip here
+        //
+        // In the case of https DNS spoofing is not possible. Source here:
+        // https://security.stackexchange.com/questions/94331/why-doesnt-dns-spoofing-work-against-https-sites
+        if ( url.getProtocol().equals( "http" ) || url.getProtocol().equals( "ftp" ) )
+        {
+            result = substituteHostByIP( url, inetAddress.getHostAddress() );
+        }
+
+        return result;
     }
 
-    public static HttpURLConnection checkUrlIncludingHops( URL url, List<IPAddressString> blockedIpRanges )
-            throws Exception
+    protected URL substituteHostByIP( URL u, String ip ) throws MalformedURLException
+    {
+        String s;
+        int port;
+        String newURLString = u.getProtocol() + "://"
+                              + ((s = u.getUserInfo()) != null && !s.isEmpty() ? s + '@' : "")
+                              + ((s = u.getHost()) != null && !s.isEmpty() ? ip : "")
+                              + ((port = u.getPort()) != u.getDefaultPort() && port > 0 ? ':' + Integer.toString( port ) : "")
+                              + ((s = u.getPath()) != null ? s : "")
+                              + ((s = u.getQuery()) != null ? '?' + s : "")
+                              + ((s = u.getRef()) != null ? '#' + s : "");
+
+        return new URL( newURLString );
+    }
+
+    public URLConnection checkUrlIncludingHops( URL url, List<IPAddressString> blockedIpRanges ) throws Exception
     {
         URL result = url;
-        boolean isRedirect;
+        boolean keepFollowingRedirects;
         int redirectLimit = REDIRECT_LIMIT;
-        HttpURLConnection con;
+        URLConnection urlCon;
+        HttpURLConnection httpCon;
 
         do
         {
@@ -80,49 +118,59 @@ public class WebURLAccessRule implements URLAccessRule
             // Otherwise, we could have situations like an internal ip, e.g. 10.0.0.1
             // is banned in the config, but it redirects to another different internal ip
             // and we would still have a security hole
-            checkNotBlocked( result, blockedIpRanges );
-            con = (HttpURLConnection) result.openConnection();
-            con.setRequestProperty("User-Agent", String.format("%s%s", LOAD_CSV_USER_AGENT_PREFIX, userAgent()));
-            con.setInstanceFollowRedirects( false );
-            con.connect();
-            con.getInputStream();
-            isRedirect = isRedirect(con.getResponseCode());
+            result = checkNotBlockedAndPinToIP( result, blockedIpRanges );
+            urlCon = result.openConnection();
 
-            if ( isRedirect )
+            if ( urlCon instanceof HttpURLConnection )
             {
-                if ( redirectLimit-- == 0 )
-                {
-                    con.disconnect();
-                    throw new IOException( "Redirect limit exceeded" );
-                }
-                String location = con.getHeaderField( "Location" );
+                httpCon = (HttpURLConnection) urlCon;
+                httpCon.setRequestProperty(
+                        "User-Agent", String.format( "%s%s", LOAD_CSV_USER_AGENT_PREFIX, userAgent() ) );
+                httpCon.setInstanceFollowRedirects( false );
+                httpCon.connect();
+                httpCon.getInputStream();
+                keepFollowingRedirects = isRedirect( httpCon.getResponseCode() );
 
-                if ( location == null )
+                if ( keepFollowingRedirects )
                 {
-                    con.disconnect();
-                    throw new IOException( "URL responded with a redirect but the location header was null" );
-                }
-
-                URL newUrl;
-                try
-                {
-                    newUrl = new URL( location );
-                    if ( !newUrl.getProtocol().equalsIgnoreCase(result.getProtocol()) )
+                    if ( redirectLimit-- == 0 )
                     {
-                        return con;
+                        httpCon.disconnect();
+                        throw new IOException( "Redirect limit exceeded" );
                     }
+                    String location = httpCon.getHeaderField( "Location" );
+
+                    if ( location == null )
+                    {
+                        httpCon.disconnect();
+                        throw new IOException( "URL responded with a redirect but the location header was null" );
+                    }
+
+                    URL newUrl;
+                    try
+                    {
+                        newUrl = new URL( location );
+                        if ( !newUrl.getProtocol().equalsIgnoreCase( result.getProtocol() ) )
+                        {
+                            return httpCon;
+                        }
+                    }
+                    catch ( MalformedURLException e )
+                    {
+                        // Try to use the location as a relative path, matches browser behaviour
+                        newUrl = new URL( httpCon.getURL(), location );
+                    }
+                    result = newUrl;
                 }
-                catch ( MalformedURLException e )
-                {
-                    // Try to use the location as a relative path, matches browser behaviour
-                    newUrl = new URL( con.getURL(), location );
-                }
-                result = newUrl;
+            }
+            else
+            {
+                keepFollowingRedirects = false;
             }
         }
-        while ( isRedirect );
+        while ( keepFollowingRedirects );
 
-        return con;
+        return urlCon;
     }
 
     private static boolean isRedirect( int responseCode )
@@ -139,8 +187,11 @@ public class WebURLAccessRule implements URLAccessRule
         {
             try
             {
-                HttpURLConnection con = checkUrlIncludingHops( url, blockedIpRanges );
-                con.disconnect();
+                URLConnection con = checkUrlIncludingHops( url, blockedIpRanges );
+                if ( con instanceof HttpURLConnection )
+                {
+                    ((HttpURLConnection) con).disconnect();
+                }
             }
             catch ( Exception e )
             {
