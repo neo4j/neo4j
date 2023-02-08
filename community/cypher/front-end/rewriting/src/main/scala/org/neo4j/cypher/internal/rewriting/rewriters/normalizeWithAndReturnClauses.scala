@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -251,13 +252,16 @@ case class normalizeWithAndReturnClauses(
       case Some(alias) if !existingAliases.valuesIterator.contains(expression) =>
         alias.copyId
       case _ =>
-        val newExpression = expression.endoRewrite(topDown(Rewriter.lift {
-          case subExpression: Expression =>
-            existingAliases.get(subExpression) match {
-              case Some(subAlias) if !existingAliases.valuesIterator.contains(subExpression) => subAlias.copyId
-              case _                                                                         => subExpression
-            }
-        }))
+        val newExpression = expression.endoRewrite(topDown(
+          Rewriter.lift {
+            case subExpression: Expression =>
+              existingAliases.get(subExpression) match {
+                case Some(subAlias) if !existingAliases.valuesIterator.contains(subExpression) => subAlias.copyId
+                case _                                                                         => subExpression
+              }
+          },
+          _.isInstanceOf[ScopeExpression]
+        ))
         newExpression
     }
   }

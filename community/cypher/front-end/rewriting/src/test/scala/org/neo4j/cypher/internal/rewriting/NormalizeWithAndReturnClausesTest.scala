@@ -251,6 +251,103 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     )
   }
 
+  test("RETURN: Existing alias's should not be used within scoped expressions, list comprehension") {
+    assertRewrite(
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY 1 IN [var0 IN [1,2] WHERE true]
+      """.stripMargin,
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY 1 IN [var0 IN [1,2] WHERE true]
+      """.stripMargin
+    )
+  }
+
+  test("RETURN: Existing alias's should not be used within scoped expressions, any iterable predicate expression") {
+    assertRewrite(
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY any(var0 IN [1, 2] WHERE true)
+      """.stripMargin,
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY any(var0 IN [1, 2] WHERE true)
+      """.stripMargin
+    )
+  }
+
+  test("RETURN: Existing alias's should not be used within scoped expressions, none iterable predicate expression") {
+    assertRewrite(
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY none(var0 IN [1, 2] WHERE true)
+      """.stripMargin,
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY none(var0 IN [1, 2] WHERE true)
+      """.stripMargin
+    )
+  }
+
+  test("WITH: Existing alias's should not be used within scoped expressions, list comprehension") {
+    assertRewrite(
+      """MATCH ()
+        |WITH true AS var0
+        |ORDER BY 1 IN [var0 IN [1,2] WHERE true]
+        |RETURN var0
+      """.stripMargin,
+      """MATCH ()
+        |WITH true AS var0
+        |ORDER BY 1 IN [var0 IN [1,2] WHERE true]
+        |RETURN var0 AS var0
+      """.stripMargin
+    )
+  }
+
+  test("WITH: Existing alias's should not be used within scoped expressions, any iterable predicate expression") {
+    assertRewrite(
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY any(var0 IN [1, 2] WHERE true)
+      """.stripMargin,
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY any(var0 IN [1, 2] WHERE true)
+      """.stripMargin
+    )
+  }
+
+  test("WITH: Existing alias's should not be used within scoped expressions, none iterable predicate expression") {
+    assertRewrite(
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY none(var0 IN [1, 2] WHERE true)
+      """.stripMargin,
+      """MATCH ()
+        |RETURN true AS var0
+        |ORDER BY none(var0 IN [1, 2] WHERE true)
+      """.stripMargin
+    )
+  }
+
+  test("WITH: attach ORDER BY expressions to existing aliases inside EXISTS subqueries") {
+    assertRewrite(
+      """RETURN EXISTS {
+        | MATCH (n)
+        | WITH n.prop AS prop
+        | ORDER BY n.prop RETURN prop
+        | } AS exists
+        |""".stripMargin,
+      """RETURN EXISTS {
+        | MATCH (n)
+        | WITH n.prop AS prop
+        | ORDER BY prop RETURN prop AS prop
+        | } AS exists
+        |""".stripMargin
+    )
+  }
+
   test("RETURN: attach ORDER BY expressions to existing aliases") {
     assertRewrite(
       """MATCH (n)
