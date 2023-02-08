@@ -934,33 +934,35 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       )
     )
 
-  def _labelExpression(entityType: Option[EntityType]): Gen[LabelExpression] = {
+  def _labelExpression(entityType: Option[EntityType], containsIs: Boolean): Gen[LabelExpression] = {
 
-    def _labelExpressionConjunction: Gen[LabelExpression.Conjunctions] = for {
-      lhs <- _labelExpression(entityType)
-      rhs <- _labelExpression(entityType)
-    } yield LabelExpression.Conjunctions.flat(lhs, rhs, pos)
+    def _labelExpressionConjunction(): Gen[LabelExpression.Conjunctions] = for {
+      lhs <- _labelExpression(entityType, containsIs)
+      rhs <- _labelExpression(entityType, containsIs)
+    } yield LabelExpression.Conjunctions.flat(lhs, rhs, pos, containsIs)
 
-    def _labelExpressionDisjunction: Gen[LabelExpression.Disjunctions] = for {
-      lhs <- _labelExpression(entityType)
-      rhs <- _labelExpression(entityType)
-    } yield LabelExpression.Disjunctions.flat(lhs, rhs, pos)
+    def _labelExpressionDisjunction(): Gen[LabelExpression.Disjunctions] = for {
+      lhs <- _labelExpression(entityType, containsIs)
+      rhs <- _labelExpression(entityType, containsIs)
+    } yield LabelExpression.Disjunctions.flat(lhs, rhs, pos, containsIs)
 
-    frequency(
-      5 -> oneOf[LabelExpression](
-        lzy(LabelExpression.Wildcard()(pos)),
-        lzy(entityType match {
-          case Some(NODE_TYPE)         => _labelName.map(Leaf(_))
-          case Some(RELATIONSHIP_TYPE) => _relTypeName.map(Leaf(_))
-          case None                    => _labelOrTypeName.map(Leaf(_))
-        })
-      ),
-      1 -> oneOf[LabelExpression](
-        lzy(_labelExpressionConjunction),
-        lzy(_labelExpressionDisjunction),
-        lzy(_labelExpression(entityType).map(LabelExpression.Negation(_)(pos)))
+    for {
+      labelExpr <- frequency(
+        5 -> oneOf[LabelExpression](
+          lzy(LabelExpression.Wildcard(containsIs)(pos)),
+          lzy(entityType match {
+            case Some(NODE_TYPE)         => _labelName.map(Leaf(_, containsIs))
+            case Some(RELATIONSHIP_TYPE) => _relTypeName.map(Leaf(_, containsIs))
+            case None                    => _labelOrTypeName.map(Leaf(_, containsIs))
+          })
+        ),
+        1 -> oneOf[LabelExpression](
+          lzy(_labelExpressionConjunction()),
+          lzy(_labelExpressionDisjunction()),
+          lzy(_labelExpression(entityType, containsIs).map(LabelExpression.Negation(_, containsIs)(pos)))
+        )
       )
-    )
+    } yield labelExpr
   }
 
   // PATTERNS
@@ -968,7 +970,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _nodePattern: Gen[NodePattern] = for {
     variable <- option(_variable)
-    labelExpression <- option(_labelExpression(Some(NODE_TYPE)))
+    containsIs <- boolean
+    labelExpression <- option(_labelExpression(Some(NODE_TYPE), containsIs))
     properties <- option(oneOf(_map, _parameter))
     predicate <- variable match {
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
@@ -990,7 +993,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _relationshipPattern: Gen[RelationshipPattern] = for {
     variable <- option(_variable)
-    labelExpression <- option(_labelExpression(Some(RELATIONSHIP_TYPE)))
+    containsIs <- boolean
+    labelExpression <- option(_labelExpression(Some(RELATIONSHIP_TYPE), containsIs))
     length <- option(option(_range))
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection

@@ -1167,37 +1167,37 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL labelConjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelConjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         throw new UnsupportedOperationException("labelConjunction is not a literal");
     }
 
     @Override
-    public NULL labelDisjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelDisjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         throw new UnsupportedOperationException("labelDisjunction is not a literal");
     }
 
     @Override
-    public NULL labelNegation(NULL p, NULL e) {
+    public NULL labelNegation(NULL p, NULL e, boolean containsIs) {
         throw new UnsupportedOperationException("labelNegation is not a literal");
     }
 
     @Override
-    public NULL labelWildcard(NULL p) {
+    public NULL labelWildcard(NULL p, boolean containsIs) {
         throw new UnsupportedOperationException("labelWildcard is not a literal");
     }
 
     @Override
-    public NULL labelLeaf(NULL p, String e, NULL entityType) {
+    public NULL labelLeaf(NULL p, String e, NULL entityType, boolean containsIs) {
         throw new UnsupportedOperationException("labelAtom is not a literal");
     }
 
     @Override
-    public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         throw new UnsupportedOperationException("labelColonConjunction is not a literal");
     }
 
     @Override
-    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         throw new UnsupportedOperationException("labelColonDisjunction is not a literal");
     }
 

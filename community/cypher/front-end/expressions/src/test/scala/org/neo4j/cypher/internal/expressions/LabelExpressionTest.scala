@@ -88,7 +88,7 @@ class LabelExpressionTest extends CypherFunSuite {
     val a = Leaf(LabelName("A")(pos))
     val b = Leaf(LabelName("B")(pos))
     val c = Leaf(LabelName("C")(pos))
-    val expr = Conjunctions.flat(a, ColonConjunction(b, c)(pos), pos)
+    val expr = Conjunctions.flat(a, ColonConjunction(b, c)(pos), pos, containsIs = false)
     expr.replaceColonSyntax shouldBe Conjunctions(Seq(a, b, c))(pos)
   }
 
@@ -96,7 +96,7 @@ class LabelExpressionTest extends CypherFunSuite {
     val a = Leaf(LabelName("A")(pos))
     val b = Leaf(LabelName("B")(pos))
     val c = Leaf(LabelName("C")(pos))
-    val expr = Disjunctions.flat(a, ColonDisjunction(b, c)(pos), pos)
+    val expr = Disjunctions.flat(a, ColonDisjunction(b, c)(pos), pos, containsIs = false)
     expr.replaceColonSyntax shouldBe Disjunctions(Seq(a, b, c))(pos)
   }
 

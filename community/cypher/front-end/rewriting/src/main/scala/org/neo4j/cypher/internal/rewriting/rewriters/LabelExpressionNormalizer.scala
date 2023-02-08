@@ -71,18 +71,18 @@ case class LabelExpressionNormalizer(entityExpression: Expression, entityType: O
         .reduceRight((a, b) => Or(a, b)(a.position))
 
     // in a node pattern
-    case Leaf(name: LabelName) =>
+    case Leaf(name: LabelName, _) =>
       HasLabels(copy(entityExpression), Seq(name))(name.position)
 
     // in a label expression predicate
-    case Leaf(name: LabelOrRelTypeName) =>
+    case Leaf(name: LabelOrRelTypeName, _) =>
       HasLabelsOrTypes(copy(entityExpression), Seq(name))(name.position)
 
     // in a relationship pattern
-    case Leaf(name: RelTypeName) =>
+    case Leaf(name: RelTypeName, _) =>
       HasTypes(copy(entityExpression), Seq(name))(name.position)
 
-    case leaf @ Leaf(_) =>
+    case leaf @ Leaf(_, _) =>
       throw new IllegalArgumentException(
         s"Unexpected non-implemented label expression leaf $leaf when rewriting label expressions"
       )

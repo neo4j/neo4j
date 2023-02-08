@@ -28,45 +28,90 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
   private val labelExpressions = Seq(
     (
       "A",
-      labelLeaf("A"),
-      labelRelTypeLeaf("A"),
-      labelOrRelTypeLeaf("A")
+      labelLeaf("A", containsIs = true),
+      labelRelTypeLeaf("A", containsIs = true),
+      labelOrRelTypeLeaf("A", containsIs = true)
     ),
     (
       "A&B",
-      labelConjunction(labelLeaf("A"), labelLeaf("B")),
-      labelConjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B")),
-      labelConjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))
+      labelConjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
+      labelConjunction(
+        labelRelTypeLeaf("A", containsIs = true),
+        labelRelTypeLeaf("B", containsIs = true),
+        containsIs = true
+      ),
+      labelConjunction(
+        labelOrRelTypeLeaf("A", containsIs = true),
+        labelOrRelTypeLeaf("B", containsIs = true),
+        containsIs = true
+      )
     ),
     (
       "A|B",
-      labelDisjunction(labelLeaf("A"), labelLeaf("B")),
-      labelDisjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B")),
-      labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))
+      labelDisjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
+      labelDisjunction(
+        labelRelTypeLeaf("A", containsIs = true),
+        labelRelTypeLeaf("B", containsIs = true),
+        containsIs = true
+      ),
+      labelDisjunction(
+        labelOrRelTypeLeaf("A", containsIs = true),
+        labelOrRelTypeLeaf("B", containsIs = true),
+        containsIs = true
+      )
     ),
     (
       "%",
-      labelWildcard(),
-      labelWildcard(),
-      labelWildcard()
+      labelWildcard(containsIs = true),
+      labelWildcard(containsIs = true),
+      labelWildcard(containsIs = true)
     ),
     (
       "!A",
-      labelNegation(labelLeaf("A")),
-      labelNegation(labelRelTypeLeaf("A")),
-      labelNegation(labelOrRelTypeLeaf("A"))
+      labelNegation(labelLeaf("A", containsIs = true), containsIs = true),
+      labelNegation(labelRelTypeLeaf("A", containsIs = true), containsIs = true),
+      labelNegation(labelOrRelTypeLeaf("A", containsIs = true), containsIs = true)
     ),
     (
       "!(A|B)",
-      labelNegation(labelDisjunction(labelLeaf("A"), labelLeaf("B"))),
-      labelNegation(labelDisjunction(labelRelTypeLeaf("A"), labelRelTypeLeaf("B"))),
-      labelNegation(labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B")))
+      labelNegation(
+        labelDisjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
+        containsIs = true
+      ),
+      labelNegation(
+        labelDisjunction(
+          labelRelTypeLeaf("A", containsIs = true),
+          labelRelTypeLeaf("B", containsIs = true),
+          containsIs = true
+        ),
+        containsIs = true
+      ),
+      labelNegation(
+        labelDisjunction(
+          labelOrRelTypeLeaf("A", containsIs = true),
+          labelOrRelTypeLeaf("B", containsIs = true),
+          containsIs = true
+        ),
+        containsIs = true
+      )
     ),
     (
       "A&!B",
-      labelConjunction(labelLeaf("A"), labelNegation(labelLeaf("B"))),
-      labelConjunction(labelRelTypeLeaf("A"), labelNegation(labelRelTypeLeaf("B"))),
-      labelConjunction(labelOrRelTypeLeaf("A"), labelNegation(labelOrRelTypeLeaf("B")))
+      labelConjunction(
+        labelLeaf("A", containsIs = true),
+        labelNegation(labelLeaf("B", containsIs = true), containsIs = true),
+        containsIs = true
+      ),
+      labelConjunction(
+        labelRelTypeLeaf("A", containsIs = true),
+        labelNegation(labelRelTypeLeaf("B", containsIs = true), containsIs = true),
+        containsIs = true
+      ),
+      labelConjunction(
+        labelOrRelTypeLeaf("A", containsIs = true),
+        labelNegation(labelOrRelTypeLeaf("B", containsIs = true), containsIs = true),
+        containsIs = true
+      )
     )
   )
 
@@ -117,6 +162,39 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         )
       }
 
+      // CREATE + MERGE, these should parse but will be disallowed in semantic checking,
+      // in a similar fashion as the label expressions
+
+      test(s"CREATE ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+        gives(
+          singleQuery(
+            create(
+              nodePat(
+                maybeVariableAst,
+                Some(exprAstNode),
+                maybePropertiesAst,
+                maybeWhereAst
+              )
+            )
+          )
+        )
+      }
+
+      test(s"MERGE ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+        gives(
+          singleQuery(
+            merge(
+              nodePat(
+                maybeVariableAst,
+                Some(exprAstNode),
+                maybePropertiesAst,
+                maybeWhereAst
+              )
+            )
+          )
+        )
+      }
+
       for {
         (maybePathLength, maybePathLengthAst) <- pathLength
       } yield {
@@ -148,6 +226,49 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
           gives(
             singleQuery(
               optionalMatch(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
+
+        // CREATE + MERGE, these should parse but will be disallowed in semantic checking,
+        // in a similar fashion as the label expressions
+
+        test(s"CREATE ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+          gives(
+            singleQuery(
+              create(
+                relationshipChain(
+                  nodePat(),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )
+        }
+
+        test(s"MERGE ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+          gives(
+            singleQuery(
+              merge(
                 relationshipChain(
                   nodePat(),
                   relPat(
@@ -377,11 +498,25 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
               None,
               Some(literalInt(-1)),
               (
-                labelExpressionPredicate("n", labelConjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))),
+                labelExpressionPredicate(
+                  "n",
+                  labelConjunction(
+                    labelOrRelTypeLeaf("A", containsIs = true),
+                    labelOrRelTypeLeaf("B", containsIs = true),
+                    containsIs = true
+                  )
+                ),
                 literalInt(1)
               ),
               (
-                labelExpressionPredicate("r", labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B"))),
+                labelExpressionPredicate(
+                  "r",
+                  labelDisjunction(
+                    labelOrRelTypeLeaf("A", containsIs = true),
+                    labelOrRelTypeLeaf("B", containsIs = true),
+                    containsIs = true
+                  )
+                ),
                 literalInt(2)
               )
             ),
@@ -400,7 +535,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         match_(
           nodePat(
             Some("n"),
-            Some(labelLeaf("IS"))
+            Some(labelLeaf("IS", containsIs = true))
           )
         )
       )
@@ -426,7 +561,11 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         match_(
           nodePat(
             Some("WHERE"),
-            labelExpression = Some(labelDisjunction(labelLeaf("IS"), labelLeaf("WHERE"))),
+            labelExpression = Some(labelDisjunction(
+              labelLeaf("IS", containsIs = true),
+              labelLeaf("WHERE", containsIs = true),
+              containsIs = true
+            )),
             predicates = Some(equals(prop("WHERE", "IS"), prop("IS", "WHERE")))
           )
         )
@@ -442,7 +581,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             nodePat(),
             relPat(
               Some("r"),
-              Some(labelRelTypeLeaf("IS"))
+              Some(labelRelTypeLeaf("IS", containsIs = true))
             ),
             nodePat()
           )
@@ -476,7 +615,11 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             nodePat(),
             relPat(
               Some("WHERE"),
-              labelExpression = Some(labelDisjunction(labelRelTypeLeaf("IS"), labelRelTypeLeaf("WHERE"))),
+              labelExpression = Some(labelDisjunction(
+                labelRelTypeLeaf("IS", containsIs = true),
+                labelRelTypeLeaf("WHERE", containsIs = true),
+                containsIs = true
+              )),
               predicates = Some(equals(prop("WHERE", "IS"), prop("IS", "WHERE")))
             ),
             nodePat()
@@ -491,7 +634,10 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(Some("n")),
-          where = Some(where(and(labelExpressionPredicate("n", labelOrRelTypeLeaf("NOT")), isNotNull(varFor("n")))))
+          where = Some(where(and(
+            labelExpressionPredicate("n", labelOrRelTypeLeaf("NOT", containsIs = true)),
+            isNotNull(varFor("n"))
+          )))
         )
       )
     )
@@ -527,7 +673,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         match_(
           nodePat(
             Some("n"),
-            labelExpression = Some(labelLeaf("NULL")),
+            labelExpression = Some(labelLeaf("NULL", containsIs = true)),
             predicates = Some(isNull(varFor("n")))
           )
         )
@@ -577,7 +723,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
             nodePat(),
             relPat(
               Some("r"),
-              labelExpression = Some(labelRelTypeLeaf("NULL")),
+              labelExpression = Some(labelRelTypeLeaf("NULL", containsIs = true)),
               predicates = Some(isNull(varFor("r")))
             ),
             nodePat()
@@ -608,4 +754,21 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
     failsToParse
   }
 
+  test("Should not allow IS for SET label") {
+    val query =
+      """MATCH (n)
+        |SET n IS Label
+        |RETURN n""".stripMargin
+
+    assertFailsWithMessage(query, "Invalid input 'IS': expected \":\" (line 2, column 7 (offset: 16))")
+  }
+
+  test("Should not allow IS for REMOVE label") {
+    val query =
+      """MATCH (n)
+        |REMOVE n IS Label
+        |RETURN n""".stripMargin
+
+    assertFailsWithMessage(query, "Invalid input 'IS': expected \":\" (line 2, column 10 (offset: 19))")
+  }
 }

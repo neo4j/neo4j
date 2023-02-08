@@ -269,13 +269,13 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
 
   private[rewriters] def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
     expression match {
-      case Conjunctions(children)               => ands(children, relType)
-      case ColonConjunction(lhs, rhs)           => ands(Seq(lhs, rhs), relType)
-      case Disjunctions(children)               => ors(children, relType)
-      case ColonDisjunction(lhs, rhs)           => ors(Seq(lhs, rhs), relType)
-      case Negation(e)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
-      case Wildcard()                           => TailCalls.done(true)
-      case Leaf(expressionRelType: RelTypeName) => TailCalls.done(expressionRelType == relType)
+      case Conjunctions(children, _)               => ands(children, relType)
+      case ColonConjunction(lhs, rhs, _)           => ands(Seq(lhs, rhs), relType)
+      case Disjunctions(children, _)               => ors(children, relType)
+      case ColonDisjunction(lhs, rhs, _)           => ors(Seq(lhs, rhs), relType)
+      case Negation(e, _)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
+      case Wildcard(_)                             => TailCalls.done(true)
+      case Leaf(expressionRelType: RelTypeName, _) => TailCalls.done(expressionRelType == relType)
       case x =>
         throw new IllegalArgumentException(s"Unexpected label expression $x when evaluating relationship overlap")
     }

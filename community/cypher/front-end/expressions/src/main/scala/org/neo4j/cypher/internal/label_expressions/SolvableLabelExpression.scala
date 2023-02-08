@@ -120,21 +120,21 @@ object SolvableLabelExpression {
 
   private def extractLabelExpressionRec(labelExpression: LabelExpression): TailRec[SolvableLabelExpression] =
     labelExpression match {
-      case Wildcard() =>
+      case Wildcard(_) =>
         TailCalls.done(SolvableLabelExpression.wildcard)
-      case Leaf(label) =>
+      case Leaf(label, _) =>
         TailCalls.done(SolvableLabelExpression.label(label.name))
-      case Negation(not: LabelExpression) =>
+      case Negation(not: LabelExpression, _) =>
         TailCalls.tailcall(extractLabelExpressionRec(not)).map(_.not)
-      case ColonConjunction(lhs: LabelExpression, rhs: LabelExpression) =>
+      case ColonConjunction(lhs: LabelExpression, rhs: LabelExpression, _) =>
         TailCallsUtil.map2(extractLabelExpressionRec(lhs), extractLabelExpressionRec(rhs))(_.and(_))
-      case Conjunctions(conjointExpressions: Seq[LabelExpression]) =>
+      case Conjunctions(conjointExpressions: Seq[LabelExpression], _) =>
         TailCallsUtil.traverse(conjointExpressions.toList)(le => extractLabelExpressionRec(le)).map(
           _.reduceLeft(_.and(_))
         )
-      case ColonDisjunction(lhs: LabelExpression, rhs: LabelExpression) =>
+      case ColonDisjunction(lhs: LabelExpression, rhs: LabelExpression, _) =>
         TailCallsUtil.map2(extractLabelExpressionRec(lhs), extractLabelExpressionRec(rhs))(_.or(_))
-      case Disjunctions(disjointExpressions: Seq[LabelExpression]) =>
+      case Disjunctions(disjointExpressions: Seq[LabelExpression], _) =>
         TailCallsUtil.traverse(disjointExpressions.toList)(le => extractLabelExpressionRec(le)).map(
           _.reduceLeft(_.or(_))
         )

@@ -2551,34 +2551,35 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
 LABEL_EXPRESSION LabelExpression( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e;
+    boolean containsIs;
 }
 {
-    (":" | <IS>)  (
+    (":" {containsIs = false;} | <IS> {containsIs = true;})  (
             LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
-            e = LabelExpression4ExpectingBar(type)
+            e = LabelExpression4ExpectingBar(type, containsIs)
             |
             LOOKAHEAD({ labelExpressionStack.isEmpty() || labelExpressionStack.peek() == ExpectBar.DO_NOT_EXPECT_BAR})
-            e = LabelExpression4(type)
+            e = LabelExpression4(type, containsIs)
         )
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type ) :
+LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type, boolean containsIs ) :
 {
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression3(type) (
+    e=LabelExpression3(type, containsIs) (
         LOOKAHEAD(2)
         t=<BAR>
         (
-            ":" temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp ); }
+            ":" temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
         |
-            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
+            temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
         )
     )*
     {
@@ -2586,22 +2587,22 @@ LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type ) :
     }
 }
 
-LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type ) :
+LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type, boolean containsIs ) :
 {
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression3(type) (
+    e=LabelExpression3(type, containsIs) (
         LOOKAHEAD(
             <BAR> (":")? LabelExpression3() <BAR>
         )
         t=<BAR>
         (
-            ":" temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp ); }
+            ":" temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
         |
-            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
+            temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
         )
     )*
     {
@@ -2609,20 +2610,20 @@ LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type ) :
     }
 }
 
-LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type ) :
+LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type, boolean containsIs ) :
 {
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression2(type)
+    e=LabelExpression2(type, containsIs)
     (
         LOOKAHEAD(2)
         (
-            t=<AMPERSAND> temp=LabelExpression2(type) { e = astFactory.labelConjunction( pos( t ), e, temp ); }
+            t=<AMPERSAND> temp=LabelExpression2(type, containsIs) { e = astFactory.labelConjunction( pos( t ), e, temp, containsIs ); }
         |
-            t=":" temp=LabelExpression2(type) { e = astFactory.labelColonConjunction( pos( t ), e, temp ); }
+            t=":" temp=LabelExpression2(type, containsIs) { e = astFactory.labelColonConjunction( pos( t ), e, temp, containsIs ); }
         )
     )*
     {
@@ -2630,22 +2631,22 @@ LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type ) :
     }
 }
 
-LABEL_EXPRESSION LabelExpression2( ENTITY_TYPE type ) :
+LABEL_EXPRESSION LabelExpression2( ENTITY_TYPE type, boolean containsIs ) :
 {
     Token t;
     LABEL_EXPRESSION e;
 }
 {
     (
-        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2(type) { e = astFactory.labelNegation( pos( t ), e ); }
-        | e=LabelExpression1(type)
+        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2(type, containsIs) { e = astFactory.labelNegation( pos( t ), e, containsIs ); }
+        | e=LabelExpression1(type, containsIs)
     )
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
+LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type, boolean containsIs ) :
 {
     LABEL_EXPRESSION e = null;
     String label = null;
@@ -2654,9 +2655,9 @@ LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
 }
 {
     (
-        <LPAREN> e=LabelExpression4(type) <RPAREN>
-        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ) ); }
-        | t=SymbolicNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type ); }
+        <LPAREN> e=LabelExpression4(type, containsIs) <RPAREN>
+        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ), containsIs ); }
+        | t=SymbolicNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type, containsIs ); }
     )
     {
         labelExpressionStack.pop();

@@ -521,43 +521,64 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
 
-  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
-    labelConjunctions(Seq(lhs, rhs), position)
+  def labelConjunction(
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression =
+    labelConjunctions(Seq(lhs, rhs), position, containsIs)
 
-  def labelConjunctions(children: Seq[LabelExpression], position: InputPosition = pos): LabelExpression =
-    LabelExpression.Conjunctions(children)(position)
+  def labelConjunctions(
+    children: Seq[LabelExpression],
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression =
+    LabelExpression.Conjunctions(children, containsIs)(position)
 
   def labelColonConjunction(
     lhs: LabelExpression,
     rhs: LabelExpression,
-    position: InputPosition = pos
-  ): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs)(position)
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs, containsIs)(position)
 
-  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
-    labelDisjunctions(Seq(lhs, rhs), position)
+  def labelDisjunction(
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression =
+    labelDisjunctions(Seq(lhs, rhs), position, containsIs)
 
-  def labelDisjunctions(children: Seq[LabelExpression], position: InputPosition = pos): LabelExpression =
-    LabelExpression.Disjunctions(children)(position)
+  def labelDisjunctions(
+    children: Seq[LabelExpression],
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression =
+    LabelExpression.Disjunctions(children, containsIs)(position)
 
   def labelColonDisjunction(
     lhs: LabelExpression,
     rhs: LabelExpression,
-    position: InputPosition = pos
-  ): LabelExpression = LabelExpression.ColonDisjunction(lhs, rhs)(position)
+    position: InputPosition = pos,
+    containsIs: Boolean = false
+  ): LabelExpression = LabelExpression.ColonDisjunction(lhs, rhs, containsIs)(position)
 
-  def labelNegation(e: LabelExpression, position: InputPosition = pos): LabelExpression =
-    LabelExpression.Negation(e)(position)
+  def labelNegation(e: LabelExpression, position: InputPosition = pos, containsIs: Boolean = false): LabelExpression =
+    LabelExpression.Negation(e, containsIs)(position)
 
-  def labelWildcard(position: InputPosition = pos): LabelExpression = LabelExpression.Wildcard()(position)
+  def labelWildcard(position: InputPosition = pos, containsIs: Boolean = false): LabelExpression =
+    LabelExpression.Wildcard(containsIs)(position)
 
-  def labelLeaf(name: String, position: InputPosition = pos): LabelExpression =
-    Leaf(LabelName(name)(position))
+  def labelLeaf(name: String, position: InputPosition = pos, containsIs: Boolean = false): LabelExpression =
+    Leaf(LabelName(name)(position), containsIs)
 
-  def labelRelTypeLeaf(name: String, position: InputPosition = pos): LabelExpression =
-    Leaf(RelTypeName(name)(position))
+  def labelRelTypeLeaf(name: String, position: InputPosition = pos, containsIs: Boolean = false): LabelExpression =
+    Leaf(RelTypeName(name)(position), containsIs)
 
-  def labelOrRelTypeLeaf(name: String, position: InputPosition = pos): LabelExpression =
-    Leaf(LabelOrRelTypeName(name)(position))
+  def labelOrRelTypeLeaf(name: String, position: InputPosition = pos, containsIs: Boolean = false): LabelExpression =
+    Leaf(LabelOrRelTypeName(name)(position), containsIs)
 
   def labelExpressionPredicate(v: String, labelExpression: LabelExpression): LabelExpressionPredicate =
     labelExpressionPredicate(varFor(v), labelExpression)

@@ -45,7 +45,7 @@ class IsWhereRelationshipPatternParserTest extends JavaccParserAstTestBase[Relat
         gives(
           relPat(
             maybeVariableName,
-            labelExpression = Some(labelRelTypeLeaf(isOrWhere))
+            labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true))
           )
         )
       }
@@ -66,7 +66,7 @@ class IsWhereRelationshipPatternParserTest extends JavaccParserAstTestBase[Relat
           gives(
             relPat(
               maybeVariableName,
-              labelExpression = Some(labelRelTypeLeaf(isOrWhere)),
+              labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),
               predicates = Some(varFor(isOrWhere2))
             )
           )
@@ -76,7 +76,10 @@ class IsWhereRelationshipPatternParserTest extends JavaccParserAstTestBase[Relat
           gives(
             relPat(
               maybeVariableName,
-              predicates = Some(LabelExpressionPredicate(varFor(isOrWhere), labelOrRelTypeLeaf(isOrWhere2))(pos))
+              predicates = Some(LabelExpressionPredicate(
+                varFor(isOrWhere),
+                labelOrRelTypeLeaf(isOrWhere2, containsIs = true)
+              )(pos))
             )
           )
         }
@@ -96,8 +99,11 @@ class IsWhereRelationshipPatternParserTest extends JavaccParserAstTestBase[Relat
             gives(
               relPat(
                 maybeVariableName,
-                labelExpression = Some(labelRelTypeLeaf(isOrWhere)),
-                predicates = Some(LabelExpressionPredicate(varFor(isOrWhere2), labelOrRelTypeLeaf(isOrWhere3))(pos))
+                labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),
+                predicates = Some(LabelExpressionPredicate(
+                  varFor(isOrWhere2),
+                  labelOrRelTypeLeaf(isOrWhere3, containsIs = true)
+                )(pos))
               )
             )
           }

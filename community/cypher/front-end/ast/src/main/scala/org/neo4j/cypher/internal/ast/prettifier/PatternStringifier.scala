@@ -76,7 +76,10 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
 
     val labelExpression =
       nodePattern.labelExpression
-        .map(le => s":${expr.stringifyLabelExpression(le)}")
+        .map(le => {
+          val isOrColon = if (le.containsIs) " IS " else ":"
+          s"$isOrColon${expr.stringifyLabelExpression(le)}"
+        })
 
     val body =
       concatenate(
@@ -104,7 +107,10 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
 
     val labelExpression =
       relationship.labelExpression
-        .map(le => s":${expr.stringifyLabelExpression(le)}")
+        .map(le => {
+          val isOrColon = if (le.containsIs) " IS " else ":"
+          s"$isOrColon${expr.stringifyLabelExpression(le)}"
+        })
 
     val length = relationship.length match {
       case None              => None

@@ -160,7 +160,7 @@ class ResolveTokensTest extends CypherFunSuite {
               NodePattern(None, None, None, None),
               RelationshipPattern(
                 None,
-                Some(Leaf(relTypeToken: RelTypeName)),
+                Some(Leaf(relTypeToken: RelTypeName, _)),
                 None,
                 None,
                 None,
@@ -194,7 +194,7 @@ class ResolveTokensTest extends CypherFunSuite {
               NodePattern(None, None, None, None),
               RelationshipPattern(
                 None,
-                Some(Leaf(relTypeToken: RelTypeName)),
+                Some(Leaf(relTypeToken: RelTypeName, _)),
                 None,
                 None,
                 None,

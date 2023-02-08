@@ -396,8 +396,8 @@ object ClauseConverters {
 
   private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] =
     labelExpression.collect {
-      case Leaf(labelName: LabelName) => Set(labelName)
-      case ColonConjunction(lhs, rhs) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
+      case Leaf(labelName: LabelName, _) => Set(labelName)
+      case ColonConjunction(lhs, rhs, _) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
     }.getOrElse(Set.empty)
 
   private def dedup(nodePatterns: Vector[CreateNodeCommand]) = {
@@ -437,7 +437,7 @@ object ClauseConverters {
       // Semantic checking enforces types.size == 1
       case RelationshipChain(
           leftNode @ NodePattern(Some(leftVar), _, _, _),
-          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName)), _, properties, _, direction),
+          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName, _)), _, properties, _, direction),
           rightNode @ NodePattern(Some(rightVar), _, _, _)
         ) =>
         (
@@ -456,7 +456,7 @@ object ClauseConverters {
       // CREATE ()->[:R]->()-[:R]->...->()
       case RelationshipChain(
           left,
-          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName)), _, properties, _, direction),
+          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName, _)), _, properties, _, direction),
           rightNode @ NodePattern(Some(rightVar), _, _, _)
         ) =>
         val (nodes, rels) = allCreatePatterns(left)

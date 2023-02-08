@@ -185,8 +185,8 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
     partition: LabelExpressionsPartition
   ): LabelExpressionsPartition = {
     labelExpression match {
-      case _: Leaf                                                                    => partition
-      case Disjunctions(children) if !isNode && children.forall(_.isInstanceOf[Leaf]) => partition
+      case _: Leaf                                                                       => partition
+      case Disjunctions(children, _) if !isNode && children.forall(_.isInstanceOf[Leaf]) => partition
       case x if isNode && x.containsGpmSpecificLabelExpression    => partition.copy(gpm = partition.gpm + x)
       case x if !isNode && x.containsGpmSpecificRelTypeExpression => partition.copy(gpm = partition.gpm + x)
       case x                                                      => partition.copy(legacy = partition.legacy + x)
@@ -372,7 +372,7 @@ trait SingleRelTypeCheck {
           s"Exactly one relationship type must be specified for ${self.name}. Did you forget to prefix your relationship type with a ':'?",
           rel.position
         )
-      case Some(Leaf(RelTypeName(_))) => success
+      case Some(Leaf(RelTypeName(_), _)) => success
       case Some(other) =>
         val types = other.flatten.distinct
         val (maybePlain, exampleString) =

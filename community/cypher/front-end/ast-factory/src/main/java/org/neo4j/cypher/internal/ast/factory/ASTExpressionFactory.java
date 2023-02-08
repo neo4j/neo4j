@@ -86,19 +86,19 @@ public interface ASTExpressionFactory<
 
     EXPRESSION and(POS p, EXPRESSION lhs, EXPRESSION rhs);
 
-    LABEL_EXPRESSION labelConjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
+    LABEL_EXPRESSION labelConjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs, boolean containsIs);
 
-    LABEL_EXPRESSION labelDisjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
+    LABEL_EXPRESSION labelDisjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs, boolean containsIs);
 
-    LABEL_EXPRESSION labelNegation(POS p, LABEL_EXPRESSION e);
+    LABEL_EXPRESSION labelNegation(POS p, LABEL_EXPRESSION e, boolean containsIs);
 
-    LABEL_EXPRESSION labelWildcard(POS p);
+    LABEL_EXPRESSION labelWildcard(POS p, boolean containsIs);
 
-    LABEL_EXPRESSION labelLeaf(POS p, String e, ENTITY_TYPE entityType);
+    LABEL_EXPRESSION labelLeaf(POS p, String e, ENTITY_TYPE entityType, boolean containsIs);
 
-    LABEL_EXPRESSION labelColonConjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
+    LABEL_EXPRESSION labelColonConjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs, boolean containsIs);
 
-    LABEL_EXPRESSION labelColonDisjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
+    LABEL_EXPRESSION labelColonDisjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs, boolean containsIs);
 
     EXPRESSION labelExpressionPredicate(EXPRESSION subject, LABEL_EXPRESSION exp);
 

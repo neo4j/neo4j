@@ -192,37 +192,37 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL labelConjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelConjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelDisjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelDisjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelNegation(NULL p, NULL e) {
+    public NULL labelNegation(NULL p, NULL e, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelWildcard(NULL p) {
+    public NULL labelWildcard(NULL p, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelLeaf(NULL p, String e, NULL entityType) {
+    public NULL labelLeaf(NULL p, String e, NULL entityType, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         return null;
     }
 
     @Override
-    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs) {
+    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs, boolean containsIs) {
         return null;
     }
 

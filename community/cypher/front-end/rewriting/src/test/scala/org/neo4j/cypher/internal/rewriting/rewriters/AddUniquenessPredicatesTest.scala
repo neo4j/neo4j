@@ -493,9 +493,9 @@ class AddUniquenessPredicatesPropertyTest extends CypherFunSuite with CypherScal
     def size(le: LabelExpression): Long = le match {
       case le: BinaryLabelExpression        => size(le.lhs) + size(le.rhs) + 1
       case le: MultiOperatorLabelExpression => le.children.map(size).sum + 1
-      case Negation(e)                      => 1 + size(e)
-      case Wildcard()                       => 1
-      case Leaf(_)                          => 1
+      case Negation(e, _)                   => 1 + size(e)
+      case Wildcard(_)                      => 1
+      case Leaf(_, _)                       => 1
     }
 
     var seed = org.scalacheck.rng.Seed.random()

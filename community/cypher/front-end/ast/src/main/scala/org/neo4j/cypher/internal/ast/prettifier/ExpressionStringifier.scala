@@ -525,9 +525,9 @@ private class DefaultExpressionStringifier(
   }
 
   private def stringifyLabelExpressionAtom(labelExpression: LabelExpression): String = labelExpression match {
-    case Leaf(name)  => apply(name)
-    case _: Wildcard => s"%"
-    case le          => s"(${stringifyLabelExpression(le)})"
+    case Leaf(name, _) => apply(name)
+    case _: Wildcard   => s"%"
+    case le            => s"(${stringifyLabelExpression(le)})"
   }
 }
 

@@ -51,7 +51,9 @@ class PatternComprehensionParserTest extends JavaccParserAstTestBase[Statement] 
                 relationshipChain(
                   nodePat(
                     if (maybeVariable.equals("")) None else Some(maybeVariable),
-                    if (maybeLabelExpr.equals("")) None else Some(labelLeaf("A")),
+                    if (maybeLabelExpr.equals("")) None
+                    else if (maybeLabelExpr.equals(":A")) Some(labelLeaf("A"))
+                    else Some(labelLeaf("A", containsIs = true)),
                     if (maybeProperties.equals("")) None else Some(mapOf(("prop", literalInt(1)))),
                     if (maybeWhere.equals("")) None else Some(eq(prop("x", "prop"), literalInt(1)))
                   ),
@@ -81,7 +83,9 @@ class PatternComprehensionParserTest extends JavaccParserAstTestBase[Statement] 
                     nodePat(),
                     relPat(
                       if (maybeVariable.equals("")) None else Some(maybeVariable),
-                      if (maybeLabelExpr.equals("")) None else Some(labelRelTypeLeaf("A")),
+                      if (maybeLabelExpr.equals("")) None
+                      else if (maybeLabelExpr.equals(":A")) Some(labelRelTypeLeaf("A"))
+                      else Some(labelRelTypeLeaf("A", containsIs = true)),
                       if (maybePathLength.equals("")) None else Some(Some(range(Some(1), Some(5)))),
                       if (maybeProperties.equals("")) None else Some(mapOf(("prop", literalInt(1)))),
                       if (maybeWhere.equals("")) None else Some(eq(prop("x", "prop"), literalInt(1)))

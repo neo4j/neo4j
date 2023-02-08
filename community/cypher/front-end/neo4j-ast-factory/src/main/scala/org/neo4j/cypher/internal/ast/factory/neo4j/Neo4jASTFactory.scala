@@ -2573,28 +2573,51 @@ class Neo4jASTFactory(query: String)
     ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))
   }
 
-  override def labelConjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
-    LabelExpression.Conjunctions.flat(lhs, rhs, p)
+  override def labelConjunction(
+    p: InputPosition,
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    containsIs: Boolean
+  ): LabelExpression =
+    LabelExpression.Conjunctions.flat(lhs, rhs, p, containsIs)
 
-  override def labelDisjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression = {
-    LabelExpression.Disjunctions.flat(lhs, rhs, p)
+  override def labelDisjunction(
+    p: InputPosition,
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    containsIs: Boolean
+  ): LabelExpression = {
+    LabelExpression.Disjunctions.flat(lhs, rhs, p, containsIs)
   }
 
-  override def labelNegation(p: InputPosition, e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(p)
+  override def labelNegation(p: InputPosition, e: LabelExpression, containsIs: Boolean): LabelExpression =
+    LabelExpression.Negation(e, containsIs)(p)
 
-  override def labelWildcard(p: InputPosition): LabelExpression = LabelExpression.Wildcard()(p)
+  override def labelWildcard(p: InputPosition, containsIs: Boolean): LabelExpression =
+    LabelExpression.Wildcard(containsIs)(p)
 
-  override def labelLeaf(p: InputPosition, n: String, entityType: EntityType): LabelExpression = entityType match {
-    case EntityType.NODE                 => Leaf(LabelName(n)(p))
-    case EntityType.NODE_OR_RELATIONSHIP => Leaf(LabelOrRelTypeName(n)(p))
-    case EntityType.RELATIONSHIP         => Leaf(RelTypeName(n)(p))
-  }
+  override def labelLeaf(p: InputPosition, n: String, entityType: EntityType, containsIs: Boolean): LabelExpression =
+    entityType match {
+      case EntityType.NODE                 => Leaf(LabelName(n)(p), containsIs)
+      case EntityType.NODE_OR_RELATIONSHIP => Leaf(LabelOrRelTypeName(n)(p), containsIs)
+      case EntityType.RELATIONSHIP         => Leaf(RelTypeName(n)(p), containsIs)
+    }
 
-  override def labelColonConjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
-    LabelExpression.ColonConjunction(lhs, rhs)(p)
+  override def labelColonConjunction(
+    p: InputPosition,
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    containsIs: Boolean
+  ): LabelExpression =
+    LabelExpression.ColonConjunction(lhs, rhs, containsIs)(p)
 
-  override def labelColonDisjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
-    LabelExpression.ColonDisjunction(lhs, rhs)(p)
+  override def labelColonDisjunction(
+    p: InputPosition,
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    containsIs: Boolean
+  ): LabelExpression =
+    LabelExpression.ColonDisjunction(lhs, rhs, containsIs)(p)
 
   override def labelExpressionPredicate(subject: Expression, exp: LabelExpression): Expression =
     LabelExpressionPredicate(subject, exp)(subject.position)

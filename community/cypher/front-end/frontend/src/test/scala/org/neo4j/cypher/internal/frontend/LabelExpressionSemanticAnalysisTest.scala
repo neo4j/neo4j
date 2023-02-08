@@ -26,20 +26,85 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
 
   override def defaultQuery: String = s"$statement $testName"
 
+  private val labelExprErrorMessage =
+    s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
+
+  private val isErrorMessage =
+    s"The IS keyword in patterns is not allowed in $statement, but only in MATCH clause and in expressions"
+
   test("(n:A:B)") {
     runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n:A&B)") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
+      labelExprErrorMessage
     )
   }
 
   test("(n:A|B)") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
+      labelExprErrorMessage
     )
+  }
+
+  test("(n:A|:B)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage,
+      "Label expressions are not allowed to contain '|:'."
+    )
+  }
+
+  test("(IS A)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      isErrorMessage
+    )
+  }
+
+  test("(n IS A&B)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage,
+      isErrorMessage
+    )
+  }
+
+  test("(n IS !(A&B))") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage,
+      isErrorMessage
+    )
+  }
+
+  test("(n IS A|B)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage,
+      isErrorMessage
+    )
+  }
+
+  test("(n IS %)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage,
+      isErrorMessage
+    )
+  }
+
+  test("(n IS A:B)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      isErrorMessage
+    )
+  }
+
+  test("(n IS A|:B)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      isErrorMessage,
+      labelExprErrorMessage,
+      "Label expressions are not allowed to contain '|:'."
+    )
+  }
+
+  test("(IS:IS)") {
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("()-[:Rel1]->()") {
@@ -66,6 +131,50 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       s"Exactly one relationship type must be specified for $statement. Did you forget to prefix your relationship type with a ':'?"
     )
+  }
+
+  test("()-[r IS Rel1]->()") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      isErrorMessage
+    )
+  }
+
+  test("(n IS A)-[:REL]->()") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      isErrorMessage
+    )
+  }
+
+  test("()-[:REL]->(IS B)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      isErrorMessage
+    )
+  }
+
+  test("()-[IS Rel1|Rel2]->()") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      isErrorMessage,
+      s"A single relationship type must be specified for $statement"
+    )
+  }
+
+  test("()-[IS Rel1|:Rel2]->()") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      isErrorMessage,
+      s"A single relationship type must be specified for $statement"
+    )
+  }
+
+  test("()-[IS !Rel1]->()") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      isErrorMessage,
+      s"A single plain relationship type like `:Rel1` must be specified for $statement",
+      s"Relationship type expressions in patterns are not allowed in $statement, but only in MATCH clause"
+    )
+  }
+
+  test("()-[IS:IS]->()") {
+    runSemanticAnalysis().errors shouldBe empty
   }
 
 }

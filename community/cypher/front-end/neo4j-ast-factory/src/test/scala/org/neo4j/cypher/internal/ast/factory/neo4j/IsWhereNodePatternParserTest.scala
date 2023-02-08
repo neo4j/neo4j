@@ -45,7 +45,7 @@ class IsWhereNodePatternParserTest extends JavaccParserAstTestBase[NodePattern] 
         gives(
           nodePat(
             maybeVariableName,
-            labelExpression = Some(labelLeaf(isOrWhere))
+            labelExpression = Some(labelLeaf(isOrWhere, containsIs = true))
           )
         )
       }
@@ -66,7 +66,7 @@ class IsWhereNodePatternParserTest extends JavaccParserAstTestBase[NodePattern] 
           gives(
             nodePat(
               maybeVariableName,
-              labelExpression = Some(labelLeaf(isOrWhere)),
+              labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),
               predicates = Some(varFor(isOrWhere2))
             )
           )
@@ -76,7 +76,10 @@ class IsWhereNodePatternParserTest extends JavaccParserAstTestBase[NodePattern] 
           gives(
             nodePat(
               maybeVariableName,
-              predicates = Some(LabelExpressionPredicate(varFor(isOrWhere), labelOrRelTypeLeaf(isOrWhere2))(pos))
+              predicates = Some(LabelExpressionPredicate(
+                varFor(isOrWhere),
+                labelOrRelTypeLeaf(isOrWhere2, containsIs = true)
+              )(pos))
             )
           )
         }
@@ -95,8 +98,11 @@ class IsWhereNodePatternParserTest extends JavaccParserAstTestBase[NodePattern] 
             gives(
               nodePat(
                 maybeVariableName,
-                labelExpression = Some(labelLeaf(isOrWhere)),
-                predicates = Some(LabelExpressionPredicate(varFor(isOrWhere2), labelOrRelTypeLeaf(isOrWhere3))(pos))
+                labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),
+                predicates = Some(LabelExpressionPredicate(
+                  varFor(isOrWhere2),
+                  labelOrRelTypeLeaf(isOrWhere3, containsIs = true)
+                )(pos))
               )
             )
           }
