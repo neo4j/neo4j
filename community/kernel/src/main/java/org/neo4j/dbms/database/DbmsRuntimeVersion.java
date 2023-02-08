@@ -55,7 +55,9 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
      */
     V5_6(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_56, KernelVersion.V5_6);
 
-    public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION =
+    // The latest version should be kept private to be able to override it from tests.
+    // getLatestVersion should be used when the latest version is required.
+    private static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION =
             V5_0; // version should be fixed to 5_0, bump is not an option
 
     public static DbmsRuntimeVersion getLatestVersion(Config config) {

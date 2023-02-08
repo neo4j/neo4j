@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -57,7 +58,7 @@ class DbmsRuntimeVersionTest {
     @Test
     void testBasicVersionLifecycle() {
         // the system DB will be initialised with the default version for this binary
-        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
 
         // BTW this should never be manipulated directly outside tests
         setRuntimeVersion(DbmsRuntimeVersion.V4_2);
@@ -65,13 +66,13 @@ class DbmsRuntimeVersionTest {
 
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
-        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
     }
 
     @Test
     void latestVersionIsRealLatestVersionByDefault() {
         // The system DB will be initialised with the default version for this binary
-        assertSame(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION, dbmsRuntimeRepository.getVersion());
+        assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
     }
 
     @Test

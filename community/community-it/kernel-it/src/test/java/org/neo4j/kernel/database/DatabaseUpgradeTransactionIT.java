@@ -75,6 +75,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -130,7 +131,7 @@ public class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
-        set(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        set(LatestVersions.LATEST_RUNTIME_VERSION);
 
         // When
         createReadTransaction();
@@ -197,7 +198,7 @@ public class DatabaseUpgradeTransactionIT {
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.LATEST);
-        assertThat(dbmsRuntimeVersion()).isEqualTo(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
         assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.LATEST, startTransaction);
     }
 
@@ -259,7 +260,7 @@ public class DatabaseUpgradeTransactionIT {
 
         // Then
         assertThat(kernelVersion()).isEqualTo(KernelVersion.LATEST);
-        assertThat(dbmsRuntimeVersion()).isEqualTo(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
         assertUpgradeTransactionInOrder(KernelVersion.V5_0, KernelVersion.LATEST, startTransaction);
         assertDegrees(nodeId);
     }
@@ -320,7 +321,7 @@ public class DatabaseUpgradeTransactionIT {
             Future<String> f1 = executor.executeDontWait(this::createWriteTransaction);
             l2.await(); // wait for it to be committing
             // then upgrade dbms runtime to trigger db upgrade on next write
-            set(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+            set(LatestVersions.LATEST_RUNTIME_VERSION);
 
             try (Transaction tx = db.beginTx()) {
                 tx.acquireWriteLock(tx.getNodeByElementId(lockNode1)); // take the lock

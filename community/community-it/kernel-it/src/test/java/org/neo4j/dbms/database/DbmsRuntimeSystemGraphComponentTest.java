@@ -21,7 +21,6 @@ package org.neo4j.dbms.database;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
-import static org.neo4j.dbms.database.DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.time.Duration;
@@ -35,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResultTransformer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -64,7 +64,7 @@ class DbmsRuntimeSystemGraphComponentTest {
     @Test
     void testInitialisationOnFreshDatabase() {
         systemGraphComponents.initializeSystemGraph(fakeSystemDb);
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
 
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
@@ -89,17 +89,17 @@ class DbmsRuntimeSystemGraphComponentTest {
         createVersionNode(userDatabase);
 
         systemGraphComponents.initializeSystemGraph(fakeSystemDb);
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
 
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
     void testCurrentVersionPresent() {
-        createVersionNode(userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        createVersionNode(userDatabase, LatestVersions.LATEST_RUNTIME_VERSION);
 
         systemGraphComponents.initializeSystemGraph(fakeSystemDb);
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
 
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
@@ -122,7 +122,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
         systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
@@ -132,18 +132,18 @@ class DbmsRuntimeSystemGraphComponentTest {
 
         systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
     @Test
     void initializeRuntimeVersionNodeToLatestVersion() {
-        createRuntimeComponentNode(userDatabase, LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        createRuntimeComponentNode(userDatabase, LatestVersions.LATEST_RUNTIME_VERSION);
         assertStatus(SystemGraphComponent.Status.CURRENT);
 
         systemGraphComponents.initializeSystemGraph(fakeSystemDb);
 
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 
@@ -153,7 +153,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
         systemGraphComponents.upgradeToCurrent(fakeSystemDb);
 
-        assertVersion(LATEST_DBMS_RUNTIME_COMPONENT_VERSION, fakeSystemDb);
+        assertVersion(LatestVersions.LATEST_RUNTIME_VERSION, fakeSystemDb);
         assertStatus(SystemGraphComponent.Status.CURRENT);
     }
 

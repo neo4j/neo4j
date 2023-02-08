@@ -48,6 +48,7 @@ import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 
 class DatabaseUpgradeTransactionHandlerTest {
@@ -67,7 +68,7 @@ class DatabaseUpgradeTransactionHandlerTest {
     @Test
     void shouldUpdateKernelOnFirstTransactionAndUnsubscribeListener() {
         // Given
-        init(KernelVersion.V4_2, DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        init(KernelVersion.V4_2, LatestVersions.LATEST_RUNTIME_VERSION);
 
         // When
         doATransaction();
@@ -86,7 +87,7 @@ class DatabaseUpgradeTransactionHandlerTest {
     @Test
     void shouldNotRegisterListenerWhenOnLatestVersion() {
         // Given
-        init(KernelVersion.LATEST, DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        init(KernelVersion.LATEST, LatestVersions.LATEST_RUNTIME_VERSION);
 
         // When
         doATransaction();
@@ -122,7 +123,7 @@ class DatabaseUpgradeTransactionHandlerTest {
         assertThat(listenerUnregistered).isFalse();
 
         // When
-        setDbmsRuntime(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+        setDbmsRuntime(LatestVersions.LATEST_RUNTIME_VERSION);
         doATransaction();
 
         // then
@@ -160,7 +161,7 @@ class DatabaseUpgradeTransactionHandlerTest {
                     // which is 4.2
                     assertEventually(this::getKernelVersion, equalityCondition(KernelVersion.V4_4), 1, MINUTES);
                     // Then upgrade the dbms runtime version
-                    setDbmsRuntime(DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION);
+                    setDbmsRuntime(LatestVersions.LATEST_RUNTIME_VERSION);
                     // And wait for the db to make the upgrade to this version too
                     assertEventually(this::getKernelVersion, equalityCondition(KernelVersion.LATEST), 1, MINUTES);
                     stop.set(true);
