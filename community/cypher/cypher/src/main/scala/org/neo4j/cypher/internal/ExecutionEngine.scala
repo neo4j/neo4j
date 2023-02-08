@@ -283,7 +283,7 @@ abstract class ExecutionEngine(
 
     val cacheKey = CacheKey(
       initialInputQuery.cacheKey,
-      QueryCache.extractParameterTypeMap(params),
+      QueryCache.extractParameterTypeMap(params, config.useParameterSizeHint),
       tc.kernelTransaction().dataRead().transactionStateHasChanges()
     )
 

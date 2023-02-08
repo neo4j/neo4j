@@ -362,8 +362,8 @@ class QueryCacheTest extends CypherFunSuite {
       Array("a", "b", "c"),
       Array(Values.of(3), Values.of("hi"), VirtualValues.list(Values.of(false), Values.of(true)))
     )
-    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
-    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1, useSizeHint = false)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2, useSizeHint = false)
     typeMap1.hashCode() shouldBe typeMap2.hashCode()
     typeMap1 should equal(typeMap2)
     typeMap2 should equal(typeMap1)
@@ -372,27 +372,27 @@ class QueryCacheTest extends CypherFunSuite {
   test("parameterTypeMap should equal if same types but different values") {
     val params1 = VirtualValues.map(Array("a"), Array(Values.of("a")))
     val params2 = VirtualValues.map(Array("a"), Array(Values.of("b")))
-    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
-    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1, useSizeHint = false)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2, useSizeHint = false)
     typeMap1.hashCode() shouldBe typeMap2.hashCode()
     typeMap1 should equal(typeMap2)
     typeMap2 should equal(typeMap1)
   }
 
-  test("parameterTypeMap should not equal if same types but very different length of strings") {
+  test("parameterTypeMap should not equal if same types but very different length of strings (if using size hint)") {
     val params1 = VirtualValues.map(Array("a"), Array(Values.of("a")))
     val params2 = VirtualValues.map(Array("a"), Array(Values.of("b".repeat(1000))))
-    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
-    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1, useSizeHint = true)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2, useSizeHint = true)
     typeMap1 shouldNot equal(typeMap2)
     typeMap2 shouldNot equal(typeMap1)
   }
 
-  test("parameterTypeMap should not equal if same types but very different length of lists") {
+  test("parameterTypeMap should not equal if same types but very different length of lists (if using size hint)") {
     val params1 = VirtualValues.map(Array("a"), Array(VirtualValues.range(0, 1, 1)))
     val params2 = VirtualValues.map(Array("a"), Array(VirtualValues.range(0, 1001, 1)))
-    val typeMap1 = QueryCache.extractParameterTypeMap(params1)
-    val typeMap2 = QueryCache.extractParameterTypeMap(params2)
+    val typeMap1 = QueryCache.extractParameterTypeMap(params1, useSizeHint = true)
+    val typeMap2 = QueryCache.extractParameterTypeMap(params2, useSizeHint = true)
     typeMap1 shouldNot equal(typeMap2)
     typeMap2 shouldNot equal(typeMap1)
   }
@@ -424,9 +424,8 @@ class QueryCacheTest extends CypherFunSuite {
     } {
       if (p1 != p2) {
         withClue(s"    $p1\n != $p2\n") {
-          val typeMap1 = QueryCache.extractParameterTypeMap(p1)
-          val typeMap2 = QueryCache.extractParameterTypeMap(p2)
-          typeMap1.hashCode() shouldNot be(typeMap2.hashCode())
+          val typeMap1 = QueryCache.extractParameterTypeMap(p1, useSizeHint = false)
+          val typeMap2 = QueryCache.extractParameterTypeMap(p2, useSizeHint = false)
           typeMap1 shouldNot equal(typeMap2)
         }
       }

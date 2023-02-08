@@ -382,11 +382,11 @@ object QueryCache {
   /**
    * Use this method to extract ParameterTypeMap from MapValue that represents parameters
    */
-  def extractParameterTypeMap(mapValue: MapValue): ParameterTypeMap = {
+  def extractParameterTypeMap(mapValue: MapValue, useSizeHint: Boolean): ParameterTypeMap = {
     val resultMap = new java.util.HashMap[String, ParameterTypeInfo]
     var hashCode = 0
     mapValue.foreach((key, value) => {
-      val valueType = ParameterValueTypeHelper.deriveCypherType(value)
+      val valueType = ParameterValueTypeHelper.deriveCypherType(value, useSizeHint)
       resultMap.put(key, valueType)
       hashCode = hashCode ^ (key.hashCode + 31 * valueType.hashCode())
     })
