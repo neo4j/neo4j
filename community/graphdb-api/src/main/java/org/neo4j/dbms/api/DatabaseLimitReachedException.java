@@ -30,7 +30,7 @@ public class DatabaseLimitReachedException extends DatabaseManagementException {
     public DatabaseLimitReachedException(String startOfErrorMessage) {
         super(
                 startOfErrorMessage + " The total limit of databases is already reached. "
-                        + "To create more you need to either drop databases or change the limit via the config setting 'server.max_databases'");
+                        + "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'");
     }
 
     @Override
