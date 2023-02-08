@@ -22,7 +22,7 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessFactory;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -79,7 +79,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
                 swappers,
                 pageCacheTracer.createFileSwapperTracer(),
                 blockSwapper,
-                nativeAccess());
+                nativeAccessFactory());
     }
 
     private static BlockSwapper createBlockSwapper(MemoryTracker memoryTracker) {
@@ -90,7 +90,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory {
     }
 
     @VisibleForTesting
-    protected NativeAccess nativeAccess() {
-        return NativeAccessProvider.getNativeAccess();
+    protected NativeAccessFactory nativeAccessFactory() {
+        return file -> NativeAccessProvider.getNativeAccess();
     }
 }

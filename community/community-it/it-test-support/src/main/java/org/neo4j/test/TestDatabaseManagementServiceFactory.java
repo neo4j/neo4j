@@ -75,8 +75,8 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         return new TestDatabaseGlobalModule(config, daemonMode, this.dbmsInfo, dependencies);
     }
 
-    class TestDatabaseGlobalModule extends GlobalModule {
-        TestDatabaseGlobalModule(
+    public class TestDatabaseGlobalModule extends GlobalModule {
+        public TestDatabaseGlobalModule(
                 Config config, boolean daemonMode, DbmsInfo dbmsInfo, ExternalDependencies dependencies) {
             super(config, dbmsInfo, daemonMode, dependencies);
         }

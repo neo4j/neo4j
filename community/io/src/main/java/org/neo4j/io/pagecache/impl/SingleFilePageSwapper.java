@@ -41,6 +41,7 @@ import net.jpountz.xxhash.XXHashFactory;
 import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessFactory;
 import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.ChecksumMismatchException;
@@ -110,7 +111,7 @@ public class SingleFilePageSwapper implements PageSwapper {
             SwapperSet swapperSet,
             PageFileSwapperTracer fileSwapperTracer,
             BlockSwapper blockSwapper,
-            NativeAccess nativeAccess)
+            NativeAccessFactory nativeAccessFactory)
             throws IOException {
         this.fs = fs;
         this.path = path;
@@ -144,7 +145,7 @@ public class SingleFilePageSwapper implements PageSwapper {
         this.canDoVectorizedIO = channel.hasPositionLock() && UnsafeUtil.unsafeByteBufferAccessAvailable();
         this.swapperId = swapperSet.allocate(this);
         this.blockSwapper = blockSwapper;
-        this.nativeAccess = nativeAccess;
+        this.nativeAccess = nativeAccessFactory.create(path);
     }
 
     private StoreChannel createStoreChannel() throws IOException {
