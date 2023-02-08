@@ -23,6 +23,7 @@ import java.io.DataOutputStream;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 public class OutputStreamWritableChannel implements FlushableChannel {
     private final DataOutputStream dataOutputStream;
@@ -81,6 +82,18 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     @Override
     public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
         dataOutputStream.write(value, offset, length);
+        return this;
+    }
+
+    @Override
+    public FlushableChannel putAll(ByteBuffer src) throws IOException {
+        if (src.hasArray()) {
+            dataOutputStream.write(src.array());
+        } else {
+            while (src.hasRemaining()) {
+                dataOutputStream.writeByte(src.get());
+            }
+        }
         return this;
     }
 

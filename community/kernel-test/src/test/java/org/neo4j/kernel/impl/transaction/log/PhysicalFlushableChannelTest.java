@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static java.util.Arrays.copyOfRange;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -167,6 +168,59 @@ class PhysicalFlushableChannelTest {
 
         byte[] writtenBytes = Files.readAllBytes(firstFile);
         assertArrayEquals(bytes, writtenBytes);
+    }
+
+    @Test
+    void writeSmallByteBuffer() throws IOException {
+        final Path firstFile = directory.homePath().resolve("file1");
+        StoreChannel storeChannel = fileSystem.write(firstFile);
+        PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+
+        ByteBuffer smallBuffer = ByteBuffer.wrap(generateBytes(100));
+        try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, INSTANCE)) {
+            channel.putAll(smallBuffer);
+        }
+        byte[] writtenBytes = Files.readAllBytes(firstFile);
+        assertArrayEquals(smallBuffer.array(), writtenBytes);
+    }
+
+    @Test
+    void writeLargerThanBufferByteBuffer() throws IOException {
+        final Path firstFile = directory.homePath().resolve("file1");
+        StoreChannel storeChannel = fileSystem.write(firstFile);
+        PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+
+        int bufferSize = 512;
+        ByteBuffer largeBuffer = ByteBuffer.wrap(generateBytes(bufferSize * 2));
+        HeapScopedBuffer scopedBuffer = new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, scopedBuffer)) {
+            channel.putAll(largeBuffer);
+        }
+        byte[] writtenBytes = Files.readAllBytes(firstFile);
+        assertArrayEquals(largeBuffer.array(), writtenBytes);
+    }
+
+    @Test
+    void writeByteBufferShouldNotClobberExistingData() throws IOException {
+        final Path firstFile = directory.homePath().resolve("file1");
+        StoreChannel storeChannel = fileSystem.write(firstFile);
+        PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
+                storeChannel, 1, (byte) -1, firstFile, nativeChannelAccessor, databaseTracer);
+
+        int bufferSize = 512;
+        int small = 64;
+        byte[] smallArray = generateBytes(small);
+        ByteBuffer largeBuffer = ByteBuffer.wrap(generateBytes(bufferSize * 2));
+        HeapScopedBuffer scopedBuffer = new HeapScopedBuffer(bufferSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+        try (PhysicalFlushableChannel channel = new PhysicalFlushableChannel(versionedStoreChannel, scopedBuffer)) {
+            channel.put(smallArray, smallArray.length);
+            channel.putAll(largeBuffer);
+        }
+        byte[] writtenBytes = Files.readAllBytes(firstFile);
+        assertArrayEquals(smallArray, copyOfRange(writtenBytes, 0, small));
+        assertArrayEquals(largeBuffer.array(), copyOfRange(writtenBytes, small, small + largeBuffer.capacity()));
     }
 
     @MethodSource("bytesToChannelParameters")

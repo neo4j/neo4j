@@ -103,6 +103,11 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     }
 
     @Override
+    public FlushableChecksumChannel putAll(ByteBuffer src) throws IOException {
+        return channel.putAll(src);
+    }
+
+    @Override
     public void close() throws IOException {
         channel.close();
     }

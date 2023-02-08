@@ -69,84 +69,90 @@ class StoreIdTest {
         }
 
         @Override
-        public byte get() throws IOException {
+        public byte get() {
             return buffer.get();
         }
 
         @Override
-        public short getShort() throws IOException {
+        public short getShort() {
             return buffer.getShort();
         }
 
         @Override
-        public int getInt() throws IOException {
+        public int getInt() {
             return buffer.getInt();
         }
 
         @Override
-        public long getLong() throws IOException {
+        public long getLong() {
             return buffer.getLong();
         }
 
         @Override
-        public float getFloat() throws IOException {
+        public float getFloat() {
             return buffer.getFloat();
         }
 
         @Override
-        public double getDouble() throws IOException {
+        public double getDouble() {
             return buffer.getDouble();
         }
 
         @Override
-        public void get(byte[] bytes, int length) throws IOException {
+        public void get(byte[] bytes, int length) {
             buffer.get(bytes, 0, length);
         }
 
         @Override
-        public WritableChannel put(byte value) throws IOException {
+        public WritableChannel put(byte value) {
             buffer.put(value);
             return this;
         }
 
         @Override
-        public WritableChannel putShort(short value) throws IOException {
+        public WritableChannel putShort(short value) {
             buffer.putShort(value);
             return this;
         }
 
         @Override
-        public WritableChannel putInt(int value) throws IOException {
+        public WritableChannel putInt(int value) {
             buffer.putInt(value);
             return this;
         }
 
         @Override
-        public WritableChannel putLong(long value) throws IOException {
+        public WritableChannel putLong(long value) {
             buffer.putLong(value);
             return this;
         }
 
         @Override
-        public WritableChannel putFloat(float value) throws IOException {
+        public WritableChannel putFloat(float value) {
             buffer.putFloat(value);
             return this;
         }
 
         @Override
-        public WritableChannel putDouble(double value) throws IOException {
+        public WritableChannel putDouble(double value) {
             buffer.putDouble(value);
             return this;
         }
 
         @Override
-        public WritableChannel put(byte[] value, int offset, int length) throws IOException {
+        public WritableChannel put(byte[] value, int offset, int length) {
             buffer.put(value, 0, length);
             return this;
         }
 
         @Override
-        public void close() throws IOException {}
+        public WritableChannel putAll(ByteBuffer src) {
+            buffer.put(src);
+            return null;
+        }
+
+        @Override
+        public void close() {}
 
         void flip() {
             buffer.flip();

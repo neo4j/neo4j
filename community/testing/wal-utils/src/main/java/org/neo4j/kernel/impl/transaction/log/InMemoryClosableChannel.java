@@ -139,6 +139,12 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public InMemoryClosableChannel putAll(ByteBuffer src) {
+        writer.putAll(src);
+        return this;
+    }
+
+    @Override
     public boolean isOpen() {
         return open;
     }
@@ -478,6 +484,15 @@ public class InMemoryClosableChannel
         public Writer put(byte[] bytes, int offset, int length) {
             buffer.put(bytes, offset, length);
             checksum.update(bytes, offset, length);
+            return this;
+        }
+
+        @Override
+        public Writer putAll(ByteBuffer src) {
+            src.mark();
+            buffer.put(src);
+            src.reset();
+            checksum.update(src);
             return this;
         }
 

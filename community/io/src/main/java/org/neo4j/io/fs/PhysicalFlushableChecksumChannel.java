@@ -123,4 +123,17 @@ public class PhysicalFlushableChecksumChannel extends PhysicalFlushableChannel i
     public FlushableChecksumChannel put(byte[] value, int offset, int length) throws IOException {
         return (FlushableChecksumChannel) super.put(value, offset, length);
     }
+
+    @Override
+    public FlushableChecksumChannel putAll(ByteBuffer src) throws IOException {
+        src.mark();
+        super.putAll(src);
+
+        if (!DISABLE_WAL_CHECKSUM && buffer.position() == 0) {
+            src.reset();
+            checksum.update(src);
+        }
+
+        return this;
+    }
 }

@@ -65,14 +65,9 @@ public class PhysicalFlushableChannel implements FlushableChannel {
     @Override
     public Flushable prepareForFlush() throws IOException {
         buffer.flip();
-        StoreChannel channel = this.channel;
-        try {
-            channel.writeAll(buffer);
-        } catch (ClosedChannelException e) {
-            handleClosedChannelException(e);
-        }
+        Flushable flushable = flushToChannel(channel, buffer);
         buffer.clear();
-        return channel;
+        return flushable;
     }
 
     @Override
@@ -113,6 +108,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
     @Override
     public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
+        assert length >= 0;
         int localOffset = 0;
         int capacity = buffer.capacity();
         while (localOffset < length) {
@@ -122,6 +118,17 @@ public class PhysicalFlushableChannel implements FlushableChannel {
             bufferWithGuaranteedSpace(chunkSize).put(value, offset + localOffset, chunkSize);
             localOffset += chunkSize;
         }
+        return this;
+    }
+
+    @Override
+    public FlushableChannel putAll(ByteBuffer src) throws IOException {
+        if (src.remaining() <= buffer.remaining()) {
+            buffer.put(src);
+            return this;
+        }
+        prepareForFlush(); // Flush internal buffer
+        flushToChannel(channel, src);
         return this;
     }
 
@@ -169,6 +176,15 @@ public class PhysicalFlushableChannel implements FlushableChannel {
             prepareForFlush();
         }
         return buffer;
+    }
+
+    private Flushable flushToChannel(StoreChannel destination, ByteBuffer src) throws IOException {
+        try {
+            destination.writeAll(src);
+        } catch (ClosedChannelException e) {
+            handleClosedChannelException(e);
+        }
+        return destination;
     }
 
     private void handleClosedChannelException(ClosedChannelException e) throws ClosedChannelException {

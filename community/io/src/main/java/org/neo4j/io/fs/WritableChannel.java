@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Represents an infinite channel to write primitive data to.
@@ -101,4 +102,13 @@ public interface WritableChannel extends Closeable {
      * @throws IOException if I/O error occurs.
      */
     WritableChannel put(byte[] value, int offset, int length) throws IOException;
+
+    /**
+     * Writes all remaining data in the {@link ByteBuffer} to this channel.
+     *
+     * @param src buffer with data to write to this channel.
+     * @return this channel, for fluent usage.
+     * @throws IOException if I/O error occurs.
+     */
+    WritableChannel putAll(ByteBuffer src) throws IOException;
 }

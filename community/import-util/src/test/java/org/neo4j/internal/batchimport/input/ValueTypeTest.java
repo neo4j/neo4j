@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
@@ -109,6 +110,13 @@ class ValueTypeTest {
         @Override
         public FlushableChannel put(byte[] value, int offset, int length) {
             position += length;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putAll(ByteBuffer src) {
+            position += src.remaining();
+            src.position(src.limit()); // Consume buffer
             return this;
         }
 
