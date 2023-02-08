@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -100,18 +101,45 @@ public abstract class FormatCompatibilityVerifier {
                             + "has changed without also incrementing format version(s). Please make necessary format version changes.",
                     t);
         }
+
+        // Verify creation of new file produces the same binary
+        verifyBinaryContent(zipName, storeFile);
+    }
+
+    private void verifyBinaryContent(String zipName, Path storeFile) throws IOException {
+        // unzip file because it could be modified on previous steps
+        globalFs.deleteFile(storeFile);
+        var tempFile = globalDir.file(storeFileName() + "-committed");
+        ZipUtils.unzipResource(getClass(), zipName, storeFileName(), tempFile);
+
+        createStoreFile(storeFile);
+        var mismatchOffset = Files.mismatch(storeFile, tempFile);
+        if (mismatchOffset != -1L) {
+            ZipUtils.zip(globalFs, storeFile, globalDir.file(zipName));
+            fail(String.format(
+                    """
+                                Generated file %s is binary different to the committed file %s extracted from %s. The first mismatch offset is %d.
+                                This could mean hidden change in format that is not detected by other means.
+                                If change is intentional a store file with this new format should be committed.
+                                %s""",
+                    storeFile, tempFile, zipName, mismatchOffset, moveInstruction(zipName)));
+        }
     }
 
     private void tellDeveloperToCommitThisFormatVersion(String zipName) {
-        fail(String.format(
-                "This is merely a notification to developer. Format has changed and its version has also "
-                        + "been properly incremented. A store file with this new format has been generated and should be committed. "
-                        + "Please move the newly created file to correct resources location using command:%n"
+        fail("This is merely a notification to developer. Format has changed and its version has also "
+                + "been properly incremented. A store file with this new format has been generated and should be committed. "
+                + moveInstruction(zipName));
+    }
+
+    private String moveInstruction(String zipName) {
+        return String.format(
+                "Please move the newly created file to correct resources location using command:%n"
                         + "mv \"%s\" \"%s\"%n"
                         + "replacing the existing file there",
                 globalDir.file(zipName),
                 "<corresponding-module>" + pathify(".src.test.resources.")
-                        + pathify(getClass().getPackage().getName() + ".") + zipName));
+                        + pathify(getClass().getPackage().getName() + ".") + zipName);
     }
 
     private static String pathify(String name) {

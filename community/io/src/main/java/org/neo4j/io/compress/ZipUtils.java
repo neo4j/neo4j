@@ -104,10 +104,12 @@ public class ZipUtils {
      *
      * @param klass The class from which to get the zip file resource.
      * @param zipName Name of zip file.
-     * @param targetFile Target file to which content will be unzipped, must align with content of zip file.
+     * @param zipEntryName Expected zip entry name.
+     * @param targetFile Target file to which content will be unzipped.
      * @throws IOException if something goes wrong.
      */
-    public static void unzipResource(Class<?> klass, String zipName, Path targetFile) throws IOException {
+    public static void unzipResource(Class<?> klass, String zipName, String zipEntryName, Path targetFile)
+            throws IOException {
         URL resource = klass.getResource(zipName);
         if (resource == null) {
             throw new NoSuchFileException(zipName);
@@ -119,12 +121,16 @@ public class ZipUtils {
                 throw new IllegalStateException("Zip file '" + sourceZip + "' does not contain any elements.");
             }
             ZipEntry entry = entries.nextElement();
-            if (!targetFile.getFileName().toString().equals(entry.getName())) {
-                throw new IllegalStateException("Zip file '" + sourceZip + "' does not contain target file '"
-                        + targetFile.getFileName() + "'.");
+            if (!zipEntryName.equals(entry.getName())) {
+                throw new IllegalStateException(
+                        "Zip file '" + sourceZip + "' does not contain target file '" + zipEntryName + "'.");
             }
             Files.copy(zipFile.getInputStream(entry), targetFile);
         }
+    }
+
+    public static void unzipResource(Class<?> klass, String zipName, Path targetFile) throws IOException {
+        unzipResource(klass, zipName, targetFile.getFileName().toString(), targetFile);
     }
 
     /**
