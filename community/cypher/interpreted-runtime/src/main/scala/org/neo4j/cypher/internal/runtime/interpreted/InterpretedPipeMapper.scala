@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -204,6 +205,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AntiSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameRelationshipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthExpandPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
@@ -1520,6 +1522,9 @@ case class InterpretedPipeMapper(
 
       case AssertSameNode(node, _, _) =>
         AssertSameNodePipe(lhs, rhs, node)(id = id)
+
+      case AssertSameRelationship(relationship, _, _) =>
+        AssertSameRelationshipPipe(lhs, rhs, relationship)(id = id)
 
       case SemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs)(id = id)

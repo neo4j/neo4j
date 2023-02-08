@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.AntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ArgumentTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AssertSameNodeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.AssertSameRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.BFSPruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTxStateTestBase
@@ -444,6 +445,7 @@ class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY
 
 class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
     with EsotericAssertSameNodeTestBase[CommunityRuntimeContext]
+class InterpretedAssertSameRelationshipTest extends AssertSameRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedLenientCreateRelationshipTest
