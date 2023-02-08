@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
@@ -409,10 +408,6 @@ public abstract class Command implements StorageCommand {
 
         static final long HEAP_SIZE = shallowSizeOfInstance(SchemaRuleCommand.class);
 
-        public SchemaRuleCommand(SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule) {
-            this(LATEST_LOG_SERIALIZATION, recordBefore, recordAfter, schemaRule);
-        }
-
         public SchemaRuleCommand(
                 LogCommandSerialization serialization,
                 SchemaRecord recordBefore,
@@ -451,10 +446,6 @@ public abstract class Command implements StorageCommand {
 
         private final int labelId;
         private final long delta;
-
-        public NodeCountsCommand(int labelId, long delta) {
-            this(LATEST_LOG_SERIALIZATION, labelId, delta);
-        }
 
         public NodeCountsCommand(LogCommandSerialization serialization, int labelId, long delta) {
             super(serialization);
@@ -495,10 +486,6 @@ public abstract class Command implements StorageCommand {
         private final int typeId;
         private final int endLabelId;
         private final long delta;
-
-        public RelationshipCountsCommand(int startLabelId, int typeId, int endLabelId, long delta) {
-            this(LATEST_LOG_SERIALIZATION, startLabelId, typeId, endLabelId, delta);
-        }
 
         public RelationshipCountsCommand(
                 LogCommandSerialization serialization, int startLabelId, int typeId, int endLabelId, long delta) {

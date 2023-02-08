@@ -118,20 +118,20 @@ class IndexTransactionApplierFactoryTest {
         when(batchContext.getIndexActivator()).thenReturn(indexActivator);
         try (var txApplier = applier.startTx(new GroupOfCommands(StoreCursors.NULL), batchContext)) {
             // activate index 1
-            txApplier.visitSchemaRuleCommand(
-                    new Command.SchemaRuleCommand(new SchemaRecord(rule1.getId()), asSchemaRecord(rule1, true), rule1));
+            txApplier.visitSchemaRuleCommand(new Command.SchemaRuleCommand(
+                    LATEST_LOG_SERIALIZATION, new SchemaRecord(rule1.getId()), asSchemaRecord(rule1, true), rule1));
 
             // activate index 2
-            txApplier.visitSchemaRuleCommand(
-                    new Command.SchemaRuleCommand(new SchemaRecord(rule2.getId()), asSchemaRecord(rule2, true), rule2));
+            txApplier.visitSchemaRuleCommand(new Command.SchemaRuleCommand(
+                    LATEST_LOG_SERIALIZATION, new SchemaRecord(rule2.getId()), asSchemaRecord(rule2, true), rule2));
 
             // activate index 3
-            txApplier.visitSchemaRuleCommand(
-                    new Command.SchemaRuleCommand(new SchemaRecord(rule3.getId()), asSchemaRecord(rule3, true), rule3));
+            txApplier.visitSchemaRuleCommand(new Command.SchemaRuleCommand(
+                    LATEST_LOG_SERIALIZATION, new SchemaRecord(rule3.getId()), asSchemaRecord(rule3, true), rule3));
 
             // drop index 2
-            txApplier.visitSchemaRuleCommand(
-                    new Command.SchemaRuleCommand(asSchemaRecord(rule2, true), asSchemaRecord(rule2, false), rule2));
+            txApplier.visitSchemaRuleCommand(new Command.SchemaRuleCommand(
+                    LATEST_LOG_SERIALIZATION, asSchemaRecord(rule2, true), asSchemaRecord(rule2, false), rule2));
         }
 
         verify(indexUpdateListener).dropIndex(rule2);

@@ -22,6 +22,7 @@ package org.neo4j.tracers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
@@ -129,7 +130,7 @@ public class CommitProcessTracingIT {
     @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException {
         var transaction = new CompleteTransaction(
-                List.of(new Command.NodeCountsCommand(1, 2)),
+                List.of(new Command.NodeCountsCommand(LATEST_LOG_SERIALIZATION, 1, 2)),
                 UNKNOWN_CONSENSUS_INDEX,
                 0,
                 0,

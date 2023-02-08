@@ -145,7 +145,7 @@ public class Commands {
                 .materialise(id);
         SchemaRecord before = new SchemaRecord(id).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = new SchemaRecord(id).initialize(true, 33);
-        return new SchemaRuleCommand(before, after, rule);
+        return new SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
     }
 
     public static PropertyCommand createProperty(long id, PropertyType type, int key, long... valueRecordIds) {

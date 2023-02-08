@@ -578,7 +578,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(rule.getId());
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -599,7 +600,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
         IndexDescriptor rule = indexRule(21, 1, 2, "K", "X.Y");
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -632,7 +634,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         IndexDescriptor rule = constraintIndexRule(21, 1, 2, "K", "X.Y", 42L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, batchContext, transactionToApply);
@@ -663,7 +666,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21);
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = constraintIndexRule(0, 1, 2, "K", "X.Y", 42L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, batchContext, transactionToApply);
@@ -745,7 +749,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21);
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = constraintIndexRule(0, 1, 2, "K", "X.Y", 42L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         var e = assertThrows(Exception.class, () -> apply(applier, command::handle, batchContext, transactionToApply));
         assertSame(runtimeException, e);
@@ -763,7 +768,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -783,7 +789,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -806,7 +813,8 @@ class NeoStoreTransactionApplierTest {
         after.setCreated();
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -827,7 +835,8 @@ class NeoStoreTransactionApplierTest {
         after.setCreated();
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -848,7 +857,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -868,7 +878,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -888,7 +899,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -907,7 +919,8 @@ class NeoStoreTransactionApplierTest {
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, rule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);

@@ -78,7 +78,8 @@ class NeoTransactionIndexApplierTest {
         SchemaRecord before = new SchemaRecord(1);
         SchemaRecord after = before.copy().initialize(true, 39);
         after.setCreated();
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, indexRule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, indexRule);
 
         // When
         boolean result;
@@ -106,7 +107,8 @@ class NeoTransactionIndexApplierTest {
 
         SchemaRecord before = new SchemaRecord(1).initialize(true, 39);
         SchemaRecord after = new SchemaRecord(1);
-        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(before, after, indexRule);
+        Command.SchemaRuleCommand command =
+                new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, indexRule);
 
         // When
         boolean result;

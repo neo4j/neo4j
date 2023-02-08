@@ -222,7 +222,7 @@ public class TransactionWriter {
     // Internals
 
     private void addSchema(SchemaRecord before, SchemaRecord after, SchemaRule rule) {
-        otherCommands.add(new Command.SchemaRuleCommand(before, after, rule));
+        otherCommands.add(new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule));
     }
 
     public void add(NodeRecord before, NodeRecord after) {
@@ -250,11 +250,12 @@ public class TransactionWriter {
     }
 
     public void incrementNodeCount(int labelId, long delta) {
-        otherCommands.add(new Command.NodeCountsCommand(labelId, delta));
+        otherCommands.add(new Command.NodeCountsCommand(LATEST_LOG_SERIALIZATION, labelId, delta));
     }
 
     public void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta) {
-        otherCommands.add(new Command.RelationshipCountsCommand(startLabelId, typeId, endLabelId, delta));
+        otherCommands.add(new Command.RelationshipCountsCommand(
+                LATEST_LOG_SERIALIZATION, startLabelId, typeId, endLabelId, delta));
     }
 
     private static <T extends TokenRecord> T withName(T record, int[] dynamicIds, String name) {

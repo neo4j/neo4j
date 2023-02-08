@@ -51,7 +51,8 @@ class CountsStoreTransactionApplierTest {
         // WHEN
         try (TransactionApplier txApplier =
                 applier.startTx(new GroupOfCommands(2L, StoreCursors.NULL), mock(BatchContext.class))) {
-            txApplier.visitNodeCountsCommand(new Command.NodeCountsCommand(ANY_LABEL, 1));
+            txApplier.visitNodeCountsCommand(new Command.NodeCountsCommand(
+                    RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION, ANY_LABEL, 1));
         }
 
         // THEN
