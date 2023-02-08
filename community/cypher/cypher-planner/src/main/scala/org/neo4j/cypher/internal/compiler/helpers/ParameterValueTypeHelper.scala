@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.LOCAL_DATE_TIME
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.LOCAL_TIME
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.MAP
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.POINT
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.STRING
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.TIME
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo.info
 import org.neo4j.values.AnyValue
@@ -54,31 +56,33 @@ import org.neo4j.values.virtual.MapValue
 
 object ParameterValueTypeHelper {
 
-  def asCypherTypeMap(map: MapValue): Map[String, ParameterTypeInfo] = {
+  def asCypherTypeMap(map: MapValue, useSizeHint: Boolean): Map[String, ParameterTypeInfo] = {
     val builder = collection.immutable.Map.newBuilder[String, ParameterTypeInfo]
-    map.keySet.forEach((key: String) => builder += (key -> deriveCypherType(map.get(key))))
+    map.keySet.forEach((key: String) => builder += (key -> deriveCypherType(map.get(key), useSizeHint)))
     builder.result()
   }
 
-  def deriveCypherType(obj: AnyValue): ParameterTypeInfo = { // for scala reasons, we need the cast
+  def deriveCypherType(obj: AnyValue, useSizeHint: Boolean): ParameterTypeInfo = {
     obj match {
-      case v: TextValue          => info(CTString, v.length())
-      case _: BooleanValue       => BOOL
-      case _: IntegralValue      => INT
-      case _: FloatingPointValue => FLOAT
-      case _: PointValue         => POINT
-      case _: DateTimeValue      => DATE_TIME
-      case _: LocalDateTimeValue => LOCAL_DATE_TIME
-      case _: TimeValue          => TIME
-      case _: LocalTimeValue     => LOCAL_TIME
-      case _: DateValue          => DATE
-      case _: DurationValue      => DURATION
-      case _: MapValue           => MAP
-      case l: ListValue          =>
+      case v: TextValue if useSizeHint => info(CTString, v.length())
+      case _: TextValue                => STRING
+      case _: BooleanValue             => BOOL
+      case _: IntegralValue            => INT
+      case _: FloatingPointValue       => FLOAT
+      case _: PointValue               => POINT
+      case _: DateTimeValue            => DATE_TIME
+      case _: LocalDateTimeValue       => LOCAL_DATE_TIME
+      case _: TimeValue                => TIME
+      case _: LocalTimeValue           => LOCAL_TIME
+      case _: DateValue                => DATE
+      case _: DurationValue            => DURATION
+      case _: MapValue                 => MAP
+      case l: ListValue                =>
         // NOTE: we need to preserve inner type for Strings since that allows us to use the text index, for other types
         //       we would end up with the same plan anyway so there is no need to keep the inner type.
         val typ = if (l.itemValueRepresentation().valueGroup() == ValueGroup.TEXT) CTList(CTString) else CTList(CTAny)
-        info(typ, l.size())
+        if (useSizeHint) info(typ, l.size())
+        else ParameterTypeInfo(typ, UnknownSize)
       case _ => ANY
     }
   }

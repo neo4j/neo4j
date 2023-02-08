@@ -48,9 +48,10 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
     params: Params,
     defaultContextName: ContextName,
     compute: () => FabricPlan,
-    shouldCache: FabricPlan => Boolean
+    shouldCache: FabricPlan => Boolean,
+    useParameterSizeHint: Boolean
   ): FabricPlan = {
-    val paramTypes = QueryCache.extractParameterTypeMap(params)
+    val paramTypes = QueryCache.extractParameterTypeMap(params, useParameterSizeHint)
     val key = (query, paramTypes, defaultContextName)
     cache.get(key) match {
       case None =>

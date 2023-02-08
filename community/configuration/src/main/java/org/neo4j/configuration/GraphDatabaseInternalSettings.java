@@ -1040,6 +1040,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Use size of lists and strings of provided parameter values in planning")
+    public static final Setting<Boolean> cypher_size_hint_parameters =
+            newBuilder("internal.cypher.use_parameter_size", BOOL, false).build();
+
+    @Internal
     @Description(
             "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). "
                     + "Default is true. In clustering environments no automatic upgrade will happen (dbms.mode=CORE or dbms.mode=READ_REPLICA). "

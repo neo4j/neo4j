@@ -216,7 +216,7 @@ case class CypherPlanner(
     cancellationChecker: CancellationChecker
   ): BaseState = {
 
-    val key = AstCache.key(preParsedQuery, params)
+    val key = AstCache.key(preParsedQuery, params, config.useParameterSizeHint())
     val maybeValue = caches.astCache.get(key)
     maybeValue.getOrElse {
       val parsedQuery = planner.parseQuery(
@@ -409,7 +409,7 @@ case class CypherPlanner(
       if (options.queryOptions.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         val cacheKey = CacheKey(
           syntacticQuery.statement(),
-          QueryCache.extractParameterTypeMap(filteredParams),
+          QueryCache.extractParameterTypeMap(filteredParams, config.useParameterSizeHint()),
           transactionalContextWrapper.kernelTransaction.dataRead().transactionStateHasChanges()
         )
 

@@ -335,6 +335,9 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
   }
 
   test("repeating query with different parameters types should not hit the caches") {
+    restartWithConfig(
+      databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
+    )
     val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
@@ -362,7 +365,13 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     ))
   }
 
-  test("repeating query with same parameters types but different string lengths should not hit the caches") {
+  test(
+    "repeating query with same parameters types but different string lengths should not hit the caches, when configured to use size hint"
+  ) {
+    restartWithConfig(
+      databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
+    )
+
     val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
@@ -390,7 +399,42 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     ))
   }
 
-  test("repeating query with same parameters types but different list lengths should not hit the caches") {
+  test(
+    "repeating query with same parameters types but different string lengths should hit the caches, when configured not to use size hint"
+  ) {
+    restartWithConfig(
+      databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.FALSE)
+    )
+    val cacheListener = new LoggingTracer()
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> "a")
+    val params2: Map[String, AnyRef] = Map("n" -> "a".repeat(1001))
+
+    graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
+    graph.withTx(tx => tx.execute(query, params2.asJava).resultAsString())
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(String,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(String,UnknownSize)),false)",
+      // params2
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(String,UnknownSize)),false)"
+    ))
+  }
+
+  test(
+    "repeating query with same parameters types but different list lengths should not hit the caches, when configured to use size hint"
+  ) {
+    restartWithConfig(
+      databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
+    )
+
     val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
@@ -415,6 +459,36 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       executionPlanCacheKeyMiss,
       s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,ApproximateSize(10000))),false)",
       s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,ApproximateSize(10000))),false)"
+    ))
+  }
+
+  test(
+    "repeating query with same parameters types but different list lengths should hit the caches, when configured to not use size hint"
+  ) {
+    restartWithConfig(
+      databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.FALSE)
+    )
+
+    val cacheListener = new LoggingTracer()
+
+    val query = "RETURN $n"
+    val params1: Map[String, AnyRef] = Map("n" -> List(42).asJava)
+    val params2: Map[String, AnyRef] = Map("n" -> List.fill(1001)(42).asJava)
+
+    graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
+    graph.withTx(tx => tx.execute(query, params2.asJava).resultAsString())
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      executionPlanCacheKeyMiss,
+      s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,UnknownSize)),false)",
+      s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,UnknownSize)),false)",
+      // params2
+      s"String: cacheHit: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,UnknownSize)),false)"
     ))
   }
 

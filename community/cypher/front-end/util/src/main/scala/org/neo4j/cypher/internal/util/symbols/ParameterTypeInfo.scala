@@ -42,6 +42,7 @@ object ParameterTypeInfo {
   final val DURATION = ParameterTypeInfo(CTDuration, UnknownSize)
   final val MAP = ParameterTypeInfo(CTMap, UnknownSize)
   final val ANY = ParameterTypeInfo(CTAny, UnknownSize)
+  final val STRING = ParameterTypeInfo(CTString, UnknownSize)
 
   def info(typ: CypherType, size: Int): ParameterTypeInfo = typ match {
     case CTString | ListType(_) => ParameterTypeInfo(typ, SizeBucket.computeBucket(size))

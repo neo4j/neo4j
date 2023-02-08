@@ -93,7 +93,8 @@ case class FabricPlanner(
         queryParams,
         defaultContextName,
         () => computePlan(),
-        shouldCache
+        shouldCache,
+        cypherConfig.useParameterSizeHint
       )
       plan.copy(
         executionType = frontend.preParsing.executionType(query.options, plan.inCompositeContext)

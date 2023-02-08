@@ -178,8 +178,8 @@ object CypherQueryCaches {
     type Key = AstCacheKey
     type Value = BaseState
 
-    def key(preParsedQuery: PreParsedQuery, params: MapValue): AstCache.Key =
-      AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params))
+    def key(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
+      AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params, useParameterSizeHint))
 
     class Cache(
       cacheFactory: CacheFactory,
