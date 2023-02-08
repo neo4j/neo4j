@@ -22,7 +22,6 @@ package org.neo4j.io.fs;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
@@ -39,22 +38,6 @@ import org.neo4j.memory.MemoryTracker;
  */
 public final class FileSystemUtils {
     private FileSystemUtils() {}
-
-    /**
-     * Creates a file, or opens an existing file. If necessary, parent directories will be created.
-     *
-     * @param fs The filesystem abstraction to use.
-     * @param file The file to create or open.
-     * @return An output stream.
-     * @throws IOException If an error occurs creating directories or opening the file.
-     */
-    public static OutputStream createOrOpenAsOutputStream(FileSystemAbstraction fs, Path file, boolean append)
-            throws IOException {
-        if (file.getParent() != null) {
-            fs.mkdirs(file.getParent());
-        }
-        return fs.openAsOutputStream(file, append);
-    }
 
     /**
      * Writes provided string into a file denoted by the {@code path} using provided file system.
