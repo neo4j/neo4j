@@ -823,6 +823,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       case other           => literal(other)
     }
   }
+
+  protected def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
+    if (isParallel)
+      ThreadSafeRecordingProbe(variablesToRecord: _*)
+    else
+      RecordingProbe(variablesToRecord: _*)
+  }
 }
 
 /**

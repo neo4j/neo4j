@@ -726,7 +726,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   test("should discard columns") {
     assume(runtime.name != "interpreted" && runtime.name != "slotted")
 
-    val probe = RecordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
+    val probe = recordingProbe("keepLhs", "discardLhs", "keepRhs", "discardRhs")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keepLhs", "keepRhs", "comesFromDiscarded")
       .prober(probe)

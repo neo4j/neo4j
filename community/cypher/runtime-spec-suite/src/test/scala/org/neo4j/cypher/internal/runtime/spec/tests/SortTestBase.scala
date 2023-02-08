@@ -232,8 +232,8 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   test("should discard columns") {
     assume(runtime.name != "interpreted" && runtime.name != "slotted")
 
-    val probe1 = RecordingProbe("keep", "discard")
-    val probe2 = RecordingProbe("keep", "discard")
+    val probe1 = recordingProbe("keep", "discard")
+    val probe2 = recordingProbe("keep", "discard")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keep")
       .prober(probe2)

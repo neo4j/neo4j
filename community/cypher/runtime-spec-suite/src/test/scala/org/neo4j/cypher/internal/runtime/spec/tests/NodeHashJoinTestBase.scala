@@ -26,9 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.ThreadSafeRecordingProbe
 import org.neo4j.graphdb.Direction
 import org.neo4j.values.storable.Values.stringValue
 
@@ -911,7 +909,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
       nodePropertyGraph(size, { case i => Map("p" -> i) })
     }
 
-    val probe = ThreadSafeRecordingProbe("lhsKeep", "lhsDiscard", "rhsKeep", "rhsDiscard")
+    val probe = recordingProbe("lhsKeep", "lhsDiscard", "rhsKeep", "rhsDiscard")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("lhsKeep", "rhsKeep", "rhsDiscard")
       .prober(probe)
@@ -929,21 +927,11 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val result = execute(logicalQuery, runtime)
 
-    val supportsOrder = runtime.name != "Parallel"
-    if (supportsOrder) {
-      result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
-        .withRows(inOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
+    result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
+      .withRows(inAnyOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
 
-      probe.seenRows.map(_.toSeq).toSeq shouldBe
-        Range(0, size)
-          .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
-    } else {
-      result should beColumns("lhsKeep", "rhsKeep", "rhsDiscard")
-        .withRows(inAnyOrder(Range(0, size).map(i => Array(s"$i", s"${i + 2}", s"${i + 3}"))))
-
-      probe.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
-        Range(0, size)
-          .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
-    }
+    probe.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
+      Range(0, size)
+        .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
   }
 }

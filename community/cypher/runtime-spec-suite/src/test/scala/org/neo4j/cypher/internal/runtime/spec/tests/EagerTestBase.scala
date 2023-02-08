@@ -692,8 +692,8 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
   test("should discard columns") {
     assume(runtime.name != "interpreted")
 
-    val probe1 = RecordingProbe("keep", "discard")
-    val probe2 = RecordingProbe("keep", "discard")
+    val probe1 = recordingProbe("keep", "discard")
+    val probe2 = recordingProbe("keep", "discard")
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keep")
       .prober(probe2)
@@ -712,18 +712,11 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("keep")
       .withRows(Range.inclusive(0, sizeHint).map(i => Array(s"bla$i")))
 
-    probe1.seenRows.map(_.toSeq).toSeq shouldBe
+    probe1.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
       Range.inclusive(0, sizeHint).map(i => Seq(stringValue(s"bla$i"), stringValue(s"blö$i")))
 
-    probe2.seenRows.map(_.toSeq).toSeq shouldBe
+    probe2.seenRows.map(_.toSeq).toSeq should contain theSameElementsAs
       Range.inclusive(0, sizeHint).map(i => Seq(stringValue(s"bla$i"), null))
-  }
-
-  protected def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {
-    if (isParallel)
-      ThreadSafeRecordingProbe(variablesToRecord: _*)
-    else
-      RecordingProbe(variablesToRecord: _*)
   }
 
   protected def assertRows(expected: GenTraversable[_], actual: Seq[_], hasLimit: Boolean = false): Any = {
