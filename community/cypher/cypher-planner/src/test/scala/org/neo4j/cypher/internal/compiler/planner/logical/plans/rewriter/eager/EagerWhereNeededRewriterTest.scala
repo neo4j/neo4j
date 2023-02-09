@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -607,6 +609,35 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .apply()
         .|.allNodeScan("m")
         .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(5))))))
+        .filter("n:N")
+        .nodeByIdSeek("n", Set.empty, 1)
+        .build()
+    )
+  }
+
+  test("inserts eager between label remove and NodeByIdSeek with label filter if read through stable iterator") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .removeLabels("m", "N")
+      .apply()
+      .|.allNodeScan("m")
+      .filter("n:N")
+      .nodeByIdSeek("n", Set.empty, 1)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .removeLabels("m", "N")
+        .apply()
+        .|.allNodeScan("m")
+        .eager(ListSet(LabelReadRemoveConflict(labelName("N"), Some(Conflict(Id(2), Id(5))))))
         .filter("n:N")
         .nodeByIdSeek("n", Set.empty, 1)
         .build()
@@ -3509,6 +3540,37 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .|.nodeByLabelScan("d", "Event")
         .eager(ListSet(LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))))
         .foreach("x", "[1]", Seq(createPattern(Seq(createNode("e", "Event")))))
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should insert an eager when there is a conflict between a Remove Label within a forEach and a read after"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .apply()
+      .|.nodeByLabelScan("d", "Event")
+      .foreach("x", "[1]", Seq(RemoveLabelPattern("e", Seq(labelName("Event")))))
+      .argument()
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("d")
+        .apply()
+        .|.nodeByLabelScan("d", "Event")
+        .eager(ListSet(
+          LabelReadRemoveConflict(labelName("Event"), Some(Conflict(Id(3), Id(0)))),
+          LabelReadRemoveConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))
+        ))
+        .foreach("x", "[1]", Seq(RemoveLabelPattern("e", Seq(labelName("Event")))))
         .argument()
         .build()
     )

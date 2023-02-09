@@ -143,7 +143,7 @@ case class SetLabelPattern(idName: String, labels: Seq[LabelName]) extends SetMu
   override def dependencies: Set[String] = Set(idName)
 }
 
-case class RemoveLabelPattern(idName: String, labels: Seq[LabelName]) extends SimpleMutatingPattern with NoSymbols {
+case class RemoveLabelPattern(idName: String, labels: Seq[LabelName]) extends SetMutatingPattern with NoSymbols {
   override def dependencies: Set[String] = Set(idName)
 }
 

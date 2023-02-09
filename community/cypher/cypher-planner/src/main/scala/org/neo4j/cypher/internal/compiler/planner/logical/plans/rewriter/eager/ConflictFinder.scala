@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanThatIntroducesVariable
@@ -29,12 +30,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
@@ -42,8 +45,10 @@ import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.util.InputPosition
@@ -111,7 +116,12 @@ object ConflictFinder {
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
-      addConflict(writePlan, readPlan, Set(LabelReadSetConflict(label, conflict)))
+      writePlan match {
+        case _: RemoveLabels => addConflict(writePlan, readPlan, Set(LabelReadRemoveConflict(label, conflict)))
+        case forEach: Foreach if forEach.mutations.exists(_.isInstanceOf[RemoveLabelPattern]) =>
+          addConflict(writePlan, readPlan, Set(LabelReadRemoveConflict(label, conflict)))
+        case _ => addConflict(writePlan, readPlan, Set(LabelReadSetConflict(label, conflict)))
+      }
     }
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE

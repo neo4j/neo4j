@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
 import org.neo4j.cypher.internal.ir.DeleteMutatingPattern
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -253,6 +254,9 @@ object WriteFinder {
         acc.withUnknownPropertiesWritten
 
       case (acc, SetLabelPattern(_, labels)) =>
+        acc.withLabelsWritten(labels.toSet)
+
+      case (acc, RemoveLabelPattern(_, labels)) =>
         acc.withLabelsWritten(labels.toSet)
 
       case (_, mutatingPattern) =>
