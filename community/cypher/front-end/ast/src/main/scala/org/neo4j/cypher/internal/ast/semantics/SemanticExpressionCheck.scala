@@ -779,7 +779,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       .foldSemanticCheck(disjunction => { state: SemanticState =>
         val isNode = state.expressionType(entity).actual == CTNode.invariant
         val sanitizedLabelExpression = stringifier.stringifyLabelExpression(labelExpression.replaceColonSyntax)
-        val errorMessage = SemanticPatternCheck.legacyRelationshipDisjunctionError(sanitizedLabelExpression, isNode)
+        val errorMessage = SemanticPatternCheck.legacyRelationshipDisjunctionError(
+          sanitizedLabelExpression,
+          labelExpression.containsIs,
+          isNode
+        )
         SemanticCheckResult.error(state, SemanticError(errorMessage, disjunction.position))
       })
 
@@ -802,7 +806,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       ) {
         val sanitizedLabelExpression = stringifier.stringifyLabelExpression(labelExpression.replaceColonSyntax)
         error(
-          s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :$sanitizedLabelExpression.",
+          if (labelExpression.containsIs)
+            s"Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS $sanitizedLabelExpression."
+          else
+            s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :$sanitizedLabelExpression.",
           legacySymbols.head.position
         )
       } chain

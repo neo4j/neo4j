@@ -117,7 +117,8 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   case class LabelExpressionsPartition(
     legacy: Set[LabelExpression] = Set.empty,
-    gpm: Set[LabelExpression] = Set.empty
+    gpm: Set[LabelExpression] = Set.empty,
+    leaf: Set[LabelExpression] = Set.empty
   )
 
   final override def semanticCheck: SemanticCheck =
@@ -158,20 +159,27 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
       case LabelExpression => throw new IllegalStateException("Missing a case for label expression location")
     }
 
-    when(partition.gpm.nonEmpty) {
+    val containsIs = (partition.gpm ++ partition.legacy ++ partition.leaf).exists(le => le.containsIs)
+
+    when(partition.gpm.nonEmpty || containsIs) {
       // we prefer the new way, so we will only error on the "legacy" expressions
       val maybeExplanation = partition.legacy.map { le =>
-        (stringifier.stringifyLabelExpression(le.replaceColonSyntax), le.position)
+        (stringifier.stringifyLabelExpression(le.replaceColonSyntax), le.containsIs, le.position)
       } match {
         case SetExtractor() => None
-        case SetExtractor((singleExpression, pos)) =>
-          Some((s"This expression could be expressed as :$singleExpression.", pos))
+        case SetExtractor((singleExpression, containsIs, pos)) =>
+          val isOrColon = if (containsIs) "IS " else ":"
+          Some((s"This expression could be expressed as $isOrColon$singleExpression.", pos))
         // we report all error on the first position as we will later on throw away everything but the first error.
-        case set => Some((s"These expressions could be expressed as :${set.map(_._1).mkString(", :")}.", set.head._2))
+        case set: Set[(String, Boolean, InputPosition)] =>
+          val replacement = set.map(x => (if (x._2) "IS " else ":") + x._1)
+          Some((s"These expressions could be expressed as ${replacement.mkString(", ")}.", set.head._3))
       }
       maybeExplanation match {
         case Some((explanation, pos)) => SemanticError(
-            s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation",
+            if (partition.gpm.nonEmpty)
+              s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation"
+            else s"Mixing the IS keyword with colon (':') between labels is not allowed. $explanation",
             pos
           )
         case None => SemanticCheck.success
@@ -185,7 +193,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
     partition: LabelExpressionsPartition
   ): LabelExpressionsPartition = {
     labelExpression match {
-      case _: Leaf                                                                       => partition
+      case x: Leaf => partition.copy(leaf = partition.leaf + x)
       case Disjunctions(children, _) if !isNode && children.forall(_.isInstanceOf[Leaf]) => partition
       case x if isNode && x.containsGpmSpecificLabelExpression    => partition.copy(gpm = partition.gpm + x)
       case x if !isNode && x.containsGpmSpecificRelTypeExpression => partition.copy(gpm = partition.gpm + x)
