@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
  *    /  \
  * (ui1) (ui2)
  */
-object mergeUniqueIndexSeekLeafPlanner
+object mergeNodeUniqueIndexSeekLeafPlanner
     extends NodeIndexLeafPlanner(Seq(nodeSingleUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
 
   override def apply(

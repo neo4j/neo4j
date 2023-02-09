@@ -100,6 +100,18 @@ trait FakeIndexAndConstraintManagement {
     IndexModifier(indexes(indexDef))
   }
 
+  def uniqueRelationshipIndexOn(relationshipType: String, properties: String*): IndexModifier = {
+    val indexDef = relationshipIndexOn(
+      relationshipType,
+      properties,
+      isUnique = true,
+      withValues = false,
+      IndexOrderCapability.NONE,
+      IndexType.Range
+    )
+    IndexModifier(indexes(indexDef))
+  }
+
   def relationshipTextIndexOn(relationshipType: String, properties: String*): IndexModifier = {
     val indexDef = relationshipIndexOn(
       relationshipType,
