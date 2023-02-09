@@ -221,6 +221,41 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
+  test("should plan assert same relationship on top of multiple unique index seeks under MERGE") {
+    val cfg = plannerBuilder()
+      .enablePlanningRelationshipUniqueIndexSeek()
+      .enablePlanningMergeRelationshipUniqueIndexSeek()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop2", "prop3"),
+        existsSelectivity = 1,
+        uniqueSelectivity = 0.01,
+        isUnique = true
+      )
+      .build()
+
+    val plan = cfg.plan("MERGE (a)-[r:REL {prop: 123, prop2: 42, prop3: 'welp'}]->(b)").stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .merge(
+        nodes = Seq(
+          createNode("a"),
+          createNode("b")
+        ),
+        relationships = Seq(
+          createRelationship("r", "a", "REL", "b", OUTGOING, Some("{prop: 123, prop2: 42, prop3: 'welp'}"))
+        )
+      )
+      .assertSameRelationship("r")
+      .|.relationshipIndexOperator("(a)-[r:REL(prop2 = 42, prop3 = 'welp')]->(b)", unique = true)
+      .relationshipIndexOperator("(a)-[r:REL(prop = 123)]->(b)", unique = true)
+      .build()
+  }
+
   test("should not plan relationship unique index seek under MERGE if it's disabled") {
     val cfg = plannerBuilder()
       .enablePlanningRelationshipUniqueIndexSeek()
