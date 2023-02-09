@@ -257,7 +257,7 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, highestSetTrackerIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
-            long pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
+            long pessimisticNumberOfCollisions = detectAndMarkCollisions( progress, sortBuckets );
             if ( pessimisticNumberOfCollisions > 0 )
             {
                 buildCollisionInfo( inputIdLookup, pessimisticNumberOfCollisions, collector, progress );
@@ -331,17 +331,15 @@ public class EncodingIdMapper implements IdMapper
     {
         private final long fromInclusive;
         private final long toExclusive;
-        private final boolean last;
         private final ProgressListener progress;
 
         private int numberOfCollisions;
         private int localProgress;
 
-        DetectWorker( long fromInclusive, long toExclusive, boolean last, ProgressListener progress )
+        DetectWorker( long fromInclusive, long toExclusive, ProgressListener progress )
         {
             this.fromInclusive = fromInclusive;
             this.toExclusive = toExclusive;
-            this.last = last;
             this.progress = progress;
         }
 
@@ -350,9 +348,8 @@ public class EncodingIdMapper implements IdMapper
         {
             SameGroupDetector sameGroupDetector = new SameGroupDetector();
 
-            // In all chunks except the last this chunk also takes care of the detection in the seam,
-            // but for the last one there's no seam at the end.
-            long end = last ? toExclusive - 1 : toExclusive;
+            // No detection over seams necessary, we have divided where there will be no collisions outside each part
+            long end = toExclusive - 1;
 
             for ( long i = fromInclusive; i < end; i++ )
             {
@@ -440,29 +437,28 @@ public class EncodingIdMapper implements IdMapper
      * races between detector workers. This is not a problem though, this value serves as a pessimistic value
      * for allocating arrays to hold collision data to later sort and use to discover duplicates.
      */
-    private long detectAndMarkCollisions( ProgressListener progress )
+    private long detectAndMarkCollisions( ProgressListener progress, SortBucket[] sortBuckets )
     {
         progress.started( "DETECT" );
         long totalCount = highestSetTrackerIndex + 1;
 
         Workers<DetectWorker> workers = new Workers<>( "DETECT" );
-        int processors = processorsForParallelWork;
-        long stride = totalCount / processorsForParallelWork;
-        if ( stride < 10 )
+
+        if ( totalCount / processorsForParallelWork < 10 )
         {
             // Multi-threading would be overhead
-            processors = 1;
-            stride = totalCount;
+            workers.start( new DetectWorker( 0, totalCount, progress ) );
         }
-        long fromInclusive;
-        long toExclusive = 0;
-        for ( int i = 0; i < processors; i++ )
+        else
         {
-            boolean last = i == processors - 1;
-            fromInclusive = toExclusive;
-            toExclusive = last ? totalCount : toExclusive + stride;
-            workers.start( new DetectWorker( fromInclusive, toExclusive, last, progress ) );
+            // To be sure we don't have collisions over workers (and would possibly need to swap values in detect)
+            // we divide according to the sortBuckets
+            for ( SortBucket sortBucket : sortBuckets )
+            {
+                workers.start( new DetectWorker( sortBucket.baseIndex, sortBucket.baseIndex + sortBucket.count, progress ) );
+            }
         }
+
         workers.awaitAndThrowOnErrorStrict();
 
         long numberOfCollisions = 0;
