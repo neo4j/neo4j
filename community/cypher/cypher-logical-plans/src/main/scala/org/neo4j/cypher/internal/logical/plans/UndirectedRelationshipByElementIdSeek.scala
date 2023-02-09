@@ -43,4 +43,6 @@ case class UndirectedRelationshipByElementIdSeek(
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedRelationshipByElementIdSeek =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def directed: Boolean = false
 }

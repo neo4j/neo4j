@@ -32,8 +32,12 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-  additionalConfigs = (GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)), runtime) {
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        additionalConfigs = (GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)
+      ),
+      runtime
+    ) {
 
   test("should verify that two relationships are identical (directed)") {
     val rels = given {
@@ -677,7 +681,6 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
         .setProperty("id", 42)
     }
 
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
@@ -769,7 +772,3 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withRows(singleColumn(Seq(expected, expected)))
   }
 }
-
-
-
-

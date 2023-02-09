@@ -286,9 +286,10 @@ abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan
   def idName: String
   def leftNode: String
   def rightNode: String
+  def directed: Boolean
 }
 
-abstract class MultiNodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
+abstract class MultiEntityLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
   def idNames: Set[String]
 }
 
@@ -340,7 +341,7 @@ abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogic
   def indexType: IndexType
 }
 
-abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeafPlan(idGen)
+abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiEntityLogicalLeafPlan(idGen)
     with IndexedPropertyProvidingPlan {}
 
 abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
@@ -352,6 +353,22 @@ abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idG
   def indexOrder: IndexOrder
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeekLeafPlan
+}
+
+abstract class MultiRelationshipIndexLeafPlan(idGen: IdGen) extends MultiEntityLogicalLeafPlan(idGen)
+    with IndexedPropertyProvidingPlan {}
+
+abstract class RelationshipIndexSeekLeafPlan(idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
+
+  def valueExpr: QueryExpression[Expression]
+
+  def properties: Seq[IndexedProperty]
+
+  def indexOrder: IndexOrder
+
+  def unique: Boolean
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexSeekLeafPlan
 }
 
 case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {

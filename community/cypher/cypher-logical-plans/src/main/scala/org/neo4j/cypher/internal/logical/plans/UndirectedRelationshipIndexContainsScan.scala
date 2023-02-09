@@ -60,4 +60,6 @@ case class UndirectedRelationshipIndexContainsScan(
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan =
     copy(property = f(property))(SameId(this.id))
+
+  override def directed: Boolean = false
 }

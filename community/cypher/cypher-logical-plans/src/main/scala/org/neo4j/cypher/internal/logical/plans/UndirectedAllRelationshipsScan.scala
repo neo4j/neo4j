@@ -44,4 +44,6 @@ case class UndirectedAllRelationshipsScan(
 
   override def withoutArgumentIds(argsToExclude: Set[String]): UndirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def directed: Boolean = false
 }

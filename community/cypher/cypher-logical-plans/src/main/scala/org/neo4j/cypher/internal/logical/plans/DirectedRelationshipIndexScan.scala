@@ -58,4 +58,6 @@ case class DirectedRelationshipIndexScan(
   override def leftNode: String = startNode
 
   override def rightNode: String = endNode
+
+  override def directed: Boolean = true
 }

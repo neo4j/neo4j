@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.AssertingMultiRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
 import org.neo4j.cypher.internal.logical.plans.Bound
@@ -493,6 +494,31 @@ case class LogicalPlan2PlanDescription(
           variables,
           withRawCardinalities
         )
+
+      case p @ AssertingMultiRelationshipIndexSeek(_, indexLeafPlans) =>
+        val (_, indexDescs) = indexLeafPlans.map(l =>
+          getRelIndexDescriptions(
+            l.idName,
+            l.leftNode,
+            l.typeToken,
+            l.rightNode,
+            l.directed,
+            l.properties.map(_.propertyKeyToken),
+            l.indexType,
+            l.valueExpr,
+            unique = l.unique,
+            readOnly,
+            p.cachedProperties
+          )
+        ).unzip
+        PlanDescriptionImpl(
+          id = plan.id,
+          "AssertingMultiNodeIndexSeek",
+          NoChildren,
+          Seq(Details(indexDescs)),
+          variables,
+          withRawCardinalities
+        )
       case p @ DirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType) =>
         val (indexMode, indexDesc) = getRelIndexDescriptions(
           idName,
@@ -503,7 +529,6 @@ case class LogicalPlan2PlanDescription(
           properties.map(_.propertyKeyToken),
           indexType,
           valueExpr,
-          directed = true,
           unique = false,
           readOnly = readOnly,
           p.cachedProperties
@@ -519,7 +544,6 @@ case class LogicalPlan2PlanDescription(
           properties.map(_.propertyKeyToken),
           indexType,
           valueExpr,
-          directed = false,
           unique = false,
           readOnly = readOnly,
           p.cachedProperties
@@ -535,7 +559,6 @@ case class LogicalPlan2PlanDescription(
           properties.map(_.propertyKeyToken),
           indexType,
           valueExpr,
-          directed = true,
           unique = true,
           readOnly = readOnly,
           p.cachedProperties
@@ -551,7 +574,6 @@ case class LogicalPlan2PlanDescription(
           properties.map(_.propertyKeyToken),
           indexType,
           valueExpr,
-          directed = false,
           unique = true,
           readOnly = readOnly,
           p.cachedProperties
@@ -2370,13 +2392,12 @@ case class LogicalPlan2PlanDescription(
     propertyKeys: Seq[PropertyKeyToken],
     indexType: IndexType,
     valueExpr: QueryExpression[expressions.Expression],
-    directed: Boolean,
     unique: Boolean,
     readOnly: Boolean,
     caches: Seq[expressions.Expression]
   ): (String, PrettyString) = {
 
-    val name = relationshipIndexOperatorName(valueExpr, unique, readOnly, directed)
+    val name = relationshipIndexOperatorName(valueExpr, unique, readOnly, isDirected)
     val predicate = indexPredicateString(propertyKeys, valueExpr)
     val info = relIndexInfoString(idName, start, typeToken, end, isDirected, propertyKeys, indexType, predicate, caches)
 

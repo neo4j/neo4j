@@ -45,7 +45,7 @@ case class UndirectedRelationshipUniqueIndexSeek(
   argumentIds: Set[String],
   indexOrder: IndexOrder,
   override val indexType: IndexType
-)(implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
+)(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -59,4 +59,8 @@ case class UndirectedRelationshipUniqueIndexSeek(
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): UndirectedRelationshipUniqueIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
+
+  override def unique: Boolean = true
+
+  override def directed: Boolean = false
 }

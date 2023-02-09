@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.AssertingMultiRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -169,6 +170,7 @@ import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
 
 import java.util
+
 import scala.util.Try
 
 /**
@@ -601,6 +603,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         }
 
       case AssertingMultiNodeIndexSeek(_, leafPlans) =>
+        leafPlans.foreach { p =>
+          allocateLeaf(p, nullable, slots)
+          allocations.set(p.id, slots)
+        }
+
+      case AssertingMultiRelationshipIndexSeek(_, leafPlans) =>
         leafPlans.foreach { p =>
           allocateLeaf(p, nullable, slots)
           allocations.set(p.id, slots)

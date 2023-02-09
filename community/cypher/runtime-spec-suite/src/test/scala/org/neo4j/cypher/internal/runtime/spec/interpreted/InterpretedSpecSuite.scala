@@ -445,7 +445,9 @@ class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY
 
 class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
     with EsotericAssertSameNodeTestBase[CommunityRuntimeContext]
-class InterpretedAssertSameRelationshipTest extends AssertSameRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedAssertSameRelationshipTest
+    extends AssertSameRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedLenientCreateRelationshipTest
