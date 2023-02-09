@@ -19,20 +19,25 @@
  */
 package org.neo4j.kernel.database;
 
+import java.time.Clock;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
-import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.internal.CappedLogger;
 
 public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository {
-    private final Supplier<DatabaseContext> systemDatabaseSupplier;
+    private final Supplier<Optional<? extends DatabaseContext>> systemDatabaseSupplier;
+    private final CappedLogger cappedLogger;
 
-    public SystemGraphDatabaseIdRepository(Supplier<DatabaseContext> systemDatabaseSupplier) {
+    public SystemGraphDatabaseIdRepository(
+            Supplier<Optional<? extends DatabaseContext>> systemDatabaseSupplier, InternalLogProvider logProvider) {
         this.systemDatabaseSupplier = systemDatabaseSupplier;
+        this.cappedLogger = new CappedLogger(logProvider.getLog(getClass()), 10, TimeUnit.SECONDS, Clock.systemUTC());
     }
 
     @Override
@@ -45,12 +50,16 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository {
         return execute(model -> model.getDatabaseIdByUUID(databaseId.uuid()));
     }
 
-    private <T> T execute(Function<TopologyGraphDbmsModel, T> operation) {
+    private <T> Optional<T> execute(Function<TopologyGraphDbmsModel, Optional<T>> operation) {
         var databaseContext = systemDatabaseSupplier.get();
-        var systemDb = databaseContext.databaseFacade();
+        if (databaseContext.isEmpty()) {
+            cappedLogger.info("Could not retrieve the system database at this time.");
+            return Optional.empty();
+        }
+        var systemDb = databaseContext.get().databaseFacade();
         if (!systemDb.isAvailable(100)) {
-            throw new DatabaseShutdownException(
-                    new DatabaseManagementException("System database is not (yet) available"));
+            cappedLogger.info("Currently, the system database is not available.");
+            return Optional.empty();
         }
         try (var tx = systemDb.beginTx()) {
             var model = new CommunityTopologyGraphDbmsModel(tx);

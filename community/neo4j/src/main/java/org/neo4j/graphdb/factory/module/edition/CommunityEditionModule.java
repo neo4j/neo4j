@@ -66,6 +66,7 @@ import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
@@ -155,7 +156,9 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         var rootDatabaseIdRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseIdRepository.class,
                 globalModule.getExternalDependencyResolver(),
-                () -> new SystemGraphDatabaseIdRepository(databaseRepository::getSystemDatabaseContext));
+                () -> new SystemGraphDatabaseIdRepository(
+                        () -> databaseRepository.getDatabaseContext(DatabaseId.SYSTEM_DATABASE_ID),
+                        globalModule.getLogService().getInternalLogProvider()));
         var rootDatabaseReferenceRepository = CommunityEditionModule.tryResolveOrCreate(
                 DatabaseReferenceRepository.class,
                 globalModule.getExternalDependencyResolver(),
