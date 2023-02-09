@@ -3405,6 +3405,38 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts Eager if there is a conflict in a Union plan: RHS vs Top (LHS and RHS are identical plans with a filter)."
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("foo")
+      .create(createNodeWithProperties("m", Seq.empty, "{prop: 5}"))
+      .union().withCardinality(10)
+      .|.filter("n.prop > 0").withCardinality(5)
+      .|.allNodeScan("n").withCardinality(5)
+      .filter("n.prop > 0").withCardinality(5)
+      .allNodeScan("n").withCardinality(5)
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("foo")
+        .create(createNodeWithProperties("m", Seq(), "{prop: 5}"))
+        .union()
+        .|.filter("n.prop > 0")
+        .|.eager(ListSet(ReadCreateConflict(Some(Conflict(Id(1), Id(4))))))
+        .|.allNodeScan("n")
+        .filter("n.prop > 0")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
     "Should only reference the conflicting label when there is an eagerness conflict between a write within a forEach and a read after"
   ) {
     val planBuilder = new LogicalPlanBuilder()
@@ -4280,6 +4312,34 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(5), Id(4))))))
         .deleteNode("n")
         .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+// MATCH (n:N) UNION MATCH (n:N) DELETE n return count(*) as count
+  test("Should be eager if deleted node conflicts with unstable node (identical plan to stable node)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("n")
+      .union()
+      .|.nodeByLabelScan("n", "N")
+      .nodeByLabelScan("n", "N")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("n")
+        .union()
+        .|.eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .|.nodeByLabelScan("n", "N")
+        .nodeByLabelScan("n", "N")
         .build()
     )
   }

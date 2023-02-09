@@ -116,12 +116,12 @@ object ConflictFinder {
 
     // Conflicts between a label read (determined by a snapshot filterExpressions) and a label CREATE
     for {
-      (writePlan, createdNodes) <- readsAndWrites.writes.creates.createdNodes
+      (Ref(writePlan), createdNodes) <- readsAndWrites.writes.creates.createdNodes
 
       (variable, FilterExpressions(readPlans, expression)) <-
         // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
         // But we have to include other filterExpressions that are not in the snapshot, to also cover write-read conflicts.
-        readsAndWrites.writes.creates.nodeFilterExpressionsSnapshots(writePlan).fuse(
+        readsAndWrites.writes.creates.nodeFilterExpressionsSnapshots(Ref(writePlan)).fuse(
           readsAndWrites.reads.nodeFilterExpressions
         )((x, _) => x)
 
@@ -141,7 +141,7 @@ object ConflictFinder {
         case _: CreateOverlaps.Overlap        => true
       })
 
-      readPlan <- readPlans
+      Ref(readPlan) <- readPlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
@@ -211,7 +211,7 @@ object ConflictFinder {
       : Map[LogicalVariable, (PossibleDeleteConflictPlans, DeleteConflictType)] = {
       // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
       // But we have to include other possibleDeleteConflictPlans that are not in the snapshot, to also cover write-read conflicts.
-      readsAndWrites.writes.deletes.possibleNodeDeleteConflictPlanSnapshots(writePlan)
+      readsAndWrites.writes.deletes.possibleNodeDeleteConflictPlanSnapshots(Ref(writePlan))
         .view.mapValues[(PossibleDeleteConflictPlans, DeleteConflictType)](x => (x, MatchDeleteConflict)).toMap
         .fuse(readsAndWrites.reads.possibleNodeDeleteConflictPlans.view.mapValues(x => (x, DeleteMatchConflict)).toMap)(
           (x, _) => x
@@ -220,7 +220,7 @@ object ConflictFinder {
 
     // Conflicts between a MATCH and a DELETE with a node variable
     for {
-      (writePlan, deletedNodes) <- readsAndWrites.writes.deletes.deletedNodeVariables
+      (Ref(writePlan), deletedNodes) <- readsAndWrites.writes.deletes.deletedNodeVariables
 
       (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, lastPlansToReferenceVar), conflictType)) <-
         deleteReadVariables(writePlan)
@@ -269,16 +269,16 @@ object ConflictFinder {
 
   private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
     // A plan can never conflict with itself
-    def conflictsWithItself = writePlan == readPlan
+    def conflictsWithItself = writePlan eq readPlan
 
     // a merge plan can never conflict with its children
     def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && writePlan.folder.treeExists {
-      case `readPlan` => true
+      case plan: LogicalPlan if plan eq readPlan => true
     }
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
     def conflictsWithUnstablePlan =
-      readPlan != wholePlan.leftmostLeaf ||
+      (readPlan ne wholePlan.leftmostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
         isInTransactionalApply(
           writePlan,
@@ -311,7 +311,7 @@ object ConflictFinder {
     acc: Seq[LogicalPlan] = Seq.empty
   ): Option[Seq[LogicalPlan]] = {
     outerPlan match {
-      case `innerPlan` => Some(acc)
+      case plan: LogicalPlan if (plan eq innerPlan) => Some(acc)
       case _ =>
         def recurse = plan => parentsOfIn(innerPlan, plan, acc :+ outerPlan)
         val maybeLhs = outerPlan.lhs.flatMap(recurse)

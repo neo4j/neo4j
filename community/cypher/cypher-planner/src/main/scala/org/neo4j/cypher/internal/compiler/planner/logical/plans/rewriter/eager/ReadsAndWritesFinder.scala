@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Ref
 
 object ReadsAndWritesFinder {
 
@@ -152,7 +153,7 @@ object ReadsAndWritesFinder {
    * @param expression                 an expression of all predicates related to one variable.
    */
   case class FilterExpressions(
-    plansThatIntroduceVariable: Set[LogicalPlan],
+    plansThatIntroduceVariable: Set[Ref[LogicalPlan]],
     expression: Expression = Ands(Seq.empty)(InputPosition.NONE)
   ) {
 
@@ -317,7 +318,7 @@ object ReadsAndWritesFinder {
       variable: LogicalVariable,
       plan: LogicalPlan
     ): Reads = {
-      val newExpressions = nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(plan)))
+      val newExpressions = nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(Ref(plan))))
       copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
     }
 
@@ -327,7 +328,7 @@ object ReadsAndWritesFinder {
       filterExpression: Expression
     ): Reads = {
       val newExpressions =
-        nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(plan))).withAddedExpression(
+        nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(Ref(plan)))).withAddedExpression(
           filterExpression
         )
       copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
@@ -478,8 +479,8 @@ object ReadsAndWritesFinder {
    * @param nodeFilterExpressionsSnapshots for each plan (that we will need to look at the snapshot later), a snapshot of the current nodeFilterExpressions.
    */
   private[eager] case class Creates(
-    createdNodes: Map[LogicalPlan, Set[CreatedNode]] = Map.empty,
-    nodeFilterExpressionsSnapshots: Map[LogicalPlan, Map[LogicalVariable, FilterExpressions]] = Map.empty
+    createdNodes: Map[Ref[LogicalPlan], Set[CreatedNode]] = Map.empty,
+    nodeFilterExpressionsSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
 
     /**
@@ -493,10 +494,10 @@ object ReadsAndWritesFinder {
       plan: LogicalPlan,
       nodeFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      val prevCreatedNodes = createdNodes.getOrElse(plan, Set.empty)
+      val prevCreatedNodes = createdNodes.getOrElse(Ref(plan), Set.empty)
       copy(
-        createdNodes = createdNodes.updated(plan, prevCreatedNodes + createdNode),
-        nodeFilterExpressionsSnapshots = nodeFilterExpressionsSnapshots + (plan -> nodeFilterExpressionsSnapshot)
+        createdNodes = createdNodes.updated(Ref(plan), prevCreatedNodes + createdNode),
+        nodeFilterExpressionsSnapshots = nodeFilterExpressionsSnapshots + (Ref(plan) -> nodeFilterExpressionsSnapshot)
       )
     }
 
@@ -525,10 +526,10 @@ object ReadsAndWritesFinder {
    * @param possibleNodeDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleNodeDeleteConflictPlans
    */
   private[eager] case class Deletes(
-    deletedNodeVariables: Map[LogicalPlan, Set[Variable]] = Map.empty,
+    deletedNodeVariables: Map[Ref[LogicalPlan], Set[Variable]] = Map.empty,
     plansThatDeleteNodeExpressions: Seq[LogicalPlan] = Seq.empty,
     plansThatDeleteUnknownTypeExpressions: Seq[LogicalPlan] = Seq.empty,
-    possibleNodeDeleteConflictPlanSnapshots: Map[LogicalPlan, Map[LogicalVariable, PossibleDeleteConflictPlans]] =
+    possibleNodeDeleteConflictPlanSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, PossibleDeleteConflictPlans]] =
       Map.empty
   ) {
 
@@ -536,8 +537,8 @@ object ReadsAndWritesFinder {
      * Save that `plan` deletes the variable `deletedNode`.
      */
     def withDeletedNodeVariable(deletedNode: Variable, plan: LogicalPlan): Deletes = {
-      val prevDeletedNodes = deletedNodeVariables.getOrElse(plan, Set.empty)
-      copy(deletedNodeVariables = deletedNodeVariables.updated(plan, prevDeletedNodes + deletedNode))
+      val prevDeletedNodes = deletedNodeVariables.getOrElse(Ref(plan), Set.empty)
+      copy(deletedNodeVariables = deletedNodeVariables.updated(Ref(plan), prevDeletedNodes + deletedNode))
     }
 
     def withPlanThatDeletesNodeExpressions(plan: LogicalPlan): Deletes = {
@@ -556,7 +557,9 @@ object ReadsAndWritesFinder {
       plan: LogicalPlan,
       snapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Deletes = {
-      copy(possibleNodeDeleteConflictPlanSnapshots = possibleNodeDeleteConflictPlanSnapshots.updated(plan, snapshot))
+      copy(possibleNodeDeleteConflictPlanSnapshots =
+        possibleNodeDeleteConflictPlanSnapshots.updated(Ref(plan), snapshot)
+      )
     }
 
     def includePlanDeletes(
