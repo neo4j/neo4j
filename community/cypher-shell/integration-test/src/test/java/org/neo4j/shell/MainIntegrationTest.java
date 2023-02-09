@@ -818,6 +818,46 @@ class MainIntegrationTest {
     }
 
     @Test
+    void evaluatesParameterArgumentsWithSemicolon() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addArgs("--param", "purple => 'rain';")
+                .addArgs("--param", "white =>  \"space\"  ;  ")
+                .addArgs("--param", "advice => ['talk', 'less', 'smile', 'more'];")
+                .addArgs("--param", "when => date('2021-01-12');")
+                .addArgs("--param", "repeatAfterMe => 'A' + 'B' + 'C';")
+                .addArgs("--param", "easyAs => 1 + 2 + 3;")
+                .addArgs(
+                        "--param",
+                        "dt => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));")
+                .addArgs(
+                        "--param",
+                        "dt2 => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));")
+                .userInputLines(
+                        ":params", "return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains(
+                                """
+                                        > :params
+                                        :param advice        => ['talk', 'less', 'smile', 'more']
+                                        :param dt            => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
+                                        :param dt2           => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
+                                        :param easyAs        => 1 + 2 + 3
+                                        :param purple        => 'rain'
+                                        :param repeatAfterMe => 'A' + 'B' + 'C'
+                                        :param when          => date('2021-01-12')
+                                        :param white         => "space"  ;  """),
+                        contains(
+                                """
+                                 > return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;
+                                 $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2
+                                 "rain", "space", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6, 2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]
+                                 """));
+    }
+
+    @Test
     void evaluatesArgumentsInteractive() throws Exception {
         buildTest()
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
@@ -845,6 +885,41 @@ class MainIntegrationTest {
                                         > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
                                         $purple, $advice, $when, $repeatAfterMe, $easyAs
                                         "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
+                                        """));
+    }
+
+    @Test
+    void evaluatesArgumentsInteractiveWithSemicolon() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .userInputLines(
+                        ":param purple => 'rain';",
+                        ":param advice => ['talk', 'less', 'smile', 'more'];",
+                        ":param when => date('2021-01-12');",
+                        ":param repeatAfterMe => 'A' + 'B' + 'C';",
+                        ":param easyAs => 1 + 2 + 3;",
+                        ":param dt => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));",
+                        ":param dt2 => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));;",
+                        ":params",
+                        "return $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains(
+                                """
+                                        > :params
+                                        :param advice        => ['talk', 'less', 'smile', 'more']
+                                        :param dt            => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
+                                        :param dt2           => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
+                                        :param easyAs        => 1 + 2 + 3
+                                        :param purple        => 'rain'
+                                        :param repeatAfterMe => 'A' + 'B' + 'C'
+                                        :param when          => date('2021-01-12')"""),
+                        contains(
+                                """
+                                        > return $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;
+                                        $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2
+                                        "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6, 2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]
                                         """));
     }
 

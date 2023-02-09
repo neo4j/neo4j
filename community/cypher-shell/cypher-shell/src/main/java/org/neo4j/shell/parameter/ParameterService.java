@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter;
 import org.neo4j.cypher.internal.parser.javacc.Cypher;
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
@@ -134,6 +135,10 @@ class ShellParameterService implements ParameterService {
 
         @Override
         public RawParameter parse(String input) throws ParameterParsingException {
+            return doParse(stripTrailingSemicolon(input));
+        }
+
+        private RawParameter doParse(String input) throws ParameterParsingException {
             if (invalidPattern.matcher(input).matches()) {
                 throw new ParameterParsingException();
             }
@@ -145,6 +150,10 @@ class ShellParameterService implements ParameterService {
                     .map(m -> new RawParameter(unescapedCypherVariable(m.group("key")), m.group("value")))
                     .filter(p -> !p.name().isBlank())
                     .orElseThrow(ParameterParsingException::new);
+        }
+
+        private static String stripTrailingSemicolon(String input) {
+            return input.endsWith(";") ? StringUtils.stripEnd(input, ";") : input;
         }
     }
 

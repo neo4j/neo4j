@@ -98,19 +98,24 @@ class ShellParameterServiceTest {
 
     @Test
     void parse() throws ParameterService.ParameterParsingException {
-        assertParse("bob   9", "bob", "9");
-        assertParse("bob => 9", "bob", "9");
-        assertParse("`bob` => 9", "bob", "9");
-        assertParse("bØb   9", "bØb", "9");
-        assertParse("`first=>Name` => \"Bruce\"", "first=>Name", "\"Bruce\"");
-        assertParse("`bob#`   9", "bob#", "9");
-        assertParse(" `bo `` sömething ```   9", "bo ` sömething `", "9");
-        assertParse("bob 'one two'", "bob", "'one two'");
-        assertParse("böb 'one two'", "böb", "'one two'");
-        assertParse("bob: \"one\"", "bob", "\"one\"");
-        assertParse("`bob:`: 'one'", "bob:", "'one'");
-        assertParse("`t:om` 'two'", "t:om", "'two'");
-        assertParse("bob \"RETURN 5 as bob\"", "bob", "\"RETURN 5 as bob\"");
+        final var tests = List.of(
+                List.of("bob   9", "bob", "9"),
+                List.of("bob => 9", "bob", "9"),
+                List.of("`bob` => 9", "bob", "9"),
+                List.of("bØb   9", "bØb", "9"),
+                List.of("`first=>Name` => \"Bruce\"", "first=>Name", "\"Bruce\""),
+                List.of("`bob#`   9", "bob#", "9"),
+                List.of(" `bo `` sömething ```   9", "bo ` sömething `", "9"),
+                List.of("bob 'one two'", "bob", "'one two'"),
+                List.of("böb 'one two'", "böb", "'one two'"),
+                List.of("bob: \"one\"", "bob", "\"one\""),
+                List.of("`bob:`: 'one'", "bob:", "'one'"),
+                List.of("`t:om` 'two'", "t:om", "'two'"),
+                List.of("bob \"RETURN 5 as bob\"", "bob", "\"RETURN 5 as bob\""));
+        for (var test : tests) {
+            assertParse(test.get(0), test.get(1), test.get(2));
+            assertParse(test.get(0) + ";", test.get(1), test.get(2));
+        }
     }
 
     @Test
