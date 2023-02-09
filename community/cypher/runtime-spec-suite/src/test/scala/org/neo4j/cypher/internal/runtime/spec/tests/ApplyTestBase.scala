@@ -98,6 +98,26 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
+  test("apply on empty lhs argument should preserve rhs order") {
+    // given
+    val nodes = given {
+      nodeGraph(19, "RHS")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("y").withRows(inOrder(nodes.map(Array(_))))
+  }
+
   test("apply on aggregation should carry through argument variables") {
     // given
     val nodes = given {

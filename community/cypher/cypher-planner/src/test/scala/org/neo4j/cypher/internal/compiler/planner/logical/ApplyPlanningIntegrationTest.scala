@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
@@ -31,5 +32,24 @@ class ApplyPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     no(plan.flatten) should matchPattern {
       case _: Apply =>
     }
+  }
+
+  test("should not plan sort on top of apply plan when lhs is empty argument and rhs is ordered") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("Label", 10)
+      .build()
+
+    val plan = planner.plan(
+      s"OPTIONAL MATCH (n:Label) RETURN n ORDER BY n"
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .optional()
+        .nodeByLabelScan("n", "Label", indexOrder = IndexOrderAscending)
+        .build()
+    )
   }
 }

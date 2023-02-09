@@ -2847,21 +2847,23 @@ case class LogicalPlanProducer(
     }
 
   /**
-   * Plans with a rhs may invalidate the provided order coming from the lhs.
-   * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.
+   * Plans with an empty argument on the lhs maintains the ordering of the rhs. In that case, this method returns the order coming from the rhs.
+   * Plans with a rhs may invalidate the provided order coming from the lhs. If this is the case, this method returns an empty provided order.
+   * In any other case (i.e. lhs is not a single argument, and rhs is not invalidating lhs ordering), it forwards the provided order from the left.
    */
   private def providedOrderOfApply(
     left: LogicalPlan,
     right: LogicalPlan,
     executionModel: ExecutionModel
   ): ProvidedOrder = {
-    if (invalidatesProvidedOrderRecursive(right, executionModel)) {
-      ProvidedOrder.empty
-    } else
-      // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-      {
-        providedOrders.get(left.id).fromLeft
-      }
+    (left, right) match {
+      case (Argument(args), rhs) if args.isEmpty =>
+        providedOrders.get(rhs.id).fromRight
+      case (_, rhs) if invalidatesProvidedOrderRecursive(rhs, executionModel) =>
+        ProvidedOrder.empty
+      case (lhs, _) => // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+        providedOrders.get(lhs.id).fromLeft
+    }
   }
 
   private def assertRhsDoesNotInvalidateLhsOrder(
