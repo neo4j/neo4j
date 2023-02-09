@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.context;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+
 /**
  * {@link VersionContext} that does not perform any kind of version tracking for cases when its not required.
  * @see VersionContext
@@ -45,10 +47,20 @@ public class EmptyVersionContext implements VersionContext {
     }
 
     @Override
+    public long highestClosed() {
+        return Long.MAX_VALUE;
+    }
+
+    @Override
     public void markAsDirty() {}
 
     @Override
     public boolean isDirty() {
         return false;
+    }
+
+    @Override
+    public long[] notVisibleTransactionIds() {
+        return EMPTY_LONG_ARRAY;
     }
 }

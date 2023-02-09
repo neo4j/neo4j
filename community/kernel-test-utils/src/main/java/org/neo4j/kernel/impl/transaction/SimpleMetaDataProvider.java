@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
@@ -110,6 +111,11 @@ public class SimpleMetaDataProvider implements MetadataProvider {
     @Override
     public long getLastClosedTransactionId() {
         return transactionIdStore.getLastClosedTransactionId();
+    }
+
+    @Override
+    public TransactionIdSnapshot getClosedTransactionSnapshot() {
+        return transactionIdStore.getClosedTransactionSnapshot();
     }
 
     @Override

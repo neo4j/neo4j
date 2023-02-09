@@ -19,27 +19,12 @@
  */
 package org.neo4j.io.pagecache.context;
 
-import org.neo4j.kernel.database.NamedDatabaseId;
+import static org.neo4j.io.pagecache.context.TransactionIdSnapshot.EMPTY_ID_SNAPSHOT;
 
-/**
- * Supplier to create {@link VersionContext} used during version data read and write operations
- */
-public interface VersionContextSupplier {
-    /**
-     * Initialise current supplier with provider of transaction id snapshots
-     * for future version context to be able to get snapshot of closed and visible transaction ids
-     * @param transactionIdSnapshotFactory closed transaction id supplier.
-     */
-    void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory);
+@FunctionalInterface
+public interface TransactionIdSnapshotFactory {
 
-    /**
-     * Provide version context
-     * @return instance of version context
-     */
-    VersionContext createVersionContext();
+    TransactionIdSnapshotFactory EMPTY_SNAPSHOT_FACTORY = () -> EMPTY_ID_SNAPSHOT;
 
-    @FunctionalInterface
-    interface Factory {
-        VersionContextSupplier create(NamedDatabaseId databaseId);
-    }
+    TransactionIdSnapshot createSnapshot();
 }

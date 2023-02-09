@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.pagecache.context;
 
-import java.util.function.LongSupplier;
-
 /**
  * {@link VersionContextSupplier} version that supply same {@link EmptyVersionContext} each time for cases
  * where version context mechanics is not required
@@ -31,7 +29,7 @@ public class EmptyVersionContextSupplier implements VersionContextSupplier {
     private EmptyVersionContextSupplier() {}
 
     @Override
-    public void init(LongSupplier lastClosedTransactionIdSupplier) {}
+    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
 
     @Override
     public VersionContext createVersionContext() {

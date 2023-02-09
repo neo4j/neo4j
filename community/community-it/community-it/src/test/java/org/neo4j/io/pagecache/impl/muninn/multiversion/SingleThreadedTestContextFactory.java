@@ -19,12 +19,13 @@
  */
 package org.neo4j.io.pagecache.impl.muninn.multiversion;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
-import java.util.function.LongSupplier;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -62,49 +63,67 @@ public class SingleThreadedTestContextFactory extends CursorContextFactory {
             this.versionContext = (TestTransactionVersionContext) versionContext;
         }
 
-        public void setWriteAndReadVersion(long version) {
-            setWriteAndReadVersion(version, version);
+        public void setWriteAndReadVersion(long version, long[] nonVisibleIds) {
+            setWriteAndReadVersion(version, version, nonVisibleIds);
         }
 
         public void setWriteAndReadVersion(long writeVersion, long readVersion) {
-            versionContext.closedTxIdSupplier.setLastClosedTxId(readVersion);
+            setWriteAndReadVersion(writeVersion, readVersion, EMPTY_LONG_ARRAY);
+        }
+
+        public void setWriteAndReadVersion(long version) {
+            setWriteAndReadVersion(version, version, EMPTY_LONG_ARRAY);
+        }
+
+        public void setWriteAndReadVersion(long writeVersion, long readVersion, long[] notVisibleIds) {
+            MutableTransactionSnapshotSupplier snapshotSupplier = versionContext.snapshotSupplier;
+            snapshotSupplier.setLastClosedTxId(readVersion);
+            snapshotSupplier.setHigherBoundaries(readVersion, notVisibleIds);
             versionContext.initRead();
             versionContext.initWrite(writeVersion);
         }
     }
 
     private static class TestVersionContextSupplier implements VersionContextSupplier {
-        private final MutableLongClosedTxIdSupplier closedTxIdSupplier = new MutableLongClosedTxIdSupplier();
+        private final MutableTransactionSnapshotSupplier snapshotSupplier = new MutableTransactionSnapshotSupplier();
 
         @Override
-        public void init(LongSupplier lastClosedTransactionIdSupplier) {}
+        public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
 
         @Override
         public VersionContext createVersionContext() {
-            return new TestTransactionVersionContext(closedTxIdSupplier);
+            return new TestTransactionVersionContext(snapshotSupplier);
         }
     }
 
     private static class TestTransactionVersionContext extends TransactionVersionContext {
 
-        private final MutableLongClosedTxIdSupplier closedTxIdSupplier;
+        private final MutableTransactionSnapshotSupplier snapshotSupplier;
 
-        TestTransactionVersionContext(MutableLongClosedTxIdSupplier closedTxIdSupplier) {
-            super(closedTxIdSupplier);
-            this.closedTxIdSupplier = closedTxIdSupplier;
+        TestTransactionVersionContext(MutableTransactionSnapshotSupplier snapshotSupplier) {
+            super(snapshotSupplier);
+            this.snapshotSupplier = snapshotSupplier;
         }
     }
 
-    private static class MutableLongClosedTxIdSupplier implements LongSupplier {
-        private final MutableLong lastClosedTxId = new MutableLong();
+    private static class MutableTransactionSnapshotSupplier implements TransactionIdSnapshotFactory {
+        private long lastClosedTxId;
+        private long highestVisible;
+        private long[] nonVisibleIds = EMPTY_LONG_ARRAY;
 
         public void setLastClosedTxId(long value) {
-            lastClosedTxId.setValue(value);
+            lastClosedTxId = value;
+            highestVisible = value;
+        }
+
+        public void setHigherBoundaries(long highestVisible, long[] notVisibleIds) {
+            this.highestVisible = highestVisible;
+            this.nonVisibleIds = notVisibleIds;
         }
 
         @Override
-        public long getAsLong() {
-            return lastClosedTxId.toLong();
+        public TransactionIdSnapshot createSnapshot() {
+            return new TransactionIdSnapshot(lastClosedTxId, highestVisible, nonVisibleIds);
         }
     }
 }

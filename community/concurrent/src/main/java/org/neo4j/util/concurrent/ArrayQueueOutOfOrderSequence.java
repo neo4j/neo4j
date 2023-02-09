@@ -19,6 +19,8 @@
  */
 package org.neo4j.util.concurrent;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+
 import java.util.Arrays;
 
 /**
@@ -125,6 +127,17 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence {
                 return idsOutOfOrder;
             }
         };
+    }
+
+    @Override
+    public synchronized ReverseSnapshot reverseSnapshot() {
+        long gapFree = highestGapFreeNumber;
+        long everSeen = highestEverSeen;
+        if (everSeen == gapFree) {
+            return new ReverseSnapshot(gapFree, everSeen, EMPTY_LONG_ARRAY);
+        }
+        long[] missingNumbers = outOfOrderQueue.missingItems(gapFree);
+        return new ReverseSnapshot(gapFree, everSeen, missingNumbers);
     }
 
     @Override

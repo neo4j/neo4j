@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.context;
 
-import java.util.function.LongSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -47,7 +46,7 @@ public class CursorContextFactory {
         return new CursorContext(this, cursorTracer, versionContextSupplier.createVersionContext());
     }
 
-    public void init(LongSupplier lastClosedTransactionIdSupplier) {
-        versionContextSupplier.init(lastClosedTransactionIdSupplier);
+    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+        versionContextSupplier.init(transactionIdSnapshotFactory);
     }
 }

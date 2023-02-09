@@ -39,6 +39,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
 import org.neo4j.snapshot.TestVersionContext;
@@ -49,7 +51,9 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
     private TestWebContainer testWebContainer;
     private LongSupplier lastTransactionIdSource;
     private final CopyOnWriteArrayList<TestVersionContext> contexts = new CopyOnWriteArrayList<>();
-    private final LongSupplier idSupplier = () -> lastTransactionIdSource.getAsLong();
+    private volatile boolean enabledTestContexts = false;
+    private final TransactionIdSnapshotFactory transactionIdSnapshotFactory =
+            () -> new TransactionIdSnapshot(lastTransactionIdSource.getAsLong());
 
     @BeforeEach
     void setUp() throws Exception {
@@ -63,9 +67,13 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
         var db = testWebContainer.getDefaultDatabase();
 
         testContextSupplierFactory.setTestVersionContextSupplier(databaseName -> {
-            var context = testCursorContext(idSupplier, databaseName);
-            contexts.add(context);
-            return context;
+            if (enabledTestContexts) {
+                var context = testCursorContext(transactionIdSnapshotFactory, databaseName);
+                contexts.add(context);
+                return context;
+            } else {
+                return new TestVersionContext(TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY, databaseName);
+            }
         });
 
         createData(db);
@@ -90,6 +98,7 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
     @Test
     void executeQueryWithSingleRetry() {
         lastTransactionIdSource = new ArrayBasedLongSupplier();
+        enabledTestContexts = true;
         HTTP.Response response = executeOverHTTP("MATCH (n) RETURN n.c");
         assertThat(response.status()).isEqualTo(200);
         Map<String, List<Map<String, List<Map<String, List<String>>>>>> content = response.content();
@@ -102,6 +111,7 @@ class SnapshotQueryExecutionIT extends ExclusiveWebContainerTestBase {
     @Test
     void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException() {
         lastTransactionIdSource = () -> 1;
+        enabledTestContexts = true;
         HTTP.Response response = executeOverHTTP("MATCH (n:toRetry) CREATE () RETURN n.c");
         Map<String, List<Map<String, String>>> content = response.content();
         // todo query string returned is different bug? 'MATCH (`n`:`toRetry`)

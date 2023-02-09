@@ -22,7 +22,6 @@ package org.neo4j.snapshot;
 import static java.util.Objects.requireNonNull;
 
 import java.util.function.Function;
-import java.util.function.LongSupplier;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
@@ -41,11 +40,6 @@ public class TestTransactionVersionContextSupplier extends TransactionVersionCon
             Function<String, TestVersionContext> supplier, NamedDatabaseId databaseId) {
         this.supplier = requireNonNull(supplier);
         this.databaseId = requireNonNull(databaseId);
-    }
-
-    @Override
-    public void init(LongSupplier lastClosedTransactionIdSupplier) {
-        super.init(lastClosedTransactionIdSupplier);
     }
 
     @Override

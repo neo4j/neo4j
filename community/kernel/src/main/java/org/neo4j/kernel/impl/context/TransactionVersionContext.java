@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.context;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
-import java.util.function.LongSupplier;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 
 /**
@@ -29,20 +30,18 @@ import org.neo4j.io.pagecache.context.VersionContext;
  * Or perform versioned data modification.
  */
 public class TransactionVersionContext implements VersionContext {
-    private final LongSupplier lastClosedTxIdSupplier;
+    private final TransactionIdSnapshotFactory transactionIdSnapshotFactory;
     private long transactionId = BASE_TX_ID;
-    private long lastClosedTxId = Long.MAX_VALUE;
+    private TransactionIdSnapshot transactionIds;
     private boolean dirty;
 
-    public TransactionVersionContext(LongSupplier lastClosedTxIdSupplier) {
-        this.lastClosedTxIdSupplier = lastClosedTxIdSupplier;
+    public TransactionVersionContext(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+        this.transactionIdSnapshotFactory = transactionIdSnapshotFactory;
     }
 
     @Override
     public void initRead() {
-        long txId = lastClosedTxIdSupplier.getAsLong();
-        assert txId >= BASE_TX_ID;
-        lastClosedTxId = txId;
+        transactionIds = transactionIdSnapshotFactory.createSnapshot();
         dirty = false;
     }
 
@@ -59,7 +58,17 @@ public class TransactionVersionContext implements VersionContext {
 
     @Override
     public long lastClosedTransactionId() {
-        return lastClosedTxId;
+        return transactionIds.lastClosedTxId();
+    }
+
+    @Override
+    public long highestClosed() {
+        return transactionIds.highestEverSeen();
+    }
+
+    @Override
+    public long[] notVisibleTransactionIds() {
+        return transactionIds.notVisibleTransactions();
     }
 
     @Override

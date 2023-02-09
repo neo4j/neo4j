@@ -19,28 +19,28 @@
  */
 package org.neo4j.kernel.impl.context;
 
+import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY;
+
 import java.util.Objects;
-import java.util.function.LongSupplier;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * {@link VersionContextSupplier} that supplier version context that should be used in a context of
  * transaction(Committing or reading).
  */
 public class TransactionVersionContextSupplier implements VersionContextSupplier {
-    private LongSupplier lastClosedTransactionIdSupplier = () -> TransactionIdStore.BASE_TX_ID;
+    private TransactionIdSnapshotFactory transactionIdSnapshotFactory = EMPTY_SNAPSHOT_FACTORY;
 
     @Override
-    public void init(LongSupplier lastClosedTransactionIdSupplier) {
-        this.lastClosedTransactionIdSupplier = lastClosedTransactionIdSupplier;
+    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+        this.transactionIdSnapshotFactory = Objects.requireNonNull(transactionIdSnapshotFactory);
     }
 
     @Override
     public VersionContext createVersionContext() {
-        Objects.requireNonNull(lastClosedTransactionIdSupplier);
-        var versionContext = new TransactionVersionContext(lastClosedTransactionIdSupplier);
+        var versionContext = new TransactionVersionContext(transactionIdSnapshotFactory);
         versionContext.initRead();
         return versionContext;
     }

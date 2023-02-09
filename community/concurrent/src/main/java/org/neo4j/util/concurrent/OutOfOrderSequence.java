@@ -57,9 +57,14 @@ public interface OutOfOrderSequence {
 
     Snapshot snapshot();
 
+    ReverseSnapshot reverseSnapshot();
+
     interface Snapshot {
+
         long[] highestGapFree();
 
         long[][] idsOutOfOrder();
     }
+
+    record ReverseSnapshot(long highestGapFree, long highestEverSeen, long[] missingIds) {}
 }

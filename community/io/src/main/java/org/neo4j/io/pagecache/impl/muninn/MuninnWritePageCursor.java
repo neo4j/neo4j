@@ -26,6 +26,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
@@ -197,12 +198,18 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertCursorOpenFileMappedAndGetIdOfLastPage();
-        if (multiVersioned && olderVersionRequired(pointer)) {
+        if (multiVersioned && olderVersionRequired(versionContext)) {
             versionStorage.loadWriteSnapshot(this, versionContext, pinEvent);
         }
         if (!multiVersioned) {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
+    }
+
+    private boolean olderVersionRequired(VersionContext versionContext) {
+        long version = getLongAt(pointer, littleEndian);
+        // We in the same version as we already have, we do not need to move anywhere. Head is actual page.
+        return version != versionContext.committingTransactionId();
     }
 
     @Override

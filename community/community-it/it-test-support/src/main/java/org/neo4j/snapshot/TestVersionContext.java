@@ -20,10 +20,11 @@
 package org.neo4j.snapshot;
 
 import java.io.PrintStream;
-import java.util.function.LongSupplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -33,7 +34,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
  * A {@link VersionContext} that can be injected in tests to verify the behavior of {@link SnapshotExecutionEngine}.
  */
 public class TestVersionContext extends TransactionVersionContext {
-    private boolean wrongLastClosedTxId = true;
+    private boolean wrongLastClosedTxId;
     private int numIsDirtyCalls;
     private int additionalAttempts;
     private boolean stayDirty;
@@ -41,12 +42,15 @@ public class TestVersionContext extends TransactionVersionContext {
     private Exception additionalAttemptsCall;
     private final String databaseName;
 
-    public TestVersionContext(LongSupplier transactionIdSupplier, String databaseName) {
-        this(transactionIdSupplier, databaseName, true);
+    public TestVersionContext(TransactionIdSnapshotFactory transactionIdSnapshotFactory, String databaseName) {
+        this(transactionIdSnapshotFactory, databaseName, true);
     }
 
-    public TestVersionContext(LongSupplier transactionIdSupplier, String databaseName, boolean wrongLastClosedTxId) {
-        super(transactionIdSupplier);
+    public TestVersionContext(
+            TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+            String databaseName,
+            boolean wrongLastClosedTxId) {
+        super(transactionIdSnapshotFactory);
         this.databaseName = databaseName;
         this.wrongLastClosedTxId = wrongLastClosedTxId;
     }
@@ -110,14 +114,20 @@ public class TestVersionContext extends TransactionVersionContext {
         this.stayDirty = stayDirty;
     }
 
-    public static TestVersionContext testCursorContext(LongSupplier idSupplier, String databaseName) {
-        return new TestVersionContext(idSupplier, databaseName);
+    public static TestVersionContext testCursorContext(
+            TransactionIdSnapshotFactory snapshotFactory, String databaseName) {
+        var context = new TestVersionContext(snapshotFactory, databaseName);
+        context.initRead();
+        return context;
     }
 
     public static TestVersionContext testCursorContext(
             DatabaseManagementService managementService, String databaseName) {
         TransactionIdStore transactionIdStore = getTransactionIdStore(managementService, databaseName);
-        return new TestVersionContext(transactionIdStore::getLastClosedTransactionId, databaseName);
+        var context = new TestVersionContext(
+                () -> new TransactionIdSnapshot(transactionIdStore.getLastClosedTransactionId()), databaseName);
+        context.initRead();
+        return context;
     }
 
     private static TransactionIdStore getTransactionIdStore(

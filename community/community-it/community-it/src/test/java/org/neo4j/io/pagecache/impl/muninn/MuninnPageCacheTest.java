@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static java.time.Duration.ofMillis;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +64,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
@@ -94,6 +94,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
@@ -2035,7 +2036,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             pageCursor.close();
         }
     }
@@ -2072,6 +2073,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
+        public long highestClosed() {
+            return lastClosedTxId;
+        }
+
+        @Override
         public void markAsDirty() {
             dirty = true;
         }
@@ -2079,6 +2085,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         @Override
         public boolean isDirty() {
             return dirty;
+        }
+
+        @Override
+        public long[] notVisibleTransactionIds() {
+            return EMPTY_LONG_ARRAY;
         }
     }
 
@@ -2320,7 +2331,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
-        public void init(LongSupplier lastClosedTransactionIdSupplier) {}
+        public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
 
         @Override
         public VersionContext createVersionContext() {

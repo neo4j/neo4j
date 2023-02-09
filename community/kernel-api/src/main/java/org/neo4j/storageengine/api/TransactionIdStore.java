@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
@@ -113,6 +115,11 @@ public interface TransactionIdStore {
      * @return highest seen gap-free {@link #transactionClosed(long, long, long, int, long, long)}  closed transaction id}.
      */
     long getLastClosedTransactionId();
+
+    /**
+     * @return current snapshot of closed and visible transaction ids
+     */
+    TransactionIdSnapshot getClosedTransactionSnapshot();
 
     /**
      * Returns transaction information about the last committed transaction, i.e.

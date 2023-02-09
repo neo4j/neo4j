@@ -182,20 +182,6 @@ public abstract class MuninnPageCursor extends PageCursor {
         }
     }
 
-    protected boolean shouldLoadSnapshot() {
-        long pagePointer = pointer;
-        long pageVersion = getLongAt(pagePointer, littleEndian);
-        return olderVersionRequired(pagePointer)
-                && ((pageVersion > versionContext.lastClosedTransactionId())
-                        && (pageVersion != versionContext.committingTransactionId()));
-    }
-
-    protected boolean olderVersionRequired(long pagePointer) {
-        long chainHeadVersion = getLongAt(pagePointer, littleEndian);
-        // We in the same version as we already have, we do not need to move anywhere. Head is actual page.
-        return chainHeadVersion != versionContext.committingTransactionId();
-    }
-
     protected long getPageChecksum() {
         return getLongAt(pointer + CHECKSUM_OFFSET, littleEndian);
     }

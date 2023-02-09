@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
@@ -78,6 +77,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.DefaultElementIdMapperV1;
 import org.neo4j.kernel.api.Kernel;
@@ -178,6 +179,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -388,7 +390,8 @@ public class Database extends AbstractDatabase {
 
         // Check the tail of transaction logs and validate version
         LogTailMetadata tailMetadata = getLogTail();
-        initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
+        long lastClosedTxId = tailMetadata.getLastCommittedTransaction().transactionId();
+        initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId));
 
         storageExists = storageEngineFactory.storageExists(fs, databaseLayout);
         validateStoreAndTxLogs(tailMetadata, cursorContextFactory, storageExists);
@@ -411,7 +414,8 @@ public class Database extends AbstractDatabase {
             // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the
             // latest info
             tailMetadata = getLogTail();
-            initialiseContextFactory(tailMetadata.getLastCommittedTransaction()::transactionId);
+            long recoveredTxId = tailMetadata.getLastCommittedTransaction().transactionId();
+            initialiseContextFactory(() -> new TransactionIdSnapshot(recoveredTxId));
         }
 
         metadataCache = databaseDependencies.satisfyDependency(new MetadataCache(tailMetadata));
@@ -450,9 +454,9 @@ public class Database extends AbstractDatabase {
                 cursorContextFactory,
                 tracers.getPageCacheTracer());
 
-        TransactionIdStore transactionIdStore =
-                databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
-        initialiseContextFactory(transactionIdStore::getLastClosedTransactionId);
+        var metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
+
+        initialiseContextFactory(getTransactionIdSnapshotFactory(databaseConfig, metadataProvider));
         elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
         // Recreate the logFiles after storage engine to get access to dependencies
@@ -497,13 +501,13 @@ public class Database extends AbstractDatabase {
                 internalLogProvider,
                 scheduler,
                 forceOperation,
-                transactionIdStore,
+                metadataProvider,
                 databaseMonitors,
                 databaseDependencies,
                 cursorContextFactory,
                 storageEngineFactory.commandReaderFactory());
         commitmentFactory =
-                new TransactionCommitmentFactory(transactionLogModule.transactionMetadataCache(), transactionIdStore);
+                new TransactionCommitmentFactory(transactionLogModule.transactionMetadataCache(), metadataProvider);
 
         databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners(databaseFacade, transactionEventListeners, namedDatabaseId);
@@ -514,7 +518,7 @@ public class Database extends AbstractDatabase {
                 indexingService,
                 databaseSchemaState,
                 storageEngine,
-                transactionIdStore,
+                metadataProvider,
                 metadataCache,
                 databaseAvailabilityGuard,
                 clock,
@@ -565,8 +569,8 @@ public class Database extends AbstractDatabase {
         // no specific actions
     }
 
-    private void initialiseContextFactory(LongSupplier longSupplier) {
-        cursorContextFactory.init(longSupplier);
+    private void initialiseContextFactory(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+        cursorContextFactory.init(transactionIdSnapshotFactory);
     }
 
     @Override
@@ -1186,8 +1190,17 @@ public class Database extends AbstractDatabase {
     }
 
     private static LockService createLockService(DatabaseConfig databaseConfig) {
-        return !"multiversion".equals(databaseConfig.get(db_format))
-                ? new ReentrantLockService()
-                : LockService.NO_LOCK_SERVICE;
+        return isMultiVersioned(databaseConfig) ? new ReentrantLockService() : LockService.NO_LOCK_SERVICE;
+    }
+
+    private static TransactionIdSnapshotFactory getTransactionIdSnapshotFactory(
+            DatabaseConfig databaseConfig, MetadataProvider metadataProvider) {
+        return isMultiVersioned(databaseConfig)
+                ? (() -> new TransactionIdSnapshot(metadataProvider.getLastClosedTransactionId()))
+                : metadataProvider::getClosedTransactionSnapshot;
+    }
+
+    private static boolean isMultiVersioned(DatabaseConfig databaseConfig) {
+        return !"multiversion".equals(databaseConfig.get(db_format));
     }
 }

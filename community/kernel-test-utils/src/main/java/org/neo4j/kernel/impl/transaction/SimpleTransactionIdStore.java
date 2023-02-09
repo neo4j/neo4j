@@ -24,6 +24,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSI
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
@@ -99,6 +100,11 @@ public class SimpleTransactionIdStore implements TransactionIdStore {
     @Override
     public long getLastClosedTransactionId() {
         return closedTransactionId.getHighestGapFreeNumber();
+    }
+
+    @Override
+    public TransactionIdSnapshot getClosedTransactionSnapshot() {
+        return new TransactionIdSnapshot(closedTransactionId.reverseSnapshot());
     }
 
     @Override

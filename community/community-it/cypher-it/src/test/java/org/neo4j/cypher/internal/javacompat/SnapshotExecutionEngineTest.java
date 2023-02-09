@@ -28,7 +28,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.function.LongSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -39,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -79,7 +79,7 @@ class SnapshotExecutionEngineTest {
         CursorContextFactory contextFactory =
                 new CursorContextFactory(PageCacheTracer.NULL, new VersionContextSupplier() {
                     @Override
-                    public void init(LongSupplier lastClosedTransactionIdSupplier) {}
+                    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
 
                     @Override
                     public VersionContext createVersionContext() {

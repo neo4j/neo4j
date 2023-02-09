@@ -126,6 +126,34 @@ public class SequenceArray {
         return builder.toString();
     }
 
+    long[] missingItems(long gapFree) {
+        long[] missingItems = new long[8];
+
+        int remaining = itemsAhead - 1;
+        int queueCursor = cursor + 1;
+        long expected = gapFree + 1;
+        int resultCursor = 0;
+        while (remaining-- > 0) {
+            int absIndex = index(queueCursor);
+            long number = array[absIndex];
+            if (number != UNSET && number != expected) {
+                for (long missing = expected; missing < number; missing++) {
+                    if (missingItems.length == resultCursor) {
+                        missingItems = Arrays.copyOf(missingItems, missingItems.length << 1);
+                    }
+                    missingItems[resultCursor++] = missing;
+                }
+                expected = number + 1;
+            }
+            queueCursor = advanceCursor(queueCursor);
+        }
+
+        if (resultCursor < missingItems.length) {
+            missingItems = Arrays.copyOf(missingItems, resultCursor);
+        }
+        return missingItems;
+    }
+
     long[][] snapshot() {
         long[][] temp = new long[itemsAhead][]; // worst-case size
         int remaining = itemsAhead - 1;

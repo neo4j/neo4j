@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -66,7 +67,6 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHeader> implements MetadataProvider {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
-    private static final long NOT_INITIALIZED = Long.MIN_VALUE;
     // Stores created post 5.0 and migrated 4.4 stores must have LEGACY_STORE_VERSION position set to this value
     // if you ever wonder what this is, it is just a random 8 byte prime number
     private static final long LEGACY_STORE_VERSION_VALUE = 0xcf1bbcdcb7a56463L;
@@ -307,6 +307,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
     public long getLastClosedTransactionId() {
         assertNotClosed();
         return lastClosedTx.getHighestGapFreeNumber();
+    }
+
+    @Override
+    public TransactionIdSnapshot getClosedTransactionSnapshot() {
+        assertNotClosed();
+        return new TransactionIdSnapshot(lastClosedTx.reverseSnapshot());
     }
 
     @Override

@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.LongSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +46,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
+import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -74,8 +76,16 @@ class EagerResultIT {
         prepareData();
         TransactionIdStore transactionIdStore = getTransactionIdStore();
         testContextSupplierFactory.setTestVersionContextSupplier(databaseName -> {
-            var context = new TestVersionContext(transactionIdStore::getLastClosedTransactionId, databaseName);
+            TestVersionContext context;
+            if (databaseName.equals(database.databaseName())) {
+                context = new TestVersionContext(
+                        () -> new TransactionIdSnapshot(transactionIdStore.getLastClosedTransactionId()), databaseName);
+
+            } else {
+                context = new TestVersionContext(TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY, databaseName);
+            }
             context.setWrongLastClosedTxId(false);
+            context.initRead();
             return context;
         });
     }
@@ -256,8 +266,8 @@ class EagerResultIT {
     private static class TestVersionContext extends org.neo4j.snapshot.TestVersionContext {
         private boolean useCorrectLastCommittedTxId;
 
-        TestVersionContext(LongSupplier transactionIdSupplier, String databaseName) {
-            super(transactionIdSupplier, databaseName);
+        TestVersionContext(TransactionIdSnapshotFactory snapshotFactory, String databaseName) {
+            super(snapshotFactory, databaseName);
         }
 
         @Override

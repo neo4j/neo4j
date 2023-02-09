@@ -41,6 +41,9 @@ package org.neo4j.io.pagecache.context;
  * </ul>
  * By default, non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
  * and transaction id that is equal to minimal possible transaction id: 1.
+ *
+ * Please note that contexts is snapshot engine use last closed transactions while multi versioned stores use highest close
+ * and not visible ids to do version filtering.
  */
 public interface VersionContext {
     /**
@@ -61,10 +64,18 @@ public interface VersionContext {
     long committingTransactionId();
 
     /**
-     * Last closed transaction id that read context was initialised with
+     * Last closed transaction id that read context was initialised with.
+     * Used in snapshot execution engine as visibility guard.
      * @return last closed transaction id
      */
     long lastClosedTransactionId();
+
+    /**
+     * The highest closed tx id for this context. Together with array of not visible transactions ids
+     * determines what versions of pages are visible for this context user.
+     * Used in multi versioned stores as part of visibility criteria.
+     */
+    long highestClosed();
 
     /**
      * Mark current context as dirty
@@ -76,4 +87,10 @@ public interface VersionContext {
      * @return true if context is dirty, false otherwise
      */
     boolean isDirty();
+
+    /**
+     * Array of not visible transaction with ids lower to the highest closed registered in a context.
+     * Used in multi versioned stores as part of visibility criteria.
+     */
+    long[] notVisibleTransactionIds();
 }

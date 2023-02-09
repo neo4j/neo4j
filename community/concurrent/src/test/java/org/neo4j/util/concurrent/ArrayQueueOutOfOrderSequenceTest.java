@@ -22,6 +22,7 @@ package org.neo4j.util.concurrent;
 import static java.lang.Integer.max;
 import static java.lang.Thread.sleep;
 import static java.util.Arrays.copyOfRange;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -165,6 +166,59 @@ class ArrayQueueOutOfOrderSequenceTest {
 
         sequence.offer(42L, EMPTY_META);
         assertEquals(42L, sequence.highestEverSeen());
+    }
+
+    @Test
+    void closedTransactionSnapshotWithSingleMissingRange() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, new long[] {1, 2});
+        sequence.offer(1, new long[] {1, 2});
+        sequence.offer(2, new long[] {3, 4});
+        sequence.offer(3, new long[] {5, 6});
+        sequence.offer(6, new long[] {7, 8});
+
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.missingIds()).hasSize(2).contains(4, 5);
+    }
+
+    @Test
+    void closedTransactionSnapshotWithSeveralMissingRanges() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, new long[] {1, 2});
+        sequence.offer(1, new long[] {1, 2});
+        sequence.offer(2, new long[] {3, 4});
+        sequence.offer(3, new long[] {5, 6});
+        sequence.offer(6, new long[] {7, 8});
+        sequence.offer(8, new long[] {9, 10});
+        sequence.offer(11, new long[] {11, 12});
+
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.missingIds()).hasSize(5).contains(4, 5, 7, 9, 10);
+    }
+
+    @Test
+    void closedTransactionSnapshotWithNoneOutOfOrder() {
+        var sequence = new ArrayQueueOutOfOrderSequence(0, 8, new long[] {1, 2});
+        sequence.offer(1, new long[] {1, 2});
+        sequence.offer(2, new long[] {3, 4});
+        sequence.offer(3, new long[] {5, 6});
+
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertEquals(3, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.missingIds()).isEmpty();
+    }
+
+    @Test
+    void longRangeOfMissingTransactions() {
+        var sequence = new ArrayQueueOutOfOrderSequence(10, 8, new long[] {1, 2});
+        sequence.offer(11, new long[] {1, 2});
+        sequence.offer(21, new long[] {3, 4});
+        sequence.offer(31, new long[] {5, 6});
+        var reverseSnapshot = sequence.reverseSnapshot();
+        assertEquals(11, reverseSnapshot.highestGapFree());
+        assertThat(reverseSnapshot.missingIds())
+                .hasSize(18)
+                .contains(12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30);
     }
 
     @Test

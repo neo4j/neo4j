@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine;
 
+import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -70,6 +71,11 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     @Override
     public long getLastClosedTransactionId() {
         return transactionId;
+    }
+
+    @Override
+    public TransactionIdSnapshot getClosedTransactionSnapshot() {
+        return new TransactionIdSnapshot(transactionId);
     }
 
     @Override
