@@ -495,7 +495,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case p @ AssertingMultiRelationshipIndexSeek(_, indexLeafPlans) =>
+      case p @ AssertingMultiRelationshipIndexSeek(_, _, _, _, indexLeafPlans) =>
         val (_, indexDescs) = indexLeafPlans.map(l =>
           getRelIndexDescriptions(
             l.idName,
@@ -513,7 +513,7 @@ case class LogicalPlan2PlanDescription(
         ).unzip
         PlanDescriptionImpl(
           id = plan.id,
-          "AssertingMultiNodeIndexSeek",
+          "AssertingMultiRelationshipIndexSeek",
           NoChildren,
           Seq(Details(indexDescs)),
           variables,

@@ -583,7 +583,6 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r").withNoRows()
   }
 
-
   test("should assert same relationships on top of range seek and fail (directed)") {
     given {
       uniqueRelationshipIndex("R", "prop")
@@ -628,7 +627,9 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
     a[MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))
   }
 
-  test("should fail on merge using multiple unique indexes if it found a relationship matching single property only (directed)") {
+  test(
+    "should fail on merge using multiple unique indexes if it found a relationship matching single property only (directed)"
+  ) {
     given {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")
@@ -649,7 +650,9 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
     a[MergeConstraintConflictException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
 
-  test("should fail on merge using multiple unique indexes if it found a relationship matching single property only (undirected)") {
+  test(
+    "should fail on merge using multiple unique indexes if it found a relationship matching single property only (undirected)"
+  ) {
     given {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")

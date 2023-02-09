@@ -29,7 +29,13 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator is used on label/property combinations under uniqueness constraint, meaning that a single matching
  * relationship is guaranteed per seek.
  */
-case class AssertingMultiRelationshipIndexSeek(relationship: String, relIndexSeeks: Seq[RelationshipIndexSeekLeafPlan])(
+case class AssertingMultiRelationshipIndexSeek(
+  relationship: String,
+  leftNode: String,
+  rightNode: String,
+  directed: Boolean,
+  relIndexSeeks: Seq[RelationshipIndexSeekLeafPlan]
+)(
   implicit idGen: IdGen
 ) extends MultiRelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -55,7 +61,13 @@ case class AssertingMultiRelationshipIndexSeek(relationship: String, relIndexSee
     )
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): MultiRelationshipIndexLeafPlan =
-    AssertingMultiRelationshipIndexSeek(relationship, relIndexSeeks.map(_.withMappedProperties(f)))(SameId(this.id))
+    AssertingMultiRelationshipIndexSeek(
+      relationship,
+      leftNode,
+      rightNode,
+      directed,
+      relIndexSeeks.map(_.withMappedProperties(f))
+    )(SameId(this.id))
 
   override def copyWithoutGettingValues: AssertingMultiRelationshipIndexSeek =
     // NOTE: This is only used by a top-down rewriter (removeCachedProperties).

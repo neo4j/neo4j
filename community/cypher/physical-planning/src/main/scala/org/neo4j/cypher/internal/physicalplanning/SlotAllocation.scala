@@ -608,7 +608,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           allocations.set(p.id, slots)
         }
 
-      case AssertingMultiRelationshipIndexSeek(_, leafPlans) =>
+      case AssertingMultiRelationshipIndexSeek(_, _, _, _, leafPlans) =>
         leafPlans.foreach { p =>
           allocateLeaf(p, nullable, slots)
           allocations.set(p.id, slots)
