@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
+import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
@@ -50,42 +51,42 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 import scala.annotation.tailrec
 
-object mergeRelationshipUniqueIndexSeekLeafPlanner
-    extends RelationshipIndexLeafPlanner(
-      Seq(relationshipSingleUniqueIndexSeekPlanProvider),
-      LeafPlanRestrictions.NoRestrictions
-    ) {
+object mergeRelationshipUniqueIndexSeekLeafPlanner extends LeafPlanner {
+
+  private val relationshipIndexLeafPlanner = RelationshipIndexLeafPlanner(
+    planProviders = Seq(relationshipSingleUniqueIndexSeekPlanProvider),
+    restrictions = LeafPlanRestrictions.NoRestrictions
+  )
 
   override def apply(
-    qg: QueryGraph,
+    queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Set[LogicalPlan] =
-    if (context.settings.planningMergeRelationshipUniqueIndexSeekEnabled) {
-      def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
-        context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
+  ): Set[LogicalPlan] = if (context.settings.planningMergeRelationshipUniqueIndexSeekEnabled) {
+    def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
+      context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
-      val resultPlans: Set[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
+    val resultPlans: Set[LogicalPlan] = relationshipIndexLeafPlanner.apply(queryGraph, interestingOrderConfig, context)
 
-      val grouped: Map[PatternRelationship, Set[LogicalPlan]] = resultPlans.groupBy { p =>
-        val solvedQG = solvedQueryGraph(p)
-        val patternRelationships = solvedQG.patternRelationships
+    val grouped: Map[PatternRelationship, Set[LogicalPlan]] = resultPlans.groupBy { p =>
+      val solvedQG = solvedQueryGraph(p)
+      val patternRelationships = solvedQG.patternRelationships
 
-        AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-          patternRelationships.size == 1,
-          "Relationship unique index plan solved more than one pattern relationship."
-        )
-        patternRelationships.head
-      }
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+        patternRelationships.size == 1,
+        "Relationship unique index plan solved more than one pattern relationship."
+      )
+      patternRelationships.head
+    }
 
-      grouped.map {
-        case (relationship, plans) =>
-          plans.reduce[LogicalPlan] {
-            case (p1, p2) =>
-              context.staticComponents.logicalPlanProducer.planAssertSameRelationship(relationship, p1, p2, context)
-          }
-      }.toSet
-    } else Set.empty
+    grouped.map {
+      case (relationship, plans) =>
+        plans.reduce[LogicalPlan] {
+          case (p1, p2) =>
+            context.staticComponents.logicalPlanProducer.planAssertSameRelationship(relationship, p1, p2, context)
+        }
+    }.toSet
+  } else Set.empty
 }
 
 object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
