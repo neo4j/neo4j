@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeNodeUniqueIndexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -329,7 +329,10 @@ case object PlanUpdates extends UpdatesPlanner {
     val producer: LogicalPlanProducer = context.staticComponents.logicalPlanProducer
 
     // Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
-    val leafPlannerList = LeafPlannerList(IndexedSeq(mergeNodeUniqueIndexSeekLeafPlanner, mergeRelationshipUniqueIndexSeekLeafPlanner))
+    val leafPlannerList = LeafPlannerList(IndexedSeq(
+      mergeNodeUniqueIndexSeekLeafPlanner,
+      mergeRelationshipUniqueIndexSeekLeafPlanner
+    ))
     val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.plannerState.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
