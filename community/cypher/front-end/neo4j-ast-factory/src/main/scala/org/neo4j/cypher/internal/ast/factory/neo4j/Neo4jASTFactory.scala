@@ -247,6 +247,7 @@ import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.SettingQualifier
 import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
@@ -268,6 +269,8 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSettingAction
+import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -1418,6 +1421,16 @@ class Neo4jASTFactory(query: String)
     )(yieldClause.position)
   }
 
+  override def showSettingsClause(
+    p: InputPosition,
+    names: SimpleEither[util.List[String], Expression],
+    where: Where,
+    hasYield: Boolean
+  ): Clause = {
+    val namesAsScala = names.asScala.left.map(_.asScala.toList)
+    ShowSettingsClause(namesAsScala, Option(where), hasYield)(p)
+  }
+
   // Schema Commands
   // Constraint Commands
 
@@ -2096,6 +2109,7 @@ class Neo4jASTFactory(query: String)
     case ActionType.EXECUTE_ADMIN_PROCEDURE       => ExecuteAdminProcedureAction
     case ActionType.SERVER_SHOW                   => ShowServerAction
     case ActionType.SERVER_MANAGEMENT             => ServerManagementAction
+    case ActionType.SETTING_SHOW                  => ShowSettingAction
 
     case ActionType.GRAPH_ALL          => AllGraphAction
     case ActionType.GRAPH_WRITE        => WriteAction
@@ -2172,6 +2186,12 @@ class Neo4jASTFactory(query: String)
   override def procedureQualifier(p: InputPosition, procedures: util.List[String]): util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()
     procedures.forEach(proc => list.add(ProcedureQualifier(proc)(p)))
+    list
+  }
+
+  override def settingQualifier(p: InputPosition, names: util.List[String]): util.List[PrivilegeQualifier] = {
+    val list = new util.ArrayList[PrivilegeQualifier]()
+    names.forEach(proc => list.add(SettingQualifier(proc)(p)))
     list
   }
 

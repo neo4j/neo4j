@@ -236,6 +236,7 @@ import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.SettingQualifier
 import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
@@ -257,6 +258,8 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSettingAction
+import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -1425,7 +1428,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _showTransactions: Gen[Query] = for {
-    ids <- transactionIds
+    ids <- namesOrNameExpression
     yields <- _eitherYieldOrWhere
     yieldAll <- boolean
     use <- option(_use)
@@ -1447,7 +1450,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _terminateTransactions: Gen[Query] = for {
-    ids <- transactionIds
+    ids <- namesOrNameExpression
     yields <- option(_yield)
     yieldAll <- boolean
     returns <- option(_return)
@@ -1504,7 +1507,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   private def showAsPartOfCombined: Gen[Seq[Clause]] = for {
-    ids <- transactionIds
+    ids <- namesOrNameExpression
     yields <- _yield
     yieldAll <- boolean
   } yield {
@@ -1514,7 +1517,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   private def terminateAsPartOfCombined: Gen[Seq[Clause]] = for {
-    ids <- transactionIds
+    ids <- namesOrNameExpression
     yields <- _yield
     yieldAll <- boolean
   } yield {
@@ -1524,13 +1527,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     else Seq(TerminateTransactionsClause(ids, items, yieldAll = false, None)(pos), withClause)
   }
 
-  /* Ids for the transaction commands:
+  /* names for show commands:
    * - can be an expression or a list of strings
    * - a singular string is parsed as string expression
-   * - no ids gives an empty list
-   * - two or more ids give an id list
+   * - no names gives an empty list
+   * - two or more names give an name list
    */
-  private def transactionIds: Gen[Either[List[String], Expression]] = for {
+  private def namesOrNameExpression: Gen[Either[List[String], Expression]] = for {
     multiIdList <- twoOrMore(string)
     idList <- oneOf(List.empty, multiIdList)
     expr <- _expression
@@ -1572,6 +1575,21 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       withType = ParsedAsYield
     )(pos)
 
+  private def _showSettings: Gen[Query] = for {
+    names <- namesOrNameExpression
+    yields <- _eitherYieldOrWhere
+    use <- option(_use)
+  } yield {
+    val showClauses = yields match {
+      case Some(Right(w))           => Seq(ShowSettingsClause(names, Some(w), hasYield = false)(pos))
+      case Some(Left((y, Some(r)))) => Seq(ShowSettingsClause(names, None, hasYield = true)(pos), y, r)
+      case Some(Left((y, None)))    => Seq(ShowSettingsClause(names, None, hasYield = true)(pos), y)
+      case _                        => Seq(ShowSettingsClause(names, None, hasYield = false)(pos))
+    }
+    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
+    SingleQuery(fullClauses)(pos)
+  }
+
   def _showCommands: Gen[Query] = oneOf(
     _showIndexes,
     _showConstraints,
@@ -1579,7 +1597,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showFunctions,
     _showTransactions,
     _terminateTransactions,
-    _combinedTransactionCommands
+    _combinedTransactionCommands,
+    _showSettings
   )
 
   // Schema commands
@@ -1999,7 +2018,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     AssignPrivilegeAction,
     RemovePrivilegeAction,
     ServerManagementAction,
-    ShowServerAction
+    ShowServerAction,
+    ShowSettingAction
   )
 
   def _databaseAction: Gen[DatabaseAction] = oneOf(
@@ -2052,6 +2072,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         glob <- _glob
         functions <- oneOrMore(FunctionQualifier(glob)(pos))
         qualifier <- frequency(7 -> functions, 3 -> List(FunctionQualifier("*")(pos)))
+      } yield qualifier
+
+    } else if (dbmsAction == ShowSettingAction) {
+      // Settings
+      for {
+        glob <- _glob
+        configs <- oneOrMore(SettingQualifier(glob)(pos))
+        qualifier <- frequency(7 -> configs, 3 -> List(SettingQualifier("*")(pos)))
       } yield qualifier
     } else if (dbmsAction == ImpersonateUserAction) {
       // impersonation

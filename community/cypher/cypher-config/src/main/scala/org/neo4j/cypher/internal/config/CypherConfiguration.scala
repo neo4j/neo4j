@@ -106,6 +106,9 @@ class CypherConfiguration private (val config: Config) {
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
 
+  val showSettingFeatureEnabled: Boolean =
+    config.get(GraphDatabaseInternalSettings.show_setting)
+
   val planningIntersectionScansEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
 

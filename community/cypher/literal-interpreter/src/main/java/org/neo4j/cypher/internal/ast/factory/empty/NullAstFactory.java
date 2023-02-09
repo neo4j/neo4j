@@ -820,6 +820,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, NULL> ids, NULL where, boolean hasYield) {
+        return null;
+    }
+
+    @Override
     public NULL createConstraint(
             NULL p,
             ConstraintType constraintType,
@@ -1159,6 +1164,11 @@ public class NullAstFactory
 
     @Override
     public List<NULL> procedureQualifier(NULL p, List<String> procedures) {
+        return null;
+    }
+
+    @Override
+    public List<NULL> settingQualifier(NULL p, List<String> names) {
         return null;
     }
 

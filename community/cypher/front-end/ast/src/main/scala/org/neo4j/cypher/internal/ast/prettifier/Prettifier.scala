@@ -158,6 +158,8 @@ import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SetPropertyItems
+import org.neo4j.cypher.internal.ast.SettingAllQualifier
+import org.neo4j.cypher.internal.ast.SettingQualifier
 import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
@@ -172,6 +174,7 @@ import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -916,6 +919,7 @@ case class Prettifier(
       case s: ShowFunctionsClause         => asString(s)
       case s: ShowTransactionsClause      => asString(s)
       case t: TerminateTransactionsClause => asString(t)
+      case s: ShowSettingsClause          => asString(s)
       case s: SetClause                   => asString(s)
       case r: Remove                      => asString(r)
       case d: Delete                      => asString(d)
@@ -1149,7 +1153,7 @@ case class Prettifier(
     }
 
     def asString(s: ShowTransactionsClause): String = {
-      val ids = idsAsString(s.ids)
+      val ids = namesAsString(s.ids)
       val ind = indented()
       val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
       val yielded = partialYieldAsString(s.yieldItems, s.yieldAll)
@@ -1157,12 +1161,12 @@ case class Prettifier(
     }
 
     def asString(s: TerminateTransactionsClause): String = {
-      val ids = idsAsString(s.ids)
+      val ids = namesAsString(s.ids)
       val yielded = partialYieldAsString(s.yieldItems, s.yieldAll)
       s"TERMINATE TRANSACTIONS$ids$yielded"
     }
 
-    private def idsAsString(ids: Either[List[String], Expression]): String = ids match {
+    private def namesAsString(ids: Either[List[String], Expression]): String = ids match {
       case Left(s)  => if (s.nonEmpty) s.map(id => expr.quote(id)).mkString(" ", ", ", "") else ""
       case Right(e) => s" ${expr(e)}"
     }
@@ -1177,6 +1181,13 @@ case class Prettifier(
         asNewLine(s"${INDENT}YIELD $items")
       } else if (yieldAll) asNewLine(s"${INDENT}YIELD *")
       else ""
+
+    def asString(s: ShowSettingsClause): String = {
+      val names = namesAsString(s.names)
+      val ind = indented()
+      val where = s.where.map(ind.asString).map(asNewLine).getOrElse("")
+      s"${s.name}$names$where"
+    }
 
     def asString(s: SetClause): String = {
       val items = s.items.map {
@@ -1332,6 +1343,7 @@ object Prettifier {
       case UserQualifier(name)         => escapeName(name)
       case ProcedureQualifier(glob)    => stringifyQualifiedName(glob)
       case FunctionQualifier(glob)     => stringifyQualifiedName(glob)
+      case SettingQualifier(glob)      => stringifyQualifiedName(glob)
     }
 
     qualifier match {
@@ -1352,6 +1364,8 @@ object Prettifier {
       case ProcedureAllQualifier() :: Nil         => Some("*")
       case p @ FunctionQualifier(_) :: _          => Some(p.map(stringify).mkString(", "))
       case FunctionAllQualifier() :: Nil          => Some("*")
+      case p @ SettingQualifier(_) :: _           => Some(p.map(stringify).mkString(", "))
+      case SettingAllQualifier() :: Nil           => Some("*")
       case _                                      => Some("<unknown>")
     }
   }

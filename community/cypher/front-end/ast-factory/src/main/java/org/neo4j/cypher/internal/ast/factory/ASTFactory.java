@@ -322,6 +322,8 @@ public interface ASTFactory<
 
     CLAUSE turnYieldToWith(YIELD yieldClause);
 
+    CLAUSE showSettingsClause(POS p, SimpleEither<List<String>, EXPRESSION> names, WHERE where, boolean hasYield);
+
     // Schema Commands
     // Constraint Commands
 
@@ -545,6 +547,8 @@ public interface ASTFactory<
     List<PRIVILEGE_QUALIFIER> functionQualifier(POS p, List<String> functions);
 
     List<PRIVILEGE_QUALIFIER> procedureQualifier(POS p, List<String> procedures);
+
+    List<PRIVILEGE_QUALIFIER> settingQualifier(POS p, List<String> names);
 
     List<GRAPH_SCOPE> graphScopes(POS p, List<DATABASE_NAME> graphNames, ScopeType scopeType);
 

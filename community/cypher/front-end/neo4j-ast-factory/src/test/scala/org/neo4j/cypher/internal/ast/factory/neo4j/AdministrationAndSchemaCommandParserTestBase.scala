@@ -183,6 +183,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
       Immutable
     ) => InputPosition => ast.Statement
 
+  type settingPrivilegeFunc =
+    (
+      ast.DbmsAction,
+      List[ast.SettingPrivilegeQualifier],
+      Seq[Either[String, Parameter]],
+      Immutable
+    ) => InputPosition => ast.Statement
+
   def grantGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResource,
@@ -235,6 +243,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   def grantExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    ast.GrantPrivilege.dbmsAction(a, i, r, q)
+
+  def grantShowSettingPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SettingPrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -297,6 +313,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   ): InputPosition => ast.Statement =
     ast.DenyPrivilege.dbmsAction(a, i, r, q)
 
+  def denyShowSettingPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SettingPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    ast.DenyPrivilege.dbmsAction(a, i, r, q)
+
   def revokeGrantGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResource,
@@ -349,6 +373,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   def revokeGrantExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeGrantType()(pos), q)
+
+  def revokeGrantShowSettingPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SettingPrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =
@@ -411,6 +443,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   ): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos), q)
 
+  def revokeDenyShowSettingPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SettingPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeDenyType()(pos), q)
+
   def revokeGraphPrivilege(
     p: ast.PrivilegeType,
     a: ast.ActionResource,
@@ -463,6 +503,14 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
   def revokeExecuteFunctionPrivilege(
     a: ast.DbmsAction,
     q: List[ast.FunctionPrivilegeQualifier],
+    r: Seq[Either[String, Parameter]],
+    i: Immutable
+  ): InputPosition => ast.Statement =
+    ast.RevokePrivilege.dbmsAction(a, i, r, ast.RevokeBothType()(pos), q)
+
+  def revokeShowSettingPrivilege(
+    a: ast.DbmsAction,
+    q: List[ast.SettingPrivilegeQualifier],
     r: Seq[Either[String, Parameter]],
     i: Immutable
   ): InputPosition => ast.Statement =

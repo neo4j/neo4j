@@ -84,6 +84,7 @@ public enum ActionType {
     EXECUTE_ADMIN_PROCEDURE,
     SERVER_SHOW,
     SERVER_MANAGEMENT,
+    SETTING_SHOW,
 
     // Graph actions
     GRAPH_ALL,

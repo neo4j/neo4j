@@ -1076,7 +1076,67 @@ class PrettifierIT extends CypherFunSuite {
         |  ORDER BY currentQueryId ASCENDING
         |  SKIP 1
         |  LIMIT 1
-        |RETURN *""".stripMargin
+        |RETURN *""".stripMargin,
+
+    // show settings
+
+    "show setting" ->
+      "SHOW SETTINGS",
+    "show seTTIng" ->
+      "SHOW SETTINGS",
+    "show settings 'foo'" ->
+      """SHOW SETTINGS "foo"""",
+    "show settings $param" ->
+      "SHOW SETTINGS $param",
+    "show settings $`some escaped param`" ->
+      "SHOW SETTINGS $`some escaped param`",
+    "show settings 'foo', 'bar'" ->
+      """SHOW SETTINGS "foo", "bar"""",
+    "show settings $param+'.list'" ->
+      """SHOW SETTINGS $param + ".list"""",
+    "show settings [ 'foo', 'bar' ]" ->
+      """SHOW SETTINGS ["foo", "bar"]""",
+    "show \nsetting\n 'foo'" ->
+      """SHOW SETTINGS "foo"""",
+    "show setTing WHERE name = 'foo'" ->
+      """SHOW SETTINGS
+        |  WHERE name = "foo"""".stripMargin,
+    "show setting 'foo' WHERE name = 'foo'" ->
+      """SHOW SETTINGS "foo"
+        |  WHERE name = "foo"""".stripMargin,
+    "show settings $list WHERE name = 'foo'" ->
+      """SHOW SETTINGS $list
+        |  WHERE name = "foo"""".stripMargin,
+    "show settings $`escaped list` WHERE name = 'foo'" ->
+      """SHOW SETTINGS $`escaped list`
+        |  WHERE name = "foo"""".stripMargin,
+    "show setting  YIELD *" ->
+      """SHOW SETTINGS
+        |YIELD *""".stripMargin,
+    "show setting  YIELD * Return DISTINCT name" ->
+      """SHOW SETTINGS
+        |YIELD *
+        |RETURN DISTINCT name""".stripMargin,
+    "show setting YIELD * where name STARTS WITH 'dbms' Return *" ->
+      """SHOW SETTINGS
+        |YIELD *
+        |  WHERE name STARTS WITH "dbms"
+        |RETURN *""".stripMargin,
+    "show setting yield name order by name skip 1 limit 1" ->
+      """SHOW SETTINGS
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
+    "SHOW setting 'foo', 'bar' yield name, description, isDynamic WHERE isDynamic RETURN *" ->
+      """SHOW SETTINGS "foo", "bar"
+        |YIELD name, description, isDynamic
+        |  WHERE isDynamic
+        |RETURN *""".stripMargin,
+    "SHOW setting $list yield name, description, isExplicitlySet WHERE isExplicitlySet" ->
+      """SHOW SETTINGS $list
+        |YIELD name, description, isExplicitlySet
+        |  WHERE isExplicitlySet""".stripMargin
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](
@@ -2178,7 +2238,13 @@ class PrettifierIT extends CypherFunSuite {
           s"$action show server on dbms $preposition role" ->
             s"$action SHOW SERVERS ON DBMS $preposition role",
           s"$action show servers on dbms $preposition role, $$paramrole" ->
-            s"$action SHOW SERVERS ON DBMS $preposition role, $$paramrole"
+            s"$action SHOW SERVERS ON DBMS $preposition role, $$paramrole",
+          s"$action show setting * on dbms $preposition role" ->
+            s"$action SHOW SETTING * ON DBMS $preposition role",
+          s"$action show settings * on dbms $preposition role" ->
+            s"$action SHOW SETTING * ON DBMS $preposition role",
+          s"$action show setting math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
+            s"$action SHOW SETTING math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role"
         )
     }
   }

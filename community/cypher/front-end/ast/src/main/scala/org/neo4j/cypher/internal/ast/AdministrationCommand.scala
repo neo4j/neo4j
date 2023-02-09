@@ -508,7 +508,13 @@ sealed abstract class PrivilegeCommand(
 
   protected def immutableKeywordOrEmptyString(immutable: Boolean): String = if (immutable) " IMMUTABLE" else ""
 
-  override def semanticCheck: SemanticCheck =
+  override def semanticCheck: SemanticCheck = {
+    val showSettingFeatureCheck = privilege match {
+      case DbmsPrivilege(ShowSettingAction) =>
+        requireFeatureSupport(s"The `$name` clause", SemanticFeature.ShowSetting, position)
+      case _ => SemanticCheck.success
+    }
+
     privilege match {
       case DbmsPrivilege(u: UnassignableAction) =>
         error(s"`GRANT`, `DENY` and `REVOKE` are not supported for `${u.name}`", position)
@@ -520,9 +526,10 @@ sealed abstract class PrivilegeCommand(
           case _: DefaultDatabaseScope => true
           case _                       => false
         } => error("`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", position)
-      case _ => super.semanticCheck chain
+      case _ => showSettingFeatureCheck chain super.semanticCheck chain
           SemanticState.recordCurrentScope(this)
     }
+  }
 }
 
 final case class GrantPrivilege(

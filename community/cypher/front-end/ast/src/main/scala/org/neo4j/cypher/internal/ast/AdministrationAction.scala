@@ -118,6 +118,8 @@ case object ExecuteFunctionAction extends DbmsAction("EXECUTE USER DEFINED FUNCT
 
 case object ExecuteBoostedFunctionAction extends DbmsAction("EXECUTE BOOSTED USER DEFINED FUNCTION")
 
+case object ShowSettingAction extends DbmsAction("SHOW SETTING")
+
 abstract class UserManagementAction(override val name: String) extends DbmsAction(name)
 
 case object AllUserActions extends UserManagementAction("USER MANAGEMENT")

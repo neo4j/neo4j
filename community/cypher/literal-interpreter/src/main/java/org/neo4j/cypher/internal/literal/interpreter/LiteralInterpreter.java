@@ -466,6 +466,11 @@ public class LiteralInterpreter
         throw new UnsupportedOperationException("turnYieldToWith is not a literal");
     }
 
+    @Override
+    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield) {
+        throw new UnsupportedOperationException("showSettingsClause is not a literal");
+    }
+
     // Schema commands
 
     @Override
@@ -829,6 +834,11 @@ public class LiteralInterpreter
     @Override
     public List<NULL> procedureQualifier(NULL p, List<String> procedures) {
         throw new UnsupportedOperationException("procedureQualifier is not a literal");
+    }
+
+    @Override
+    public List<NULL> settingQualifier(NULL p, List<String> names) {
+        throw new UnsupportedOperationException("settingQualifier is not a literal");
     }
 
     @Override

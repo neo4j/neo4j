@@ -559,6 +559,8 @@ TOKEN [IGNORE_CASE] :
     | < SERVER: "SERVER" >
     | < SERVERS: "SERVERS" >
     | < SET: "SET" >
+    | < SETTING: "SETTING" >
+    | < SETTINGS: "SETTINGS" >
     | < SHORTEST_PATH: "shortestPath" >
     | < SHOW: "SHOW">
     | < SINGLE: "SINGLE" >
@@ -3451,6 +3453,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | statement=ShowCurrentUser( start, useClause )
         | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
         | statement=ShowProcedures( start, useClause )
+        | statement=ShowSettings( start, useClause )
         | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
         | clauses=ShowTransactions( start )
         | statement=ShowAliases( start, useClause )
@@ -3905,14 +3908,14 @@ List<CLAUSE> ShowTransactions( Token start ) throws Exception:
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
         LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
-        | ( LOOKAHEAD(transactionIds() (WhereClause() | YieldClause()))
-              idEither=transactionIds() (
+        | ( LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
+              idEither=stringsOrExpression() (
                   ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
                   | where=WhereClause()
               )
           | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
           | LOOKAHEAD(WhereClause()) where=WhereClause()
-          | idEither=transactionIds()
+          | idEither=stringsOrExpression()
         ) ( tailClauses=showOrTerminateTransactions() )?
     )?
     {
@@ -3951,14 +3954,14 @@ List<CLAUSE> TerminateTransactions( Token start ) throws Exception:
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
         LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
-        | ( LOOKAHEAD(transactionIds() (WhereClause() | YieldClause()))
-              idEither=transactionIds() (
+        | ( LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
+              idEither=stringsOrExpression() (
                   ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
                   | where=WhereClause()
               )
           | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
           | LOOKAHEAD(WhereClause()) where=WhereClause()
-          | idEither=transactionIds()
+          | idEither=stringsOrExpression()
         ) ( tailClauses=showOrTerminateTransactions() )?
     )?
     {
@@ -3997,17 +4000,63 @@ List<CLAUSE> showOrTerminateTransactions() throws Exception:
     }
 }
 
-SimpleEither<List<String>, EXPRESSION> transactionIds() throws Exception:
+SimpleEither<List<String>, EXPRESSION> stringsOrExpression() throws Exception:
 {
     List<String> ids = new ArrayList<>();
     EXPRESSION expr = null;
     SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(ids);
 }
 {
-    ( LOOKAHEAD(TransactionIdString() ",") (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); })
+    ( LOOKAHEAD(StringImage() ",") (ids=StringList() { idEither=SimpleEither.left(ids); })
     | (expr=Expression() { idEither=SimpleEither.right(expr); }) )
     {
         return idEither;
+    }
+}
+
+STATEMENT ShowSettings( Token start, USE_CLAUSE useClause ) throws Exception:
+{
+    List<CLAUSE> clauses = new ArrayList<>();
+    if (useClause != null)
+    {
+        clauses.add( useClause );
+    }
+
+    List<String> names = new ArrayList<>();
+    PARAMETER param = null;
+    SimpleEither<List<String>, EXPRESSION> nameEither = SimpleEither.left(names);
+
+    WHERE where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
+}
+{
+    ( <SETTING> | <SETTINGS> )
+    (
+        LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
+              nameEither=stringsOrExpression() (
+                  ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
+                  | where=WhereClause()
+              )
+          | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
+          | LOOKAHEAD(WhereClause()) where=WhereClause()
+          | nameEither=stringsOrExpression()
+    )?
+    {
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, false ) );
+        }
+        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 
@@ -5183,7 +5232,8 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
     PRIVILEGE_TYPE privilege = null;
     ADMINISTRATION_ACTION action = null;
     List<DATABASE_SCOPE> databases = null;
-    List<PRIVILEGE_QUALIFIER> qualifier = astFactory.allDatabasesQualifier();
+    List<PRIVILEGE_QUALIFIER> databaseQualifier = astFactory.allDatabasesQualifier();
+    List<PRIVILEGE_QUALIFIER> dbmsQualifier = astFactory.allQualifier();
     List<SimpleEither<String, PARAMETER>>qualifiers = null;
 }
 {
@@ -5193,9 +5243,9 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
             (
                 (<INDEX> | <INDEXES>) { action = astFactory.privilegeAction( ActionType.INDEX_SHOW ); }
                 | (<CONSTRAINT> | <CONSTRAINTS>) { action = astFactory.privilegeAction( ActionType.CONSTRAINT_SHOW ); }
-                | (<TRANSACTION> | <TRANSACTIONS>) { action = astFactory.privilegeAction( ActionType.TRANSACTION_SHOW ); qualifier = astFactory.allUsersQualifier(); }
-                    ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { qualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
-            ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, qualifier, immutable ); }
+                | (<TRANSACTION> | <TRANSACTIONS>) { action = astFactory.privilegeAction( ActionType.TRANSACTION_SHOW ); databaseQualifier = astFactory.allUsersQualifier(); }
+                    ( <LPAREN> (<TIMES> | qualifiers=SymbolicNameOrStringParameterList() { databaseQualifier = astFactory.userQualifier(qualifiers); } ) <RPAREN> )?
+            ) <ON> databases=DatabaseScopeList() { privilege = astFactory.databasePrivilege( pos(start), action, databases, databaseQualifier, immutable ); }
         ) | (
             (
                 <ALIAS> { action = astFactory.privilegeAction( ActionType.ALIAS_SHOW ); }
@@ -5203,7 +5253,8 @@ PRIVILEGE_TYPE showPrivilege(Token start, boolean immutable):
                 | <ROLE> { action = astFactory.privilegeAction( ActionType.ROLE_SHOW ); }
                 | <USER> { action = astFactory.privilegeAction( ActionType.USER_SHOW ); }
                 | (<SERVER> | <SERVERS>) { action = astFactory.privilegeAction( ActionType.SERVER_SHOW ); }
-            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, astFactory.allQualifier(), immutable ); }
+                | (<SETTING> | <SETTINGS>) dbmsQualifier = settingQualifier(start) { action = astFactory.privilegeAction( ActionType.SETTING_SHOW ); }
+            ) <ON> <DBMS> { privilege = astFactory.dbmsPrivilege( pos(start), action, dbmsQualifier, immutable ); }
         )
     ) { return privilege; }
 }
@@ -5340,7 +5391,7 @@ List<PRIVILEGE_QUALIFIER> executeFunctionQualifier(Token start):
 {}
 {
     {
-        return astFactory.functionQualifier(pos(start), executables());
+        return astFactory.functionQualifier(pos(start), globs());
     }
 }
 
@@ -5348,11 +5399,19 @@ List<PRIVILEGE_QUALIFIER> executeProcedureQualifier(Token start):
 {}
 {
     {
-        return astFactory.procedureQualifier(pos(start), executables());
+        return astFactory.procedureQualifier(pos(start), globs());
     }
 }
 
-List<String> executables():
+List<PRIVILEGE_QUALIFIER> settingQualifier(Token start):
+{}
+{
+    {
+        return astFactory.settingQualifier(pos(start), globs());
+    }
+}
+
+List<String> globs():
 {
     List<String> executableList = new ArrayList<>();
     String executableName = null;
@@ -5957,7 +6016,7 @@ String GlobPart() :
     }
 }
 
-String TransactionIdString():
+String StringImage():
 {
     Token t;
 }
@@ -5965,14 +6024,14 @@ String TransactionIdString():
     t=StringToken() { return token.image; }
 }
 
-List<String> TransactionIdStringList():
+List<String> StringList():
 {
     String entry;
     List<String> list = new ArrayList<>();
 }
 {
-    entry=TransactionIdString() { list.add( entry ); }
-    ( "," entry=TransactionIdString() { list.add( entry ); } )*
+    entry=StringImage() { list.add( entry ); }
+    ( "," entry=StringImage() { list.add( entry ); } )*
     {
         return list;
     }
@@ -6241,6 +6300,8 @@ Token UnescapedSymbolicNameString() :
         | t=<SERVER>
         | t=<SERVERS>
         | t=<SET>
+        | t=<SETTING>
+        | t=<SETTINGS>
         | t=<SHORTEST_PATH>
         | t=<SHOW>
         | t=<SINGLE>

@@ -296,6 +296,8 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationAndSche
                |  "ROLE"
                |  "SERVER"
                |  "SERVERS"
+               |  "SETTING"
+               |  "SETTINGS"
                |  "TRANSACTION"
                |  "TRANSACTIONS"
                |  "USER" (line 1, column ${offset + 6} (offset: ${offset + 5}))""".stripMargin

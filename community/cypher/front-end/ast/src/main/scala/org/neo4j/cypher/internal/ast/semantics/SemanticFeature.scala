@@ -29,6 +29,10 @@ object SemanticFeature {
     override def name: String = "multiple databases"
   }
 
+  case object ShowSetting extends SemanticFeature with FeatureToString {
+    override def name: String = "show setting"
+  }
+
   case object MultipleGraphs extends SemanticFeature with FeatureToString {
     override def name: String = "multiple graphs"
   }
@@ -53,7 +57,8 @@ object SemanticFeature {
     UseGraphSelector,
     ExpressionsInViewInvocations,
     QuantifiedPathPatterns,
-    CallInTxsStatusAndErrorHandling
+    CallInTxsStatusAndErrorHandling,
+    ShowSetting
   )
 
   def fromString(str: String): SemanticFeature =

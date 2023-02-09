@@ -216,7 +216,14 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features.dynamic()
     )
-    () => CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures)
+    () => CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures ++ showSettingFeature)
+  }
+
+  private val showSettingFeature: Set[String] = {
+    if (config.showSettingFeatureEnabled)
+      Set(SemanticFeature.ShowSetting.productPrefix)
+    else
+      Set.empty
   }
 
   val planningIntersectionScansEnabled: () => Boolean = {

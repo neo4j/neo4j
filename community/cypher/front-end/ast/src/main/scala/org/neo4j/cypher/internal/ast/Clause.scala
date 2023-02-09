@@ -167,7 +167,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
         case SetExtractor((singleExpression, pos)) =>
           Some((s"This expression could be expressed as :$singleExpression.", pos))
         // we report all error on the first position as we will later on throw away everything but the first error.
-        case set => Some(s"These expressions could be expressed as :${set.map(_._1).mkString(", :")}.", set.head._2)
+        case set => Some((s"These expressions could be expressed as :${set.map(_._1).mkString(", :")}.", set.head._2))
       }
       maybeExplanation match {
         case Some((explanation, pos)) => SemanticError(
@@ -1169,6 +1169,55 @@ object TerminateTransactionsClause {
       yieldItems,
       yieldAll,
       wherePos
+    )(position)
+  }
+}
+
+case class ShowSettingsClause(
+  unfilteredColumns: DefaultOrAllShowColumns,
+  names: Either[List[String], Expression],
+  where: Option[Where],
+  hasYield: Boolean
+)(val position: InputPosition) extends CommandClause with CommandClauseAllowedOnSystem {
+
+  override def name: String = "SHOW SETTINGS"
+
+  override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
+
+  override def clauseSpecificSemanticCheck: SemanticCheck = {
+    requireFeatureSupport(
+      s"The `$name` clause",
+      SemanticFeature.ShowSetting,
+      position
+    ) chain super.clauseSpecificSemanticCheck
+  }
+}
+
+object ShowSettingsClause {
+
+  def apply(
+    names: Either[List[String], Expression],
+    where: Option[Where],
+    hasYield: Boolean
+  )(position: InputPosition): ShowSettingsClause = {
+    val defaultCols = List(
+      ShowColumn("name")(position),
+      ShowColumn("value")(position),
+      ShowColumn("isDynamic", CTBoolean)(position),
+      ShowColumn("defaultValue")(position),
+      ShowColumn("description")(position)
+    )
+    val verboseCols = List(
+      ShowColumn("startupValue")(position),
+      ShowColumn("isExplicitlySet", CTBoolean)(position),
+      ShowColumn("validValues")(position)
+    )
+
+    ShowSettingsClause(
+      DefaultOrAllShowColumns(hasYield, defaultCols, defaultCols ++ verboseCols),
+      names,
+      where,
+      hasYield
     )(position)
   }
 }

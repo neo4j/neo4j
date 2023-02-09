@@ -102,3 +102,18 @@ final case class FunctionQualifier(glob: String)(val position: InputPosition) ex
 }
 
 final case class FunctionAllQualifier()(val position: InputPosition) extends FunctionPrivilegeQualifier
+
+sealed trait SettingPrivilegeQualifier extends PrivilegeQualifier {
+  override def dup(children: Seq[AnyRef]): SettingPrivilegeQualifier.this.type = this
+}
+
+final case class SettingQualifier(glob: String)(val position: InputPosition)
+    extends SettingPrivilegeQualifier {
+
+  override def simplify: Seq[SettingPrivilegeQualifier] = glob match {
+    case "*" => Seq(SettingAllQualifier()(position))
+    case _   => Seq(this)
+  }
+}
+
+final case class SettingAllQualifier()(val position: InputPosition) extends SettingPrivilegeQualifier

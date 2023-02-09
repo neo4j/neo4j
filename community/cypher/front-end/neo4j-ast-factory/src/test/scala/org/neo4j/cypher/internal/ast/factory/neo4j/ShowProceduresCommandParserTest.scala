@@ -227,6 +227,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
         |  "ROLES"
         |  "SERVER"
         |  "SERVERS"
+        |  "SETTING"
+        |  "SETTINGS"
         |  "TEXT"
         |  "TRANSACTION"
         |  "TRANSACTIONS"
