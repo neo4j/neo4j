@@ -67,16 +67,8 @@ public class ParallelSort {
 
     public synchronized SortBucket[] run() throws InterruptedException {
         SortBucket[] sortBuckets = sortRadix();
-        int threadsNeeded = 0;
-        for (int i = 0; i < threads; i++) {
-            if (sortBuckets[i].count == 0) {
-                break;
-            }
-            threadsNeeded++;
-        }
-
         Workers<SortWorker> sortWorkers = new Workers<>("SortWorker");
-        for (int i = 0; i < threadsNeeded; i++) {
+        for (int i = 0; i < threads; i++) {
             if (sortBuckets[i].count == 0) {
                 break;
             }
