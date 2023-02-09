@@ -105,6 +105,23 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(input.flatten)
   }
 
+  test("limit on top of all node scan") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(10)
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(10))
+  }
+
   test("should support limit") {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
