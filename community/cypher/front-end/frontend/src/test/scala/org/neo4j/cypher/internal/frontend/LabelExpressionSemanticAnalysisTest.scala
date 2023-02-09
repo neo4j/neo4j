@@ -337,7 +337,17 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     )
   }
 
+  test("MATCH (a), (b) WITH shortestPath((a IS A)-[:REL*]->(b:B)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "The IS keyword in shortestPath is not allowed in expression"
+    )
+  }
+
   test("MATCH p = shortestPath((a:A|B)-[:REL*]->(b:B|C)) RETURN length(p) AS result") {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test("MATCH p = shortestPath((a IS A)-[:REL*]->(b:B)) RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages shouldBe empty
   }
 
@@ -365,6 +375,23 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     )
   }
 
+  test("MATCH (n), (m) WITH shortestPath((n)-[IS A*]->(m)) AS p RETURN length(p) AS result") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      "The IS keyword in shortestPath is not allowed in expression"
+    )
+  }
+
+  test("MATCH (n), (m) WITH (n)-[:!A&!B*]->(m) AS p RETURN p AS result") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      "Variable length relationships must not use relationship type expressions.",
+      "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause"
+    )
+  }
+
+  test("MATCH (n), (m) WITH (n)-[IS A*]->(m) AS p RETURN p AS result") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   test("MATCH (n), (m) WHERE length(shortestPath((n)-[:!A&!B*]->(m))) > 0 RETURN n, m AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
       "Variable length relationships must not use relationship type expressions.",
@@ -385,7 +412,11 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     )
   }
 
-  test("MATCH (a), (b) RETURN [(a:A|B)-[:REL*]->(b:B|C) | 1] AS p") {
+  test("MATCH p = shortestPath((n)-[IS A]->(m)) RETURN length(p) AS result") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("MATCH (a), (b) RETURN [(a:A|B)-[:REL*]->(b IS B) | 1] AS p") {
     runSemanticAnalysis().errors shouldBe empty
   }
 
@@ -599,6 +630,15 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
       """The semantics of using colon in the separation of alternative relationship types in conjunction with
         |the use of variable binding, inlined property predicates, or variable length is no longer supported.
         |Please separate the relationships types using `:(A&!B)|C` instead.""".stripMargin
+    )
+  }
+
+  test("MATCH (n)-[r]->() WHERE r IS (A&!B)|:C RETURN n") {
+    // should not allow mixing colon disjunction symbol with IS keyword in relationship type expression – separate error
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      """The semantics of using colon in the separation of alternative relationship types in conjunction with
+        |the use of variable binding, inlined property predicates, or variable length is no longer supported.
+        |Please separate the relationships types using `IS (A&!B)|C` instead.""".stripMargin
     )
   }
 
