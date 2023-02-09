@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -112,6 +113,13 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     newWhere
   }
 
+  def canBeEmpty(range: Option[Range]): Boolean =
+    range match {
+      case None                        => false // * means lower bound of 1 in var length relationships
+      case Some(Range(None, _))        => false // default lower bound is 1 in var length relationships
+      case Some(Range(Some(lower), _)) => lower.value == 0
+    }
+
   def collectRelationships(pattern: ASTNode): Seq[NodeConnection] =
     pattern.folder.treeFold(Seq.empty[NodeConnection]) {
       case _: ScopeExpression =>
@@ -126,7 +134,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
               // To ensure this, we need to change the position to that of the QPP.
               val innerRelsWithFixedPositions = innerAcc.asInstanceOf[Seq[SingleRelationship]]
                 .map(x => x.copy(variable = x.variable.withPosition(qpp.position)))
-              acc :+ RelationshipGroup(innerRelsWithFixedPositions)
+              acc :+ RelationshipGroup(innerRelsWithFixedPositions, qpp.quantifier.canBeEmpty)
             }
           )
 
@@ -140,11 +148,11 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
           TraverseChildren(acc :+ SingleRelationship(ident, labelExpression))
         }
 
-      case RelationshipChain(_, RelationshipPattern(optIdent, labelExpression, Some(_), _, _, _), _) =>
+      case RelationshipChain(_, RelationshipPattern(optIdent, labelExpression, Some(range), _, _, _), _) =>
         acc => {
           val ident =
             optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
-          TraverseChildren(acc :+ RelationshipGroup(Seq(SingleRelationship(ident, labelExpression))))
+          TraverseChildren(acc :+ RelationshipGroup(Seq(SingleRelationship(ident, labelExpression)), canBeEmpty(range)))
         }
     }
 
@@ -187,7 +195,7 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
         val xRels = x.innerRelationships.filter(innerX => y.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerX)))
         val yRels = y.innerRelationships.filter(innerY => x.innerRelationships.exists(!_.isAlwaysDifferentFrom(innerY)))
         Option.when(xRels.nonEmpty && yRels.nonEmpty) {
-          if (xRels.map(_.name).intersect(yRels.map(_.name)).nonEmpty) {
+          if (xRels.map(_.name).intersect(yRels.map(_.name)).nonEmpty && !(x.canBeEmpty || y.canBeEmpty)) {
             False()(pos)
           } else {
             val xList = reduceLists(xRels.map(_.variable.copyId), pos)
@@ -211,7 +219,8 @@ case object AddUniquenessPredicates extends Step with ASTRewriterFactory {
 
   sealed trait NodeConnection
 
-  case class RelationshipGroup(innerRelationships: Seq[SingleRelationship]) extends NodeConnection
+  case class RelationshipGroup(innerRelationships: Seq[SingleRelationship], canBeEmpty: Boolean = false)
+      extends NodeConnection
 
   case class SingleRelationship(
     variable: LogicalVariable,

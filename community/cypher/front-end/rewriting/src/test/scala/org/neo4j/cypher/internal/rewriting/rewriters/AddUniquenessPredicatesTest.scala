@@ -128,7 +128,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     assertRewrite(
       "MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c) RETURN *",
       s"""MATCH (a)-[r1*0..1]->(b)-[r1*0..1]->(c)
-         |WHERE false AND ${unique("r1", 0)} AND ${unique("r1", 2)}
+         |WHERE ${disjoint("r1", "r1")} AND ${unique("r1", 1)} AND ${unique("r1", 3)}
          |RETURN *""".stripMargin
     )
   }
