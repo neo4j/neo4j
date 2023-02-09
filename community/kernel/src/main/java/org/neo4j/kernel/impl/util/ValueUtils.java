@@ -96,6 +96,8 @@ public final class ValueUtils {
                     throw new IllegalArgumentException(
                             "Unknown entity + " + object.getClass().getName());
                 }
+            } else if (object instanceof Map<?, ?>) {
+                return asMapValue((Map<String, Object>) object, wrapEntities);
             } else if (object instanceof Iterable<?>) {
                 if (object instanceof Path) {
                     if (wrapEntities) {
@@ -108,8 +110,6 @@ public final class ValueUtils {
                 } else {
                     return asListValue((Iterable<Object>) object, wrapEntities);
                 }
-            } else if (object instanceof Map<?, ?>) {
-                return asMapValue((Map<String, Object>) object, wrapEntities);
             } else if (object instanceof Iterator<?> iterator) {
                 ListValueBuilder builder = ListValueBuilder.newListBuilder();
                 while (iterator.hasNext()) {

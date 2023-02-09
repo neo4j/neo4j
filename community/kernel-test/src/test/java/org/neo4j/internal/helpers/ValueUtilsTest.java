@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -100,5 +101,20 @@ class ValueUtilsTest {
         assertThat(listValue.value(1)).isEqualTo(intValue(2));
         assertThat(listValue.value(2)).isEqualTo(intValue(3));
         assertThat(listValue.size()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldHandleIterableMutableMaps() {
+        // Given
+        Map<String, Object> map = Maps.mutable.with("a", Arrays.asList("foo", 42));
+
+        // When
+        AnyValue anyValue = ValueUtils.of(map);
+
+        // Then
+        assertThat(anyValue).isInstanceOf(MapValue.class);
+        MapValue mapValue = (MapValue) anyValue;
+        assertThat(mapValue.get("a")).isEqualTo(VirtualValues.list(stringValue("foo"), intValue(42)));
+        assertThat(mapValue.size()).isEqualTo(1);
     }
 }
