@@ -21,7 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
+import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -29,7 +35,6 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -40,24 +45,30 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSe
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
-import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
-class MergeRelationshipUniqueIndexSeekLeafPlanningTest extends CypherFunSuite
+class MergeRelationshipUniqueIndexSeekLeafPlanningTest
+    extends CypherFunSuite
     with LogicalPlanningTestSupport2
     with AstConstructionTestSupport {
-  private val relName = "r"
+
+  private val relationshipName = "r"
+  private val relationshipTypeName = "REL"
   private val startNodeName = "start"
   private val endNodeName = "end"
   private val prop = "prop"
   private val prop2 = "prop2"
   private val prop3 = "prop3"
-  private val relTypeName = "REL"
 
-  private val rProp = prop(relName, prop)
-  private val rProp2 = prop(relName, prop2)
-  private val rProp3 = prop(relName, prop3)
+  private val rProp = prop(relationshipName, prop)
+  private val rProp2 = prop(relationshipName, prop2)
+  private val rProp3 = prop(relationshipName, prop3)
   private val lit42 = literalInt(42)
   private val lit6 = literalInt(6)
   private val litFoo = literalString("Foo")
@@ -66,214 +77,253 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest extends CypherFunSuite
   private val rProp2InLit6 = in(rProp2, listOf(lit6))
   private val rProp3InLitFoo = in(rProp3, listOf(litFoo))
 
-  private def queryGraph(types: Seq[String], semanticDirection: SemanticDirection, predicates: Expression*) =
+  private def buildQueryGraph(predicates: Expression*) =
     QueryGraph(
-      selections = Selections(predicates.map(Predicate(Set(relName), _)).toSet),
+      selections = Selections.from(predicates),
       patternRelationships = Set(PatternRelationship(
-        relName,
+        relationshipName,
         (startNodeName, endNodeName),
-        semanticDirection,
-        types.map(super[AstConstructionTestSupport].relTypeName(_)),
+        SemanticDirection.OUTGOING,
+        List(relTypeName(relationshipTypeName)),
         SimplePatternLength
       ))
     )
 
-  test("does not plan index seek when planning relationship unique index seek for merger is disabled") {
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = false))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
+  private def buildLogicalPlanningContext(
+    config: StubbedLogicalPlanningConfiguration,
+    planningMergeRelationshipUniqueIndexSeekEnabled: Boolean
+  ): LogicalPlanningContext = {
+    val metrics = config.metricsFactory.newMetrics(config.planContext, mock[ExpressionEvaluator], config.executionModel)
 
-      // then
-      resultPlans shouldBe empty
+    val planningAttributes = PlanningAttributes.newAttributes
+
+    val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
+
+    val staticComponents = StaticComponents(
+      planContext = config.planContext,
+      notificationLogger = devNullLogger,
+      planningAttributes = planningAttributes,
+      logicalPlanProducer = logicalPlanProducer,
+      queryGraphSolver = queryGraphSolver,
+      metrics = metrics,
+      idGen = idGen,
+      anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      cancellationChecker = CancellationChecker.NeverCancelled,
+      semanticTable = config.semanticTable
+    )
+
+    val settings = Settings(
+      executionModel = config.executionModel,
+      debugOptions = CypherDebugOptions.default,
+      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
+      planningRelationshipUniqueIndexSeekEnabled = true,
+      planningMergeRelationshipUniqueIndexSeekEnabled = planningMergeRelationshipUniqueIndexSeekEnabled
+    )
+
+    LogicalPlanningContext(staticComponents, settings)
+  }
+
+  test("does not plan index seek when planning relationship unique index seek for merger is disabled") {
+    // given
+    val config = new given {
+      uniqueRelationshipIndexOn(relationshipTypeName, prop)
     }
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = false)
+    val queryGraph = buildQueryGraph(rPropInLit42)
+
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
+
+    // then
+    plans shouldBe empty
   }
 
   test("does not plan index seek when no index is present") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), SemanticDirection.OUTGOING, rPropInLit42)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = true))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
+    // given
+    val config = new given()
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val queryGraph = buildQueryGraph(rPropInLit42)
 
-      // then
-      resultPlans shouldBe empty
-    }
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
+
+    // then
+    plans shouldBe empty
   }
 
   test("plans an index seek on a single property") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), SemanticDirection.OUTGOING, rPropInLit42)
-      uniqueRelationshipIndexOn(relTypeName, prop)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = true))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
-
-      // then
-      resultPlans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(IndexedProperty(
-          PropertyKeyToken(prop, cfg.semanticTable.resolvedPropertyKeyNames(prop)),
-          CanGetValue,
-          RELATIONSHIP_TYPE
-        )),
-        valueExpr = SingleQueryExpression(lit42),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      ))
+    // given
+    val config = new given {
+      uniqueRelationshipIndexOn(relationshipTypeName, prop)
     }
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val queryGraph = buildQueryGraph(rPropInLit42)
+
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
+
+    // then
+    plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(IndexedProperty(
+        PropertyKeyToken(prop, config.semanticTable.resolvedPropertyKeyNames(prop)),
+        CanGetValue,
+        RELATIONSHIP_TYPE
+      )),
+      valueExpr = SingleQueryExpression(lit42),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    ))
   }
 
-  test("plans two index seek, with an assert same relationship, when querying two properties with two different indexes") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), SemanticDirection.OUTGOING, rPropInLit42, rProp2InLit6)
-      uniqueRelationshipIndexOn(relTypeName, prop)
-      uniqueRelationshipIndexOn(relTypeName, prop2)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = true))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
-
-      val lhs = DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(IndexedProperty(
-          PropertyKeyToken(prop, cfg.semanticTable.resolvedPropertyKeyNames(prop)),
-          CanGetValue,
-          RELATIONSHIP_TYPE
-        )),
-        valueExpr = SingleQueryExpression(lit42),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      )
-
-      val rhs = DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(IndexedProperty(
-          PropertyKeyToken(prop2, cfg.semanticTable.resolvedPropertyKeyNames(prop2)),
-          CanGetValue,
-          RELATIONSHIP_TYPE
-        )),
-        valueExpr = SingleQueryExpression(lit6),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      )
-
-      // then
-      resultPlans shouldEqual Set(AssertSameRelationship(idName = relName, left = lhs, right = rhs))
+  test(
+    "plans two index seek, with an assert same relationship, when querying two properties with two different indexes"
+  ) {
+    // given
+    val config = new given {
+      uniqueRelationshipIndexOn(relationshipTypeName, prop)
+      uniqueRelationshipIndexOn(relationshipTypeName, prop2)
     }
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6)
+
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
+
+    val lhs = DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(IndexedProperty(
+        PropertyKeyToken(prop, config.semanticTable.resolvedPropertyKeyNames(prop)),
+        CanGetValue,
+        RELATIONSHIP_TYPE
+      )),
+      valueExpr = SingleQueryExpression(lit42),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    )
+
+    val rhs = DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(IndexedProperty(
+        PropertyKeyToken(prop2, config.semanticTable.resolvedPropertyKeyNames(prop2)),
+        CanGetValue,
+        RELATIONSHIP_TYPE
+      )),
+      valueExpr = SingleQueryExpression(lit6),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    )
+
+    // then
+    plans shouldEqual Set(AssertSameRelationship(idName = relationshipName, left = lhs, right = rhs))
   }
 
   test("plans a single index seek when querying two properties with a composite index") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), SemanticDirection.OUTGOING, rPropInLit42, rProp2InLit6)
-      uniqueRelationshipIndexOn(relTypeName, prop, prop2)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = true))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
-
-      // then
-      resultPlans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(
-          IndexedProperty(
-            PropertyKeyToken(prop, cfg.semanticTable.resolvedPropertyKeyNames(prop)),
-            CanGetValue,
-            RELATIONSHIP_TYPE
-          ),
-          IndexedProperty(
-            PropertyKeyToken(prop2, cfg.semanticTable.resolvedPropertyKeyNames(prop2)),
-            CanGetValue,
-            RELATIONSHIP_TYPE
-          )
-        ),
-        valueExpr = CompositeQueryExpression(List(SingleQueryExpression(lit42), SingleQueryExpression(lit6))),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      ))
+    // given
+    val config = new given {
+      uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
     }
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6)
+
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
+
+    // then
+    plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(
+        IndexedProperty(
+          PropertyKeyToken(prop, config.semanticTable.resolvedPropertyKeyNames(prop)),
+          CanGetValue,
+          RELATIONSHIP_TYPE
+        ),
+        IndexedProperty(
+          PropertyKeyToken(prop2, config.semanticTable.resolvedPropertyKeyNames(prop2)),
+          CanGetValue,
+          RELATIONSHIP_TYPE
+        )
+      ),
+      valueExpr = CompositeQueryExpression(List(SingleQueryExpression(lit42), SingleQueryExpression(lit6))),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    ))
   }
 
   test("plans a single index seek and a composite one under an assert same relationship") {
-    new given {
-      addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), SemanticDirection.OUTGOING, rPropInLit42, rProp2InLit6, rProp3InLitFoo)
-      uniqueRelationshipIndexOn(relTypeName, prop, prop2)
-      uniqueRelationshipIndexOn(relTypeName, prop3)
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      val ctx2 = ctx.withModifiedSettings(_.copy(planningMergeRelationshipUniqueIndexSeekEnabled = true))
-      // when
-      val resultPlans =
-        mergeRelationshipUniqueIndexSeekLeafPlanner(cfg.qg, InterestingOrderConfig.empty, ctx2)
+    // given
+    val config = new given {
+      uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
+      uniqueRelationshipIndexOn(relationshipTypeName, prop3)
+    }
+    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6, rProp3InLitFoo)
 
-      val lhs = DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(
-          IndexedProperty(
-            PropertyKeyToken(prop, cfg.semanticTable.resolvedPropertyKeyNames(prop)),
-            CanGetValue,
-            RELATIONSHIP_TYPE
-          ),
-          IndexedProperty(
-            PropertyKeyToken(prop2, cfg.semanticTable.resolvedPropertyKeyNames(prop2)),
-            CanGetValue,
-            RELATIONSHIP_TYPE
-          )
-        ),
-        valueExpr = CompositeQueryExpression(List(SingleQueryExpression(lit42), SingleQueryExpression(lit6))),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      )
+    // when
+    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
 
-      val rhs = DirectedRelationshipUniqueIndexSeek(
-        idName = relName,
-        startNode = startNodeName,
-        endNode = endNodeName,
-        typeToken = RelationshipTypeToken(relTypeName, cfg.semanticTable.resolvedRelTypeNames(relTypeName)),
-        properties = Seq(IndexedProperty(
-          PropertyKeyToken(prop3, cfg.semanticTable.resolvedPropertyKeyNames(prop3)),
+    val lhs = DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(
+        IndexedProperty(
+          PropertyKeyToken(prop, config.semanticTable.resolvedPropertyKeyNames(prop)),
           CanGetValue,
           RELATIONSHIP_TYPE
-        )),
-        valueExpr = SingleQueryExpression(litFoo),
-        argumentIds = Set.empty,
-        indexOrder = IndexOrderNone,
-        indexType = IndexType.RANGE
-      )
+        ),
+        IndexedProperty(
+          PropertyKeyToken(prop2, config.semanticTable.resolvedPropertyKeyNames(prop2)),
+          CanGetValue,
+          RELATIONSHIP_TYPE
+        )
+      ),
+      valueExpr = CompositeQueryExpression(List(SingleQueryExpression(lit42), SingleQueryExpression(lit6))),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    )
 
-      // then
-      resultPlans shouldEqual Set(AssertSameRelationship(idName = relName, left = lhs, right = rhs))
-    }
+    val rhs = DirectedRelationshipUniqueIndexSeek(
+      idName = relationshipName,
+      startNode = startNodeName,
+      endNode = endNodeName,
+      typeToken =
+        RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
+      properties = Seq(IndexedProperty(
+        PropertyKeyToken(prop3, config.semanticTable.resolvedPropertyKeyNames(prop3)),
+        CanGetValue,
+        RELATIONSHIP_TYPE
+      )),
+      valueExpr = SingleQueryExpression(litFoo),
+      argumentIds = Set.empty,
+      indexOrder = IndexOrderNone,
+      indexType = IndexType.RANGE
+    )
+
+    // then
+    plans shouldEqual Set(AssertSameRelationship(idName = relationshipName, left = lhs, right = rhs))
   }
 }
