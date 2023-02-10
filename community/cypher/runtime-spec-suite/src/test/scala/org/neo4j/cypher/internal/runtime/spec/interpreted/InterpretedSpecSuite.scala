@@ -180,6 +180,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.WritingSubqueryApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexContainsScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexEndsWithScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexLockingUniqueSeekConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexSeekConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipTypeScanConcurrencyStressTestBase
@@ -515,3 +516,6 @@ class InterpretedRelationshipIndexEndsWithScanConcurrencyStressTest
 
 class InterpretedRelationshipIndexSeekConcurrencyStressTest
     extends RelationshipIndexSeekConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+
+class InterpretedRelationshipIndexLockingUniqueSeekConcurrencyStressTest
+    extends RelationshipIndexLockingUniqueSeekConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)

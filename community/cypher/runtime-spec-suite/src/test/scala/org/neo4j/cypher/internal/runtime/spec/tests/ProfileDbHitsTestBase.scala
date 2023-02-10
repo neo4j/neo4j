@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -70,7 +71,10 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   val canReuseAllScanLookup: Boolean, // operator following AllNodesScan or RelationshipScan does not need to lookup node again
   val canFuseOverPipelines: Boolean,
   val useWritesWithProfiling: Boolean // writes with profiling count dbHits for each element of the input array and ignore when no actual write was performed e.g. there is no addLabel write when label already exists on the node
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith((GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)),
+      runtime
+    ) {
 
   test("HasLabel on top of AllNodesScan") {
     val cost = if (canReuseAllScanLookup) costOfLabelCheck - 1 else costOfLabelCheck
@@ -464,28 +468,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
   }
 
-  test("should profile dbHits of directed relationship index unique seek") {
-    // given
-    given {
-      relationshipIndex("R", "difficulty")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("difficulty", i % 10)
-      }
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]->(y)", unique = true)
-      .build()
-
-    val result = profile(logicalQuery, runtime)
-    consume(result)
-    val expectedDbHits: Int = sizeHint / 10 + 1
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(expectedDbHits)
-  }
-
   test("should profile dbHits of directed relationship index range seek") {
     // given
     given {
@@ -590,28 +572,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)")
-      .build()
-
-    val result = profile(logicalQuery, runtime)
-    consume(result)
-
-    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be(sizeHint / 5 + 2))
-  }
-
-  test("should profile dbHits of undirected relationship multiple index unique seek") {
-    // given
-    given {
-      relationshipIndex("R", "difficulty")
-      val (_, rels) = circleGraph(sizeHint)
-      rels.zipWithIndex.foreach {
-        case (r, i) => r.setProperty("difficulty", i % 10)
-      }
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)", unique = true)
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -1335,6 +1295,51 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
 
     val expectedDbHits = expectedRowCount * costOfCompositeUniqueIndexCursorRow
     seekProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits
+  }
+
+  test("should profile dbHits of directed relationship index unique seek") {
+    // given
+    given {
+      uniqueRelationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _                     => // do nothing
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]->(y)", unique = true)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(1)
+  }
+
+  test("should profile dbHits of undirected relationship multiple index unique seek") {
+    // given
+    given {
+      uniqueRelationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _                     => // do nothing
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)", unique = true)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should be(2)
   }
 
 }
