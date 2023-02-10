@@ -24,15 +24,14 @@ import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.protocol.v44.message.decoder.RouteMessageDecoder;
 import org.neo4j.bolt.protocol.v44.message.decoder.RunMessageDecoder;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
@@ -46,10 +45,8 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
     public BoltProtocolV44(
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, clock);
     }
 
     @Override
@@ -69,16 +66,14 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
 
     @Override
     public StateMachine createStateMachine(Connection connection) {
-        connection
-                .memoryTracker()
-                .allocateHeap(TransactionStateMachineSPIProviderV4.SHALLOW_SIZE
-                        + StateMachineSPIImpl.SHALLOW_SIZE
-                        + StateMachineV44.SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE + StateMachineV44.SHALLOW_SIZE);
 
-        var transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, connection, clock);
-        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider);
+        var boltSPI = new StateMachineSPIImpl(logging);
+        return new StateMachineV44(boltSPI, connection, clock);
+    }
 
-        return new StateMachineV44(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
+    @Override
+    public MetadataHandler metadataHandler() {
+        return DefaultMetadataHandler.getInstance();
     }
 }

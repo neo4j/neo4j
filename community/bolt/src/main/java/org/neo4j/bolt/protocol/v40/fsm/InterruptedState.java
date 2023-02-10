@@ -24,7 +24,6 @@ import static org.neo4j.util.Preconditions.checkState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.Signal;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.memory.HeapEstimator;
@@ -41,21 +40,14 @@ public class InterruptedState implements State {
     @Override
     public State process(RequestMessage message, StateMachineContext context) throws BoltConnectionFatality {
         assertInitialized();
-        if (message == Signal.INTERRUPT) {
-            return this;
-        }
-
         if (message instanceof ResetMessage) {
             if (!context.connection().reset()) {
                 context.connectionState().markIgnored();
                 return this;
             }
 
-            if (context.resetMachine()) {
-                context.connectionState().resetPendingFailedAndIgnored();
-                return readyState;
-            }
-            return null;
+            context.connectionState().resetPendingFailedAndIgnored();
+            return readyState;
         } else {
             context.connectionState().markIgnored();
             return this;

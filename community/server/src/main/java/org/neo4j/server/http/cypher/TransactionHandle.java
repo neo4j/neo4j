@@ -25,30 +25,23 @@ import static org.neo4j.kernel.impl.util.ValueUtils.asParameterMapValue;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import java.util.Map;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
-import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorProvider;
-import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
-import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.bolt.protocol.v44.transaction.TransactionStateMachineSPIProviderV44;
-import org.neo4j.bolt.transaction.CleanUpConnectionContext;
-import org.neo4j.bolt.transaction.CleanUpTransactionContext;
-import org.neo4j.bolt.transaction.InitializeContext;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -73,7 +66,6 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionHandle.class);
 
     private final String databaseName;
-    private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final TransactionManager transactionManager;
@@ -82,18 +74,16 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     private final long id;
     private long expirationTimestamp = -1;
     private final InternalLogProvider userLogProvider;
-    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
-    private String txManagerTxId;
-    private LoginContext loginContext;
     private final ClientConnectionInfo clientConnectionInfo;
+    private final boolean readByDefault;
+
+    private Transaction transaction;
+    private LoginContext loginContext;
     MemoryTracker memoryTracker;
     AuthManager authManager;
-    private final SystemNanoClock clock;
-    private final boolean readByDefault;
 
     TransactionHandle(
             String databaseName,
-            QueryExecutionEngine engine,
             TransactionRegistry registry,
             TransactionUriScheme uriScheme,
             boolean implicitTransaction,
@@ -102,13 +92,10 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
             long customTransactionTimeoutMillis,
             TransactionManager transactionManager,
             InternalLogProvider logProvider,
-            BoltGraphDatabaseManagementServiceSPI boltSPI,
             MemoryTracker memoryTracker,
             AuthManager authManager,
-            SystemNanoClock clock,
             boolean readByDefault) {
         this.databaseName = databaseName;
-        this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.IMPLICIT : Type.EXPLICIT;
@@ -118,14 +105,11 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
         this.id = registry.begin(this);
         this.transactionManager = transactionManager;
         this.userLogProvider = logProvider;
-        this.boltSPI = boltSPI;
         this.loginContext = loginContext;
         this.clientConnectionInfo = clientConnectionInfo;
         this.memoryTracker = memoryTracker;
         this.authManager = authManager;
-        this.clock = clock;
         this.readByDefault = readByDefault;
-        setUpStatementProcessor();
     }
 
     URI uri() {
@@ -149,56 +133,54 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
 
     @Override
     public boolean terminate() {
-        transactionManager.interrupt(txManagerTxId);
+        this.transaction.interrupt();
         return true;
     }
 
-    void ensureActiveTransaction() throws KernelException {
-        if (txManagerTxId == null) {
+    void ensureActiveTransaction() throws TransactionException {
+        if (this.transaction == null) {
             beginTransaction();
         }
     }
 
-    StatementMetadata executeStatement(Statement statement) throws KernelException, TransactionNotFoundException {
-        return transactionManager.runQuery(
-                txManagerTxId, statement.getStatement(), asParameterMapValue(statement.getParameters()));
+    org.neo4j.bolt.tx.statement.Statement executeStatement(Statement statement) throws TransactionException {
+        return this.transaction.run(statement.getStatement(), asParameterMapValue(statement.getParameters()));
     }
 
-    void forceRollback() throws TransactionNotFoundException {
-        transactionManager.rollback(txManagerTxId);
-        transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
+    void forceRollback() throws TransactionException {
+        this.transaction.rollback();
+        transaction.close();
     }
 
     void suspendTransaction() {
         expirationTimestamp = registry.release(id, this);
     }
 
-    void commit() throws KernelException, TransactionNotFoundException {
+    void commit() throws TransactionException {
         try {
-            transactionManager.commit(txManagerTxId);
+            this.transaction.commit();
         } finally {
             registry.forget(id);
-            transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
+            this.transaction.close();
         }
     }
 
-    void rollback() {
+    void rollback() throws TransactionException {
         try {
-            transactionManager.rollback(txManagerTxId);
-        } catch (TransactionNotFoundException ex) {
-            // ignore - Transaction already rolled back by release mechanism.
+            this.transaction.rollback();
         } finally {
-            registry.forget(id);
-            transactionManager.cleanUp(new CleanUpConnectionContext(Long.toString(id)));
+            this.registry.forget(id);
+            this.transaction.close();
         }
     }
 
-    public LoginContext getLoginContext() {
+    @Override
+    public LoginContext loginContext() {
         return loginContext;
     }
 
     boolean hasTransactionContext() {
-        return txManagerTxId != null;
+        return this.transaction != null;
     }
 
     @Override
@@ -216,55 +198,23 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
         return this.databaseName;
     }
 
-    /*
-    This is an ugly temporary measure to enable the HTTP server to use the Bolt Implementation of TransactionManager.
-    This will be removed completely when a global transaction aware TransactionManager is implemented.
-     */
-    private void setUpStatementProcessor() {
-        var transactionStateMachineSPIProvider = new TransactionStateMachineSPIProviderV44(boltSPI, this, clock);
-        var statementProcessorReleaseManager = new HttpStatementProcessorReleaseManager(this.transactionManager);
-
-        var statementProcessorProvider = new StatementProcessorProvider(
-                transactionStateMachineSPIProvider,
-                clock,
-                statementProcessorReleaseManager,
-                new RoutingContext(true, Collections.emptyMap()),
-                memoryTracker);
-
-        transactionManager.initialize(new InitializeContext(Long.toString(getId()), statementProcessorProvider));
-    }
-
-    public void beginTransaction() throws KernelException {
-        txManagerTxId = transactionManager.begin(
-                loginContext,
-                databaseName,
+    public void beginTransaction() throws TransactionException {
+        this.transaction = this.transactionManager.create(
+                TransactionType.EXPLICIT,
+                this,
+                this.databaseName,
+                readByDefault ? AccessMode.READ : AccessMode.WRITE,
                 Collections.emptyList(),
-                readByDefault,
-                Collections.emptyMap(),
-                customTransactionTimeout,
-                null,
-                Long.toString(id));
+                this.customTransactionTimeout,
+                Collections.emptyMap());
     }
 
     public TransactionManager transactionManager() {
         return transactionManager;
     }
 
-    public String getTxManagerTxId() {
-        return txManagerTxId;
-    }
-
-    public static class HttpStatementProcessorReleaseManager implements StatementProcessorReleaseManager {
-        private final TransactionManager transactionManager;
-
-        public HttpStatementProcessorReleaseManager(TransactionManager transactionManager) {
-            this.transactionManager = transactionManager;
-        }
-
-        @Override
-        public void releaseStatementProcessor(String transactionId) {
-            this.transactionManager.cleanUp(new CleanUpTransactionContext(transactionId));
-            this.transactionManager.cleanUp(new CleanUpConnectionContext(transactionId));
-        }
+    @Override
+    public RoutingContext routingContext() {
+        return new RoutingContext(true, Map.of());
     }
 }

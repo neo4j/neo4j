@@ -20,6 +20,9 @@
 package org.neo4j.bolt.protocol.common.connector.connection;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.Map;
@@ -40,6 +43,7 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.AuthenticationResult;
@@ -147,7 +151,8 @@ class AtomicSchedulingConnectionTest {
                 this.clock);
 
         // this is to set useragent
-        this.connection.negotiate(Collections.emptyList(), USER_AGENT);
+        this.connection.negotiate(
+                Collections.emptyList(), USER_AGENT, new RoutingContext(false, Collections.emptyMap()));
     }
 
     private void selectProtocol() {
@@ -197,7 +202,7 @@ class AtomicSchedulingConnectionTest {
     void shouldIdentifyMemoryTracker() {
         Assertions.assertThat(this.connection.memoryTracker()).isSameAs(this.memoryTracker);
 
-        Mockito.verifyNoInteractions(this.connector);
+        Mockito.verifyNoMoreInteractions(this.connector);
     }
 
     @Test
@@ -232,7 +237,7 @@ class AtomicSchedulingConnectionTest {
         var barrier = new CyclicBarrier(2);
         var latch = new CountDownLatch(1);
         var failure = new AtomicReference<AssertionError>();
-        this.connection.submit(fsm -> {
+        this.connection.submit((fsm, responseHandler) -> {
             try {
                 barrier.await();
 
@@ -333,7 +338,7 @@ class AtomicSchedulingConnectionTest {
         this.selectProtocol();
 
         // submit an empty job to ensure that the connection doesn't inline close due to being in idle
-        this.connection.submit(fsm -> {});
+        this.connection.submit((fsm, responseHandler) -> {});
 
         ConnectionAssertions.assertThat(this.connection)
                 .isActive()
@@ -351,8 +356,11 @@ class AtomicSchedulingConnectionTest {
     }
 
     @Test
-    void shouldImmediatelyCloseWhenInIdle() {
+    void shouldImmediatelyCloseWhenInIdle() throws Exception {
+        var future = Mockito.mock(ChannelFuture.class);
         var listener = Mockito.mock(ConnectionListener.class);
+
+        Mockito.doReturn(future).when(this.channel).close();
 
         this.selectProtocol();
 
@@ -375,8 +383,19 @@ class AtomicSchedulingConnectionTest {
                 .isClosed();
 
         // any closeable dependencies should also be closed once the connection is closed
-        Mockito.verify(this.fsm).close();
+        ArgumentCaptor<GenericFutureListener<? extends Future<? super Void>>> closeListenerCaptor =
+                ArgumentCaptor.forClass(GenericFutureListener.class);
+
         Mockito.verify(this.channel).close();
+        Mockito.verify(future).addListener(closeListenerCaptor.capture());
+
+        Mockito.verify(this.memoryTracker, Mockito.never()).close();
+
+        var closeListener = closeListenerCaptor.getValue();
+        Assertions.assertThat(closeListener).isNotNull();
+
+        closeListener.operationComplete(null);
+
         Mockito.verify(this.memoryTracker).close();
 
         // listeners should also be notified about both being marked for closure and actually closing
@@ -445,8 +464,8 @@ class AtomicSchedulingConnectionTest {
 
         // since the jobs had not been started when the connection was marked for closure, they will not
         // execute - it is the callers responsibility to not kill connections which remain active if possible
-        inOrder.verify(job1, Mockito.never()).perform(this.fsm);
-        inOrder.verify(job2, Mockito.never()).perform(this.fsm);
+        inOrder.verify(job1, Mockito.never()).perform(Mockito.eq(this.fsm), Mockito.any());
+        inOrder.verify(job2, Mockito.never()).perform(Mockito.eq(this.fsm), Mockito.any());
 
         inOrder.verify(listener).onIdle();
         inOrder.verify(listener).onClosed();
@@ -578,6 +597,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
+        Mockito.verify(this.protocol).metadataHandler();
         Mockito.verifyNoMoreInteractions(this.protocol);
 
         // listeners should have been notified about the initialization of the state machine
@@ -592,6 +612,7 @@ class AtomicSchedulingConnectionTest {
         Mockito.verify(this.protocol).registerStructReaders(Mockito.any());
         Mockito.verify(this.protocol).registerStructWriters(Mockito.any());
         Mockito.verify(this.protocol).features();
+        Mockito.verify(this.protocol).metadataHandler();
         Mockito.verifyNoMoreInteractions(this.protocol);
 
         Assertions.assertThatExceptionOfType(IllegalStateException.class)

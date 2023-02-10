@@ -22,7 +22,9 @@ package org.neo4j.bolt.testing.assertions;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.util.Arrays;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
@@ -72,7 +74,7 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
         return this.hasRemainingResponses(0);
     }
 
-    public ResponseRecorderAssertions hasMessage(Consumer<RecordedMessage> assertions) {
+    public ResponseRecorderAssertions hasMessage(BiConsumer<RecordedMessage, Supplier<String>> assertions) {
         this.isNotNull();
 
         RecordedMessage message;
@@ -82,27 +84,27 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
             throw new AssertionError("Interrupted while awaiting response", ex);
         }
 
-        assertions.accept(message);
+        assertions.accept(message, message::getStacktrace);
         return this;
     }
 
-    public ResponseRecorderAssertions hasResponseMessage(Consumer<ResponseMessage> assertions) {
-        return this.hasMessage(message -> {
+    public ResponseRecorderAssertions hasResponseMessage(BiConsumer<ResponseMessage, Supplier<String>> assertions) {
+        return this.hasMessage((message, stacktrace) -> {
             if (!message.isResponse()) {
                 this.failWithMessage("Expected response message but got <%s>", message);
             }
 
-            assertions.accept(message.asResponse());
+            assertions.accept(message.asResponse(), stacktrace);
         });
     }
 
     public ResponseRecorderAssertions hasIgnoredResponse() {
-        return this.hasResponseMessage(actual -> {
+        return this.hasResponseMessage((actual, stacktrace) -> {
             if (actual != IgnoredMessage.INSTANCE) {
                 failWithActualExpectedAndMessage(
                         actual,
                         IgnoredMessage.INSTANCE,
-                        "Expected response <%s> but got <%s>",
+                        "Expected response <%s> but got <%s> via:\n" + stacktrace.get(),
                         IgnoredMessage.INSTANCE,
                         actual);
             }
@@ -120,9 +122,9 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
     }
 
     public ResponseRecorderAssertions hasSuccessResponse() {
-        return this.hasResponseMessage(actual -> {
+        return this.hasResponseMessage((actual, stacktrace) -> {
             if (!(actual instanceof SuccessMessage)) {
-                failWithMessage("Expected SUCCESS response but got <%s>", actual);
+                failWithMessage("Expected SUCCESS response but got <%s> via:\n" + stacktrace.get(), actual);
             }
         });
     }
@@ -138,9 +140,9 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
     }
 
     public ResponseRecorderAssertions hasSuccessResponse(Consumer<MapValue> assertions) {
-        return this.hasResponseMessage(actual -> {
+        return this.hasResponseMessage((actual, stacktrace) -> {
             if (!(actual instanceof SuccessMessage)) {
-                failWithMessage("Expected SUCCESS response but got <%s>", actual);
+                failWithMessage("Expected SUCCESS response but got <%s> via:\n" + stacktrace.get(), actual);
                 return;
             }
 
@@ -149,9 +151,9 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
     }
 
     public ResponseRecorderAssertions hasFailureResponse() {
-        return this.hasResponseMessage(actual -> {
+        return this.hasResponseMessage((actual, stacktrace) -> {
             if (!(actual instanceof FailureMessage)) {
-                failWithMessage("Expected FAILURE response but got <%s>", actual);
+                failWithMessage("Expected FAILURE response but got <%s> via:\n" + stacktrace.get(), actual);
             }
         });
     }
@@ -166,33 +168,37 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
         return this;
     }
 
-    public ResponseRecorderAssertions hasFailureResponse(Consumer<FailureMessage> assertions) {
-        return this.hasResponseMessage(actual -> {
+    public ResponseRecorderAssertions hasFailureResponse(BiConsumer<FailureMessage, Supplier<String>> assertions) {
+        return this.hasResponseMessage((actual, stacktrace) -> {
             if (!(actual instanceof FailureMessage)) {
-                failWithMessage("Expected FAILURE response but got <%s>", actual);
+                failWithMessage("Expected FAILURE response but got <%s> via:\n" + stacktrace.get(), actual);
                 return;
             }
 
-            assertions.accept((FailureMessage) actual);
+            assertions.accept((FailureMessage) actual, stacktrace);
         });
     }
 
     public ResponseRecorderAssertions hasFailureResponse(Status status) {
-        return this.hasFailureResponse(msg -> {
+        return this.hasFailureResponse((msg, stacktrace) -> {
             if (msg.status() != status) {
                 failWithActualExpectedAndMessage(
-                        msg.status(), status, "Expected FAILURE with status <%s> but got <%s>", status, msg.status());
+                        msg.status(),
+                        status,
+                        "Expected FAILURE with status <%s> but got <%s> via:\n" + stacktrace.get(),
+                        status,
+                        msg.status());
             }
         });
     }
 
     public ResponseRecorderAssertions hasFailureResponse(String message) {
-        return this.hasFailureResponse(msg -> {
+        return this.hasFailureResponse((msg, stacktrace) -> {
             if (!message.equals(msg.message())) {
                 failWithActualExpectedAndMessage(
                         msg.message(),
                         message,
-                        "Expected FAILURE with message <\"%s\"> but got <\"%s\">",
+                        "Expected FAILURE with message <\"%s\"> but got <\"%s\"> via:\n" + stacktrace.get(),
                         message,
                         msg.message());
             }
@@ -200,44 +206,48 @@ public final class ResponseRecorderAssertions extends AbstractAssert<ResponseRec
     }
 
     public ResponseRecorderAssertions hasFailureResponse(Status status, String message) {
-        return this.hasFailureResponse(msg -> {
+        return this.hasFailureResponse((msg, stacktrace) -> {
             if (msg.status() != status) {
                 failWithActualExpectedAndMessage(
-                        msg.status(), status, "Expected FAILURE with status <%s> but got <%s>", status, msg.status());
+                        msg.status(),
+                        status,
+                        "Expected FAILURE with status <%s> but got <%s> via:\n" + stacktrace,
+                        status,
+                        msg.status());
             }
 
             if (!message.equals(msg.message())) {
                 failWithActualExpectedAndMessage(
                         msg.message(),
                         message,
-                        "Expected FAILURE with message <\"%s\"> but got <\"%s\">",
+                        "Expected FAILURE with message <\"%s\"> but got <\"%s\"> via:\n" + stacktrace.get(),
                         message,
                         msg.message());
             }
         });
     }
 
-    public ResponseRecorderAssertions hasRecord(Consumer<AnyValue[]> assertions) {
-        return this.hasMessage(message -> {
+    public ResponseRecorderAssertions hasRecord(BiConsumer<AnyValue[], Supplier<String>> assertions) {
+        return this.hasMessage((message, stacktrace) -> {
             if (!message.isRecord()) {
-                this.failWithMessage("Expected record but got <%s>", message);
+                this.failWithMessage("Expected record but got <%s> via:\n" + stacktrace.get(), message);
             }
 
-            assertions.accept(message.asRecord());
+            assertions.accept(message.asRecord(), stacktrace);
         });
     }
 
     public ResponseRecorderAssertions hasRecord() {
-        return hasRecord(actual -> {});
+        return hasRecord((actual, stacktrace) -> {});
     }
 
     public ResponseRecorderAssertions hasRecord(AnyValue... expected) {
-        return hasRecord(actual -> {
+        return hasRecord((actual, stacktrace) -> {
             if (!Arrays.equals(expected, actual)) {
                 failWithActualExpectedAndMessage(
                         actual,
                         expected,
-                        "Expected RECORD with values <%s> but got <%s>",
+                        "Expected RECORD with values <%s> but got <%s> via:\n" + stacktrace.get(),
                         Arrays.toString(expected),
                         Arrays.toString(actual));
             }

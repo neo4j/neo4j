@@ -28,6 +28,7 @@ import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryPool;
@@ -120,6 +121,39 @@ public interface Connector extends Lifecycle {
      * @return a bookmarks parser.
      */
     BookmarkParser bookmarkParser();
+
+    /**
+     * Retrieves the transaction manager which shall manage the transactions within this connector.
+     *
+     * @return a transaction manager.
+     */
+    TransactionManager transactionManager();
+
+    /**
+     * Identifies the total number of bytes to be requested from the pool when streaming records.
+     * <p />
+     * Lower values may improve overall operation performance but may result in more frequent
+     * allocations when larger values are streamed at regular intervals.
+     *
+     * @return a buffer size (in bytes).
+     */
+    int streamingBufferSize();
+
+    /**
+     * Identifies the total number of bytes expected to be present within the outgoing record buffer
+     * while streaming before the buffers are flushed.
+     * <p />
+     * Lower values will improve overall latency but might impact performance as records are more
+     * frequently flushed to the client.
+     * <p />
+     * Flushing always occurs upon completion of a streaming operation regardless of the value
+     * configured within this property.
+     * <p />
+     * A value of zero indicates no threshold (e.g. flushing occurs on a per-record basis).
+     *
+     * @return a flush threshold (in bytes).
+     */
+    int streamingFlushThreshold();
 
     /**
      * Registers a new listener with this connector.

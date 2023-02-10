@@ -22,34 +22,29 @@ package org.neo4j.bolt.test.extension.lifecycle;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.neo4j.bolt.transport.Neo4jWithSocket;
-import org.neo4j.bolt.transport.Neo4jWithSocketSupportExtension;
+import org.neo4j.bolt.test.extension.db.ServerInstanceContext;
 
 public class ServerInstanceManager implements BeforeEachCallback, AfterEachCallback {
 
-    private final BiConsumer<ExtensionContext, Neo4jWithSocket> serverInitializer;
+    private final ServerInstanceContext context;
 
-    public ServerInstanceManager(BiConsumer<ExtensionContext, Neo4jWithSocket> serverInitializer) {
-        this.serverInitializer = serverInitializer;
+    public ServerInstanceManager(ServerInstanceContext context) {
+        this.context = context;
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        var server = Neo4jWithSocketSupportExtension.getInstance(context);
-        this.serverInitializer.accept(context, server);
-
+        var server = this.context.configure(context);
         server.init(new BoltTestInfo(context));
     }
 
     @Override
     public void afterEach(ExtensionContext context) {
-        var server = Neo4jWithSocketSupportExtension.getInstance(context);
-        server.shutdownDatabase();
+        this.context.stop(context);
     }
 
     private static class BoltTestInfo implements TestInfo {

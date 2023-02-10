@@ -19,13 +19,17 @@
  */
 package org.neo4j.bolt.protocol.v43.fsm;
 
-import java.util.UUID;
+import java.util.Collections;
 import java.util.concurrent.CompletionException;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.v43.message.request.RouteMessage;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.virtual.MapValue;
 
@@ -52,19 +56,17 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.ReadyState {
     }
 
     protected State processRouteMessage(RouteMessage message, StateMachineContext context) throws Exception {
-        var programId = UUID.randomUUID().toString();
-        context.connectionState().setCurrentTransactionId(programId);
-
+        var tx = context.connection()
+                .beginTransaction(
+                        TransactionType.EXPLICIT,
+                        GraphDatabaseSettings.SYSTEM_DATABASE_NAME,
+                        AccessMode.READ,
+                        message.getBookmarks(),
+                        null,
+                        Collections.emptyMap());
         try {
             routingTableGetter
-                    .get(
-                            programId,
-                            context.connection().loginContext(),
-                            context.transactionManager(),
-                            message.getRequestContext(),
-                            message.getBookmarks(),
-                            message.getDatabaseName(),
-                            context.connectionId())
+                    .get(tx, message.getRequestContext(), message.getDatabaseName())
                     .thenAccept(routingTable -> this.onRoutingTableReceived(context, message, routingTable))
                     .join();
         } catch (CompletionException ex) {
@@ -75,6 +77,16 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.ReadyState {
             }
 
             throw ex;
+        } finally {
+            try {
+                tx.commit();
+            } catch (TransactionException ignore) {
+            }
+
+            try {
+                context.connection().closeTransaction();
+            } catch (TransactionException ignore) {
+            }
         }
 
         return this;

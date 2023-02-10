@@ -29,9 +29,9 @@ public abstract class AbstractStreamingMessage implements RequestMessage {
 
     private final MapValue meta;
     private final long n;
-    private final int statementId;
+    private final long statementId;
 
-    public AbstractStreamingMessage(MapValue meta, long n, int statementId) {
+    public AbstractStreamingMessage(MapValue meta, long n, long statementId) {
         this.meta = requireNonNull(meta);
         this.n = n;
         this.statementId = statementId;
@@ -41,7 +41,7 @@ public abstract class AbstractStreamingMessage implements RequestMessage {
         return this.n;
     }
 
-    public int statementId() {
+    public long statementId() {
         return statementId;
     }
 

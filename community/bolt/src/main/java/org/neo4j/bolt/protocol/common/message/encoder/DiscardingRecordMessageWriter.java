@@ -19,22 +19,18 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
-import org.neo4j.values.AnyValue;
-
 /**
  * TODO: Simplify to a split between metadata consumers and actual record consumers.
  */
-public class DiscardingRecordMessageWriter extends BoltResult.DiscardingRecordConsumer {
-    private final ResponseHandler parent;
-
-    public DiscardingRecordMessageWriter(ResponseHandler parent) {
-        this.parent = parent;
-    }
-
-    @Override
-    public void addMetadata(String key, AnyValue value) {
-        this.parent.onMetadata(key, value);
-    }
-}
+// public class DiscardingRecordMessageWriter extends BoltResult.DiscardingRecordConsumer {
+//    private final ResponseHandler parent;
+//
+//    public DiscardingRecordMessageWriter(ResponseHandler parent) {
+//        this.parent = parent;
+//    }
+//
+//    @Override
+//    public void addMetadata(String key, AnyValue value) {
+//        this.parent.onMetadata(key, value);
+//    }
+// }

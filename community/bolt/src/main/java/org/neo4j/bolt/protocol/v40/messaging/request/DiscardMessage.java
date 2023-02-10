@@ -24,7 +24,7 @@ import org.neo4j.values.virtual.MapValue;
 public class DiscardMessage extends AbstractStreamingMessage {
     public static final byte SIGNATURE = 0x2F;
 
-    public DiscardMessage(MapValue meta, long n, int statementId) {
+    public DiscardMessage(MapValue meta, long n, long statementId) {
         super(meta, n, statementId);
     }
 

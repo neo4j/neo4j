@@ -49,7 +49,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -70,19 +70,18 @@ import org.neo4j.test.server.HTTP.Response;
 public class TransactionIT extends AbstractRestFunctionalTestBase {
     private ExecutorService executors;
 
-    private StatementProcessorTxManager transactionManager;
+    private TransactionManager transactionManager;
 
     @BeforeEach
     public void setUp() {
         executors = Executors.newFixedThreadPool(max(3, Runtime.getRuntime().availableProcessors()));
-        transactionManager = resolveDependency(StatementProcessorTxManager.class);
+        transactionManager = resolveDependency(TransactionManager.class);
     }
 
     @AfterEach
     public void afterEach() {
         // verify TransactionManager's state is reset after each
-        assertThat(transactionManager.transactionCount()).isEqualTo(0);
-        assertThat(transactionManager.statementProcessorProviderCount()).isEqualTo(0);
+        assertThat(transactionManager.getTransactionCount()).isEqualTo(0);
         executors.shutdown();
     }
 
@@ -425,7 +424,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         interruptFuture.get();
         lockerFuture.get();
         Response execute = executeFuture.get();
-        assertThat(execute).satisfies(hasErrors(Status.Statement.Statement.ExecutionFailed));
+        assertThat(execute).satisfies(hasErrors(Status.Transaction.Terminated));
 
         Response execute2 = POST(executeResource, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
         assertThat(execute2.status()).isEqualTo(404);

@@ -25,7 +25,7 @@ import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
-import org.neo4j.bolt.test.annotation.wire.selector.Version;
+import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.packstream.struct.StructHeader;

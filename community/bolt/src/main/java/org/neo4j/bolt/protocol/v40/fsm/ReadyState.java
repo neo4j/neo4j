@@ -20,18 +20,15 @@
 package org.neo4j.bolt.protocol.v40.fsm;
 
 import static org.neo4j.util.Preconditions.checkState;
-import static org.neo4j.values.storable.Values.stringArray;
 
-import java.util.UUID;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
-import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
 import org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
+import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.memory.HeapEstimator;
-import org.neo4j.values.storable.Values;
 
 /**
  * The READY state indicates that the connection is ready to accept a new RUN request. This is the "normal" state for a connection and becomes available after
@@ -40,9 +37,6 @@ import org.neo4j.values.storable.Values;
  */
 public class ReadyState extends FailSafeState {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
-
-    public static final String FIELDS_KEY = "fields";
-    public static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
 
     protected State streamingState;
     protected State txReadyState;
@@ -84,26 +78,22 @@ public class ReadyState extends FailSafeState {
     @SuppressWarnings("removal")
     protected State processRunMessage(RunMessage message, StateMachineContext context) throws Exception {
         long start = context.clock().millis();
-        var programId = UUID.randomUUID().toString();
-        context.connectionState().setCurrentTransactionId(programId);
-        var runResult = context.transactionManager()
-                .runProgram(
-                        programId,
-                        context.connection().loginContext(),
+
+        var tx = context.connection()
+                .beginTransaction(
+                        TransactionType.IMPLICIT,
                         message.databaseName(),
-                        message.statement(),
-                        message.params(),
+                        message.getAccessMode(),
                         message.bookmarks(),
-                        message.getAccessMode().equals(AccessMode.READ),
-                        message.transactionMetadata(),
                         message.transactionTimeout(),
-                        context.connectionId());
+                        message.transactionMetadata());
+        var statement = tx.run(message.statement(), message.params());
+
         long end = context.clock().millis();
 
         context.connectionState()
-                .onMetadata(
-                        FIELDS_KEY, stringArray(runResult.statementMetadata().fieldNames()));
-        context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
+                .getResponseHandler()
+                .onStatementPrepared(TransactionType.IMPLICIT, statement.id(), end - start, statement.fieldNames());
 
         // TODO: Remove along with ENTER_STREAMING
         context.connection().write(StateSignal.ENTER_STREAMING);
@@ -113,26 +103,24 @@ public class ReadyState extends FailSafeState {
 
     @SuppressWarnings("removal")
     protected State processBeginMessage(BeginMessage message, StateMachineContext context) throws Exception {
-        var transactionId = context.transactionManager()
-                .begin(
-                        context.connection().loginContext(),
+        var type = message.type();
+        if (type == null) {
+            type = TransactionType.EXPLICIT;
+        }
+
+        context.connection()
+                .beginTransaction(
+                        type,
                         message.databaseName(),
+                        message.getAccessMode(),
                         message.bookmarks(),
-                        message.getAccessMode().equals(AccessMode.READ),
-                        message.transactionMetadata(),
                         message.transactionTimeout(),
-                        getTxType(message),
-                        context.connectionId());
-        context.connectionState().setCurrentTransactionId(transactionId);
+                        message.transactionMetadata());
 
         // TODO: Remove along with ENTER_STREAMING
         context.connection().write(StateSignal.ENTER_STREAMING);
 
         return txReadyState;
-    }
-
-    protected String getTxType(BeginMessage beginMessage) {
-        return null;
     }
 
     protected State processLogoffMessage(StateMachineContext context) {

@@ -20,11 +20,10 @@
 package org.neo4j.bolt.protocol.v40.bookmark;
 
 import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.utf8Value;
 
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
@@ -39,7 +38,7 @@ public record BookmarkWithDatabaseId(long txId, NamedDatabaseId namedDatabaseId)
 
     @Override
     public void attachTo(ResponseHandler state) {
-        state.onMetadata(BOOKMARK_KEY, utf8Value(toString()));
+        state.onBookmark(toString());
     }
 
     @Override

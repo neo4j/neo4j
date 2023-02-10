@@ -67,9 +67,9 @@ import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.bolt.transport.BoltMemoryPool;
 import org.neo4j.bolt.transport.NettyMemoryPool;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -124,8 +124,9 @@ public class BoltServer extends LifecycleAdapter {
     private final SslPolicyLoader sslPolicyLoader;
     private final BoltProtocolRegistry protocolRegistry;
     private final AuthConfigProvider authConfigProvider;
-    private final InternalLog log;
     private final BookmarkParser bookmarkParser;
+    private final TransactionManager transactionManager;
+    private final InternalLog log;
 
     private final LifeSupport connectorLife = new LifeSupport();
     private BoltMemoryPool memoryPool;
@@ -140,6 +141,7 @@ public class BoltServer extends LifecycleAdapter {
             ConnectorPortRegister connectorPortRegister,
             NetworkConnectionTracker connectionTracker,
             DatabaseIdRepository databaseIdRepository,
+            TransactionManager transactionManager,
             Config config,
             SystemNanoClock clock,
             Monitors monitors,
@@ -149,12 +151,12 @@ public class BoltServer extends LifecycleAdapter {
             AuthManager internalAuthManager,
             AuthManager loopbackAuthManager,
             MemoryPools memoryPools,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager) {
+            DefaultDatabaseResolver defaultDatabaseResolver) {
         this.dbmsInfo = dbmsInfo;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
         this.connectionTracker = connectionTracker;
+        this.transactionManager = transactionManager;
         this.config = config;
         this.clock = clock;
         this.monitors = monitors;
@@ -184,48 +186,13 @@ public class BoltServer extends LifecycleAdapter {
         this.bookmarkParser = new BookmarkParserV40(databaseIdRepository, customBookmarkParser);
 
         this.protocolRegistry = BoltProtocolRegistry.builder()
-                .register(new BoltProtocolV40(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV41(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV42(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV43(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV44(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV50(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
-                .register(new BoltProtocolV51(
-                        logService,
-                        boltGraphDatabaseManagementServiceSPI,
-                        defaultDatabaseResolver,
-                        transactionManager,
-                        clock))
+                .register(new BoltProtocolV40(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV41(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV42(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV43(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV44(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV50(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(new BoltProtocolV51(logService, boltGraphDatabaseManagementServiceSPI, clock))
                 .build();
     }
 
@@ -274,9 +241,17 @@ public class BoltServer extends LifecycleAdapter {
         ByteBufAllocator allocator = getBufferAllocator();
         var connectionFactory = createConnectionFactory();
 
+        var streamingBufferSize = config.get(BoltConnectorInternalSettings.streaming_buffer_size);
+        var streamingFlushThreshold = config.get(BoltConnectorInternalSettings.streaming_flush_threshold);
+
         if (config.get(BoltConnectorInternalSettings.enable_loopback_auth)) {
             registerConnector(createDomainSocketConnector(
-                    connectionFactory, transport, createAuthentication(loopbackAuthManager), allocator));
+                    connectionFactory,
+                    transport,
+                    createAuthentication(loopbackAuthManager),
+                    allocator,
+                    streamingBufferSize,
+                    streamingFlushThreshold));
 
             log.info("Configured loopback (domain socket) Bolt connector");
         }
@@ -307,7 +282,9 @@ public class BoltServer extends LifecycleAdapter {
                 sslContext,
                 createAuthentication(externalAuthManager),
                 ConnectorType.BOLT,
-                allocator));
+                allocator,
+                streamingBufferSize,
+                streamingFlushThreshold));
 
         log.info("Configured external Bolt connector with listener address %s", listenAddress);
 
@@ -345,7 +322,9 @@ public class BoltServer extends LifecycleAdapter {
                     internalSslContext,
                     createAuthentication(internalAuthManager),
                     ConnectorType.INTRA_BOLT,
-                    allocator));
+                    allocator,
+                    streamingBufferSize,
+                    streamingFlushThreshold));
 
             log.info("Configured internal Bolt connector with listener address %s", internalListenAddress);
         }
@@ -483,7 +462,9 @@ public class BoltServer extends LifecycleAdapter {
             SslContext sslContext,
             Authentication authentication,
             ConnectorType connectorType,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            int streamingBufferSize,
+            int streamingFlushThreshold) {
         return new SocketNettyConnector(
                 BoltConnector.NAME,
                 bindAddress,
@@ -505,6 +486,9 @@ public class BoltServer extends LifecycleAdapter {
                 defaultDatabaseResolver,
                 connectionHintProvider,
                 bookmarkParser,
+                transactionManager,
+                streamingBufferSize,
+                streamingFlushThreshold,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -513,7 +497,9 @@ public class BoltServer extends LifecycleAdapter {
             Connection.Factory connectionFactory,
             ConnectorTransport transport,
             Authentication authentication,
-            ByteBufAllocator allocator) {
+            ByteBufAllocator allocator,
+            int streamingBufferSize,
+            int streamingFlushThreshold) {
         if (config.get(BoltConnectorInternalSettings.unsupported_loopback_listen_file) == null) {
             throw new IllegalArgumentException(
                     "A file has not been specified for use with the loopback domain socket.");
@@ -535,6 +521,9 @@ public class BoltServer extends LifecycleAdapter {
                 defaultDatabaseResolver,
                 connectionHintProvider,
                 bookmarkParser,
+                transactionManager,
+                streamingBufferSize,
+                streamingFlushThreshold,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }

@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.error.bookmark.BookmarkFormatException;
 import org.neo4j.bolt.protocol.error.bookmark.BookmarkParserException;
 import org.neo4j.bolt.protocol.error.bookmark.InvalidBookmarkMixtureException;

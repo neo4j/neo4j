@@ -19,73 +19,63 @@
  */
 package org.neo4j.bolt.fsm;
 
-import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.testing.assertions.MapValueAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.begin;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.commit;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.discard;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.goodbye;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.hello;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.pull;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.reset;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.rollback;
-import static org.neo4j.bolt.testing.messages.BoltV40Messages.run;
 import static org.neo4j.values.storable.BooleanValue.TRUE;
 import static org.neo4j.values.storable.Values.longValue;
 
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.bolt.fsm.v40.BoltStateMachineV4StateTestBase;
+import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.Signal;
-import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
 import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
 import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
-import org.neo4j.bolt.protocol.v40.fsm.StateMachineV40;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
+import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
+import org.neo4j.bolt.testing.annotation.fsm.initializer.Autocommit;
+import org.neo4j.bolt.testing.messages.BoltMessages;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.kernel.api.exceptions.Status;
 
-class AutoCommitStateIT extends BoltStateMachineV4StateTestBase {
-    @Test
-    void shouldMoveFromAutoCommitToReadyOnPull_succ() throws Throwable {
-        // Given
-        var recorder = new ResponseRecorder();
-        var machine = getBoltStateMachineInAutoCommitState();
+@CommunityStateMachineTestExtension
+class AutoCommitStateIT {
 
-        // When
-        machine.process(pull(100L), recorder);
+    /**
+     * Evaluates whether the state machine moves from AUTOCOMMIT back to READY once all messages are
+     * consumed (single record variation).
+     */
+    @StateMachineTest
+    void shouldMoveFromAutoCommitToReadyOnPullWhenSingleResultIsReturned(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) throws Throwable {
+        fsm.process(messages.pull(1), recorder);
 
-        // Then
         assertThat(recorder).hasRecord().hasSuccessResponse(meta -> assertThat(meta)
                 .containsKey("type")
                 .containsKey("t_last")
                 .containsKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(machine).isInState(ReadyState.class);
+        assertThat(fsm).isInState(ReadyState.class);
     }
 
-    @Test
-    void shouldMoveFromAutoCommitToReadyOnPull_succ_hasMore() throws Throwable {
-        // Given
-        var recorder = new ResponseRecorder();
-        var machine = getBoltStateMachineInAutoCommitState("Unwind [1, 2, 3] as n return n");
+    /**
+     * Evaluates whether the state machine moves from AUTOCOMMIT back to READY once all messages are
+     * consumed (multi record variation).
+     */
+    @StateMachineTest
+    void shouldMoveFromAutoCommitToReadyOnPullWhenMultiplyResultsAreReturned(
+            @Autocommit("UNWIND [1, 2, 3] AS n RETURN n") StateMachine fsm,
+            ResponseRecorder recorder,
+            BoltMessages messages)
+            throws Throwable {
+        fsm.process(messages.pull(2), recorder);
 
-        // When
-        machine.process(pull(2L), recorder);
-
-        // Then
         assertThat(recorder).hasRecord(longValue(1)).hasRecord(longValue(2)).hasSuccessResponse(meta -> assertThat(meta)
                 .containsEntry("has_more", TRUE)
                 .doesNotContainKey("db")
                 .doesNotContainKey("bookmark"));
 
-        machine.process(pull(2L), recorder);
+        fsm.process(messages.pull(2), recorder);
 
         assertThat(recorder).hasRecord(longValue(3)).hasSuccessResponse(meta -> assertThat(meta)
                 .containsKey("type")
@@ -93,69 +83,166 @@ class AutoCommitStateIT extends BoltStateMachineV4StateTestBase {
                 .containsKey("bookmark")
                 .containsKey("db"));
 
-        assertThat(machine).isInState(ReadyState.class);
+        assertThat(fsm).isInState(ReadyState.class);
     }
 
-    @Test
-    void shouldMoveFromAutoCommitToReadyOnDiscardAll_succ() throws Throwable {
-        // Given
-        var recorder = new ResponseRecorder();
-        var machine = getBoltStateMachineInAutoCommitState();
+    /**
+     * Evaluates whether the state machine moves from AUTOCOMMIT back to READY once all messages are
+     * discarded (single record variation).
+     */
+    @StateMachineTest
+    void shouldMoveFromAutoCommitToReadyOnDiscardAllWhenSingleResultIsReturned(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) throws Throwable {
+        fsm.process(messages.discard(1), recorder);
 
-        // When
-        machine.process(discard(2L), recorder);
-
-        // Then
         assertThat(recorder)
                 .hasSuccessResponse(
                         meta -> assertThat(meta).containsKey("bookmark").containsKey("db"));
 
-        assertThat(machine).isInState(ReadyState.class);
+        assertThat(fsm).isInState(ReadyState.class);
     }
 
-    @Test
-    void shouldMoveFromAutoCommitToInterruptedOnInterrupt() throws Throwable {
-        // Given
-        var recorder = new ResponseRecorder();
-        var machine = getBoltStateMachineInAutoCommitState();
+    /**
+     * Evaluates whether the state machine moves from AUTOCOMMIT back to READY once all messages are
+     * discarded (multi record variation).
+     */
+    @StateMachineTest
+    void shouldMoveFromAutoCommitToReadyOnDiscardAllWhenMultipleResultsAreReturned(
+            @Autocommit("UNWIND [1, 2, 3] AS n RETURN n") StateMachine fsm,
+            ResponseRecorder recorder,
+            BoltMessages messages)
+            throws Throwable {
+        fsm.process(messages.discard(2), recorder);
 
-        // When
-        machine.process(Signal.INTERRUPT, recorder);
+        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
+                .containsEntry("has_more", TRUE)
+                .doesNotContainKey("db")
+                .doesNotContainKey("bookmark"));
 
-        // Then
-        assertThat(machine).isInState(InterruptedState.class);
+        fsm.process(messages.discard(2), recorder);
+
+        assertThat(recorder).hasSuccessResponse(meta -> assertThat(meta)
+                .containsKey("type")
+                .containsKey("t_last")
+                .containsKey("bookmark")
+                .containsKey("db"));
+
+        assertThat(fsm).isInState(ReadyState.class);
     }
 
-    @ParameterizedTest
-    @MethodSource("illegalV4Messages")
-    void shouldCloseConnectionOnIllegalV4MessagesInAutoCommitState(RequestMessage message) throws Throwable {
-        // Given
-        ResponseRecorder recorder = new ResponseRecorder();
-        var machine = getBoltStateMachineInAutoCommitState("CREATE (n {k:'k'}) RETURN n.k");
+    /**
+     * Evaluates whether the state machine moves to the INTERRUPTED state when an INTERRUPT signal
+     * is received.
+     * <p />
+     * Note that the INTERRUPT signal is an implicit result of receiving a RESET message but is
+     * distinct from RESET in order to determine the exact moment at which the machine shall return
+     * to READY.
+     */
+    @StateMachineTest
+    void shouldMoveFromAutoCommitToInterruptedOnInterrupt(
+            @Autocommit StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+            throws BoltConnectionFatality {
+        fsm.connection().interrupt();
 
-        assertThat(machine)
-                .shouldKillConnection(fsm -> fsm.process(message, recorder))
+        fsm.process(messages.run("RETURN 1"), recorder);
+
+        assertThat(recorder).hasIgnoredResponse();
+
+        assertThat(fsm).isInState(InterruptedState.class);
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when HELLO is received while in auto commit
+     * state.
+     * <p />
+     * HELLO is only valid within CONNECTED state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnHello(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.hello());
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when RUN is received while in auto commit
+     * state.
+     * <p />
+     * RUN is only valid within READY and TX_READY state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnRun(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        // explicitly send a valid cypher query so that we do not end up with another failure
+        // message when this test is supposed to fail
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.run("RETURN 1"));
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when BEGIN is received while in auto commit
+     * state.
+     * <p />
+     * BEGIN is only valid within READY state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnBegin(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.begin());
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when COMMIT is received while in auto commit
+     * state.
+     * <p />
+     * COMMIT is only valid within TX_READY state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnCommit(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.commit());
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when ROLLBACK is received while in auto commit
+     * state.
+     * <p />
+     * ROLLBACK is only valid within TX_READY state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnRollback(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.rollback());
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when RESET is received while in auto commit
+     * state.
+     * <p />
+     * RESET is only valid within INTERRUPTED state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnReset(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.reset());
+    }
+
+    /**
+     * Evaluates whether the connection is terminated when GOODBYE is received while in auto commit
+     * state.
+     * <p />
+     * GOODBYE is only valid within READY state.
+     */
+    @StateMachineTest
+    void shouldCloseConnectionInAutoCommitOnGoodbye(
+            @Autocommit StateMachine fsm, ResponseRecorder recorder, BoltMessages messages) {
+        this.shouldCloseConnectionInAutoCommitOnMessage(fsm, recorder, messages.goodbye());
+    }
+
+    private void shouldCloseConnectionInAutoCommitOnMessage(
+            StateMachine fsm, ResponseRecorder recorder, RequestMessage message) {
+        assertThat(fsm)
+                .shouldKillConnection(it -> it.process(message, recorder))
                 .isInInvalidState();
 
         assertThat(recorder).hasFailureResponse(Status.Request.Invalid);
-    }
-
-    private static Stream<RequestMessage> illegalV4Messages() {
-        return Stream.of(hello(), run("any string"), begin(), rollback(), commit(), reset(), goodbye());
-    }
-
-    private StateMachineV40 getBoltStateMachineInAutoCommitState() throws BoltConnectionFatality {
-        return getBoltStateMachineInAutoCommitState("CREATE (n {k:'k'}) RETURN n.k");
-    }
-
-    private StateMachineV40 getBoltStateMachineInAutoCommitState(String query) throws BoltConnectionFatality {
-        var machine = newStateMachine();
-
-        machine.process(hello(), nullResponseHandler());
-        machine.process(run(query), nullResponseHandler());
-
-        assertThat(machine).isInState(AutoCommitState.class);
-
-        return machine;
     }
 }

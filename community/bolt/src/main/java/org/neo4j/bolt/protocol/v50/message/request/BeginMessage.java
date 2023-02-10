@@ -24,10 +24,11 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.values.virtual.MapValue;
 
 public class BeginMessage extends org.neo4j.bolt.protocol.v44.message.request.BeginMessage {
-    private final String txType;
+    private final TransactionType type;
 
     public BeginMessage(
             MapValue meta,
@@ -37,12 +38,13 @@ public class BeginMessage extends org.neo4j.bolt.protocol.v44.message.request.Be
             Map<String, Object> txMetadata,
             String databaseName,
             String impersonatedUser,
-            String txType) {
+            TransactionType type) {
         super(meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
-        this.txType = txType;
+        this.type = type;
     }
 
-    public String txType() {
-        return txType;
+    @Override
+    public TransactionType type() {
+        return type;
     }
 }

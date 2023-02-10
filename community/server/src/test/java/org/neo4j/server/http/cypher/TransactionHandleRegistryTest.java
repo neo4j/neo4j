@@ -290,7 +290,7 @@ class TransactionHandleRegistryTest {
                 new TransactionHandleRegistry(Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool);
         TransactionHandle handle = mock(TransactionHandle.class);
         LoginContext loginContext = mockLoginContext("Johannes");
-        when(handle.getLoginContext()).thenReturn(loginContext);
+        when(handle.loginContext()).thenReturn(loginContext);
 
         long id = registry.begin(handle);
         registry.release(id, handle);
@@ -311,7 +311,7 @@ class TransactionHandleRegistryTest {
                 new TransactionHandleRegistry(Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool);
         TransactionHandle handle = mock(TransactionHandle.class);
         LoginContext owningUser = mockLoginContext("Johannes");
-        when(handle.getLoginContext()).thenReturn(owningUser);
+        when(handle.loginContext()).thenReturn(owningUser);
 
         long id = registry.begin(handle);
         registry.release(id, handle);
@@ -330,7 +330,7 @@ class TransactionHandleRegistryTest {
                 new TransactionHandleRegistry(Clocks.fakeClock(), Duration.ZERO, logProvider, memoryPool);
         TransactionHandle handle = mock(TransactionHandle.class);
         LoginContext owningUser = mockLoginContext("Johannes");
-        when(handle.getLoginContext()).thenReturn(owningUser);
+        when(handle.loginContext()).thenReturn(owningUser);
 
         long id = registry.begin(handle);
 
@@ -353,7 +353,7 @@ class TransactionHandleRegistryTest {
                 new TransactionHandleRegistry(clock, timeoutLength, logProvider, memoryPool);
         TransactionHandle handle = mock(TransactionHandle.class);
         LoginContext loginContext = mockLoginContext("Johannes");
-        when(handle.getLoginContext()).thenReturn(loginContext);
+        when(handle.loginContext()).thenReturn(loginContext);
 
         // Active Tx in Registry
         long id = registry.begin(handle);
@@ -375,7 +375,7 @@ class TransactionHandleRegistryTest {
                 new TransactionHandleRegistry(clock, timeoutLength, logProvider, memoryPool);
         TransactionHandle handle = mock(TransactionHandle.class);
         LoginContext loginContext = mockLoginContext("Johannes");
-        when(handle.getLoginContext()).thenReturn(loginContext);
+        when(handle.loginContext()).thenReturn(loginContext);
 
         // Active Tx in Registry
         long id = registry.begin(handle);
@@ -385,7 +385,7 @@ class TransactionHandleRegistryTest {
 
         // Then
         verify(handle, times(1)).terminate();
-        verify(handle).getLoginContext();
+        verify(handle).loginContext();
         verifyNoMoreInteractions(handle);
     }
 

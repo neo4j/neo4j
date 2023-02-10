@@ -22,8 +22,8 @@ package org.neo4j.bolt.test.wire.initializer;
 import java.util.List;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.test.annotation.wire.InitializeWire;
-import org.neo4j.bolt.test.util.AnnotationUtil;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Prepares a Bolt wire implementation for use with a given test specification.

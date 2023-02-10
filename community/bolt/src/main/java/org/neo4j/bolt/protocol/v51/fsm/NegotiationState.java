@@ -63,9 +63,8 @@ public class NegotiationState implements State {
         if (message instanceof HelloMessage helloMessage) {
             var routingContext = extractRoutingContext(helloMessage);
 
-            var enabledFeatures = context.connection().negotiate(helloMessage.features(), helloMessage.userAgent());
-
-            context.initStatementProcessorProvider(routingContext);
+            var enabledFeatures =
+                    context.connection().negotiate(helloMessage.features(), helloMessage.userAgent(), routingContext);
 
             var connectionState = context.connectionState();
             var boltSpi = context.boltSpi();

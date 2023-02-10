@@ -19,8 +19,9 @@
  */
 package org.neo4j.bolt.protocol.v50.message.util;
 
+import java.util.Locale;
+import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
-import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -28,17 +29,28 @@ import org.neo4j.values.virtual.MapValue;
 public class MessageMetadataParserV50 {
     public static final String TX_TYPE_KEY = "tx_type";
 
-    public static String parseTxType(MapValue meta) throws PackstreamReaderException {
+    public static TransactionType parseTxType(MapValue meta) throws PackstreamReaderException {
         var anyValue = meta.get(TX_TYPE_KEY);
         if (anyValue == Values.NO_VALUE) {
             return null;
         }
 
-        if (anyValue instanceof StringValue) {
-            return ((StringValue) anyValue).stringValue();
+        if (anyValue instanceof StringValue stringValue) {
+            try {
+                return TransactionType.valueOf(stringValue.stringValue().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                // TODO: Do we have a good reason to ignore invalid values here?
+                return TransactionType.EXPLICIT;
+                //                throw new IllegalStructArgumentException(
+                //                    TX_TYPE_KEY,
+                //                    "Expecting tx type value to be a recognized String value, but got: " +
+                // stringValue,
+                //                    ex);
+            }
         }
 
-        throw new IllegalStructArgumentException(
-                TX_TYPE_KEY, "Expecting tx type value to be a String value, but got: " + anyValue);
+        return TransactionType.EXPLICIT;
+        //        throw new IllegalStructArgumentException(
+        //                TX_TYPE_KEY, "Expecting tx type value to be a String value, but got: " + anyValue);
     }
 }

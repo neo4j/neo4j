@@ -20,22 +20,48 @@
 package org.neo4j.bolt.protocol.common;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
+import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
+import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
+import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
+import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
+import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
+import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.storable.Value;
 
 public interface BoltProtocol {
+
+    static List<BoltProtocol> available(
+            LogService logging,
+            BoltGraphDatabaseManagementServiceSPI databaseManagementServiceSPI,
+            SystemNanoClock clock) {
+        return List.of(
+                new BoltProtocolV40(logging, databaseManagementServiceSPI, clock),
+                new BoltProtocolV41(logging, databaseManagementServiceSPI, clock),
+                new BoltProtocolV42(logging, databaseManagementServiceSPI, clock),
+                new BoltProtocolV43(logging, databaseManagementServiceSPI, clock),
+                new BoltProtocolV44(logging, databaseManagementServiceSPI, clock),
+                new BoltProtocolV50(logging, databaseManagementServiceSPI, clock));
+    }
+
     /**
      * Identifies the version number via which this protocol implementation is identified during the negotiation process.
      *
@@ -106,5 +132,14 @@ public interface BoltProtocol {
      */
     default void registerStructWriters(WriterPipeline pipeline) {
         pipeline.addLast(DefaultStructWriter.getInstance());
+    }
+
+    /**
+     * Retrieves a metadata handler which generates metadata entries within operation responses.
+     *
+     * @return a metadata handler implementation.
+     */
+    default MetadataHandler metadataHandler() {
+        return DefaultMetadataHandler.getInstance();
     }
 }

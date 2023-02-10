@@ -36,7 +36,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;

@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.test.annotation.wire.initializer.EnableFeature;
-import org.neo4j.bolt.test.util.AnnotationUtil;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Enables a desired set of features on a given Bolt wire.

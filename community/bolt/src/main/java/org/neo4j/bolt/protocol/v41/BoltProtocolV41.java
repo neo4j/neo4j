@@ -27,11 +27,8 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
-import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
 import org.neo4j.bolt.protocol.v41.fsm.StateMachineV41;
 import org.neo4j.bolt.protocol.v41.message.decoder.HelloMessageDecoder;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -46,10 +43,8 @@ public class BoltProtocolV41 extends BoltProtocolV40 {
     public BoltProtocolV41(
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager,
             SystemNanoClock clock) {
-        super(logging, boltGraphDatabaseManagementServiceSPI, defaultDatabaseResolver, transactionManager, clock);
+        super(logging, boltGraphDatabaseManagementServiceSPI, clock);
     }
 
     @Override
@@ -73,16 +68,9 @@ public class BoltProtocolV41 extends BoltProtocolV40 {
 
     @Override
     public StateMachine createStateMachine(Connection connection) {
-        connection
-                .memoryTracker()
-                .allocateHeap(TransactionStateMachineSPIProviderV4.SHALLOW_SIZE
-                        + StateMachineSPIImpl.SHALLOW_SIZE
-                        + StateMachineV41.SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE + StateMachineV41.SHALLOW_SIZE);
 
-        var transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, connection, clock);
-        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider);
-
-        return new StateMachineV41(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
+        var boltSPI = new StateMachineSPIImpl(logging);
+        return new StateMachineV41(boltSPI, connection, clock);
     }
 }

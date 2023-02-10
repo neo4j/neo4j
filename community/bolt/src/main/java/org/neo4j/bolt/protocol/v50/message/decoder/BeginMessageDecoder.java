@@ -27,6 +27,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v44.message.util.MessageMetadataParserV44;
 import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
 import org.neo4j.bolt.protocol.v50.message.util.MessageMetadataParserV50;
+import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -62,7 +63,7 @@ public class BeginMessageDecoder extends org.neo4j.bolt.protocol.v44.message.dec
             Map<String, Object> txMetadata,
             String databaseName,
             String impersonatedUser,
-            String txType) {
+            TransactionType txType) {
         return new BeginMessage(
                 metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser, txType);
     }

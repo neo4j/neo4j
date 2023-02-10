@@ -30,6 +30,7 @@ import org.neo4j.bolt.protocol.common.connector.ConnectionRegistry;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
@@ -127,6 +128,10 @@ public final class ConnectorMockFactory extends AbstractMockFactory<Connector, C
 
     public ConnectorMockFactory withBookmarkParser(BookmarkParser parser) {
         return this.withStaticValue(Connector::bookmarkParser, parser);
+    }
+
+    public ConnectorMockFactory withTransactionManager(TransactionManager transactionManager) {
+        return this.withStaticValue(Connector::transactionManager, transactionManager);
     }
 
     public ConnectorMockFactory withConnectionCreationFunction(Supplier<Connection> factory) {

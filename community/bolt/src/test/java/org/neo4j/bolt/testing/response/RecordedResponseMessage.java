@@ -19,13 +19,19 @@
  */
 package org.neo4j.bolt.testing.response;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 
-public record RecordedResponseMessage(ResponseMessage response) implements RecordedMessage {
+public record RecordedResponseMessage(ResponseMessage response, Throwable throwable) implements RecordedMessage {
 
     @Override
     public boolean isResponse() {
         return true;
+    }
+
+    @Override
+    public String getStacktrace() {
+        return ExceptionUtils.getStackTrace(this.throwable);
     }
 
     @Override

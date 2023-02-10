@@ -22,63 +22,20 @@ package org.neo4j.bolt.protocol.common;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 
 class MutableConnectionStateTest {
     private final MutableConnectionState state = new MutableConnectionState();
 
-    private final BoltResult result = mock(BoltResult.class);
     private final ResponseHandler responseHandler = mock(ResponseHandler.class);
-
-    @Test
-    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Throwable {
-        state.setResponseHandler(null);
-
-        state.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
-
-        assertNull(state.getPendingError());
-        assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleOnPullRecordsWithResponseHandler() throws Throwable {
-        state.setResponseHandler(responseHandler);
-
-        state.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
-
-        verify(responseHandler).onPullRecords(result, STREAM_LIMIT_UNLIMITED);
-    }
-
-    @Test
-    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Throwable {
-        state.setResponseHandler(null);
-
-        state.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
-
-        assertNull(state.getPendingError());
-        assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Throwable {
-        state.setResponseHandler(responseHandler);
-
-        state.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
-
-        verify(responseHandler).onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
-    }
 
     @Test
     void shouldHandleOnMetadataWithoutResponseHandler() {
@@ -100,7 +57,7 @@ class MutableConnectionStateTest {
     }
 
     @Test
-    void shouldHandleMarkIgnoredWithoutResponseHandler() {
+    void shouldHandleMarkIgnored() {
         state.setResponseHandler(null);
 
         state.markIgnored();
@@ -110,18 +67,7 @@ class MutableConnectionStateTest {
     }
 
     @Test
-    void shouldHandleMarkIgnoredWitResponseHandler() {
-        state.setResponseHandler(responseHandler);
-
-        state.markIgnored();
-
-        verify(responseHandler).markIgnored();
-        assertNull(state.getPendingError());
-        assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleMarkFailedWithoutResponseHandler() {
+    void shouldHandleMarkFailed() {
         state.setResponseHandler(null);
 
         Error error = Error.from(new RuntimeException());
@@ -129,37 +75,6 @@ class MutableConnectionStateTest {
 
         assertEquals(error, state.getPendingError());
         assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleMarkFailedWitResponseHandler() {
-        state.setResponseHandler(responseHandler);
-
-        Error error = Error.from(new RuntimeException());
-        state.markFailed(error);
-
-        verify(responseHandler).markFailed(error);
-        assertNull(state.getPendingError());
-        assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleOnFinishWithoutResponseHandler() {
-        state.setResponseHandler(null);
-
-        state.onFinish();
-
-        assertNull(state.getPendingError());
-        assertFalse(state.hasPendingIgnore());
-    }
-
-    @Test
-    void shouldHandleOnFinishWitResponseHandler() {
-        state.setResponseHandler(responseHandler);
-
-        state.onFinish();
-
-        verify(responseHandler).onFinish();
     }
 
     @Test
@@ -180,15 +95,6 @@ class MutableConnectionStateTest {
     }
 
     @Test
-    void shouldNotProcessMessageWhenClosed() {
-        state.setResponseHandler(null);
-
-        state.markClosed();
-
-        assertFalse(state.canProcessMessage());
-    }
-
-    @Test
     void shouldNotProcessMessageWithPendingError() {
         state.setResponseHandler(null);
 
@@ -204,51 +110,5 @@ class MutableConnectionStateTest {
         state.markIgnored();
 
         assertFalse(state.canProcessMessage());
-    }
-
-    // FIXME: Test
-    //    @Test
-    //    void shouldInterrupt() {
-    //        assertFalse(state.isInterrupted());
-    //
-    //        assertEquals(1, state.incrementInterruptCounter());
-    //        assertTrue(state.isInterrupted());
-    //
-    //        assertEquals(2, state.incrementInterruptCounter());
-    //        assertTrue(state.isInterrupted());
-    //
-    //        assertEquals(3, state.incrementInterruptCounter());
-    //        assertTrue(state.isInterrupted());
-    //
-    //        assertEquals(2, state.decrementInterruptCounter());
-    //        assertTrue(state.isInterrupted());
-    //
-    //        assertEquals(1, state.decrementInterruptCounter());
-    //        assertTrue(state.isInterrupted());
-    //
-    //        assertEquals(0, state.decrementInterruptCounter());
-    //        assertFalse(state.isInterrupted());
-    //    }
-
-    @Test
-    void shouldGetAndSetTransactionId() throws BoltProtocolBreachFatality {
-        state.setCurrentTransactionId("123");
-        assertEquals("123", state.getCurrentTransactionId());
-    }
-
-    @Test
-    void shouldThrowIfTransactionIdIsReplaceWithoutFirstClearing() throws BoltProtocolBreachFatality {
-        state.setCurrentTransactionId("123");
-        assertThrows(BoltProtocolBreachFatality.class, () -> state.setCurrentTransactionId("456"));
-    }
-
-    @Test
-    void shouldClearTransactionId() throws BoltProtocolBreachFatality {
-        state.setCurrentTransactionId("123");
-        assertEquals("123", state.getCurrentTransactionId());
-
-        state.clearCurrentTransactionId();
-
-        assertNull(state.getCurrentTransactionId());
     }
 }

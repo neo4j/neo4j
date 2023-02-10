@@ -22,6 +22,7 @@ package org.neo4j.configuration.connectors;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static org.neo4j.configuration.SettingConstraints.any;
+import static org.neo4j.configuration.SettingConstraints.greaterThanOrEqual;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
@@ -219,4 +220,20 @@ public final class BoltConnectorInternalSettings implements SettingsDeclaration 
             return loggingDecodedTraffic;
         }
     }
+
+    @Internal
+    @Description("Specifies the initial number of bytes requested when streaming records.")
+    public static final Setting<Integer> streaming_buffer_size = newBuilder(
+                    "internal.dbms.bolt.streaming_buffer_size", INT, 512)
+            .addConstraint(min(128))
+            .build();
+
+    @Internal
+    @Description("Specifies the minimum number of bytes which need to be written in order to flush the local network"
+            + "pipelines thus making prior written records visible to clients.")
+    public static final Setting<Integer> streaming_flush_threshold = newBuilder(
+                    "internal.dbms.bolt.streaming_flush_threshold", INT, 8192)
+            .addConstraint(any(is(0), min(128)))
+            .addConstraint(greaterThanOrEqual(streaming_buffer_size))
+            .build();
 }

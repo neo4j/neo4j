@@ -32,6 +32,8 @@ public interface RecordedMessage {
         return false;
     }
 
+    String getStacktrace();
+
     default ResponseMessage asResponse() {
         throw new IllegalStateException("Cannot convert " + this.getClass().getSimpleName() + " to response message");
     }

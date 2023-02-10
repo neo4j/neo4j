@@ -37,8 +37,11 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.response.NetworkResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -62,6 +65,7 @@ public abstract class AbstractConnection implements Connection {
     protected final Channel channel;
     private final long connectedAt;
     protected final MemoryTracker memoryTracker;
+    protected final LogService logService;
     protected final InternalLog log;
     protected final Log userLog;
 
@@ -74,10 +78,12 @@ public abstract class AbstractConnection implements Connection {
     // TODO: Switch to immutable writer pipeline implementation?
     protected volatile WriterPipeline writerPipeline;
     protected final AtomicReference<StructRegistry<Connection, Value>> structRegistry = new AtomicReference<>();
+    protected volatile ResponseHandler responseHandler;
 
     private final AtomicReference<LoginContext> loginContext = new AtomicReference<>();
     private volatile LoginContext impersonationContext;
 
+    private volatile RoutingContext routingContext;
     private volatile BoltConnectionInfo connectionInfo;
     private volatile String username;
     private volatile String userAgent;
@@ -96,6 +102,8 @@ public abstract class AbstractConnection implements Connection {
         this.channel = channel;
         this.connectedAt = connectedAt;
         this.memoryTracker = memoryTracker;
+
+        this.logService = logService;
         this.log = logService.getInternalLog(this.getClass());
         this.userLog = logService.getUserLog(this.getClass());
     }
@@ -212,6 +220,15 @@ public abstract class AbstractConnection implements Connection {
         this.writerPipeline = pipeline;
         this.structRegistry.set(structRegistry.build());
 
+        // allocate a new response handler which shall take care of communicating operation results
+        // to the client
+        this.responseHandler = new NetworkResponseHandler(
+                this,
+                protocol().metadataHandler(),
+                this.connector.streamingBufferSize(),
+                this.connector.streamingFlushThreshold(),
+                this.logService);
+
         // also enable any implicitly enabled features within the protocol version as we do not want these to be enabled
         // again if negotiated through one of the later mechanisms
         this.features.set(Collections.unmodifiableSet(protocol.features()));
@@ -293,8 +310,9 @@ public abstract class AbstractConnection implements Connection {
     }
 
     @Override
-    public List<Feature> negotiate(List<Feature> features, String userAgent) {
+    public List<Feature> negotiate(List<Feature> features, String userAgent, RoutingContext routingContext) {
         this.userAgent = userAgent;
+        this.routingContext = routingContext;
         return features.stream().filter(this::enableFeature).toList();
     }
 
@@ -336,6 +354,15 @@ public abstract class AbstractConnection implements Connection {
         }
 
         return this.loginContext.get();
+    }
+
+    @Override
+    public RoutingContext routingContext() {
+        if (this.routingContext == null) {
+            throw new IllegalStateException("Connection has yet to select routing context");
+        }
+
+        return this.routingContext;
     }
 
     @Override

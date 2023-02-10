@@ -29,6 +29,7 @@ import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
@@ -49,8 +50,12 @@ public abstract class AbstractConnector implements Connector {
     private final DefaultDatabaseResolver defaultDatabaseResolver;
     private final ConnectionHintProvider connectionHintProvider;
     private final BookmarkParser bookmarkParser;
+    private final TransactionManager transactionManager;
 
     private final ConnectionRegistry connectionRegistry;
+
+    private final int streamingBufferSize;
+    private final int streamingFlushThreshold;
 
     private final List<ConnectorListener> listeners = new ArrayList<>();
 
@@ -66,6 +71,9 @@ public abstract class AbstractConnector implements Connector {
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
             BookmarkParser bookmarkParser,
+            TransactionManager transactionManager,
+            int streamingBufferSize,
+            int streamingFlushThreshold,
             InternalLogProvider logging) {
         this.id = id;
         this.memoryPool = memoryPool;
@@ -77,6 +85,10 @@ public abstract class AbstractConnector implements Connector {
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionHintProvider = connectionHintProvider;
         this.bookmarkParser = bookmarkParser;
+        this.transactionManager = transactionManager;
+
+        this.streamingBufferSize = streamingBufferSize;
+        this.streamingFlushThreshold = streamingFlushThreshold;
 
         this.connectionRegistry = new ConnectionRegistry(id, connectionTracker, logging);
     }
@@ -129,6 +141,21 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public BookmarkParser bookmarkParser() {
         return this.bookmarkParser;
+    }
+
+    @Override
+    public TransactionManager transactionManager() {
+        return this.transactionManager;
+    }
+
+    @Override
+    public int streamingBufferSize() {
+        return this.streamingBufferSize;
+    }
+
+    @Override
+    public int streamingFlushThreshold() {
+        return this.streamingFlushThreshold;
     }
 
     @Override

@@ -65,6 +65,17 @@ public abstract class AbstractMockFactory<T, SELF extends AbstractMockFactory<T,
         return mock;
     }
 
+    /**
+     * Applies the configuration within this factory to a given mock.
+     *
+     * @param mock a mock object.
+     * @return a reference to the given mock object.
+     */
+    public T apply(T mock) {
+        this.configurators.forEach(configurator -> configurator.accept(mock));
+        return mock;
+    }
+
     @SuppressWarnings("unchecked")
     public SELF with(Consumer<T> configurator) {
         this.configurators.add(configurator);

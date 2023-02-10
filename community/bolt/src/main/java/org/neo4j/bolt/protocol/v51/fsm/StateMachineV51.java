@@ -29,21 +29,14 @@ import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
 import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
 import org.neo4j.bolt.protocol.v43.fsm.FailedState;
 import org.neo4j.bolt.protocol.v44.fsm.InTransactionState;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 public class StateMachineV51 extends AbstractStateMachine {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineV51.class);
 
-    public StateMachineV51(
-            StateMachineSPI spi,
-            Connection connection,
-            Clock clock,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager) {
-        super(spi, connection, clock, defaultDatabaseResolver, transactionManager);
+    public StateMachineV51(StateMachineSPI spi, Connection connection, Clock clock) {
+        super(spi, connection, clock);
     }
 
     @Override
@@ -67,27 +60,21 @@ public class StateMachineV51 extends AbstractStateMachine {
         negotiation.setAuthenticationState(authentication);
 
         authentication.setReadyState(ready);
-        authentication.setInterruptedState(interrupted);
         authentication.setFailedState(failed);
 
         ready.setTransactionReadyState(inTransaction);
         ready.setStreamingState(autoCommitState);
         ready.setFailedState(failed);
-        ready.setInterruptedState(interrupted);
         ready.setAuthenticationState(authentication);
 
         autoCommitState.setReadyState(ready);
         autoCommitState.setFailedState(failed);
-        autoCommitState.setInterruptedState(interrupted);
 
         inTransaction.setReadyState(ready);
         inTransaction.setFailedState(failed);
-        inTransaction.setInterruptedState(interrupted);
-
-        failed.setInterruptedState(interrupted);
 
         interrupted.setReadyState(ready);
 
-        return new AbstractStateMachine.States(negotiation, failed);
+        return new AbstractStateMachine.States(negotiation, failed, interrupted);
     }
 }

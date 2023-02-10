@@ -25,9 +25,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
 import org.neo4j.bolt.test.annotation.wire.selector.IncludeWire;
-import org.neo4j.bolt.test.annotation.wire.selector.Version;
-import org.neo4j.bolt.test.util.AnnotationUtil;
+import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Provides a wire selector implementation which selects the tested wires based on a predefined set of in- and
@@ -55,7 +55,7 @@ public class FilteredBoltWireSelector implements BoltWireSelector {
     private ProtocolVersion decodeVersion(Version annotation) {
         if (annotation.minor() == -1) {
             return new ProtocolVersion(
-                    annotation.major(), ProtocolVersion.MAX_MAJOR_BIT, ProtocolVersion.MAX_MAJOR_BIT);
+                    annotation.major(), ProtocolVersion.MAX_MINOR_BIT, ProtocolVersion.MAX_MINOR_BIT);
         }
 
         return new ProtocolVersion(annotation.major(), annotation.minor(), annotation.range());

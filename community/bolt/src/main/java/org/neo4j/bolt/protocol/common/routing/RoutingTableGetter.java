@@ -19,11 +19,8 @@
  */
 package org.neo4j.bolt.protocol.common.routing;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.bolt.tx.Transaction;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -33,20 +30,9 @@ public interface RoutingTableGetter {
     /**
      * Retrieves the routing table
      *
-     * @param programId The program reference used to execute the routing table query.
-     * @param transactionManager The transaction manager which will be used to get the routing information.
      * @param routingContext Meta information used by the routing procedure to create the routing table.
-     * @param bookmarks the bookmark required to wait for before executing.
      * @param databaseName The name of the database from the routing table will be get.
-     * @param connectionId the connectionId which requested the routing table.
-     * @return A promise of a routing table
+     * @return a promise of a routing table
      */
-    CompletableFuture<MapValue> get(
-            String programId,
-            LoginContext loginContext,
-            TransactionManager transactionManager,
-            MapValue routingContext,
-            List<Bookmark> bookmarks,
-            String databaseName,
-            String connectionId);
+    CompletableFuture<MapValue> get(Transaction transaction, MapValue routingContext, String databaseName);
 }

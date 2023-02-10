@@ -19,11 +19,10 @@
  */
 package org.neo4j.bolt.protocol.common.bookmark;
 
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface Bookmark {
-    String BOOKMARK_KEY = "bookmark"; // used in response messages
 
     long txId();
 

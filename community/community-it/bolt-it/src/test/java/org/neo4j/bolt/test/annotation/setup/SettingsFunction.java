@@ -24,14 +24,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.neo4j.bolt.test.annotation.BoltTestExtension;
 
 /**
  * Marks the annotated function as a settings function used when initializing a new server instance.
  * <p />
  * The annotated function is expected to accept a single parameter of type {@code Map<Setting<?>, Object>} and be marked
- * static (as it is invoked prior to initializing its associated test template) and will only affect tests annotated
- * via {@link BoltTestExtension}.
+ * static (as it is invoked prior to initializing its associated test template).
  */
 @Documented
 @Target(ElementType.METHOD)

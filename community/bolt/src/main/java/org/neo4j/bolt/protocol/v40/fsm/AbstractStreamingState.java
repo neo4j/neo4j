@@ -21,15 +21,19 @@ package org.neo4j.bolt.protocol.v40.fsm;
 
 import static org.neo4j.util.Preconditions.checkState;
 
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
 import org.neo4j.bolt.protocol.v40.messaging.request.DiscardMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.PullMessage;
-import org.neo4j.bolt.protocol.v40.messaging.result.DiscardResultConsumer;
-import org.neo4j.bolt.protocol.v40.messaging.result.PullResultConsumer;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.error.statement.StatementExecutionException;
+import org.neo4j.bolt.tx.error.statement.StatementStreamingException;
+import org.neo4j.bolt.tx.statement.Statement;
+import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 /**
  * When STREAMING, a result is available as a stream of records. These must be PULLed or DISCARDed before any further statements can be executed.
@@ -43,18 +47,23 @@ public abstract class AbstractStreamingState extends FailSafeState {
         context.connectionState().ensureNoPendingTerminationNotice();
 
         State nextState = null;
-        if (message instanceof PullMessage pullMessage) {
-            nextState = processStreamPullResultMessage(
-                    pullMessage.statementId(),
-                    new PullResultConsumer(context, pullMessage.n()),
-                    context,
-                    pullMessage.n());
-        } else if (message instanceof DiscardMessage discardMessage) {
-            nextState = processStreamDiscardResultMessage(
-                    discardMessage.statementId(),
-                    new DiscardResultConsumer(context, discardMessage.n()),
-                    context,
-                    discardMessage.n());
+        try {
+            if (message instanceof PullMessage pullMessage) {
+                nextState = processStreamPullResultMessage(pullMessage.statementId(), context, pullMessage.n());
+            } else if (message instanceof DiscardMessage discardMessage) {
+                nextState =
+                        processStreamDiscardResultMessage(discardMessage.statementId(), context, discardMessage.n());
+            }
+        } catch (StatementExecutionException | StatementStreamingException ex) {
+            // in case of statement execution errors, we typically need to unpack the exception in
+            // order to find its actual status bearing cause
+            var cause = ex.getCause();
+
+            if (!(ex instanceof HasStatus) && cause != null) {
+                throw cause;
+            } else {
+                throw ex;
+            }
         }
 
         // TODO: Remove along with EXIT_STREAMING
@@ -69,13 +78,93 @@ public abstract class AbstractStreamingState extends FailSafeState {
         this.readyState = readyState;
     }
 
-    protected abstract State processStreamPullResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long numberToPull)
-            throws Throwable;
+    protected State processStreamPullResultMessage(long statementId, StateMachineContext context, long noToPull)
+            throws Throwable {
+        context.connectionState().ensureNoPendingTerminationNotice();
 
-    protected abstract State processStreamDiscardResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
-            throws Throwable;
+        var tx = context.connection()
+                .transaction()
+                .orElseThrow(() -> new IllegalStateException("Transaction has already been closed"));
+
+        if (statementId == -1) {
+            statementId = tx.latestStatementId();
+        }
+
+        // TODO: Status code - this could be caused by a driver bug
+        var statement = tx.getStatement(statementId)
+                .orElseThrow(() -> new IllegalStateException("Statement has already been closed"));
+
+        return this.processStreamPullResultMessage(tx, statement, context, noToPull);
+    }
+
+    protected State processStreamPullResultMessage(
+            Transaction tx, Statement statement, StateMachineContext context, long noToPull) throws Throwable {
+        var responseHandler = context.connectionState().getResponseHandler();
+
+        try {
+            statement.consume(responseHandler, noToPull);
+        } finally {
+            if (!statement.hasRemaining()) {
+                statement.close();
+            }
+        }
+        return this;
+    }
+
+    protected State processStreamDiscardResultMessage(long statementId, StateMachineContext context, long noToDiscard)
+            throws Throwable {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
+        var tx = context.connection()
+                .transaction()
+                .orElseThrow(() -> new IllegalStateException("Transaction has already been closed"));
+
+        if (statementId == -1) {
+            statementId = tx.latestStatementId();
+        }
+
+        // TODO: Status code - this could be caused by a driver bug
+        var statement = tx.getStatement(statementId)
+                .orElseThrow(() -> new IllegalStateException("Statement has already been closed"));
+
+        return this.processStreamDiscardResultMessage(tx, statement, context, noToDiscard);
+    }
+
+    protected State processStreamDiscardResultMessage(
+            Transaction tx, Statement statement, StateMachineContext context, long noToDiscard) throws Throwable {
+        var responseHandler = context.connectionState().getResponseHandler();
+
+        try {
+            statement.discard(responseHandler, noToDiscard);
+        } finally {
+            if (!statement.hasRemaining()) {
+                statement.close();
+            }
+        }
+
+        return this;
+    }
+
+    protected void commit(StateMachineContext ctx, Transaction tx) throws TransactionException {
+        var responseHandler = ctx.connectionState().getResponseHandler();
+
+        Bookmark bookmark;
+        try {
+            bookmark = tx.commit();
+        } finally {
+            ctx.connection().closeTransaction();
+        }
+
+        bookmark.attachTo(responseHandler);
+    }
+
+    protected void rollback(StateMachineContext ctx, Transaction tx) throws TransactionException {
+        try {
+            tx.rollback();
+        } finally {
+            ctx.connection().closeTransaction();
+        }
+    }
 
     @Override
     protected void assertInitialized() {

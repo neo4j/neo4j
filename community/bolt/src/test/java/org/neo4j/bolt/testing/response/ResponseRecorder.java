@@ -22,27 +22,35 @@ package org.neo4j.bolt.testing.response;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import org.neo4j.bolt.protocol.common.fsm.response.AbstractMetadataAwareResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.bolt.protocol.common.message.response.IgnoredMessage;
-import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-public class ResponseRecorder implements ResponseHandler {
+public class ResponseRecorder extends AbstractMetadataAwareResponseHandler {
     private BlockingQueue<RecordedMessage> messages;
 
     private MapValueBuilder metadataBuilder;
-    private ResponseMessage currentResponse;
+    private RecordingRecordHandler recordHandler;
+
+    public ResponseRecorder(MetadataHandler metadataHandler) {
+        super(metadataHandler);
+
+        reset();
+    }
 
     public ResponseRecorder() {
-        reset();
+        this(DefaultMetadataHandler.getInstance());
     }
 
     public void reset() {
@@ -52,7 +60,7 @@ public class ResponseRecorder implements ResponseHandler {
 
     private void resetState() {
         this.metadataBuilder = new MapValueBuilder();
-        this.currentResponse = null;
+        this.recordHandler = null;
     }
 
     public RecordedMessage next() throws InterruptedException {
@@ -63,13 +71,36 @@ public class ResponseRecorder implements ResponseHandler {
     }
 
     @Override
-    public boolean onPullRecords(BoltResult result, long size) throws Throwable {
-        return hasMore(result.handleRecords(new RecordingBoltResultRecordConsumer(), size));
+    public RecordHandler onBeginStreaming(List<String> fieldNames) {
+        return this.recordHandler = new RecordingRecordHandler(fieldNames.size());
     }
 
     @Override
-    public boolean onDiscardRecords(BoltResult result, long size) throws Throwable {
-        return hasMore(result.handleRecords(new DiscardingBoltResultVisitor(), size));
+    public void onCompleteStreaming(boolean hasRemaining) {
+        super.onCompleteStreaming(hasRemaining);
+
+        this.messages.addAll(this.recordHandler.records);
+    }
+
+    @Override
+    public void onFailure(Error error) {
+        messages.add(new RecordedResponseMessage(
+                new FailureMessage(error.status(), error.message(), error.isFatal()), new IllegalStateException()));
+
+        this.resetState();
+    }
+
+    @Override
+    public void onIgnored() {
+        messages.add(new RecordedResponseMessage(IgnoredMessage.INSTANCE, new IllegalStateException()));
+        this.resetState();
+    }
+
+    @Override
+    public void onSuccess() {
+        messages.add(new RecordedResponseMessage(
+                new SuccessMessage(this.metadataBuilder.build()), new IllegalStateException()));
+        this.resetState();
     }
 
     @Override
@@ -77,74 +108,34 @@ public class ResponseRecorder implements ResponseHandler {
         this.metadataBuilder.add(key, value);
     }
 
-    @Override
-    public void markIgnored() {
-        this.currentResponse = IgnoredMessage.INSTANCE;
-    }
-
-    @Override
-    public void markFailed(Error error) {
-        this.currentResponse = new FailureMessage(error.status(), error.message(), error.isFatal());
-    }
-
-    @Override
-    public void onFinish() {
-        var response = this.currentResponse;
-        if (this.currentResponse == null) {
-            response = new SuccessMessage(this.metadataBuilder.build());
-        }
-
-        this.messages.add(new RecordedResponseMessage(response));
-        this.resetState();
-    }
-
     public int remaining() {
         return messages.size();
     }
 
-    private boolean hasMore(boolean hasMore) {
-        if (hasMore) {
-            onMetadata("has_more", BooleanValue.TRUE);
-        }
-        return hasMore;
-    }
+    private class RecordingRecordHandler implements RecordHandler {
+        private final List<RecordedRecordMessage> records = new ArrayList<>();
 
-    private class DiscardingBoltResultVisitor extends BoltResult.DiscardingRecordConsumer {
-        @Override
-        public void addMetadata(String key, AnyValue value) {
-            metadataBuilder.add(key, value);
-        }
-    }
+        private AnyValue[] fields;
+        private int fieldIndex;
 
-    private class RecordingBoltResultRecordConsumer implements BoltResult.RecordConsumer {
-        private AnyValue[] anyValues;
-        private int currentOffset = -1;
-
-        @Override
-        public void addMetadata(String key, AnyValue value) {
-            metadataBuilder.add(key, value);
+        public RecordingRecordHandler(int numberOfFields) {
+            this.fields = new AnyValue[numberOfFields];
         }
 
         @Override
-        public void beginRecord(int numberOfFields) {
-            currentOffset = 0;
-            anyValues = new AnyValue[numberOfFields];
+        public void onField(AnyValue value) {
+            this.fields[this.fieldIndex++] = value;
         }
 
         @Override
-        public void consumeField(AnyValue value) {
-            anyValues[currentOffset++] = value;
+        public void onCompleted() {
+            this.records.add(new RecordedRecordMessage(this.fields, new IllegalStateException()));
+
+            this.fields = new AnyValue[this.fields.length];
+            this.fieldIndex = 0;
         }
 
         @Override
-        public void endRecord() {
-            currentOffset = -1;
-            messages.add(new RecordedRecordMessage(anyValues));
-        }
-
-        @Override
-        public void onError() {
-            // IGNORE
-        }
+        public void onFailure() {}
     }
 }

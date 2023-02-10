@@ -26,6 +26,8 @@ import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.LegacyMetadataHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.encoder.FailureMessageEncoder;
 import org.neo4j.bolt.protocol.common.message.encoder.IgnoredMessageEncoder;
 import org.neo4j.bolt.protocol.common.message.encoder.SuccessMessageEncoder;
@@ -52,9 +54,6 @@ import org.neo4j.bolt.protocol.v40.messaging.decoder.PullMessageDecoder;
 import org.neo4j.bolt.protocol.v40.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.protocol.v40.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.bolt.protocol.v40.messaging.decoder.RunMessageDecoder;
-import org.neo4j.bolt.protocol.v40.transaction.TransactionStateMachineSPIProviderV4;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
@@ -72,8 +71,6 @@ public class BoltProtocolV40 implements BoltProtocol {
     protected final Log log;
 
     protected final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
-    protected final DefaultDatabaseResolver defaultDatabaseResolver;
-    protected final TransactionManager transactionManager;
     protected final SystemNanoClock clock;
 
     private final StructRegistry<Connection, RequestMessage> requestMessageStructRegistry;
@@ -82,15 +79,11 @@ public class BoltProtocolV40 implements BoltProtocol {
     public BoltProtocolV40(
             LogService logging,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager,
             SystemNanoClock clock) {
         this.logging = logging;
         this.log = logging.getInternalLog(getClass());
 
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
-        this.defaultDatabaseResolver = defaultDatabaseResolver;
-        this.transactionManager = transactionManager;
         this.clock = clock;
 
         this.requestMessageStructRegistry = this.createRequestMessageRegistry();
@@ -110,17 +103,11 @@ public class BoltProtocolV40 implements BoltProtocol {
 
     @Override
     public StateMachine createStateMachine(Connection connection) {
-        connection
-                .memoryTracker()
-                .allocateHeap(TransactionStateMachineSPIProviderV4.SHALLOW_SIZE
-                        + StateMachineSPIImpl.SHALLOW_SIZE
-                        + StateMachineV40.SHALLOW_SIZE);
+        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE + StateMachineV40.SHALLOW_SIZE);
 
-        var transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4(boltGraphDatabaseManagementServiceSPI, connection, clock);
-        var boltSPI = new StateMachineSPIImpl(logging, transactionSpiProvider);
+        var boltSPI = new StateMachineSPIImpl(logging);
 
-        return new StateMachineV40(boltSPI, connection, clock, defaultDatabaseResolver, transactionManager);
+        return new StateMachineV40(boltSPI, connection, clock);
     }
 
     protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
@@ -175,6 +162,11 @@ public class BoltProtocolV40 implements BoltProtocol {
         BoltProtocol.super.registerStructWriters(pipeline);
 
         pipeline.addFirst(LegacyStructWriter.getInstance());
+    }
+
+    @Override
+    public MetadataHandler metadataHandler() {
+        return LegacyMetadataHandler.getInstance();
     }
 
     @Override

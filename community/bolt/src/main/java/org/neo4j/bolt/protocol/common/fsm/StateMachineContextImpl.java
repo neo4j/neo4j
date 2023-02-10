@@ -22,16 +22,10 @@ package org.neo4j.bolt.protocol.common.fsm;
 import java.time.Clock;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
-import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorProvider;
-import org.neo4j.bolt.protocol.common.transaction.statement.StatementProcessorReleaseManager;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.transaction.CleanUpTransactionContext;
-import org.neo4j.bolt.transaction.InitializeContext;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.memory.HeapEstimator;
 
-public class StateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager {
+public class StateMachineContextImpl implements StateMachineContext {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineContextImpl.class);
 
     private final Connection connection;
@@ -39,21 +33,18 @@ public class StateMachineContextImpl implements StateMachineContext, StatementPr
     private final StateMachineSPI spi;
     private final MutableConnectionState connectionState;
     private final Clock clock;
-    private final TransactionManager transactionManager;
 
     public StateMachineContextImpl(
             Connection connection,
             StateMachine machine,
             StateMachineSPI spi,
             MutableConnectionState connectionState,
-            Clock clock,
-            TransactionManager transactionManager) {
+            Clock clock) {
         this.connection = connection;
         this.machine = machine;
         this.spi = spi;
         this.connectionState = connectionState;
         this.clock = clock;
-        this.transactionManager = transactionManager;
     }
 
     @Override
@@ -72,11 +63,6 @@ public class StateMachineContextImpl implements StateMachineContext, StatementPr
     }
 
     @Override
-    public TransactionManager transactionManager() {
-        return transactionManager;
-    }
-
-    @Override
     public StateMachineSPI boltSpi() {
         return spi;
     }
@@ -90,26 +76,5 @@ public class StateMachineContextImpl implements StateMachineContext, StatementPr
     public void handleFailure(Throwable cause, boolean fatal) throws BoltConnectionFatality {
         // FIXME: Call direction reversal
         machine.handleFailure(cause, fatal);
-    }
-
-    @Override
-    public boolean resetMachine() throws BoltConnectionFatality {
-        return machine.reset();
-    }
-
-    @Override
-    public void initStatementProcessorProvider(RoutingContext routingContext) {
-        var transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        var statementProcessorProvider = new StatementProcessorProvider(
-                transactionSpiProvider, clock, this, routingContext, connection.memoryTracker());
-        var initializeContext = new InitializeContext(connectionId(), statementProcessorProvider);
-
-        transactionManager.initialize(initializeContext);
-    }
-
-    @Override
-    public void releaseStatementProcessor(String transactionId) {
-        transactionManager.cleanUp(new CleanUpTransactionContext(transactionId));
-        connectionState.clearCurrentTransactionId();
     }
 }

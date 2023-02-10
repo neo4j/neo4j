@@ -20,10 +20,8 @@
 package org.neo4j.bolt.protocol.common.fsm;
 
 import org.neo4j.bolt.protocol.common.message.Error;
-import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
 
 public interface StateMachineSPI {
-    TransactionStateMachineSPIProvider transactionStateMachineSPIProvider();
 
     void reportError(Error err);
 

@@ -20,107 +20,56 @@
 
 package org.neo4j.bolt.testing.messages;
 
+import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
-import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
-import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
 import org.neo4j.bolt.protocol.v51.message.request.HelloMessage;
+import org.neo4j.bolt.protocol.v51.message.request.LogoffMessage;
 import org.neo4j.bolt.protocol.v51.message.request.LogonMessage;
-import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
-public class BoltV51Messages {
+public class BoltV51Messages extends BoltV50Messages {
     private static final String USER_AGENT = "BoltV51Wire/0.0";
+
+    private static final BoltV51Messages INSTANCE = new BoltV51Messages();
+
+    protected BoltV51Messages() {}
+
+    public static BoltMessages getInstance() {
+        return INSTANCE;
+    }
 
     private static final RequestMessage HELLO = new HelloMessage(
             map("user_agent", USER_AGENT), new RoutingContext(true, stringMap("policy", "fast", "region", "europe")));
-
-    public static RequestMessage hello() {
-        return HELLO;
-    }
-
-    public static RequestMessage hello(Map<String, Object> meta) {
-        return hello(meta, null);
-    }
-
-    public static RequestMessage hello(Map<String, Object> meta, RoutingContext routingContext) {
-        if (!meta.containsKey("user_agent")) {
-            meta.put("user_agent", USER_AGENT);
-        }
-
-        if (routingContext == null) {
-            routingContext = new RoutingContext(false, Collections.emptyMap());
-        }
-
-        return new HelloMessage(meta, routingContext);
-    }
-
-    public static RequestMessage run() {
-        return BoltV43Messages.run();
-    }
-
-    public static RequestMessage run(String statement) {
-        return BoltV44Messages.run(statement, MapValue.EMPTY);
-    }
-
-    public static RequestMessage run(String statement, MapValue params) {
-        return BoltV44Messages.run(statement, params, MapValue.EMPTY);
-    }
-
-    public static RequestMessage run(String statement, MapValue params, MapValue meta) {
-        return new RunMessage(statement, params, meta);
-    }
-
-    public static RequestMessage pull() {
-        return BoltV44Messages.pull();
-    }
-
-    public static RequestMessage discard() throws BoltIOException {
-        return BoltV44Messages.discard();
-    }
-
-    public static RequestMessage begin() {
-        return new BeginMessage(null, null, null, null, null, "databaseName", null, "");
-    }
-
-    public static RequestMessage begin(String databaseName) {
-        return new BeginMessage(null, null, null, null, null, databaseName, null, "");
-    }
-
-    public static RequestMessage begin(String databaseName, String impersonatedUser) {
-        return BoltV44Messages.begin(null, null, null, null, databaseName, impersonatedUser);
-    }
-
-    public static RequestMessage rollback() {
-        return BoltV44Messages.rollback();
-    }
-
-    public static RequestMessage commit() {
-        return BoltV44Messages.commit();
-    }
-
-    public static RequestMessage reset() {
-        return BoltV44Messages.reset();
-    }
-
-    public static RequestMessage goodbye() {
-        return BoltV44Messages.goodbye();
-    }
 
     public static RouteMessage route(String impersonatedUser) {
         return new RouteMessage(new MapValueBuilder().build(), List.of(), null, impersonatedUser);
     }
 
-    public static RequestMessage logon() {
+    @Override
+    public RequestMessage logon() {
         return new LogonMessage(new HashMap<>(0));
+    }
+
+    @Override
+    public RequestMessage logoff() {
+        return LogoffMessage.INSTANCE;
+    }
+
+    @Override
+    public RequestMessage hello(Map<String, Object> meta) {
+        return new HelloMessage(this.getDefaultHelloMetaMap(meta), new RoutingContext(true, emptyMap()));
+    }
+
+    @Override
+    public RequestMessage hello() {
+        return new HelloMessage(this.getDefaultHelloMetaMap(emptyMap()), new RoutingContext(true, emptyMap()));
     }
 }

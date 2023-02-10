@@ -28,8 +28,6 @@ import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
 import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
 import org.neo4j.bolt.protocol.v41.fsm.ConnectedState;
 import org.neo4j.bolt.protocol.v43.fsm.FailedState;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -39,13 +37,8 @@ import org.neo4j.memory.MemoryTracker;
 public class StateMachineV44 extends AbstractStateMachine {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineV44.class);
 
-    public StateMachineV44(
-            StateMachineSPI spi,
-            Connection connection,
-            Clock clock,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager) {
-        super(spi, connection, clock, defaultDatabaseResolver, transactionManager);
+    public StateMachineV44(StateMachineSPI spi, Connection connection, Clock clock) {
+        super(spi, connection, clock);
     }
 
     @Override
@@ -69,20 +62,15 @@ public class StateMachineV44 extends AbstractStateMachine {
         ready.setTransactionReadyState(inTransaction);
         ready.setStreamingState(autoCommitState);
         ready.setFailedState(failed);
-        ready.setInterruptedState(interrupted);
 
         autoCommitState.setReadyState(ready);
         autoCommitState.setFailedState(failed);
-        autoCommitState.setInterruptedState(interrupted);
 
         inTransaction.setReadyState(ready);
         inTransaction.setFailedState(failed);
-        inTransaction.setInterruptedState(interrupted);
-
-        failed.setInterruptedState(interrupted);
 
         interrupted.setReadyState(ready);
 
-        return new States(connected, failed);
+        return new States(connected, failed, interrupted);
     }
 }

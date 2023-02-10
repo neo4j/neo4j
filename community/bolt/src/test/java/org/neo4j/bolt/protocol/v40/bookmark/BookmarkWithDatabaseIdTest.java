@@ -23,11 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 
 class BookmarkWithDatabaseIdTest {
     @Test
@@ -51,10 +50,7 @@ class BookmarkWithDatabaseIdTest {
         bookmark.attachTo(responseHandler);
 
         verify(responseHandler)
-                .onMetadata(
-                        "bookmark",
-                        stringValue(String.format(
-                                "%s:42", namedDatabaseId.databaseId().uuid())));
+                .onBookmark(String.format("%s:42", namedDatabaseId.databaseId().uuid()));
     }
 
     @Test

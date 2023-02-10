@@ -27,12 +27,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
@@ -100,20 +99,11 @@ public class HttpTransactionManager {
 
     public TransactionFacade createTransactionFacade(
             GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName) {
-        var dependencyResolver = databaseAPI.getDependencyResolver();
-
         var readByDefault = databaseAPI.mode() != TopologyGraphDbmsModel.HostedOnMode.SINGLE && !routingEnabled;
 
         memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
         return new TransactionFacade(
-                databaseName,
-                dependencyResolver.resolveDependency(QueryExecutionEngine.class),
-                transactionRegistry,
-                transactionManager,
-                userLogProvider,
-                boltSPI,
-                authManager,
-                readByDefault);
+                databaseName, transactionRegistry, transactionManager, userLogProvider, authManager, readByDefault);
     }
 
     private void scheduleTransactionTimeout(Duration timeout) {

@@ -26,6 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.neo4j.bolt.test.annotation.wire.SelectWire;
 import org.neo4j.bolt.test.wire.selector.FilteredBoltWireSelector;
+import org.neo4j.bolt.testing.annotation.Version;
 
 /**
  * Excludes a list of matching protocol versions for execution of one or more annotated test templates.

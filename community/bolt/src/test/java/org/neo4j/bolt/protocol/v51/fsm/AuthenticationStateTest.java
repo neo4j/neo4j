@@ -65,7 +65,6 @@ public class AuthenticationStateTest {
         stateInTest = new AuthenticationState();
         stateInTest.setReadyState(readyState);
         stateInTest.setFailedState(mock());
-        stateInTest.setInterruptedState(mock());
     }
 
     @Test

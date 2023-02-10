@@ -117,6 +117,26 @@ public final class ConnectionAssertions extends AbstractAssert<ConnectionAsserti
         return this;
     }
 
+    public ConnectionAssertions hasTransaction() {
+        isNotNull();
+
+        if (!this.actual.transaction().isPresent()) {
+            failWithMessage("Expected connection to have a transaction");
+        }
+
+        return this;
+    }
+
+    public ConnectionAssertions hasNoTransaction() {
+        isNotNull();
+
+        if (this.actual.transaction().isPresent()) {
+            failWithMessage("Expected connection to have no transaction");
+        }
+
+        return this;
+    }
+
     public ConnectionAssertions isActive() {
         isNotNull();
 

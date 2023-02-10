@@ -19,23 +19,17 @@
  */
 package org.neo4j.bolt.protocol.v40.fsm;
 
-import static org.neo4j.bolt.protocol.v40.fsm.ReadyState.FIELDS_KEY;
-import static org.neo4j.bolt.protocol.v40.fsm.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
-import static org.neo4j.values.storable.Values.stringArray;
-
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.RollbackMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
 import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.statement.Statement;
 import org.neo4j.memory.HeapEstimator;
-import org.neo4j.values.storable.Values;
 
 public class InTransactionState extends AbstractStreamingState {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(InTransactionState.class);
@@ -65,53 +59,46 @@ public class InTransactionState extends AbstractStreamingState {
         return "IN_TRANSACTION";
     }
 
-    @Override
-    protected State processStreamPullResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToPull)
-            throws Throwable {
-        context.transactionManager()
-                .pullData(context.connectionState().getCurrentTransactionId(), statementId, noToPull, resultConsumer);
-        return this;
-    }
-
-    @Override
-    protected State processStreamDiscardResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
-            throws Throwable {
-        context.transactionManager()
-                .discardData(
-                        context.connectionState().getCurrentTransactionId(), statementId, noToDiscard, resultConsumer);
-        return this;
-    }
-
-    private State processRunMessage(RunMessage message, StateMachineContext context)
-            throws KernelException, TransactionNotFoundException {
+    private State processRunMessage(RunMessage message, StateMachineContext context) throws TransactionException {
         context.connectionState().ensureNoPendingTerminationNotice();
+
+        var tx = context.connection()
+                .transaction()
+                .orElseThrow(() -> new IllegalStateException("Transaction has already been closed"));
+
         long start = context.clock().millis();
-        var metadata = context.transactionManager()
-                .runQuery(context.connectionState().getCurrentTransactionId(), message.statement(), message.params());
+        Statement statement;
+        statement = tx.run(message.statement(), message.params());
         long end = context.clock().millis();
 
-        context.connectionState().onMetadata(FIELDS_KEY, stringArray(metadata.fieldNames()));
-        context.connectionState().onMetadata(FIRST_RECORD_AVAILABLE_KEY, Values.longValue(end - start));
-        context.connectionState().onMetadata(QUERY_ID_KEY, Values.longValue(metadata.queryId()));
+        context.connectionState()
+                .getResponseHandler()
+                .onStatementPrepared(TransactionType.EXPLICIT, statement.id(), end - start, statement.fieldNames());
 
         return this;
     }
 
     protected State processCommitMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException, AuthenticationException {
-        Bookmark bookmark =
-                context.transactionManager().commit(context.connectionState().getCurrentTransactionId());
-        context.connectionState().clearCurrentTransactionId();
-        bookmark.attachTo(context.connectionState());
+            throws TransactionException, AuthenticationException {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
+        var tx = context.connection()
+                .transaction()
+                .orElseThrow(() -> new IllegalStateException("Transaction has already been closed"));
+
+        this.commit(context, tx);
         return readyState;
     }
 
     protected State processRollbackMessage(StateMachineContext context)
-            throws KernelException, TransactionNotFoundException, AuthenticationException {
-        context.transactionManager().rollback(context.connectionState().getCurrentTransactionId());
-        context.connectionState().clearCurrentTransactionId();
+            throws TransactionException, AuthenticationException {
+        context.connectionState().ensureNoPendingTerminationNotice();
+
+        var tx = context.connection()
+                .transaction()
+                .orElseThrow(() -> new IllegalStateException("Transaction has already been closed"));
+
+        this.rollback(context, tx);
         return readyState;
     }
 }

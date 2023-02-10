@@ -19,12 +19,9 @@
  */
 package org.neo4j.bolt.protocol.v40.fsm;
 
-import static org.neo4j.util.Preconditions.checkState;
-
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.Signal;
 import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.DiscardMessage;
 import org.neo4j.bolt.protocol.v40.messaging.request.PullMessage;
@@ -40,26 +37,14 @@ import org.neo4j.memory.HeapEstimator;
 public class FailedState implements State {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(FailedState.class);
 
-    private State interruptedState;
-
     @Override
     public State process(RequestMessage message, StateMachineContext context) throws BoltConnectionFatality {
-        checkState(interruptedState != null, "Interrupted state not set");
-
         if (shouldIgnore(message)) {
             context.connectionState().markIgnored();
             return this;
         }
 
-        if (message == Signal.INTERRUPT) {
-            return interruptedState;
-        }
-
         return null;
-    }
-
-    public void setInterruptedState(State interruptedState) {
-        this.interruptedState = interruptedState;
     }
 
     @Override

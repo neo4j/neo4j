@@ -26,6 +26,7 @@ import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -222,18 +223,19 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     @Override
     public Lifecycle createWebServer(
             DatabaseManagementService managementService,
+            TransactionManager transactionManager,
             Dependencies globalDependencies,
             Config config,
             InternalLogProvider userLogProvider,
             DbmsInfo dbmsInfo) {
         return new CommunityNeoWebServer(
                 managementService,
+                transactionManager,
                 globalDependencies,
                 config,
                 userLogProvider,
                 dbmsInfo,
                 globalModule.getMemoryPools(),
-                globalModule.getTransactionManager(),
                 globalModule.getGlobalClock());
     }
 

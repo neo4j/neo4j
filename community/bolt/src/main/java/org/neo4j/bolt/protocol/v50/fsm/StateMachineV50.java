@@ -29,21 +29,15 @@ import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
 import org.neo4j.bolt.protocol.v41.fsm.ConnectedState;
 import org.neo4j.bolt.protocol.v43.fsm.FailedState;
 import org.neo4j.bolt.protocol.v44.fsm.InTransactionState;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.bolt.protocol.v44.fsm.ReadyState;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
 public class StateMachineV50 extends AbstractStateMachine {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(StateMachineV50.class);
 
-    public StateMachineV50(
-            StateMachineSPI spi,
-            Connection connection,
-            Clock clock,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager) {
-        super(spi, connection, clock, defaultDatabaseResolver, transactionManager);
+    public StateMachineV50(StateMachineSPI spi, Connection connection, Clock clock) {
+        super(spi, connection, clock);
     }
 
     @Override
@@ -59,7 +53,7 @@ public class StateMachineV50 extends AbstractStateMachine {
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4.4
         var failed = new FailedState(); // v4.3
-        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v5.0
+        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v4.4
         var interrupted = new InterruptedState(); // v3
 
         connected.setReadyState(ready);
@@ -67,20 +61,15 @@ public class StateMachineV50 extends AbstractStateMachine {
         ready.setTransactionReadyState(inTransaction);
         ready.setStreamingState(autoCommitState);
         ready.setFailedState(failed);
-        ready.setInterruptedState(interrupted);
 
         autoCommitState.setReadyState(ready);
         autoCommitState.setFailedState(failed);
-        autoCommitState.setInterruptedState(interrupted);
 
         inTransaction.setReadyState(ready);
         inTransaction.setFailedState(failed);
-        inTransaction.setInterruptedState(interrupted);
-
-        failed.setInterruptedState(interrupted);
 
         interrupted.setReadyState(ready);
 
-        return new AbstractStateMachine.States(connected, failed);
+        return new AbstractStateMachine.States(connected, failed, interrupted);
     }
 }

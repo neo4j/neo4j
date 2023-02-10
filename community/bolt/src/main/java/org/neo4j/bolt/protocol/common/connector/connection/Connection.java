@@ -23,22 +23,29 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -129,6 +136,15 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
     }
 
     /**
+     * Shorthand for {@link Channel#flush()}
+     *
+     * @see Channel#flush()
+     */
+    default void flush() {
+        this.channel().flush();
+    }
+
+    /**
      * Registers a new listener with this connection.
      *
      * @param listener a listener.
@@ -195,9 +211,11 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      *
      * @param features list of features.
      * @param userAgent the user agent string
+     * @param routingContext a routing context providing information about routing support and
+     *                       selected routing policies.
      * @return a list of enabled features
      */
-    List<Feature> negotiate(List<Feature> features, String userAgent);
+    List<Feature> negotiate(List<Feature> features, String userAgent, RoutingContext routingContext);
 
     /**
      * Retrieves the finite state machine for this connection.
@@ -212,6 +230,7 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      *
      * @return a login context or null if no authentication has been performed on this connection.
      */
+    @Override
     LoginContext loginContext();
 
     /**
@@ -266,9 +285,8 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      *
      * @see #submit(Job) for more information on job scheduling.
      * @param message an arbitrary request message as defined by the remote peer.
-     * @param responseHandler a handler which shall be notified with the result of the operation.
      */
-    void submit(RequestMessage message, ResponseHandler responseHandler);
+    void submit(RequestMessage message);
 
     /**
      * Attempts to submit a new job to the connection execution queue.
@@ -304,6 +322,19 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      * @return true if interrupted, false otherwise.
      */
     boolean isInterrupted();
+
+    Transaction beginTransaction(
+            TransactionType type,
+            String databaseName,
+            AccessMode mode,
+            List<Bookmark> bookmarks,
+            Duration timeout,
+            Map<String, Object> metadata)
+            throws TransactionException;
+
+    Optional<Transaction> transaction();
+
+    void closeTransaction() throws TransactionException;
 
     /**
      * Interrupts this connection and aborts any currently active jobs if possible.

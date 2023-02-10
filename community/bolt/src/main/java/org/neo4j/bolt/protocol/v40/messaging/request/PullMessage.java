@@ -24,7 +24,7 @@ import org.neo4j.values.virtual.MapValue;
 public class PullMessage extends AbstractStreamingMessage {
     public static final byte SIGNATURE = 0x3F;
 
-    public PullMessage(MapValue meta, long n, int statementId) {
+    public PullMessage(MapValue meta, long n, long statementId) {
         super(meta, n, statementId);
     }
 

@@ -20,11 +20,8 @@
 package org.neo4j.server.http.cypher;
 
 import static java.lang.Long.parseLong;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -33,13 +30,11 @@ import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -47,12 +42,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -60,25 +55,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
-import org.mockito.stubbing.Answer;
+import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
-import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
-import org.neo4j.bolt.transaction.CleanUpConnectionContext;
-import org.neo4j.bolt.transaction.InitializeContext;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.cypher.internal.runtime.QueryStatistics;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.testing.mock.MockResult;
+import org.neo4j.bolt.testing.mock.StatementMockFactory;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.error.statement.StatementExecutionException;
 import org.neo4j.exceptions.SyntaxException;
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -94,7 +86,6 @@ import org.neo4j.server.http.cypher.format.api.InputFormatException;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionNotificationState;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
-import org.neo4j.time.Clocks;
 import org.neo4j.values.virtual.MapValue;
 
 class InvocationTest {
@@ -102,12 +93,9 @@ class InvocationTest {
     private static final String TX_ID = "123";
 
     private final InternalLog log = mock(InternalLog.class);
-    // cannot be mocked because is final
-    private final QueryExecutionType queryExecutionType = null;
-    private final QueryStatistics queryStatistics = mock(QueryStatistics.class);
-    private final ExecutionPlanDescription executionPlanDescription = mock(ExecutionPlanDescription.class);
-    private final Iterable<Notification> notifications = emptyList();
     private final TransactionManager transactionManager = mock(TransactionManager.class);
+    private final Transaction transaction = mock(Transaction.class);
+    private org.neo4j.bolt.tx.statement.Statement statement;
     private final InternalLogProvider logProvider = mock(InternalLogProvider.class);
     private final BoltGraphDatabaseManagementServiceSPI boltSPI = mock(BoltGraphDatabaseManagementServiceSPI.class);
     private final QueryExecutionEngine executionEngine = mock(QueryExecutionEngine.class);
@@ -116,44 +104,36 @@ class InvocationTest {
     private final OutputEventStream outputEventStream = mock(OutputEventStream.class);
     private final MemoryTracker memoryTracker = mock(MemoryTracker.class);
     private final AuthManager authManager = mock(AuthManager.class);
-    private final StatementMetadata metadata = mock(StatementMetadata.class);
-    private final BoltResult boltResult = mock(BoltResult.class);
     private final String[] DEFAULT_FIELD_NAMES = new String[] {"c1", "c2", "c3"};
 
     @BeforeEach
     void setUp() throws Exception {
-        when(metadata.fieldNames()).thenReturn(DEFAULT_FIELD_NAMES);
-        when(transactionManager.begin(
-                        any(LoginContext.class),
+        this.statement = generateStatementMock();
+
+        when(this.transaction.id()).thenReturn("123");
+
+        when(transactionManager.create(
+                        any(TransactionType.class),
+                        any(TransactionOwner.class),
                         anyString(),
+                        any(AccessMode.class),
                         anyList(),
-                        anyBoolean(),
-                        anyMap(),
                         nullable(Duration.class),
-                        nullable(String.class),
-                        anyString()))
-                .thenReturn(TX_ID);
-        when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY)).thenReturn(metadata);
-        doAnswer((Answer<Bookmark>) invocationOnMock -> {
-                    ResultConsumer resultConsumer = invocationOnMock.getArgument(3, ResultConsumer.class);
-                    resultConsumer.consume(boltResult);
-                    return Bookmark.EMPTY_BOOKMARK;
-                })
-                .when(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
+                        anyMap()))
+                .thenReturn(transaction);
+        when(transaction.run(anyString(), Mockito.eq(MapValue.EMPTY))).thenReturn(statement);
+        when(transaction.commit()).thenReturn(Bookmark.EMPTY_BOOKMARK);
     }
 
     @Test
     void shouldExecuteStatements() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -167,25 +147,23 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement, registry);
+        txManagerOrder.verify(registry).begin(handle);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        txManagerOrder.verify(transactionManager).commit(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
+        txManagerOrder.verify(transaction).commit();
+        txManagerOrder.verify(registry).forget(123L);
+        txManagerOrder.verify(transaction).close();
         verifyNoMoreInteractions(transactionManager);
 
         // then verify output
@@ -209,13 +187,11 @@ class InvocationTest {
     void shouldSuspendTransactionAndReleaseForOtherRequestsAfterExecutingStatements() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -233,24 +209,20 @@ class InvocationTest {
         transactionOrder.verify(registry).release(123L, handle);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
+        txManagerOrder.verifyNoMoreInteractions();
 
         // then verify output
         InOrder outputOrder = inOrder(outputEventStream);
@@ -267,16 +239,18 @@ class InvocationTest {
 
     @Test
     void shouldResumeTransactionWhenExecutingStatementsOnSecondRequest() throws Throwable {
-        // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
-
+        TransactionHandle handle = getTransactionHandle(registry);
+        var statement1 = generateStatementMock();
+        var statement2 = generateStatementMock();
+        when(transaction.run(eq("queryA"), Mockito.eq(MapValue.EMPTY))).thenReturn(statement1);
+        when(transaction.run(eq("queryB"), Mockito.eq(MapValue.EMPTY))).thenReturn(statement2);
         InputEventStream inputEventStream = mock(InputEventStream.class);
-        Statement statement = new Statement("query", map());
-        when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
+        Statement statementA = new Statement("queryA", map());
+        Statement statementB = new Statement("queryB", map());
+        when(inputEventStream.read()).thenReturn(statementA, NULL_STATEMENT);
 
-        setupResultMocks();
-
+        // given initial invocation
         Invocation invocation = new Invocation(
                 log,
                 handle,
@@ -285,46 +259,49 @@ class InvocationTest {
                 inputEventStream,
                 false);
 
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, statement1, statement2, registry);
+
         invocation.execute(outputEventStream);
 
-        reset(registry, outputEventStream);
-        when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
+        txManagerOrder
+                .verify(transactionManager)
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("queryA", MapValue.EMPTY);
+        txManagerOrder.verify(statement1).consume(any(ResponseHandler.class), anyLong());
 
-        // when
+        InOrder outputOrder = inOrder(outputEventStream);
+        outputOrder.verify(outputEventStream).writeStatementStart(statementA, List.of("c1", "c2", "c3"));
+        verifyDefaultResultRows(outputOrder);
+
+        outputOrder
+                .verify(outputEventStream)
+                .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
+        outputOrder
+                .verify(outputEventStream)
+                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0);
+
+        txManagerOrder.verify(registry).release(123L, handle);
+
+        when(inputEventStream.read()).thenReturn(statementB, NULL_STATEMENT);
+
+        // when an additional invocation is triggered it should resume the initial transaction
         invocation.execute(outputEventStream);
-
-        // then
-        InOrder order = inOrder(registry, transactionManager);
-        order.verify(registry).release(123L, handle);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
-        txManagerOrder
-                .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        verifyNoMoreInteractions(transactionManager);
+        txManagerOrder.verify(transaction).run("queryB", MapValue.EMPTY);
+        txManagerOrder.verify(statement2).consume(any(ResponseHandler.class), anyLong());
 
         // verify output
-        InOrder outputOrder = inOrder(outputEventStream);
-        outputOrder.verify(outputEventStream).writeStatementStart(statement, List.of("c1", "c2", "c3"));
+        outputOrder.verify(outputEventStream).writeStatementStart(statementB, List.of("c1", "c2", "c3"));
         verifyDefaultResultRows(outputOrder);
+
         outputOrder
                 .verify(outputEventStream)
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
@@ -338,13 +315,11 @@ class InvocationTest {
     void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -362,11 +337,20 @@ class InvocationTest {
         transactionOrder.verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).commit("123");
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
+        txManagerOrder
+                .verify(transactionManager)
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(transaction).commit();
+        txManagerOrder.verify(transaction).close();
         txManagerOrder.verifyNoMoreInteractions();
 
         // then verify output
@@ -386,7 +370,7 @@ class InvocationTest {
     void shouldRollbackTransactionAndTellRegistryToForgetItsHandle() throws Exception {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         RollbackInvocation invocation = new RollbackInvocation(log, handle);
 
@@ -394,10 +378,10 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then
-        InOrder transactionOrder = inOrder(transactionManager, registry);
-        transactionOrder.verify(transactionManager).rollback("123");
+        InOrder transactionOrder = inOrder(transaction, registry);
+        transactionOrder.verify(transaction).rollback();
         transactionOrder.verify(registry).forget(123L);
-        transactionOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+        transactionOrder.verify(transaction).close();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, null, -1);
@@ -413,10 +397,8 @@ class InvocationTest {
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
 
-        setupResultMocks();
-
         // when
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
         Invocation invocation = new Invocation(
                 log,
                 handle,
@@ -425,35 +407,26 @@ class InvocationTest {
                 inputEventStream,
                 true);
 
-        // then
-        InOrder transactionOrder = inOrder(transactionManager);
-        transactionOrder.verify(transactionManager).initialize(any());
-        transactionOrder.verifyNoMoreInteractions();
-
         // when
         invocation.execute(outputEventStream);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        txManagerOrder.verify(transactionManager).commit(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
+        txManagerOrder.verify(transaction).commit();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeStatementStart(statement, List.of("c1", "c2", "c3"));
@@ -470,11 +443,10 @@ class InvocationTest {
     @Test
     void shouldRollbackTransactionIfExecutionErrorOccurs() throws Exception {
         // given
-        when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY))
-                .thenThrow(mock(TransactionNotFoundException.class));
+        when(transaction.run("query", MapValue.EMPTY)).thenThrow(new StatementExecutionException());
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
@@ -492,23 +464,21 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).rollback(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(transaction).rollback();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         verify(registry).forget(123L);
 
@@ -524,18 +494,16 @@ class InvocationTest {
     @Test
     void shouldHandleCommitError() throws Throwable {
         // given
-        var commitError = mock(KernelException.class);
+        var commitError = mock(TransactionException.class);
         when(commitError.getMessage()).thenReturn("Something went wrong!");
-        when(transactionManager.commit("123")).thenThrow(commitError);
+        when(transaction.commit()).thenThrow(commitError);
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -549,29 +517,25 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then
-        verify(log).error(eq("Failed to commit transaction."), any(KernelException.class));
+        verify(log).error(eq("Failed to commit transaction."), any(TransactionException.class));
         verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        txManagerOrder.verify(transactionManager).commit(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
+        txManagerOrder.verify(transaction).commit();
+        txManagerOrder.verify(transaction).close();
         verifyNoMoreInteractions(transactionManager);
 
         InOrder outputOrder = inOrder(outputEventStream);
@@ -590,19 +554,18 @@ class InvocationTest {
     @Test
     void shouldHandleErrorWhenStartingTransaction() throws Throwable {
         // given
-        when(transactionManager.begin(
-                        any(LoginContext.class),
+        when(transactionManager.create(
+                        any(TransactionType.class),
+                        any(TransactionOwner.class),
                         anyString(),
+                        any(AccessMode.class),
                         anyList(),
-                        eq(true),
-                        anyMap(),
                         nullable(Duration.class),
-                        nullable(String.class),
-                        anyString()))
-                .thenThrow(mock(KernelException.class));
+                        anyMap()))
+                .thenThrow(mock(TransactionException.class));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
@@ -620,10 +583,7 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then
-        verify(log)
-                .error(
-                        eq("Failed to start transaction"),
-                        any(KernelException.class)); // todo how does cleanup work here
+        verify(log).error(eq("Failed to start transaction"), any(TransactionException.class));
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeFailure(any(), any()); // todo more specific
@@ -636,25 +596,22 @@ class InvocationTest {
     @Test
     void shouldHandleAuthorizationErrorWhenStartingTransaction() throws Throwable {
         // given
-        when(transactionManager.begin(
-                        any(LoginContext.class),
+        when(transactionManager.create(
+                        any(TransactionType.class),
+                        any(TransactionOwner.class),
                         anyString(),
+                        any(AccessMode.class),
                         anyList(),
-                        eq(true),
-                        anyMap(),
                         nullable(Duration.class),
-                        nullable(String.class),
-                        anyString()))
+                        anyMap()))
                 .thenThrow(new AuthorizationViolationException("Forbidden"));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -682,11 +639,11 @@ class InvocationTest {
     void shouldHandleCypherSyntaxError() throws Exception {
         // given
         String queryText = "matsch (n) return n";
-        when(transactionManager.runQuery(TX_ID, queryText, MapValue.EMPTY))
+        when(transaction.run(queryText, MapValue.EMPTY))
                 .thenThrow(new RuntimeException(new SyntaxException("did you mean MATCH?")));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement(queryText, map());
@@ -707,23 +664,21 @@ class InvocationTest {
         verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, queryText, MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).rollback(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run(queryText, MapValue.EMPTY);
+        txManagerOrder.verify(transaction).rollback();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.SyntaxError, "did you mean MATCH?");
@@ -736,10 +691,10 @@ class InvocationTest {
     @Test
     void shouldHandleExecutionEngineThrowingUndeclaredCheckedExceptions() throws Exception {
         // given
-        when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY)).thenThrow(new RuntimeException("BOO"));
+        when(transaction.run("query", MapValue.EMPTY)).thenThrow(new RuntimeException("BOO"));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
@@ -760,23 +715,21 @@ class InvocationTest {
         verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).rollback(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(transaction).rollback();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.ExecutionFailed, "BOO");
@@ -789,13 +742,13 @@ class InvocationTest {
     @Test
     void shouldHandleRollbackError() throws Exception {
         // given
-        when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY)).thenThrow(new RuntimeException("BOO"));
+        doThrow(new RuntimeException("BOO")).when(transaction).run("query", MapValue.EMPTY);
         doThrow(new IllegalStateException("Something went wrong"))
-                .when(transactionManager)
-                .rollback(TX_ID);
+                .when(transaction)
+                .rollback();
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
@@ -816,23 +769,21 @@ class InvocationTest {
         verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).rollback(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(transaction).rollback();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.ExecutionFailed, "BOO");
@@ -849,13 +800,11 @@ class InvocationTest {
     void shouldInterruptTransaction() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -871,17 +820,16 @@ class InvocationTest {
         handle.terminate();
 
         // then
-        verify(transactionManager).interrupt(TX_ID);
+        verify(transaction).interrupt();
     }
 
     @Test
     void deadlockExceptionHasCorrectStatus() throws Throwable {
         // given
-        when(transactionManager.runQuery(TX_ID, "query", MapValue.EMPTY))
-                .thenThrow(new DeadlockDetectedException("deadlock"));
+        when(transaction.run("query", MapValue.EMPTY)).thenThrow(new DeadlockDetectedException("deadlock"));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
@@ -902,23 +850,21 @@ class InvocationTest {
         verify(registry).forget(123L);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(true),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder.verify(transactionManager).rollback(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(transaction).rollback();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         InOrder outputOrder = inOrder(outputEventStream);
         outputOrder.verify(outputEventStream).writeFailure(Status.Transaction.DeadlockDetected, "deadlock");
@@ -934,7 +880,6 @@ class InvocationTest {
         TransactionManager txManager = mock(TransactionManager.class);
         TransactionHandle handle = new TransactionHandle(
                 "neo4j",
-                executionEngine,
                 mock(TransactionRegistry.class),
                 uriScheme,
                 true,
@@ -943,10 +888,8 @@ class InvocationTest {
                 100,
                 txManager,
                 mock(InternalLogProvider.class),
-                mock(BoltGraphDatabaseManagementServiceSPI.class),
                 mock(MemoryTracker.class),
                 mock(AuthManager.class),
-                Clocks.nanoClock(),
                 true);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
@@ -964,16 +907,22 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then
-        verify(txManager).initialize(any());
         verify(txManager)
-                .begin(AUTH_DISABLED, "neo4j", emptyList(), true, emptyMap(), Duration.ofMillis(100), null, "0");
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.READ,
+                        Collections.emptyList(),
+                        Duration.ofMillis(100),
+                        Collections.emptyMap());
     }
 
     @Test
     void shouldHandleInputParsingErrorWhenReadingStatements() throws Exception {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         when(inputEventStream.read())
@@ -991,8 +940,8 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then
-        verify(transactionManager).rollback(TX_ID);
-        verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+        verify(transaction).rollback();
+        verify(transaction).close();
         verify(registry).forget(123L);
 
         InOrder outputOrder = inOrder(outputEventStream);
@@ -1007,7 +956,7 @@ class InvocationTest {
     void shouldHandleConnectionErrorWhenReadingStatementsInImplicitTransaction() throws Exception {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         when(inputEventStream.read())
@@ -1022,12 +971,12 @@ class InvocationTest {
                 true);
 
         // when
-        var e = assertThrows(ConnectionException.class, () -> invocation.execute(outputEventStream));
-        assertEquals("Connection error", e.getMessage());
+        var e = assertThrows(RuntimeException.class, () -> invocation.execute(outputEventStream));
+        assertTrue(e.getMessage().contains("Connection error"));
 
         // then
-        verify(transactionManager).rollback(TX_ID);
-        verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
+        verify(transaction).rollback();
+        verify(transaction).close();
         verify(registry).forget(123L);
 
         verifyNoInteractions(outputEventStream);
@@ -1037,7 +986,7 @@ class InvocationTest {
     void shouldKeepTransactionOpenIfConnectionErrorWhenReadingStatementsInExplicitTransaction() throws Exception {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry, false, true);
+        TransactionHandle handle = getTransactionHandle(registry, false, true);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         when(inputEventStream.read())
@@ -1052,13 +1001,13 @@ class InvocationTest {
                 true);
 
         // when
-        var e = assertThrows(ConnectionException.class, () -> invocation.execute(outputEventStream));
-        assertEquals("Connection error", e.getMessage());
+        var e = assertThrows(RuntimeException.class, () -> invocation.execute(outputEventStream));
+        assertTrue(e.getMessage().contains("Connection error"));
 
         // then
-        verify(transactionManager, never()).rollback(TX_ID);
-        verify(transactionManager, never()).commit(TX_ID);
-        verify(transactionManager, never()).cleanUp(any(CleanUpConnectionContext.class));
+        verify(transaction, never()).rollback();
+        verify(transaction, never()).commit();
+        verify(transaction, never()).close();
         verify(registry, never()).forget(1337L);
 
         verifyNoInteractions(outputEventStream);
@@ -1068,13 +1017,11 @@ class InvocationTest {
     void shouldHandleConnectionErrorWhenWritingOutputInImplicitTransaction() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry);
+        TransactionHandle handle = getTransactionHandle(registry);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -1091,12 +1038,12 @@ class InvocationTest {
                         any(), any());
 
         // when
-        var e = assertThrows(ConnectionException.class, () -> invocation.execute(outputEventStream));
-        assertEquals("Connection error", e.getMessage());
+        var e = assertThrows(RuntimeException.class, () -> invocation.execute(outputEventStream));
+        assertTrue(e.getMessage().contains("Connection error"));
 
         // then
-        verify(transactionManager).rollback(TX_ID);
-        verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext("1337")));
+        verify(transaction).rollback();
+        verify(transaction).close();
         verify(registry).forget(1337L);
 
         InOrder outputOrder = inOrder(outputEventStream);
@@ -1112,13 +1059,11 @@ class InvocationTest {
     void shouldKeepTransactionOpenIfConnectionErrorWhenWritingOutputInImplicitTransaction() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry, false, true);
+        TransactionHandle handle = getTransactionHandle(registry, false, true);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -1135,12 +1080,12 @@ class InvocationTest {
                         any(), any());
 
         // when
-        var e = assertThrows(ConnectionException.class, () -> invocation.execute(outputEventStream));
-        assertEquals("Connection error", e.getMessage());
+        var e = assertThrows(RuntimeException.class, () -> invocation.execute(outputEventStream));
+        assertTrue(e.getMessage().contains("Connection error"));
 
         // then
-        verify(transactionManager, never()).rollback(TX_ID);
-        verify(transactionManager, never()).cleanUp(any(CleanUpConnectionContext.class));
+        verify(transaction, never()).rollback();
+        verify(transaction, never()).close();
         verify(registry, never()).forget(1337L);
 
         InOrder outputOrder = inOrder(outputEventStream);
@@ -1154,14 +1099,12 @@ class InvocationTest {
 
     @Test
     void shouldAllocateAndFreeMemory() throws Throwable {
-        var handle = getTransactionHandle(executionEngine, registry, false, true);
+        var handle = getTransactionHandle(registry, false, true);
         var memoryPool = mock(MemoryPool.class);
         var inputEventStream = mock(InputEventStream.class);
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
         when(inputEventStream.read()).thenReturn(new Statement("query", map()), NULL_STATEMENT);
-
-        setupResultMocks();
 
         var invocation = new Invocation(
                 mock(InternalLog.class), handle, uriScheme.txCommitUri(1337L), memoryPool, inputEventStream, true);
@@ -1175,14 +1118,12 @@ class InvocationTest {
 
     @Test
     void shouldFreeMemoryOnException() throws Throwable {
-        var handle = getTransactionHandle(executionEngine, registry, false, true);
+        var handle = getTransactionHandle(registry, false, true);
         var memoryPool = mock(MemoryPool.class);
         var inputEventStream = mock(InputEventStream.class);
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
         when(inputEventStream.read()).thenReturn(new Statement("query", map()), NULL_STATEMENT);
-
-        setupResultMocks();
 
         doThrow(new ConnectionException("Something broke", new IOException("Oh no")))
                 .when(outputEventStream)
@@ -1191,7 +1132,7 @@ class InvocationTest {
         var invocation = new Invocation(
                 mock(InternalLog.class), handle, uriScheme.txCommitUri(1337L), memoryPool, inputEventStream, true);
 
-        assertThrows(ConnectionException.class, () -> invocation.execute(outputEventStream));
+        assertThrows(RuntimeException.class, () -> invocation.execute(outputEventStream));
 
         verify(memoryPool).reserveHeap(Statement.SHALLOW_SIZE);
         verify(memoryPool).releaseHeap(Statement.SHALLOW_SIZE);
@@ -1202,13 +1143,11 @@ class InvocationTest {
     void shouldExecuteStatementsWithWriteTransaction() throws Throwable {
         // given
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
-        TransactionHandle handle = getTransactionHandle(executionEngine, registry, true, false);
+        TransactionHandle handle = getTransactionHandle(registry, true, false);
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         Statement statement = new Statement("query", map());
         when(inputEventStream.read()).thenReturn(statement, NULL_STATEMENT);
-
-        setupResultMocks();
 
         Invocation invocation = new Invocation(
                 log,
@@ -1222,26 +1161,22 @@ class InvocationTest {
         invocation.execute(outputEventStream);
 
         // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder(transactionManager);
-        txManagerOrder.verify(transactionManager).initialize(any(InitializeContext.class));
+        InOrder txManagerOrder = inOrder(transactionManager, transaction, this.statement);
         txManagerOrder
                 .verify(transactionManager)
-                .begin(
-                        any(LoginContext.class),
-                        anyString(),
-                        anyList(),
-                        eq(false),
-                        anyMap(),
-                        nullable(Duration.class),
-                        nullable(String.class),
-                        anyString());
-        txManagerOrder.verify(transactionManager).runQuery(TX_ID, "query", MapValue.EMPTY);
-        txManagerOrder
-                .verify(transactionManager)
-                .pullData(any(String.class), any(Integer.class), any(Long.class), any(ResultConsumer.class));
-        txManagerOrder.verify(transactionManager).commit(TX_ID);
-        txManagerOrder.verify(transactionManager).cleanUp(eq(new CleanUpConnectionContext(TX_ID)));
-        verifyNoMoreInteractions(transactionManager);
+                .create(
+                        TransactionType.EXPLICIT,
+                        handle,
+                        "neo4j",
+                        AccessMode.WRITE,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
+        txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
+        txManagerOrder.verify(transaction).commit();
+        txManagerOrder.verify(transaction).close();
+        txManagerOrder.verifyNoMoreInteractions();
 
         // then verify output
         InOrder outputOrder = inOrder(outputEventStream);
@@ -1273,18 +1208,14 @@ class InvocationTest {
                         argThat(new ValuesMatcher(Map.of("c1", "v4", "c2", "v5", "c3", "v6"))));
     }
 
-    private TransactionHandle getTransactionHandle(QueryExecutionEngine executionEngine, TransactionRegistry registry) {
-        return getTransactionHandle(executionEngine, registry, true, true);
+    private TransactionHandle getTransactionHandle(TransactionRegistry registry) {
+        return getTransactionHandle(registry, true, true);
     }
 
     private TransactionHandle getTransactionHandle(
-            QueryExecutionEngine executionEngine,
-            TransactionRegistry registry,
-            boolean implicitTransaction,
-            boolean readOnly) {
+            TransactionRegistry registry, boolean implicitTransaction, boolean readOnly) {
         return new TransactionHandle(
                 "neo4j",
-                executionEngine,
                 registry,
                 uriScheme,
                 implicitTransaction,
@@ -1293,11 +1224,19 @@ class InvocationTest {
                 anyLong(),
                 transactionManager,
                 logProvider,
-                boltSPI,
                 memoryTracker,
                 authManager,
-                Clocks.nanoClock(),
                 readOnly);
+    }
+
+    private org.neo4j.bolt.tx.statement.Statement generateStatementMock() {
+        return StatementMockFactory.newFactory()
+                .withResults(MockResult.newInstance(factory -> factory.withField("c1", "c2", "c3")
+                        .withRecord(stringValue("v1"), stringValue("v2"), stringValue("v3"))
+                        .withRecord(stringValue("v4"), stringValue("v5"), stringValue("v6"))
+                        .withMetadata("type", stringValue("w"))
+                        .withMetadata("db", stringValue("neo4j"))))
+                .build();
     }
 
     private static class ValuesMatcher implements ArgumentMatcher<Function<String, Object>> {
@@ -1331,29 +1270,4 @@ class InvocationTest {
             return URI.create("data/");
         }
     };
-
-    // todo test open tx state
-    private void setupResultMocks() throws Throwable {
-        var fieldNames = List.of("c1", "c2", "c3").toArray(new String[0]);
-
-        when(boltResult.fieldNames()).thenReturn(fieldNames);
-        when(boltResult.handleRecords(any(BoltResult.RecordConsumer.class), any(Long.class)))
-                .thenAnswer((Answer<Boolean>) invocation -> {
-                    var recordConsumer = invocation.getArgument(0, BoltResult.RecordConsumer.class);
-                    recordConsumer.beginRecord(3);
-                    recordConsumer.consumeField(stringValue("v1"));
-                    recordConsumer.consumeField(stringValue("v2"));
-                    recordConsumer.consumeField(stringValue("v3"));
-                    recordConsumer.endRecord();
-                    recordConsumer.beginRecord(3);
-                    recordConsumer.consumeField(stringValue("v4"));
-                    recordConsumer.consumeField(stringValue("v5"));
-                    recordConsumer.consumeField(stringValue("v6"));
-                    recordConsumer.endRecord();
-                    recordConsumer.addMetadata("type", stringValue("w"));
-                    recordConsumer.addMetadata("db", stringValue("neo4j"));
-                    recordConsumer.addMetadata("t_last", longValue(0));
-                    return false;
-                });
-    }
 }

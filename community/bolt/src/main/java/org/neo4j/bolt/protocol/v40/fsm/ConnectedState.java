@@ -54,11 +54,9 @@ public class ConnectedState implements State {
             var authToken = helloMessage.authToken();
             var routingContext = extractRoutingContext(helloMessage);
 
-            var enabledFeatures = context.connection().negotiate(helloMessage.features(), helloMessage.userAgent());
+            var enabledFeatures = context.connection().negotiate(helloMessage.features(), userAgent, routingContext);
 
-            if (processAuthentication(userAgent, authToken, context)) {
-                context.initStatementProcessorProvider(routingContext);
-
+            if (processAuthentication(context, authToken)) {
                 context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));
 
                 var connectionHints = new MapValueBuilder();
@@ -85,8 +83,7 @@ public class ConnectedState implements State {
         return new RoutingContext(false, Collections.emptyMap());
     }
 
-    protected boolean processAuthentication(
-            String userAgent, Map<String, Object> authToken, StateMachineContext context)
+    protected boolean processAuthentication(StateMachineContext context, Map<String, Object> authToken)
             throws BoltConnectionFatality {
         try {
             var boltSpi = context.boltSpi();

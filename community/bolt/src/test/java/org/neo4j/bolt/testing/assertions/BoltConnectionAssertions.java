@@ -131,7 +131,12 @@ public final class BoltConnectionAssertions
 
     public BoltConnectionAssertions receivesSuccess(int n) {
         for (var i = 0; i < n; ++i) {
-            this.receivesSuccess();
+            try {
+                this.receivesSuccess();
+            } catch (AssertionError ex) {
+                throw new AssertionError(
+                        "Failed to retrieve expected message (received " + i + " out of " + n + ")", ex);
+            }
         }
 
         return this;

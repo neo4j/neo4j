@@ -19,15 +19,21 @@
  */
 package org.neo4j.bolt.testing.mock;
 
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.mock;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.Attribute;
+import java.net.SocketAddress;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.mockito.ArgumentCaptor;
@@ -41,9 +47,14 @@ import org.neo4j.bolt.protocol.common.connector.connection.authentication.Authen
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
+import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 
@@ -153,6 +164,9 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                 .when(mock)
                 .writeAndFlush(ArgumentMatchers.any(), ArgumentMatchers.any()));
 
+        this.with(mock ->
+                Mockito.doAnswer(invocation -> channel.flush()).when(mock).flush());
+
         return this.withStaticValue(Connection::channel, channel);
     }
 
@@ -199,6 +213,40 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
         return this.withStaticValue(Connection::loginContext, ctx);
     }
 
+    public ConnectionMockFactory withAuthentication(Authentication authentication) {
+        var loginContext = new AtomicReference<LoginContext>();
+
+        this.with(connection -> Mockito.doAnswer(invocation -> loginContext.get())
+                .when(connection)
+                .loginContext());
+        this.with(connection -> {
+            try {
+                Mockito.doAnswer(invocation -> {
+                            var result = authentication.authenticate(
+                                    invocation.getArgument(0),
+                                    new BoltConnectionInfo(
+                                            "bolt-test",
+                                            "bolt-test",
+                                            mock(SocketAddress.class),
+                                            mock(SocketAddress.class)));
+                            loginContext.set(result.getLoginContext());
+
+                            if (result.credentialsExpired()) {
+                                return AuthenticationFlag.CREDENTIALS_EXPIRED;
+                            }
+
+                            return null;
+                        })
+                        .when(connection)
+                        .logon(anyMap());
+            } catch (AuthenticationException ignore) {
+                // Mock interaction - never happens
+            }
+        });
+
+        return this;
+    }
+
     public ConnectionMockFactory withAuthenticationFlag(AuthenticationFlag flag) {
         return this.withStaticValue(
                 mock -> {
@@ -212,7 +260,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
     }
 
     public ConnectionMockFactory withAuthenticationFlag(
-            AuthenticationFlag flag, Supplier<Map<String, Object>> tokenMatcher, Supplier<String> userAgentMatcher) {
+            AuthenticationFlag flag, Supplier<Map<String, Object>> tokenMatcher) {
         return this.withStaticValue(
                 mock -> {
                     try {
@@ -224,10 +272,8 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                 flag);
     }
 
-    public ConnectionMockFactory withAuthenticationFlag(
-            AuthenticationFlag flag, Map<String, Object> token, String userAgent) {
-        return this.withAuthenticationFlag(
-                flag, () -> ArgumentMatchers.eq(token), () -> ArgumentMatchers.eq(userAgent));
+    public ConnectionMockFactory withAuthenticationFlag(AuthenticationFlag flag, Map<String, Object> token) {
+        return this.withAuthenticationFlag(flag, () -> ArgumentMatchers.eq(token));
     }
 
     public ConnectionMockFactory withSelectedDefaultDatabase(String database) {
@@ -267,11 +313,69 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                     newValue = 0;
                 } else {
                     newValue = oldValue - 1;
+
+                    if (newValue == 0) {
+                        ((Connection) invocation.getMock()).closeTransaction();
+                    }
                 }
             } while (!captor.compareAndSet(oldValue, newValue));
 
             return newValue == 0;
         });
+    }
+
+    public ConnectionMockFactory withTransaction(Transaction transaction) {
+        return this.withStaticValue(Connection::transaction, transaction);
+    }
+
+    public ConnectionMockFactory withTransactionManager(TransactionManager transactionManager) {
+        var transaction = new AtomicReference<Transaction>();
+
+        this.withAnswer(
+                connection -> {
+                    try {
+                        connection.beginTransaction(
+                                Mockito.any(),
+                                Mockito.any(),
+                                Mockito.any(),
+                                Mockito.any(),
+                                Mockito.any(),
+                                Mockito.any());
+                    } catch (TransactionException ignore) {
+                        // Stubbing invocation - never occurs
+                    }
+                },
+                invocation -> {
+                    var newTransaction = transactionManager.create(
+                            invocation.getArgument(0),
+                            (Connection) invocation.getMock(),
+                            invocation.getArgument(1),
+                            invocation.getArgument(2),
+                            invocation.getArgument(3),
+                            invocation.getArgument(4),
+                            invocation.getArgument(5));
+                    transaction.set(newTransaction);
+                    return newTransaction;
+                });
+        this.withAnswer(Connection::transaction, invocation -> Optional.ofNullable(transaction.get()));
+        this.withAnswer(
+                connection -> {
+                    try {
+                        connection.closeTransaction();
+                    } catch (TransactionException ignore) {
+                        // Stubbing invocation - never occurs
+                    }
+                },
+                invocation -> {
+                    var currentTransaction = transaction.getAndSet(null);
+                    if (currentTransaction != null) {
+                        currentTransaction.close();
+                    }
+
+                    return null;
+                });
+
+        return this;
     }
 
     public ConnectionMockFactory withResetResult(boolean result) {

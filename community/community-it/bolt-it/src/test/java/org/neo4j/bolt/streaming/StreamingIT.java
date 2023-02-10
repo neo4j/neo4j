@@ -35,7 +35,7 @@ import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.initializer.EnableFeature;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
-import org.neo4j.bolt.test.annotation.wire.selector.Version;
+import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltV44Wire;

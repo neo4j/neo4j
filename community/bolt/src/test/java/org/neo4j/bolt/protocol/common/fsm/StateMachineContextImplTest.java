@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.protocol.common.fsm;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 class StateMachineContextImplTest {
@@ -49,15 +46,9 @@ class StateMachineContextImplTest {
         this.connectionState = new MutableConnectionState();
         this.databaseResolver = mock(DefaultDatabaseResolver.class);
         var stateMachineSPI = mock(StateMachineSPI.class);
-        var transactionManager = mock(TransactionManager.class);
 
         this.context = new StateMachineContextImpl(
-                this.connection,
-                this.machine,
-                stateMachineSPI,
-                this.connectionState,
-                Clock.systemUTC(),
-                transactionManager);
+                this.connection, this.machine, stateMachineSPI, this.connectionState, Clock.systemUTC());
     }
 
     @Test
@@ -66,26 +57,6 @@ class StateMachineContextImplTest {
         context.handleFailure(cause, true);
 
         verify(machine).handleFailure(cause, true);
-    }
-
-    @Test
-    void shouldResetMachine() throws BoltConnectionFatality {
-        context.resetMachine();
-
-        verify(machine).reset();
-    }
-
-    @Test
-    void releaseShouldResetTransactionState() throws Throwable {
-        assertSame(connectionState, context.connectionState());
-
-        context.connectionState().setCurrentTransactionId("123");
-
-        // When
-        context.releaseStatementProcessor("123");
-
-        // Then
-        assertNull(context.connectionState().getCurrentTransactionId());
     }
 
     // FIXME: Test

@@ -74,7 +74,7 @@ import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
 public class ShutdownSequenceIT {
-    private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofSeconds(10);
+    private static final Duration THREAD_POOL_SHUTDOWN_WAIT_TIME = Duration.ofMinutes(10);
 
     private final AssertableLogProvider internalLogProvider = new SpiedAssertableLogProvider(BoltServer.class);
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();

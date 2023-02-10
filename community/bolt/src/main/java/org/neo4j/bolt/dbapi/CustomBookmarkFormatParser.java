@@ -21,7 +21,6 @@ package org.neo4j.bolt.dbapi;
 
 import java.util.List;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 
 /**
  * A parser of custom bookmark format. It can parse a serialized bookmark into a subclass of {@link Bookmark}.

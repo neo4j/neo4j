@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.v43.fsm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doReturn;
@@ -39,7 +38,6 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.v40.fsm.FailedState;
 import org.neo4j.bolt.protocol.v43.message.request.RouteMessage;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
@@ -57,13 +55,11 @@ class ReadyStateTest {
 
         this.failedState = mock(FailedState.class);
         var streamingState = mock(State.class);
-        var interruptedState = mock(State.class);
         var transactionReadyState = mock(State.class);
 
         this.state = new ReadyState(this.routingTableGetter);
         state.setFailedState(failedState);
         state.setStreamingState(streamingState);
-        state.setInterruptedState(interruptedState);
         state.setTransactionReadyState(transactionReadyState);
     }
 
@@ -71,9 +67,14 @@ class ReadyStateTest {
     void shouldProcessTheRoutingMessageAndSetTheRoutingTableOnTheMetadata() throws Exception {
         var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
         var context = mock(StateMachineContext.class, RETURNS_MOCKS);
-        var connectionState = mockMutableConnectionState(context);
-        var transactionManager = mockTransactionManager(context);
-        var routingTable = mockRoutingTable(routingMessage, this.routingTableGetter, transactionManager);
+        var connectionState = mock(MutableConnectionState.class);
+        doReturn(connectionState).when(context).connectionState();
+        doReturn("123").when(context).connectionId();
+
+        var routingTable = routingTable();
+        doReturn(CompletableFuture.completedFuture(routingTable))
+                .when(routingTableGetter)
+                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
 
         var nextState = this.state.process(routingMessage, context);
 
@@ -90,8 +91,11 @@ class ReadyStateTest {
         doReturn(mutableConnectionState).when(context).connectionState();
         doReturn("123").when(context).connectionId();
 
-        var transactionManager = mockTransactionManager(context);
-        var runtimeException = mockCompletedRuntimeException(routingMessage, routingTableGetter, transactionManager);
+        var runtimeException = new RuntimeException("Something happened");
+
+        doReturn(CompletableFuture.failedFuture(runtimeException))
+                .when(routingTableGetter)
+                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
 
         var nextState = this.state.process(routingMessage, context);
 
@@ -108,74 +112,15 @@ class ReadyStateTest {
         doReturn(mutableConnectionState).when(context).connectionState();
         doReturn("123").when(context).connectionId();
 
-        var transactionManager = mockTransactionManager(context);
-        var runtimeException = mockRuntimeException(routingMessage, this.routingTableGetter, transactionManager);
+        var runtimeException = new RuntimeException("Something happened");
+        doThrow(runtimeException)
+                .when(routingTableGetter)
+                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
 
         var nextState = this.state.process(routingMessage, context);
 
         assertEquals(this.failedState, nextState);
         verify(context).handleFailure(runtimeException, false);
-    }
-
-    private RuntimeException mockRuntimeException(
-            RouteMessage routingMessage, RoutingTableGetter routingTableGetter, TransactionManager transactionManager) {
-        var runtimeException = new RuntimeException("Something happened");
-        doThrow(runtimeException)
-                .when(routingTableGetter)
-                .get(
-                        anyString(),
-                        any(),
-                        eq(transactionManager),
-                        eq(routingMessage.getRequestContext()),
-                        eq(routingMessage.getBookmarks()),
-                        eq(routingMessage.getDatabaseName()),
-                        eq("123"));
-        return runtimeException;
-    }
-
-    private RuntimeException mockCompletedRuntimeException(
-            RouteMessage routingMessage, RoutingTableGetter routingTableGetter, TransactionManager transactionManager) {
-        var runtimeException = new RuntimeException("Something happened");
-        doReturn(CompletableFuture.failedFuture(runtimeException))
-                .when(routingTableGetter)
-                .get(
-                        anyString(),
-                        any(),
-                        eq(transactionManager),
-                        eq(routingMessage.getRequestContext()),
-                        eq(routingMessage.getBookmarks()),
-                        eq(routingMessage.getDatabaseName()),
-                        eq("123"));
-        return runtimeException;
-    }
-
-    private static MutableConnectionState mockMutableConnectionState(StateMachineContext context) {
-        var connectionState = mock(MutableConnectionState.class);
-        doReturn(connectionState).when(context).connectionState();
-        doReturn("123").when(context).connectionId();
-        return connectionState;
-    }
-
-    private MapValue mockRoutingTable(
-            RouteMessage routingMessage, RoutingTableGetter routingTableGetter, TransactionManager transactionManager) {
-        var routingTable = routingTable();
-        doReturn(CompletableFuture.completedFuture(routingTable))
-                .when(routingTableGetter)
-                .get(
-                        anyString(),
-                        any(),
-                        eq(transactionManager),
-                        eq(routingMessage.getRequestContext()),
-                        eq(routingMessage.getBookmarks()),
-                        eq(routingMessage.getDatabaseName()),
-                        eq("123"));
-        return routingTable;
-    }
-
-    private TransactionManager mockTransactionManager(StateMachineContext context) {
-        var transactionManager = mock(TransactionManager.class);
-        doReturn(transactionManager).when(context).transactionManager();
-        return transactionManager;
     }
 
     private static MapValue routingTable() {

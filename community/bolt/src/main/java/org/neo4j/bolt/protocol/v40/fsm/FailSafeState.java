@@ -24,27 +24,31 @@ import static org.neo4j.util.Preconditions.checkState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.Signal;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.security.error.AuthenticationException;
+import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.kernel.api.exceptions.Status.HasStatus;
 
 public abstract class FailSafeState implements State {
     protected State failedState;
-    private State interruptedState;
 
     @Override
     public State process(RequestMessage message, StateMachineContext context) throws BoltConnectionFatality {
         assertInitialized();
 
-        if (message == Signal.INTERRUPT) {
-            return interruptedState;
-        }
-
         try {
             return processUnsafe(message, context);
         } catch (AuthorizationExpiredException | AuthenticationException e) {
             context.handleFailure(e, true);
+            return failedState;
+        } catch (TransactionException e) {
+            if (!(e instanceof HasStatus) && e.getCause() instanceof HasStatus) {
+                context.handleFailure(e.getCause(), false);
+            } else {
+                context.handleFailure(e, false);
+            }
+
             return failedState;
         } catch (Throwable t) {
             context.handleFailure(t, false);
@@ -56,13 +60,8 @@ public abstract class FailSafeState implements State {
         this.failedState = failedState;
     }
 
-    public void setInterruptedState(State interruptedState) {
-        this.interruptedState = interruptedState;
-    }
-
     protected void assertInitialized() {
         checkState(failedState != null, "Failed state not set");
-        checkState(interruptedState != null, "Interrupted state not set");
     }
 
     protected abstract State processUnsafe(RequestMessage message, StateMachineContext context) throws Throwable;

@@ -19,10 +19,12 @@
  */
 package org.neo4j.packstream.testing;
 
+import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.bolt.testing.assertions.ByteBufAssertions;
 import org.neo4j.packstream.error.reader.LimitExceededException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -52,9 +54,25 @@ public class PackstreamBufAssertions extends AbstractAssert<PackstreamBufAsserti
         return new PackstreamBufAssertions(value);
     }
 
+    public static PackstreamBufAssertions assertThat(ByteBuf value) {
+        return assertThat(PackstreamBuf.wrap(value));
+    }
+
     public static PackstreamBufAssertions assertThat(
             PackstreamBuf value, StructRegistry<Object, Value> structRegistry) {
         return new PackstreamBufAssertions(value, structRegistry);
+    }
+
+    public static PackstreamBufAssertions assertThat(ByteBuf value, StructRegistry<Object, Value> structRegistry) {
+        return assertThat(PackstreamBuf.wrap(value), structRegistry);
+    }
+
+    public static InstanceOfAssertFactory<PackstreamBuf, PackstreamBufAssertions> packstreamBuf() {
+        return new InstanceOfAssertFactory<>(PackstreamBuf.class, PackstreamBufAssertions::assertThat);
+    }
+
+    public static InstanceOfAssertFactory<ByteBuf, PackstreamBufAssertions> wrap() {
+        return new InstanceOfAssertFactory<>(ByteBuf.class, PackstreamBufAssertions::assertThat);
     }
 
     private void fail(UnexpectedTypeException ex) {

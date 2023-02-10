@@ -29,9 +29,9 @@ import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -46,31 +46,18 @@ public class TransactionManagerCleanupIT {
     @ProtocolTest
     void shouldIncreaseAndDecreaseTxCount(BoltWire wire, @Authenticated TransportConnection connection)
             throws IOException {
-        var txManager = resolveDependency(server, StatementProcessorTxManager.class);
+        var txManager = resolveDependency(server, TransactionManager.class);
 
-        Assertions.assertThat(txManager.transactionCount()).isEqualTo(0);
+        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(0);
 
         connection.send(wire.begin());
         assertThat(connection).receivesSuccess();
 
-        Assertions.assertThat(txManager.transactionCount()).isEqualTo(1);
+        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(1);
 
         connection.send(wire.rollback());
         assertThat(connection).receivesSuccess();
 
-        Assertions.assertThat(txManager.transactionCount()).isEqualTo(0);
-    }
-
-    @ProtocolTest
-    void shouldDecrementProviderCountOnConnectionClosure(BoltWire wire, @Authenticated TransportConnection connection)
-            throws IOException {
-        var txManager = resolveDependency(server, StatementProcessorTxManager.class);
-
-        Assertions.assertThat(txManager.statementProcessorProviderCount()).isEqualTo(1);
-
-        connection.send(wire.goodbye());
-        assertThat(connection).isEventuallyTerminated();
-
-        Assertions.assertThat(txManager.statementProcessorProviderCount()).isEqualTo(0);
+        Assertions.assertThat(txManager.getTransactionCount()).isEqualTo(0);
     }
 }

@@ -36,6 +36,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.handler.BoltChannelInitializer;
 import org.neo4j.bolt.security.Authentication;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -79,6 +80,9 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
             BookmarkParser bookmarkParser,
+            TransactionManager transactionManager,
+            int streamingBufferSize,
+            int streamingFlushThreshold,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -94,6 +98,9 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 defaultDatabaseResolver,
                 connectionHintProvider,
                 bookmarkParser,
+                transactionManager,
+                streamingBufferSize,
+                streamingFlushThreshold,
                 userLogProvider,
                 logging);
         if (encryptionRequired && sslContext == null) {
@@ -133,6 +140,9 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
             BookmarkParser bookmarkParser,
+            TransactionManager transactionManager,
+            int streamingBufferSize,
+            int streamingFlushThreshold,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         this(
@@ -157,6 +167,9 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 defaultDatabaseResolver,
                 connectionHintProvider,
                 bookmarkParser,
+                transactionManager,
+                streamingBufferSize,
+                streamingFlushThreshold,
                 userLogProvider,
                 logging);
     }

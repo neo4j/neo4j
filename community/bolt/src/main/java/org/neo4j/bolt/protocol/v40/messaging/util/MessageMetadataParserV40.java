@@ -29,7 +29,6 @@ import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
@@ -157,15 +156,15 @@ public final class MessageMetadataParserV40 {
                 STREAM_LIMIT_KEY, format("Expecting size to be a Long value, but got: %s", anyValue));
     }
 
-    public static int parseStatementId(MapValue meta) throws PackstreamReaderException {
+    public static long parseStatementId(MapValue meta) throws PackstreamReaderException {
         var anyValue = meta.get(QUERY_ID_KEY);
 
         if (anyValue == Values.NO_VALUE) {
-            return StatementMetadata.ABSENT_QUERY_ID;
+            return -1;
         }
 
         if (anyValue instanceof LongValue longValue) {
-            return Math.toIntExact(longValue.longValue());
+            return longValue.longValue();
         }
 
         throw new IllegalStructArgumentException(

@@ -49,7 +49,6 @@ public class ReadyStateTest {
         stateInTest.setAuthenticationState(authenticationState);
         stateInTest.setStreamingState(mock());
         stateInTest.setFailedState(mock());
-        stateInTest.setInterruptedState(mock());
         stateInTest.setTransactionReadyState(mock());
 
         context = mock();

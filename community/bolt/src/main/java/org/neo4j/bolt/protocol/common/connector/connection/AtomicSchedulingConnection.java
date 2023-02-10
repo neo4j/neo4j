@@ -21,7 +21,11 @@ package org.neo4j.bolt.protocol.common.connector.connection;
 
 import io.netty.channel.Channel;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -32,18 +36,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
+import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.internal.LogService;
@@ -72,6 +82,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     private final LinkedBlockingDeque<Job> jobs = new LinkedBlockingDeque<>();
 
     private final AtomicInteger remainingInterrupts = new AtomicInteger();
+    private final AtomicReference<Transaction> transaction = new AtomicReference<>();
 
     public AtomicSchedulingConnection(
             Connector connector,
@@ -98,11 +109,11 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     }
 
     @Override
-    public void submit(RequestMessage message, ResponseHandler responseHandler) {
+    public void submit(RequestMessage message) {
         this.notifyListeners(listener -> listener.onRequestReceived(message));
 
         var queuedAt = this.clock.millis();
-        this.submit(fsm -> {
+        this.submit((fsm, responseHandler) -> {
             var processingStartedAt = this.clock.millis();
             var queuedForMillis = processingStartedAt - queuedAt;
             this.notifyListeners(listener -> listener.onRequestBeginProcessing(message, queuedForMillis));
@@ -271,8 +282,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             } else {
                 // if there are no jobs, we'll terminate unless there are open transactions or statements remaining
                 // which require us to remain on this thread
-                // TODO: shouldStickOnThread and hasOpenStatement should be the same thing
-                if (!fsm.shouldStickOnThread() && !fsm.hasOpenStatement()) {
+                if (!this.transaction().isPresent()) {
                     break;
                 }
 
@@ -332,7 +342,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         this.channel.write(StateSignal.BEGIN_JOB_PROCESSING);
 
         try {
-            job.perform(fsm);
+            job.perform(fsm, this.responseHandler);
         } catch (BoltConnectionAuthFatality ex) {
             this.close();
 
@@ -358,11 +368,69 @@ public class AtomicSchedulingConnection extends AbstractConnection {
     }
 
     @Override
-    public void interrupt() {
-        var fsm = this.fsm();
+    public Transaction beginTransaction(
+            TransactionType type,
+            String databaseName,
+            AccessMode mode,
+            List<Bookmark> bookmarks,
+            Duration timeout,
+            Map<String, Object> metadata)
+            throws TransactionException {
+        // if no database name was given explicitly, we'll substitute it with the current default
+        // database on this connection (e.g. either a pre-selected database, the user home database
+        // or the system-wide home database)
+        if (databaseName == null) {
+            databaseName = this.selectedDefaultDatabase();
+        }
 
+        // optimistically create the transaction as we do not know what state the connection is in
+        // at the moment
+        var transaction = this.connector()
+                .transactionManager()
+                .create(type, this, databaseName, mode, bookmarks, timeout, metadata);
+
+        // if another transaction has been created in the meantime or was already present when the
+        // method was originally invoked, we'll destroy the optimistically created transaction and
+        // throw immediately to indicate misuse
+        if (!this.transaction.compareAndSet(null, transaction)) {
+            try {
+                transaction.close();
+            } catch (TransactionException ignore) {
+            }
+
+            throw new IllegalStateException("Nested transactions are not supported");
+        }
+
+        return transaction;
+    }
+
+    @Override
+    public Optional<Transaction> transaction() {
+        return Optional.ofNullable(this.transaction.get());
+    }
+
+    @Override
+    public void closeTransaction() throws TransactionException {
+        var tx = this.transaction.getAndSet(null);
+        if (tx == null) {
+            return;
+        }
+
+        tx.close();
+    }
+
+    @Override
+    public void interrupt() {
+        // increment the interrupt timer internally in order to keep track on when we are supposed
+        // to reset to a valid state
         this.remainingInterrupts.incrementAndGet();
-        fsm.interrupt();
+
+        // if there is currently an active transaction, we'll interrupt it and all of its children
+        // in order to free up the worker threads immediately
+        var tx = this.transaction.get();
+        if (tx != null) {
+            tx.interrupt();
+        }
     }
 
     @Override
@@ -384,6 +452,12 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         // if the loop doesn't complete immediately, we'll check whether the counter was previously at one meaning that
         // we have successfully reset the connection to the desired state
         if (current == 1) {
+            try {
+                this.closeTransaction();
+            } catch (TransactionException ex) {
+                log.warn("Failed to gracefully terminate transaction during reset", ex);
+            }
+
             log.debug("[%s] Connection has been reset", this.id);
             return true;
         }
@@ -439,9 +513,10 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         } else {
             // interrupt any remaining workloads to ensure that the connection closes as fast as possible
             this.interrupt();
-            // Submit a noop job to wake up a worker thread waiting in single-job polling mode and have it realize that
+
+            // submit a noop job to wake up a worker thread waiting in single-job polling mode and have it realize that
             // the transaction is terminated
-            submit(fsm -> {});
+            submit((fsm, handler) -> {});
         }
     }
 
@@ -463,29 +538,29 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         log.debug("[%s] Closing connection", this.id);
 
-        // attempt to cleanly terminate the FSM and any remaining transactions related to it - this can sometimes fail
-        // due to prior errors which are generally ignored here
+        // attempt to cleanly terminate any pending transaction - this can sometimes fail as a
+        // result of a prior error in which case we'll simply ignore the problem
         try {
-            BoltProtocol protocol;
-            do {
-                protocol = this.protocol.get();
-            } while (!this.protocol.compareAndSet(protocol, null));
-
-            var fsm = this.fsm;
-            if (fsm != null) {
-                fsm.close();
+            var transaction = this.transaction.getAndSet(null);
+            if (transaction != null) {
+                transaction.close();
             }
-        } catch (Throwable ex) {
-            log.warn("[" + this.id + "] Failed to terminate finite state machine", ex);
+        } catch (TransactionException ex) {
+            log.warn("[" + this.id + "] Failed to terminate transaction", ex);
         }
+
+        BoltProtocol protocol;
+        do {
+            protocol = this.protocol.get();
+        } while (!this.protocol.compareAndSet(protocol, null));
 
         // ensure that the underlying connection is also closed (the peer has likely already been notified of the
         // reason)
-        this.channel.close();
-
-        // also ensure that the associated memory tracker is closed as all associated resources will be destroyed as
-        // soon as the connection is removed from its registry
-        this.memoryTracker.close();
+        this.channel.close().addListener(f -> {
+            // also ensure that the associated memory tracker is closed as all associated resources will be destroyed as
+            // soon as the connection is removed from its registry
+            this.memoryTracker.close();
+        });
 
         // notify any dependent components that the connection has completed its shutdown procedure and is now safe to
         // remove
@@ -533,5 +608,18 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                     this.executor,
                     this.clock);
         }
+    }
+
+    @FunctionalInterface
+    private interface TransactionFactory {
+        Transaction create(
+                TransactionManager transactionManager,
+                TransactionOwner owner,
+                String databaseName,
+                AccessMode mode,
+                List<Bookmark> bookmarks,
+                Duration timeout,
+                Map<String, Object> metadata)
+                throws TransactionException;
     }
 }

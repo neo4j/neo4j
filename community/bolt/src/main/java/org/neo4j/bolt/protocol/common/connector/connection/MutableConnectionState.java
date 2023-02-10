@@ -19,10 +19,8 @@
  */
 package org.neo4j.bolt.protocol.common.connector.connection;
 
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
-import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -30,12 +28,11 @@ import org.neo4j.values.AnyValue;
 /**
  * Keeps state of the connection and bolt state machine.
  */
-public class MutableConnectionState implements ResponseHandler {
+public class MutableConnectionState {
+    private boolean responded;
+
     private Error pendingError;
     private boolean pendingIgnore;
-    private volatile boolean terminated;
-    private boolean closed;
-    private volatile String currentTransactionId;
 
     /**
      * Callback poised to receive the next response.
@@ -47,54 +44,18 @@ public class MutableConnectionState implements ResponseHandler {
      */
     private Status pendingTerminationNotice;
 
-    @Override
-    public boolean onPullRecords(BoltResult result, long size) throws Throwable {
-        if (responseHandler != null) {
-            return responseHandler.onPullRecords(result, size);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean onDiscardRecords(BoltResult result, long size) throws Throwable {
-        if (responseHandler != null) {
-            return responseHandler.onDiscardRecords(result, size);
-        } else {
-            return false;
-        }
-    }
-
-    @Override
     public void onMetadata(String key, AnyValue value) {
         if (responseHandler != null) {
             responseHandler.onMetadata(key, value);
         }
     }
 
-    @Override
     public void markIgnored() {
-        if (responseHandler != null) {
-            responseHandler.markIgnored();
-        } else {
-            pendingIgnore = true;
-        }
+        pendingIgnore = true;
     }
 
-    @Override
     public void markFailed(Error error) {
-        if (responseHandler != null) {
-            responseHandler.markFailed(error);
-        } else {
-            pendingError = error;
-        }
-    }
-
-    @Override
-    public void onFinish() {
-        if (responseHandler != null) {
-            responseHandler.onFinish();
-        }
+        pendingError = error;
     }
 
     public Error getPendingError() {
@@ -112,7 +73,7 @@ public class MutableConnectionState implements ResponseHandler {
     }
 
     public boolean canProcessMessage() {
-        return !closed && pendingError == null && !pendingIgnore;
+        return pendingError == null && !pendingIgnore;
     }
 
     public ResponseHandler getResponseHandler() {
@@ -127,22 +88,6 @@ public class MutableConnectionState implements ResponseHandler {
         this.pendingTerminationNotice = terminationNotice;
     }
 
-    public boolean isTerminated() {
-        return terminated;
-    }
-
-    public void markTerminated() {
-        terminated = true;
-    }
-
-    public boolean isClosed() {
-        return closed;
-    }
-
-    public void markClosed() {
-        closed = true;
-    }
-
     public void ensureNoPendingTerminationNotice() {
         if (pendingTerminationNotice != null) {
             Status status = pendingTerminationNotice;
@@ -151,21 +96,5 @@ public class MutableConnectionState implements ResponseHandler {
 
             throw new TransactionTerminatedException(status);
         }
-    }
-
-    public void setCurrentTransactionId(String transactionId) throws BoltProtocolBreachFatality {
-        if (this.currentTransactionId != null) {
-            throw new BoltProtocolBreachFatality(
-                    "Cannot assign new transaction id without clearing the old id: " + currentTransactionId);
-        }
-        this.currentTransactionId = transactionId;
-    }
-
-    public void clearCurrentTransactionId() {
-        this.currentTransactionId = null;
-    }
-
-    public String getCurrentTransactionId() {
-        return currentTransactionId;
     }
 }

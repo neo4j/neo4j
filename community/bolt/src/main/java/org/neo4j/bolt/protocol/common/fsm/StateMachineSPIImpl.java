@@ -23,7 +23,6 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 
 import org.neo4j.bolt.protocol.common.message.Error;
-import org.neo4j.bolt.protocol.common.transaction.TransactionStateMachineSPIProvider;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.Log;
@@ -35,22 +34,15 @@ public class StateMachineSPIImpl implements StateMachineSPI {
     public static final String BOLT_SERVER_VERSION_PREFIX = "Neo4j/";
 
     private final String version;
-    private final TransactionStateMachineSPIProvider transactionSpiProvider;
 
     private final Log userLog;
     private final Log debugLog;
 
-    public StateMachineSPIImpl(LogService logging, TransactionStateMachineSPIProvider transactionSpiProvider) {
-        this.transactionSpiProvider = transactionSpiProvider;
+    public StateMachineSPIImpl(LogService logging) {
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
 
         this.userLog = logging.getUserLog(StateMachineSPIImpl.class);
         this.debugLog = logging.getInternalLog(StateMachineSPIImpl.class);
-    }
-
-    @Override
-    public TransactionStateMachineSPIProvider transactionStateMachineSPIProvider() {
-        return transactionSpiProvider;
     }
 
     /**

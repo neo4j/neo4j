@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.assertj.core.api.AbstractListAssert;
+import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 
@@ -42,6 +43,10 @@ public class ListValueAssertions
         values.forEach(list::add);
 
         return new ListValueAssertions(list);
+    }
+
+    public static InstanceOfAssertFactory<ListValue, ListValueAssertions> listValue() {
+        return new InstanceOfAssertFactory<>(ListValue.class, ListValueAssertions::assertThat);
     }
 
     @Override

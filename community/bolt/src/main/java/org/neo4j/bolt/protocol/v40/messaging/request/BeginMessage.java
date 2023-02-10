@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.values.virtual.MapValue;
 
 public class BeginMessage extends TransactionInitiatingMessage {
@@ -41,5 +42,9 @@ public class BeginMessage extends TransactionInitiatingMessage {
             Map<String, Object> txMetadata,
             String databaseName) {
         super(meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName);
+    }
+
+    public TransactionType type() {
+        return TransactionType.EXPLICIT;
     }
 }

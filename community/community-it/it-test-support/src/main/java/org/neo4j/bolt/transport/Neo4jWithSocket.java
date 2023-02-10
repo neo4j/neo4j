@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.transport;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
@@ -119,12 +118,17 @@ public class Neo4jWithSocket {
 
         installSelfSignedCertificateIfEncryptionEnabled(settings);
 
+        var databaseName = (String) settings.get(GraphDatabaseSettings.initial_default_database);
+        if (databaseName == null) {
+            databaseName = GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+        }
+
         managementService = graphDatabaseFactory
                 .setFileSystem(testDirectory.getFileSystem())
                 .setDatabaseRootDirectory(storeDir)
                 .setConfig(settings)
                 .build();
-        gdb = managementService.database(DEFAULT_DATABASE_NAME);
+        gdb = managementService.database(databaseName);
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency(ConnectorPortRegister.class);
     }

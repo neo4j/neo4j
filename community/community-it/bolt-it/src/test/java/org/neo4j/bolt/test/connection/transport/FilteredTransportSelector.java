@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.test.annotation.connection.transport.ExcludeTransport;
 import org.neo4j.bolt.test.annotation.connection.transport.IncludeTransport;
-import org.neo4j.bolt.test.util.AnnotationUtil;
 import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Provides a transport selector for use with the {@link IncludeTransport} and {@link ExcludeTransport} annotations.

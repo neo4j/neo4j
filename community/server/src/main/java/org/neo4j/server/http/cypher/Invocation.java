@@ -26,9 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import org.neo4j.bolt.protocol.common.transaction.statement.metadata.StatementMetadata;
-import org.neo4j.bolt.transaction.ResultNotFoundException;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.error.statement.StatementException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.fabric.executor.FabricException;
@@ -41,8 +40,8 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
-import org.neo4j.server.http.cypher.consumer.OutputEventStreamResultConsumer;
-import org.neo4j.server.http.cypher.consumer.SingleNodeResultConsumer;
+import org.neo4j.server.http.cypher.consumer.OutputEventStreamResponseHandler;
+import org.neo4j.server.http.cypher.consumer.SingleNodeResponseHandler;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.InputFormatException;
@@ -82,7 +81,7 @@ class Invocation {
 
     private OutputEventStream outputEventStream;
     private Neo4jError neo4jError;
-    private RuntimeException outputError;
+    private Exception outputError;
     private TransactionNotificationState transactionNotificationState = TransactionNotificationState.NO_TRANSACTION;
 
     Invocation(
@@ -116,7 +115,8 @@ class Invocation {
         executePostStatementsTransactionLogic();
         sendTransactionStateInformation();
         if (outputError != null) {
-            throw outputError;
+            // TODO: Re-wrapping for convenience - This is not great
+            throw new RuntimeException(outputError);
         }
     }
 
@@ -240,22 +240,19 @@ class Invocation {
     }
 
     private void executeStatement(Statement statement) throws Exception {
-        StatementMetadata result = transactionHandle.executeStatement(statement);
+        var result = transactionHandle.executeStatement(statement);
         writeResult(statement, result);
     }
 
-    private void writeResult(Statement statement, StatementMetadata statementMetadata)
-            throws TransactionNotFoundException, ResultNotFoundException {
+    private void writeResult(Statement statement, org.neo4j.bolt.tx.statement.Statement boltStatement)
+            throws StatementException {
         var cacheWriter = new CachingWriter(new DefaultValueMapper(null));
         cacheWriter.setGetNodeById(createGetNodeByIdFunction(cacheWriter));
         var valueMapper = new TransactionIndependentValueMapper(cacheWriter);
         try {
-            var resultConsumer =
-                    new OutputEventStreamResultConsumer(outputEventStream, statement, statementMetadata, valueMapper);
+            var resultConsumer = new OutputEventStreamResponseHandler(outputEventStream, statement, valueMapper);
 
-            transactionHandle
-                    .transactionManager()
-                    .pullData(transactionHandle.getTxManagerTxId(), statementMetadata.queryId(), -1, resultConsumer);
+            boltStatement.consume(resultConsumer, -1);
         } catch (ConnectionException | OutputFormatException e) {
             handleOutputError(e);
         }
@@ -269,18 +266,9 @@ class Invocation {
                 try {
                     var statement = createGetNodeByIdStatement(id);
                     var statementMetadata = transactionHandle.executeStatement(statement);
-                    transactionHandle
-                            .transactionManager()
-                            .pullData(
-                                    transactionHandle.getTxManagerTxId(),
-                                    statementMetadata.queryId(),
-                                    -1,
-                                    new SingleNodeResultConsumer(cachingWriter, nodeReference::set));
-                } catch (TransactionNotFoundException e) {
-                    handleNeo4jError(Status.Transaction.TransactionNotFound, e);
-                } catch (ResultNotFoundException e) {
-                    handleNeo4jError(Status.Statement.EntityNotFound, e);
-                } catch (KernelException e) {
+
+                    statementMetadata.consume(new SingleNodeResponseHandler(cachingWriter, nodeReference::set), -1);
+                } catch (TransactionException e) {
                     handleNeo4jError(Status.General.UnknownError, e);
                 }
             }
@@ -289,7 +277,7 @@ class Invocation {
         };
     }
 
-    private void handleOutputError(RuntimeException e) {
+    private void handleOutputError(Exception e) {
         if (outputError != null) {
             return;
         }

@@ -19,12 +19,10 @@
  */
 package org.neo4j.server.http.cypher;
 
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -55,29 +53,23 @@ class TransactionFacade {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(TransactionFacade.class);
 
     private final String databaseName;
-    private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionManager transactionManager;
     private final InternalLogProvider logProvider;
-    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final AuthManager authManager;
     private final boolean readByDefault;
 
     TransactionFacade(
             String databaseName,
-            QueryExecutionEngine engine,
             TransactionRegistry registry,
             TransactionManager transactionManager,
             InternalLogProvider logProvider,
-            BoltGraphDatabaseManagementServiceSPI boltSPI,
             AuthManager authManager,
             boolean readByDefault) {
         this.databaseName = databaseName;
-        this.engine = engine;
         this.registry = registry;
         this.transactionManager = transactionManager;
         this.logProvider = logProvider;
-        this.boltSPI = boltSPI;
         this.authManager = authManager;
         this.readByDefault = readByDefault;
     }
@@ -88,13 +80,11 @@ class TransactionFacade {
             LoginContext loginContext,
             ClientConnectionInfo clientConnectionInfo,
             MemoryTracker memoryTracker,
-            long customTransactionTimeout,
-            SystemNanoClock clock) {
+            long customTransactionTimeout) {
         memoryTracker.allocateHeap(TransactionHandle.SHALLOW_SIZE);
 
         return new TransactionHandle(
                 databaseName,
-                engine,
                 registry,
                 uriScheme,
                 implicitTransaction,
@@ -103,10 +93,8 @@ class TransactionFacade {
                 customTransactionTimeout,
                 transactionManager,
                 logProvider,
-                boltSPI,
                 memoryTracker,
                 authManager,
-                clock,
                 readByDefault);
     }
 
@@ -123,7 +111,6 @@ class TransactionFacade {
 
         return new TransactionHandle(
                 databaseName,
-                engine,
                 registry,
                 uriScheme,
                 implicitTransaction,
@@ -132,10 +119,8 @@ class TransactionFacade {
                 customTransactionTimeout,
                 transactionManager,
                 logProvider,
-                boltSPI,
                 memoryTracker,
                 authManager,
-                clock,
                 isReadOnlyTransaction);
     }
 

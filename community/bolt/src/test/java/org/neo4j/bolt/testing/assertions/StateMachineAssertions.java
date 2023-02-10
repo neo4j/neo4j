@@ -33,7 +33,6 @@ import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
 import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
 import org.neo4j.function.ThrowingConsumer;
 
 public final class StateMachineAssertions extends AbstractAssert<StateMachineAssertions, StateMachine> {
@@ -59,55 +58,6 @@ public final class StateMachineAssertions extends AbstractAssert<StateMachineAss
         }
 
         return (AbstractStateMachine) this.actual;
-    }
-
-    public StateMachineAssertions hasOpenStatement() {
-        if (!this.actual.hasOpenStatement()) {
-            failWithActualExpectedAndMessage(
-                    this.actual.hasOpenStatement(), true, "Expected open statement to be present");
-        }
-
-        return this;
-    }
-
-    public StateMachineAssertions doesNotHaveOpenStatement() {
-        if (this.actual.hasOpenStatement()) {
-            failWithActualExpectedAndMessage(
-                    this.actual.hasOpenStatement(), false, "Expected no open statement to be present");
-        }
-
-        return this;
-    }
-
-    public StateMachineAssertions hasTransaction() {
-        var fsm = this.toAbstractStateMachine();
-
-        if (!(fsm.transactionManager() instanceof StatementProcessorTxManager txManager)) {
-            failWithMessage("Expected state machine transaction manager to implement StatementProcessorTxManager");
-            return this;
-        }
-
-        if (txManager.getCurrentNoOfOpenTx() == 0) {
-            failWithMessage(
-                    "Expected at least one transaction to be open but got <%d>", txManager.getCurrentNoOfOpenTx());
-        }
-
-        return this;
-    }
-
-    public StateMachineAssertions doesNotHaveTransaction() {
-        var fsm = this.toAbstractStateMachine();
-
-        if (!(fsm.transactionManager() instanceof StatementProcessorTxManager txManager)) {
-            failWithMessage("Expected state machine transaction manager to implement StatementProcessorTxManager");
-            return this;
-        }
-
-        if (txManager.getCurrentNoOfOpenTx() != 0) {
-            failWithMessage("Expected no transactions to be open but got <%d>", txManager.getCurrentNoOfOpenTx());
-        }
-
-        return this;
     }
 
     public StateMachineAssertions stateSatisfies(Consumer<State> assertions) {
@@ -136,23 +86,11 @@ public final class StateMachineAssertions extends AbstractAssert<StateMachineAss
                 Assertions.assertThat(state).as("is not in a valid state").isNull());
     }
 
-    public StateMachineAssertions isClosed() {
-        var fsm = this.toAbstractStateMachine();
-
-        if (!fsm.isClosed()) {
-            failWithMessage("Expected state machine to be closed");
-        }
-
-        return this;
-    }
-
     public StateMachineAssertions canReset(Connection connection) {
         try {
             var recorder = new ResponseRecorder();
 
             connection.interrupt();
-
-            this.actual.interrupt();
             this.actual.process(ResetMessage.INSTANCE, recorder);
 
             ResponseRecorderAssertions.assertThat(recorder)

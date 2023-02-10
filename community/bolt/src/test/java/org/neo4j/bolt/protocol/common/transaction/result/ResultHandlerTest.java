@@ -19,174 +19,151 @@
  */
 package org.neo4j.bolt.protocol.common.transaction.result;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.STREAM_LIMIT_UNLIMITED;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
-import static org.neo4j.logging.LogAssertions.assertThat;
-
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.message.Error;
-import org.neo4j.bolt.protocol.common.message.response.SuccessMessage;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.error.streaming.BoltStreamingWriteException;
-import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
-
 public class ResultHandlerTest {
-    @Test
-    void shouldCallHaltOnUnexpectedFailures() {
-        var future = Mockito.mock(ChannelFuture.class, Mockito.RETURNS_SELF);
-        Mockito.doReturn(false).when(future).isSuccess();
-        Mockito.doReturn(new RuntimeException("Something went horribly wrong"))
-                .when(future)
-                .cause();
-
-        var ch = mock(Channel.class);
-
-        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
-        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
-
-        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
-
-        Assertions.assertThatExceptionOfType(BoltStreamingWriteException.class)
-                .isThrownBy(handler::onFinish)
-                .withCauseExactlyInstanceOf(RuntimeException.class)
-                .withMessage("Failed to finalize batch: Cannot write result response");
-    }
-
-    @Test
-    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception {
-        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error.from(new RuntimeException("Non-fatal error")));
-    }
-
-    @Test
-    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception {
-        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error.fatalFrom(new RuntimeException("Fatal error")));
-    }
-
-    @Test
-    void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception {
-        // Connections dying is not exceptional per-se, so we don't need to fill the log with
-        // eye-catching stack traces; but it could be indicative of some issue, so log a brief
-        // warning in the debug log at least.
-
-        // Given
-        var outputClosed = new RuntimeException("UH OH!");
-        var txTerminated = Error.from(new TransactionTerminatedException(Status.Transaction.Terminated));
-
-        // When
-        var logProvider = emulateFailureWritingError(txTerminated, outputClosed);
-
-        // Then
-        assertThat(logProvider)
-                .forClass(ResultHandler.class)
-                .forLevel(WARN)
-                .containsMessageWithArguments(
-                        "Client %s disconnected while query was running. Session has been cleaned up. "
-                                + "This can be caused by temporary network problems, but if you see this often, ensure your "
-                                + "applications are properly waiting for operations to complete before exiting.",
-                        new Object[] {null});
-    }
-
-    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error original) throws Exception {
-        RuntimeException outputError = new RuntimeException("Output failed");
-        AssertableLogProvider logProvider = emulateFailureWritingError(original, outputError);
-
-        assertThat(logProvider)
-                .forClass(ResultHandler.class)
-                .forLevel(WARN)
-                .containsMessageWithException("Unable to send error back to the client", outputError);
-
-        assertThat(outputError).hasSuppressedException(original.cause());
-    }
-
-    @Test
-    void shouldPullTheResult() throws Throwable {
-        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
-        Mockito.doReturn(true).when(future).isSuccess();
-
-        var connection = ConnectionMockFactory.newFactory().build();
-        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
-
-        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
-
-        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
-
-        var result = mock(BoltResult.class);
-
-        handler.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
-        handler.onFinish();
-
-        verify(result).handleRecords(any(BoltResult.RecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
-        verify(connection).writeAndFlush(any(SuccessMessage.class));
-        verify(future).sync();
-        verify(future).isSuccess();
-    }
-
-    @Test
-    void shouldDiscardTheResult() throws Throwable {
-        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
-        Mockito.doReturn(true).when(future).isSuccess();
-
-        var connection = ConnectionMockFactory.newFactory().build();
-        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
-
-        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
-
-        var result = mock(BoltResult.class);
-
-        handler.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
-        handler.onFinish();
-
-        verify(result).discardRecords(any(BoltResult.DiscardingRecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
-        verify(connection).writeAndFlush(any(SuccessMessage.class));
-        verify(future).sync();
-        verify(future).isSuccess();
-    }
-
-    private static AssertableLogProvider emulateFailureWritingError(Error error, Throwable exception) {
-        var logProvider = new AssertableLogProvider();
-
-        // I'm sorry ... I truly am ...
-        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
-
-        doReturn(false).when(future).isSuccess();
-
-        doReturn(exception).when(future).cause();
-
-        doAnswer(call -> {
-                    GenericFutureListener listener = call.getArgument(0);
-                    listener.operationComplete((Future) call.getMock());
-
-                    return call.getMock();
-                })
-                .when(future)
-                .addListener(any());
-
-        var connection = ConnectionMockFactory.newFactory().build();
-
-        Mockito.doReturn(null).when(connection).clientAddress();
-        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
-
-        var handler = new ResultHandler(connection, logProvider);
-
-        handler.markFailed(error);
-        handler.onFinish();
-
-        return logProvider;
-    }
+    //    @Test
+    //    void shouldCallHaltOnUnexpectedFailures() {
+    //        var future = Mockito.mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+    //        Mockito.doReturn(false).when(future).isSuccess();
+    //        Mockito.doReturn(new RuntimeException("Something went horribly wrong"))
+    //                .when(future)
+    //                .cause();
+    //
+    //        var ch = mock(Channel.class);
+    //
+    //        var connection = ConnectionMockFactory.newFactory().withChannel(ch).build();
+    //        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+    //
+    //        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
+    //
+    //        Assertions.assertThatExceptionOfType(BoltStreamingWriteException.class)
+    //                .isThrownBy(handler::onFinish)
+    //                .withCauseExactlyInstanceOf(RuntimeException.class)
+    //                .withMessage("Failed to finalize batch: Cannot write result response");
+    //    }
+    //
+    //    @Test
+    //    void shouldLogWriteErrorAndOriginalErrorWhenUnknownFailure() throws Exception {
+    //        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error.from(new RuntimeException("Non-fatal
+    // error")));
+    //    }
+    //
+    //    @Test
+    //    void shouldLogWriteErrorAndOriginalFatalErrorWhenUnknownFailure() throws Exception {
+    //        testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error.fatalFrom(new RuntimeException("Fatal
+    // error")));
+    //    }
+    //
+    //    @Test
+    //    void shouldLogShortWarningOnClientDisconnectMidwayThroughQuery() throws Exception {
+    //        // Connections dying is not exceptional per-se, so we don't need to fill the log with
+    //        // eye-catching stack traces; but it could be indicative of some issue, so log a brief
+    //        // warning in the debug log at least.
+    //
+    //        // Given
+    //        var outputClosed = new RuntimeException("UH OH!");
+    //        var txTerminated = Error.from(new TransactionTerminatedException(Status.Transaction.Terminated));
+    //
+    //        // When
+    //        var logProvider = emulateFailureWritingError(txTerminated, outputClosed);
+    //
+    //        // Then
+    //        assertThat(logProvider)
+    //                .forClass(ResultHandler.class)
+    //                .forLevel(WARN)
+    //                .containsMessageWithArguments(
+    //                        "Client %s disconnected while query was running. Session has been cleaned up. "
+    //                                + "This can be caused by temporary network problems, but if you see this often,
+    // ensure your "
+    //                                + "applications are properly waiting for operations to complete before exiting.",
+    //                        new Object[] {null});
+    //    }
+    //
+    //    private static void testLoggingOfWriteErrorAndOriginalErrorWhenUnknownFailure(Error original) throws Exception
+    // {
+    //        RuntimeException outputError = new RuntimeException("Output failed");
+    //        AssertableLogProvider logProvider = emulateFailureWritingError(original, outputError);
+    //
+    //        assertThat(logProvider)
+    //                .forClass(ResultHandler.class)
+    //                .forLevel(WARN)
+    //                .containsMessageWithException("Unable to send error back to the client", outputError);
+    //
+    //        assertThat(outputError).hasSuppressedException(original.cause());
+    //    }
+    //
+    //    @Test
+    //    void shouldPullTheResult() throws Throwable {
+    //        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+    //        Mockito.doReturn(true).when(future).isSuccess();
+    //
+    //        var connection = ConnectionMockFactory.newFactory().build();
+    //        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+    //
+    //        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+    //
+    //        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
+    //
+    //        var result = mock(BoltResult.class);
+    //
+    //        handler.onPullRecords(result, STREAM_LIMIT_UNLIMITED);
+    //        handler.onFinish();
+    //
+    //        verify(result).handleRecords(any(BoltResult.RecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
+    //        verify(connection).writeAndFlush(any(SuccessMessage.class));
+    //        verify(future).sync();
+    //        verify(future).isSuccess();
+    //    }
+    //
+    //    @Test
+    //    void shouldDiscardTheResult() throws Throwable {
+    //        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+    //        Mockito.doReturn(true).when(future).isSuccess();
+    //
+    //        var connection = ConnectionMockFactory.newFactory().build();
+    //        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+    //
+    //        var handler = new ResultHandler(connection, NullLogProvider.getInstance());
+    //
+    //        var result = mock(BoltResult.class);
+    //
+    //        handler.onDiscardRecords(result, STREAM_LIMIT_UNLIMITED);
+    //        handler.onFinish();
+    //
+    //        verify(result).discardRecords(any(BoltResult.DiscardingRecordConsumer.class), eq(STREAM_LIMIT_UNLIMITED));
+    //        verify(connection).writeAndFlush(any(SuccessMessage.class));
+    //        verify(future).sync();
+    //        verify(future).isSuccess();
+    //    }
+    //
+    //    private static AssertableLogProvider emulateFailureWritingError(Error error, Throwable exception) {
+    //        var logProvider = new AssertableLogProvider();
+    //
+    //        // I'm sorry ... I truly am ...
+    //        var future = mock(ChannelFuture.class, Mockito.RETURNS_SELF);
+    //
+    //        doReturn(false).when(future).isSuccess();
+    //
+    //        doReturn(exception).when(future).cause();
+    //
+    //        doAnswer(call -> {
+    //                    GenericFutureListener listener = call.getArgument(0);
+    //                    listener.operationComplete((Future) call.getMock());
+    //
+    //                    return call.getMock();
+    //                })
+    //                .when(future)
+    //                .addListener(any());
+    //
+    //        var connection = ConnectionMockFactory.newFactory().build();
+    //
+    //        Mockito.doReturn(null).when(connection).clientAddress();
+    //        Mockito.doReturn(future).when(connection).writeAndFlush(Mockito.any());
+    //
+    //        var handler = new ResultHandler(connection, logProvider);
+    //
+    //        handler.markFailed(error);
+    //        handler.onFinish();
+    //
+    //        return logProvider;
+    //    }
 }

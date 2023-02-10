@@ -23,8 +23,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.neo4j.bolt.test.annotation.connection.SelectTransport;
-import org.neo4j.bolt.test.util.AnnotationUtil;
 import org.neo4j.bolt.testing.client.TransportType;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Selects the set of transports for which a given test template shall be instantiated.

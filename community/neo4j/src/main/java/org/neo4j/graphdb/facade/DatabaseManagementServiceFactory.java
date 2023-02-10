@@ -38,6 +38,8 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.TransactionManagerImpl;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -177,17 +179,25 @@ public class DatabaseManagementServiceFactory {
                         globalModule.getGlobalMonitors(),
                         globalModule.getGlobalClock(),
                         logService);
+
+        var transactionManager =
+                new TransactionManagerImpl(boltGraphDatabaseManagementServiceSPI, globalModule.getGlobalClock());
+        globalDependencies.satisfyDependency(transactionManager);
+
         var boltServer = createBoltServer(
                 globalModule,
                 edition,
                 boltGraphDatabaseManagementServiceSPI,
+                transactionManager,
                 databaseContextProvider.databaseIdRepository());
+
         globalLife.add(boltServer);
         globalDependencies.satisfyDependency(boltServer);
         var webServer = createWebServer(
                 edition,
                 managementService,
                 globalDependencies,
+                transactionManager,
                 config,
                 globalModule.getLogService().getUserLogProvider());
         globalDependencies.satisfyDependency(webServer);
@@ -226,10 +236,12 @@ public class DatabaseManagementServiceFactory {
             AbstractEditionModule edition,
             DatabaseManagementService managementService,
             Dependencies globalDependencies,
+            TransactionManager transactionManager,
             Config config,
             InternalLogProvider userLogProvider) {
         if (shouldEnableWebServer(config)) {
-            return edition.createWebServer(managementService, globalDependencies, config, userLogProvider, dbmsInfo);
+            return edition.createWebServer(
+                    managementService, transactionManager, globalDependencies, config, userLogProvider, dbmsInfo);
         }
         return new DisabledNeoWebServer();
     }
@@ -397,6 +409,7 @@ public class DatabaseManagementServiceFactory {
             GlobalModule globalModule,
             AbstractEditionModule edition,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+            TransactionManager transactionManager,
             DatabaseIdRepository databaseIdRepository) {
 
         // Must be called before loading any Netty classes in order to override the factory
@@ -410,6 +423,7 @@ public class DatabaseManagementServiceFactory {
                 globalModule.getConnectorPortRegister(),
                 edition.getConnectionTracker(),
                 databaseIdRepository,
+                transactionManager,
                 globalModule.getGlobalConfig(),
                 globalModule.getGlobalClock(),
                 globalModule.getGlobalMonitors(),
@@ -419,8 +433,7 @@ public class DatabaseManagementServiceFactory {
                 edition.getBoltInClusterAuthManager(),
                 edition.getBoltLoopbackAuthManager(),
                 globalModule.getMemoryPools(),
-                edition.getDefaultDatabaseResolver(),
-                globalModule.getTransactionManager());
+                edition.getDefaultDatabaseResolver());
     }
 
     private static void dumpDbmsInfo(InternalLog log, GraphDatabaseAPI system) {

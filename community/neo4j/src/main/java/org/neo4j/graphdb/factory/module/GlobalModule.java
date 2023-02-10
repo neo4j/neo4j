@@ -35,8 +35,6 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 import java.nio.file.Path;
 import java.util.function.Supplier;
-import org.neo4j.bolt.transaction.StatementProcessorTxManager;
-import org.neo4j.bolt.transaction.TransactionManager;
 import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.capabilities.DBMSCapabilities;
 import org.neo4j.collection.Dependencies;
@@ -140,7 +138,6 @@ public class GlobalModule {
     private final MemoryPools memoryPools;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
-    private final TransactionManager transactionManager;
     private final CapabilitiesService capabilitiesService;
 
     /**
@@ -264,10 +261,6 @@ public class GlobalModule {
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency(connectorPortRegister);
-
-        // transaction manager used for Bolt and HTTP interfaces
-        transactionManager = new StatementProcessorTxManager();
-        globalDependencies.satisfyDependency(transactionManager);
 
         capabilitiesService = loadCapabilities();
         globalDependencies.satisfyDependency(capabilitiesService);
@@ -535,10 +528,6 @@ public class GlobalModule {
 
     public GlobalMemoryGroupTracker getOtherMemoryPool() {
         return otherMemoryPool;
-    }
-
-    public TransactionManager getTransactionManager() {
-        return transactionManager;
     }
 
     public CapabilitiesService getCapabilitiesService() {

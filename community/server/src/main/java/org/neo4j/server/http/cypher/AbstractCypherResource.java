@@ -262,8 +262,7 @@ public abstract class AbstractCypherResource {
                     loginContext,
                     loginContext.connectionInfo(),
                     memoryTracker,
-                    customTransactionTimeout,
-                    clock);
+                    customTransactionTimeout);
         }
     }
 

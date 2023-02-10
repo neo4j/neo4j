@@ -19,26 +19,18 @@
  */
 package org.neo4j.bolt.protocol.common.message.encoder;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
-import org.neo4j.values.storable.Values;
-
 class DiscardingRecordMessageWriterTest {
 
-    @Test
-    void shouldInvokeParentWhenMetadataIsPassed() {
-        var parent = mock(ResponseHandler.class);
-        var child = new DiscardingRecordMessageWriter(parent);
-
-        child.addMetadata("the_answer", Values.longValue(42));
-        child.addMetadata("foo", Values.stringValue("bar"));
-
-        verify(parent).onMetadata("the_answer", Values.longValue(42));
-        verify(parent).onMetadata("foo", Values.stringValue("bar"));
-        verifyNoMoreInteractions(parent);
-    }
+    //    @Test
+    //    void shouldInvokeParentWhenMetadataIsPassed() {
+    //        var parent = mock(ResponseHandler.class);
+    //        var child = new DiscardingRecordMessageWriter(parent);
+    //
+    //        child.addMetadata("the_answer", Values.longValue(42));
+    //        child.addMetadata("foo", Values.stringValue("bar"));
+    //
+    //        verify(parent).onMetadata("the_answer", Values.longValue(42));
+    //        verify(parent).onMetadata("foo", Values.stringValue("bar"));
+    //        verifyNoMoreInteractions(parent);
+    //    }
 }

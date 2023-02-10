@@ -17,23 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.bolt.protocol.v50.fsm;
 
+import org.neo4j.bolt.protocol.common.fsm.State;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
-import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
+import org.neo4j.bolt.protocol.v51.fsm.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.message.request.LogoffMessage;
 import org.neo4j.memory.HeapEstimator;
 
 public class ReadyState extends org.neo4j.bolt.protocol.v44.fsm.ReadyState {
-    public static final long SHALLOW_SIZE =
-            HeapEstimator.shallowSizeOfInstance(org.neo4j.bolt.protocol.v44.fsm.ReadyState.class);
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
+    AuthenticationState authenticationState;
 
     public ReadyState(RoutingTableGetter routingTableGetter) {
         super(routingTableGetter);
     }
 
+    public void setAuthenticationState(AuthenticationState authenticationState) {
+        this.authenticationState = authenticationState;
+    }
+
     @Override
-    protected String getTxType(org.neo4j.bolt.protocol.v40.messaging.request.BeginMessage beginMessage) {
-        var message = (BeginMessage) beginMessage;
-        return message.txType();
+    public State processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
+        if (message instanceof LogoffMessage) {
+            return processLogoffMessage(context);
+        }
+
+        return super.processUnsafe(message, context);
     }
 }

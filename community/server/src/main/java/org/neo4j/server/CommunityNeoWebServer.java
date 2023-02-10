@@ -23,7 +23,7 @@ import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communit
 
 import java.util.ArrayList;
 import java.util.function.Supplier;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -49,12 +49,12 @@ import org.neo4j.time.SystemNanoClock;
 public class CommunityNeoWebServer extends AbstractNeoWebServer {
     public CommunityNeoWebServer(
             DatabaseManagementService managementService,
+            TransactionManager transactionManager,
             Dependencies globalDependencies,
             Config config,
             InternalLogProvider userLogProvider,
             DbmsInfo dbmsInfo,
             MemoryPools memoryPools,
-            TransactionManager transactionManager,
             SystemNanoClock clock) {
         super(
                 managementService,

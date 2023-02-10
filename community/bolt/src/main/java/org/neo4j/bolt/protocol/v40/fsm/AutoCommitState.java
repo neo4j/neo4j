@@ -21,7 +21,8 @@ package org.neo4j.bolt.protocol.v40.fsm;
 
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
-import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.statement.Statement;
 import org.neo4j.memory.HeapEstimator;
 
 /**
@@ -37,32 +38,27 @@ public class AutoCommitState extends AbstractStreamingState {
 
     @Override
     protected State processStreamPullResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToPull)
-            throws Throwable {
-        var bookmark = context.transactionManager()
-                .pullData(context.connectionState().getCurrentTransactionId(), statementId, noToPull, resultConsumer);
-        bookmark.attachTo(context.connectionState());
+            Transaction tx, Statement statement, StateMachineContext context, long noToPull) throws Throwable {
+        super.processStreamPullResultMessage(tx, statement, context, noToPull);
 
-        if (resultConsumer.hasMore()) {
-            return this;
+        if (!statement.hasRemaining()) {
+            this.commit(context, tx);
+            return this.readyState;
         }
 
-        return readyState;
+        return this;
     }
 
     @Override
     protected State processStreamDiscardResultMessage(
-            int statementId, ResultConsumer resultConsumer, StateMachineContext context, long noToDiscard)
-            throws Throwable {
-        var bookmark = context.transactionManager()
-                .discardData(
-                        context.connectionState().getCurrentTransactionId(), statementId, noToDiscard, resultConsumer);
-        bookmark.attachTo(context.connectionState());
+            Transaction tx, Statement statement, StateMachineContext context, long noToDiscard) throws Throwable {
+        super.processStreamDiscardResultMessage(tx, statement, context, noToDiscard);
 
-        if (resultConsumer.hasMore()) {
-            return this;
+        if (!statement.hasRemaining()) {
+            this.commit(context, tx);
+            return this.readyState;
         }
 
-        return readyState;
+        return this;
     }
 }

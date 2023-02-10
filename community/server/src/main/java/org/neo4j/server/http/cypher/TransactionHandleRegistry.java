@@ -78,7 +78,7 @@ public class TransactionHandleRegistry implements TransactionRegistry {
         abstract boolean isSuspended();
 
         LoginContext getLoginContext() {
-            return transactionHandle.getLoginContext();
+            return transactionHandle.loginContext();
         }
     }
 
@@ -137,7 +137,7 @@ public class TransactionHandleRegistry implements TransactionRegistry {
 
         @Override
         LoginContext getLoginContext() {
-            return transactionHandle.getLoginContext();
+            return transactionHandle.loginContext();
         }
 
         long getLastActiveTimestamp() {

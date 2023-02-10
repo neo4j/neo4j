@@ -32,9 +32,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.protocol.v41.message.request.HelloMessage;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -48,24 +48,17 @@ class RequestHandlerTest {
     void shouldEnqueueRequests() throws BoltConnectionFatality {
         var msg = new HelloMessage(emptyMap(), new RoutingContext(true, emptyMap()), emptyMap());
 
-        var responseHandler = mock(ResponseHandler.class);
-        var fsm = mock(StateMachine.class);
-
         var channel = new EmbeddedChannel();
-        var connection = ConnectionMockFactory.newFactory()
-                .attachTo(channel, new RequestHandler(responseHandler, NullLogProvider.getInstance()));
+        var connection =
+                ConnectionMockFactory.newFactory().attachTo(channel, new RequestHandler(NullLogProvider.getInstance()));
 
         channel.writeInbound(msg);
 
         var messageCaptor = ArgumentCaptor.forClass(RequestMessage.class);
-        var responseHandlerCaptor = ArgumentCaptor.forClass(ResponseHandler.class);
-        verify(connection).submit(messageCaptor.capture(), responseHandlerCaptor.capture());
+        verify(connection).submit(messageCaptor.capture());
 
         var actualMsg = messageCaptor.getValue();
         assertThat(actualMsg).isNotNull().isSameAs(msg);
-
-        var actualResponseHandler = responseHandlerCaptor.getValue();
-        assertThat(actualResponseHandler).isNotNull().isSameAs(responseHandler);
     }
 
     @Test
@@ -74,13 +67,14 @@ class RequestHandlerTest {
         var fsm = mock(StateMachine.class);
 
         var channel = new EmbeddedChannel();
-        var connection = ConnectionMockFactory.newFactory()
-                .withAnswer(mock -> mock.submit(ArgumentMatchers.any()), invocation -> {
+
+        ConnectionMockFactory.newFactory()
+                .withAnswer(mock -> mock.submit(ArgumentMatchers.<Job>any()), invocation -> {
                     var job = invocation.<Job>getArgument(0);
-                    job.perform(fsm);
+                    job.perform(fsm, responseHandler);
                     return null;
                 })
-                .attachTo(channel, new RequestHandler(responseHandler, NullLogProvider.getInstance()));
+                .attachTo(channel, new RequestHandler(NullLogProvider.getInstance()));
 
         channel.pipeline().fireExceptionCaught(new IllegalStructArgumentException("foo", "Something went wrong! :("));
 

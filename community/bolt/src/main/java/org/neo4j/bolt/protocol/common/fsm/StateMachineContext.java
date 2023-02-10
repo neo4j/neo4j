@@ -22,9 +22,7 @@ package org.neo4j.bolt.protocol.common.fsm;
 import java.time.Clock;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.transaction.TransactionManager;
 
 public interface StateMachineContext {
 
@@ -34,15 +32,9 @@ public interface StateMachineContext {
 
     Clock clock();
 
-    TransactionManager transactionManager();
-
     StateMachineSPI boltSpi();
 
     MutableConnectionState connectionState();
 
     void handleFailure(Throwable cause, boolean fatal) throws BoltConnectionFatality;
-
-    boolean resetMachine() throws BoltConnectionFatality;
-
-    void initStatementProcessorProvider(RoutingContext routingContext);
 }

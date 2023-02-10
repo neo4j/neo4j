@@ -36,7 +36,6 @@ import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.handler.messages.GoodbyeMessageHandler;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
-import org.neo4j.bolt.protocol.common.transaction.result.ResultHandler;
 import org.neo4j.bolt.runtime.throttle.ChannelReadThrottleHandler;
 import org.neo4j.bolt.runtime.throttle.ChannelWriteThrottleHandler;
 import org.neo4j.configuration.Config;
@@ -225,8 +224,7 @@ public class ProtocolHandshakeHandler extends SimpleChannelInboundHandler<Protoc
         }
 
         ctx.pipeline()
-                .addLast("outboundPayloadAccumulator", new RecordResponseAccumulator())
-                .addLast("requestHandler", new RequestHandler(new ResultHandler(connection, logging), logging))
+                .addLast("requestHandler", new RequestHandler(logging))
                 .addLast(HouseKeeperHandler.HANDLER_NAME, new HouseKeeperHandler(logging))
                 .remove(this);
 

@@ -19,7 +19,9 @@
  */
 package org.neo4j.bolt.protocol.common.connector.tx;
 
+import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -40,6 +42,10 @@ public interface TransactionOwner {
      * @return a connection information object.
      */
     ClientConnectionInfo info();
+
+    LoginContext loginContext();
+
+    RoutingContext routingContext();
 
     // TODO: Databases should be identified by their UUID in the future to avoid confusion
     // TODO: This should probably live in the FSM context

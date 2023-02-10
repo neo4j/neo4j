@@ -38,6 +38,7 @@ import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
@@ -95,6 +96,9 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 defaultDatabaseResolver,
                 connectionHintProvider,
                 Mockito.mock(BookmarkParser.class),
+                Mockito.mock(TransactionManager.class),
+                512,
+                0,
                 logging,
                 logging);
     }

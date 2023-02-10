@@ -24,9 +24,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.annotation.connection.InitializeConnection;
-import org.neo4j.bolt.test.util.AnnotationUtil;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 
 /**
  * Handles the initialization of a connection.

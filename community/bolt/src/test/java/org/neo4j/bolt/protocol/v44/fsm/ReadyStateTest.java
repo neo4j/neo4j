@@ -21,11 +21,13 @@ package org.neo4j.bolt.protocol.v44.fsm;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -46,7 +48,11 @@ import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
 import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
-import org.neo4j.bolt.transaction.TransactionManager;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.bolt.tx.statement.Statement;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.virtual.MapValue;
@@ -58,6 +64,8 @@ class ReadyStateTest {
     private Connection connection;
     private StateMachineSPI spi;
     private TransactionManager transactionManager;
+    private Transaction transaction;
+    private Statement statement;
     private RoutingTableGetter routingTableGetter;
 
     private LoginContext originalContext;
@@ -67,12 +75,21 @@ class ReadyStateTest {
     private ReadyState state;
 
     @BeforeEach
-    void prepareState() {
+    void prepareState() throws TransactionException {
         this.inTransactionState = mock(State.class);
         this.streamingState = mock(State.class);
 
         this.spi = mock(StateMachineSPI.class);
+
+        this.statement = mock(Statement.class);
+
+        this.transaction = mock(Transaction.class);
+        when(this.transaction.run(anyString(), any())).thenReturn(this.statement);
+
         this.transactionManager = mock(TransactionManager.class, RETURNS_MOCKS);
+        when(this.transactionManager.create(any(), any(), anyString(), any(), anyList(), any(), anyMap()))
+                .thenReturn(this.transaction);
+
         this.routingTableGetter = mock(RoutingTableGetter.class, RETURNS_MOCKS);
 
         var originalSubject = mock(AuthSubject.class);
@@ -89,10 +106,18 @@ class ReadyStateTest {
 
         this.context = mock(StateMachineContext.class, RETURNS_MOCKS);
         when(this.context.boltSpi()).thenReturn(this.spi);
-        when(this.context.transactionManager()).thenReturn(this.transactionManager);
 
         var impersonatedContext = new AtomicReference<LoginContext>();
         this.connection = ConnectionMockFactory.newFactory()
+                .withAnswer(
+                        c -> {
+                            try {
+                                c.beginTransaction(any(), anyString(), any(), anyList(), any(), anyMap());
+                            } catch (TransactionException ignore) {
+                                // Stubbing invocation - Never occurs
+                            }
+                        },
+                        invocation -> this.transaction)
                 .withAnswer(Connection::loginContext, invocation -> Optional.ofNullable(impersonatedContext.get())
                         .orElseGet(() -> this.originalContext))
                 .withAnswer(
@@ -136,15 +161,14 @@ class ReadyStateTest {
         inOrder.verify(this.connection).impersonate("bob");
 
         // in 4.3 implementation
-        inOrder.verify(this.context).transactionManager();
-        inOrder.verify(this.context).connection();
-        inOrder.verify(this.connection).loginContext();
-        inOrder.verify(this.context).connectionId();
-        inOrder.verify(this.transactionManager)
-                .begin(eq(this.impersonationContext), eq("neo4j"), any(), eq(false), any(), any(), any(), any());
-        inOrder.verify(this.context).connectionState();
-
-        inOrder.verify(this.context).connection();
+        inOrder.verify(this.connection)
+                .beginTransaction(
+                        eq(TransactionType.EXPLICIT),
+                        eq("neo4j"),
+                        eq(AccessMode.WRITE),
+                        eq(Collections.emptyList()),
+                        Mockito.isNull(),
+                        eq(Collections.emptyMap()));
         inOrder.verify(this.connection).write(StateSignal.ENTER_STREAMING);
 
         // impersonation is cleared when leaving transaction state
@@ -162,16 +186,11 @@ class ReadyStateTest {
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).impersonate("bob");
+        inOrder.verify(this.connection)
+                .beginTransaction(eq(TransactionType.EXPLICIT), eq("system"), eq(AccessMode.READ), any(), any(), any());
 
         // in 4.3 implementation
-        inOrder.verify(this.context).connectionState();
-        inOrder.verify(this.context).connection();
-        inOrder.verify(this.connection).loginContext();
-        inOrder.verify(this.context).transactionManager();
-        inOrder.verify(this.context).connectionId();
-
-        inOrder.verify(this.routingTableGetter)
-                .get(any(), eq(this.impersonationContext), any(), any(), any(), eq("neo4j"), any());
+        inOrder.verify(this.routingTableGetter).get(any(), any(), eq("neo4j"));
 
         inOrder.verify(this.connection).impersonate(null);
     }
@@ -192,32 +211,27 @@ class ReadyStateTest {
 
         assertSame(this.streamingState, nextState);
 
-        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.transactionManager);
+        var inOrder = Mockito.inOrder(
+                this.connection, this.context, this.spi, this.transactionManager, this.transaction, this.statement);
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).impersonate("bob");
 
         // in 4.3 implementation
         inOrder.verify(this.context).clock();
-        inOrder.verify(this.context).connectionState();
-        inOrder.verify(this.context).transactionManager();
         inOrder.verify(this.context).connection();
-        inOrder.verify(this.connection).loginContext();
-        inOrder.verify(this.context).connectionId();
-        inOrder.verify(this.transactionManager)
-                .runProgram(
-                        any(),
-                        eq(this.impersonationContext),
-                        eq("neo4j"),
-                        eq("RUN FANCY QUERY"),
-                        any(),
-                        any(),
-                        eq(false),
-                        any(),
-                        any(),
-                        any());
+        inOrder.verify(this.connection)
+                .beginTransaction(
+                        TransactionType.IMPLICIT,
+                        "neo4j",
+                        AccessMode.WRITE,
+                        Collections.emptyList(),
+                        null,
+                        Collections.emptyMap());
+        inOrder.verify(this.transaction).run(eq("RUN FANCY QUERY"), any());
         inOrder.verify(this.context).clock();
-        inOrder.verify(this.context, times(2)).connectionState();
+        inOrder.verify(this.statement).id();
+        inOrder.verify(this.statement).fieldNames();
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).write(StateSignal.ENTER_STREAMING);

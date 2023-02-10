@@ -19,13 +19,19 @@
  */
 package org.neo4j.bolt.testing.response;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.values.AnyValue;
 
-public record RecordedRecordMessage(AnyValue[] record) implements RecordedMessage {
+public record RecordedRecordMessage(AnyValue[] record, Throwable throwable) implements RecordedMessage {
 
     @Override
     public boolean isRecord() {
         return true;
+    }
+
+    @Override
+    public String getStacktrace() {
+        return ExceptionUtils.getStackTrace(this.throwable);
     }
 
     @Override

@@ -19,20 +19,21 @@
  */
 package org.neo4j.bolt.protocol.common.routing;
 
-import static java.util.Collections.emptyList;
-
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.message.result.BoltResult;
-import org.neo4j.bolt.protocol.common.message.result.ResultConsumer;
-import org.neo4j.bolt.transaction.ProgramResultReference;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.bolt.protocol.common.fsm.response.RecordHandler;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
+import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.tx.Transaction;
+import org.neo4j.bolt.tx.TransactionType;
+import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.kernel.api.exceptions.Status.HasStatus;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -46,40 +47,28 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter {
             "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)";
     private static final String ROUTING_CONTEXT_PARAM = "routingContext";
     private static final String DATABASE_NAME_PARAM = "databaseName";
-    private static final String SYSTEM_DB_NAME = GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
     @Override
-    public CompletableFuture<MapValue> get(
-            String programId,
-            LoginContext loginContext,
-            TransactionManager transactionManager,
-            MapValue routingContext,
-            List<Bookmark> bookmarks,
-            String databaseName,
-            String connectionId) {
+    public CompletableFuture<MapValue> get(Transaction transaction, MapValue routingContext, String databaseName) {
         var params = getParams(routingContext, databaseName);
         var future = new CompletableFuture<MapValue>();
 
         try {
-            ProgramResultReference programResultReference = transactionManager.runProgram(
-                    programId,
-                    loginContext,
-                    SYSTEM_DB_NAME,
-                    GET_ROUTING_TABLE_STATEMENT,
-                    params,
-                    emptyList(),
-                    true,
-                    Map.of(),
-                    null,
-                    connectionId);
-
-            transactionManager.pullData(
-                    programId,
-                    programResultReference.statementMetadata().queryId(),
-                    -1,
-                    new RoutingTableConsumer(future));
-        } catch (Throwable throwable) {
-            future.completeExceptionally(throwable);
+            var statement = transaction.run(GET_ROUTING_TABLE_STATEMENT, params);
+            try {
+                statement.consume(new RoutingTableResponseHandler(future), -1);
+            } finally {
+                statement.close();
+            }
+        } catch (TransactionException ex) {
+            // if the transaction exception provides its own status code, we'll return it as-is in
+            // order to retain control over status codes within Bolt where desired
+            var cause = ex.getCause();
+            if (!(ex instanceof HasStatus) && cause instanceof HasStatus) {
+                future.completeExceptionally(cause);
+            } else {
+                future.completeExceptionally(ex);
+            }
         }
 
         return future;
@@ -92,58 +81,77 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter {
         return paramsBuilder.build();
     }
 
-    private static class RoutingTableConsumer implements ResultConsumer {
-        private final CompletableFuture<MapValue> future;
-
-        private RoutingTableConsumer(CompletableFuture<MapValue> future) {
-            this.future = future;
-        }
-
-        @Override
-        public void consume(BoltResult result) throws Throwable {
-            var consumer = new RoutingTableRecordConsumer(future, result.fieldNames());
-            result.handleRecords(consumer, 1L);
-        }
-
-        @Override
-        public boolean hasMore() {
-            return false;
-        }
-    }
-
-    private static class RoutingTableRecordConsumer implements BoltResult.RecordConsumer {
+    private static class RoutingTableResponseHandler implements ResponseHandler, RecordHandler {
         private final CompletableFuture<MapValue> future;
         private final MapValueBuilder mapValueBuilder;
-        private final List<String> fields;
         private Iterator<String> fieldsIt;
 
-        private RoutingTableRecordConsumer(CompletableFuture<MapValue> future, String[] fields) {
+        private RoutingTableResponseHandler(CompletableFuture<MapValue> future) {
             this.future = future;
             this.mapValueBuilder = new MapValueBuilder();
-            this.fields = List.of(fields);
         }
 
         @Override
-        public void addMetadata(String key, AnyValue value) {}
+        public void onStatementPrepared(
+                TransactionType transactionType,
+                long statementId,
+                long timeSpentPreparingResults,
+                List<String> fieldNames) {}
 
         @Override
-        public void beginRecord(int numberOfFields) throws IOException {
-            this.fieldsIt = this.fields.iterator();
+        public RecordHandler onBeginStreaming(List<String> fieldNames) {
+            this.fieldsIt = fieldNames.iterator();
+            return this;
         }
 
         @Override
-        public void consumeField(AnyValue value) throws IOException {
+        public void onField(AnyValue value) {
             this.mapValueBuilder.add(this.fieldsIt.next(), value);
         }
 
         @Override
-        public void endRecord() throws IOException {
-            future.complete(mapValueBuilder.build());
+        public void onCompleted() {
+            this.future.complete(this.mapValueBuilder.build());
         }
 
         @Override
-        public void onError() throws IOException {
-            future.completeExceptionally(new RuntimeException("Error processing the record"));
+        public void onFailure() {
+            future.completeExceptionally(new RuntimeException("Failed to generate routing table"));
+        }
+
+        @Override
+        public void onStreamingMetadata(
+                long timeSpentStreaming,
+                QueryExecutionType executionType,
+                DatabaseReference database,
+                QueryStatistics statistics,
+                Iterable<Notification> notifications) {}
+
+        @Override
+        public void onStreamingExecutionPlan(ExecutionPlanDescription plan) {}
+
+        @Override
+        public void onCompleteStreaming(boolean hasRemaining) {}
+
+        @Override
+        public void onBookmark(String encodedBookmark) {}
+
+        @Override
+        public void onSuccess() {}
+
+        @Override
+        public void onFailure(Error error) {
+            // FSM callback - not applicable
+        }
+
+        @Override
+        public void onIgnored() {
+            // FSM callback - not applicable
+        }
+
+        @Override
+        public void onMetadata(String key, AnyValue value) {
+            // metadata is discarded for ROUTE requests
         }
     }
 }

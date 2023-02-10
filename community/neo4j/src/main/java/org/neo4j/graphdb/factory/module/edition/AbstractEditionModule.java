@@ -25,6 +25,7 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
 
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -190,6 +191,7 @@ public abstract class AbstractEditionModule {
 
     public abstract Lifecycle createWebServer(
             DatabaseManagementService managementService,
+            TransactionManager transactionManager,
             Dependencies globalDependencies,
             Config config,
             InternalLogProvider userLogProvider,

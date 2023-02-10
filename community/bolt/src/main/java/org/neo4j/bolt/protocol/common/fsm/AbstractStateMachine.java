@@ -23,22 +23,16 @@ import java.time.Clock;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
+import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.common.message.request.Signal;
-import org.neo4j.bolt.protocol.common.message.result.ResponseHandler;
 import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.security.error.AuthenticationException;
-import org.neo4j.bolt.transaction.CleanUpConnectionContext;
-import org.neo4j.bolt.transaction.TransactionManager;
-import org.neo4j.bolt.transaction.TransactionNotFoundException;
-import org.neo4j.bolt.transaction.TransactionStatus;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -57,30 +51,25 @@ import org.neo4j.memory.MemoryTracker;
 public abstract class AbstractStateMachine implements StateMachine {
     private final Connection connection;
     private final StateMachineSPI spi;
-    protected DefaultDatabaseResolver defaultDatabaseResolver;
     protected final MutableConnectionState connectionState;
     private final StateMachineContext context;
 
     private State state;
     private final State failedState;
+    private final State interruptedState;
 
-    public AbstractStateMachine(
-            StateMachineSPI spi,
-            Connection connection,
-            Clock clock,
-            DefaultDatabaseResolver defaultDatabaseResolver,
-            TransactionManager transactionManager) {
+    public AbstractStateMachine(StateMachineSPI spi, Connection connection, Clock clock) {
         connection.memoryTracker().allocateHeap(StateMachineContextImpl.SHALLOW_SIZE);
 
         this.connection = connection;
         this.spi = spi;
-        this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionState = new MutableConnectionState();
-        this.context = new StateMachineContextImpl(connection, this, spi, connectionState, clock, transactionManager);
+        this.context = new StateMachineContextImpl(connection, this, spi, connectionState, clock);
 
         var states = buildStates(connection.memoryTracker());
         this.state = states.initial;
         this.failedState = states.failed;
+        this.interruptedState = states.interrupted;
     }
 
     @Override
@@ -101,10 +90,11 @@ public abstract class AbstractStateMachine implements StateMachine {
     }
 
     private void before(ResponseHandler handler) throws BoltConnectionFatality {
-        if (connectionState.isTerminated()) {
-            close();
-        } else if (connection.isInterrupted()) {
-            nextState(Signal.INTERRUPT, context);
+        // if the connection has transitioned into an interrupted state since processing the last
+        // message was processed, we'll immediately transition the state machine to its interrupted
+        // state in order to respond appropriately (e.g. respond with IGNORED)
+        if (connection.isInterrupted()) {
+            this.state = this.interruptedState;
         }
 
         connectionState.setResponseHandler(handler);
@@ -115,15 +105,14 @@ public abstract class AbstractStateMachine implements StateMachine {
             try {
                 var pendingError = connectionState.getPendingError();
                 if (pendingError != null) {
-                    connectionState.markFailed(pendingError);
-                }
-
-                if (connectionState.hasPendingIgnore()) {
-                    connectionState.markIgnored();
+                    connectionState.getResponseHandler().onFailure(pendingError);
+                } else if (connectionState.hasPendingIgnore()) {
+                    connectionState.getResponseHandler().onIgnored();
+                } else {
+                    connectionState.getResponseHandler().onSuccess();
                 }
 
                 connectionState.resetPendingFailedAndIgnored();
-                connectionState.getResponseHandler().onFinish();
             } finally {
                 connectionState.setResponseHandler(null);
             }
@@ -150,46 +139,17 @@ public abstract class AbstractStateMachine implements StateMachine {
     }
 
     /**
-     * When this is invoked, the machine will make attempts
-     * at interrupting any currently running action,
-     * and will then ignore all inbound messages until a {@code RESET}
-     * message is received. If this is called multiple times, an equivalent number
-     * of reset messages must be received before the SSM goes back to a good state.
-     * <p>
-     * You can imagine this is as a "call ahead" mechanism used by RESET to
-     * cancel any statements ahead of it in line, without compromising the single-
-     * threaded processing of messages that the state machine does.
-     * <p>
-     * This can be used to cancel a long-running statement or transaction.
-     */
-    @Override
-    public void interrupt() {
-        var currentTransactionId = connectionState.getCurrentTransactionId();
-        if (currentTransactionId != null) {
-            transactionManager().interrupt(currentTransactionId);
-        }
-    }
-
-    /**
      * When this is invoked, the machine will check whether the related transaction is
      * marked for termination and releasing the related transactional resources.
      */
     @Override
     public void validateTransaction() throws KernelException {
-        var currentTxId = connectionState.getCurrentTransactionId();
-        if (currentTxId == null) {
+        var tx = this.connection.transaction().orElse(null);
+        if (tx == null) {
             return;
         }
 
-        var status = transactionManager().transactionStatus(currentTxId);
-        if (status.value().equals(TransactionStatus.Value.INTERRUPTED)) {
-            connectionState().setPendingTerminationNotice(status.error());
-
-            try {
-                transactionManager().rollback(currentTxId);
-            } catch (TransactionNotFoundException ignore) {
-            }
-        }
+        tx.validate().ifPresent(this.connectionState::setPendingTerminationNotice);
     }
 
     @Override
@@ -202,75 +162,6 @@ public abstract class AbstractStateMachine implements StateMachine {
             }
         } finally {
             after();
-        }
-    }
-
-    @Override
-    public boolean isClosed() {
-        return connectionState.isClosed();
-    }
-
-    @Override
-    public void close() {
-        connectionState.markClosed();
-
-        // However a new transaction may have been created so we must always to reset
-        resetTransactionState();
-        transactionManager().cleanUp(new CleanUpConnectionContext(context.connectionId()));
-    }
-
-    @Override
-    public void markForTermination() {
-        /*
-         * This is a side-channel call and we should not close anything directly.
-         * Just mark the transaction and set isTerminated to true and then the session
-         * thread will close down the connection eventually.
-         */
-        connectionState.markTerminated();
-        var txId = connectionState.getCurrentTransactionId();
-        if (txId != null) {
-            transactionManager().interrupt(txId);
-        }
-        transactionManager().cleanUp(new CleanUpConnectionContext(context.connectionId()));
-    }
-
-    @Override
-    public boolean shouldStickOnThread() {
-        // Currently, we're doing our best to keep things together
-        // We should not switch threads when there's an active statement (executing/streaming)
-        // Also, we're currently sticking to the thread when there's an open transaction due to
-        // cursor errors we receive when a transaction is picked up by another thread linearly.
-        var txId = connectionState.getCurrentTransactionId();
-        if (txId == null) {
-            return false;
-        }
-
-        var transactionState = transactionManager().transactionStatus(txId);
-
-        return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT)
-                || transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_NO_OPEN_STATEMENTS);
-    }
-
-    @Override
-    public boolean hasOpenStatement() {
-        var txId = connectionState.getCurrentTransactionId();
-        if (txId == null) {
-            return false;
-        }
-
-        var transactionState = transactionManager().transactionStatus(txId);
-
-        return transactionState.value().equals(TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT);
-    }
-
-    @Override
-    public boolean reset() throws BoltConnectionFatality {
-        try {
-            resetTransactionState();
-            return true;
-        } catch (Throwable t) {
-            handleFailure(t, true);
-            return false;
         }
     }
 
@@ -299,10 +190,6 @@ public abstract class AbstractStateMachine implements StateMachine {
         return state;
     }
 
-    public TransactionManager transactionManager() {
-        return context.transactionManager();
-    }
-
     public MutableConnectionState connectionState() {
         return connectionState;
     }
@@ -321,19 +208,7 @@ public abstract class AbstractStateMachine implements StateMachine {
         }
     }
 
-    private void resetTransactionState() {
-        try {
-            if (connectionState.getCurrentTransactionId() != null) {
-                transactionManager().rollback(connectionState.getCurrentTransactionId());
-            }
-        } catch (TransactionNotFoundException e) {
-            // if the transaction cannot be found then it has already been reset/removed.
-        } finally {
-            connectionState.clearCurrentTransactionId();
-        }
-    }
-
     protected abstract States buildStates(MemoryTracker memoryTracker);
 
-    public record States(State initial, State failed) {}
+    public record States(State initial, State failed, State interrupted) {}
 }

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.neo4j.bolt.test.annotation.connection.Resolver;
-import org.neo4j.bolt.test.util.AnnotationUtil;
+import org.neo4j.bolt.testing.util.AnnotationUtil;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.internal.helpers.HostnamePort;
 
