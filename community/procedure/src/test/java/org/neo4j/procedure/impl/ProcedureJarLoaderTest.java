@@ -445,6 +445,28 @@ public class ProcedureJarLoaderTest {
                         NoClassDefFoundError.class.getName());
     }
 
+    @Test
+    void proceduresCanDependOnOtherJARInDirectory() throws Exception {
+        // given
+        var neighbourhood = new ByteBuddy().subclass(Object.class).make();
+
+        var ourHero = new ByteBuddy()
+                .subclass(Object.class)
+                .defineMethod("get", neighbourhood.getTypeDescription())
+                .intercept(FixedValue.nullValue())
+                .make();
+
+        // when
+        neighbourhood.toJar(
+                testDirectory.createFile("friendly_neighbourhood.jar").toFile());
+        ourHero.toJar(testDirectory.createFile("our_hero.jar").toFile());
+
+        jarloader.loadProceduresFromDir(testDirectory.absolutePath());
+
+        // then
+        assertThat(logProvider).doesNotHaveAnyLogs();
+    }
+
     private static NamingStrategy.AbstractBase oneNameStrategy(String className) {
         return new NamingStrategy.AbstractBase() {
             @Override
