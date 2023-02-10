@@ -82,7 +82,8 @@ public class Neo4jAdminCommand implements Callable<Integer>, VerboseCommand {
                     environment.out(),
                     environment.err(),
                     new DefaultFileSystemAbstraction(),
-                    this::createDbmsBootloader);
+                    this::createDbmsBootloader,
+                    adminBootloader.getPluginClassLoader());
             CommandLine actualCommand = getActualAdminCommand(ctx);
             if (unmatchedParameters.isEmpty()) { // No arguments (except expand commands/verbose), print usage
                 actualCommand.usage(adminBootloader.environment.err());

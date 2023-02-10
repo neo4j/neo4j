@@ -76,7 +76,7 @@ server.jvm.additional=-XX:-OmitStackTraceInFastThrow
 "server.jvm.additional" is the only settings that is allowed to have  multiple declarations, so it is not that bad.
 
  */
-class ConfigFileMigrator {
+public class ConfigFileMigrator {
 
     /*
     The framework used for the migration, works a bit unexpected with comment separators.
@@ -89,22 +89,26 @@ class ConfigFileMigrator {
 
     private final PrintStream out;
     private final PrintStream err;
-    private final Set<SettingMigrator> migrators = getSortedMigrators();
-    private final Set<String> knownSettings = getKnownSettings(); // This is excluding group settings
+    private final ClassLoader classLoader;
+    private final Set<SettingMigrator> migrators;
+    private final Set<String> knownSettings; // This is excluding group settings
 
-    ConfigFileMigrator(PrintStream out, PrintStream err) {
+    public ConfigFileMigrator(PrintStream out, PrintStream err, ClassLoader classLoader) {
         this.out = out;
         this.err = err;
+        this.classLoader = classLoader;
+        this.migrators = getSortedMigrators(classLoader);
+        this.knownSettings = getKnownSettings();
     }
 
-    private static Set<SettingMigrator> getSortedMigrators() {
+    private static Set<SettingMigrator> getSortedMigrators(ClassLoader classLoader) {
         Set<SettingMigrator> migrators =
                 new TreeSet<>(Comparator.comparing(o -> o.getClass().getName()));
-        migrators.addAll(Services.loadAll(SettingMigrator.class));
+        migrators.addAll(Services.loadAll(classLoader, SettingMigrator.class));
         return migrators;
     }
 
-    void migrate(Path sourceConfigFile, Path destinationConfigFile) throws IOException {
+    public void migrate(Path sourceConfigFile, Path destinationConfigFile) throws IOException {
         try {
             PropertiesConfiguration config = readIntoConfig(sourceConfigFile);
             LoggingSettingsMigrator loggingSettingsMigrator =
@@ -266,7 +270,7 @@ class ConfigFileMigrator {
     private boolean isSettingValid(String key, String value) {
         if (!knownSettings.contains(key)) {
             try { // The setting can be a group setting. The only way to know is to build the config and see
-                Config.newBuilder()
+                configBuilder()
                         .setRaw(Map.of(key, value))
                         .set(GraphDatabaseSettings.strict_config_validation, true)
                         .build();
@@ -279,13 +283,17 @@ class ConfigFileMigrator {
 
     private void validate(Path config) {
         try {
-            Config.newBuilder()
+            configBuilder()
                     .fromFile(config)
                     .set(GraphDatabaseSettings.strict_config_validation, true)
                     .build();
         } catch (RuntimeException e) {
             throw new CommandFailedException("Migrated file failed validation", e);
         }
+    }
+
+    private Config.Builder configBuilder() {
+        return Config.newBuilder(classLoader);
     }
 
     private void writeToFile(PropertiesConfiguration config, Path configFile)
@@ -313,7 +321,7 @@ class ConfigFileMigrator {
     }
 
     private Set<String> getKnownSettings() {
-        return Config.defaults().getDeclaredSettings().keySet();
+        return configBuilder().build().getDeclaredSettings().keySet();
     }
 
     private record MigratedSetting(String key, List<String> values, Map<String, String> originalValues) {}

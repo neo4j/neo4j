@@ -25,6 +25,7 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.server.startup.EnhancedExecutionContext;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -68,8 +69,8 @@ public class MigrateConfigCommand extends AbstractCommand {
             throw new CommandFailedException(
                     String.format("Target path '%s' is not an existing directory", targetFile.getParent()));
         }
-
-        var migrator = new ConfigFileMigrator(ctx.out(), ctx.err());
+        var enhancedCtx = EnhancedExecutionContext.unwrapFromExecutionContext(ctx);
+        var migrator = new ConfigFileMigrator(ctx.out(), ctx.err(), enhancedCtx.getClassloaderWithPlugins());
         migrator.migrate(sourceFile, targetFile);
     }
 

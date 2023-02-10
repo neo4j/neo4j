@@ -31,27 +31,35 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * In fact, every execution context created by {@link Neo4jAdminCommand} and {@link Neo4jCommand} is
  * Enhanced execution context, but most commands don't need to know that.
  */
-class EnhancedExecutionContext extends ExecutionContext {
+public class EnhancedExecutionContext extends ExecutionContext {
 
     private final Supplier<Bootloader.Dbms> dbmsBootloaderFactory;
 
-    EnhancedExecutionContext(
+    private final ClassLoader classloaderWithPlugins;
+
+    public EnhancedExecutionContext(
             Path homeDir,
             Path confDir,
             PrintStream out,
             PrintStream err,
             FileSystemAbstraction fs,
-            Supplier<Bootloader.Dbms> dbmsBootloaderFactory) {
+            Supplier<Bootloader.Dbms> dbmsBootloaderFactory,
+            ClassLoader pluginClassLoader) {
         super(homeDir, confDir, out, err, fs);
 
         this.dbmsBootloaderFactory = dbmsBootloaderFactory;
+        this.classloaderWithPlugins = pluginClassLoader;
     }
 
     Bootloader.Dbms createDbmsBootloader() {
         return dbmsBootloaderFactory.get();
     }
 
-    static EnhancedExecutionContext unwrapFromExecutionContext(ExecutionContext executionContext) {
+    public ClassLoader getClassloaderWithPlugins() {
+        return classloaderWithPlugins;
+    }
+
+    public static EnhancedExecutionContext unwrapFromExecutionContext(ExecutionContext executionContext) {
         if (executionContext instanceof EnhancedExecutionContext) {
             return (EnhancedExecutionContext) executionContext;
         }

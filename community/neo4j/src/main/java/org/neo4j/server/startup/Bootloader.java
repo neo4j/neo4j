@@ -26,14 +26,12 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -98,8 +96,6 @@ public abstract class Bootloader implements AutoCloseable {
     final boolean expandCommands;
     final List<String> additionalArgs;
 
-    private final List<Closeable> closeableResources = new ArrayList<>();
-
     // inferred
     private Path home;
     private Path conf;
@@ -107,6 +103,7 @@ public abstract class Bootloader implements AutoCloseable {
     private boolean fullConfig;
     private BootloaderOsAbstraction os;
     private ProcessManager processManager;
+    private URLClassLoader pluginClassloader;
 
     protected Bootloader(
             Class<?> entrypoint,
@@ -222,6 +219,16 @@ public abstract class Bootloader implements AutoCloseable {
 
     private Config.Builder getConfigBuilder(boolean loadPluginsSettings) {
         if (loadPluginsSettings) {
+            var classloader = getPluginClassLoader();
+            if (classloader != null) {
+                return Config.newBuilder(classloader);
+            }
+        }
+        return Config.newBuilder();
+    }
+
+    ClassLoader getPluginClassLoader() {
+        if (pluginClassloader == null) {
             // Locate plugin jar files and add them to the config class loader
             try (Stream<Path> list = Files.list(config().get(GraphDatabaseSettings.plugin_dir))) {
                 URL[] urls = list.filter(path -> path.toString().endsWith(".jar"))
@@ -230,9 +237,7 @@ public abstract class Bootloader implements AutoCloseable {
                         .toArray(URL[]::new);
 
                 if (urls.length > 0) {
-                    var classLoader = new URLClassLoader(urls, Bootloader.class.getClassLoader());
-                    closeableResources.add(classLoader);
-                    return Config.newBuilder(classLoader);
+                    pluginClassloader = new URLClassLoader(urls, Bootloader.class.getClassLoader());
                 }
             } catch (IOException e) {
                 if (verbose) {
@@ -240,7 +245,7 @@ public abstract class Bootloader implements AutoCloseable {
                 }
             }
         }
-        return Config.newBuilder();
+        return pluginClassloader;
     }
 
     private URL pathToURL(Path p) {
@@ -321,7 +326,7 @@ public abstract class Bootloader implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        IOUtils.closeAll(closeableResources);
+        IOUtils.closeAll(pluginClassloader);
     }
 
     public static class FilteredConfig implements Configuration {

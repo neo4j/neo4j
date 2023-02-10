@@ -68,11 +68,14 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingMigrator;
+import org.neo4j.configuration.SettingMigrators;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.server.NeoBootstrapper;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.conditions.Conditions;
@@ -356,16 +359,7 @@ class FakeDbmsLaunchTest {
             Files.createDirectories(maybePlugins);
 
             // Create jar file with service loadable setting class
-            Path jarFile = maybePlugins.resolve("MyPlugin.jar");
-            try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(jarFile))) {
-                String fileName = MyPluginSetting.class.getName().replace('.', '/') + ".class";
-                jarOut.putNextEntry(new ZipEntry(fileName));
-                jarOut.write(JarBuilder.classCompiledBytes(fileName));
-                jarOut.closeEntry();
-                jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingsDeclaration.class.getName()));
-                jarOut.write((MyPluginSetting.class.getName() + "\n").getBytes(StandardCharsets.UTF_8));
-                jarOut.closeEntry();
-            }
+            createPluginJar(maybePlugins.resolve("MyPlugin.jar"));
 
             // Start with strict validation
             addConf(GraphDatabaseSettings.strict_config_validation, "true");
@@ -375,9 +369,31 @@ class FakeDbmsLaunchTest {
             assertThat(err.toString()).isEmpty();
         }
 
-        public static class MyPluginSetting implements SettingsDeclaration {
+        protected void createPluginJar(Path path) throws IOException {
+            var cls = MyPluginSetting.class;
+            Files.createDirectories(path.getParent());
+            try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(path))) {
+                String fileName = cls.getName().replace('.', '/') + ".class";
+                jarOut.putNextEntry(new ZipEntry(fileName));
+                jarOut.write(JarBuilder.classCompiledBytes(fileName));
+                jarOut.closeEntry();
+                jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingsDeclaration.class.getName()));
+                jarOut.write((cls.getName() + "\n").getBytes(StandardCharsets.UTF_8));
+                jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingMigrator.class.getName()));
+                jarOut.write((cls.getName() + "\n").getBytes(StandardCharsets.UTF_8));
+                jarOut.closeEntry();
+            }
+        }
+
+        public static class MyPluginSetting implements SettingsDeclaration, SettingMigrator {
             public static final Setting<String> setting =
                     newBuilder("db.my.plugin.setting", STRING, "foo").build();
+            public static final String oldSetting = "db.old.my.plugin.setting";
+
+            @Override
+            public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+                SettingMigrators.migrateSettingNameChange(values, log, oldSetting, setting);
+            }
         }
 
         @Test
@@ -581,6 +597,17 @@ class FakeDbmsLaunchTest {
             newArgs[0] = "server";
             System.arraycopy(arg, 0, newArgs, 1, arg.length);
             return super.executeWithoutInjection(newArgs);
+        }
+
+        @Test
+        void shouldMigrateConfigFromPlugin() throws IOException {
+            Path plugins = home.resolve("plugins");
+            Files.createDirectories(plugins);
+
+            createPluginJar(plugins.resolve("MyPlugin.jar"));
+            Files.writeString(confFile, MyPluginSetting.oldSetting + "=bar");
+            assertThat(execute("migrate-configuration")).isEqualTo(EXIT_CODE_OK);
+            assertThat(Files.readString(confFile)).isEqualToIgnoringNewLines(MyPluginSetting.setting.name() + "=bar");
         }
     }
 

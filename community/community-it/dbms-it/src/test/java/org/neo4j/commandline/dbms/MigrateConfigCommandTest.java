@@ -21,21 +21,36 @@ package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingMigrator;
+import org.neo4j.configuration.SettingMigrators;
+import org.neo4j.configuration.SettingsDeclaration;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.server.startup.Bootloader;
+import org.neo4j.server.startup.EnhancedExecutionContext;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.jar.JarBuilder;
 import picocli.CommandLine;
 
 @Neo4jLayoutExtension
@@ -265,6 +280,43 @@ class MigrateConfigCommandTest {
         assertThat(Files.readString(originalConfigFile)).isEqualTo("dbms.tx_log.rotation.size=1G");
     }
 
+    @Test
+    void shouldWorkWithSettingsInPlugins() throws IOException {
+        var cfgFile = createConfigFileInDefaultLocation(MyPlugin.oldSetting + "=bar");
+        var result = runConfigMigrationCommand(createPluginClassLoader());
+        assertEquals(0, result.exitCode);
+        assertThat(Files.readString(cfgFile)).isEqualToIgnoringNewLines(MyPlugin.setting.name() + "=bar");
+    }
+
+    private ClassLoader createPluginClassLoader() throws IOException {
+        var cls = MyPlugin.class;
+        Path jarFile = neo4jLayout.homeDirectory().resolve("plugins").resolve("MyPlugin.jar");
+        Files.createDirectories(jarFile.getParent());
+        try (JarOutputStream jarOut = new JarOutputStream(Files.newOutputStream(jarFile))) {
+            String fileName = cls.getName().replace('.', '/') + ".class";
+            jarOut.putNextEntry(new ZipEntry(fileName));
+            jarOut.write(JarBuilder.classCompiledBytes(fileName));
+            jarOut.closeEntry();
+            jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingsDeclaration.class.getName()));
+            jarOut.write((cls.getName() + "\n").getBytes(StandardCharsets.UTF_8));
+            jarOut.putNextEntry(new ZipEntry("META-INF/services/" + SettingMigrator.class.getName()));
+            jarOut.write((cls.getName() + "\n").getBytes(StandardCharsets.UTF_8));
+            jarOut.closeEntry();
+        }
+        return new URLClassLoader(new URL[] {jarFile.toUri().toURL()}, Bootloader.class.getClassLoader());
+    }
+
+    public static class MyPlugin implements SettingsDeclaration, SettingMigrator {
+        public static final Setting<String> setting =
+                newBuilder("db.my.plugin.setting", STRING, "foo").build();
+        public static final String oldSetting = "db.old.my.plugin.setting";
+
+        @Override
+        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            SettingMigrators.migrateSettingNameChange(values, log, oldSetting, setting);
+        }
+    }
+
     private Path createConfigFileInDefaultLocation(String content) throws IOException {
         return createConfigFile(Config.DEFAULT_CONFIG_DIR_NAME, content);
     }
@@ -287,13 +339,23 @@ class MigrateConfigCommandTest {
     }
 
     private Result runConfigMigrationCommand(String... args) {
+        return runConfigMigrationCommand(this.getClass().getClassLoader(), args);
+    }
+
+    private Result runConfigMigrationCommand(ClassLoader classLoader, String... args) {
         var homeDir = neo4jLayout.homeDirectory().toAbsolutePath();
         var configDir = homeDir.resolve(Config.DEFAULT_CONFIG_DIR_NAME);
         var out = new Output();
         var err = new Output();
 
-        var ctx = new ExecutionContext(
-                homeDir, configDir, out.printStream, err.printStream, new DefaultFileSystemAbstraction());
+        var ctx = new EnhancedExecutionContext(
+                homeDir,
+                configDir,
+                out.printStream,
+                err.printStream,
+                new DefaultFileSystemAbstraction(),
+                () -> null,
+                classLoader);
 
         var command = CommandLine.populateCommand(new MigrateConfigCommand(ctx), args);
 
@@ -306,6 +368,7 @@ class MigrateConfigCommandTest {
     }
 
     private static class Output {
+
         private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         private final PrintStream printStream = new PrintStream(buffer);
 
