@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->()-[]->(b)]{0,*} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,*} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,1} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,2} (you)`
@@ -1335,6 +1336,67 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should respect relationship uniqueness between inner relationships") {
+
+    // (n1:START) → (n2)
+    val (n1, n2, r12) = given {
+      val n1 = tx.createNode(label("START"))
+      val n2 = tx.createNode()
+      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      (n1, n2, r12)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "a", "b", "c", "r", "rr")
+      .trail(TrailTestBase.`(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`)
+      .|.expandAll("(b_inner)<-[rr_inner]-(c_inner)")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("me", "you", "a", "b", "c", "r", "rr").withRows(inAnyOrder(
+      Seq(
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+      )
+    ))
+  }
+
+  test("should respect relationship uniqueness between more inner relationships") {
+
+    // (n1:START) → (n2) -> (n3)
+    val (n1, n2, n3, r12, r23) = given {
+      val n1 = tx.createNode(label("START"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+      (n1, n2, n3, r12, r23)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "a", "b", "c", "d", "r", "rr", "rrr")
+      .trail(TrailTestBase.`(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)`)
+      .|.expandAll("(c_inner)<-[rrr_inner]-(d_inner)")
+      .|.expandAll("(b_inner)-[rr_inner]->(c_inner)")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("me", "you", "a", "b", "c", "d", "r", "rr", "rrr").withRows(inAnyOrder(
+      Seq(
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+      )
+    ))
+  }
+
   protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
 
   //  (n0:START)                                                  (n6:LOOP)
@@ -1996,6 +2058,38 @@ object TrailTestBase {
       previouslyBoundRelationships = Set.empty,
       previouslyBoundRelationshipGroups = Set.empty,
       reverseGroupVariableProjections = true
+    )
+
+  val `(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)` : TrailParameters =
+    TrailParameters(
+      min = 0,
+      max = UpperBound.Limited(1),
+      start = "me",
+      end = "you",
+      innerStart = "a_inner",
+      innerEnd = "c_inner",
+      groupNodes = Set(("a_inner", "a"), ("b_inner", "b"), ("c_inner", "c")),
+      groupRelationships = Set(("r_inner", "r"), ("rr_inner", "rr")),
+      innerRelationships = Set("r_inner", "rr_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+  val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)` : TrailParameters =
+    TrailParameters(
+      min = 0,
+      max = UpperBound.Limited(1),
+      start = "me",
+      end = "you",
+      innerStart = "a_inner",
+      innerEnd = "d_inner",
+      groupNodes = Set(("a_inner", "a"), ("b_inner", "b"), ("c_inner", "c"), ("d_inner", "d")),
+      groupRelationships = Set(("r_inner", "r"), ("rr_inner", "rr"), ("rrr_inner", "rrr")),
+      innerRelationships = Set("r_inner", "rr_inner", "rrr_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
     )
 }
 
@@ -4185,6 +4279,67 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
       )
     ))
 
+  }
+
+  test("should respect relationship uniqueness between inner relationships - with leveraged order on lhs") {
+
+    // (n1:START) → (n2)
+    val (n1, n2, r12) = given {
+      val n1 = tx.createNode(label("START"))
+      val n2 = tx.createNode()
+      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      (n1, n2, r12)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "a", "b", "c", "r", "rr")
+      .trail(TrailTestBase.`(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`).withLeveragedOrder()
+      .|.expandAll("(b_inner)<-[rr_inner]-(c_inner)")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("me", "you", "a", "b", "c", "r", "rr").withRows(inAnyOrder(
+      Seq(
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+      )
+    ))
+  }
+
+  test("should respect relationship uniqueness between more inner relationships - with leveraged order on lhs") {
+
+    // (n1:START) → (n2) -> (n3)
+    val (n1, n2, n3, r12, r23) = given {
+      val n1 = tx.createNode(label("START"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+      (n1, n2, n3, r12, r23)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "a", "b", "c", "d", "r", "rr", "rrr")
+      .trail(TrailTestBase.`(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)`).withLeveragedOrder()
+      .|.expandAll("(c_inner)<-[rrr_inner]-(d_inner)")
+      .|.expandAll("(b_inner)-[rr_inner]->(c_inner)")
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build()
+
+    // when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("me", "you", "a", "b", "c", "d", "r", "rr", "rrr").withRows(inAnyOrder(
+      Seq(
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+      )
+    ))
   }
 
   // (n0:START) ↘

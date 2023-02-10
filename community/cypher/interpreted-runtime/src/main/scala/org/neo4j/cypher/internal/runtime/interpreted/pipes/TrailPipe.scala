@@ -189,14 +189,15 @@ case class TrailPipe(
                     innerResult = inner.createResults(innerState).filter(row => {
                       var relationshipsAreUnique = true
                       var i = 0
+                      val innerRelationshipsSeen = collection.mutable.Set[Long]()
                       while (relationshipsAreUnique && i < innerRelationshipsArray.length) {
                         val r = innerRelationshipsArray(i)
+                        val rel = castOrFail[VirtualRelationshipValue](row.getByName(r)).id()
                         // TODO optimization: allRelationships is a superset of RHS rels, we should only check RHS rels as only they can change
-                        if (
-                          trailState.relationshipsSeen.contains(
-                            castOrFail[VirtualRelationshipValue](row.getByName(r)).id()
-                          )
-                        ) {
+                        if (trailState.relationshipsSeen.contains(rel)) {
+                          relationshipsAreUnique = false
+                        }
+                        if (relationshipsAreUnique && !innerRelationshipsSeen.add(rel)) {
                           relationshipsAreUnique = false
                         }
                         i += 1

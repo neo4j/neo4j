@@ -260,9 +260,14 @@ case class TrailSlottedPipe(
                   innerResult = inner.createResults(innerState).filter(row => {
                     var relationshipsAreUnique = true
                     var i = 0
+                    val innerRelationshipsSeen = collection.mutable.Set[Long]()
                     while (relationshipsAreUnique && i < innerRelGetters.length) {
                       val r = innerRelGetters(i)
-                      if (trailState.relationshipsSeen.contains(r.applyAsLong(row))) {
+                      val rel = r.applyAsLong(row)
+                      if (trailState.relationshipsSeen.contains(rel)) {
+                        relationshipsAreUnique = false
+                      }
+                      if (relationshipsAreUnique && !innerRelationshipsSeen.add(rel)) {
                         relationshipsAreUnique = false
                       }
                       i += 1

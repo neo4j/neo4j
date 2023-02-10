@@ -440,6 +440,11 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
           e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of).toArray,
           id
         ))
+      case e: physicalplanning.ast.TrailRelationshipUniqueness =>
+        val trailStateMetadataSlotOffset =
+          physicalPlan.slotConfigurations(id).getMetaDataOffsetFor(e.trailStateMetadataSlotKey)
+        val innerRelSlots = e.innerRelationships.map(r => physicalPlan.slotConfigurations(id)(r))
+        Some(TrailRelationshipsUniqueExpression(trailStateMetadataSlotOffset, innerRelSlots))
       case _ =>
         None
     }
