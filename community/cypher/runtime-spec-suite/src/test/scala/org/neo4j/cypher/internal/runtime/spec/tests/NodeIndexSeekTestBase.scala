@@ -1995,9 +1995,6 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should verify that two nodes are identical with locking reads") {
-    // Temporarily disabled: AssertingMultiNodeSeekOperator is broken
-    assume(runtime.name != "Pipelined")
-
     val nodes = given {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodePropertyGraph(

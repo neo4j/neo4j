@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
@@ -50,6 +51,7 @@ trait MultiNodeIndexSeekCompatibilityTestRewriter[CONTEXT <: RuntimeContext] ext
   }
 
   private def stopper(a: AnyRef): Boolean = a match {
+    case _: AssertSameNode     => true
     case _: MultiNodeIndexSeek => true
     case _: LogicalPlan        => false
     case _                     => true
