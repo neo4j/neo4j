@@ -154,12 +154,16 @@ class ProfileCommandTest {
         setPid(process.pid());
 
         Stopwatch start = Stopwatch.start();
+        Future<Void> future = null;
         try (OtherThreadExecutor otherThread = new OtherThreadExecutor("test")) {
-            Future<Void> future = otherThread.executeDontWait(() -> execute(Duration.ofMinutes(10)));
+            future = otherThread.executeDontWait(() -> execute(Duration.ofMinutes(10)));
             assertEventually(this::hasThreadDumps, TRUE, 1, MINUTES);
             process.destroy();
             process.waitFor();
-            future.get();
+        } finally {
+            if (future != null) {
+                future.get();
+            }
         }
         assertThat(start.elapsed()).isLessThan(Duration.ofMinutes(1));
         assertThat(ctxOut.toString()).contains("All profilers failed");
