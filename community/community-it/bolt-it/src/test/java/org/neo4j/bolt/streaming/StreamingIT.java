@@ -223,6 +223,54 @@ public class StreamingIT {
                 .receivesSuccess();
     }
 
+    @ProtocolTest
+    void shouldReturnDatabaseNameOnCompletionViaPull(BoltWire wire, @Authenticated TransportConnection connection)
+            throws IOException {
+        connection.send(wire.begin());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        connection.send(wire.run("UNWIND range(1, 10) AS x RETURN x"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta ->
+                        Assertions.assertThat(meta).containsEntry("qid", 0L).containsKeys("fields", "t_first"));
+
+        connection.send(wire.pull(5));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccessAfterRecords(meta -> Assertions.assertThat(meta).doesNotContainKeys("db", "t_last"));
+
+        connection.send(wire.pull());
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccessAfterRecords(meta ->
+                        Assertions.assertThat(meta).containsEntry("db", "neo4j").containsKey("t_last"));
+
+        connection.send(wire.rollback());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+    }
+
+    @ProtocolTest
+    void shouldReturnDatabaseNameOnCompletionViaDiscard(BoltWire wire, @Authenticated TransportConnection connection)
+            throws IOException {
+        connection.send(wire.begin());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+
+        connection.send(wire.run("UNWIND range(1, 10) AS x RETURN x"));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccess(meta ->
+                        Assertions.assertThat(meta).containsEntry("qid", 0L).containsKeys("fields", "t_first"));
+
+        connection.send(wire.discard(5));
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccessAfterRecords(meta -> Assertions.assertThat(meta).doesNotContainKeys("db", "t_last"));
+
+        connection.send(wire.discard());
+        BoltConnectionAssertions.assertThat(connection)
+                .receivesSuccessAfterRecords(meta ->
+                        Assertions.assertThat(meta).containsEntry("db", "neo4j").containsKey("t_last"));
+
+        connection.send(wire.rollback());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess();
+    }
+
     private static void assertElementIdNode(
             PackstreamBuf buf, long nodeId, String label, Consumer<Map<String, Object>> propertyAssertions) {
         PackstreamBufAssertions.assertThat(buf)
