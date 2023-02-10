@@ -43,7 +43,7 @@ object CandidateListFinder {
   /**
    * @param candidates Eager may be planned on top of any of these plans.
    *                   The candidates are in an order such that `candidates(n+1).children.contains(candidates(n))`.
-   * @param reasons    the reasons of the original conflict(s)
+   * @param conflict   the original conflict
    */
   private[eager] case class CandidateList(candidates: Seq[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
 

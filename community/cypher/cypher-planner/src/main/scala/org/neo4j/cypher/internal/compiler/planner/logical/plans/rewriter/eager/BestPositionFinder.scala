@@ -64,7 +64,7 @@ object BestPositionFinder {
     )
 
     /**
-     * Merge two candidate sets of they overlap.
+     * Merge two candidate sets if they overlap.
      */
     def tryMerge(a: CandidateSetWithMinimum, b: CandidateSetWithMinimum): Option[CandidateSetWithMinimum] = {
       val aSet = a.candidates
