@@ -1744,10 +1744,6 @@ class BFSPruningVarExpandCursorTest {
         public long startNode() {
             return nodes.get(0);
         }
-
-        public List<Long> dropStartNode() {
-            return nodes.subList(1, nodes.size());
-        }
     }
 
     private Map<Long, Integer> asDepthMap(BFSPruningVarExpandCursor expander) {
@@ -1812,6 +1808,8 @@ class BFSPruningVarExpandCursorTest {
             if (d != cursor.currentDepth() || list == null) {
                 d = cursor.currentDepth();
                 if (list != null) {
+                    // sort nodes of same depth by node id, so equality check is not dependent on traversal order /
+                    // storage format
                     list.sortThis();
                 }
                 list = LongLists.mutable.empty();
@@ -1820,8 +1818,9 @@ class BFSPruningVarExpandCursorTest {
             list.add(cursor.endNode());
         }
 
-        if (!graph.isEmpty()) {
-            ((MutableLongList) graph.get(graph.size() - 1)).sortThis();
+        // in the above loop we will miss sorting the last list
+        if (list != null) {
+            list.sortThis();
         }
         return new BFSGraph(graph);
     }
