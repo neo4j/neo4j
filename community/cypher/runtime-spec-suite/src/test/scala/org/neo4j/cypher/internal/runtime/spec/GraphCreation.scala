@@ -177,7 +177,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
       val relationships =
         for (relType <- relTypes) yield {
           val n =
-            if (relType == relTypes.last)
+            if (relType eq relTypes.last)
               runtimeTestSupport.tx.createNode(endLabel)
             else
               runtimeTestSupport.tx.createNode()
