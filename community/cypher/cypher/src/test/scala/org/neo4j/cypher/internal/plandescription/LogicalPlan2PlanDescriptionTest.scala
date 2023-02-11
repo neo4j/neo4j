@@ -4831,6 +4831,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           maxLength = 4,
+          depthName = None,
           nodePredicates = Seq(nodePredicate),
           relationshipPredicates = Seq(relationshipPredicate)
         ),
@@ -4858,6 +4859,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = true,
           4,
+          depthName = None,
           Seq(nodePredicate),
           Seq()
         ),
@@ -4883,6 +4885,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           4,
+          depthName = None,
           Seq(),
           Seq()
         ),

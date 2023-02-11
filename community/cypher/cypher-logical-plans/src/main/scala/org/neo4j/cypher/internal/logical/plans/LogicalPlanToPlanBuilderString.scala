@@ -358,6 +358,7 @@ object LogicalPlanToPlanBuilderString {
           to,
           includeStartNode,
           maxLength,
+          depthName,
           nodePredicates,
           relationshipPredicates
         ) =>

@@ -1678,6 +1678,7 @@ case class LogicalPlan2PlanDescription(
           toName,
           includeStartNode,
           max,
+          depthName,
           nodePredicates,
           relationshipPredicates
         ) =>

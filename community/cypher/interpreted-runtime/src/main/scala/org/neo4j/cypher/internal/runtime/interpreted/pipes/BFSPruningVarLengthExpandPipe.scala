@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingE
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander
 import org.neo4j.io.IOUtils
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -46,6 +47,7 @@ case class BFSPruningVarLengthExpandPipe(
   source: Pipe,
   fromName: String,
   toName: String,
+  maybeDepthName: Option[String],
   types: RelationshipTypes,
   dir: SemanticDirection,
   includeStartNode: Boolean,
@@ -53,6 +55,9 @@ case class BFSPruningVarLengthExpandPipe(
   filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
+
+  private val emitDepth: Boolean = maybeDepthName.nonEmpty
+  private val depthName: String = maybeDepthName.orNull
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -81,7 +86,17 @@ case class BFSPruningVarLengthExpandPipe(
                 PrimitiveLongHelper.map(
                   expand,
                   endNode => {
-                    rowFactory.copyWith(row, toName, VirtualValues.node(endNode))
+                    if (emitDepth) {
+                      rowFactory.copyWith(
+                        row,
+                        toName,
+                        VirtualValues.node(endNode),
+                        depthName,
+                        Values.intValue(expand.currentDepth)
+                      )
+                    } else {
+                      rowFactory.copyWith(row, toName, VirtualValues.node(endNode))
+                    }
                   }
                 )
               } else {
@@ -100,6 +115,10 @@ case class BFSPruningVarLengthExpandPipe(
 
 object BFSPruningVarLengthExpandPipe {
 
+  trait ClosingLongIteratorWithDepth extends ClosingLongIterator {
+    def currentDepth: Int
+  }
+
   def bfsIterator(
     query: QueryContext,
     node: Long,
@@ -110,7 +129,7 @@ object BFSPruningVarLengthExpandPipe {
     nodePredicate: LongPredicate,
     relPredicate: Predicate[RelationshipTraversalCursor],
     memoryTracker: MemoryTracker
-  ): ClosingLongIterator = {
+  ): ClosingLongIteratorWithDepth = {
     val nodeCursor = query.nodeCursor()
     val traversalCursor = query.traversalCursor()
 
@@ -157,8 +176,19 @@ object BFSPruningVarLengthExpandPipe {
     }
     query.resources.trace(nodeCursor)
     query.resources.trace(traversalCursor)
-    new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long = if (cursor.next()) cursor.endNode() else -1L
+    var _nextCurrentDepth: Int = -1
+    var _currentDepth: Int = -1
+    new PrimitiveCursorIterator with ClosingLongIteratorWithDepth {
+      override protected def fetchNext(): Long = {
+        _currentDepth = _nextCurrentDepth
+        if (cursor.next()) {
+          _nextCurrentDepth = cursor.currentDepth()
+          cursor.endNode()
+        } else {
+          -1L
+        }
+      }
+      override def currentDepth: Int = _currentDepth
       override def close(): Unit = IOUtils.closeAll(traversalCursor, nodeCursor, cursor)
     }
   }

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPip
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.predicateIsTrue
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.values.storable.Values
 
 import java.util.function.LongPredicate
 import java.util.function.Predicate
@@ -47,6 +48,7 @@ case class BFSPruningVarLengthExpandSlottedPipe(
   source: Pipe,
   fromSlot: Slot,
   toOffset: Int,
+  maybeDepthOffset: Option[Int],
   types: RelationshipTypes,
   dir: SemanticDirection,
   includeStartNode: Boolean,
@@ -58,6 +60,8 @@ case class BFSPruningVarLengthExpandSlottedPipe(
   self =>
 
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot, throwOnTypeError = false)
+  private val emitDepth: Boolean = maybeDepthOffset.nonEmpty
+  private val depthOffset: Int = maybeDepthOffset.getOrElse(-1)
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -108,6 +112,9 @@ case class BFSPruningVarLengthExpandSlottedPipe(
                   val outputRow = SlottedRow(slots)
                   outputRow.copyAllFrom(inputRow)
                   outputRow.setLongAt(toOffset, endNode)
+                  if (emitDepth) {
+                    outputRow.setRefAt(depthOffset, Values.intValue(expand.currentDepth))
+                  }
                   outputRow
                 }
               )
