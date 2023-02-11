@@ -591,6 +591,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def bfsPruningVarExpand(
     pattern: String,
+    depthName: Option[String] = None,
     nodePredicates: Seq[Predicate] = Seq.empty,
     relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
@@ -608,6 +609,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             p.to,
             min == 0,
             max,
+            depthName,
             nodePredicates.map(_.asVariablePredicate),
             relationshipPredicates.map(_.asVariablePredicate)
           )(_)

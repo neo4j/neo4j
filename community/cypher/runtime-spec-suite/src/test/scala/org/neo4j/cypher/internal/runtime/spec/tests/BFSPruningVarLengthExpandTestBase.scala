@@ -77,18 +77,18 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..1]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..1]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = Array(Array(n2))
+    val expected = Array(Array(n2, 1))
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with max length") {
@@ -97,18 +97,18 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..1]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..1]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = Array(Array(n2))
+    val expected = Array(Array(n2, 1))
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand with max length including start node") {
@@ -117,9 +117,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..1]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0..1]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -128,11 +128,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected =
       Array(
-        Array(n1),
-        Array(n2)
+        Array(n1, 0),
+        Array(n2, 1)
       )
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with max length including start node") {
@@ -141,9 +141,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..1]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0..1]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -152,11 +152,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected =
       Array(
-        Array(n1),
-        Array(n2)
+        Array(n1, 0),
+        Array(n2, 1)
       )
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand with min and max length") {
@@ -165,9 +165,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..4]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..4]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -180,10 +180,10 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 1 to 4
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.endNode())
+        Array(pathPrefix.endNode(), length)
       }
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with min and max length") {
@@ -192,9 +192,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..4]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..4]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -207,10 +207,10 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 1 to 4
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.endNode())
+        Array(pathPrefix.endNode(), length)
       }
 
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand with length 0") {
@@ -219,17 +219,17 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = Array(Array(n1))
-    runtimeResult should beColumns("y").withRows(expected)
+    val expected = Array(Array(n1, 0))
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with length 0") {
@@ -238,17 +238,17 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = Array(Array(n1))
-    runtimeResult should beColumns("y").withRows(expected)
+    val expected = Array(Array(n1, 0))
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand with length 0..2") {
@@ -257,9 +257,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..2]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0..2]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -267,11 +267,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2),
-      Array(n3)
+      Array(n1, 0),
+      Array(n2, 1),
+      Array(n3, 2)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with length 0..2") {
@@ -280,9 +280,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*0..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -290,11 +290,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2),
-      Array(n3)
+      Array(n1, 0),
+      Array(n2, 1),
+      Array(n3, 2)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand with self-loop") {
@@ -310,9 +310,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..2]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..2]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -320,10 +320,10 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2)
+      Array(n1, 1),
+      Array(n2, 1)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("undirected var-length-expand with self-loop") {
@@ -339,9 +339,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -349,10 +349,10 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2)
+      Array(n1, 1),
+      Array(n2, 1)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("fixed length with shortcut") {
@@ -384,9 +384,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..4]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..4]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -394,12 +394,12 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1_2),
-      Array(n2),
-      Array(n3),
-      Array(n4)
+      Array(n1_2, 1),
+      Array(n2, 1),
+      Array(n3, 2),
+      Array(n4, 3)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("fixed length with shortcut, undirected") {
@@ -431,9 +431,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..4]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..4]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -441,13 +441,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1_2),
-      Array(n2),
-      Array(n3),
-      Array(n1),
-      Array(n4)
+      Array(n1_2, 1),
+      Array(n2, 1),
+      Array(n3, 2),
+      Array(n1, 3),
+      Array(n4, 3)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("fixed length with longer shortcut") {
@@ -481,9 +481,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..5]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -491,13 +491,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1_2a),
-      Array(n1_2b),
-      Array(n2),
-      Array(n3),
-      Array(n4)
+      Array(n1_2a, 1),
+      Array(n1_2b, 2),
+      Array(n2, 1),
+      Array(n3, 2),
+      Array(n4, 3)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("fixed length with longer shortcut, undirected") {
@@ -531,9 +531,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*..5]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -541,14 +541,14 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1_2a),
-      Array(n1_2b),
-      Array(n2),
-      Array(n3),
-      Array(n1),
-      Array(n4)
+      Array(n1_2a, 1),
+      Array(n1_2b, 2),
+      Array(n2, 1),
+      Array(n3, 2),
+      Array(n1, 4),
+      Array(n4, 3)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("two ways to get to the same node - one inside and one outside the max") {
@@ -582,9 +582,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..4]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..4]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -592,13 +592,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2),
-      Array(n3),
-      Array(y),
-      Array(z)
+      Array(n1, 1),
+      Array(n2, 2),
+      Array(n3, 3),
+      Array(y, 1),
+      Array(z, 2)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("two ways to get to the same node - one inside and one outside the max, undirected") {
@@ -632,9 +632,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..4]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..4]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -642,13 +642,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Array(
-      Array(n1),
-      Array(n2),
-      Array(n3),
-      Array(y),
-      Array(z)
+      Array(n1, 1),
+      Array(n2, 2),
+      Array(n3, 2),
+      Array(y, 1),
+      Array(z, 2)
     )
-    runtimeResult should beColumns("y").withRows(expected)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   // NULL INPUT
@@ -693,24 +693,24 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..2]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..2]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1),
-      Array(g.sa1),
-      Array(g.middle),
-      Array(g.sb2),
-      Array(g.sc3),
-      Array(g.ea1),
-      Array(g.eb1),
-      Array(g.ec1)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1),
+      Array(g.sa1, 1),
+      Array(g.middle, 1),
+      Array(g.sb2, 2),
+      Array(g.sc3, 2),
+      Array(g.ea1, 2),
+      Array(g.eb1, 2),
+      Array(g.ec1, 2)
     ))
   }
 
@@ -720,18 +720,18 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)<-[*1..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)<-[*1..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sc1),
-      Array(g.sc2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sc1, 1),
+      Array(g.sc2, 2)
     ))
   }
 
@@ -741,27 +741,27 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[*1..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1), // outgoing only
-      Array(g.sa1),
-      Array(g.middle),
-      Array(g.sb2),
-      Array(g.sc3),
-      Array(g.ea1),
-      Array(g.eb1),
-      Array(g.ec1),
-      Array(g.sc1), // incoming only
-      Array(g.sc2),
-      Array(g.end)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1), // outgoing only
+      Array(g.sa1, 1),
+      Array(g.middle, 1),
+      Array(g.sb2, 2),
+      Array(g.sc3, 2),
+      Array(g.ea1, 2),
+      Array(g.eb1, 2),
+      Array(g.ec1, 2),
+      Array(g.sc1, 1), // incoming only
+      Array(g.sc2, 2),
+      Array(g.end, 2)
     ))
   }
 
@@ -773,21 +773,21 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[:A*1..2]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[:A*1..2]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.middle),
-      Array(g.sc3),
-      Array(g.ea1),
-      Array(g.ec1)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.middle, 1),
+      Array(g.sc3, 2),
+      Array(g.ea1, 2),
+      Array(g.ec1, 2)
     ))
   }
 
@@ -797,18 +797,18 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[:B*1..2]->(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[:B*1..2]->(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1),
-      Array(g.sb2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1),
+      Array(g.sb2, 2)
     ))
   }
 
@@ -818,24 +818,24 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[:A*1..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[:A*1..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.sc1),
-      Array(g.middle),
-      Array(g.end),
-      Array(g.sc2),
-      Array(g.sc3),
-      Array(g.ea1),
-      Array(g.ec1)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.sc1, 1),
+      Array(g.middle, 1),
+      Array(g.end, 2),
+      Array(g.sc2, 2),
+      Array(g.sc3, 2),
+      Array(g.ea1, 2),
+      Array(g.ec1, 2)
     ))
   }
 
@@ -845,18 +845,18 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[:B*1..2]-(y)")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand("(x)-[:B*1..2]-(y)", depthName = Some("depth"))
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1),
-      Array(g.sb2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1),
+      Array(g.sb2, 2)
     ))
   }
 
@@ -869,19 +869,23 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.middle.getId)))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.middle.getId)),
+        depthName = Some("depth")
+      )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.sb1),
-      Array(g.sb2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.sb1, 1),
+      Array(g.sb2, 2)
     ))
   }
 
@@ -891,14 +895,15 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*1..3]-(y)",
         nodePredicates = Seq(
           Predicate("n", "id(n) <> " + g.middle.getId),
           Predicate("n2", "id(n2) <> " + g.sc3.getId)
-        )
+        ),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -906,12 +911,12 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.sb1),
-      Array(g.sb2),
-      Array(g.sc1),
-      Array(g.sc2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.sb1, 1),
+      Array(g.sb2, 2),
+      Array(g.sc1, 1),
+      Array(g.sc2, 2)
     ))
   }
 
@@ -922,16 +927,20 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*1..2]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)),
+        depthName = Some("depth")
+      )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withNoRows()
+    runtimeResult should beColumns("y", "depth").withNoRows()
   }
 
   test("should filter on node predicate on first node, undirected") {
@@ -941,16 +950,20 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*1..2]-(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*1..2]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)),
+        depthName = Some("depth")
+      )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withNoRows()
+    runtimeResult should beColumns("y", "depth").withNoRows()
   }
 
   test("should filter on node predicate on first node from reference") {
@@ -960,9 +973,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(X)-[*1..2]->(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(X)-[*1..2]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)),
+        depthName = Some("depth")
+      )
       .projection("x AS X")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -970,7 +987,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withNoRows()
+    runtimeResult should beColumns("y", "depth").withNoRows()
   }
 
   test("should filter on node predicate on first node from reference, undirected") {
@@ -980,9 +997,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(X)-[*1..2]-(y)", nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(X)-[*1..2]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) <> " + g.start.getId)),
+        depthName = Some("depth")
+      )
       .projection("x AS X")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -990,7 +1011,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withNoRows()
+    runtimeResult should beColumns("y", "depth").withNoRows()
   }
 
   test("should filter on relationship predicate") {
@@ -999,11 +1020,12 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*1..2]->(y)",
-        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId))
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId)),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -1011,11 +1033,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.middle),
-      Array(g.sb1),
-      Array(g.sb2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.middle, 2),
+      Array(g.sb1, 1),
+      Array(g.sb2, 2)
     ))
   }
 
@@ -1025,14 +1047,15 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*1..3]-(y)",
         relationshipPredicates = Seq(
           Predicate("r", "id(r) <> " + g.startMiddle.getId),
           Predicate("r2", "id(r2) <> " + g.endMiddle.getId)
-        )
+        ),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -1040,17 +1063,17 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.sb1),
-      Array(g.sc1),
-      Array(g.middle),
-      Array(g.sb2),
-      Array(g.sc2),
-      Array(g.ea1),
-      Array(g.eb1),
-      Array(g.ec1),
-      Array(g.sc3)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.sb1, 1),
+      Array(g.sc1, 1),
+      Array(g.middle, 2),
+      Array(g.sb2, 2),
+      Array(g.sc2, 2),
+      Array(g.ea1, 3),
+      Array(g.eb1, 3),
+      Array(g.ec1, 3),
+      Array(g.sc3, 3)
     ))
   }
 
@@ -1060,11 +1083,12 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*1..2]-(y)",
-        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId))
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId)),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -1072,13 +1096,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sa1),
-      Array(g.middle),
-      Array(g.sb1),
-      Array(g.sc1),
-      Array(g.sb2),
-      Array(g.sc2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sa1, 1),
+      Array(g.middle, 2),
+      Array(g.sb1, 1),
+      Array(g.sc1, 1),
+      Array(g.sb2, 2),
+      Array(g.sc2, 2)
     ))
   }
 
@@ -1089,12 +1113,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*..2]->(y)",
         nodePredicates = Seq(Predicate("n", "id(n) <> " + g.sa1.getId)),
-        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId))
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId)),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -1102,9 +1127,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1),
-      Array(g.sb2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1),
+      Array(g.sb2, 2)
     ))
   }
 
@@ -1115,12 +1140,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
       .bfsPruningVarExpand(
         "(x)-[*..2]-(y)",
         nodePredicates = Seq(Predicate("n", "id(n) <> " + g.sa1.getId)),
-        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId))
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> " + g.startMiddle.getId)),
+        depthName = Some("depth")
       )
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
@@ -1128,11 +1154,11 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("y").withRows(Array(
-      Array(g.sb1),
-      Array(g.sc1),
-      Array(g.sb2),
-      Array(g.sc2)
+    runtimeResult should beColumns("y", "depth").withRows(Array(
+      Array(g.sb1, 1),
+      Array(g.sc1, 1),
+      Array(g.sb2, 2),
+      Array(g.sc2, 2)
     ))
   }
 
@@ -1144,9 +1170,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")),
+        depthName = Some("depth")
+      )
       .input(nodes = Seq("x"))
       .build()
 
@@ -1158,8 +1188,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing start node, undirected") {
@@ -1170,9 +1200,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]-(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")),
+        depthName = Some("depth")
+      )
       .input(nodes = Seq("x"))
       .build()
 
@@ -1184,8 +1218,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing start node including start node") {
@@ -1196,9 +1230,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]->(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")),
+        depthName = Some("depth")
+      )
       .input(nodes = Seq("x"))
       .build()
 
@@ -1210,8 +1248,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing start node including start node, undirected") {
@@ -1222,9 +1260,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]-(y)", nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "'START' IN labels(x)")),
+        depthName = Some("depth")
+      )
       .input(nodes = Seq("x"))
       .build()
 
@@ -1236,8 +1278,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing reference in context") {
@@ -1248,9 +1290,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]->(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) >= zero")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1263,8 +1309,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing reference in context, undirected") {
@@ -1275,9 +1321,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]-(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) >= zero")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1290,8 +1340,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing reference in context and including start node") {
@@ -1302,9 +1352,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]->(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) >= zero")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1317,8 +1371,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing reference in context and including start node, undirected") {
@@ -1329,9 +1383,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]-(y)", nodePredicates = Seq(Predicate("n", "id(n) >= zero")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(n) >= zero")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x"))
       .build()
@@ -1344,8 +1402,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing node in context") {
@@ -1356,9 +1414,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]->(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(other) >= 0")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1371,8 +1433,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing node in context, undirected") {
@@ -1383,9 +1445,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*..5]-(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(other) >= 0")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1398,8 +1464,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing node in context and including start node") {
@@ -1410,9 +1476,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]->(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]->(y)",
+        nodePredicates = Seq(Predicate("n", "id(other) >= 0")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1425,8 +1495,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("should handle predicate accessing node in context and including start node, undirected") {
@@ -1437,9 +1507,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("y")
-      .distinct("y AS y")
-      .bfsPruningVarExpand("(x)-[*0..5]-(y)", nodePredicates = Seq(Predicate("n", "id(other) >= 0")))
+      .produceResults("y", "depth")
+      .distinct("y AS y", "depth AS depth")
+      .bfsPruningVarExpand(
+        "(x)-[*0..5]-(y)",
+        nodePredicates = Seq(Predicate("n", "id(other) >= 0")),
+        depthName = Some("depth")
+      )
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -1452,8 +1526,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode())
-    runtimeResult should beColumns("y").withRows(expected)
+      } yield Array(path.take(length).endNode(), length)
+    runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
   test("var-length-expand should only find start node once") {

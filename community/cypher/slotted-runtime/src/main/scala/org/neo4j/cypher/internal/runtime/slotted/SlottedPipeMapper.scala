@@ -933,11 +933,13 @@ class SlottedPipeMapper(
           to,
           includeStartNode,
           max,
+          depthName,
           nodePredicates,
           relationshipPredicates
         ) =>
         val fromSlot = slots(from)
         val toOffset = slots.getLongOffsetFor(to)
+        val depthOffset = depthName.map(slots.getReferenceOffsetFor)
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
         val sourceSlots = physicalPlan.slotConfigurations(source.id)
@@ -959,6 +961,7 @@ class SlottedPipeMapper(
           source,
           fromSlot,
           toOffset,
+          depthOffset,
           RelationshipTypes(types.toArray),
           dir,
           includeStartNode,
