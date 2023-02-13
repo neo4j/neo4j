@@ -93,10 +93,10 @@ public class DefaultReadOnlyDatabases implements ReadOnlyDatabases {
 
     @Override
     public synchronized void refresh() {
-        this.updateId++;
         this.readOnlyDatabases = readOnlyDatabasesLookupFactories.stream()
                 .map(LookupFactory::lookupReadOnlyDatabases)
                 .collect(Collectors.toUnmodifiableSet());
+        this.updateId++;
         listener.onRefresh(this);
     }
 }
