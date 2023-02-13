@@ -96,6 +96,10 @@ public abstract class DatabaseMigrationITBase {
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
     }
 
+    protected StoreMigrationTestUtils.Result migrate(Neo4jLayout neo4jLayout, String... args) {
+        return StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(neo4jLayout, args);
+    }
+
     protected void doShouldMigrateDatabase(ZippedStore zippedStore, String toRecordFormat)
             throws IOException, ConsistencyCheckIncompleteException {
         // given
@@ -103,8 +107,8 @@ public abstract class DatabaseMigrationITBase {
         zippedStore.unzip(homeDir);
 
         // when
-        StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
+        StoreMigrationTestUtils.Result result =
+                migrate(layout, "--to-format", toRecordFormat, "--verbose", DEFAULT_DATABASE_NAME);
         assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
 
         migrateOrRemoveSystemDatabase(zippedStore, layout);
@@ -134,8 +138,7 @@ public abstract class DatabaseMigrationITBase {
     protected void doShouldMigrateSystemDatabaseAndOthers(SystemDbMigration systemDbMigration)
             throws IOException, ConsistencyCheckIncompleteException {
         doShouldMigrateSystemDatabase(systemDbMigration, (neo4jLayout) -> {
-            StoreMigrationTestUtils.Result result =
-                    StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(neo4jLayout, "--verbose", "*");
+            StoreMigrationTestUtils.Result result = migrate(neo4jLayout, "--verbose", "*");
             assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
         });
     }
@@ -143,11 +146,9 @@ public abstract class DatabaseMigrationITBase {
     protected void doShouldMigrateSystemDatabase(SystemDbMigration systemDbMigration)
             throws IOException, ConsistencyCheckIncompleteException {
         doShouldMigrateSystemDatabase(systemDbMigration, (neo4jLayout) -> {
-            StoreMigrationTestUtils.Result result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                    neo4jLayout, "--verbose", DEFAULT_DATABASE_NAME);
+            StoreMigrationTestUtils.Result result = migrate(neo4jLayout, "--verbose", DEFAULT_DATABASE_NAME);
             assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
-            result = StoreMigrationTestUtils.runStoreMigrationCommandFromSameJvm(
-                    neo4jLayout, "--verbose", SYSTEM_DATABASE_NAME);
+            result = migrate(neo4jLayout, "--verbose", SYSTEM_DATABASE_NAME);
             assertThat(result.exitCode()).withFailMessage(result.err()).isEqualTo(0);
         });
     }
