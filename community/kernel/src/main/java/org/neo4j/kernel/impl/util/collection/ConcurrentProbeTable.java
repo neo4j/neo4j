@@ -26,7 +26,6 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.neo4j.collection.trackable.HeapTrackingConcurrentBag;
 import org.neo4j.collection.trackable.HeapTrackingConcurrentHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
@@ -40,7 +39,7 @@ import org.neo4j.memory.MemoryTracker;
 public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> extends DefaultCloseListenable {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentProbeTable.class);
     private final MemoryTracker scopedMemoryTracker;
-    private HeapTrackingConcurrentHashMap<K, HeapTrackingConcurrentBag<V>> map;
+    private HeapTrackingConcurrentHashMap<K, ConcurrentBag<V>> map;
 
     public static <K extends Measurable, V extends Measurable> ConcurrentProbeTable<K, V> createProbeTable(
             MemoryTracker memoryTracker) {
@@ -55,11 +54,10 @@ public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> ex
     }
 
     public void put(K key, V value) {
-        MutableLong heapUsage =
-                new MutableLong(value.estimatedHeapUsage() + HeapTrackingConcurrentBag.staticSizeOfWrapperObject());
+        MutableLong heapUsage = new MutableLong(value.estimatedHeapUsage() + ConcurrentBag.SIZE_OF_NODE);
         map.computeIfAbsent(key, p -> {
-                    heapUsage.add(key.estimatedHeapUsage() + map.sizeOfWrapperObject());
-                    return HeapTrackingConcurrentBag.newBag(scopedMemoryTracker);
+                    heapUsage.add(key.estimatedHeapUsage() + map.sizeOfWrapperObject() + ConcurrentBag.SIZE_OF_BAG);
+                    return new ConcurrentBag<>();
                 })
                 .add(value);
         scopedMemoryTracker.allocateHeap(heapUsage.longValue());
