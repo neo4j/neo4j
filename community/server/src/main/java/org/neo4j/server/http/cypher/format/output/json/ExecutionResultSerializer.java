@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.output.json;
 
+import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.COMMITTED;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
 
@@ -226,6 +227,11 @@ class ExecutionResultSerializer {
                     jsonGenerator.writeStringField("expires", expires);
                 }
                 jsonGenerator.writeEndObject();
+            }
+            if (transactionInfoEvent.getNotification() == COMMITTED) {
+                jsonGenerator.writeArrayFieldStart("lastBookmarks");
+                jsonGenerator.writeString(transactionInfoEvent.getBookmark());
+                jsonGenerator.writeEndArray();
             }
             jsonGenerator.writeEndObject();
             flush();

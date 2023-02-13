@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.server.http.cypher.integration.JoltV1ResultFormatIT.splitAndVerify;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -70,12 +71,13 @@ class JoltV2ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n"
-                        + "{\"summary\":{}}\n"
-                        + "{\"info\":{\"commit\":\""
-                        + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\n",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}",
+                "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}",
+                "{\"summary\":{}}",
+                "{\"info\":{\"commit\":\"" + commitResource + "\",\"lastBookmarks\":[");
     }
 
     @ParameterizedTest
@@ -91,12 +93,14 @@ class JoltV2ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "\u001E{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n"
-                        + "\u001E{\"summary\":{}}\n"
-                        + "\u001E{\"info\":{\"commit\":\""
-                        + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\u001E",
+                "",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n",
+                "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n",
+                "{\"summary\":{}}\n",
+                "{\"info\":{\"commit\":\"" + commitResource + "\",\"lastBookmarks\":[");
     }
 
     @Test
@@ -108,12 +112,13 @@ class JoltV2ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo(
-                        "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" + "{\"data\":[1,{\"R\":\"5.5\"},true]}\n"
-                                + "{\"summary\":{}}\n"
-                                + "{\"info\":{\"commit\":\""
-                                + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\n",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}",
+                "{\"data\":[1,{\"R\":\"5.5\"},true]}",
+                "{\"summary\":{}}",
+                "{\"info\":{\"commit\":\"" + commitResource + "\",\"lastBookmarks\":[");
     }
 
     @Test
@@ -124,12 +129,14 @@ class JoltV2ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "\u001E{\"data\":[1,{\"R\":\"5.5\"},true]}\n"
-                        + "\u001E{\"summary\":{}}\n"
-                        + "\u001E{\"info\":{\"commit\":\""
-                        + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\u001E",
+                "",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n",
+                "{\"data\":[1,{\"R\":\"5.5\"},true]}\n",
+                "{\"summary\":{}}\n",
+                "{\"info\":{\"commit\":\"" + commitResource + "\",\"lastBookmarks\":[");
     }
 
     private static HTTP.RawPayload queryAsJsonRow(String query) {

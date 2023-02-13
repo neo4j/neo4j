@@ -37,6 +37,6 @@ class ErrorInvocation {
 
     void execute(OutputEventStream outputEventStream) {
         outputEventStream.writeFailure(neo4jError.status(), neo4jError.getMessage());
-        outputEventStream.writeTransactionInfo(TransactionNotificationState.NO_TRANSACTION, null, -1);
+        outputEventStream.writeTransactionInfo(TransactionNotificationState.NO_TRANSACTION, null, -1, null);
     }
 }

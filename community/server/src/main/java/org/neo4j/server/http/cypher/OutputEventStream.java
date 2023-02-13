@@ -45,7 +45,8 @@ public interface OutputEventStream {
 
     void writeRecord(List<String> columns, Function<String, Object> valueSupplier);
 
-    void writeTransactionInfo(TransactionNotificationState notification, URI commitUri, long expirationTimestamp);
+    void writeTransactionInfo(
+            TransactionNotificationState notification, URI commitUri, long expirationTimestamp, String bookmark);
 
     void writeFailure(Status status, String message);
 }

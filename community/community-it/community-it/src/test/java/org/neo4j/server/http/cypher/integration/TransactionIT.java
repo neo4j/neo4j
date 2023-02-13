@@ -29,6 +29,7 @@ import static org.neo4j.server.http.cypher.integration.TransactionConditions.has
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.web.HttpHeaderUtils.ACCESS_MODE_HEADER;
+import static org.neo4j.server.web.HttpHeaderUtils.BOOKMARKS_HEADER;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
@@ -38,7 +39,9 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -49,7 +52,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -58,12 +64,14 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.web.XForwardUtil;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
@@ -884,13 +892,178 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
     }
 
     @Test
-    public void shouldErrorWithInvalidAccessModeHeader() throws Exception {
-
+    public void shouldErrorWithInvalidAccessModeHeader() {
         // begin
         Response begin = POST(TX_ENDPOINT, quotedJson(""), Map.of(ACCESS_MODE_HEADER, "INVALID!"));
+        assertThat(begin.status()).isEqualTo(200);
+        assertThat(begin).satisfies(hasErrors(Status.Request.InvalidFormat));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"boooookyMark", "64, 12", "FB:boom!"})
+    public void shouldRejectInvalidBookmarks(String bookmarkInput) throws JsonParseException {
+
+        // begin
+        Response begin = POST(TX_ENDPOINT, quotedJson(""), Map.of(BOOKMARKS_HEADER, bookmarkInput));
 
         assertThat(begin.status()).isEqualTo(200);
         assertThat(begin).satisfies(hasErrors(Status.Request.InvalidFormat));
+        assertThat(begin.get("errors").get(0).get("message").asText())
+                .startsWith("Invalid bookmarks header. " + "`bookmarks` must be an array of non-empty string values.");
+    }
+
+    @Test
+    public void shouldReturnUpdatedBookmarkAfterSingleRequestTransaction() throws JsonParseException {
+        var initialBookmark = POST(
+                        transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"))
+                .get("lastBookmarks")
+                .get(0)
+                .asText();
+
+        var beginWithBookmark = POST(
+                transactionCommitUri(),
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(initialBookmark));
+
+        assertThat(beginWithBookmark.status()).isEqualTo(200);
+        assertThat(beginWithBookmark).satisfies(containsNoErrors());
+        assertThat(beginWithBookmark.get("lastBookmarks").asText()).isNotEqualTo(initialBookmark);
+    }
+
+    @Test
+    public void shouldAcceptMultipleBookmarks() throws JsonParseException {
+        var initialBookmarkA = POST(
+                        transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"))
+                .get("lastBookmarks")
+                .get(0)
+                .asText();
+        var initialBookmarkB = POST(
+                        transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"))
+                .get("lastBookmarks")
+                .get(0)
+                .asText();
+
+        var beginWithBookmark = POST(
+                transactionCommitUri(),
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(initialBookmarkA, initialBookmarkB));
+
+        assertThat(beginWithBookmark.status()).isEqualTo(200);
+        assertThat(beginWithBookmark).satisfies(containsNoErrors());
+        assertThat(beginWithBookmark.get("lastBookmarks").get(0).asText()).isNotEqualTo(initialBookmarkA);
+        assertThat(beginWithBookmark.get("lastBookmarks").get(0).asText()).isNotEqualTo(initialBookmarkB);
+    }
+
+    @Test
+    public void shouldReturnUpdatedBookmarkAfterExplicitTransaction() throws JsonParseException {
+        var initialBookmark = POST(
+                        transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"))
+                .get("lastBookmarks")
+                .get(0)
+                .asText();
+
+        // begin
+        Response begin = POST(TX_ENDPOINT, quotedJson(""), bookmarkHeader(initialBookmark));
+
+        assertThat(begin.status()).isEqualTo(201);
+        assertHasTxLocation(begin, TX_ENDPOINT);
+
+        String commitResource = begin.stringFromContent("commit");
+        assertThat(commitResource).isEqualTo(begin.location() + "/commit");
+
+        // execute and commit
+        Response commit = POST(commitResource, quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
+
+        assertThat(commit).satisfies(containsNoErrors());
+        assertThat(commit.status()).isEqualTo(200);
+        assertThat(commit.get("lastBookmarks").get(0).asText()).isNotEqualTo(initialBookmark);
+    }
+
+    @Test
+    void shouldFailForUnreachableBookmark() {
+        var lastClosedTransactionId = getLastClosedTransactionId();
+
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                resolveDependency(Database.class)
+                                        .getNamedDatabaseId()
+                                        .databaseId()
+                                        .uuid(),
+                                lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
+
+        Response begin = POST(
+                TX_ENDPOINT,
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(expectedBookmark));
+
+        assertThat(begin.status()).isEqualTo(201);
+        assertThat(begin).satisfies(hasErrors(Status.Transaction.BookmarkTimeout));
+    }
+
+    @Test
+    void bookmarksAreIgnoredOnMidTransactionRequests() throws JsonParseException {
+        var bookmark = POST(transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"))
+                .get("lastBookmarks")
+                .get(0)
+                .asText();
+
+        // begin
+        Response begin = POST(TX_ENDPOINT);
+
+        assertThat(begin.status()).isEqualTo(201);
+        assertHasTxLocation(begin, TX_ENDPOINT);
+
+        String commitResource = begin.stringFromContent("commit");
+
+        // execute
+        Response execute = POST(
+                begin.location(),
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(bookmark));
+        assertThat(execute.status()).isEqualTo(200);
+        assertThat(execute.get("transaction").get("expires").asText()).satisfies(validRFCTimestamp());
+
+        // commit
+        Response commit = POST(commitResource);
+
+        assertThat(commit.status()).isEqualTo(200);
+        assertThat(commit.get("lastBookmarks").get(0).asText()).isNotBlank();
+    }
+
+    @Test
+    public void shouldWaitForUpdatedBookmark() {
+        var lastClosedTransactionId = getLastClosedTransactionId();
+
+        var expectedBookmark = new FabricBookmark(
+                        List.of(new FabricBookmark.InternalGraphState(
+                                resolveDependency(Database.class)
+                                        .getNamedDatabaseId()
+                                        .databaseId()
+                                        .uuid(),
+                                lastClosedTransactionId + 1)),
+                        List.of())
+                .serialize();
+
+        var begin = POST(
+                transactionCommitUri(),
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(expectedBookmark));
+
+        assertThat(begin.status()).isEqualTo(200);
+        assertThat(begin).satisfies(hasErrors(Status.Transaction.BookmarkTimeout));
+
+        // move the state forward one so bookmark becomes reachable
+        POST(transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"));
+
+        Response begin2 = POST(
+                transactionCommitUri(),
+                quotedJson("{ 'statements': [ { 'statement': 'CREATE (n)' } ] }"),
+                bookmarkHeader(expectedBookmark));
+
+        assertThat(begin2.status()).isEqualTo(200);
+        assertThat(begin2).satisfies(containsNoErrors());
     }
 
     private String transactionCommitUri() {
@@ -962,5 +1135,27 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         return kernelTransactions.activeTransactions().stream()
                 .flatMap(k -> k.executingQuery().stream())
                 .anyMatch(executingQuery -> statement.equals(executingQuery.rawQueryText()));
+    }
+
+    private static Map<String, String> bookmarkHeader(String... bookmark) {
+        var sb = new StringBuilder();
+
+        sb.append("[");
+        for (var iter = Arrays.stream(bookmark).iterator(); iter.hasNext(); ) {
+            sb.append("\"");
+            sb.append(iter.next());
+            sb.append("\"");
+            if (iter.hasNext()) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+
+        return Map.of(BOOKMARKS_HEADER, sb.toString());
+    }
+
+    public long getLastClosedTransactionId() {
+        var txIdStore = resolveDependency(TransactionIdStore.class);
+        return txIdStore.getLastClosedTransactionId();
     }
 }

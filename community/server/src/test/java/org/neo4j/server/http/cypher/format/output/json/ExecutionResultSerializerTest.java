@@ -129,8 +129,32 @@ class ExecutionResultSerializerTest {
     @Test
     void shouldSerializeResponseWithCommitUriOnly() {
         // when
-        serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1));
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, null));
+
+        // then
+        String result = output.toString(UTF_8);
+        assertEquals("{\"results\":[],\"errors\":[],\"commit\":\"commit/uri/1\"}", result);
+    }
+
+    @Test
+    void shouldSerializeBookmarkOnCommittedNotificationState() {
+        // when
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.COMMITTED, URI.create("commit/uri/1"), -1, "I AM BOOKMARK!"));
+
+        // then
+        String result = output.toString(UTF_8);
+        assertEquals(
+                "{\"results\":[],\"errors\":[],\"commit\":\"commit/uri/1\",\"lastBookmarks\":[\"I AM BOOKMARK!\"]}",
+                result);
+    }
+
+    @Test
+    void shouldNotSerializeBookmarkOnNonCommittedNotificationStates() {
+        // when
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, "NOT SEEN!"));
 
         // then
         String result = output.toString(UTF_8);
@@ -149,8 +173,8 @@ class ExecutionResultSerializerTest {
         writeRecord(serializer, row, "column1", "column2");
         writeStatementEnd(serializer);
 
-        serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1));
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, null));
 
         // then
         String result = output.toString(UTF_8);
@@ -543,7 +567,7 @@ class ExecutionResultSerializerTest {
         writeStatementEnd(serializer);
 
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1, null));
 
         // then
         String result = output.toString(UTF_8);
@@ -1076,12 +1100,12 @@ class ExecutionResultSerializerTest {
 
     private static void writeTransactionInfo(ExecutionResultSerializer serializer) {
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1, null));
     }
 
     private static void writeTransactionInfo(ExecutionResultSerializer serializer, String commitUri) {
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create(commitUri), -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create(commitUri), -1, null));
     }
 
     private static void writeError(ExecutionResultSerializer serializer, Status status, String message) {

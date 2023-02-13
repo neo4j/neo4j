@@ -53,6 +53,6 @@ class RollbackInvocation {
             transactionNotificationState = TransactionNotificationState.UNKNOWN;
         }
 
-        outputEventStream.writeTransactionInfo(transactionNotificationState, null, -1);
+        outputEventStream.writeTransactionInfo(transactionNotificationState, null, -1, null);
     }
 }

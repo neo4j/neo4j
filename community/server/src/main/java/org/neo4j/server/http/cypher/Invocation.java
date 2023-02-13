@@ -250,8 +250,8 @@ class Invocation {
         cacheWriter.setGetNodeById(createGetNodeByIdFunction(cacheWriter));
         var valueMapper = new TransactionIndependentValueMapper(cacheWriter);
         try {
-            var resultConsumer = new OutputEventStreamResponseHandler(outputEventStream, statement, valueMapper);
-
+            var resultConsumer =
+                    new OutputEventStreamResponseHandler(outputEventStream, statement, valueMapper, transactionHandle);
             boltStatement.consume(resultConsumer, -1);
         } catch (ConnectionException | OutputFormatException e) {
             handleOutputError(e);
@@ -325,7 +325,10 @@ class Invocation {
 
         try {
             outputEventStream.writeTransactionInfo(
-                    transactionNotificationState, commitUri, transactionHandle.getExpirationTimestamp());
+                    transactionNotificationState,
+                    commitUri,
+                    transactionHandle.getExpirationTimestamp(),
+                    transactionHandle.getOutputBookmark());
         } catch (ConnectionException | OutputFormatException e) {
             handleOutputError(e);
         }

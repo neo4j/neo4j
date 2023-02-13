@@ -21,12 +21,19 @@ package org.neo4j.server.web;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.InternalLog;
@@ -35,8 +42,11 @@ public class HttpHeaderUtils {
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
     public static final String ACCESS_MODE_HEADER = "access-mode";
+    public static final String BOOKMARKS_HEADER = "bookmarks";
 
     public static final Map<String, String> CHARSET = Map.of("charset", UTF_8.name());
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private HttpHeaderUtils() {}
 
@@ -94,6 +104,24 @@ public class HttpHeaderUtils {
                                 ACCESS_MODE_HEADER, headerValue),
                         ex);
             }
+        }
+    }
+
+    public static List<Bookmark> getBookmarks(CustomBookmarkFormatParser bookmarkFormatParser, HttpHeaders headers) {
+        String headerValue = headers.getHeaderString(BOOKMARKS_HEADER);
+
+        if (headerValue == null || headerValue.length() == 0) {
+            return Collections.emptyList();
+        }
+
+        try {
+            var stringList = Arrays.asList(MAPPER.readValue(headerValue, String[].class));
+            return bookmarkFormatParser.parse(stringList);
+        } catch (IllegalStateException ex) {
+            throw new IllegalArgumentException("Only Fabric bookmarks are supported.", ex);
+        } catch (IllegalArgumentException | JsonProcessingException ex) {
+            throw new IllegalArgumentException(
+                    "Invalid bookmarks header. `bookmarks` must be an array of non-empty string values.", ex);
         }
     }
 

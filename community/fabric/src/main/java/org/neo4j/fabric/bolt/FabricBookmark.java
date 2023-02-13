@@ -75,6 +75,7 @@ public class FabricBookmark extends BookmarkMetadata implements Bookmark {
         return this;
     }
 
+    @Override
     public String serialize() {
         String serializedState = BookmarkStateSerializer.serialize(this);
         return PREFIX + serializedState;

@@ -33,6 +33,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.server.http.cypher.OutputEventStream;
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.TransactionIndependentValueMapper;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.values.AnyValue;
@@ -49,12 +50,18 @@ public class OutputEventStreamResponseHandler extends AbstractMetadataAwareRespo
     private Iterable<Notification> notifications;
     private ExecutionPlanDescription executionPlanDescription;
 
+    private TransactionHandle transactionHandle;
+
     public OutputEventStreamResponseHandler(
-            OutputEventStream outputEventStream, Statement statement, TransactionIndependentValueMapper valueMapper) {
+            OutputEventStream outputEventStream,
+            Statement statement,
+            TransactionIndependentValueMapper valueMapper,
+            TransactionHandle transactionHandle) {
         super(DefaultMetadataHandler.getInstance());
         this.outputEventStream = outputEventStream;
         this.statement = statement;
         this.valueMapper = valueMapper;
+        this.transactionHandle = transactionHandle;
     }
 
     @Override
@@ -103,7 +110,11 @@ public class OutputEventStreamResponseHandler extends AbstractMetadataAwareRespo
     }
 
     @Override
-    public void onBookmark(String encodedBookmark) {}
+    public void onBookmark(String encodedBookmark) {
+        if (encodedBookmark != null) {
+            transactionHandle.setOutputBookmark(encodedBookmark);
+        }
+    }
 
     @Override
     public void onFailure(Error error) {

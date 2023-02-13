@@ -25,7 +25,9 @@ import static org.neo4j.kernel.impl.util.ValueUtils.asParameterMapValue;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
@@ -81,6 +83,8 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     private LoginContext loginContext;
     MemoryTracker memoryTracker;
     AuthManager authManager;
+    private final List<Bookmark> inputBookmarks;
+    private String encodedBookmark;
 
     TransactionHandle(
             String databaseName,
@@ -94,7 +98,8 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
             InternalLogProvider logProvider,
             MemoryTracker memoryTracker,
             AuthManager authManager,
-            boolean readByDefault) {
+            boolean readByDefault,
+            List<Bookmark> bookmarks) {
         this.databaseName = databaseName;
         this.registry = registry;
         this.uriScheme = uriScheme;
@@ -110,6 +115,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
         this.memoryTracker = memoryTracker;
         this.authManager = authManager;
         this.readByDefault = readByDefault;
+        this.inputBookmarks = bookmarks;
     }
 
     URI uri() {
@@ -158,7 +164,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
 
     void commit() throws TransactionException {
         try {
-            this.transaction.commit();
+            encodedBookmark = this.transaction.commit().serialize();
         } finally {
             registry.forget(id);
             this.transaction.close();
@@ -204,7 +210,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
                 this,
                 this.databaseName,
                 readByDefault ? AccessMode.READ : AccessMode.WRITE,
-                Collections.emptyList(),
+                inputBookmarks,
                 this.customTransactionTimeout,
                 Collections.emptyMap());
     }
@@ -216,5 +222,13 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     @Override
     public RoutingContext routingContext() {
         return new RoutingContext(true, Map.of());
+    }
+
+    public String getOutputBookmark() {
+        return encodedBookmark;
+    }
+
+    public void setOutputBookmark(String encodedBookmark) {
+        this.encodedBookmark = encodedBookmark;
     }
 }

@@ -92,13 +92,13 @@ public abstract class AbstractEventSourceJoltSerializerTest {
     protected static void writeTransactionInfo(LineDelimitedEventSourceJoltSerializer serializer) {
         serializer.writeErrorWrapper();
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1, null));
     }
 
     protected static void writeTransactionInfo(LineDelimitedEventSourceJoltSerializer serializer, String commitUri) {
         serializer.writeErrorWrapper();
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create(commitUri), -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create(commitUri), -1, null));
     }
 
     protected static void writeError(LineDelimitedEventSourceJoltSerializer serializer, Status status, String message) {

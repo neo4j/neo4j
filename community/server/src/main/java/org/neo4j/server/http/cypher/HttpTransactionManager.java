@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -102,8 +103,15 @@ public class HttpTransactionManager {
         var readByDefault = databaseAPI.mode() != TopologyGraphDbmsModel.HostedOnMode.SINGLE && !routingEnabled;
 
         memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
+        var bookmarkParser = boltSPI.getCustomBookmarkFormatParser().orElse(CustomBookmarkFormatParser.DEFAULT);
         return new TransactionFacade(
-                databaseName, transactionRegistry, transactionManager, userLogProvider, authManager, readByDefault);
+                databaseName,
+                transactionRegistry,
+                transactionManager,
+                userLogProvider,
+                authManager,
+                readByDefault,
+                bookmarkParser);
     }
 
     private void scheduleTransactionTimeout(Duration timeout) {

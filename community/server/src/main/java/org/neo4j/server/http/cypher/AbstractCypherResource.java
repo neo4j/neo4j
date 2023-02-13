@@ -23,6 +23,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
 import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest;
 import static org.neo4j.server.web.HttpHeaderUtils.getAccessMode;
+import static org.neo4j.server.web.HttpHeaderUtils.getBookmarks;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 import java.net.URI;
@@ -244,6 +245,7 @@ public abstract class AbstractCypherResource {
         LoginContext loginContext = getLoginContextFromHttpServletRequest(request);
         long customTransactionTimeout = getTransactionTimeout(headers, log);
         var isReadOnlyTransaction = getAccessMode(headers);
+        var bookmarks = getBookmarks(transactionFacade.bookmarkParser(), headers);
 
         if (isReadOnlyTransaction.isPresent()) {
             return transactionFacade.newTransactionHandle(
@@ -254,7 +256,8 @@ public abstract class AbstractCypherResource {
                     memoryTracker,
                     customTransactionTimeout,
                     clock,
-                    isReadOnlyTransaction.get());
+                    isReadOnlyTransaction.get(),
+                    bookmarks);
         } else {
             return transactionFacade.newTransactionHandle(
                     uriScheme,
@@ -262,7 +265,8 @@ public abstract class AbstractCypherResource {
                     loginContext,
                     loginContext.connectionInfo(),
                     memoryTracker,
-                    customTransactionTimeout);
+                    customTransactionTimeout,
+                    bookmarks);
         }
     }
 

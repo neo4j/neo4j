@@ -111,8 +111,31 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     @Test
     void shouldSerializeResponseWithCommitUriOnly() {
         // when
-        serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1));
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, null));
+
+        // then
+        String result = output.toString(UTF_8);
+        assertEquals("{\"info\":{\"commit\":\"commit/uri/1\"}}\n", result);
+    }
+
+    @Test
+    void shouldSerializeBookmarkOnCommittedNotificationState() {
+        // when
+
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.COMMITTED, URI.create("commit/uri/1"), -1, "I AM BOOKMARK!"));
+
+        // then
+        String result = output.toString(UTF_8);
+        assertEquals("{\"info\":{\"commit\":\"commit/uri/1\",\"lastBookmarks\":[\"I AM BOOKMARK!\"]}}\n", result);
+    }
+
+    @Test
+    void shouldNotSerializeBookmarkOnNonCommittedNotificationStates() {
+        // when
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, "NOT SEEN!"));
 
         // then
         String result = output.toString(UTF_8);
@@ -131,8 +154,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         writeRecord(serializer, row, "column1", "column2");
         writeStatementEnd(serializer);
 
-        serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1));
+        serializer.writeTransactionInfo(new TransactionInfoEvent(
+                TransactionNotificationState.NO_TRANSACTION, URI.create("commit/uri/1"), -1, null));
 
         // then
         String result = output.toString(UTF_8);
@@ -514,7 +537,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         writeStatementEnd(serializer);
 
         serializer.writeTransactionInfo(
-                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1));
+                new TransactionInfoEvent(TransactionNotificationState.NO_TRANSACTION, null, -1, null));
 
         // then
         String result = output.toString(UTF_8);

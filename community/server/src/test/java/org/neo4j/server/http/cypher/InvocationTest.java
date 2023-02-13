@@ -20,6 +20,7 @@
 package org.neo4j.server.http.cypher;
 
 import static java.lang.Long.parseLong;
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -56,8 +57,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
@@ -69,13 +68,13 @@ import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementExecutionException;
 import org.neo4j.exceptions.SyntaxException;
+import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
@@ -92,13 +91,14 @@ class InvocationTest {
     private static final Statement NULL_STATEMENT = null;
     private static final String TX_ID = "123";
 
+    private static final String SERIALIZED_BOOKMARK = "BOOKMARK!";
+
     private final InternalLog log = mock(InternalLog.class);
     private final TransactionManager transactionManager = mock(TransactionManager.class);
     private final Transaction transaction = mock(Transaction.class);
     private org.neo4j.bolt.tx.statement.Statement statement;
+    private final FabricBookmark bookmark = mock(FabricBookmark.class);
     private final InternalLogProvider logProvider = mock(InternalLogProvider.class);
-    private final BoltGraphDatabaseManagementServiceSPI boltSPI = mock(BoltGraphDatabaseManagementServiceSPI.class);
-    private final QueryExecutionEngine executionEngine = mock(QueryExecutionEngine.class);
     private final InternalTransaction internalTransaction = mock(InternalTransaction.class);
     private final TransactionRegistry registry = mock(TransactionRegistry.class);
     private final OutputEventStream outputEventStream = mock(OutputEventStream.class);
@@ -121,8 +121,11 @@ class InvocationTest {
                         nullable(Duration.class),
                         anyMap()))
                 .thenReturn(transaction);
+
+        when(bookmark.serialize()).thenReturn(SERIALIZED_BOOKMARK);
+
         when(transaction.run(anyString(), Mockito.eq(MapValue.EMPTY))).thenReturn(statement);
-        when(transaction.commit()).thenReturn(Bookmark.EMPTY_BOOKMARK);
+        when(transaction.commit()).thenReturn(bookmark);
     }
 
     @Test
@@ -156,7 +159,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -179,7 +182,8 @@ class InvocationTest {
         // emptyList() );
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1, SERIALIZED_BOOKMARK);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -217,7 +221,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -233,7 +237,7 @@ class InvocationTest {
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0);
+                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -270,7 +274,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("queryA", MapValue.EMPTY);
@@ -285,7 +289,7 @@ class InvocationTest {
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0);
+                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0, null);
 
         txManagerOrder.verify(registry).release(123L, handle);
 
@@ -307,7 +311,7 @@ class InvocationTest {
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0);
+                .writeTransactionInfo(TransactionNotificationState.OPEN, uriScheme.txCommitUri(123L), 0, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -345,7 +349,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -362,7 +366,8 @@ class InvocationTest {
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1, SERIALIZED_BOOKMARK);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -384,7 +389,9 @@ class InvocationTest {
         transactionOrder.verify(transaction).close();
 
         InOrder outputOrder = inOrder(outputEventStream);
-        outputOrder.verify(outputEventStream).writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, null, -1);
+        outputOrder
+                .verify(outputEventStream)
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, null, -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -419,7 +426,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -436,7 +443,8 @@ class InvocationTest {
                 .writeStatementEnd(any(), any(), any(), any()); // todo work out why the actual args fails
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1, SERIALIZED_BOOKMARK);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -472,7 +480,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -487,7 +495,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.ExecutionFailed, null);
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -529,7 +537,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -547,7 +555,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(any(), any()); // todo check error properly here
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.UNKNOWN, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.UNKNOWN, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -589,7 +597,8 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(any(), any()); // todo more specific
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -631,7 +640,8 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Security.Forbidden, "Forbidden");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri(1337L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.NO_TRANSACTION, uriScheme.txCommitUri(1337L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -672,7 +682,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run(queryText, MapValue.EMPTY);
@@ -684,7 +694,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.SyntaxError, "did you mean MATCH?");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -723,7 +733,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -735,7 +745,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Statement.ExecutionFailed, "BOO");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -777,7 +787,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -792,7 +802,7 @@ class InvocationTest {
                 .writeFailure(Status.Transaction.TransactionRollbackFailed, "Something went wrong");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.UNKNOWN, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.UNKNOWN, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -858,7 +868,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -870,7 +880,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Transaction.DeadlockDetected, "deadlock");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -890,7 +900,8 @@ class InvocationTest {
                 mock(InternalLogProvider.class),
                 mock(MemoryTracker.class),
                 mock(AuthManager.class),
-                true);
+                true,
+                emptyList());
 
         InputEventStream inputEventStream = mock(InputEventStream.class);
         when(inputEventStream.read()).thenReturn(null);
@@ -913,7 +924,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.READ,
-                        Collections.emptyList(),
+                        emptyList(),
                         Duration.ofMillis(100),
                         Collections.emptyMap());
     }
@@ -948,7 +959,7 @@ class InvocationTest {
         outputOrder.verify(outputEventStream).writeFailure(Status.Request.InvalidFormat, "Cannot parse input");
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(TransactionNotificationState.ROLLED_BACK, uriScheme.txCommitUri(123L), -1, null);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -1169,7 +1180,7 @@ class InvocationTest {
                         handle,
                         "neo4j",
                         AccessMode.WRITE,
-                        Collections.emptyList(),
+                        emptyList(),
                         null,
                         Collections.emptyMap());
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
@@ -1191,7 +1202,8 @@ class InvocationTest {
         // emptyList() );
         outputOrder
                 .verify(outputEventStream)
-                .writeTransactionInfo(TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1);
+                .writeTransactionInfo(
+                        TransactionNotificationState.COMMITTED, uriScheme.txCommitUri(123L), -1, SERIALIZED_BOOKMARK);
         verifyNoMoreInteractions(outputEventStream);
     }
 
@@ -1226,7 +1238,8 @@ class InvocationTest {
                 logProvider,
                 memoryTracker,
                 authManager,
-                readOnly);
+                readOnly,
+                emptyList());
     }
 
     private org.neo4j.bolt.tx.statement.Statement generateStatementMock() {

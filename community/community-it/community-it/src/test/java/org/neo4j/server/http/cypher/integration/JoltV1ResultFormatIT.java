@@ -83,12 +83,14 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n"
-                        + "{\"summary\":{}}\n"
-                        + "{\"info\":{" + lineDeprecationNotification() + "," + "\"commit\":\""
-                        + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\n",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}",
+                "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}",
+                "{\"summary\":{}}",
+                "{\"info\":{" + lineDeprecationNotification() + "," + "\"commit\":\"" + commitResource
+                        + "\",\"lastBookmarks\":[");
     }
 
     @ParameterizedTest
@@ -104,12 +106,15 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "\u001E{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n"
-                        + "\u001E{\"summary\":{}}\n"
-                        + "\u001E{\"info\":{" + seqDeprecationNotification() + ",\"commit\":\""
-                        + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\u001E",
+                "",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n",
+                "{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n",
+                "{\"summary\":{}}\n",
+                "{\"info\":{" + seqDeprecationNotification() + ",\"commit\":\"" + commitResource
+                        + "\",\"lastBookmarks\":[");
     }
 
     @ParameterizedTest
@@ -120,12 +125,14 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo(
-                        "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" + "{\"data\":[1,{\"R\":\"5.5\"},true]}\n"
-                                + "{\"summary\":{}}\n"
-                                + "{\"info\":{" + lineDeprecationNotification() + ",\"commit\":\""
-                                + commitResource + "\"}}\n");
+        splitAndVerify(
+                response.rawContent(),
+                "\n",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}",
+                "{\"data\":[1,{\"R\":\"5.5\"},true]}",
+                "{\"summary\":{}}",
+                "{\"info\":{" + lineDeprecationNotification() + ",\"commit\":\"" + commitResource
+                        + "\",\"lastBookmarks\":[");
     }
 
     @ParameterizedTest
@@ -136,12 +143,16 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
                 .POST(commitResource, queryAsJsonRow("RETURN 1, 5.5, true"));
 
         assertThat(response.status()).isEqualTo(200);
-        assertThat(response.rawContent())
-                .isEqualTo("\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n"
-                        + "\u001E{\"data\":[1,{\"R\":\"5.5\"},true]}\n"
-                        + "\u001E{\"summary\":{}}\n"
-                        + "\u001E{\"info\":{" + seqDeprecationNotification() + ","
-                        + "\"commit\":\"" + commitResource + "\"}}\n");
+
+        splitAndVerify(
+                response.rawContent(),
+                "\u001E",
+                "",
+                "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n",
+                "{\"data\":[1,{\"R\":\"5.5\"},true]}\n",
+                "{\"summary\":{}}\n",
+                "{\"info\":{" + seqDeprecationNotification() + "," + "\"commit\":\"" + commitResource
+                        + "\",\"lastBookmarks\":");
     }
 
     private static HTTP.RawPayload queryAsJsonRow(String query) {
@@ -162,5 +173,16 @@ class JoltV1ResultFormatIT extends AbstractRestFunctionalTestBase {
                 + "which has been deprecated.\",\"description\":\"The requested format has been deprecated. "
                 + "('application/vnd.neo4j.jolt' and 'application/vnd.neo4j.jolt-v1' have been deprecated and will be removed in a "
                 + "future version. Please use 'application/vnd.neo4j.jolt-v2'.)\"}]";
+    }
+
+    public static void splitAndVerify(String input, String separator, String... expectedOutput) {
+        var splitContent = input.split(separator);
+
+        for (int i = 0; i < expectedOutput.length - 1; i++) {
+            assertThat(splitContent[i]).isEqualTo(expectedOutput[i]);
+        }
+
+        // final one we do a partial match because the bookmark is generated
+        assertThat(splitContent[expectedOutput.length - 1]).startsWith(expectedOutput[expectedOutput.length - 1]);
     }
 }

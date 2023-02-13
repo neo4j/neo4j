@@ -32,10 +32,14 @@ public class TransactionInfoEvent implements OutputEvent {
     private final URI commitUri;
     private final long expirationTimestamp;
 
-    public TransactionInfoEvent(TransactionNotificationState notification, URI commitUri, long expirationTimestamp) {
+    private final String bookmark;
+
+    public TransactionInfoEvent(
+            TransactionNotificationState notification, URI commitUri, long expirationTimestamp, String bookmark) {
         this.notification = notification;
         this.commitUri = commitUri;
         this.expirationTimestamp = expirationTimestamp;
+        this.bookmark = bookmark;
     }
 
     @Override
@@ -68,5 +72,9 @@ public class TransactionInfoEvent implements OutputEvent {
      */
     public long getExpirationTimestamp() {
         return expirationTimestamp;
+    }
+
+    public String getBookmark() {
+        return bookmark;
     }
 }

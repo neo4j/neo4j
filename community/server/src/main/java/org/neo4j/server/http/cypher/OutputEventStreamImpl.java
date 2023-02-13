@@ -87,8 +87,8 @@ class OutputEventStreamImpl implements OutputEventSource, OutputEventStream {
 
     @Override
     public void writeTransactionInfo(
-            TransactionNotificationState notification, URI commitUri, long expirationTimestamp) {
-        notifyListener(new TransactionInfoEvent(notification, commitUri, expirationTimestamp));
+            TransactionNotificationState notification, URI commitUri, long expirationTimestamp, String bookmark) {
+        notifyListener(new TransactionInfoEvent(notification, commitUri, expirationTimestamp, bookmark));
     }
 
     @Override

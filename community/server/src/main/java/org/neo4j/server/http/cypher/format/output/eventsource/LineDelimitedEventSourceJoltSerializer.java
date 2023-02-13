@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FORMAT;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message;
+import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.COMMITTED;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -224,6 +225,13 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
                     jsonGenerator.writeStringField("expires", expires);
                 }
                 jsonGenerator.writeEndObject();
+            }
+
+            if (transactionInfoEvent.getNotification() == COMMITTED) {
+
+                jsonGenerator.writeArrayFieldStart("lastBookmarks");
+                jsonGenerator.writeString(transactionInfoEvent.getBookmark());
+                jsonGenerator.writeEndArray();
             }
 
             jsonGenerator.writeEndObject();

@@ -30,6 +30,11 @@ public interface Bookmark {
 
     void attachTo(ResponseHandler state);
 
+    default String serialize() {
+        return toString();
+    }
+    ;
+
     Bookmark EMPTY_BOOKMARK = new Bookmark() {
         @Override
         public long txId() {
@@ -44,6 +49,11 @@ public interface Bookmark {
         @Override
         public void attachTo(ResponseHandler state) {
             // doing nothing
+        }
+
+        @Override
+        public String serialize() {
+            return "";
         }
     };
 }
