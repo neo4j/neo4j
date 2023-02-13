@@ -41,6 +41,7 @@ class ResourceManager(
   memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
 ) extends DefaultCloseListenable with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor, memoryTracker)
+  protected var firstResource: AutoCloseablePlus = _
 
   /**
    * Trace a resource
@@ -49,6 +50,13 @@ class ResourceManager(
     monitor.trace(resource)
     resources.add(resource)
     resource.setCloseListener(this)
+  }
+
+  /**
+   * Trace a resource that should be closed before all other resources
+   */
+  def traceFirst(resource: AutoCloseablePlus): Unit = {
+    firstResource = resource
   }
 
   /**
@@ -77,9 +85,16 @@ class ResourceManager(
 
   def allResources: Iterator[AutoCloseablePlus] = resources.all()
 
-  override def closeInternal(): Unit = resources.closeAll()
+  override def closeInternal(): Unit = {
+    val firstResourceToClose = firstResource
+    if (firstResourceToClose != null) {
+      firstResource = null
+      firstResourceToClose.close()
+    }
+    resources.closeAll()
+  }
 
-  override def isClosed: Boolean = resources.isClosed
+  override def isClosed: Boolean = firstResource == null && resources.isClosed
 }
 
 class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {
