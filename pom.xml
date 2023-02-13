@@ -137,7 +137,7 @@
     <jersey.version>2.34</jersey.version>
     <junit.version>5.9.2</junit.version>
     <junit.platform.version>1.9.2</junit.platform.version>
-    <mockito.version>5.1.1</mockito.version>
+    <mockito.version>4.11.0</mockito.version>
     <opencypher.version>1.0.0-M21</opencypher.version>
     <caffeine.version>3.1.2</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
