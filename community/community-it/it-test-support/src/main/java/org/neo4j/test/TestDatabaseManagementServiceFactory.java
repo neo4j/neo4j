@@ -59,20 +59,20 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     }
 
     @Override
-    protected GlobalModule createGlobalModule(Config config, boolean consoleMode, ExternalDependencies dependencies) {
+    protected GlobalModule createGlobalModule(Config config, boolean daemonMode, ExternalDependencies dependencies) {
         config.setIfNotSet(GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO);
 
         if (!fileSystem.isPersistent()) {
             config.setIfNotSet(GraphDatabaseSettings.keep_logical_logs, "1 files");
         }
 
-        return new TestDatabaseGlobalModule(config, consoleMode, this.dbmsInfo, dependencies);
+        return new TestDatabaseGlobalModule(config, daemonMode, this.dbmsInfo, dependencies);
     }
 
     class TestDatabaseGlobalModule extends GlobalModule {
         TestDatabaseGlobalModule(
-                Config config, boolean consoleMode, DbmsInfo dbmsInfo, ExternalDependencies dependencies) {
-            super(config, dbmsInfo, consoleMode, dependencies);
+                Config config, boolean daemonMode, DbmsInfo dbmsInfo, ExternalDependencies dependencies) {
+            super(config, dbmsInfo, daemonMode, dependencies);
         }
 
         @Override
@@ -81,10 +81,10 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         }
 
         @Override
-        protected LogService createLogService(InternalLogProvider userLogProvider, boolean consoleMode) {
+        protected LogService createLogService(InternalLogProvider userLogProvider, boolean daemonMode) {
             if (internalLogProvider == null) {
                 if (fileSystem.isPersistent()) {
-                    return super.createLogService(userLogProvider, consoleMode);
+                    return super.createLogService(userLogProvider, daemonMode);
                 }
                 internalLogProvider = NullLogProvider.getInstance();
             }

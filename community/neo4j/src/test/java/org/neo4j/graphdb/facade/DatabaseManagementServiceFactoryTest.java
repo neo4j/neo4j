@@ -85,11 +85,11 @@ class DatabaseManagementServiceFactoryTest {
         return new DatabaseManagementServiceFactory(DbmsInfo.UNKNOWN, CommunityEditionModule::new) {
             @Override
             protected GlobalModule createGlobalModule(
-                    Config config, boolean consoleMode, ExternalDependencies dependencies) {
+                    Config config, boolean daemonMode, ExternalDependencies dependencies) {
                 LifeSupport lifeSupport = new LifeSupport();
                 lifeSupport.add(new PoisonedLifecycleMember(startupError, shutdownError));
 
-                return new GlobalModule(config, dbmsInfo, consoleMode, dependencies) {
+                return new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
                     @Override
                     public LifeSupport createLife() {
                         return lifeSupport;

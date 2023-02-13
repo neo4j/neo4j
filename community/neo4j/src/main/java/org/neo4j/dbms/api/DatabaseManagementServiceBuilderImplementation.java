@@ -59,7 +59,7 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
     private final Map<String, URLAccessRule> urlAccessRules = new HashMap<>();
     protected Path homeDirectory;
     protected Config.Builder config = Config.newBuilder();
-    protected boolean consoleMode;
+    protected boolean daemonMode;
 
     public DatabaseManagementServiceBuilderImplementation(
             Path homeDirectory, Predicate<Class<? extends ExtensionFactory>> extensionFilter) {
@@ -81,7 +81,7 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
 
     protected DatabaseManagementService newDatabaseManagementService(Config config, ExternalDependencies dependencies) {
         return new DatabaseManagementServiceFactory(getDbmsInfo(config), getEditionFactory(config))
-                .build(augmentConfig(config), consoleMode, dependencies);
+                .build(augmentConfig(config), daemonMode, dependencies);
     }
 
     protected DbmsInfo getDbmsInfo(Config config) {

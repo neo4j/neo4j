@@ -31,14 +31,14 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 public class CommunityBootstrapper extends NeoBootstrapper {
     @Override
     protected DatabaseManagementService createNeo(
-            Config config, boolean consoleMode, GraphDatabaseDependencies dependencies) {
+            Config config, boolean daemonMode, GraphDatabaseDependencies dependencies) {
         DatabaseManagementServiceFactory facadeFactory =
                 new DatabaseManagementServiceFactory(COMMUNITY, CommunityEditionModule::new);
-        return facadeFactory.build(config, consoleMode, dependencies);
+        return facadeFactory.build(config, daemonMode, dependencies);
     }
 
     @Override
-    protected boolean checkLicenseAgreement(Path homeDir, boolean consoleMode) {
+    protected boolean checkLicenseAgreement(Path homeDir, boolean daemonMode) {
         return true;
     }
 }

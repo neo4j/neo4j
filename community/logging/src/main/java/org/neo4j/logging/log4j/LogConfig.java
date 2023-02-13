@@ -26,6 +26,7 @@ import static org.neo4j.logging.log4j.LoggerTarget.ROOT_LOGGER;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -42,6 +43,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.xml.XmlConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.apache.logging.log4j.layout.template.json.JsonTemplateLayout;
+import org.apache.logging.log4j.spi.ExtendedLogger;
 import org.apache.logging.log4j.status.StatusLogger;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.InternalLog;
@@ -112,7 +114,7 @@ public final class LogConfig {
      *
      * @param fs              the file system.
      * @param xmlConfigFile   the log4j xml configuration path.
-     * @param consoleMode     if {@code false}, console appenders will be removed.
+     * @param daemonMode      if {@code true}, console appenders will be removed.
      * @param configLookup    a lookup function to get values for setting names.
      * @param headerLogger    a callback for header the header logger, only applicable to {@link Neo4jDebugLogLayout}.
      * @param headerClassName classname to use in the header logger, only applicable to {@link Neo4jDebugLogLayout}.
@@ -122,7 +124,7 @@ public final class LogConfig {
             FileSystemAbstraction fs,
             Path xmlConfigFile,
             boolean useDefaultOnMissingXml,
-            boolean consoleMode,
+            boolean daemonMode,
             Function<String, Object> configLookup,
             Consumer<InternalLog> headerLogger,
             String headerClassName) {
@@ -130,7 +132,7 @@ public final class LogConfig {
                 .withConfigLookup(configLookup)
                 .withHeaderLogger(headerLogger, headerClassName)
                 .withUseDefaultOnMissingXml(useDefaultOnMissingXml)
-                .withConsoleMode(consoleMode)
+                .withDaemonMode(daemonMode)
                 .build();
     }
 
@@ -170,16 +172,17 @@ public final class LogConfig {
      */
     private static class LookupInjectionXmlConfiguration extends XmlConfiguration {
         private final LookupContext context;
-        private final boolean allowConsoleAppenders;
+        private final boolean daemonMode;
+        private final List<String> removedAppenders = new ArrayList<>();
 
         LookupInjectionXmlConfiguration(
                 LoggerContext loggerContext,
                 ConfigurationSource configSource,
                 LookupContext context,
-                boolean allowConsoleAppenders) {
+                boolean daemonMode) {
             super(loggerContext, configSource);
             this.context = context;
-            this.allowConsoleAppenders = allowConsoleAppenders;
+            this.daemonMode = daemonMode;
         }
 
         @Override
@@ -188,11 +191,14 @@ public final class LogConfig {
             super.doConfigure();
             AbstractLookup.removeLookupContext();
 
-            if (!allowConsoleAppenders) {
-                List<Appender> consoleAppenders = getAppenders().values().stream()
-                        .filter(a -> a instanceof ConsoleAppender)
+            if (daemonMode) {
+                List<ConsoleAppender> consoleAppenders = getAppenders().values().stream()
+                        .filter(ConsoleAppender.class::isInstance)
+                        .map(ConsoleAppender.class::cast)
                         .toList();
-                for (Appender consoleAppender : consoleAppenders) {
+                for (ConsoleAppender consoleAppender : consoleAppenders) {
+                    removedAppenders.add("Removing console appender '" + consoleAppender.getName() + "' with target '"
+                            + consoleAppender.getTarget() + "'.");
                     removeAppender(consoleAppender.getName());
                 }
             }
@@ -213,7 +219,7 @@ public final class LogConfig {
                 if (source == null) {
                     return null;
                 }
-                return new LookupInjectionXmlConfiguration(getLoggerContext(), source, context, allowConsoleAppenders);
+                return new LookupInjectionXmlConfiguration(getLoggerContext(), source, context, daemonMode);
             } catch (final IOException ex) {
                 StatusLogger.getLogger().error("Cannot locate file {}", getConfigurationSource(), ex);
             }
@@ -242,7 +248,7 @@ public final class LogConfig {
         private Function<String, Object> configLookup;
         private String jsonLayout;
         private boolean useDefaultOnMissingXml = false;
-        private boolean consoleMode = false;
+        private boolean daemonMode = false;
 
         private Builder(FileSystemAbstraction fileSystemAbstraction, Path xmlConfigFile) {
             this.fileSystemAbstraction = fileSystemAbstraction;
@@ -284,8 +290,8 @@ public final class LogConfig {
             return this;
         }
 
-        public Builder withConsoleMode(boolean allowConsoleAppenders) {
-            this.consoleMode = allowConsoleAppenders;
+        public Builder withDaemonMode(boolean daemonMode) {
+            this.daemonMode = daemonMode;
             return this;
         }
 
@@ -297,7 +303,7 @@ public final class LogConfig {
                 try {
                     ConfigurationSource configurationSource = getConfigurationSource();
                     configureLoggingFromFile(
-                            context, headerLogger, headerClassName, configLookup, configurationSource, consoleMode);
+                            context, headerLogger, headerClassName, configLookup, configurationSource, daemonMode);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -372,10 +378,15 @@ public final class LogConfig {
             String headerClassName,
             Function<String, Object> configLookup,
             ConfigurationSource configSource,
-            boolean allowConsoleAppenders) {
+            boolean daemonMode) {
         LookupContext lookupContext = new LookupContext(headerLogger, headerClassName, configLookup);
         LookupInjectionXmlConfiguration lookupInjectionXmlConfiguration =
-                new LookupInjectionXmlConfiguration(context, configSource, lookupContext, allowConsoleAppenders);
+                new LookupInjectionXmlConfiguration(context, configSource, lookupContext, daemonMode);
         context.setConfiguration(lookupInjectionXmlConfiguration);
+        if (daemonMode && !lookupInjectionXmlConfiguration.removedAppenders.isEmpty()) {
+            ExtendedLogger logger = context.getLogger(LogConfig.class);
+            logger.info("Running in daemon mode, all <Console> appenders will be suppressed:");
+            lookupInjectionXmlConfiguration.removedAppenders.forEach(logger::info);
+        }
     }
 }

@@ -83,12 +83,12 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             throw new ServerStartupException("Argument --home-dir is required and was not provided.");
         }
 
-        return boot.start(args.homeDir, args.configFile, args.configOverrides, args.expandCommands, args.consoleMode);
+        return boot.start(args.homeDir, args.configFile, args.configOverrides, args.expandCommands, !args.consoleMode);
     }
 
     @VisibleForTesting
     public final int start(Path homeDir, Map<String, String> configOverrides) {
-        return start(homeDir, null, configOverrides, false, true);
+        return start(homeDir, null, configOverrides, false, false);
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
      * @param configFile path to a possible configuration file, if the files does not exist a default config will be used.
      * @param configOverrides optional config overrides, will be applied after the {@code configFile} is parsed.
      * @param expandCommands if {@code true}, this will allow the config to execute commands in values and used the returned value instead.
-     * @param consoleMode if {@code false}, console log appenders will be forcefully removed from the logging configuration.
+     * @param daemonMode if {@code true}, console log appenders will be forcefully removed from the logging configuration.
      * @return exit code.
      */
     @Override
@@ -106,7 +106,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             Path configFile,
             Map<String, String> configOverrides,
             boolean expandCommands,
-            boolean consoleMode) {
+            boolean daemonMode) {
         SystemLogger.installErrorListener();
         addShutdownHook();
         installSignalHandlers();
@@ -119,14 +119,14 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                 .build();
         pidFile = config.get(BootloaderSettings.pid_file);
         writePidSilently();
-        Log4jLogProvider userLogProvider = setupLogging(config, consoleMode);
+        Log4jLogProvider userLogProvider = setupLogging(config, daemonMode);
         userLogFileStream = userLogProvider;
 
         dependencies = dependencies.userLogProvider(userLogProvider);
 
         log = userLogProvider.getLog(getClass());
 
-        boolean licenseAccepted = checkLicenseAgreement(homeDir, consoleMode);
+        boolean licenseAccepted = checkLicenseAgreement(homeDir, daemonMode);
 
         // Log any messages written before logging was configured.
         startupLog.replayInto(log);
@@ -144,7 +144,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         }
 
         // Signal parent process we are ready to detach
-        if (!consoleMode) {
+        if (daemonMode) {
             System.err.println(Environment.FULLY_FLEDGED);
 
             // Redirect output to the log files
@@ -167,7 +167,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                     .toString();
 
             log.info("Starting...");
-            databaseManagementService = createNeo(config, consoleMode, dependencies);
+            databaseManagementService = createNeo(config, daemonMode, dependencies);
             log.info("Started.");
 
             return OK;
@@ -261,18 +261,18 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     }
 
     protected abstract DatabaseManagementService createNeo(
-            Config config, boolean consoleMode, GraphDatabaseDependencies dependencies);
+            Config config, boolean daemonMode, GraphDatabaseDependencies dependencies);
 
-    protected abstract boolean checkLicenseAgreement(Path homeDir, boolean consoleMode);
+    protected abstract boolean checkLicenseAgreement(Path homeDir, boolean daemonMode);
 
-    private static Log4jLogProvider setupLogging(Config config, boolean consoleMode) {
+    private static Log4jLogProvider setupLogging(Config config, boolean daemonMode) {
         Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
         boolean allowDefaultXmlConfig = !config.isExplicitlySet(GraphDatabaseSettings.user_logging_config_path);
         Neo4jLoggerContext ctx = createLoggerFromXmlConfig(
                 new DefaultFileSystemAbstraction(),
                 xmlConfig,
                 allowDefaultXmlConfig,
-                consoleMode,
+                daemonMode,
                 config::configStringLookup,
                 null,
                 null);

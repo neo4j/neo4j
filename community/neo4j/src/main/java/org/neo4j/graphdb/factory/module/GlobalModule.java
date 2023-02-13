@@ -143,11 +143,11 @@ public class GlobalModule {
     /**
      * @param globalConfig         configuration affecting global aspects of the system.
      * @param dbmsInfo             the type of dbms this module manages.
-     * @param consoleMode          if we run in console mode or not. If {@code false}, we will avoid printing to stdout/stderr.
+     * @param daemonMode           if we run in daemon mode or not. If {@code true}, we will avoid printing to stdout/stderr.
      * @param externalDependencies optional external dependencies provided by caller.
      */
     public GlobalModule(
-            Config globalConfig, DbmsInfo dbmsInfo, boolean consoleMode, ExternalDependencies externalDependencies) {
+            Config globalConfig, DbmsInfo dbmsInfo, boolean daemonMode, ExternalDependencies externalDependencies) {
         externalDependencyResolver =
                 externalDependencies.dependencies() != null ? externalDependencies.dependencies() : new Dependencies();
 
@@ -170,7 +170,7 @@ public class GlobalModule {
         // If no logging was passed in from the outside then create logging and register
         // with this life
         logService = globalDependencies.satisfyDependency(
-                createLogService(externalDependencies.userLogProvider(), consoleMode));
+                createLogService(externalDependencies.userLogProvider(), daemonMode));
         globalConfig.setLogger(logService.getInternalLog(Config.class));
 
         // Component monitoring
@@ -328,7 +328,7 @@ public class GlobalModule {
         }
     }
 
-    protected LogService createLogService(InternalLogProvider userLogProvider, boolean consoleMode) {
+    protected LogService createLogService(InternalLogProvider userLogProvider, boolean daemonMode) {
         userLogProvider = userLogProvider == null ? NullLogProvider.getInstance() : userLogProvider;
         InternalLogProvider internalLogProvider = NullLogProvider.getInstance();
 
@@ -341,7 +341,7 @@ public class GlobalModule {
                     fileSystem,
                     xmlConfig,
                     allowDefaultXmlConfig,
-                    consoleMode,
+                    daemonMode,
                     globalConfig::configStringLookup,
                     log -> dbmsDiagnosticsManager.dumpAll(
                             log), // dbmsDiagnosticsManager is null here, but will be assigned later

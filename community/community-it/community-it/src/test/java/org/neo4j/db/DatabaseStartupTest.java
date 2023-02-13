@@ -265,8 +265,8 @@ class DatabaseStartupTest {
 
         @Override
         protected GlobalModule createGlobalModule(
-                Config config, boolean consoleMode, ExternalDependencies dependencies) {
-            return new GlobalModule(config, dbmsInfo, consoleMode, dependencies) {
+                Config config, boolean daemonMode, ExternalDependencies dependencies) {
+            return new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
                 @Override
                 protected FileSystemAbstraction createFileSystemAbstraction() {
                     return new EphemeralFileSystemAbstraction();
@@ -288,7 +288,7 @@ class DatabaseStartupTest {
         @Override
         protected DatabaseManagementService newDatabaseManagementService(
                 Config config, ExternalDependencies dependencies) {
-            return factory.build(augmentConfig(config), consoleMode, dependencies);
+            return factory.build(augmentConfig(config), daemonMode, dependencies);
         }
     }
 }

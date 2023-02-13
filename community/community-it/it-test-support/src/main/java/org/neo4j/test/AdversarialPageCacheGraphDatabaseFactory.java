@@ -53,8 +53,8 @@ public final class AdversarialPageCacheGraphDatabaseFactory {
 
                     @Override
                     protected GlobalModule createGlobalModule(
-                            Config config, boolean consoleMode, ExternalDependencies dependencies) {
-                        return new GlobalModule(config, dbmsInfo, consoleMode, dependencies) {
+                            Config config, boolean daemonMode, ExternalDependencies dependencies) {
+                        return new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction() {
                                 return fs;
@@ -75,7 +75,7 @@ public final class AdversarialPageCacheGraphDatabaseFactory {
                             }
                         };
                     }
-                }.build(config, consoleMode, dependencies);
+                }.build(config, daemonMode, dependencies);
             }
         };
     }

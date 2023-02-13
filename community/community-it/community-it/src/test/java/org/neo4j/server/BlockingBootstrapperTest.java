@@ -53,7 +53,7 @@ class BlockingBootstrapperTest {
                     Path configFile,
                     Map<String, String> configOverrides,
                     boolean expandCommands,
-                    boolean consoleMode) {
+                    boolean daemonMode) {
                 running.set(true);
                 return 0;
             }
@@ -95,7 +95,7 @@ class BlockingBootstrapperTest {
                     Path configFile,
                     Map<String, String> configOverrides,
                     boolean expandCommands,
-                    boolean consoleMode) {
+                    boolean daemonMode) {
                 return 1;
             }
 

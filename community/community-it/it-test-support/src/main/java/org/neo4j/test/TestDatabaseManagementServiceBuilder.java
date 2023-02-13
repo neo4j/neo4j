@@ -131,7 +131,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                 getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider);
 
         return factory.build(
-                augmentConfig(config), consoleMode, GraphDatabaseDependencies.newDependencies(dependencies));
+                augmentConfig(config), daemonMode, GraphDatabaseDependencies.newDependencies(dependencies));
     }
 
     @Override

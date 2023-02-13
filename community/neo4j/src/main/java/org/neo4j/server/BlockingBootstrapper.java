@@ -42,8 +42,8 @@ public class BlockingBootstrapper implements Bootstrapper {
             Path configFile,
             Map<String, String> configOverrides,
             boolean expandCommands,
-            boolean consoleMode) {
-        int status = wrapped.start(homeDir, configFile, configOverrides, expandCommands, consoleMode);
+            boolean daemonMode) {
+        int status = wrapped.start(homeDir, configFile, configOverrides, expandCommands, daemonMode);
         if (status != NeoBootstrapper.OK) {
             return status;
         }

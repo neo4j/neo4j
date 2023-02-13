@@ -126,13 +126,12 @@ public class DatabaseManagementServiceFactory {
      * {@link org .neo4j.kernel.impl.factory.GraphDatabaseFacade}.
      *
      * @param config       configuration
-     * @param consoleMode  if running in console mode. If {@code false}, we avoid printing to stdout/stderr.
+     * @param daemonMode   if running in daemon mode. If {@code true}, we avoid printing to stdout/stderr.
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService build(
-            Config config, boolean consoleMode, final ExternalDependencies dependencies) {
-        var globalModule = createGlobalModule(config, consoleMode, dependencies);
+    public DatabaseManagementService build(Config config, boolean daemonMode, final ExternalDependencies dependencies) {
+        var globalModule = createGlobalModule(config, daemonMode, dependencies);
         var edition = editionFactory.apply(globalModule);
         var globalDependencies = globalModule.getGlobalDependencies();
         var globalLife = globalModule.getGlobalLife();
@@ -305,8 +304,8 @@ public class DatabaseManagementServiceFactory {
      * Create the platform module. Override to replace with custom module.
      */
     protected GlobalModule createGlobalModule(
-            Config config, boolean consoleMode, final ExternalDependencies dependencies) {
-        return new GlobalModule(config, dbmsInfo, consoleMode, dependencies);
+            Config config, boolean daemonMode, final ExternalDependencies dependencies) {
+        return new GlobalModule(config, dbmsInfo, daemonMode, dependencies);
     }
 
     /**

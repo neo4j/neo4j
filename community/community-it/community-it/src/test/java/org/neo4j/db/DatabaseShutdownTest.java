@@ -114,8 +114,8 @@ class DatabaseShutdownTest {
 
                 @Override
                 protected GlobalModule createGlobalModule(
-                        Config config, boolean consoleMode, ExternalDependencies dependencies) {
-                    GlobalModule globalModule = new GlobalModule(config, dbmsInfo, consoleMode, dependencies) {
+                        Config config, boolean daemonMode, ExternalDependencies dependencies) {
+                    GlobalModule globalModule = new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
                         @Override
                         protected PageCache createPageCache(
                                 FileSystemAbstraction fileSystem,
@@ -161,7 +161,7 @@ class DatabaseShutdownTest {
                     globalLife = globalModule.getGlobalLife();
                     return globalModule;
                 }
-            }.build(config, consoleMode, dependencies);
+            }.build(config, daemonMode, dependencies);
         }
 
         LifecycleStatus getDatabaseStatus() {

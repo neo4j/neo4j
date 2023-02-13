@@ -90,7 +90,7 @@ class ServerUserLogTest {
                     stringMap(GraphDatabaseSettings.user_logging_config_path.name(), xmlConfig.toString());
             configOverrides.putAll(connectorsConfig());
 
-            int returnCode = neoBootstrapper.start(dir, null, configOverrides, false, true);
+            int returnCode = neoBootstrapper.start(dir, null, configOverrides, false, false);
 
             // then no exceptions are thrown and
             assertThat(getStdOut()).isNotEmpty();

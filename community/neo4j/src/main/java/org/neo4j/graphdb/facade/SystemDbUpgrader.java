@@ -74,7 +74,7 @@ public class SystemDbUpgrader {
                 dependenciesWithoutExtensions(eventListener).databaseEventListeners(Iterables.iterable(eventListener));
         var globalModule = new GlobalModule(config, DbmsInfo.TOOL, false, graphDatabaseDependencies) {
             @Override
-            protected LogService createLogService(InternalLogProvider userLogProvider, boolean consoleMode) {
+            protected LogService createLogService(InternalLogProvider userLogProvider, boolean daemonMode) {
                 return new SimpleLogService(systemDbStartupLogProvider);
             }
 
