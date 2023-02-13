@@ -365,6 +365,10 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record>
 
         private MapValue withTaggedId( MapValue mapValue )
         {
+            if ( mapValue.isEmpty() )
+            {
+                return mapValue;
+            }
             MapValueBuilder builder = new MapValueBuilder( mapValue.size() );
             mapValue.foreach( ( key, value ) -> builder.add( key, withTaggedId( value ) ) );
             return builder.build();
