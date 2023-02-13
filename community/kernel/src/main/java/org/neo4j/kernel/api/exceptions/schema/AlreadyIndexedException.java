@@ -44,14 +44,11 @@ public class AlreadyIndexedException extends SchemaKernelException {
 
     private static String constructUserMessage(
             OperationContext context, TokenNameLookup tokenNameLookup, SchemaDescriptor descriptor) {
-        switch (context) {
-            case INDEX_CREATION:
-                return messageWithLabelAndPropertyName(tokenNameLookup, INDEX_CONTEXT_FORMAT, descriptor);
-            case CONSTRAINT_CREATION:
-                return messageWithLabelAndPropertyName(tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT, descriptor);
-            default:
-                return String.format(NO_CONTEXT_FORMAT, descriptor);
-        }
+        return switch (context) {
+            case INDEX_CREATION -> messageWithLabelAndPropertyName(tokenNameLookup, INDEX_CONTEXT_FORMAT, descriptor);
+            case CONSTRAINT_CREATION -> messageWithLabelAndPropertyName(
+                    tokenNameLookup, CONSTRAINT_CONTEXT_FORMAT, descriptor);
+        };
     }
 
     @Override

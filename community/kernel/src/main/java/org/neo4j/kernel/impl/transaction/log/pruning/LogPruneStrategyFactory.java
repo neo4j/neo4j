@@ -85,21 +85,16 @@ public class LogPruneStrategyFactory {
             String originalConfigValue) {
         long thresholdValue = value.value;
 
-        switch (value.type) {
-            case "files":
-                return new FileCountThreshold(thresholdValue);
-            case "size":
-                return new FileSizeThreshold(fileSystem, thresholdValue);
-            case "txs":
-            case "entries": // txs and entries are synonyms
-                return new EntryCountThreshold(logProvider, thresholdValue);
-            case "hours":
-                return new EntryTimespanThreshold(logProvider, clock, HOURS, thresholdValue);
-            case "days":
-                return new EntryTimespanThreshold(logProvider, clock, DAYS, thresholdValue);
-            default:
-                throw new IllegalArgumentException("Invalid log pruning configuration value '" + originalConfigValue
-                        + "'. Invalid type '" + value.type + "', valid are files, size, txs, entries, hours, days.");
-        }
+        return switch (value.type) {
+            case "files" -> new FileCountThreshold(thresholdValue);
+            case "size" -> new FileSizeThreshold(fileSystem, thresholdValue);
+                // txs and entries are synonyms
+            case "txs", "entries" -> new EntryCountThreshold(logProvider, thresholdValue);
+            case "hours" -> new EntryTimespanThreshold(logProvider, clock, HOURS, thresholdValue);
+            case "days" -> new EntryTimespanThreshold(logProvider, clock, DAYS, thresholdValue);
+            default -> throw new IllegalArgumentException(
+                    "Invalid log pruning configuration value '" + originalConfigValue + "'. Invalid type '" + value.type
+                            + "', valid are files, size, txs, entries, hours, days.");
+        };
     }
 }

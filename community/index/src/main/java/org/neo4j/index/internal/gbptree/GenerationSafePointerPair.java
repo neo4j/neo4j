@@ -496,20 +496,14 @@ class GenerationSafePointerPair {
      * @return name of {@code pointerState}.
      */
     static String pointerStateName(byte pointerState) {
-        switch (pointerState) {
-            case STABLE:
-                return "STABLE";
-            case UNSTABLE:
-                return "UNSTABLE";
-            case CRASH:
-                return "CRASH";
-            case BROKEN:
-                return "BROKEN";
-            case EMPTY:
-                return "EMPTY";
-            default:
-                return "Unknown[" + pointerState + "]";
-        }
+        return switch (pointerState) {
+            case STABLE -> "STABLE";
+            case UNSTABLE -> "UNSTABLE";
+            case CRASH -> "CRASH";
+            case BROKEN -> "BROKEN";
+            case EMPTY -> "EMPTY";
+            default -> "Unknown[" + pointerState + "]";
+        };
     }
 
     static byte pointerStateFromResult(long result, int shift) {

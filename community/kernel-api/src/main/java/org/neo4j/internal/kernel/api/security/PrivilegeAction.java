@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.security;
 
 import java.util.Locale;
+import java.util.Objects;
 
 public enum PrivilegeAction {
     // Database actions
@@ -121,172 +122,122 @@ public enum PrivilegeAction {
     TOKEN {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_LABEL:
-                case CREATE_RELTYPE:
-                case CREATE_PROPERTYKEY:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY -> true;
+                default -> this == action;
+            };
         }
     },
 
     CONSTRAINT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_CONSTRAINT:
-                case DROP_CONSTRAINT:
-                case SHOW_CONSTRAINT:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case CREATE_CONSTRAINT, DROP_CONSTRAINT, SHOW_CONSTRAINT -> true;
+                default -> this == action;
+            };
         }
     },
 
     INDEX {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_INDEX:
-                case DROP_INDEX:
-                case SHOW_INDEX:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case CREATE_INDEX, DROP_INDEX, SHOW_INDEX -> true;
+                default -> this == action;
+            };
         }
     },
 
     COMPOSITE_DATABASE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_COMPOSITE_DATABASE:
-                case DROP_COMPOSITE_DATABASE:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case CREATE_COMPOSITE_DATABASE, DROP_COMPOSITE_DATABASE -> true;
+                default -> this == action;
+            };
         }
     },
 
     DATABASE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_DATABASE:
-                case DROP_DATABASE:
-                    return true;
-                default:
-                    return ALTER_DATABASE.satisfies(action)
-                            || COMPOSITE_DATABASE_MANAGEMENT.satisfies(action)
-                            || this == action;
-            }
+            return switch (action) {
+                case CREATE_DATABASE, DROP_DATABASE -> true;
+                default -> ALTER_DATABASE.satisfies(action)
+                        || COMPOSITE_DATABASE_MANAGEMENT.satisfies(action)
+                        || this == action;
+            };
         }
     },
 
     ALTER_DATABASE {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SET_DATABASE_ACCESS:
-                    return true;
-                default:
-                    return this == action;
+            if (Objects.requireNonNull(action) == PrivilegeAction.SET_DATABASE_ACCESS) {
+                return true;
             }
+            return this == action;
         }
     },
 
     ALIAS_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case CREATE_ALIAS:
-                case DROP_ALIAS:
-                case ALTER_ALIAS:
-                case SHOW_ALIAS:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case CREATE_ALIAS, DROP_ALIAS, ALTER_ALIAS, SHOW_ALIAS -> true;
+                default -> this == action;
+            };
         }
     },
 
     TRANSACTION_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SHOW_TRANSACTION:
-                case TERMINATE_TRANSACTION:
-                case SHOW_CONNECTION:
-                case TERMINATE_CONNECTION:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION -> true;
+                default -> this == action;
+            };
         }
     },
 
     USER_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SHOW_USER:
-                case CREATE_USER:
-                case RENAME_USER:
-                case DROP_USER:
-                    return true;
-                default:
-                    return ALTER_USER.satisfies(action) || this == action;
-            }
+            return switch (action) {
+                case SHOW_USER, CREATE_USER, RENAME_USER, DROP_USER -> true;
+                default -> ALTER_USER.satisfies(action) || this == action;
+            };
         }
     },
 
     ALTER_USER {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SET_USER_STATUS:
-                case SET_PASSWORDS:
-                case SET_USER_HOME_DATABASE:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE -> true;
+                default -> this == action;
+            };
         }
     },
 
     ROLE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SHOW_ROLE:
-                case CREATE_ROLE:
-                case RENAME_ROLE:
-                case DROP_ROLE:
-                case ASSIGN_ROLE:
-                case REMOVE_ROLE:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case SHOW_ROLE, CREATE_ROLE, RENAME_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE -> true;
+                default -> this == action;
+            };
         }
     },
 
     PRIVILEGE_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SHOW_PRIVILEGE:
-                case ASSIGN_PRIVILEGE:
-                case REMOVE_PRIVILEGE:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE -> true;
+                default -> this == action;
+            };
         }
     },
 
@@ -294,13 +245,10 @@ public enum PrivilegeAction {
     MATCH {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case READ:
-                case TRAVERSE:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case READ, TRAVERSE -> true;
+                default -> this == action;
+            };
         }
     },
 
@@ -308,46 +256,30 @@ public enum PrivilegeAction {
     WRITE {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case SET_LABEL:
-                case REMOVE_LABEL:
-                case CREATE_ELEMENT:
-                case DELETE_ELEMENT:
-                case SET_PROPERTY:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY -> true;
+                default -> this == action;
+            };
         }
     },
 
     MERGE {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case MATCH:
-                case TRAVERSE:
-                case READ:
-                case CREATE_ELEMENT:
-                case SET_PROPERTY:
-                    return true;
-                default:
-                    return this == action;
-            }
+            return switch (action) {
+                case MATCH, TRAVERSE, READ, CREATE_ELEMENT, SET_PROPERTY -> true;
+                default -> this == action;
+            };
         }
     },
 
     GRAPH_ACTIONS {
         @Override
         public boolean satisfies(PrivilegeAction action) {
-            switch (action) {
-                case READ:
-                case TRAVERSE:
-                case MATCH:
-                    return true;
-                default:
-                    return WRITE.satisfies(action) || this == action;
-            }
+            return switch (action) {
+                case READ, TRAVERSE, MATCH -> true;
+                default -> WRITE.satisfies(action) || this == action;
+            };
         }
     },
 

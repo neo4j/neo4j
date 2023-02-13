@@ -265,25 +265,19 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor {
             if (modifiers.contains(Modifier.PUBLIC) || modifiers.contains(Modifier.PROTECTED)) {
                 ElementKind kind = element.getKind();
                 switch (kind) {
-                    case ENUM:
-                    case INTERFACE:
-                    case CLASS:
+                    case ENUM, INTERFACE, CLASS -> {
                         pushScope("." + element.getSimpleName());
                         processType((TypeElement) element);
-                        break;
-                    case RECORD_COMPONENT:
-                    case ENUM_CONSTANT:
-                    case FIELD:
+                    }
+                    case RECORD_COMPONENT, ENUM_CONSTANT, FIELD -> {
                         pushScope("#" + element);
                         processField((VariableElement) element);
-                        break;
-                    case CONSTRUCTOR:
-                    case METHOD:
+                    }
+                    case CONSTRUCTOR, METHOD -> {
                         pushScope("::" + element);
                         processMethod((ExecutableElement) element);
-                        break;
-                    default:
-                        error("Unhandled ElementKind: " + kind);
+                    }
+                    default -> error("Unhandled ElementKind: " + kind);
                 }
                 popScope();
             }
@@ -346,23 +340,12 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor {
     private void addKindIdentifier(StringBuilder sb, TypeElement typeElement) {
         ElementKind kind = typeElement.getKind();
         switch (kind) {
-            case CLASS:
-                sb.append(" class");
-                break;
-            case INTERFACE:
-                sb.append(" interface");
-                break;
-            case ENUM:
-                sb.append(" enum");
-                break;
-            case ANNOTATION_TYPE:
-                sb.append(" annotation");
-                break;
-            case RECORD:
-                sb.append(" record");
-                break;
-            default:
-                error("Unhandled ElementKind: " + kind);
+            case CLASS -> sb.append(" class");
+            case INTERFACE -> sb.append(" interface");
+            case ENUM -> sb.append(" enum");
+            case ANNOTATION_TYPE -> sb.append(" annotation");
+            case RECORD -> sb.append(" record");
+            default -> error("Unhandled ElementKind: " + kind);
         }
     }
 

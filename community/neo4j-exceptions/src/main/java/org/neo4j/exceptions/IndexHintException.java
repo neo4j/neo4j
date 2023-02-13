@@ -75,42 +75,23 @@ public class IndexHintException extends Neo4jException {
                 .map(propertyName -> escapedVarName + "." + escape(propertyName))
                 .collect(Collectors.joining(", "));
 
-        String typeString;
-        switch (indexType) {
-            case BTREE:
-                typeString = "BTREE ";
-                break;
-            case TEXT:
-                typeString = "TEXT ";
-                break;
-            case RANGE:
-                typeString = "RANGE ";
-                break;
-            case POINT:
-                typeString = "POINT ";
-                break;
-            default:
-                typeString = "";
-                break;
-        }
+        String typeString =
+                switch (indexType) {
+                    case BTREE -> "BTREE ";
+                    case TEXT -> "TEXT ";
+                    case RANGE -> "RANGE ";
+                    case POINT -> "POINT ";
+                    default -> "";
+                };
 
-        String indexFormatString;
-        switch (entityType) {
-            case NODE:
-                indexFormatString = String.format(
-                        "%sINDEX FOR (%s:%s) ON (%s)",
-                        typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
-                break;
-            case RELATIONSHIP:
-                indexFormatString = String.format(
-                        "%sINDEX FOR ()-[%s:%s]-() ON (%s)",
-                        typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
-                break;
-            default:
-                indexFormatString = "";
-                break;
-        }
-        return indexFormatString;
+        return switch (entityType) {
+            case NODE -> String.format(
+                    "%sINDEX FOR (%s:%s) ON (%s)",
+                    typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
+            case RELATIONSHIP -> String.format(
+                    "%sINDEX FOR ()-[%s:%s]-() ON (%s)",
+                    typeString, escapedVarName, escapedLabelOrRelTypeName, propertyNames);
+        };
     }
 
     private static String escape(String str) {

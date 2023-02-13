@@ -210,16 +210,11 @@ public interface RelationshipModifications {
          * @return the relationships of the given direction.
          */
         default RelationshipBatch ids(RelationshipDirection direction) {
-            switch (direction) {
-                case OUTGOING:
-                    return out();
-                case INCOMING:
-                    return in();
-                case LOOP:
-                    return loop();
-                default:
-                    throw new IllegalArgumentException(direction.name());
-            }
+            return switch (direction) {
+                case OUTGOING -> out();
+                case INCOMING -> in();
+                case LOOP -> loop();
+            };
         }
 
         /**

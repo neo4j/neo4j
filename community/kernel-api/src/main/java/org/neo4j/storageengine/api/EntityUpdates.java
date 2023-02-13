@@ -479,20 +479,13 @@ public class EntityUpdates {
 
         @Override
         public String toString() {
-            switch (type) {
-                case NoValue:
-                    return "NoValue";
-                case Before:
-                    return format("Before(%s)", before);
-                case After:
-                    return format("After(%s)", after);
-                case UnChanged:
-                    return format("UnChanged(%s)", after);
-                case Changed:
-                    return format("Changed(from=%s, to=%s)", before, after);
-                default:
-                    throw new IllegalStateException("This cannot happen!");
-            }
+            return switch (type) {
+                case NoValue -> "NoValue";
+                case Before -> format("Before(%s)", before);
+                case After -> format("After(%s)", after);
+                case UnChanged -> format("UnChanged(%s)", after);
+                case Changed -> format("Changed(from=%s, to=%s)", before, after);
+            };
         }
 
         @Override
@@ -509,20 +502,13 @@ public class EntityUpdates {
                 return false;
             }
 
-            switch (type) {
-                case NoValue:
-                    return true;
-                case Before:
-                    return before.equals(that.before);
-                case After:
-                    return after.equals(that.after);
-                case UnChanged:
-                    return after.equals(that.after);
-                case Changed:
-                    return before.equals(that.before) && after.equals(that.after);
-                default:
-                    throw new IllegalStateException("This cannot happen!");
-            }
+            return switch (type) {
+                case NoValue -> true;
+                case Before -> before.equals(that.before);
+                case After -> after.equals(that.after);
+                case UnChanged -> after.equals(that.after);
+                case Changed -> before.equals(that.before) && after.equals(that.after);
+            };
         }
 
         @Override

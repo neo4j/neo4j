@@ -70,22 +70,11 @@ class NumberType extends Type {
     void putValue(PageCursor cursor, GenericKey<?> state) {
         cursor.putByte((byte) state.long1);
         switch ((int) state.long1) {
-            case RawBits.BYTE:
-                cursor.putByte((byte) state.long0);
-                break;
-            case RawBits.SHORT:
-                cursor.putShort((short) state.long0);
-                break;
-            case RawBits.INT:
-            case RawBits.FLOAT:
-                cursor.putInt((int) state.long0);
-                break;
-            case RawBits.LONG:
-            case RawBits.DOUBLE:
-                cursor.putLong(state.long0);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown number type " + state.long1);
+            case RawBits.BYTE -> cursor.putByte((byte) state.long0);
+            case RawBits.SHORT -> cursor.putShort((short) state.long0);
+            case RawBits.INT, RawBits.FLOAT -> cursor.putInt((int) state.long0);
+            case RawBits.LONG, RawBits.DOUBLE -> cursor.putLong(state.long0);
+            default -> throw new IllegalArgumentException("Unknown number type " + state.long1);
         }
     }
 
@@ -113,22 +102,15 @@ class NumberType extends Type {
     }
 
     static int numberKeySize(long long1) {
-        switch ((int) long1) {
-            case RawBits.BYTE:
-                return SIZE_NUMBER_BYTE;
-            case RawBits.SHORT:
-                return SIZE_NUMBER_SHORT;
-            case RawBits.INT:
-                return SIZE_NUMBER_INT;
-            case RawBits.LONG:
-                return SIZE_NUMBER_LONG;
-            case RawBits.FLOAT:
-                return SIZE_NUMBER_FLOAT;
-            case RawBits.DOUBLE:
-                return SIZE_NUMBER_DOUBLE;
-            default:
-                throw new IllegalArgumentException("Unknown number type " + long1);
-        }
+        return switch ((int) long1) {
+            case RawBits.BYTE -> SIZE_NUMBER_BYTE;
+            case RawBits.SHORT -> SIZE_NUMBER_SHORT;
+            case RawBits.INT -> SIZE_NUMBER_INT;
+            case RawBits.LONG -> SIZE_NUMBER_LONG;
+            case RawBits.FLOAT -> SIZE_NUMBER_FLOAT;
+            case RawBits.DOUBLE -> SIZE_NUMBER_DOUBLE;
+            default -> throw new IllegalArgumentException("Unknown number type " + long1);
+        };
     }
 
     static NumberValue asValue(long long0, long long1) {

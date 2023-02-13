@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import static java.lang.String.format;
-
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -46,16 +44,12 @@ public class AlreadyConstrainedException extends SchemaKernelException {
 
     private static String constructUserMessage(
             OperationContext context, TokenNameLookup tokenNameLookup, ConstraintDescriptor constraint) {
-        switch (context) {
-            case INDEX_CREATION:
-                return messageWithLabelAndPropertyName(tokenNameLookup, INDEX_CONTEXT_FORMAT, constraint.schema());
-
-            case CONSTRAINT_CREATION:
-                return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.userDescription(tokenNameLookup);
-
-            default:
-                return format(NO_CONTEXT_FORMAT, constraint);
-        }
+        return switch (context) {
+            case INDEX_CREATION -> messageWithLabelAndPropertyName(
+                    tokenNameLookup, INDEX_CONTEXT_FORMAT, constraint.schema());
+            case CONSTRAINT_CREATION -> ALREADY_CONSTRAINED_MESSAGE_PREFIX
+                    + constraint.userDescription(tokenNameLookup);
+        };
     }
 
     @Override

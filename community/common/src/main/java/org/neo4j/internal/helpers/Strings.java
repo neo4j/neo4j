@@ -19,11 +19,8 @@
  */
 package org.neo4j.internal.helpers;
 
-import static java.util.stream.Collectors.joining;
-
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * Helper functions for working with strings.
@@ -89,46 +86,16 @@ public final class Strings {
         for (int i = 0; i < len; i++) {
             char ch = arg.charAt(i);
             switch (ch) {
-                case '"':
-                    output.append("\\\"");
-                    break;
-
-                case '\'':
-                    output.append("\\\'");
-                    break;
-
-                case '\\':
-                    output.append("\\\\");
-                    break;
-
-                case '\n':
-                    output.append("\\n");
-                    break;
-
-                case '\t':
-                    output.append("\\t");
-                    break;
-
-                case '\r':
-                    output.append("\\r");
-                    break;
-
-                case '\b':
-                    output.append("\\b");
-                    break;
-
-                case '\f':
-                    output.append("\\f");
-                    break;
-
-                default:
-                    output.append(ch);
-                    break;
+                case '"' -> output.append("\\\"");
+                case '\'' -> output.append("\\'");
+                case '\\' -> output.append("\\\\");
+                case '\n' -> output.append("\\n");
+                case '\t' -> output.append("\\t");
+                case '\r' -> output.append("\\r");
+                case '\b' -> output.append("\\b");
+                case '\f' -> output.append("\\f");
+                default -> output.append(ch);
             }
         }
-    }
-
-    public static String printMap(Map<?, ?> map, String entrySeparator) {
-        return map.entrySet().stream().map(Object::toString).collect(joining(entrySeparator));
     }
 }

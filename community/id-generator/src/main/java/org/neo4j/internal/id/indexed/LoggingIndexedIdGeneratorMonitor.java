@@ -348,31 +348,20 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                 Type type = TYPES[typeByte];
                 long time = channel.getLong();
                 switch (type) {
-                    case CLEARING_CACHE:
-                    case CLEARED_CACHE:
-                    case CLOSED:
-                        dumper.type(type, time);
-                        break;
-                    case ALLOCATE_HIGH:
-                    case ALLOCATE_REUSED:
-                    case MARK_USED:
-                    case MARK_DELETED:
-                    case MARK_FREE:
-                    case MARK_RESERVED:
-                    case MARK_UNRESERVED:
-                    case MARK_DELETED_AND_FREE:
-                    case NORMALIZED:
-                    case BRIDGED:
-                        dumper.typeAndId(type, time, channel.getLong());
-                        break;
-                    case CACHED:
-                    case OPENED:
-                    case CHECKPOINT:
-                        dumper.typeAndTwoIds(type, time, channel.getLong(), channel.getLong());
-                        break;
-                    default:
-                        System.out.println("Unknown type " + type);
-                        break;
+                    case CLEARING_CACHE, CLEARED_CACHE, CLOSED -> dumper.type(type, time);
+                    case ALLOCATE_HIGH,
+                            ALLOCATE_REUSED,
+                            MARK_USED,
+                            MARK_DELETED,
+                            MARK_FREE,
+                            MARK_RESERVED,
+                            MARK_UNRESERVED,
+                            MARK_DELETED_AND_FREE,
+                            NORMALIZED,
+                            BRIDGED -> dumper.typeAndId(type, time, channel.getLong());
+                    case CACHED, OPENED, CHECKPOINT -> dumper.typeAndTwoIds(
+                            type, time, channel.getLong(), channel.getLong());
+                    default -> System.out.println("Unknown type " + type);
                 }
             }
         } catch (EOFException e) {

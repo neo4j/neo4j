@@ -84,25 +84,17 @@ public final class TimeUtil {
     };
 
     private static long toNanos(String unit, int amount) {
-        switch (unit) {
-            case "ns":
-                return NANOSECONDS.toNanos(amount);
-            case "us":
-            case "μs":
-                return MICROSECONDS.toNanos(amount);
-            case "ms":
-                return MILLISECONDS.toNanos(amount);
-            case "s":
-                return SECONDS.toNanos(amount);
-            case "m":
-                return MINUTES.toNanos(amount);
-            case "h":
-                return HOURS.toNanos(amount);
-            case "d":
-                return DAYS.toNanos(amount);
-            default:
-                throw new IllegalArgumentException("Unrecognized unit `" + unit + "`. " + VALID_TIME_DESCRIPTION);
-        }
+        return switch (unit) {
+            case "ns" -> NANOSECONDS.toNanos(amount);
+            case "us", "μs" -> MICROSECONDS.toNanos(amount);
+            case "ms" -> MILLISECONDS.toNanos(amount);
+            case "s" -> SECONDS.toNanos(amount);
+            case "m" -> MINUTES.toNanos(amount);
+            case "h" -> HOURS.toNanos(amount);
+            case "d" -> DAYS.toNanos(amount);
+            default -> throw new IllegalArgumentException(
+                    "Unrecognized unit `" + unit + "`. " + VALID_TIME_DESCRIPTION);
+        };
     }
 
     public static String nanosToString(long nanos) {

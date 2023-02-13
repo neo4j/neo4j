@@ -38,13 +38,10 @@ public class EquivalentSchemaRuleAlreadyExistsException extends SchemaKernelExce
 
     private static String constructUserMessage(
             OperationContext context, TokenNameLookup tokenNameLookup, SchemaRule schemaRule) {
-        switch (context) {
-            case INDEX_CREATION:
-                return String.format(EQUIVALENT_INDEX, schemaRule.userDescription(tokenNameLookup));
-            case CONSTRAINT_CREATION:
-                return String.format(EQUIVALENT_CONSTRAINT, schemaRule.userDescription(tokenNameLookup));
-            default:
-                return String.format(EQUIVALENT_SCHEMA_RULE, schemaRule.userDescription(tokenNameLookup));
-        }
+        return switch (context) {
+            case INDEX_CREATION -> String.format(EQUIVALENT_INDEX, schemaRule.userDescription(tokenNameLookup));
+            case CONSTRAINT_CREATION -> String.format(
+                    EQUIVALENT_CONSTRAINT, schemaRule.userDescription(tokenNameLookup));
+        };
     }
 }

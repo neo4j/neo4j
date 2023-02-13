@@ -30,14 +30,10 @@ public class EffectiveQueryType {
             return QueryExecutionType.QueryType.READ_ONLY;
         }
         if (queryType == QueryType.READ_PLUS_UNRESOLVED()) {
-            switch (requested) {
-                case READ:
-                    return QueryExecutionType.QueryType.READ_ONLY;
-                case WRITE:
-                    return QueryExecutionType.QueryType.READ_WRITE;
-                default:
-                    throw new IllegalArgumentException("Unexpected access mode: " + requested);
-            }
+            return switch (requested) {
+                case READ -> QueryExecutionType.QueryType.READ_ONLY;
+                case WRITE -> QueryExecutionType.QueryType.READ_WRITE;
+            };
         }
         if (queryType == QueryType.WRITE()) {
             return QueryExecutionType.QueryType.READ_WRITE;

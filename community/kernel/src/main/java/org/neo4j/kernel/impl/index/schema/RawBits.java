@@ -43,23 +43,16 @@ class RawBits {
      * @return {@link NumberValue} with type and value given by provided raw bits and type.
      */
     static NumberValue asNumberValue(long rawBits, byte type) {
-        switch (type) {
-            case BYTE:
-                return Values.byteValue((byte) rawBits);
-            case SHORT:
-                return Values.shortValue((short) rawBits);
-            case INT:
-                return Values.intValue((int) rawBits);
-            case LONG:
-                return Values.longValue(rawBits);
-            case FLOAT:
-                return Values.floatValue(Float.intBitsToFloat((int) rawBits));
-            case DOUBLE:
-                return Values.doubleValue(Double.longBitsToDouble(rawBits));
-            default:
+        return switch (type) {
+            case BYTE -> Values.byteValue((byte) rawBits);
+            case SHORT -> Values.shortValue((short) rawBits);
+            case INT -> Values.intValue((int) rawBits);
+            case LONG -> Values.longValue(rawBits);
+            case FLOAT -> Values.floatValue(Float.intBitsToFloat((int) rawBits));
+            case DOUBLE -> Values.doubleValue(Double.longBitsToDouble(rawBits));
                 // If type is not recognized, interpret as long.
-                return Values.longValue(rawBits);
-        }
+            default -> Values.longValue(rawBits);
+        };
     }
 
     /**

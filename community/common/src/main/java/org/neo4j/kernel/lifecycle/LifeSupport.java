@@ -257,14 +257,9 @@ public class LifeSupport implements Lifecycle, LifecycleStatusProvider {
 
     private void bringToState(LifecycleInstance instance) throws LifecycleException {
         switch (status) {
-            case STARTED:
-                instance.start();
-                break;
-            case STOPPED:
-                instance.init();
-                break;
-            default:
-                break;
+            case STARTED -> instance.start();
+            case STOPPED -> instance.init();
+            default -> {}
         }
     }
 

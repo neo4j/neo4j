@@ -63,20 +63,11 @@ public abstract class RepeatedSchemaComponentException extends SchemaKernelExcep
             OperationContext context,
             TokenNameLookup tokenNameLookup,
             SchemaComponent component) {
-        String schemaName;
-        switch (context) {
-            case INDEX_CREATION:
-                schemaName = "Index";
-                break;
-
-            case CONSTRAINT_CREATION:
-                schemaName = "Constraint";
-                break;
-
-            default:
-                schemaName = "Schema object";
-                break;
-        }
+        String schemaName =
+                switch (context) {
+                    case INDEX_CREATION -> "Index";
+                    case CONSTRAINT_CREATION -> "Constraint";
+                };
         return String.format(
                 "%s on %s includes a %s more than once.",
                 schemaName, schema.userDescription(tokenNameLookup), component.name);

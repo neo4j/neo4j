@@ -308,21 +308,15 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
             final var values = valueUpdate.values();
             final var updateMode = valueUpdate.updateMode();
             switch (updateMode) {
-                case ADDED:
+                case ADDED -> {
                     if (idempotent) {
                         addIdempotent(entityId, values);
                     } else {
                         add(entityId, values);
                     }
-                    break;
-                case CHANGED:
-                    change(entityId, values);
-                    break;
-                case REMOVED:
-                    remove(entityId);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown update mode " + updateMode);
+                }
+                case CHANGED -> change(entityId, values);
+                case REMOVED -> remove(entityId);
             }
 
             hasChanges = true;

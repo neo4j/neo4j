@@ -68,14 +68,10 @@ public class SecurityLogHelper {
     }
 
     public static ContentValidator assertLog(FormattedLogFormat format, String[] content) {
-        switch (format) {
-            case PLAIN:
-                return new LoggerContentValidator(content);
-            case JSON:
-                return new JsonContentValidator(content);
-            default:
-        }
-        throw new AssertionError();
+        return switch (format) {
+            case PLAIN -> new LoggerContentValidator(content);
+            case JSON -> new JsonContentValidator(content);
+        };
     }
 
     public interface ContentValidator {

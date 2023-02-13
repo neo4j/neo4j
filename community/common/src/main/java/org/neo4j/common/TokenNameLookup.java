@@ -45,17 +45,11 @@ public interface TokenNameLookup {
     String propertyKeyGetName(int propertyKeyId);
 
     default String[] entityTokensGetNames(EntityType type, int[] entityTokenIds) {
-        IntFunction<String> mapper;
-        switch (type) {
-            case NODE:
-                mapper = this::labelGetName;
-                break;
-            case RELATIONSHIP:
-                mapper = this::relationshipTypeGetName;
-                break;
-            default:
-                throw new IllegalArgumentException("Cannot lookup names for tokens of type: " + type);
-        }
+        IntFunction<String> mapper =
+                switch (type) {
+                    case NODE -> this::labelGetName;
+                    case RELATIONSHIP -> this::relationshipTypeGetName;
+                };
         String[] tokenNames = new String[entityTokenIds.length];
         for (int i = 0; i < entityTokenIds.length; i++) {
             tokenNames[i] = mapper.apply(entityTokenIds[i]);

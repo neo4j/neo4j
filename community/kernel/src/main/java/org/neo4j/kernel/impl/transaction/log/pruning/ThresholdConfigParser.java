@@ -65,18 +65,13 @@ public class ThresholdConfigParser {
         final String boolOrNumber = tokens[0];
 
         if (tokens.length == 1) {
-            switch (boolOrNumber) {
-                case "keep_all":
-                case "true":
-                    return ThresholdConfigValue.NO_PRUNING;
-                case "keep_none":
-                case "false":
-                    return ThresholdConfigValue.KEEP_LAST_FILE;
-                default:
-                    throw new IllegalArgumentException("Invalid log pruning configuration value '" + configValue
-                            + "'. The form is 'true', 'false' or '<number><unit> <type>'. For example, '100k txs' "
-                            + "will keep the 100 000 latest transactions.");
-            }
+            return switch (boolOrNumber) {
+                case "keep_all", "true" -> ThresholdConfigValue.NO_PRUNING;
+                case "keep_none", "false" -> ThresholdConfigValue.KEEP_LAST_FILE;
+                default -> throw new IllegalArgumentException("Invalid log pruning configuration value '" + configValue
+                        + "'. The form is 'true', 'false' or '<number><unit> <type>'. For example, '100k txs' "
+                        + "will keep the 100 000 latest transactions.");
+            };
         } else {
             long thresholdValue = parseLongWithUnit(boolOrNumber);
             String thresholdType = tokens[1];

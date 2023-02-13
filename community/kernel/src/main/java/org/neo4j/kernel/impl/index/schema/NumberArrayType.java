@@ -66,26 +66,13 @@ class NumberArrayType extends AbstractArrayType<Number> {
     void initializeArray(GenericKey<?> key, int length, ValueWriter.ArrayType arrayType) {
         initializeArray(key, length);
         switch (arrayType) {
-            case BYTE:
-                key.long1 = RawBits.BYTE;
-                break;
-            case SHORT:
-                key.long1 = RawBits.SHORT;
-                break;
-            case INT:
-                key.long1 = RawBits.INT;
-                break;
-            case LONG:
-                key.long1 = RawBits.LONG;
-                break;
-            case FLOAT:
-                key.long1 = RawBits.FLOAT;
-                break;
-            case DOUBLE:
-                key.long1 = RawBits.DOUBLE;
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid number array type " + arrayType);
+            case BYTE -> key.long1 = RawBits.BYTE;
+            case SHORT -> key.long1 = RawBits.SHORT;
+            case INT -> key.long1 = RawBits.INT;
+            case LONG -> key.long1 = RawBits.LONG;
+            case FLOAT -> key.long1 = RawBits.FLOAT;
+            case DOUBLE -> key.long1 = RawBits.DOUBLE;
+            default -> throw new IllegalArgumentException("Invalid number array type " + arrayType);
         }
     }
 
@@ -142,20 +129,13 @@ class NumberArrayType extends AbstractArrayType<Number> {
     }
 
     private static ArrayElementWriter numberArrayElementWriter(GenericKey<?> key) {
-        switch ((int) key.long1) {
-            case RawBits.BYTE:
-                return (c, k, i) -> c.putByte((byte) k.long0Array[i]);
-            case RawBits.SHORT:
-                return (c, k, i) -> c.putShort((short) k.long0Array[i]);
-            case RawBits.INT:
-            case RawBits.FLOAT:
-                return (c, k, i) -> c.putInt((int) k.long0Array[i]);
-            case RawBits.LONG:
-            case RawBits.DOUBLE:
-                return (c, k, i) -> c.putLong(k.long0Array[i]);
-            default:
-                throw new IllegalArgumentException("Unknown number type " + key.long1);
-        }
+        return switch ((int) key.long1) {
+            case RawBits.BYTE -> (c, k, i) -> c.putByte((byte) k.long0Array[i]);
+            case RawBits.SHORT -> (c, k, i) -> c.putShort((short) k.long0Array[i]);
+            case RawBits.INT, RawBits.FLOAT -> (c, k, i) -> c.putInt((int) k.long0Array[i]);
+            case RawBits.LONG, RawBits.DOUBLE -> (c, k, i) -> c.putLong(k.long0Array[i]);
+            default -> throw new IllegalArgumentException("Unknown number type " + key.long1);
+        };
     }
 
     @Override
@@ -183,23 +163,16 @@ class NumberArrayType extends AbstractArrayType<Number> {
     }
 
     private static ValueWriter.ArrayType numberArrayTypeOf(byte numberType) {
-        switch (numberType) {
-            case RawBits.BYTE:
-                return ValueWriter.ArrayType.BYTE;
-            case RawBits.SHORT:
-                return ValueWriter.ArrayType.SHORT;
-            case RawBits.INT:
-                return ValueWriter.ArrayType.INT;
-            case RawBits.LONG:
-                return ValueWriter.ArrayType.LONG;
-            case RawBits.FLOAT:
-                return ValueWriter.ArrayType.FLOAT;
-            case RawBits.DOUBLE:
-                return ValueWriter.ArrayType.DOUBLE;
-            default:
+        return switch (numberType) {
+            case RawBits.BYTE -> ValueWriter.ArrayType.BYTE;
+            case RawBits.SHORT -> ValueWriter.ArrayType.SHORT;
+            case RawBits.INT -> ValueWriter.ArrayType.INT;
+            case RawBits.LONG -> ValueWriter.ArrayType.LONG;
+            case RawBits.FLOAT -> ValueWriter.ArrayType.FLOAT;
+            case RawBits.DOUBLE -> ValueWriter.ArrayType.DOUBLE;
                 // bad read, hopefully
-                return null;
-        }
+            default -> null;
+        };
     }
 
     private static ArrayElementReader numberArrayElementReader(GenericKey<?> key) {

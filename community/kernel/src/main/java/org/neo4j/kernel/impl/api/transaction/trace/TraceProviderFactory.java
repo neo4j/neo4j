@@ -31,21 +31,16 @@ public class TraceProviderFactory {
 
     public static TraceProvider getTraceProvider(Config config) {
         GraphDatabaseSettings.TransactionTracingLevel tracingLevel = config.get(transaction_tracing_level);
-        switch (tracingLevel) {
-            case DISABLED:
-                return () -> TransactionInitializationTrace.NONE;
-            case ALL:
-                return TransactionInitializationTrace::new;
-            case SAMPLE:
-                return () -> {
-                    if (ThreadLocalRandom.current().nextInt(1, 101) <= config.get(transaction_sampling_percentage)) {
-                        return new TransactionInitializationTrace();
-                    } else {
-                        return TransactionInitializationTrace.NONE;
-                    }
-                };
-            default:
-                throw new IllegalStateException("Unsupported trace mode: " + tracingLevel);
-        }
+        return switch (tracingLevel) {
+            case DISABLED -> () -> TransactionInitializationTrace.NONE;
+            case ALL -> TransactionInitializationTrace::new;
+            case SAMPLE -> () -> {
+                if (ThreadLocalRandom.current().nextInt(1, 101) <= config.get(transaction_sampling_percentage)) {
+                    return new TransactionInitializationTrace();
+                } else {
+                    return TransactionInitializationTrace.NONE;
+                }
+            };
+        };
     }
 }

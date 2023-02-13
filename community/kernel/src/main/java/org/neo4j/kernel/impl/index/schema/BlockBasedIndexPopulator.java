@@ -333,18 +333,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
                 IndexUpdateCursor<KEY, NullValue> updates = externalUpdates.reader()) {
             while (updates.next() && !cancellation.cancelled()) {
                 switch (updates.updateMode()) {
-                    case ADDED:
-                        writeToTree(writer, recordingConflictDetector, updates.key());
-                        break;
-                    case REMOVED:
-                        writer.remove(updates.key());
-                        break;
-                    case CHANGED:
+                    case ADDED -> writeToTree(writer, recordingConflictDetector, updates.key());
+                    case REMOVED -> writer.remove(updates.key());
+                    case CHANGED -> {
                         writer.remove(updates.key());
                         writeToTree(writer, recordingConflictDetector, updates.key2());
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown update mode " + updates.updateMode());
+                    }
+                    default -> throw new IllegalArgumentException("Unknown update mode " + updates.updateMode());
                 }
                 numberOfAppliedExternalUpdates.incrementAndGet();
                 numberOfIndexUpdatesSinceSample.incrementAndGet();

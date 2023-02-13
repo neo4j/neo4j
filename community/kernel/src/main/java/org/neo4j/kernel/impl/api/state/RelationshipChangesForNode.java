@@ -146,17 +146,12 @@ public class RelationshipChangesForNode {
     }
 
     public LongIterator getRelationships(Direction direction) {
-        switch (direction) {
-            case INCOMING:
-                return aggregatedIds(RelationshipDirection.INCOMING, RelationshipDirection.LOOP);
-            case OUTGOING:
-                return aggregatedIds(RelationshipDirection.OUTGOING, RelationshipDirection.LOOP);
-            case BOTH:
-                return aggregatedIds(
-                        RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP);
-            default:
-                throw new IllegalArgumentException("Unknown direction: " + direction);
-        }
+        return switch (direction) {
+            case INCOMING -> aggregatedIds(RelationshipDirection.INCOMING, RelationshipDirection.LOOP);
+            case OUTGOING -> aggregatedIds(RelationshipDirection.OUTGOING, RelationshipDirection.LOOP);
+            case BOTH -> aggregatedIds(
+                    RelationshipDirection.INCOMING, RelationshipDirection.OUTGOING, RelationshipDirection.LOOP);
+        };
     }
 
     private LongIterator aggregatedIds(RelationshipDirection... directions) {
@@ -187,25 +182,24 @@ public class RelationshipChangesForNode {
 
         MutableLongSet loops = typeSets.getIds(RelationshipDirection.LOOP);
         switch (direction) {
-            case INCOMING: {
+            case INCOMING -> {
                 MutableLongSet incoming = typeSets.getIds(RelationshipDirection.INCOMING);
                 return incoming == null && loops == null
                         ? ImmutableEmptyLongIterator.INSTANCE
                         : nonEmptyConcat(primitiveIds(incoming), primitiveIds(loops));
             }
-            case OUTGOING: {
+            case OUTGOING -> {
                 MutableLongSet outging = typeSets.getIds(RelationshipDirection.OUTGOING);
                 return outging == null && loops == null
                         ? ImmutableEmptyLongIterator.INSTANCE
                         : nonEmptyConcat(primitiveIds(outging), primitiveIds(loops));
             }
-            case BOTH: {
+            case BOTH -> {
                 MutableLongSet incoming = typeSets.getIds(RelationshipDirection.INCOMING);
                 MutableLongSet outgoing = typeSets.getIds(RelationshipDirection.OUTGOING);
                 return nonEmptyConcat(primitiveIds(outgoing), primitiveIds(incoming), primitiveIds(loops));
             }
-            default:
-                throw new IllegalArgumentException("Unknown direction: " + direction);
+            default -> throw new IllegalArgumentException("Unknown direction: " + direction);
         }
     }
 

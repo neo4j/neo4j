@@ -74,16 +74,11 @@ public interface Degrees {
      * or {@code 0} if no degree of that combination was found.
      */
     default int degree(Direction direction) {
-        switch (direction) {
-            case OUTGOING:
-                return outgoingDegree();
-            case INCOMING:
-                return incomingDegree();
-            case BOTH:
-                return totalDegree();
-            default:
-                throw new UnsupportedOperationException("Unknown direction " + direction);
-        }
+        return switch (direction) {
+            case OUTGOING -> outgoingDegree();
+            case INCOMING -> incomingDegree();
+            case BOTH -> totalDegree();
+        };
     }
 
     /**
