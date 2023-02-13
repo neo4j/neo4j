@@ -26,6 +26,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
@@ -78,6 +79,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext {
+    private final ServerIdentity serverIdentity;
     private final NamedDatabaseId namedDatabaseId;
     private final DatabaseConfig databaseConfig;
     private final QueryEngineProvider queryEngineProvider;
@@ -123,6 +125,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
 
     public ModularDatabaseCreationContext(
             HostedOnMode mode,
+            ServerIdentity serverIdentity,
             NamedDatabaseId namedDatabaseId,
             GlobalModule globalModule,
             Dependencies globalDependencies,
@@ -145,6 +148,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
             DatabaseStartupController databaseStartupController,
             ReadOnlyDatabases readOnlyDatabases,
             IOControllerService ioControllerService) {
+        this.serverIdentity = serverIdentity;
         this.namedDatabaseId = namedDatabaseId;
         this.databaseConfig = databaseConfig;
         this.contextFactory = contextFactory;
@@ -192,6 +196,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext {
         this.leaseService = leaseService;
         this.startupController = databaseStartupController;
         this.readOnlyDatabases = readOnlyDatabases;
+    }
+
+    @Override
+    public ServerIdentity getServerIdentity() {
+        return serverIdentity;
     }
 
     @Override

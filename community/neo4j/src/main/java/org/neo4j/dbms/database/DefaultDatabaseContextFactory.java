@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
@@ -50,9 +51,11 @@ public class DefaultDatabaseContextFactory
     private final IOControllerService controllerService;
     private final CommitProcessFactory commitProcessFactory;
     private final DefaultDatabaseContextFactoryComponents components;
+    private final ServerIdentity serverIdentity;
 
     public DefaultDatabaseContextFactory(
             GlobalModule globalModule,
+            ServerIdentity serverIdentity,
             DatabaseTransactionStats.Factory transactionStatsFactory,
             IdContextFactory idContextFactory,
             DeviceMapper deviceMapper,
@@ -60,6 +63,7 @@ public class DefaultDatabaseContextFactory
             CommitProcessFactory commitProcessFactory,
             DefaultDatabaseContextFactoryComponents components) {
         super(globalModule, idContextFactory);
+        this.serverIdentity = serverIdentity;
         this.transactionStatsFactory = transactionStatsFactory;
         this.deviceMapper = deviceMapper;
         this.controllerService = controllerService;
@@ -83,6 +87,7 @@ public class DefaultDatabaseContextFactory
                     globalModule.getFileSystem(), globalModule.getNeo4jLayout(), databaseConfig, namedDatabaseId);
             var creationContext = new ModularDatabaseCreationContext(
                     HostedOnMode.SINGLE,
+                    serverIdentity,
                     namedDatabaseId,
                     globalModule,
                     globalModule.getGlobalDependencies(),

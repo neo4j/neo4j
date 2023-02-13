@@ -145,6 +145,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     public DatabaseContextProvider<?> createDatabaseContextProvider(GlobalModule globalModule) {
         var databaseContextFactory = new DefaultDatabaseContextFactory(
                 globalModule,
+                identityModule,
                 getTransactionMonitorFactory(),
                 createIdContextFactory(globalModule),
                 deviceMapper,

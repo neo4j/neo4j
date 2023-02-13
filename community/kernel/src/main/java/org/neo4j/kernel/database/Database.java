@@ -55,6 +55,7 @@ import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Suppliers;
@@ -194,6 +195,9 @@ import org.neo4j.values.ElementIdMapper;
 
 public class Database extends AbstractDatabase {
     private static final String STORE_ID_VALIDATOR_TAG = "storeIdValidator";
+
+    // to be used in a future change for transaction enrichment
+    private final ServerIdentity serverIdentity;
     private final PageCache globalPageCache;
 
     private final TokenHolders tokenHolders;
@@ -261,7 +265,7 @@ public class Database extends AbstractDatabase {
                 context.getScheduler(),
                 context.getDatabaseAvailabilityGuardFactory(),
                 context.getDatabaseHealthFactory());
-
+        this.serverIdentity = context.getServerIdentity();
         this.databaseLayout = context.getDatabaseLayout();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.transactionsMemoryPool = context.getTransactionsMemoryPool();

@@ -24,6 +24,7 @@ import java.util.function.LongFunction;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Configuration;
@@ -65,6 +66,8 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
 public interface DatabaseCreationContext {
+    ServerIdentity getServerIdentity();
+
     NamedDatabaseId getNamedDatabaseId();
 
     DatabaseLayout getDatabaseLayout();
